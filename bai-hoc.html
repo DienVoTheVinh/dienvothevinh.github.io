@@ -101,9 +101,26 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+      <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </header>
+
+  <!-- Hộp nộp bài -->
+  <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;position:relative">
+      <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+      <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
+      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px" id="nbTenBai"></p>
+      <div id="nbDaNop"></div>
+      <div class="field" style="margin-top:14px">
+        <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
+        <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
+      </div>
+      <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
+      <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
+    </div>
+  </div>
 
   <div class="mobile-tabs">
     <button class="mobile-tab-btn active" id="tabVideo" onclick="hienMobilePane('video')">🎥 Video</button>
@@ -158,11 +175,78 @@ var noiDungDangChon = null;   // 'tailieu' | 'bang' | 'test'
 
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
+  nguoiDung = hoSo;
+  $('nutNopBai').style.display = '';
 
   // Tải song song: chi tiết bài + mục lục
   taiMucLuc();
   await taiChiTietBaiHoc();
 })();
+
+/* ===== NỘP BÀI ===== */
+var nguoiDung = null;
+
+function moNopBai() {
+  $('modalNopBai').style.display = 'flex';
+  $('nbTenBai').textContent = details ? details.title : '';
+  $('nbThongBao').textContent = '';
+  taiBaiDaNop();
+}
+function dongNopBai() { $('modalNopBai').style.display = 'none'; }
+
+async function taiBaiDaNop() {
+  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
+  var r = await sb.from('submissions')
+    .select('id, submitted_at, files, status, score, feedback, graded_files')
+    .eq('lesson_id', lessonId)
+    .eq('student_id', nguoiDung.id)
+    .order('submitted_at', { ascending: false });
+  var ds = r.data || [];
+  if (!ds.length) { $('nbDaNop').innerHTML = ''; return; }
+  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;font-weight:600;margin-bottom:8px">Bài em đã nộp:</div>' +
+    ds.map(function (s) {
+      var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+      var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ');
+      var kq;
+      if (s.status === 'graded') {
+        kq = '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + ' điểm' : '') + '</span>' +
+          (s.feedback ? '<div style="font-size:.85rem;margin-top:6px;color:var(--ink-2)">💬 ' + s.feedback + '</div>' : '') +
+          ((s.graded_files || []).length
+            ? '<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: ' + s.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ') + '</div>'
+            : '');
+      } else {
+        kq = '<span class="badge badge-warn">Chờ thầy chấm</span>';
+      }
+      return '<div class="card" style="padding:12px 16px;margin-bottom:10px">' +
+        '<div style="font-size:.8rem;color:var(--ink-3)">' + ngay + '</div>' +
+        '<div style="font-size:.85rem;margin:6px 0">' + links + '</div>' + kq + '</div>';
+    }).join('');
+}
+
+async function guiBaiNop() {
+  var fs = $('nbFiles').files;
+  var tb = $('nbThongBao');
+  if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
+  var nut = $('nbGui');
+  nut.disabled = true; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
+  try {
+    var fd = new FormData();
+    fd.append('kind', 'nop');
+    fd.append('lesson_id', lessonId);
+    for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
+    var r = await sb.functions.invoke('nop-bai', { body: fd });
+    if (r.error) throw new Error(r.error.message || 'Trạm nộp bài lỗi');
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    $('nbFiles').value = '';
+    tb.textContent = '✓ Nộp bài thành công!';
+    tb.style.color = 'var(--ok)';
+    taiBaiDaNop();
+  } catch (e) {
+    tb.textContent = 'Lỗi: ' + e.message;
+    tb.style.color = 'var(--err)';
+  }
+  nut.disabled = false; nut.textContent = 'Gửi bài cho thầy';
+}
 
 /* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
 async function taiMucLuc() {
