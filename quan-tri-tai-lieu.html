@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soạn tài liệu — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px 96px}
+.head{padding:40px 0 24px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:960px){.cols{grid-template-columns:1fr}}
+textarea.code{
+  width:100%;min-height:480px;resize:vertical;
+  font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.85rem;line-height:1.5;
+  color:var(--ink);background:var(--surface);border:1px solid var(--line-2);
+  border-radius:var(--r-md);padding:14px;
+}
+textarea.code:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.preview{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface-2);min-height:480px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:.9rem;text-align:center;padding:12px}
+.preview iframe{width:100%;height:560px;border:none;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.alert{display:none;font-size:.875rem;border-radius:var(--r-md);padding:11px 14px;margin:12px 0;white-space:pre-wrap;max-height:220px;overflow:auto}
+.alert.err{display:block;background:var(--err-soft);color:var(--err);font-family:Menlo,monospace;font-size:.78rem}
+.alert.ok{display:block;background:var(--ok-soft);color:var(--ok)}
+.alert.warn{display:block;background:var(--warn-soft);color:var(--warn)}
+select.input{width:auto}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <a href="hoc-tap.html">Học tập</a>
+      <a href="tai-lieu.html">Tài liệu</a>
+      <a href="quan-tri-tai-lieu.html" class="active">Soạn tài liệu</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Khu vực của thầy</div>
+    <h1>Soạn tài liệu từ LaTeX</h1>
+    <p style="margin-top:6px">Dán code LaTeX (hoặc chọn file .tex) → Biên dịch → Xem thử → Lưu vào kho cho học sinh.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row">
+      <div class="field" style="flex:1;min-width:220px;margin:0">
+        <label>Tiêu đề tài liệu</label>
+        <input class="input" id="tieuDe" placeholder="vd: Chuyên đề Hàm số — 50 câu vận dụng">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Lớp được xem</label>
+        <select class="input" id="lopChon"><option value="">Mọi lớp</option></select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Trình biên dịch</label>
+        <select class="input" id="engine">
+          <option value="pdflatex">pdflatex</option>
+          <option value="xelatex">xelatex</option>
+          <option value="lualatex">lualatex</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Hoặc chọn file</label>
+        <input type="file" id="fileTex" accept=".tex" class="input" style="padding:8px">
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <textarea class="code" id="codeTex" spellcheck="false" placeholder="Dán code LaTeX vào đây..."></textarea>
+      <div class="row">
+        <button class="btn btn-primary" id="nutBienDich" onclick="bienDich()">▶ Biên dịch PDF</button>
+        <button class="btn btn-secondary" id="nutLuu" onclick="luuVaoKho()" disabled>💾 Lưu vào kho</button>
+        <span style="font-size:.82rem;color:var(--ink-3)">Máy chủ biên dịch: texlive.net (miễn phí)</span>
+      </div>
+      <div class="alert" id="thongBao"></div>
+    </div>
+    <div class="preview" id="khungXem">Bản xem thử PDF sẽ hiện ở đây sau khi biên dịch</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script>
+var pdfBlob = null; // PDF vừa biên dịch xong, chờ lưu
+
+function bao(msg, loai) {
+  var el = $('thongBao');
+  el.className = 'alert ' + loai;
+  el.textContent = msg;
+}
+
+// ---- Chỉ thầy được vào trang này ----
+(async function () {
+  if (!daKetNoi()) { bao('Chưa kết nối Supabase.', 'warn'); return; }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role !== 'teacher') { window.location.href = 'hoc-tap.html'; return; }
+  // nạp danh sách lớp vào ô chọn
+  var r = await sb.from('classes').select('id, name').order('name');
+  (r.data || []).forEach(function (l) {
+    var o = document.createElement('option');
+    o.value = l.id; o.textContent = l.name;
+    $('lopChon').appendChild(o);
+  });
+})();
+
+// ---- Chọn file .tex → đổ vào ô soạn ----
+$('fileTex').addEventListener('change', function () {
+  var f = this.files[0];
+  if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function () { $('codeTex').value = rd.result; };
+  rd.readAsText(f);
+  if (!$('tieuDe').value) $('tieuDe').value = f.name.replace(/\.tex$/i, '');
+});
+
+// ---- Gửi LaTeX lên texlive.net, nhận về PDF ----
+async function bienDich() {
+  var tex = $('codeTex').value.trim();
+  if (!tex) { bao('Chưa có code LaTeX nào.', 'warn'); return; }
+  var nut = $('nutBienDich');
+  nut.disabled = true; nut.textContent = '⏳ Đang biên dịch…';
+  $('nutLuu').disabled = true; pdfBlob = null;
+  bao('Đang gửi lên texlive.net — tài liệu dài có thể mất 10–30 giây…', 'warn');
+
+  try {
+    var fd = new FormData();
+    fd.append('filename[]', 'document.tex');
+    fd.append('filecontents[]', tex);
+    fd.append('engine', $('engine').value);
+    fd.append('return', 'pdf');
+    var res = await fetch('https://texlive.net/cgi-bin/latexcgi', { method: 'POST', body: fd });
+    var blob = await res.blob();
+
+    if (blob.type.indexOf('pdf') !== -1) {
+      pdfBlob = blob;
+      $('khungXem').innerHTML = '<iframe src="' + URL.createObjectURL(blob) + '"></iframe>';
+      bao('✓ Biên dịch thành công! Xem thử bên phải, ưng thì bấm "Lưu vào kho".', 'ok');
+      $('nutLuu').disabled = false;
+    } else {
+      // server trả về log lỗi dạng text
+      var log = await blob.text();
+      var dong = log.split('\n').filter(function (l) { return l.indexOf('!') === 0 || l.indexOf('Error') !== -1; }).slice(0, 8).join('\n');
+      bao('Biên dịch LỖI. Các dòng lỗi chính:\n' + (dong || log.slice(-1500)), 'err');
+    }
+  } catch (e) {
+    bao('Không gửi được tới texlive.net: ' + e.message, 'err');
+  }
+  nut.disabled = false; nut.textContent = '▶ Biên dịch PDF';
+}
+
+// ---- Lưu PDF vào kho Supabase + ghi sổ tài liệu ----
+async function luuVaoKho() {
+  if (!pdfBlob) return;
+  var tieuDe = $('tieuDe').value.trim();
+  if (!tieuDe) { bao('Đặt tiêu đề cho tài liệu trước đã.', 'warn'); return; }
+  var nut = $('nutLuu');
+  nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
+
+  // tên file: bỏ dấu tiếng Việt, thêm thời gian để không trùng
+  var ten = tieuDe.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  var duongDan = Date.now() + '-' + ten + '.pdf';
+
+  var up = await sb.storage.from('tai-lieu').upload(duongDan, pdfBlob, { contentType: 'application/pdf' });
+  if (up.error) { bao('Lỗi lưu file: ' + up.error.message, 'err'); nut.disabled = false; nut.textContent = '💾 Lưu vào kho'; return; }
+
+  var ins = await sb.from('documents').insert({
+    title: tieuDe,
+    class_id: $('lopChon').value || null,
+    file_path: duongDan
+  });
+  if (ins.error) { bao('Lỗi ghi sổ: ' + ins.error.message, 'err'); }
+  else { bao('✓ Đã lưu! Học sinh thấy được tài liệu này trong mục Tài liệu ngay bây giờ.', 'ok'); }
+  nut.disabled = false; nut.textContent = '💾 Lưu vào kho';
+}
+</script>
+</body>
+</html>
