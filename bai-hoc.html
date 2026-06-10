@@ -261,7 +261,15 @@ function renderBaiHoc() {
   if (ytId) {
     videoContainer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
   } else if (driveId) {
-    videoContainer.innerHTML = '<iframe src="https://drive.google.com/file/d/' + driveId + '/preview" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    // Lưu ý: video Drive nhúng đôi khi bị trình duyệt chặn (cookie bên thứ ba)
+    // nên luôn kèm nút mở cửa sổ riêng để học sinh không bao giờ kẹt.
+    videoContainer.innerHTML = '<div style="display:flex;flex-direction:column;width:100%;height:100%">' +
+      '<iframe style="flex:1;width:100%;border:none" src="https://drive.google.com/file/d/' + driveId + '/preview" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>' +
+      '<div style="background:#1a1a1a;color:#aaa;font-size:.82rem;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<span>Video không chạy? Một số trình duyệt chặn video Drive nhúng.</span>' +
+        '<a class="btn btn-secondary btn-sm" style="padding:4px 12px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở video cửa sổ riêng</a>' +
+      '</div>' +
+      '</div>';
   } else {
     videoContainer.innerHTML = '<div class="no-content" style="background:var(--surface)">' +
       '<div class="ic">📭</div>' +
