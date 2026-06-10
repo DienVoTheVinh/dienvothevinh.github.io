@@ -264,6 +264,15 @@ function extractYoutubeId(url) {
   return m ? m[1] : null;
 }
 
+function extractDriveId(url) {
+  if (!url) return null;
+  var m1 = url.match(/\/file\/d\/([\w_-]+)/);
+  if (m1) return m1[1];
+  var m2 = url.match(/[?&]id=([\w_-]+)/);
+  if (m2 && url.includes('drive.google.com')) return m2[1];
+  return null;
+}
+
 function hienThiBaiHoc() {
   var filtered = tatCaBaiHoc;
   if (lopDangLoc !== 'tat-ca') {
@@ -283,7 +292,9 @@ function hienThiBaiHoc() {
       ? '<span class="badge badge-ok">Đã xuất bản</span>' 
       : '<span class="badge badge-mute">Nháp</span>';
     
-    var ytIndicator = extractYoutubeId(bh.youtube_url) 
+    var ytId = extractYoutubeId(bh.youtube_url);
+    var driveId = extractDriveId(bh.youtube_url);
+    var ytIndicator = (ytId || driveId)
       ? '<span class="yt-indicator">🎥 Có video</span>' 
       : '<span style="color:var(--ink-3); font-size:.82rem">Không có video</span>';
       

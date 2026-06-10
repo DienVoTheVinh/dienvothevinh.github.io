@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài học — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+body, html {
+  margin: 0; padding: 0; height: 100%; overflow: hidden;
+  font-family: var(--font-sans); background: var(--bg); color: var(--ink);
+}
+.lesson-container {
+  display: flex; flex-direction: column; height: 100vh;
+}
+/* Topbar */
+.topbar-lesson {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; border-bottom: 1px solid var(--line);
+  background: var(--surface); height: 64px; flex-shrink: 0;
+}
+.topbar-lesson .back-btn {
+  display: flex; align-items: center; gap: 8px; text-decoration: none;
+  font-weight: 600; font-size: .9rem; color: var(--ink-2); transition: color .15s;
+}
+.topbar-lesson .back-btn:hover { color: var(--accent); }
+.topbar-lesson .lesson-title {
+  font-size: 1.1rem; font-weight: 700; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 50%;
+}
+.topbar-lesson .actions {
+  display: flex; gap: 10px; align-items: center;
+}
+
+/* Split Screen Layout */
+.workspace {
+  display: flex; flex: 1; height: calc(100vh - 64px); background: var(--surface-2); position: relative;
+}
+.pane {
+  flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; background: var(--surface);
+}
+.pane-video {
+  border-right: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+}
+.pane-pdf {
+  background: #525659; /* Standard PDF reader background */
+}
+
+/* Video Wrapper */
+.video-wrapper {
+  width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center;
+}
+.video-wrapper iframe {
+  width: 100%; height: 100%; border: none;
+}
+
+/* PDF Wrapper */
+.pdf-wrapper {
+  width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--surface-2);
+}
+.pdf-toolbar {
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.pdf-toolbar span { font-size: .85rem; font-weight: 500; color: var(--ink-2); }
+.pdf-frame {
+  flex: 1; width: 100%; height: 100%; border: none; background: #f4f4f4;
+}
+
+/* Pane Toggle Controls */
+.pane-control {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  display: flex; gap: 6px;
+}
+.ctrl-btn {
+  background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 6px;
+  width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer;
+  font-size: .85rem; transition: background .15s;
+}
+.ctrl-btn:hover { background: rgba(0,0,0,0.8); }
+
+/* Mobile View Tabs (only visible on mobile screens) */
+.mobile-tabs {
+  display: none; background: var(--surface); border-bottom: 1px solid var(--line);
+  height: 48px; flex-shrink: 0;
+}
+.mobile-tab-btn {
+  flex: 1; text-align: center; border: none; background: transparent;
+  font-size: .9rem; font-weight: 600; color: var(--ink-2); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.mobile-tab-btn.active {
+  color: var(--accent); border-bottom-color: var(--accent);
+}
+
+/* Alert / No content views */
+.no-content {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; text-align: center; color: var(--ink-3); height: 100%; width: 100%;
+}
+.no-content .ic { font-size: 3rem; margin-bottom: 14px; }
+.no-content h3 { color: var(--ink); margin-bottom: 8px; }
+
+/* Responsive adjustments */
+@media (max-width: 820px) {
+  .workspace {
+    flex-direction: column;
+  }
+  .pane-video, .pane-pdf {
+    display: none; width: 100% !important; height: 100% !important;
+  }
+  /* Show active pane only */
+  .workspace.show-video .pane-video {
+    display: flex;
+  }
+  .workspace.show-pdf .pane-pdf {
+    display: flex;
+  }
+  .mobile-tabs {
+    display: flex;
+  }
+  .pane-control {
+    display: none; /* Hide toggle controls on mobile, use tabs instead */
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <!-- Header bài học -->
+  <header class="topbar-lesson">
+    <a href="hoc-tap.html" class="back-btn">
+      <span>←</span> Quay lại học tập
+    </a>
+    <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <a class="btn btn-secondary btn-sm" href="tai-lieu.html" target="_blank">Tài liệu</a>
+    </div>
+  </header>
+
+  <!-- Tabs cho màn hình di động -->
+  <div class="mobile-tabs">
+    <button class="mobile-tab-btn active" id="tabVideo" onclick="hienMobilePane('video')">🎥 Video bài giảng</button>
+    <button class="mobile-tab-btn" id="tabPdf" onclick="hienMobilePane('pdf')">📄 Tài liệu đọc & Bài tập</button>
+  </div>
+
+  <!-- Vùng học tập chia đôi -->
+  <main class="workspace show-video" id="khongGianHoc">
+    
+    <!-- Bên trái: Video bài giảng -->
+    <section class="pane pane-video" id="khungTrangVideo">
+      <div class="pane-control">
+        <button class="ctrl-btn" onclick="phongToPane('video')" title="Phóng to Video" id="btnMaxVideo">⛶</button>
+      </div>
+      <div class="video-wrapper" id="videoWrapper">
+        <div class="no-content">
+          <div class="ic">🎬</div>
+          <h3>Đang tải video bài giảng...</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bên phải: PDF Tài liệu & Bài tập -->
+    <section class="pane pane-pdf" id="khungTrangPdf">
+      <div class="pane-control">
+        <button class="ctrl-btn" onclick="phongToPane('pdf')" title="Phóng to Tài liệu" id="btnMaxPdf">⛶</button>
+      </div>
+      <div class="pdf-wrapper" id="pdfWrapper">
+        <div class="no-content" style="background: var(--surface)">
+          <div class="ic">📄</div>
+          <h3>Đang tải tài liệu lý thuyết & bài tập...</h3>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="analytics.js"></script>
+<script>
+var lessonId = null;
+var details = null;
+var viewMode = 'split'; // split, video-only, pdf-only
+
+(async function() {
+  var params = new URLSearchParams(window.location.search);
+  lessonId = params.get('id');
+  if (!lessonId) {
+    alert('Không tìm thấy thông tin bài giảng!');
+    window.location.href = 'hoc-tap.html';
+    return;
+  }
+
+  if (!daKetNoi()) {
+    // Demo Mode
+    taiGiaoDienDemo();
+    return;
+  }
+
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+
+  await taiChiTietBaiHoc();
+})();
+
+async function taiChiTietBaiHoc() {
+  // Lấy chi tiết bài giảng và tài liệu liên kết
+  var r = await sb.from('lessons')
+    .select('id, title, youtube_url, note, document_id, documents(title, file_path)')
+    .eq('id', lessonId)
+    .single();
+
+  if (r.error || !r.data) {
+    alert('Lỗi khi tải thông tin bài học: ' + (r.error ? r.error.message : 'Không tìm thấy dữ liệu'));
+    window.location.href = 'hoc-tap.html';
+    return;
+  }
+
+  details = r.data;
+  renderBaiHoc();
+}
+
+function extractYoutubeId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+function extractDriveId(url) {
+  if (!url) return null;
+  var m1 = url.match(/\/file\/d\/([\w_-]+)/);
+  if (m1) return m1[1];
+  var m2 = url.match(/[?&]id=([\w_-]+)/);
+  if (m2 && url.includes('drive.google.com')) return m2[1];
+  return null;
+}
+
+function buildPdfUrl(filePath) {
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + filePath;
+}
+
+function renderBaiHoc() {
+  // 1. Cập nhật tiêu đề bài giảng
+  $('tieuDeBaiHoc').textContent = details.title;
+  document.title = details.title + ' — VinhMath';
+
+  // 2. Render Video YouTube / Google Drive
+  var ytId = extractYoutubeId(details.youtube_url);
+  var driveId = extractDriveId(details.youtube_url);
+  var videoContainer = $('videoWrapper');
+  
+  if (ytId) {
+    videoContainer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+  } else if (driveId) {
+    videoContainer.innerHTML = '<iframe src="https://drive.google.com/file/d/' + driveId + '/preview" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+  } else {
+    videoContainer.innerHTML = '<div class="no-content" style="background:var(--surface)">' +
+      '<div class="ic">📭</div>' +
+      '<h3>Không có video bài giảng</h3>' +
+      '<p>Bài học này không bao gồm video lý thuyết hoặc thầy chưa gắn link.</p>' +
+      '</div>';
+      
+    // Nếu không có video -> Phóng to tài liệu PDF toàn màn hình (trên Desktop)
+    if (window.innerWidth > 820) {
+      phongToPane('pdf');
+    } else {
+      hienMobilePane('pdf');
+    }
+  }
+
+  // 3. Render PDF tài liệu (LaTeX)
+  var pdfContainer = $('pdfWrapper');
+  if (details.documents && details.documents.file_path) {
+    var pdfUrl = buildPdfUrl(details.documents.file_path);
+    
+    // Giao diện thanh công cụ và file PDF nhúng
+    pdfContainer.innerHTML = '<div class="pdf-toolbar">' +
+      '<span>📄 ' + details.documents.title + '</span>' +
+      '<div style="display:flex; gap:10px">' +
+        '<a class="btn btn-secondary btn-sm" style="padding:4px 10px" target="_blank" href="' + pdfUrl + '">Xem cửa sổ mới</a>' +
+        '<a class="btn btn-primary btn-sm" style="padding:4px 10px" download href="' + pdfUrl + '">Tải về máy</a>' +
+      '</div>' +
+      '</div>' +
+      '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
+  } else {
+    pdfContainer.innerHTML = '<div class="no-content" style="background:var(--surface)">' +
+      '<div class="ic">📑</div>' +
+      <h3>Không có tài liệu PDF đi kèm</h3>' +
+      '<p>Bài học này sử dụng tài liệu phát tay trực tiếp hoặc thầy chưa cập nhật file LaTeX.</p>' +
+      '</div>';
+      
+    // Nếu không có tài liệu -> Phóng to video bài giảng toàn màn hình (trên Desktop)
+    if (ytId && window.innerWidth > 820) {
+      phongToPane('video');
+    } else {
+      hienMobilePane('video');
+    }
+  }
+}
+
+// Chuyển đổi tab trên màn hình điện thoại di động
+function hienMobilePane(loai) {
+  var khongGian = $('khongGianHoc');
+  var btnVideo = $('tabVideo');
+  var btnPdf = $('tabPdf');
+  
+  if (loai === 'video') {
+    khongGian.className = 'workspace show-video';
+    btnVideo.classList.add('active');
+    btnPdf.classList.remove('active');
+  } else {
+    khongGian.className = 'workspace show-pdf';
+    btnPdf.classList.add('active');
+    btnVideo.classList.remove('active');
+  }
+}
+
+// Phóng to/Thu nhỏ khung hình trên máy tính (Split-Screen Controls)
+function phongToPane(loai) {
+  var vPane = $('khungTrangVideo');
+  var pPane = $('khungTrangPdf');
+  var btnV = $('btnMaxVideo');
+  var btnP = $('btnMaxPdf');
+
+  if (viewMode === 'split') {
+    // Từ chia đôi -> Phóng to 1 khung hình
+    if (loai === 'video') {
+      vPane.style.width = '100%'; vPane.style.flex = 'none';
+      pPane.style.display = 'none';
+      btnV.textContent = '⧉'; btnV.title = 'Chia đôi màn hình';
+      viewMode = 'video-only';
+    } else {
+      pPane.style.width = '100%'; pPane.style.flex = 'none';
+      vPane.style.display = 'none';
+      btnP.textContent = '⧉'; btnP.title = 'Chia đôi màn hình';
+      viewMode = 'pdf-only';
+    }
+  } else {
+    // Trở về chia đôi 50/50
+    vPane.style.display = 'flex'; vPane.style.width = ''; vPane.style.flex = '1';
+    pPane.style.display = 'flex'; pPane.style.width = ''; pPane.style.flex = '1';
+    btnV.textContent = '⛶'; btnV.title = 'Phóng to Video';
+    btnP.textContent = '⛶'; btnP.title = 'Phóng to Tài liệu';
+    viewMode = 'split';
+  }
+}
+
+// Hàm tải giao diện mẫu ở chế độ xem thử (Demo)
+function taiGiaoDienDemo() {
+  details = {
+    title: 'Buổi 12 · Cực trị của hàm số (Demo)',
+    youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Rickroll link for demo
+    documents: {
+      title: 'Tài liệu lý thuyết & bài tập cực trị.pdf',
+      file_path: ''
+    }
+  };
+  
+  $('tieuDeBaiHoc').textContent = details.title;
+  $('videoWrapper').innerHTML = '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" allowfullscreen></iframe>';
+  $('pdfWrapper').innerHTML = '<div class="no-content" style="background:var(--surface)">' +
+    '<div class="ic">🧪</div>' +
+    <h3>Chế độ xem thử tài liệu</h3>' +
+    '<p>Ở chế độ kết nối Supabase, tài liệu PDF LaTeX thật sẽ được render trực tiếp tại đây.</p>' +
+    '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="alert(\'Đây là bản demo xem thử!\')">Bản PDF mẫu</button>' +
+    '</div>';
+}
+</script>
+</body>
+</html>
