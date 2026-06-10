@@ -145,24 +145,80 @@
   perspective: 800px;
   transform-style: preserve-3d;
   pointer-events: none;
-  opacity: 0.65;
+  opacity: 0.85;
   z-index: 1;
 }
-.cube-scene {
-  top: 4%;
-  left: -80px;
+
+/* Premium Brand Banner spanning full width */
+.hero-brand-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 48px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  padding: 16px 32px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: visible;
 }
-.sphere-scene {
-  bottom: 6%;
-  left: -60px;
+[data-theme="dark"] .hero-brand-banner {
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
 }
-@media(max-width: 1024px) {
-  .cube-scene { left: -40px; }
-  .sphere-scene { left: -30px; }
+.brand-title {
+  font-family: var(--font-sans);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-transform: uppercase;
+  text-align: center;
+  flex: 1;
+  padding: 0 24px;
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-@media(max-width: 860px) {
-  .hero-3d-scene {
-    display: none;
+.hero-3d-scene-wrapper {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.hero-3d-scene-wrapper .hero-3d-scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  margin: 0;
+  opacity: 0.85;
+  z-index: 2;
+}
+@media(max-width: 680px) {
+  .hero-brand-banner {
+    padding: 12px 16px;
+    margin-bottom: 32px;
+  }
+  .hero-3d-scene-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+  .hero-3d-scene-wrapper .hero-3d-scene {
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  .brand-title {
+    font-size: 1.1rem;
+    padding: 0 12px;
+    letter-spacing: 0.08em;
   }
 }
 .hero-3d-axes {
@@ -263,56 +319,76 @@
 /* Portrait Column Styling */
 .portrait {
   position: relative;
+  height: 520px;
 }
 .portrait-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 20px;
   position: relative;
-  z-index: 2;
-  align-items: stretch;
-}
-.portrait-grid .left-col {
-  display: flex;
-}
-.portrait-grid .right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  justify-content: space-between;
-}
-.portrait-grid .ph-portrait {
   width: 100%;
   height: 100%;
-  aspect-ratio: 1/1.28;
+  z-index: 2;
+}
+.portrait-grid .ph-portrait {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 440px;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  position: relative;
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease;
-}
-.portrait-grid .ph-portrait:hover {
-  transform: translateY(-4px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
 }
 .portrait-grid .ph-landscape {
-  width: 100%;
-  aspect-ratio: 1.45/1;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  height: 410px;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  position: relative;
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+.portrait-grid .ph-portrait:hover {
+  transform: translateY(-10px) scale(1.03);
+  z-index: 4;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
 }
 .portrait-grid .ph-landscape:hover {
-  transform: translateY(-4px);
+  transform: translateY(-10px) scale(1.03);
+  z-index: 4;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
 }
-@media(max-width: 580px) {
+@media(max-width: 860px) {
+  .portrait {
+    height: auto;
+    margin-top: 40px;
+  }
   .portrait-grid {
-    grid-template-columns: 1fr;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    align-items: center;
+    height: auto;
+  }
+  .portrait-grid .ph-portrait,
+  .portrait-grid .ph-landscape {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 90%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 1/1.25;
   }
 }
 .portrait-grid img {
@@ -659,43 +735,52 @@ footer .wrap {
   </div>
 
   <section class="hero">
-    <!-- 3D Cube Scene (Left background) -->
-    <div class="hero-3d-scene cube-scene">
-      <div class="hero-3d-axes">
-        <div class="hero-3d-axis hero-3d-axis-x"></div>
-        <div class="hero-3d-axis hero-3d-axis-y"></div>
-        <div class="hero-3d-axis hero-3d-axis-z"></div>
-        <div class="hero-3d-cube">
-          <div class="hero-3d-face hero-f-front"></div>
-          <div class="hero-3d-face hero-f-back"></div>
-          <div class="hero-3d-face hero-f-left"></div>
-          <div class="hero-3d-face hero-f-right"></div>
-          <div class="hero-3d-face hero-f-top"></div>
-          <div class="hero-3d-face hero-f-bottom"></div>
+    <!-- Brand Header Banner (Sphere on left, Title in middle, Cube on right) -->
+    <div class="hero-brand-banner">
+      <!-- 3D Sphere (Left) -->
+      <div class="hero-3d-scene-wrapper">
+        <div class="hero-3d-scene">
+          <div class="hero-3d-axes">
+            <div class="hero-3d-axis hero-3d-axis-x"></div>
+            <div class="hero-3d-axis hero-3d-axis-y"></div>
+            <div class="hero-3d-axis hero-3d-axis-z"></div>
+            <div class="hero-3d-sphere">
+              <div class="sphere-ring ring-y-0"></div>
+              <div class="sphere-ring ring-y-30"></div>
+              <div class="sphere-ring ring-y-60"></div>
+              <div class="sphere-ring ring-y-90"></div>
+              <div class="sphere-ring ring-y-120"></div>
+              <div class="sphere-ring ring-y-150"></div>
+              <div class="sphere-ring ring-x-90"></div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- 3D Sphere Scene (Right background) -->
-    <div class="hero-3d-scene sphere-scene">
-      <div class="hero-3d-axes">
-        <div class="hero-3d-axis hero-3d-axis-x"></div>
-        <div class="hero-3d-axis hero-3d-axis-y"></div>
-        <div class="hero-3d-axis hero-3d-axis-z"></div>
-        <div class="hero-3d-sphere">
-          <div class="sphere-ring ring-y-0"></div>
-          <div class="sphere-ring ring-y-30"></div>
-          <div class="sphere-ring ring-y-60"></div>
-          <div class="sphere-ring ring-y-90"></div>
-          <div class="sphere-ring ring-y-120"></div>
-          <div class="sphere-ring ring-y-150"></div>
-          <div class="sphere-ring ring-x-90"></div>
+      
+      <!-- Stretched Brand Title -->
+      <div class="brand-title">Lớp Toán Thầy Vinh - VinhMath</div>
+      
+      <!-- 3D Cube (Right) -->
+      <div class="hero-3d-scene-wrapper">
+        <div class="hero-3d-scene">
+          <div class="hero-3d-axes">
+            <div class="hero-3d-axis hero-3d-axis-x"></div>
+            <div class="hero-3d-axis hero-3d-axis-y"></div>
+            <div class="hero-3d-axis hero-3d-axis-z"></div>
+            <div class="hero-3d-cube">
+              <div class="hero-3d-face hero-f-front"></div>
+              <div class="hero-3d-face hero-f-back"></div>
+              <div class="hero-3d-face hero-f-left"></div>
+              <div class="hero-3d-face hero-f-right"></div>
+              <div class="hero-3d-face hero-f-top"></div>
+              <div class="hero-3d-face hero-f-bottom"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <div>
-      <div class="brand-badge">LỚP TOÁN THẦY VINH &middot; VINHMATH</div>
       <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
       
