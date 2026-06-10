@@ -120,6 +120,20 @@
       </div>
 
       <div class="field">
+        <label>Hoặc tải file PDF có sẵn từ máy (không qua LaTeX)</label>
+        <input type="file" class="input" id="bhPdfFile" accept=".pdf,application/pdf" style="padding:8px">
+        <small style="color:var(--ink-3); margin-top:4px; display:block">
+          Nếu chọn file ở đây, hệ thống tự đưa file vào kho tài liệu và đính kèm <b>thay cho</b> lựa chọn bên trên.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Ảnh buổi học (chụp bảng, phiếu bài…) — chọn được nhiều ảnh cùng lúc</label>
+        <input type="file" class="input" id="bhAnhFile" accept="image/*" multiple style="padding:8px">
+        <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
+
+      <div class="field">
         <label>Ghi chú bài học</label>
         <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
       </div>
@@ -233,7 +247,7 @@ async function taiDuLieuDanhMuc() {
 
 async function taiDanhSachBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, document_id, classes(name), topics(name), documents(title, file_path)')
+    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, document_id, classes(name), topics(name), documents(title, file_path)')
     .order('sort', { ascending: false })
     .order('created_at', { ascending: false });
   
@@ -298,9 +312,14 @@ function hienThiBaiHoc() {
       ? '<span class="yt-indicator">🎥 Có video</span>' 
       : '<span style="color:var(--ink-3); font-size:.82rem">Không có video</span>';
       
-    var pdfIndicator = bh.document_id 
-      ? '<span class="pdf-indicator">📄 Đính kèm PDF</span>' 
+    var pdfIndicator = bh.document_id
+      ? '<span class="pdf-indicator">📄 Đính kèm PDF</span>'
       : '<span style="color:var(--ink-3); font-size:.82rem">Không tài liệu</span>';
+
+    var soAnh = Array.isArray(bh.images) ? bh.images.length : 0;
+    var anhIndicator = soAnh
+      ? '<span class="pdf-indicator" style="color:var(--warn)">🖼 ' + soAnh + ' ảnh buổi học</span>'
+      : '';
 
     var ngayVietNote = bh.note ? bh.note : 'Không có ghi chú dặn dò.';
     if (ngayVietNote.length > 80) ngayVietNote = ngayVietNote.slice(0, 80) + '…';
@@ -315,6 +334,7 @@ function hienThiBaiHoc() {
         '<div class="meta-info">' +
           '<div>' + ytIndicator + '</div>' +
           '<div>' + pdfIndicator + '</div>' +
+          (anhIndicator ? '<div>' + anhIndicator + '</div>' : '') +
           '<div>Thứ tự: <b class="num">' + bh.sort + '</b></div>' +
         '</div>' +
         '<div class="actions">' +
@@ -326,8 +346,40 @@ function hienThiBaiHoc() {
   }).join('');
 }
 
+/* ====== ẢNH BUỔI HỌC: quản lý ảnh đã đính kèm ====== */
+var anhDaCo = []; // đường dẫn các ảnh đang gắn với bài (khi sửa)
+
+function urlAnh(p) {
+  return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+}
+
+function veAnhHienCo() {
+  var box = $('anhHienCo');
+  if (!anhDaCo.length) { box.innerHTML = ''; return; }
+  box.innerHTML = anhDaCo.map(function (p, i) {
+    return '<div style="position:relative">' +
+      '<img src="' + urlAnh(p) + '" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<button type="button" onclick="boAnh(' + i + ')" title="Gỡ ảnh này" ' +
+        'style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+}
+
+function boAnh(i) {
+  anhDaCo.splice(i, 1);
+  veAnhHienCo();
+}
+
+// Đổi tên file thành dạng an toàn cho kho (bỏ dấu tiếng Việt)
+function tenAnToan(ten) {
+  return ten.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9.]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+
 function moFormThemMoi() {
   $('formBaiHoc').reset();
+  anhDaCo = []; veAnhHienCo();
   $('bhId').value = '';
   $('modalTieuDe').textContent = 'Thêm bài giảng mới';
   $('nutXoa').style.display = 'none';
@@ -346,6 +398,9 @@ function moFormSua(id) {
   var bh = tatCaBaiHoc.find(function(b) { return b.id === id; });
   if (!bh) return;
 
+  $('formBaiHoc').reset();
+  anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : [];
+  veAnhHienCo();
   $('bhId').value = bh.id;
   $('bhTieuDe').value = bh.title || '';
   $('bhLop').value = bh.class_id || '';
@@ -382,6 +437,47 @@ async function luuBaiHoc(e) {
   var nut = $('nutLuu');
   nut.disabled = true;
   nut.textContent = '⏳ Đang lưu…';
+
+  // ---- 1. Nếu thầy chọn file PDF từ máy: đưa vào kho + tự tạo tài liệu ----
+  var filePdf = $('bhPdfFile').files[0];
+  if (filePdf) {
+    nut.textContent = '⏳ Đang tải PDF lên…';
+    var duongDanPdf = Date.now() + '-' + tenAnToan(filePdf.name);
+    var up1 = await sb.storage.from('tai-lieu').upload(duongDanPdf, filePdf, { contentType: 'application/pdf' });
+    if (up1.error) {
+      alert('Lỗi tải PDF lên kho: ' + up1.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var tenTl = data.title ? (data.title + ' — Tài liệu') : filePdf.name.replace(/\.pdf$/i, '');
+    var insTl = await sb.from('documents')
+      .insert({ title: tenTl, class_id: data.class_id || null, file_path: duongDanPdf })
+      .select('id').single();
+    if (insTl.error) {
+      alert('Lỗi ghi tài liệu vào sổ: ' + insTl.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.document_id = insTl.data.id; // PDF từ máy thay cho lựa chọn dropdown
+  }
+
+  // ---- 2. Tải các ảnh buổi học mới chọn (nếu có) ----
+  var dsFileAnh = $('bhAnhFile').files;
+  if (dsFileAnh.length) {
+    for (var i = 0; i < dsFileAnh.length; i++) {
+      nut.textContent = '⏳ Đang tải ảnh ' + (i + 1) + '/' + dsFileAnh.length + '…';
+      var f = dsFileAnh[i];
+      var duongDanAnh = Date.now() + '-' + i + '-' + tenAnToan(f.name);
+      var up2 = await sb.storage.from('hinh-anh').upload(duongDanAnh, f, { contentType: f.type || 'image/jpeg' });
+      if (up2.error) {
+        alert('Lỗi tải ảnh "' + f.name + '": ' + up2.error.message);
+        nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+        return;
+      }
+      anhDaCo.push(duongDanAnh);
+    }
+  }
+  data.images = anhDaCo; // ảnh giữ lại + ảnh mới
 
   var r;
   if (id) {

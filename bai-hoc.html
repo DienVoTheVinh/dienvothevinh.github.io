@@ -215,7 +215,7 @@ var viewMode = 'split'; // split, video-only, pdf-only
 async function taiChiTietBaiHoc() {
   // Lấy chi tiết bài giảng và tài liệu liên kết
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, document_id, documents(title, file_path)')
+    .select('id, title, youtube_url, note, images, document_id, documents(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -277,34 +277,92 @@ function renderBaiHoc() {
     }
   }
 
-  // 3. Render PDF tài liệu (LaTeX)
-  var pdfContainer = $('pdfWrapper');
-  if (details.documents && details.documents.file_path) {
-    var pdfUrl = buildPdfUrl(details.documents.file_path);
-    
-    // Giao diện thanh công cụ và file PDF nhúng
-    pdfContainer.innerHTML = '<div class="pdf-toolbar">' +
-      '<span>📄 ' + details.documents.title + '</span>' +
-      '<div style="display:flex; gap:10px">' +
-        '<a class="btn btn-secondary btn-sm" style="padding:4px 10px" target="_blank" href="' + pdfUrl + '">Xem cửa sổ mới</a>' +
-        '<a class="btn btn-primary btn-sm" style="padding:4px 10px" download href="' + pdfUrl + '">Tải về máy</a>' +
-      '</div>' +
-      '</div>' +
-      '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
-  } else {
-    pdfContainer.innerHTML = '<div class="no-content" style="background:var(--surface)">' +
-      '<div class="ic">📑</div>' +
-      <h3>Không có tài liệu PDF đi kèm</h3>' +
-      '<p>Bài học này sử dụng tài liệu phát tay trực tiếp hoặc thầy chưa cập nhật file LaTeX.</p>' +
-      '</div>';
-      
-    // Nếu không có tài liệu -> Phóng to video bài giảng toàn màn hình (trên Desktop)
+  // 3. Render khung phải: tài liệu PDF và/hoặc ảnh buổi học
+  var coPdf = !!(details.documents && details.documents.file_path);
+  var dsAnh = Array.isArray(details.images) ? details.images : [];
+  renderKhungPhai(coPdf, dsAnh);
+
+  // Không có gì bên phải -> phóng to video toàn màn hình
+  if (!coPdf && !dsAnh.length) {
     if (ytId && window.innerWidth > 820) {
       phongToPane('video');
     } else {
       hienMobilePane('video');
     }
   }
+}
+
+/* ====== KHUNG PHẢI: chuyển qua lại giữa Tài liệu PDF và Ảnh buổi học ====== */
+var noiDungPdfHtml = '', noiDungAnhHtml = '', dangXemPhai = 'pdf';
+
+function urlAnh(p) {
+  return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+}
+
+function renderKhungPhai(coPdf, dsAnh) {
+  var pdfContainer = $('pdfWrapper');
+
+  if (!coPdf && !dsAnh.length) {
+    pdfContainer.innerHTML = '<div class="no-content" style="background:var(--surface)">' +
+      '<div class="ic">📑</div>' +
+      '<h3>Không có tài liệu đi kèm</h3>' +
+      '<p>Bài học này chưa có tài liệu PDF hay ảnh buổi học.</p>' +
+      '</div>';
+    return;
+  }
+
+  // Chuẩn bị sẵn nội dung từng chế độ xem
+  if (coPdf) {
+    var pdfUrl = buildPdfUrl(details.documents.file_path);
+    noiDungPdfHtml = '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
+  }
+  if (dsAnh.length) {
+    noiDungAnhHtml = '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--surface-2)">' +
+      dsAnh.map(function (p) {
+        var u = urlAnh(p);
+        return '<a href="' + u + '" target="_blank" title="Bấm để xem ảnh gốc">' +
+          '<img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+      }).join('') +
+      '</div>';
+  }
+
+  // Thanh công cụ: tên nội dung + nút chuyển + nút tải
+  var nutChuyen = (coPdf && dsAnh.length)
+    ? '<button class="btn btn-secondary btn-sm" style="padding:4px 10px" id="nutChuyenPhai" onclick="chuyenNoiDungPhai()">🖼 Ảnh buổi học (' + dsAnh.length + ')</button>'
+    : '';
+  var nutTaiVe = coPdf
+    ? '<a class="btn btn-primary btn-sm" style="padding:4px 10px" download href="' + buildPdfUrl(details.documents.file_path) + '">Tải về</a>'
+    : '';
+
+  pdfContainer.innerHTML = '<div class="pdf-toolbar">' +
+    '<span id="tenNoiDungPhai"></span>' +
+    '<div style="display:flex;gap:10px">' + nutChuyen + nutTaiVe + '</div>' +
+    '</div>' +
+    '<div style="flex:1;display:flex;flex-direction:column;min-height:0" id="thanNoiDungPhai"></div>';
+
+  // Mặc định hiện PDF nếu có, không thì hiện ảnh
+  dangXemPhai = coPdf ? 'pdf' : 'anh';
+  capNhatKhungPhai();
+}
+
+function capNhatKhungPhai() {
+  var dsAnh = Array.isArray(details.images) ? details.images : [];
+  if (dangXemPhai === 'pdf') {
+    $('thanNoiDungPhai').innerHTML = noiDungPdfHtml;
+    $('tenNoiDungPhai').textContent = '📄 ' + details.documents.title;
+    var n1 = $('nutChuyenPhai');
+    if (n1) n1.innerHTML = '🖼 Ảnh buổi học (' + dsAnh.length + ')';
+  } else {
+    $('thanNoiDungPhai').innerHTML = noiDungAnhHtml;
+    $('tenNoiDungPhai').textContent = '🖼 Ảnh buổi học (' + dsAnh.length + ')';
+    var n2 = $('nutChuyenPhai');
+    if (n2) n2.innerHTML = '📄 Xem tài liệu';
+  }
+}
+
+function chuyenNoiDungPhai() {
+  dangXemPhai = dangXemPhai === 'pdf' ? 'anh' : 'pdf';
+  capNhatKhungPhai();
 }
 
 // Chuyển đổi tab trên màn hình điện thoại di động
@@ -369,7 +427,7 @@ function taiGiaoDienDemo() {
   $('videoWrapper').innerHTML = '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" allowfullscreen></iframe>';
   $('pdfWrapper').innerHTML = '<div class="no-content" style="background:var(--surface)">' +
     '<div class="ic">🧪</div>' +
-    <h3>Chế độ xem thử tài liệu</h3>' +
+    '<h3>Chế độ xem thử tài liệu</h3>' +
     '<p>Ở chế độ kết nối Supabase, tài liệu PDF LaTeX thật sẽ được render trực tiếp tại đây.</p>' +
     '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="alert(\'Đây là bản demo xem thử!\')">Bản PDF mẫu</button>' +
     '</div>';
