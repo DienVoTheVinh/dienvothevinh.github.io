@@ -124,6 +124,19 @@ var BAI_HOC_MAU = [
   $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
   $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
 
+  // Hiện menu quản trị động dựa trên vai trò
+  var nav = document.querySelector('.navlinks');
+  if (nav) {
+    if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
+      var a = document.createElement('a'); a.href = 'quan-tri-tai-lieu.html'; a.textContent = 'Soạn tài liệu';
+      nav.appendChild(a);
+    }
+    if (hoSo.role === 'admin') {
+      var a = document.createElement('a'); a.href = 'quan-tri-truy-cap.html'; a.textContent = 'Giám sát';
+      nav.appendChild(a);
+    }
+  }
+
   // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)
   var r = await sb.from('lessons')
     .select('id, title, youtube_url, note, topics(name)')

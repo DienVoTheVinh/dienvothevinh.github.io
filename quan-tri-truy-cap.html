@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giám sát truy cập — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+.head{padding:40px 0 24px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:32px}
+.metric{display:flex;align-items:center;gap:16px;padding:20px 24px}
+.metric .ic{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;flex:none}
+.metric .val{font-size:1.8rem;font-weight:700;line-height:1.2;margin-top:2px}
+.metric span{font-size:.85rem;color:var(--ink-2)}
+.table-card{padding:0;overflow:hidden}
+.table-card h2{padding:20px 24px 12px;border-bottom:1px solid var(--line)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface-2);border-bottom:1px solid var(--line-2);padding:12px 18px}
+td{padding:14px 18px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.device-badge{font-size:.78rem;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:var(--ink-2)}
+.time-badge{font-weight:700;color:var(--accent)}
+.empty{text-align:center;padding:48px 24px;color:var(--ink-3)}
+.active-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ok); margin-right: 6px;
+  box-shadow: 0 0 0 3px var(--ok-soft);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0px rgba(94, 123, 94, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(94, 123, 94, 0); }
+  100% { box-shadow: 0 0 0 0px rgba(94, 123, 94, 0); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Giám sát</small></a>
+    <nav class="navlinks">
+      <a href="hoc-tap.html">Học tập</a>
+      <a href="tai-lieu.html">Tài liệu</a>
+      <a href="quan-tri-tai-lieu.html">Soạn tài liệu</a>
+      <a href="quan-tri-truy-cap.html" class="active">Giám sát</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Khu vực Admin</div>
+    <h1>Giám sát lưu lượng & Thời lượng học</h1>
+    <p style="margin-top:6px">Xem danh sách thiết bị và tổng thời gian học bài thực tế của từng học sinh.</p>
+  </div>
+
+  <div class="metrics">
+    <div class="card metric">
+      <span class="ic" style="background:var(--accent-soft);color:var(--accent)">👥</span>
+      <div><span>Tổng lượt truy cập</span><div class="val" id="totalVisits">—</div></div>
+    </div>
+    <div class="card metric">
+      <span class="ic" style="background:var(--ok-soft);color:var(--ok)">⏳</span>
+      <div><span>Tổng thời lượng (giờ)</span><div class="val" id="totalHours">—</div></div>
+    </div>
+    <div class="card metric">
+      <span class="ic" style="background:var(--warn-soft);color:var(--warn)">📱</span>
+      <div><span>Thiết bị di động</span><div class="val" id="mobilePercent">—</div></div>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    <h2>Nhật ký học tập trực tuyến</h2>
+    <div class="table-wrap">
+      <table id="bangLog">
+        <thead>
+          <tr>
+            <th>Họ và tên</th>
+            <th>Tên đăng nhập</th>
+            <th>Thiết bị</th>
+            <th>HĐH</th>
+            <th>Trình duyệt</th>
+            <th>Vào học lúc</th>
+            <th>Hoạt động cuối</th>
+            <th>Thời gian học</th>
+          </tr>
+        </thead>
+        <tbody id="duLieuLog">
+          <tr>
+            <td colspan="8" class="empty">Đang tải dữ liệu giám sát…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="analytics.js"></script>
+<script>
+// Kiểm tra quyền Admin
+(async function () {
+  if (!daKetNoi()) {
+    document.getElementById('duLieuLog').innerHTML = '<tr><td colspan="8" class="empty">Chưa kết nối CSDL Supabase.</td></tr>';
+    return;
+  }
+  
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role !== 'admin') {
+    // Không phải admin -> đưa về trang học tập
+    window.location.href = 'hoc-tap.html';
+    return;
+  }
+
+  // Tải dữ liệu phân tích từ Supabase
+  loadAnalytics();
+})();
+
+async function loadAnalytics() {
+  // 1. Fetch dữ liệu từ bảng analytics_sessions kết hợp profiles
+  var r = await sb.from('analytics_sessions')
+    .select('id, started_at, last_active_at, duration_seconds, device_type, os, browser, profiles(full_name, username)')
+    .order('last_active_at', { ascending: false });
+  
+  var data = r.data || [];
+  if (!data.length) {
+    document.getElementById('duLieuLog').innerHTML = '<tr><td colspan="8" class="empty">Chưa có dữ liệu truy cập nào được ghi nhận.</td></tr>';
+    return;
+  }
+
+  // 2. Tính toán số liệu tổng hợp
+  var totalSessions = data.length;
+  var totalSeconds = data.reduce(function (s, d) { return s + (d.duration_seconds || 0); }, 0);
+  var totalHours = (totalSeconds / 3600).toFixed(1);
+  
+  var mobileCount = data.filter(function (d) { return d.device_type === 'Mobile'; }).length;
+  var mobilePct = totalSessions ? Math.round((mobileCount / totalSessions) * 100) + '%' : '0%';
+
+  document.getElementById('totalVisits').textContent = totalSessions;
+  document.getElementById('totalHours').textContent = totalHours;
+  document.getElementById('mobilePercent').textContent = mobilePct;
+
+  // 3. Render bảng danh sách chi tiết
+  var now = new Date();
+  var html = data.map(function (row) {
+    var p = row.profiles || {};
+    var hoTen = p.full_name || '<span style="color:var(--ink-3)">Khách vãng lai</span>';
+    var userName = p.username || '—';
+    
+    // Định dạng thời gian
+    var started = new Date(row.started_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + 
+                  new Date(row.started_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                  
+    var lastActive = new Date(row.last_active_at);
+    var diffMs = now - lastActive;
+    var minutesDiff = Math.floor(diffMs / 60000);
+    
+    // Nếu hoạt động cuối cùng cách đây dưới 2 phút -> Đang trực tuyến (Active)
+    var statusHtml = '';
+    if (minutesDiff < 2) {
+      statusHtml = '<span class="active-dot"></span> Đang học';
+    } else {
+      statusHtml = lastActive.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + 
+                   lastActive.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    }
+    
+    // Tính số phút học
+    var mins = Math.round((row.duration_seconds || 0) / 60);
+    var timeStr = mins >= 60 
+      ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'p' 
+      : mins + ' phút';
+
+    return '<tr>' +
+      '<td>' + hoTen + '</td>' +
+      '<td class="num">' + userName + '</td>' +
+      '<td><span class="device-badge">' + row.device_type + '</span></td>' +
+      '<td>' + row.os + '</td>' +
+      '<td>' + row.browser + '</td>' +
+      '<td class="num">' + started + '</td>' +
+      '<td>' + statusHtml + '</td>' +
+      '<td class="num time-badge">' + timeStr + '</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('duLieuLog').innerHTML = html;
+}
+</script>
+</body>
+</html>

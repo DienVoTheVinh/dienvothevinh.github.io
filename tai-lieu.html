@@ -67,7 +67,20 @@ function urlPdf(path) {
   }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (hoSo.role === 'teacher') $('nutSoan').style.display = '';
+  if (hoSo.role === 'teacher' || hoSo.role === 'admin') $('nutSoan').style.display = '';
+
+  // Hiện menu quản trị động dựa trên vai trò
+  var nav = document.querySelector('.navlinks');
+  if (nav) {
+    if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
+      var a = document.createElement('a'); a.href = 'quan-tri-tai-lieu.html'; a.textContent = 'Soạn tài liệu';
+      nav.appendChild(a);
+    }
+    if (hoSo.role === 'admin') {
+      var a = document.createElement('a'); a.href = 'quan-tri-truy-cap.html'; a.textContent = 'Giám sát';
+      nav.appendChild(a);
+    }
+  }
 
   var r = await sb.from('documents')
     .select('id, title, file_path, created_at, classes(name), topics(name)')
