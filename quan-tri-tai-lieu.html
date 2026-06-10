@@ -406,6 +406,32 @@ $('fileTex').addEventListener('change', function () {
   if (!$('tieuDe').value) $('tieuDe').value = f.name.replace(/\.tex$/i, '');
 });
 
+// ---- Tải ex_test.sty làm tài nguyên biên dịch ----
+let exTestStyContent = null;
+async function taiExTestSty() {
+  if (exTestStyContent !== null) return exTestStyContent;
+  try {
+    const res = await fetch('ex_test.sty');
+    if (res.ok) {
+      exTestStyContent = await res.text();
+      return exTestStyContent;
+    }
+  } catch (e) {
+    console.warn('Không thể tải ex_test.sty tương đối, thử tải từ GitHub Pages:', e);
+  }
+  try {
+    const res = await fetch('https://dienvothevinh.github.io/ex_test.sty');
+    if (res.ok) {
+      exTestStyContent = await res.text();
+      return exTestStyContent;
+    }
+  } catch (e) {
+    console.error('Không thể tải ex_test.sty từ GitHub Pages:', e);
+  }
+  exTestStyContent = '';
+  return '';
+}
+
 // ---- Gửi LaTeX lên texlive.net, nhận về PDF ----
 async function bienDich() {
   var tex = $('codeTex').value.trim();
@@ -415,6 +441,18 @@ async function bienDich() {
   if ($('chiNhapTho').checked) {
     var preamble = layPreamble();
     tex = preamble + '\n\\begin{document}\n' + tex + '\n\\end{document}';
+  }
+
+  // Tự động nhúng ex_test.sty nếu tài liệu sử dụng gói này
+  if (tex.includes('ex_test') && !tex.includes('begin{filecontents*}{ex_test.sty}')) {
+    bao('Đang tải cấu trúc gói ex_test.sty...', 'warn');
+    const content = await taiExTestSty();
+    if (content) {
+      tex = '\\begin{filecontents*}{ex_test.sty}\n' + content + '\n\\end{filecontents*}\n' + tex;
+    } else {
+      bao('Cảnh báo: Không thể tải ex_test.sty, việc biên dịch có thể bị lỗi.', 'warn');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
   }
 
   var nut = $('nutBienDich');

@@ -9,44 +9,437 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
 <style>
-body{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-@media(max-width:860px){body{grid-template-columns:1fr}.side{display:none!important}}
-.side{background:var(--surface-2);border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;padding:48px 56px;position:relative;overflow:hidden}
-.side .math{position:absolute;inset:0;pointer-events:none}
-.side .math span{position:absolute;font-weight:700;color:var(--ink);opacity:.04;font-size:7rem;user-select:none}
-.side .quote{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:700;line-height:1.35;letter-spacing:-.01em;max-width:18ch}
-.side .quote .accent{color:var(--accent)}
-.side .who{font-size:.9rem;color:var(--ink-2);margin-top:16px}
-.main{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 24px;position:relative}
-.box{width:100%;max-width:380px}
-.box h1{font-size:1.6rem;margin:28px 0 6px}
-.box .sub{font-size:.94rem;margin-bottom:28px}
-.theme-toggle{position:absolute;top:20px;right:24px}
-.hint{margin-top:24px;font-size:.85rem;color:var(--ink-3);text-align:center;background:var(--surface-2);border-radius:var(--r-md);padding:12px 16px}
-.show-pass{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-3)}
-.alert{display:none;font-size:.875rem;border-radius:var(--r-md);padding:11px 14px;margin-bottom:16px}
-.alert.err{display:block;background:var(--err-soft);color:var(--err)}
-.alert.warn{display:block;background:var(--warn-soft);color:var(--warn)}
+body {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+  transition: background 0.3s ease;
+}
+
+@media(max-width: 900px) {
+  body {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    display: none !important;
+  }
+}
+
+/* --- MATH GRID BACKGROUND --- */
+.math-grid {
+  background-image: 
+    linear-gradient(to right, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* --- SIDE PANEL (LEFT) --- */
+.side {
+  background: var(--surface-2);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Ambient Glow Bubbles */
+.glow-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -1;
+  opacity: 0.15;
+  transition: all 0.5s ease;
+}
+[data-theme="dark"] .glow-bubble {
+  opacity: 0.1;
+}
+.glow-1 {
+  width: 300px;
+  height: 300px;
+  background: var(--accent);
+  top: -50px;
+  left: -50px;
+}
+.glow-2 {
+  width: 350px;
+  height: 350px;
+  background: var(--ok);
+  bottom: -50px;
+  right: -50px;
+}
+
+/* 3D Space and Coordinate Axis */
+.math-scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  perspective: 800px;
+  z-index: -1;
+}
+
+/* 3D Coordinate Axis */
+.axis-container {
+  position: absolute;
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(25deg);
+  animation: slowOrbit 30s linear infinite;
+  width: 200px;
+  height: 200px;
+}
+.axis {
+  position: absolute;
+  background: currentColor;
+  opacity: 0.35;
+}
+.axis-x {
+  width: 240px;
+  height: 1.5px;
+  top: 100px;
+  left: -20px;
+  color: var(--accent);
+}
+.axis-y {
+  width: 1.5px;
+  height: 240px;
+  left: 100px;
+  top: -20px;
+  color: var(--ok);
+}
+.axis-z {
+  width: 240px;
+  height: 1.5px;
+  top: 100px;
+  left: -20px;
+  color: var(--warn);
+  transform: rotateY(90deg);
+}
+
+/* 3D Wireframe Cube */
+.cube-3d {
+  width: 120px;
+  height: 120px;
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  transform-style: preserve-3d;
+}
+.face {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 8%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 15%, transparent);
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.front  { transform: translateZ(60px); }
+.back   { transform: rotateY(180deg) translateZ(60px); }
+.left   { transform: rotateY(-90deg) translateZ(60px); }
+.right  { transform: rotateY(90deg) translateZ(60px); }
+.top    { transform: rotateX(90deg) translateZ(60px); }
+.bottom { transform: rotateX(-90deg) translateZ(60px); }
+
+/* Floating Symbols */
+.math-symbol {
+  position: absolute;
+  font-family: serif;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.08;
+  user-select: none;
+  font-size: 5rem;
+  transition: opacity 0.3s ease;
+}
+[data-theme="dark"] .math-symbol {
+  opacity: 0.06;
+}
+.s-int { top: 12%; right: 15%; animation: floatY 8s ease-in-out infinite alternate; }
+.s-sum { bottom: 15%; left: 10%; animation: floatY 11s ease-in-out infinite alternate-reverse; }
+.s-inf { top: 40%; left: 15%; animation: floatX 9s ease-in-out infinite alternate; }
+.s-pi  { bottom: 20%; right: 12%; animation: floatRotate 13s ease-in-out infinite; }
+
+.side .quote {
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  max-width: 18ch;
+  position: relative;
+}
+.side .quote .accent {
+  color: var(--accent);
+  position: relative;
+  display: inline-block;
+}
+.side .quote .accent::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  z-index: -1;
+  border-radius: 4px;
+}
+.side .who {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.side .who::before {
+  content: "";
+  width: 24px;
+  height: 1.5px;
+  background: var(--line-2);
+}
+
+/* --- MAIN PANEL (RIGHT) --- */
+.main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 32px;
+  position: relative;
+}
+
+/* Glassmorphic Login Box */
+.box {
+  width: 100%;
+  max-width: 400px;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--r-lg);
+  padding: 40px;
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.03), 
+    0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.box:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 10px 40px rgba(31,29,26, 0.05),
+    0 1px 3px rgba(31,29,26, 0.02);
+}
+[data-theme="dark"] .box {
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.2), 
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] .box:hover {
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.box h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 24px 0 8px;
+  letter-spacing: -0.02em;
+}
+.box .sub {
+  font-size: 0.94rem;
+  margin-bottom: 32px;
+  color: var(--ink-2);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.theme-toggle:hover {
+  transform: scale(1.08);
+  border-color: var(--line-2);
+}
+
+.field {
+  position: relative;
+}
+.field label {
+  font-weight: 600;
+  color: var(--ink);
+}
+.input {
+  transition: all 0.2s ease;
+}
+.input:focus {
+  transform: translateY(-1px);
+}
+
+.show-pass {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--ink-3);
+  transition: color 0.15s;
+}
+.show-pass:hover {
+  color: var(--ink-2);
+}
+
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  z-index: -1;
+}
+.btn-primary:hover::after {
+  transform: translateX(100%);
+}
+
+.hint {
+  margin-top: 28px;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  text-align: center;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  line-height: 1.45;
+  border: 1px solid var(--line);
+}
+
+.alert {
+  display: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  animation: slideDown 0.3s ease;
+}
+.alert.err {
+  display: block;
+  background: var(--err-soft);
+  color: var(--err);
+  border-color: color-mix(in srgb, var(--err) 15%, transparent);
+}
+.alert.warn {
+  display: block;
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 15%, transparent);
+}
+
+/* --- KEYFRAME ANIMATIONS --- */
+@keyframes slowOrbit {
+  0% { transform: rotateX(-20deg) rotateY(0deg); }
+  100% { transform: rotateX(-20deg) rotateY(360deg); }
+}
+@keyframes floatY {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-15px); }
+}
+@keyframes floatX {
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(15px); }
+}
+@keyframes floatRotate {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(180deg); }
+  100% { transform: translateY(0px) rotate(360deg); }
+}
+@keyframes slideDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 </style>
 </head>
-<body>
+<body class="math-grid">
 
 <div class="side">
-  <div class="math">
-    <span style="top:6%;right:8%">∂</span>
-    <span style="top:42%;left:4%">√</span>
-    <span style="bottom:8%;right:18%">∞</span>
+  <div class="glow-bubble glow-1"></div>
+  <div class="glow-bubble glow-2"></div>
+  
+  <div class="math-scene">
+    <div class="axis-container">
+      <div class="axis axis-x"></div>
+      <div class="axis axis-y"></div>
+      <div class="axis axis-z"></div>
+      <div class="cube-3d">
+        <div class="face front"></div>
+        <div class="face back"></div>
+        <div class="face left"></div>
+        <div class="face right"></div>
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+      </div>
+    </div>
   </div>
+
+  <div class="math-symbol s-int">∫</div>
+  <div class="math-symbol s-sum">∑</div>
+  <div class="math-symbol s-inf">∞</div>
+  <div class="math-symbol s-pi">π</div>
+
   <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
   <div>
     <p class="quote">"Toán không phải là nhớ công thức. Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
-    <p class="who">— Thầy Vinh</p>
+    <p class="who">Thầy Vinh</p>
   </div>
-  <p style="font-size:.82rem;color:var(--ink-3)">© 2026 VinhMath</p>
+  <p style="font-size:0.82rem;color:var(--ink-3)">© 2026 VinhMath · Lớp Toán Thầy Vinh</p>
 </div>
 
 <div class="main">
-  <button class="btn btn-ghost btn-sm theme-toggle" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Đổi chế độ sáng/tối">🌙</button>
   <div class="box">
     <a class="logo" href="index.html" style="display:inline-flex"><span class="dot">V</span>VinhMath</a>
     <h1>Chào em 👋</h1>
@@ -66,14 +459,14 @@ body{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
           <button type="button" class="show-pass" onclick="togglePass()" id="eyeBtn">👁</button>
         </div>
       </div>
-      <button class="btn btn-primary btn-lg" type="submit" id="nutVao" style="width:100%">Vào lớp học</button>
+      <button class="btn btn-primary btn-lg" type="submit" id="nutVao" style="width:100%; margin-top: 10px;">Vào lớp học</button>
     </form>
 
     <p class="hint">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
   </div>
 </div>
 
-<!-- Thư viện Supabase (nạp từ CDN, không cần cài đặt gì) -->
+<!-- Thư viện Supabase (nạp từ CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
