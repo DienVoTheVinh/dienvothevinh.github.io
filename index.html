@@ -901,6 +901,27 @@ footer .wrap {
       </div>
     </div>
   </section>
+
+  <!-- ===== LỊCH HỌC CÁC LỚP (công khai cho phụ huynh) ===== -->
+  <section class="features" id="lich-hoc">
+    <div class="sec-label">Lịch học · Tuyển sinh</div>
+    <h2 style="margin-bottom:8px">Lịch các lớp đang mở</h2>
+    <p style="margin-bottom:20px;color:var(--ink-2);max-width:60ch">Phụ huynh xem khung giờ phù hợp và liên hệ thầy qua Zalo/điện thoại bên dưới để đăng ký cho con.</p>
+    <div class="card" style="padding:8px 4px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.92rem">
+        <thead><tr>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lớp</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Thứ</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Giờ học</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Hình thức</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Ghi chú</th>
+        </tr></thead>
+        <tbody id="bangLichCongKhai">
+          <tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Đang tải lịch học…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 <footer>
@@ -910,8 +931,33 @@ footer .wrap {
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
 <script src="analytics.js"></script>
+<script>
+// Lịch học công khai (đọc được không cần đăng nhập)
+(async function () {
+  var o = document.getElementById('bangLichCongKhai');
+  if (!daKetNoi()) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch đang cập nhật.</td></tr>'; return; }
+  var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+  var r = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, note, classes(name)')
+    .order('weekday').order('start_time');
+  var ds = r.data || [];
+  if (!ds.length) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch khai giảng sẽ được cập nhật sớm — phụ huynh liên hệ Zalo để được tư vấn.</td></tr>'; return; }
+  // Gom theo lớp cho dễ đọc
+  ds.sort(function (a, b) { return (a.classes ? a.classes.name : '').localeCompare(b.classes ? b.classes.name : '', 'vi', { numeric: true }) || a.weekday - b.weekday; });
+  o.innerHTML = ds.map(function (s) {
+    return '<tr>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)"><b>' + (s.classes ? s.classes.name : '?') + '</b></td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + TEN_THU[s.weekday] + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums">' + s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5) + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + (s.note || '') + '</td>' +
+      '</tr>';
+  }).join('');
+})();
+</script>
 </body>
 </html>
