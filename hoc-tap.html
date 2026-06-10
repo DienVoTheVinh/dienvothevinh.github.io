@@ -86,6 +86,7 @@ function theBaiHoc(bh) {
   var vid = youtubeId(bh.youtube_url);
   var thumb = vid
     ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
+  var href = bh.id ? 'bai-hoc.html?id=' + bh.id : '#';
   return '<div class="card lesson">' +
     '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
     '<div class="body">' +
@@ -94,7 +95,7 @@ function theBaiHoc(bh) {
       '<p>' + (bh.note || 'Video bài giảng + bài tập kèm theo') + '</p>' +
       '<div class="foot"><span style="font-size:.82rem;color:var(--ink-3)">' +
         (bh.so_cau ? bh.so_cau + ' câu hỏi' : '') + '</span>' +
-        '<button class="btn btn-primary btn-sm" onclick="alert(\'Trang chi tiết bài học sẽ làm ở bước tiếp theo!\')">Vào học</button>' +
+        '<a class="btn btn-primary btn-sm" href="' + href + '">Vào học</a>' +
       '</div>' +
     '</div></div>';
 }
@@ -128,12 +129,14 @@ var BAI_HOC_MAU = [
   var nav = document.querySelector('.navlinks');
   if (nav) {
     if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
-      var a = document.createElement('a'); a.href = 'quan-tri-tai-lieu.html'; a.textContent = 'Soạn tài liệu';
-      nav.appendChild(a);
+      var a1 = document.createElement('a'); a1.href = 'quan-tri-bai-hoc.html'; a1.textContent = 'Bài giảng';
+      nav.appendChild(a1);
+      var a2 = document.createElement('a'); a2.href = 'quan-tri-tai-lieu.html'; a2.textContent = 'Soạn tài liệu';
+      nav.appendChild(a2);
     }
     if (hoSo.role === 'admin') {
-      var a = document.createElement('a'); a.href = 'quan-tri-truy-cap.html'; a.textContent = 'Giám sát';
-      nav.appendChild(a);
+      var a3 = document.createElement('a'); a3.href = 'quan-tri-truy-cap.html'; a3.textContent = 'Giám sát';
+      nav.appendChild(a3);
     }
   }
 
