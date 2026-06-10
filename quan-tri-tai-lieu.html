@@ -140,27 +140,26 @@ async function bienDich() {
   bao('Đang gửi lên texlive.net — tài liệu dài có thể mất 10–30 giây…', 'warn');
 
   try {
-    var fd = new FormData();
-    fd.append('filename[]', 'document.tex');
-    fd.append('filecontents[]', tex);
-    fd.append('engine', $('engine').value);
-    fd.append('return', 'pdf');
-    var res = await fetch('https://texlive.net/cgi-bin/latexcgi', { method: 'POST', body: fd });
-    var blob = await res.blob();
+    // Gửi qua "trạm trung chuyển" trên Supabase (Edge Function tên "latex")
+    // vì texlive.net không cho trang web khác gọi thẳng (CORS).
+    var r = await sb.functions.invoke('latex', {
+      body: { tex: tex, engine: $('engine').value }
+    });
+    if (r.error) throw new Error(r.error.message || 'Edge Function lỗi');
 
-    if (blob.type.indexOf('pdf') !== -1) {
-      pdfBlob = blob;
-      $('khungXem').innerHTML = '<iframe src="' + URL.createObjectURL(blob) + '"></iframe>';
+    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+      pdfBlob = r.data;
+      $('khungXem').innerHTML = '<iframe src="' + URL.createObjectURL(r.data) + '"></iframe>';
       bao('✓ Biên dịch thành công! Xem thử bên phải, ưng thì bấm "Lưu vào kho".', 'ok');
       $('nutLuu').disabled = false;
     } else {
-      // server trả về log lỗi dạng text
-      var log = await blob.text();
+      // texlive trả về log lỗi dạng chữ
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
       var dong = log.split('\n').filter(function (l) { return l.indexOf('!') === 0 || l.indexOf('Error') !== -1; }).slice(0, 8).join('\n');
       bao('Biên dịch LỖI. Các dòng lỗi chính:\n' + (dong || log.slice(-1500)), 'err');
     }
   } catch (e) {
-    bao('Không gửi được tới texlive.net: ' + e.message, 'err');
+    bao('Không biên dịch được: ' + e.message, 'err');
   }
   nut.disabled = false; nut.textContent = '▶ Biên dịch PDF';
 }
