@@ -78,6 +78,13 @@ select.input{width:auto}
         <input type="file" id="fileTex" accept=".tex" class="input" style="padding:8px">
       </div>
     </div>
+    <div class="row" style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line-2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="chiNhapTho" checked style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;">
+        <label for="chiNhapTho" style="margin: 0; font-weight: 600; cursor: pointer; font-size: .88rem;">Chỉ nhập nội dung thô (Tự động bọc Preamble cấu trúc mẫu của thầy)</label>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="moCauHinhPreamble()" type="button" style="padding: 6px 12px; font-size: .82rem;">⚙ Cấu hình Preamble mẫu</button>
+    </div>
   </div>
 
   <div class="cols">
@@ -131,12 +138,270 @@ function bao(msg, loai) {
   });
 })();
 
+// Preamble mặc định được cấu trúc từ tài liệu của thầy
+var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
+\\usepackage{fouriernc}
+\\let\\widering\\relax
+
+% --- KHAI BÁO MÀU SẮC ---
+\\usepackage[dvipsnames,table]{xcolor}
+\\definecolor{deepslate}{HTML}{2F4F4F}
+\\definecolor{softteal}{HTML}{008080}
+\\definecolor{mutedblue}{HTML}{4682B4}
+\\definecolor{warmgray}{HTML}{A9A9A9}
+\\definecolor{cleanblack}{HTML}{2C3E50}
+
+\\def\\mauVD{softteal}
+\\def\\mauEX{mutedblue}
+\\def\\mauBT{deepslate} 
+\\def\\mauLG{red!80!black}
+\\def\\mauDA{\\mauEX}
+\\def\\mauTrue{red!70!black}
+\\def\\mauPART{cleanblack}
+\\def\\mauCHAP{softteal}
+\\def\\mauSEC{mutedblue}
+\\def\\mauSUBSEC{deepslate}
+\\def\\mauSUBSUBSEC{cleanblack}
+\\def\\mauphan{cleanblack}
+\\def\\mauchuphan{cleanblack}
+\\def\\mauchuong{softteal}
+\\def\\maunenmucluc{white}
+\\def\\maumlmot{softteal}
+\\def\\maumlhai{mutedblue}
+\\def\\maumlba{deepslate}
+\\def\\maubai{mutedblue}
+\\def\\mausubsec{deepslate}
+\\def\\mausubsecphu{softteal}
+\\def\\mausubsubsec{cleanblack}
+\\def\\maupara{cleanblack}
+\\def\\maufoot{cleanblack}
+\\def\\mauchufoot{cleanblack}
+\\def\\maufootmot{softteal}
+\\def\\maufoothai{mutedblue}
+\\def\\maufootba{deepslate}
+\\def\\maudang{softteal}
+\\def\\maunendang{white}
+\\def\\maudl{cleanblack}
+\\def\\nendl{gray!5}
+\\def\\maudn{softteal}
+\\def\\nendn{teal!5}
+\\def\\maucy{red!70!black}
+\\def\\maupt{black}
+\\def\\mauitemCI{softteal}
+\\def\\mauitemKN{red!70!black}
+\\def\\itemKN{\\color{\\mauitemKN}\\faCheckSquareO}
+\\def\\itemCI{\\color{\\mauitemCI}\\faCheckCircleO}
+
+% --- THÔNG SỐ TRANG ---
+\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
+\\def\\watermarktext{VinhMath}
+\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+\\def\\SDT{0866197857}
+
+% --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---
+\\usepackage{longtable,multirow,makecell,tabularx}
+\\usepackage{diagbox}
+\\usepackage[shortlabels]{enumitem}
+\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
+\\usepackage{tikz} 
+\\usepackage{tkz-euclide}
+\\usepackage{tikz-3dplot}
+\\usepackage{tkz-tab}
+\\usepackage{pifont}
+\\usepackage{bbding}
+\\usepackage{stackengine}
+\\usepackage{scalerel}
+\\usepackage{array}
+\\usepackage{xcolor,colortbl,tasks}
+\\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
+\\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
+\\usetikzlibrary{shadings,fadings}
+\\usepackage{pgfplots}
+\\usepackage{pgfornament}
+\\usepgfplotslibrary{fillbetween}
+\\pgfplotsset{compat=1.9}
+\\usepackage[hidelinks,unicode]{hyperref}
+\\usepackage{pdfpages}
+\\usepackage{currfile}
+\\usepackage[outline]{contour}
+\\usepackage{fontawesome}
+\\usepackage{lipsum}
+\\usepackage{everypage}
+\\usepackage{microtype}
+\\setlength{\\emergencystretch}{3em}
+
+\\arrayrulecolor{teal}
+\\newcolumntype{C}[1]{>{\\centering\\arraybackslash}p{#1}}
+\\newcolumntype{L}[1]{>{\\raggedright\\arraybackslash}p{#1}}
+\\usepackage[top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt] {geometry}
+\\usepackage{varwidth}
+
+\\setlength{\\columnsep}{8mm}
+\\setlength{\\columnseprule}{0.4pt}
+\\def\\columnseprulecolor{\\color{warmgray}}
+
+% --- GÓI TRẮC NGHIỆM EX_TEST ---
+\\usepackage[loigiai]{ex_test} 
+\\font\\damEX=ugqb8v at 13pt
+\\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Lời giải.}
+\\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} \\iconVD Câu}
+\\def\\qedEX{\\color{\\mauDC}\\ensuremath{\\square}}
+\\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
+\\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right.}
+\\usepackage{esvect}
+\\def\\vec{\\vv}
+\\def\\overrightarrow{\\vv}
+\\DeclareSymbolFont{symbolsC}{U}{txsyc}{m}{n}
+\\DeclareMathSymbol{\\varparallel}{\\mathrel}{symbolsC}{9}
+\\DeclareMathSymbol{\\parallel}{\\mathrel}{symbolsC}{9}
+
+% --- WATERMARK LỀ PHẢI ---
+\\AddEverypageHook{%
+\\begin{tikzpicture}[remember picture,overlay]
+\\coordinate (margin) at ([xshift=-5mm]current page.east);
+\\draw[softteal!40,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
+\\fill[red!50!black] ([yshift=7.2cm]margin) circle (1.5pt);
+\\node[rotate=90,anchor=center,font=\\fontfamily{qag}\\fontseries{b}\\fontsize{10}{12}\\selectfont,text=softteal!60] at (margin) {\\watermarktext};
+\\draw[softteal!40,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
+\\fill[red!50!black] ([yshift=-7.2cm]margin) circle (1.5pt);
+\\end{tikzpicture}%
+}
+
+% --- HEADER & FOOTER ---
+\\usepackage{fancyhdr,lastpage}
+\\pagestyle{fancy}
+\\fancyhf{}
+\\renewcommand{\\headrulewidth}{0.5pt}
+\\renewcommand{\\footrulewidth}{0pt}
+\\renewcommand{\\headrule}{\\hbox to\\headwidth{\\color{\\maufoot}\\leaders\\hrule height \\headrulewidth\\hfill}}
+\\fancyhead[L]{\\color{\\maufoot}\\sffamily\\bfseries Lớp Toán Thầy Vinh}
+\\fancyhead[R]{\\color{\\maufoot}\\sffamily\\bfseries VinhMath}
+\\fancyfoot[L]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faMapMarker\\ \\DC}
+\\fancyfoot[C]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faPhone\\ \\SDT}
+\\fancyfoot[R]{\\color{\\maufoot}\\fontsize{9pt}{11pt}\\selectfont\\sffamily Trang \\thepage/\\pageref{LastPage}}
+
+% --- PHÂN CẤP TIÊU ĐỀ ---
+\\usepackage[explicit]{titlesec}
+\\usepackage{titledot}
+\\setcounter{secnumdepth}{4}
+\\renewcommand{\\thechapter}{\\arabic{chapter}}
+\\renewcommand{\\thesection}{\\arabic{section}}
+\\renewcommand{\\thesubsection}{\\Alph{subsection}}
+\\renewcommand{\\thesubsubsection}{\\arabic{subsubsection}}
+
+% --- MÔI TRƯỜNG DẠNG, ĐỊNH LÝ, ĐỊNH NGHĨA ---
+\\usepackage[most]{tcolorbox}
+\\def\\beginboxVD{\\begin{tcolorbox}[enhanced,breakable,colback=\\mauVD!5,colframe=\\mauVD,coltitle=\\mauVD,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
+\\def\\beginboxEX{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauEX,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
+\\def\\beginboxBT{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauBT,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
+\\def\\endbox{\\end{tcolorbox}}
+
+\\newcounter{dang}\\setcounter{dang}{0}
+\\renewcommand{\\thedang}{\\arabic{dang}}
+\\makeatletter
+\\@addtoreset{dang}{subsection}
+\\@addtoreset{bt}{subsection}
+\\@addtoreset{ex}{subsection}
+\\@addtoreset{vd}{subsection}
+\\makeatother
+
+\\newtcolorbox{dangg}[1]{enhanced,breakable,colback=white,colframe=\\maudang,coltitle=white,colbacktitle=\\maudang,boxrule=0pt,toprule=2pt,sharp corners,fonttitle=\\bfseries\\sffamily,title={Dạng \\stepcounter{dang}\\thedang. #1},attach boxed title to top left={yshift=-2mm, xshift=0mm},boxed title style={sharp corners, boxrule=0pt},left=2mm,right=2mm,top=4mm,bottom=2mm,before upper={\\setlength{\\parskip}{0.3em}}}
+\\newenvironment{dang}[1]{\\begin{dangg}{#1}}{\\end{dangg}}
+
+\\newenvironment{boxdl}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,colback=\\nendl,boxrule=0pt,frame hidden,opacityback=0.5,left=2mm,right=0pt,bottom=1.5pt,top=1.5pt,before skip=2mm,after skip=2mm,overlay={\\draw[double,line width=1.5pt,\\maudl] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}]}{\\end{tcolorbox}}
+\\newenvironment{boxdn}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,colback=\\maudn!3,boxrule=0pt,frame hidden,opacityback=0.5,left=2mm,right=0pt,bottom=1.5pt,top=1.5pt,before skip=2mm,after skip=2mm,overlay={\\draw[double,line width=1.5pt,\\maudn] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}]}{\\end{tcolorbox}}
+
+\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}[section]
+\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
+\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
+\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
+\\newtheorem{myvidu}{\\color{\\mauVD}\\bfseries Ví dụ}
+\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
+\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
+\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
+\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
+
+\\newenvironment{dn}{\\begin{boxdn}\\begin{mydn}}{\\end{mydn}\\end{boxdn}}
+\\newenvironment{dl}{\\begin{boxdl}\\begin{mydl}}{\\end{mydl}\\end{boxdl}}
+\\newenvironment{tomtat}{}{}
+\\newenvironment{note}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,opacityback=0,boxrule=0pt,frame hidden,left=8mm,right=0pt,bottom=0pt,top=0pt,before skip=1mm,after skip=1mm,underlay unbroken and first={\\node[\\maucy,font=\\large\\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\\faExclamationTriangle};},fontupper=\\it]}{\\end{tcolorbox}}
+\\newenvironment{luuy}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,opacityback=0,boxrule=0pt,frame hidden,left=8mm,right=0pt,bottom=0pt,top=0pt,before skip=1mm,after skip=1mm,underlay unbroken and first={\\node[\\maucy,font=\\large\\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\\faExclamationTriangle};},fontupper=\\it]}{\\end{tcolorbox}}
+
+\\def\\khoanhtrondapan{}
+\\def\\khongkhoanhtrondapan{}
+\\def\\FULLWIDTH{\\newgeometry{top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt}}
+\\def\\NOTE{\\newgeometry{top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt}}
+\\def\\indapan#1#2{}
+\\def\\dotlineEX#1{\\par\\noindent\\dotfill\\par}
+\\def\\mauDC{\\mauLG!50}
+\\setlength{\\parindent}{0pt}
+
+% --- CẤU HÌNH KIỂU TÀI LIỆU (LT-3) ---
+\\AtBeginEnvironment{vd}{
+	\\beginboxVD
+	\\renewcommand{\\loigiai}[1]{
+		\\endbox
+		\\begin{onlysolution}
+			##1
+		\\end{onlysolution}
+		\\def\\endbox{}
+	}
+}
+\\AtEndEnvironment{vd}{\\endbox}
+\\AtBeginEnvironment{ex}{\\def\\iconVD{}}
+\\AtBeginEnvironment{bt}{\\def\\iconVD{}}
+\\AtBeginEnvironment{vd}{\\def\\iconVD{\\faGg}}
+\\AtBeginEnvironment{ex}{\\def\\endbox{}}
+\\AtBeginEnvironment{bt}{\\def\\endbox{}}`;
+
+function layPreamble() {
+  try {
+    return localStorage.getItem('vm-latex-preamble') || PREAMBLE_MAC_DINH;
+  } catch (e) {
+    return PREAMBLE_MAC_DINH;
+  }
+}
+
+function moCauHinhPreamble() {
+  $('preambleEditor').value = layPreamble();
+  $('modalPreamble').style.display = 'flex';
+}
+
+function dongPreamble() {
+  $('modalPreamble').style.display = 'none';
+}
+
+function luuPreamble() {
+  try {
+    localStorage.setItem('vm-latex-preamble', $('preambleEditor').value);
+    bao('✓ Đã lưu cấu hình Preamble mới thành công.', 'ok');
+  } catch (e) {
+    alert('Không thể lưu cấu hình: ' + e.message);
+  }
+  dongPreamble();
+}
+
+function resetPreambleMacDinh() {
+  if (confirm('Thầy có chắc chắn muốn khôi phục Preamble cấu trúc mẫu mặc định không?')) {
+    $('preambleEditor').value = PREAMBLE_MAC_DINH;
+  }
+}
+
 // ---- Chọn file .tex → đổ vào ô soạn ----
 $('fileTex').addEventListener('change', function () {
   var f = this.files[0];
   if (!f) return;
   var rd = new FileReader();
-  rd.onload = function () { $('codeTex').value = rd.result; };
+  rd.onload = function () {
+    var code = rd.result;
+    $('codeTex').value = code;
+    // Tự động nhận diện xem file đầy đủ hay file thô
+    if (code.indexOf('\\begin{document}') !== -1 || code.indexOf('\\documentclass') !== -1) {
+      $('chiNhapTho').checked = false;
+    } else {
+      $('chiNhapTho').checked = true;
+    }
+  };
   rd.readAsText(f);
   if (!$('tieuDe').value) $('tieuDe').value = f.name.replace(/\.tex$/i, '');
 });
@@ -145,6 +410,13 @@ $('fileTex').addEventListener('change', function () {
 async function bienDich() {
   var tex = $('codeTex').value.trim();
   if (!tex) { bao('Chưa có code LaTeX nào.', 'warn'); return; }
+  
+  // Nếu chỉ nhập nội dung thô -> tự động ghép Preamble mẫu
+  if ($('chiNhapTho').checked) {
+    var preamble = layPreamble();
+    tex = preamble + '\n\\begin{document}\n' + tex + '\n\\end{document}';
+  }
+
   var nut = $('nutBienDich');
   nut.disabled = true; nut.textContent = '⏳ Đang biên dịch…';
   $('nutLuu').disabled = true; pdfBlob = null;
@@ -202,5 +474,25 @@ async function luuVaoKho() {
   nut.disabled = false; nut.textContent = '💾 Lưu vào kho';
 }
 </script>
+
+<!-- Modal Cấu hình Preamble -->
+<div class="modal" id="modalPreamble" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 110; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+  <div class="modal-content" style="background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 90%; max-width: 800px; padding: 24px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; max-height: 90vh;">
+    <button class="modal-close" onclick="dongPreamble()" style="position: absolute; top: 16px; right: 16px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3);">×</button>
+    <h2 style="margin-bottom: 8px;">Cấu hình Preamble LaTeX mẫu</h2>
+    <p style="font-size: .85rem; color: var(--ink-2); margin-bottom: 16px;">Phần khai báo cấu trúc này sẽ được tự động chèn vào trước đoạn code LaTeX thô của thầy khi biên dịch. Nhấn "Mặc định" để khôi phục cấu trúc VinhMath gốc.</p>
+    
+    <textarea id="preambleEditor" style="flex: 1; min-height: 350px; font-family: monospace; font-size: .8rem; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); color: var(--ink); resize: vertical; line-height: 1.4;"></textarea>
+    
+    <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; border-top: 1px solid var(--line-2); padding-top: 16px;">
+      <button class="btn btn-secondary" onclick="resetPreambleMacDinh()">Mặc định</button>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" onclick="dongPreamble()">Hủy bỏ</button>
+        <button class="btn btn-primary" onclick="luuPreamble()">Lưu cấu hình</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
