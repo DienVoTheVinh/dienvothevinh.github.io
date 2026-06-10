@@ -67,6 +67,21 @@
     <button class="btn btn-primary" onclick="moFormThemMoi()">+ Thêm bài giảng</button>
   </div>
 
+  <!-- Bảng điều khiển quyền xem (chỉ admin thấy) -->
+  <div class="card" id="bangDieuKhien" style="display:none; margin-bottom:20px; padding:16px 20px">
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:space-between">
+      <div>
+        <b>🔐 Quyền xem bài giảng toàn hệ thống</b>
+        <div style="font-size:.85rem; color:var(--ink-3); margin-top:2px" id="moTaCheDo">Đang tải…</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" id="cd-class" onclick="doiCheDo('class')">🏫 Theo lớp</button>
+        <button class="btn btn-secondary btn-sm" id="cd-open" onclick="doiCheDo('open')">🌍 Mở tất cả</button>
+        <button class="btn btn-secondary btn-sm" id="cd-locked" onclick="doiCheDo('locked')">🔒 Khoá tất cả</button>
+      </div>
+    </div>
+  </div>
+
   <div class="class-tabs" id="tabKhongGianLop">
     <button class="tab-btn active" onclick="locTheoLop('tat-ca')">Tất cả lớp</button>
   </div>
@@ -133,6 +148,20 @@
         <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
       </div>
 
+      <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
+        <label>📝 Bài test cuối giờ (chọn PDF từ kho tài liệu)</label>
+        <select class="input" id="bhTestTaiLieu">
+          <option value="">-- Không có bài test --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hoặc tải file PDF bài test từ máy</label>
+        <input type="file" class="input" id="bhTestFile" accept=".pdf,application/pdf" style="padding:8px">
+        <small style="color:var(--ink-3); margin-top:4px; display:block">
+          Soạn test bằng LaTeX? Biên dịch trong mục <a href="quan-tri-tai-lieu.html" target="_blank" style="color:var(--accent)">Soạn tài liệu</a> rồi chọn ở ô trên.
+        </small>
+      </div>
+
       <div class="field">
         <label>Ghi chú bài học</label>
         <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
@@ -172,6 +201,42 @@ var tatCaLop = [];
 var tatCaChuyenDe = [];
 var tatCaTaiLieu = [];
 var lopDangLoc = 'tat-ca';
+var vaiTro = null;
+
+/* ===== CHẾ ĐỘ XEM TOÀN HỆ THỐNG (chỉ admin đổi được) ===== */
+var MO_TA_CHE_DO = {
+  'class':  'Học sinh chỉ xem được bài giảng của lớp mình (mặc định).',
+  'open':   'MỌI tài khoản học sinh xem được TẤT CẢ bài giảng đã xuất bản, bất kể lớp.',
+  'locked': 'TOÀN BỘ bài giảng đang bị KHOÁ với học sinh. Giáo viên/admin vẫn xem được.'
+};
+
+async function taiCheDo() {
+  var r = await sb.from('app_settings').select('value').eq('key', 'video_mode').single();
+  veCheDo(r.data ? r.data.value : 'class');
+}
+
+function veCheDo(m) {
+  ['class', 'open', 'locked'].forEach(function (k) {
+    var b = $('cd-' + k);
+    b.className = 'btn btn-sm ' + (k === m ? 'btn-primary' : 'btn-secondary');
+  });
+  $('moTaCheDo').textContent = MO_TA_CHE_DO[m] || '';
+}
+
+async function doiCheDo(m) {
+  if (m === 'locked' && !confirm('Khoá TẤT CẢ bài giảng với học sinh?')) return;
+  if (m === 'open' && !confirm('Mở TẤT CẢ bài giảng cho MỌI tài khoản học sinh (bất kể lớp)?')) return;
+  var r = await sb.from('app_settings').upsert({ key: 'video_mode', value: m });
+  if (r.error) { alert('Lỗi đổi chế độ: ' + r.error.message); return; }
+  veCheDo(m);
+}
+
+/* ===== KHOÁ / MỞ TỪNG BÀI ===== */
+async function batTatKhoa(id, khoa) {
+  var r = await sb.from('lessons').update({ locked: khoa }).eq('id', id);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  await taiDanhSachBaiHoc();
+}
 
 (async function() {
   if (!daKetNoi()) {
@@ -185,12 +250,17 @@ var lopDangLoc = 'tat-ca';
     window.location.href = 'hoc-tap.html';
     return;
   }
+  vaiTro = hoSo.role;
 
-  // Khởi tạo menu quản trị động
+  // Khởi tạo menu quản trị động + bảng điều khiển quyền xem (chỉ admin)
   var nav = document.querySelector('.navlinks');
   if (nav && hoSo.role === 'admin') {
     var a = document.createElement('a'); a.href = 'quan-tri-truy-cap.html'; a.textContent = 'Giám sát';
     nav.appendChild(a);
+  }
+  if (hoSo.role === 'admin') {
+    $('bangDieuKhien').style.display = 'block';
+    taiCheDo();
   }
 
   await taiDuLieuDanhMuc();
@@ -237,17 +307,19 @@ async function taiDuLieuDanhMuc() {
   var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
   tatCaTaiLieu = r3.data || [];
   var formTlSelect = $('bhTaiLieu');
+  var formTestSelect = $('bhTestTaiLieu');
   tatCaTaiLieu.forEach(function(t) {
     var opt = document.createElement('option');
     opt.value = t.id;
     opt.textContent = t.title + ' (' + t.file_path.split('-').slice(1).join('-') + ')';
     formTlSelect.appendChild(opt);
+    formTestSelect.appendChild(opt.cloneNode(true));
   });
 }
 
 async function taiDanhSachBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, document_id, classes(name), topics(name), documents(title, file_path)')
+    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
     .order('sort', { ascending: false })
     .order('created_at', { ascending: false });
   
@@ -302,9 +374,10 @@ function hienThiBaiHoc() {
   container.innerHTML = filtered.map(function(bh) {
     var lopBadge = '<span class="badge badge-mute">' + (bh.classes ? bh.classes.name : 'Chưa xếp lớp') + '</span>';
     var cdBadge = bh.topics ? '<span class="badge badge-accent">' + bh.topics.name + '</span>' : '';
-    var trangThaiBadge = bh.published 
-      ? '<span class="badge badge-ok">Đã xuất bản</span>' 
+    var trangThaiBadge = bh.published
+      ? '<span class="badge badge-ok">Đã xuất bản</span>'
       : '<span class="badge badge-mute">Nháp</span>';
+    var khoaBadge = bh.locked ? '<span class="badge badge-err">🔒 Đang khoá</span>' : '';
     
     var ytId = extractYoutubeId(bh.youtube_url);
     var driveId = extractDriveId(bh.youtube_url);
@@ -324,9 +397,19 @@ function hienThiBaiHoc() {
     var ngayVietNote = bh.note ? bh.note : 'Không có ghi chú dặn dò.';
     if (ngayVietNote.length > 80) ngayVietNote = ngayVietNote.slice(0, 80) + '…';
 
+    var testIndicator = bh.test_document_id
+      ? '<span class="pdf-indicator" style="color:var(--accent)">📝 Có bài test</span>'
+      : '';
+
+    var nutKhoa = (vaiTro === 'admin')
+      ? (bh.locked
+        ? '<button class="btn btn-ghost btn-sm" style="color:var(--ok)" onclick="batTatKhoa(\'' + bh.id + '\', false)" title="Mở khoá bài này">🔓 Mở</button>'
+        : '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="batTatKhoa(\'' + bh.id + '\', true)" title="Khoá bài này">🔒 Khoá</button>')
+      : '';
+
     return '<div class="card lesson-card">' +
       '<div>' +
-        '<div class="badge-group">' + lopBadge + cdBadge + trangThaiBadge + '</div>' +
+        '<div class="badge-group">' + lopBadge + cdBadge + trangThaiBadge + khoaBadge + '</div>' +
         '<h3>' + bh.title + '</h3>' +
         '<p class="desc">' + ngayVietNote + '</p>' +
       '</div>' +
@@ -335,11 +418,13 @@ function hienThiBaiHoc() {
           '<div>' + ytIndicator + '</div>' +
           '<div>' + pdfIndicator + '</div>' +
           (anhIndicator ? '<div>' + anhIndicator + '</div>' : '') +
+          (testIndicator ? '<div>' + testIndicator + '</div>' : '') +
           '<div>Thứ tự: <b class="num">' + bh.sort + '</b></div>' +
         '</div>' +
         '<div class="actions">' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + bh.id + '" target="_blank">Xem trang học</a>' +
-          '<button class="btn btn-primary btn-sm" onclick="moFormSua(\'' + bh.id + '\')">Chỉnh sửa</button>' +
+          '<div style="display:flex;gap:6px">' + nutKhoa +
+          '<button class="btn btn-primary btn-sm" onclick="moFormSua(\'' + bh.id + '\')">Chỉnh sửa</button></div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -407,6 +492,7 @@ function moFormSua(id) {
   $('bhChuyenDe').value = bh.topic_id || '';
   $('bhYoutube').value = bh.youtube_url || '';
   $('bhTaiLieu').value = bh.document_id || '';
+  $('bhTestTaiLieu').value = bh.test_document_id || '';
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort !== undefined ? bh.sort : 0;
   $('bhXuatBan').checked = !!bh.published;
@@ -429,6 +515,7 @@ async function luuBaiHoc(e) {
     topic_id: $('bhChuyenDe').value || null,
     youtube_url: $('bhYoutube').value.trim() || null,
     document_id: $('bhTaiLieu').value || null,
+    test_document_id: $('bhTestTaiLieu').value || null,
     note: $('bhGhiChu').value.trim() || null,
     sort: parseInt($('bhSapXep').value) || 0,
     published: $('bhXuatBan').checked
@@ -459,6 +546,28 @@ async function luuBaiHoc(e) {
       return;
     }
     data.document_id = insTl.data.id; // PDF từ máy thay cho lựa chọn dropdown
+  }
+
+  // ---- 1b. Nếu thầy chọn file PDF BÀI TEST từ máy ----
+  var fileTest = $('bhTestFile').files[0];
+  if (fileTest) {
+    nut.textContent = '⏳ Đang tải bài test lên…';
+    var duongDanTest = Date.now() + '-test-' + tenAnToan(fileTest.name);
+    var upT = await sb.storage.from('tai-lieu').upload(duongDanTest, fileTest, { contentType: 'application/pdf' });
+    if (upT.error) {
+      alert('Lỗi tải bài test: ' + upT.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var insT = await sb.from('documents')
+      .insert({ title: (data.title || 'Bài giảng') + ' — Bài test', class_id: data.class_id || null, file_path: duongDanTest })
+      .select('id').single();
+    if (insT.error) {
+      alert('Lỗi ghi bài test vào sổ: ' + insT.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.test_document_id = insT.data.id;
   }
 
   // ---- 2. Tải các ảnh buổi học mới chọn (nếu có) ----
