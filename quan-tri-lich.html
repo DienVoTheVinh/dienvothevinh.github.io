@@ -43,15 +43,19 @@
     <h1>Lịch học & Điểm danh QR</h1>
   </div>
 
-  <!-- 1. Link Meet -->
+  <!-- 1. Link Meet theo lớp -->
   <div class="card section" style="margin-top:20px">
-    <h3>🎥 Link Google Meet cố định</h3>
-    <p style="font-size:.88rem;color:var(--ink-2);margin:6px 0 12px">Học sinh bấm "Vào lớp ngay" trong trang Lớp Online sẽ mở link này.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input class="input" id="meetLink" placeholder="https://meet.google.com/abc-defg-hij" style="flex:1;min-width:240px">
-      <button class="btn btn-primary" onclick="luuMeet()">Lưu link</button>
+    <h3>🎥 Link Google Meet theo lớp</h3>
+    <p style="font-size:.88rem;color:var(--ink-2);margin:6px 0 12px">Mỗi lớp một phòng riêng — học sinh lớp nào thấy link lớp đó. Lớp bỏ trống sẽ dùng link chung dự phòng.</p>
+    <div id="khungMeetLop" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="border-top:1px dashed var(--line-2);margin-top:16px;padding-top:14px">
+      <b style="font-size:.9rem">Link chung (dự phòng)</b>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <input class="input" id="meetLink" placeholder="https://meet.google.com/abc-defg-hij" style="flex:1;min-width:240px">
+        <button class="btn btn-secondary" onclick="luuMeet()">Lưu link chung</button>
+      </div>
+      <div id="tbMeet" style="font-size:.85rem;margin-top:8px"></div>
     </div>
-    <div id="tbMeet" style="font-size:.85rem;margin-top:8px"></div>
   </div>
 
   <!-- 2. Thời khóa biểu -->
@@ -117,6 +121,7 @@
     <p style="font-size:.88rem;color:var(--ink-2)">Học sinh quét QR hoặc nhập mã bên dưới vào trang Lớp Online</p>
     <div id="khungQR"></div>
     <div class="token-text" id="qrToken"></div>
+    <div style="font-size:.78rem;color:var(--ink-3);margin-top:6px">🔄 Mã tự đổi mỗi 30 giây — chống điểm danh hộ. Mở bảng này suốt buổi học.</div>
     <div style="margin-top:16px"><span class="dem-so" id="qrDem">0</span><div style="font-size:.85rem;color:var(--ink-2)">học sinh đã điểm danh</div></div>
     <div id="qrDanhSach" style="font-size:.85rem;color:var(--ink-2);margin-top:8px;max-height:120px;overflow-y:auto"></div>
   </div>
@@ -149,9 +154,34 @@ var hennDem = null;
   var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
   if (lk.data) $('meetLink').value = lk.data.value;
 
+  taiMeetLop();
   taiLich();
   taiBuoi();
 })();
+
+/* ----- Meet theo lớp ----- */
+async function taiMeetLop() {
+  var r = await sb.from('class_links').select('class_id, meet_link');
+  var map = {};
+  (r.data || []).forEach(function (x) { map[x.class_id] = x.meet_link; });
+  $('khungMeetLop').innerHTML = dsLop.map(function (l) {
+    return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+      '<b style="width:72px;flex:none;font-size:.9rem">' + l.name + '</b>' +
+      '<input class="input" style="flex:1;min-width:220px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
+      '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
+      '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
+      '</div>';
+  }).join('');
+}
+
+async function luuMeetLop(id) {
+  var v = $('ml-' + id).value.trim();
+  var r = await sb.from('class_links').upsert({ class_id: id, meet_link: v });
+  var t = $('mlt-' + id);
+  t.textContent = r.error ? '✗' : '✓';
+  t.title = r.error ? r.error.message : 'Đã lưu';
+  t.style.color = r.error ? 'var(--err)' : 'var(--ok)';
+}
 
 /* ----- Meet ----- */
 async function luuMeet() {
@@ -241,14 +271,35 @@ async function taoBuoiHoc() {
 }
 
 var buoiDangXem = null;
-function hienQR(id, token, ten) {
-  buoiDangXem = id;
-  $('qrTen').textContent = ten;
+var hennXoay = null;
+
+// Sinh mã ngẫu nhiên mới (32 ký tự hex)
+function taoToken() {
+  var a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+// Xoay QR: đổi mã trong CSDL + vẽ lại QR — mã cũ chết ngay lập tức
+async function xoayQR() {
+  if (!buoiDangXem) return;
+  var token = taoToken();
+  var r = await sb.from('class_sessions')
+    .update({ qr_token: token, qr_expires: new Date(Date.now() + 120000).toISOString() })
+    .eq('id', buoiDangXem);
+  if (r.error) return;
   $('qrToken').textContent = token;
   $('khungQR').innerHTML = '';
   var url = new URL('diem-danh.html?token=' + token, window.location.href).href;
   new QRCode($('khungQR'), { text: url, width: 220, height: 220 });
+}
+
+function hienQR(id, token, ten) {
+  buoiDangXem = id;
+  $('qrTen').textContent = ten;
   $('modalQR').style.display = 'flex';
+  xoayQR();                                   // sinh mã mới ngay khi mở
+  hennXoay = setInterval(xoayQR, 30000);      // tự đổi mã mỗi 30 giây
   demDiemDanh();
   hennDem = setInterval(demDiemDanh, 5000);
 }
@@ -269,6 +320,7 @@ async function demDiemDanh() {
 function dongQR() {
   $('modalQR').style.display = 'none';
   if (hennDem) clearInterval(hennDem);
+  if (hennXoay) clearInterval(hennXoay);
   buoiDangXem = null;
   taiBuoi();
 }

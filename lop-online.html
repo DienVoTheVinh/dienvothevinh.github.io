@@ -100,9 +100,16 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
   if (!hoSo) return;
   $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Lớp Online';
 
-  // 1. Link Meet
-  var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
-  var meet = lk.data ? lk.data.value : '';
+  // 1. Link Meet: ưu tiên phòng riêng của lớp, không có thì dùng link chung
+  var meet = '';
+  if (hoSo.class_id) {
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
+    if (lr.data && lr.data.meet_link) meet = lr.data.meet_link;
+  }
+  if (!meet) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meet = lk.data ? lk.data.value : '';
+  }
   if (meet) { $('nutVaoMeet').href = meet; $('nutVaoMeet').style.display = 'inline-flex'; }
   else { $('chuaCoLink').style.display = 'block'; }
 
