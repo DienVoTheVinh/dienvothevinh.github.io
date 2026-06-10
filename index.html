@@ -137,16 +137,24 @@
 }
 
 /* 3D Rotating Coordinate System in Hero */
+/* 3D Rotating Coordinate System in Hero */
 .hero-3d-scene {
   position: absolute;
-  top: 35%;
-  right: -5%;
+  top: 50%;
+  right: -60px;
   width: 300px;
   height: 300px;
   perspective: 1000px;
   transform-style: preserve-3d;
-  z-index: -1;
+  transform: translateY(-50%);
+  z-index: 1; /* positive z-index to be visible */
   opacity: 0.85;
+  pointer-events: none;
+}
+@media(max-width: 960px) {
+  .hero-3d-scene {
+    right: -20px;
+  }
 }
 @media(max-width: 860px) {
   .hero-3d-scene {
@@ -164,49 +172,117 @@
 .hero-3d-axis {
   position: absolute;
   background: currentColor;
-  opacity: 0.3;
+  opacity: 0.35;
 }
-.hero-3d-axis-x { width: 200px; height: 1px; top: 150px; left: 50px; color: var(--accent); }
-.hero-3d-axis-y { width: 1px; height: 200px; left: 150px; top: 50px; color: var(--ok); }
-.hero-3d-axis-z { width: 200px; height: 1px; top: 150px; left: 50px; color: var(--warn); transform: rotateY(90deg); }
+.hero-3d-axis-x { width: 220px; height: 1.5px; top: 150px; left: 40px; color: var(--accent); }
+.hero-3d-axis-y { width: 1.5px; height: 220px; left: 150px; top: 40px; color: var(--ok); }
+.hero-3d-axis-z { width: 220px; height: 1.5px; top: 150px; left: 40px; color: var(--warn); transform: rotateY(90deg); }
 
-.hero-3d-object {
+/* Cube in positive octant */
+.hero-3d-cube {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  top: 110px;
-  left: 110px;
+  width: 66px;
+  height: 66px;
+  top: 117px;
+  left: 117px;
   transform-style: preserve-3d;
-  transform: translateZ(40px);
+  transform: translate3d(55px, -55px, 45px);
+  animation: spinCube 12s linear infinite;
+}
+@keyframes spinCube {
+  0% { transform: translate3d(55px, -55px, 45px) rotateX(0deg) rotateY(0deg); }
+  100% { transform: translate3d(55px, -55px, 45px) rotateX(360deg) rotateY(360deg); }
 }
 .hero-3d-face {
   position: absolute;
-  width: 80px;
-  height: 80px;
+  width: 66px;
+  height: 66px;
   border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent);
 }
-.hero-f-front  { transform: translateZ(40px); }
-.hero-f-back   { transform: rotateY(180deg) translateZ(40px); }
-.hero-f-left   { transform: rotateY(-90deg) translateZ(40px); }
-.hero-f-right  { transform: rotateY(90deg) translateZ(40px); }
-.hero-f-top    { transform: rotateX(90deg) translateZ(40px); }
-.hero-f-bottom { transform: rotateX(-90deg) translateZ(40px); }
+.hero-f-front  { transform: translateZ(33px); }
+.hero-f-back   { transform: rotateY(180deg) translateZ(33px); }
+.hero-f-left   { transform: rotateY(-90deg) translateZ(33px); }
+.hero-f-right  { transform: rotateY(90deg) translateZ(33px); }
+.hero-f-top    { transform: rotateX(90deg) translateZ(33px); }
+.hero-f-bottom { transform: rotateX(-90deg) translateZ(33px); }
+
+/* Sphere in negative octant */
+.hero-3d-sphere {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  top: 112px;
+  left: 112px;
+  transform-style: preserve-3d;
+  transform: translate3d(-55px, 55px, -45px);
+  animation: spinSphere 15s linear infinite;
+}
+@keyframes spinSphere {
+  0% { transform: translate3d(-55px, 55px, -45px) rotateY(0deg) rotateX(0deg); }
+  100% { transform: translate3d(-55px, 55px, -45px) rotateY(360deg) rotateX(360deg); }
+}
+.sphere-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--ok);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.ring-y-0   { transform: rotateY(0deg); }
+.ring-y-30  { transform: rotateY(30deg); }
+.ring-y-60  { transform: rotateY(60deg); }
+.ring-y-90  { transform: rotateY(90deg); }
+.ring-y-120 { transform: rotateY(120deg); }
+.ring-y-150 { transform: rotateY(150deg); }
+.ring-x-90  { transform: rotateX(90deg); border-style: solid; border-color: var(--ok); }
+
+/* Brand Badge */
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 4%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
 
 /* Portrait Column Styling */
 .portrait {
   position: relative;
 }
 .portrait-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
   gap: 20px;
   position: relative;
   z-index: 2;
+  align-items: stretch;
+}
+.portrait-grid .left-col {
+  display: flex;
+}
+.portrait-grid .right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: space-between;
 }
 .portrait-grid .ph-portrait {
-  aspect-ratio: 1/1.1;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1/1.28;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--surface-2);
@@ -219,7 +295,8 @@
   transform: translateY(-4px);
 }
 .portrait-grid .ph-landscape {
-  aspect-ratio: 1.6/1;
+  width: 100%;
+  aspect-ratio: 1.45/1;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--surface-2);
@@ -230,6 +307,11 @@
 }
 .portrait-grid .ph-landscape:hover {
   transform: translateY(-4px);
+}
+@media(max-width: 580px) {
+  .portrait-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .portrait-grid img {
   width: 100%;
@@ -574,26 +656,39 @@ footer .wrap {
     <span class="s-sqrt">√x</span>
   </div>
 
-  <!-- 3D Orbit Coordinate Axis -->
-  <div class="hero-3d-scene">
-    <div class="hero-3d-axes">
-      <div class="hero-3d-axis hero-3d-axis-x"></div>
-      <div class="hero-3d-axis hero-3d-axis-y"></div>
-      <div class="hero-3d-axis hero-3d-axis-z"></div>
-      <div class="hero-3d-object">
-        <div class="hero-3d-face hero-f-front"></div>
-        <div class="hero-3d-face hero-f-back"></div>
-        <div class="hero-3d-face hero-f-left"></div>
-        <div class="hero-3d-face hero-f-right"></div>
-        <div class="hero-3d-face hero-f-top"></div>
-        <div class="hero-3d-face hero-f-bottom"></div>
+  <section class="hero">
+    <!-- 3D Orbit Coordinate Axis -->
+    <div class="hero-3d-scene">
+      <div class="hero-3d-axes">
+        <div class="hero-3d-axis hero-3d-axis-x"></div>
+        <div class="hero-3d-axis hero-3d-axis-y"></div>
+        <div class="hero-3d-axis hero-3d-axis-z"></div>
+        
+        <!-- Cube in Positive Octant -->
+        <div class="hero-3d-cube">
+          <div class="hero-3d-face hero-f-front"></div>
+          <div class="hero-3d-face hero-f-back"></div>
+          <div class="hero-3d-face hero-f-left"></div>
+          <div class="hero-3d-face hero-f-right"></div>
+          <div class="hero-3d-face hero-f-top"></div>
+          <div class="hero-3d-face hero-f-bottom"></div>
+        </div>
+
+        <!-- Sphere in Negative Octant -->
+        <div class="hero-3d-sphere">
+          <div class="sphere-ring ring-y-0"></div>
+          <div class="sphere-ring ring-y-30"></div>
+          <div class="sphere-ring ring-y-60"></div>
+          <div class="sphere-ring ring-y-90"></div>
+          <div class="sphere-ring ring-y-120"></div>
+          <div class="sphere-ring ring-y-150"></div>
+          <div class="sphere-ring ring-x-90"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <section class="hero">
     <div>
-      <div class="sec-label">Lớp Toán Thầy Vinh · VinhMath</div>
+      <div class="brand-badge">LỚP TOÁN THẦY VINH &middot; VINHMATH</div>
       <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
       
@@ -628,12 +723,20 @@ footer .wrap {
     <div class="portrait">
       <div class="vertical-text">HIỂU BẢN CHẤT</div>
       <div class="portrait-grid">
-        <div class="ph-portrait">
-          <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.parentElement.innerHTML='📷 Thả ảnh thầy chân dung tên <b>anh-thay.jpg</b> vào thư mục trang-web'">
+        <div class="left-col">
+          <div class="ph-portrait">
+            <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.parentElement.innerHTML='📷 Thả ảnh thầy chân dung tên <b>anh-thay.jpg</b> vào thư mục trang-web'">
+          </div>
         </div>
-        <div class="ph-landscape">
-          <img src="anh-lam-viec.jpg" alt="Góc soạn bài giảng hình học" onerror="this.parentElement.innerHTML='📷 Thả ảnh góc làm việc tên <b>anh-lam-viec.jpg</b> vào thư mục trang-web'">
-          <div class="photo-caption">Chuẩn bị bài giảng hình học</div>
+        <div class="right-col">
+          <div class="ph-landscape">
+            <img src="anh-cu-nhan.jpg" alt="Thầy Thế Vinh tốt nghiệp cử nhân" onerror="this.parentElement.innerHTML='📷 Thả ảnh tốt nghiệp tên <b>anh-cu-nhan.jpg</b> vào thư mục trang-web'">
+            <div class="photo-caption">Tốt nghiệp Sư phạm Toán</div>
+          </div>
+          <div class="ph-landscape">
+            <img src="anh-lam-viec.jpg" alt="Góc soạn bài giảng hình học" onerror="this.parentElement.innerHTML='📷 Thả ảnh góc làm việc tên <b>anh-lam-viec.jpg</b> vào thư mục trang-web'">
+            <div class="photo-caption">Chuẩn bị bài giảng hình học</div>
+          </div>
         </div>
       </div>
       
