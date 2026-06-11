@@ -140,7 +140,8 @@ var timeLeftSeconds = 0;
   studentInfo = await yeuCauDangNhap();
   if (!studentInfo) return;
   
-  if (!studentInfo.class_id) {
+  var classIds = (studentInfo.class_students || []).map(function (c) { return c.class_id; });
+  if (classIds.length === 0) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('labelKhuVuc').textContent = 'Luyện đề & Thi thử';
@@ -148,18 +149,24 @@ var timeLeftSeconds = 0;
     return;
   }
   
-  await taiDanhSachDe();
+  await taiDanhSachDe(classIds);
 })();
 
-async function taiDanhSachDe() {
+async function taiDanhSachDe(classIds) {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
   
-  // Tải danh sách đề thi đã xuất bản của lớp học sinh (hoặc chung null)
-  var r = await sb.from('exams')
+  // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
+  var query = sb.from('exams')
     .select('id, title, duration_minutes, opens_at, closes_at, exam_questions(count)')
-    .eq('published', true)
-    .or('class_id.is.null, class_id.eq.' + studentInfo.class_id)
-    .order('created_at', { ascending: false });
+    .eq('published', true);
+    
+  if (classIds && classIds.length > 0) {
+    query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
+  } else {
+    query = query.is('class_id', null);
+  }
+  
+  var r = await query.order('created_at', { ascending: false });
     
   listExams = r.data || [];
   if (!listExams.length) {

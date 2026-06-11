@@ -44,12 +44,18 @@ function ketQua(ic, tieuDe, noiDung) {
   var token = new URLSearchParams(window.location.search).get('token');
   if (!token) { ketQua('❓', 'Thiếu mã', 'Đường link điểm danh không có mã. Em quét lại QR nhé.'); return; }
 
+  var classIds = (hoSo.class_students || []).map(function (c) { return c.class_id; });
+  if (classIds.length === 0) {
+    ketQua('🚫', 'Chưa xếp lớp', 'Tài khoản của em chưa được kích hoạt lớp học.');
+    return;
+  }
+
   var r;
   if (token.length <= 6) {
     // Học sinh nhập mã số bằng tay (vd: "4829")
     r = await sb.from('class_sessions')
       .select('id, title, held_on, qr_expires, attendance_open')
-      .eq('class_id', hoSo.class_id)
+      .in('class_id', classIds)
       .eq('checkin_code', token)
       .eq('attendance_open', true)
       .maybeSingle();

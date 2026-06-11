@@ -72,7 +72,7 @@ var dangLoc = 'submitted';
 
 async function taiDanhSach() {
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, lessons(title), profiles(full_name, username, classes(name))')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, lessons(title), profiles(full_name, username, class_students(classes(name)))')
     .order('submitted_at', { ascending: false });
   if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
   tatCa = r.data || [];
@@ -96,7 +96,8 @@ function veDanhSach() {
   }
   $('dsBaiNop').innerHTML = ds.map(function (s) {
     var hs = s.profiles || {};
-    var lop = hs.classes ? hs.classes.name : '—';
+    var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+    var lop = classNames || '—';
     var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
     var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">📄 ' + f.name + '</a>'; }).join(' &nbsp; ');
     var linksCham = (s.graded_files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">✏️ ' + f.name + '</a>'; }).join(' &nbsp; ');

@@ -317,21 +317,33 @@ var tatCaTaiLieu = [];
 var anhDaCo = [];
 
 (async function () {
-  if (!daKetNoi()) return;
+  console.log("1. Khởi tạo trang: Bắt đầu");
+  if (!daKetNoi()) {
+    console.log("1. Lỗi: Chưa kết nối Supabase");
+    return;
+  }
+  console.log("2. Đang kiểm tra đăng nhập...");
   var hoSo = await yeuCauDangNhap();
+  console.log("3. Đã đăng nhập, hồ sơ:", hoSo);
   if (!hoSo) return;
   if (!['admin', 'teacher'].includes(hoSo.role)) {
+    console.log("4. Vai trò không hợp lệ, chuyển hướng...");
     window.location.href = 'lop-hoc.html';
     return;
   }
   
+  console.log("5. Đang tải sidebar...");
   await loadingSidebar();
+  console.log("6. Tải sidebar xong, đang tải danh mục...");
   await taiDuLieuDanhMuc();
+  console.log("7. Khởi tạo trang: Hoàn tất!");
 })();
 
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
+  console.log("loadingSidebar: Đang truy vấn bảng classes...");
   var r = await sb.from('classes').select('id, name, grade, mode').order('grade').order('name');
+  console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
   
   // Group theo grade
@@ -457,12 +469,17 @@ async function taiLessonsLop() {
 /* ----- Tab Học sinh ----- */
 async function taiStudentsLop() {
   $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
-  var r = await sb.from('profiles')
-    .select('id, full_name, username, phone, email, school')
-    .eq('class_id', classDangChon.id)
-    .order('full_name');
   
-  var students = r.data || [];
+  var r = await sb.from('class_students')
+    .select('student_id, profiles(id, full_name, username, phone, email, school)')
+    .eq('class_id', classDangChon.id);
+  
+  var items = r.data || [];
+  var students = items.map(function (x) { return x.profiles; }).filter(Boolean);
+  
+  // Sắp xếp theo tên học sinh tiếng Việt
+  students.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
+  
   if (!students.length) {
     $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
     return;
@@ -484,7 +501,10 @@ async function taiStudentsLop() {
 
 async function xoaHocSinhKhoiLop(studentId, name) {
   if (!confirm('Thầy có chắc muốn xóa học sinh "' + name + '" khỏi lớp này?')) return;
-  var r = await sb.from('profiles').update({ class_id: null }).eq('id', studentId);
+  var r = await sb.from('class_students')
+    .delete()
+    .eq('class_id', classDangChon.id)
+    .eq('student_id', studentId);
   if (r.error) {
     alert('Lỗi khi xóa học sinh: ' + r.error.message);
   } else {
@@ -514,24 +534,34 @@ async function taiDanhSachChoXepLop() {
   var searchQuery = $('searchXepLop').value.trim();
   var classFilter = $('filterXepLopClass').value;
   
-  var query = sb.from('profiles')
-    .select('id, full_name, username, class_id, classes(name)')
+  // 1. Tải toàn bộ danh sách học sinh cùng với danh sách lớp họ đang học
+  var r = await sb.from('profiles')
+    .select('id, full_name, username, class_students(class_id, classes(name))')
     .eq('role', 'student')
     .order('full_name');
     
-  if (classFilter === 'none') {
-    query = query.is('class_id', null);
-  } else {
-    query = query.or('class_id.neq.' + classDangChon.id + ',class_id.is.null');
-  }
-  
-  var r = await query;
   if (r.error) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--err); padding:16px;">Lỗi: ' + r.error.message + '</td></tr>';
     return;
   }
   
+  // 2. Lấy danh sách student_id đã thuộc lớp hiện tại
+  var rMembers = await sb.from('class_students').select('student_id').eq('class_id', classDangChon.id);
+  var memberIds = (rMembers.data || []).map(function (x) { return x.student_id; });
+  
   var students = r.data || [];
+  
+  // Lọc bỏ những học sinh đã thuộc lớp này rồi
+  students = students.filter(function (s) {
+    return !memberIds.includes(s.id);
+  });
+  
+  // Lọc theo bộ lọc lớp (none = chưa xếp lớp nào)
+  if (classFilter === 'none') {
+    students = students.filter(function (s) {
+      return !s.class_students || s.class_students.length === 0;
+    });
+  }
   
   if (searchQuery) {
     var q = searchQuery.toLowerCase();
@@ -547,7 +577,11 @@ async function taiDanhSachChoXepLop() {
   }
   
   tbody.innerHTML = students.map(function (s) {
-    var currentClassName = s.classes ? s.classes.name : '<span style="color:var(--ink-3)">Chưa xếp lớp</span>';
+    var classNames = (s.class_students || []).map(function (c) {
+      return c.classes ? c.classes.name : '';
+    }).filter(Boolean).join(', ');
+    
+    var currentClassName = classNames ? classNames : '<span style="color:var(--ink-3)">Chưa xếp lớp</span>';
     var actionBtn = '<button class="btn btn-primary btn-sm" onclick="themHocSinhVaoLop(\'' + s.id + '\')" style="padding:4px 10px;">Thêm</button>';
     return '<tr>' +
            '  <td style="padding:8px 12px;"><b>' + s.full_name + '</b></td>' +
@@ -560,7 +594,7 @@ async function taiDanhSachChoXepLop() {
 
 async function themHocSinhVaoLop(studentId) {
   if (!classDangChon) return;
-  var r = await sb.from('profiles').update({ class_id: classDangChon.id }).eq('id', studentId);
+  var r = await sb.from('class_students').insert({ class_id: classDangChon.id, student_id: studentId });
   if (r.error) {
     alert('Lỗi xếp lớp: ' + r.error.message);
   } else {

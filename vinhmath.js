@@ -65,8 +65,23 @@ async function layHoSo() {
   var s = await sb.auth.getSession();
   if (!s.data.session) return null;
   var r = await sb.from('profiles')
-    .select('id, role, username, full_name, class_id, classes(name, mode)')
+    .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode))')
     .eq('id', s.data.session.user.id).single();
+  
+  if (r.error) {
+    console.error("Lỗi layHoSo:", r.error);
+  }
+  
+  if (r.data) {
+    r.data.class_students = r.data.class_students || [];
+    if (r.data.class_students.length > 0) {
+      r.data.class_id = r.data.class_students[0].class_id;
+      r.data.classes = r.data.class_students[0].classes;
+    } else {
+      r.data.class_id = null;
+      r.data.classes = null;
+    }
+  }
   return r.data || null;
 }
 

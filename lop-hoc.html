@@ -178,13 +178,20 @@ var BAI_HOC_MAU = [
     return;
   }
 
-  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
+  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
 
   // Hiển thị link Google Meet nếu lớp học hình thức Online
-  if (hoSo.classes && hoSo.classes.mode === 'online') {
+  var coLopOnline = hoSo.class_students.some(function (c) { return c.classes && c.classes.mode === 'online'; });
+  if (coLopOnline) {
     var meetLink = '';
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
-    if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+    var onlineClassIds = hoSo.class_students
+      .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
+      .map(function (c) { return c.class_id; });
+      
+    var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
+    var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+    if (firstLink) meetLink = firstLink.meet_link;
     
     if (!meetLink) {
       var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
