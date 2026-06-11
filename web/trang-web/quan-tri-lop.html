@@ -317,21 +317,33 @@ var tatCaTaiLieu = [];
 var anhDaCo = [];
 
 (async function () {
-  if (!daKetNoi()) return;
+  console.log("1. Khởi tạo trang: Bắt đầu");
+  if (!daKetNoi()) {
+    console.log("1. Lỗi: Chưa kết nối Supabase");
+    return;
+  }
+  console.log("2. Đang kiểm tra đăng nhập...");
   var hoSo = await yeuCauDangNhap();
+  console.log("3. Đã đăng nhập, hồ sơ:", hoSo);
   if (!hoSo) return;
   if (!['admin', 'teacher'].includes(hoSo.role)) {
+    console.log("4. Vai trò không hợp lệ, chuyển hướng...");
     window.location.href = 'lop-hoc.html';
     return;
   }
   
+  console.log("5. Đang tải sidebar...");
   await loadingSidebar();
+  console.log("6. Tải sidebar xong, đang tải danh mục...");
   await taiDuLieuDanhMuc();
+  console.log("7. Khởi tạo trang: Hoàn tất!");
 })();
 
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
+  console.log("loadingSidebar: Đang truy vấn bảng classes...");
   var r = await sb.from('classes').select('id, name, grade, mode').order('grade').order('name');
+  console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
   
   // Group theo grade
