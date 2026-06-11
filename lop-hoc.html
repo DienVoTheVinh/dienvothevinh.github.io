@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Học tập — VinhMath</title>
+<title>Lớp học của em — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
@@ -15,7 +15,8 @@
 .greet p{margin-top:6px}
 .stats{padding:24px 0 8px}
 .lessons{padding:32px 0}
-.lesson{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.lesson{display:flex;flex-direction:column;overflow:hidden;padding:0;transition:all .3s ease;border:1px solid var(--line)}
+.lesson:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:var(--shadow); }
 .lesson .thumb{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);position:relative}
 .lesson .thumb img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .lesson .thumb .play{width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:1.1rem;padding-left:4px;position:relative;z-index:1}
@@ -32,10 +33,7 @@
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html" class="active">Học tập</a>
-      <a href="lop-online.html">Lớp Online</a>
-      <a href="tai-lieu.html">Tài liệu</a>
-      <a href="#">Kết quả</a>
+      <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -93,7 +91,7 @@ function theBaiHoc(bh) {
     '<div class="body">' +
       '<span class="badge badge-accent">' + (bh.topics ? bh.topics.name : 'Bài học') + '</span>' +
       '<h3 style="margin-top:10px">' + bh.title + '</h3>' +
-      '<p>' + (bh.note || 'Video bài giảng + bài tập kèm theo') + '</p>' +
+      '<p>' + (bh.note || 'Video bài giảng + tài liệu kèm theo') + '</p>' +
       '<div class="foot"><span style="font-size:.82rem;color:var(--ink-3)">' +
         (bh.so_cau ? bh.so_cau + ' câu hỏi' : '') + '</span>' +
         '<a class="btn btn-primary btn-sm" href="' + href + '">Vào học</a>' +
@@ -111,7 +109,7 @@ var BAI_HOC_MAU = [
   if (!daKetNoi()) {
     // ----- CHẾ ĐỘ XEM THỬ -----
     $('canhBaoDemo').style.display = 'block';
-    $('loiChao').textContent = chao() + ', Văn A 👋';
+    $('loiChao').textContent = chao() + ', Học sinh 👋';
     $('tenLop').textContent = 'Lớp 12A1 · VinhMath';
     $('tkDiem').textContent = '8.4';
     $('tkChuyenCan').textContent = '92%';
@@ -125,8 +123,6 @@ var BAI_HOC_MAU = [
   if (!hoSo) return;
   $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
   $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
-
-  // (Menu giờ do menu.js vẽ thống nhất cho mọi trang)
 
   // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)
   var r = await sb.from('lessons')

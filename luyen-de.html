@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luyện đề & Thi thử — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 44px 0 20px; }
+.exam-card { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; margin-bottom: 14px; transition: all .2s; }
+.exam-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.exam-info h3 { font-size: 1.1rem; }
+.exam-meta { font-size: .84rem; color: var(--ink-2); margin-top: 4px; display: flex; gap: 14px; }
+.empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
+
+/* Workspace thi thử */
+.exam-workspace { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
+.exam-header { height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; padding: 0 24px; flex-shrink: 0; }
+.exam-title { font-weight: 700; font-size: 1.1rem; max-width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exam-timer { font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: monospace; }
+.exam-body { flex: 1; display: grid; grid-template-columns: 1fr 240px; min-height: 0; }
+@media(max-width: 800px) { .exam-body { grid-template-columns: 1fr; } }
+.exam-questions { padding: 32px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 32px; }
+.exam-sidebar { background: var(--surface); border-left: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+@media(max-width: 800px) { .exam-sidebar { display: none; } }
+.grid-nav-q { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.nav-q-btn { aspect-ratio: 1; border: 1px solid var(--line-2); background: var(--bg); color: var(--ink-2); font-weight: 600; font-size: .84rem; display: grid; place-items: center; border-radius: 6px; cursor: pointer; text-decoration: none; }
+.nav-q-btn:hover { border-color: var(--accent); color: var(--accent); }
+.nav-q-btn.answered { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.nav-q-btn.correct { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.nav-q-btn.incorrect { background: var(--err-soft); border-color: var(--err); color: var(--err); }
+
+/* Câu hỏi */
+.q-box { padding-bottom: 24px; border-bottom: 1px dashed var(--line); }
+.q-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 16px; line-height: 1.5; }
+.choices-container { display: flex; flex-direction: column; gap: 10px; }
+.choice-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all .15s; font-size: .95rem; }
+.choice-row:hover { background: var(--surface-2); }
+.choice-row.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.choice-row.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.choice-row.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); font-weight: 600; }
+.choice-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; font-weight: 700; font-size: .82rem; }
+.sol-box { margin-top: 16px; padding: 18px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: var(--r-sm); font-size: .92rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- Giao diện danh sách đề thi -->
+<div id="viewMain">
+  <div class="topbar">
+    <div class="nav">
+      <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+      <nav class="navlinks">
+        <!-- Sẽ được điền tự động bằng menu.js -->
+      </nav>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+        <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="head">
+      <div class="sec-label">Khu vực kiểm tra</div>
+      <h1>Luyện đề & Thi thử</h1>
+      <p style="margin-top:4px">Nơi tổng hợp đề thi thử chất lượng cao, chấm điểm trắc nghiệm trực tuyến.</p>
+    </div>
+
+    <div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div>
+  </div>
+</div>
+
+<!-- Giao diện làm bài thi trực tuyến -->
+<div class="exam-workspace" id="viewWorkspace">
+  <header class="exam-header">
+    <div class="exam-title" id="wkTitle">Đề thi</div>
+    <div class="exam-timer" id="wkTimer">00:00:00</div>
+    <div>
+      <button class="btn btn-primary btn-sm" id="wkSubmitBtn" onclick="nopBaiExam()">Nộp bài thi</button>
+      <button class="btn btn-ghost btn-sm" id="wkExitBtn" onclick="exitWorkspace()" style="display:none">Thoát</button>
+    </div>
+  </header>
+  
+  <div class="exam-body">
+    <!-- Vùng câu hỏi -->
+    <main class="exam-questions" id="wkQuestions"></main>
+    
+    <!-- Sidebar điều hướng -->
+    <aside class="exam-sidebar">
+      <h4 style="font-size:.85rem; text-transform:uppercase; color:var(--ink-3); letter-spacing:.06em">Bảng câu hỏi</h4>
+      <div class="grid-nav-q" id="wkNavQuestions"></div>
+      <div style="margin-top:auto; font-size:.8rem; color:var(--ink-2)">
+        * Lựa chọn của em được tự động lưu lên máy chủ sau mỗi lượt chọn.
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var listExams = [];
+var studentInfo = null;
+var currentExam = null;
+var examQuestions = [];
+var selectedAnswers = {};
+var currentAttempt = null;
+var timerInterval = null;
+var timeLeftSeconds = 0;
+
+(async function () {
+  if (!daKetNoi()) {
+    $('dsDeThi').innerHTML = '<div class="empty card">Chưa kết nối Supabase — chế độ xem thử.</div>';
+    return;
+  }
+  
+  studentInfo = await yeuCauDangNhap();
+  if (!studentInfo) return;
+  
+  await taiDanhSachDe();
+})();
+
+async function taiDanhSachDe() {
+  $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
+  
+  // Tải danh sách đề thi đã xuất bản của lớp học sinh (hoặc chung null)
+  var r = await sb.from('exams')
+    .select('id, title, duration_minutes, opens_at, closes_at, exam_questions(count)')
+    .eq('published', true)
+    .or('class_id.is.null, class_id.eq.' + studentInfo.class_id)
+    .order('created_at', { ascending: false });
+    
+  listExams = r.data || [];
+  if (!listExams.length) {
+    $('dsDeThi').innerHTML = '<div class="empty card">Lớp em chưa có đề thi/đề kiểm tra nào. Quay lại sau nhé!</div>';
+    return;
+  }
+  
+  // Lấy lịch sử làm bài thi của học sinh
+  var rAttempts = await sb.from('attempts')
+    .select('id, exam_id, score, submitted_at')
+    .eq('student_id', studentInfo.id)
+    .not('exam_id', 'is', null);
+  
+  var attemptsMap = {};
+  (rAttempts.data || []).forEach(function (att) {
+    // Lưu lượt làm bài mới nhất (hoặc đã nộp)
+    if (!attemptsMap[att.exam_id] || att.submitted_at) {
+      attemptsMap[att.exam_id] = att;
+    }
+  });
+
+  $('dsDeThi').innerHTML = listExams.map(function (e) {
+    var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
+    var attempt = attemptsMap[e.id];
+    var badgeHTML = '<span class="badge badge-mute">Chưa làm</span>';
+    var actionBtnText = 'Làm bài';
+    
+    if (attempt) {
+      if (attempt.submitted_at) {
+        badgeHTML = '<span class="badge badge-ok">Hoàn thành · ' + attempt.score.toFixed(1) + 'đ</span>';
+        actionBtnText = 'Xem kết quả';
+      } else {
+        badgeHTML = '<span class="badge badge-warn">Đang làm dở</span>';
+        actionBtnText = 'Làm tiếp';
+      }
+    }
+    
+    return '<div class="card exam-card">' +
+      '<div class="exam-info">' +
+        '<div style="display:flex; gap:10px; align-items:center">' +
+          '<h3>' + e.title + '</h3>' +
+          badgeHTML +
+        '</div>' +
+        '<div class="exam-meta">' +
+          '<span>⏱️ ' + e.duration_minutes + ' phút</span>' +
+          '<span>📋 ' + countQ + ' câu hỏi</span>' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" onclick="startExam(\'' + e.id + '\')">' + actionBtnText + '</button>' +
+      '</div>';
+  }).join('');
+}
+
+/* ----- Phân hệ Làm bài thi ----- */
+async function startExam(examId) {
+  var ex = listExams.find(function (e) { return e.id === examId; });
+  if (!ex) return;
+  currentExam = ex;
+  selectedAnswers = {};
+  currentAttempt = null;
+  
+  // Tải câu hỏi đề thi
+  var rQ = await sb.from('exam_questions')
+    .select('sort, questions(id, content_latex, choices, solution_latex)')
+    .eq('exam_id', examId)
+    .order('sort');
+    
+  examQuestions = (rQ.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+  if (!examQuestions.length) {
+    alert('Đề thi này chưa có câu hỏi nào. Liên hệ thầy Vinh nhé.');
+    return;
+  }
+  
+  // 1. Kiểm tra xem học sinh có lượt làm dở hay không
+  var rAtt = await sb.from('attempts')
+    .select('id, score, started_at, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
+    .eq('exam_id', examId)
+    .eq('student_id', studentInfo.id)
+    .maybeSingle();
+    
+  var att = rAtt.data;
+  
+  if (att && att.submitted_at) {
+    // Đã nộp bài -> Mở chế độ xem kết quả luôn
+    currentAttempt = att;
+    att.attempt_answers.forEach(function (ans) {
+      selectedAnswers[ans.question_id] = ans.chosen_key;
+    });
+    showExamResults();
+    return;
+  }
+  
+  // 2. Chưa làm hoặc làm dở -> Bắt đầu làm bài
+  $('wkExitBtn').style.display = 'none';
+  $('wkSubmitBtn').style.display = 'inline-flex';
+  
+  if (att) {
+    // Tiếp tục làm bài dở
+    currentAttempt = att;
+    att.attempt_answers.forEach(function (ans) {
+      selectedAnswers[ans.question_id] = ans.chosen_key;
+    });
+    
+    // Tính thời gian còn lại
+    var elapsed = Math.floor((Date.now() - new Date(att.started_at).getTime()) / 1000);
+    var totalSeconds = ex.duration_minutes * 60;
+    timeLeftSeconds = Math.max(0, totalSeconds - elapsed);
+  } else {
+    // Lượt làm mới hoàn toàn
+    var rNewAtt = await sb.from('attempts').insert({
+      student_id: studentInfo.id,
+      exam_id: examId,
+      started_at: new Date().toISOString()
+    }).select('id, started_at').single();
+    
+    if (rNewAtt.error) {
+      alert('Không khởi tạo được lượt làm bài: ' + rNewAtt.error.message);
+      return;
+    }
+    currentAttempt = rNewAtt.data;
+    timeLeftSeconds = ex.duration_minutes * 60;
+  }
+  
+  // Mở màn hình thi
+  $('viewMain').style.display = 'none';
+  $('viewWorkspace').style.display = 'flex';
+  $('wkTitle').textContent = ex.title;
+  
+  renderExamQuestions(false);
+  renderExamNav(false);
+  
+  // Khởi chạy đồng hồ
+  runTimer();
+}
+
+function runTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  
+  function updateDisplay() {
+    if (timeLeftSeconds <= 0) {
+      clearInterval(timerInterval);
+      $('wkTimer').textContent = 'HẾT GIỜ';
+      nopBaiExam(true); // Tự động nộp bài khi hết giờ
+      return;
+    }
+    
+    var h = Math.floor(timeLeftSeconds / 3600);
+    var m = Math.floor((timeLeftSeconds % 3600) / 60);
+    var s = timeLeftSeconds % 60;
+    
+    $('wkTimer').textContent = 
+      (h ? h.toString().padStart(2, '0') + ':' : '') + 
+      m.toString().padStart(2, '0') + ':' + 
+      s.toString().padStart(2, '0');
+      
+    timeLeftSeconds--;
+  }
+  
+  updateDisplay();
+  timerInterval = setInterval(updateDisplay, 1000);
+}
+
+function renderExamQuestions(isSubmitted) {
+  var container = $('wkQuestions');
+  container.innerHTML = examQuestions.map(function (q, idx) {
+    var qSelected = selectedAnswers[q.id];
+    var choicesHTML = q.choices.map(function (c) {
+      var stateClass = '';
+      if (isSubmitted) {
+        var ansObj = currentAttempt.attempt_answers.find(function (x) { return x.question_id === q.id; }) || {};
+        if (c.correct) {
+          stateClass = ' correct';
+        } else if (ansObj.chosen_key === c.key) {
+          stateClass = ' incorrect';
+        }
+      } else if (qSelected === c.key) {
+        stateClass = ' selected';
+      }
+      
+      return '<div class="choice-row choice-' + q.id + stateClass + '" data-key="' + c.key + '" onclick="chonDapAnExam(\'' + q.id + '\', \'' + c.key + '\')">' +
+        '<span class="choice-key">' + c.key + '</span>' +
+        '<span>' + c.latex + '</span>' +
+        '</div>';
+    }).join('');
+    
+    var solHTML = (isSubmitted && q.solution_latex)
+      ? '<div class="sol-box"><b>Lời giải chi tiết:</b><br><div>' + q.solution_latex + '</div></div>'
+      : '';
+      
+    return '<div class="q-box" id="qBox-' + q.id + '">' +
+      '<div class="q-title">Câu ' + (idx + 1) + ': ' + q.content_latex + '</div>' +
+      '<div class="choices-container">' + choicesHTML + '</div>' +
+      solHTML +
+      '</div>';
+  }).join('');
+  
+  renderMathInElement(container, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '\\[', right: '\\]', display: true}
+    ],
+    throwOnError: false
+  });
+}
+
+function renderExamNav(isSubmitted) {
+  var container = $('wkNavQuestions');
+  container.innerHTML = examQuestions.map(function (q, idx) {
+    var classStyle = '';
+    if (isSubmitted) {
+      var ansObj = currentAttempt.attempt_answers.find(function (x) { return x.question_id === q.id; }) || {};
+      classStyle = ansObj.is_correct ? ' correct' : ' incorrect';
+    } else if (selectedAnswers[q.id]) {
+      classStyle = ' answered';
+    }
+    
+    return '<a class="nav-q-btn' + classStyle + '" href="#qBox-' + q.id + '">' + (idx + 1) + '</a>';
+  }).join('');
+}
+
+async function chonDapAnExam(qId, key) {
+  if (timerInterval === null && currentAttempt.submitted_at) return; // Đã nộp bài, ko cho sửa
+  
+  selectedAnswers[qId] = key;
+  
+  // Highlight lựa chọn
+  document.querySelectorAll('.choice-' + qId).forEach(function (el) {
+    if (el.getAttribute('data-key') === key) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+  
+  // Cập nhật bảng sidebar
+  renderExamNav(false);
+  
+  // Gửi lựa chọn đáp án lên Supabase attempt_answers để tự động lưu (realtime auto-save)
+  try {
+    var isCorrect = false;
+    var q = examQuestions.find(function (x) { return x.id === qId; });
+    if (q && q.choices) {
+      var correctChoice = q.choices.find(function (c) { return c.correct; });
+      if (correctChoice && correctChoice.key === key) isCorrect = true;
+    }
+    
+    await sb.from('attempt_answers').upsert({
+      attempt_id: currentAttempt.id,
+      question_id: qId,
+      chosen_key: key,
+      is_correct: isCorrect
+    });
+  } catch (err) {
+    console.error('Lỗi tự động lưu đáp án:', err);
+  }
+}
+
+async function nopBaiExam(isAuto) {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  
+  var text = isAuto ? 'Hết giờ làm bài! Hệ thống đang tự động nộp bài của em.' : 'Em chắc chắn muốn nộp bài thi ngay bây giờ?';
+  if (!isAuto && !confirm(text)) {
+    runTimer(); // Tiếp tục chạy giờ nếu bấm hủy
+    return;
+  }
+  
+  var btn = $('wkSubmitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang nộp bài...';
+  
+  // 1. Tính toán điểm số
+  var correctCount = 0;
+  var totalCount = examQuestions.length;
+  
+  examQuestions.forEach(function (q) {
+    var chosen = selectedAnswers[q.id];
+    var isCorrect = false;
+    if (q.choices) {
+      var cCorrect = q.choices.find(function (c) { return c.correct; });
+      if (cCorrect && cCorrect.key === chosen) {
+        correctCount++;
+        isCorrect = true;
+      }
+    }
+  });
+  
+  var score = (correctCount / totalCount) * 10;
+  
+  // 2. Cập nhật attempts
+  var rAtt = await sb.from('attempts').update({
+    score: parseFloat(score.toFixed(2)),
+    correct_n: correctCount,
+    total_n: totalCount,
+    submitted_at: new Date().toISOString()
+  }).eq('id', currentAttempt.id).select('id, score, submitted_at').single();
+  
+  if (rAtt.error) {
+    alert('Lỗi nộp bài: ' + rAtt.error.message);
+    btn.disabled = false; btn.textContent = 'Nộp bài thi';
+    return;
+  }
+  
+  // 3. Nạp lại câu trả lời và chuyển sang view kết quả
+  var rAns = await sb.from('attempt_answers').select('question_id, chosen_key, is_correct').eq('attempt_id', currentAttempt.id);
+  
+  currentAttempt = rAtt.data;
+  currentAttempt.attempt_answers = rAns.data || [];
+  
+  showExamResults();
+}
+
+function showExamResults() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  
+  $('wkSubmitBtn').style.display = 'none';
+  $('wkExitBtn').style.display = 'inline-flex';
+  
+  // Hiển thị điểm số ở đầu câu hỏi
+  $('wkTimer').textContent = currentAttempt.score.toFixed(1) + 'đ';
+  
+  // Mở màn hình thi trong chế độ nộp xong
+  $('viewMain').style.display = 'none';
+  $('viewWorkspace').style.display = 'flex';
+  $('wkTitle').textContent = currentExam.title + ' (KẾT QUẢ)';
+  
+  renderExamQuestions(true);
+  renderExamNav(true);
+}
+
+function exitWorkspace() {
+  $('viewWorkspace').style.display = 'none';
+  $('viewMain').style.display = 'block';
+  taiDanhSachDe();
+}
+</script>
+</body>
+</html>

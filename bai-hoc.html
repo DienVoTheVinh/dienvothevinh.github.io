@@ -8,6 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; }
@@ -84,6 +87,19 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   .pane-control { display:none; }
   .switcher .sw-text { display:none; }
 }
+
+/* Quiz CSS */
+.quiz-container { padding: 24px; overflow-y: auto; flex: 1; background: var(--surface); display: flex; flex-direction: column; gap: 24px; }
+.quiz-q { padding-bottom: 20px; border-bottom: 1px dashed var(--line); }
+.quiz-text { font-weight: 700; margin-bottom: 14px; font-size: 1.02rem; line-height: 1.5; }
+.quiz-choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.quiz-choice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all .15s; font-size: .92rem; }
+.quiz-choice:hover { background: var(--surface-2); }
+.quiz-choice.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.quiz-choice.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.quiz-choice.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); font-weight: 600; }
+.quiz-choice-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; font-weight: 700; font-size: .8rem; }
+.quiz-sol { margin-top: 14px; padding: 16px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .9rem; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -92,7 +108,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   <header class="topbar-lesson">
     <div class="left">
       <button class="btn btn-ghost btn-sm" onclick="batTatMucLuc()" title="Mục lục">☰</button>
-      <a href="hoc-tap.html" class="back-btn"><span>←</span><span class="sw-text">Học tập</span></a>
+      <a href="lop-hoc.html" class="back-btn"><span>←</span><span class="sw-text">Lớp học</span></a>
       <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
     </div>
     <div class="switcher" id="boChuyen" style="display:none">
@@ -166,11 +182,14 @@ var lessonId = null;
 var details = null;
 var viewMode = 'split';
 var noiDungDangChon = null;   // 'tailieu' | 'bang' | 'test'
+var interactiveQuestions = [];
+var selectedAnswers = {};
+var testAttempt = null;
 
 (async function () {
   var params = new URLSearchParams(window.location.search);
   lessonId = params.get('id');
-  if (!lessonId) { window.location.href = 'hoc-tap.html'; return; }
+  if (!lessonId) { window.location.href = 'lop-hoc.html'; return; }
   if (!daKetNoi()) { alert('Chưa kết nối Supabase.'); return; }
 
   var hoSo = await yeuCauDangNhap();
@@ -286,10 +305,37 @@ async function taiChiTietBaiHoc() {
 
   if (r.error || !r.data) {
     alert('Bài giảng này đang bị khoá hoặc không tồn tại.');
-    window.location.href = 'hoc-tap.html';
+    window.location.href = 'lop-hoc.html';
     return;
   }
   details = r.data;
+
+  // Tải câu hỏi trắc nghiệm liên kết với bài học này (nếu có)
+  try {
+    var rq = await sb.from('lesson_questions')
+      .select('question_id, sort, questions(id, content_latex, choices, solution_latex)')
+      .eq('lesson_id', lessonId)
+      .order('sort');
+    interactiveQuestions = (rq.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+
+    // Tải lượt làm bài trước đó (nếu có)
+    var ra = await sb.from('attempts')
+      .select('id, score, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .maybeSingle();
+    if (ra.data) {
+      testAttempt = ra.data;
+      if (ra.data.attempt_answers) {
+        ra.data.attempt_answers.forEach(function (ans) {
+          selectedAnswers[ans.question_id] = ans.chosen_key;
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Lỗi tải câu hỏi/lượt làm bài:', e);
+  }
+
   renderBaiHoc();
 }
 
@@ -331,7 +377,7 @@ function renderBaiHoc() {
   // ---- Khung phải: 3 loại nội dung ----
   var coTaiLieu = !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
-  var coTest = !!(details.bai_test && details.bai_test.file_path);
+  var coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
   $('boChuyen').style.display = 'flex';
@@ -369,12 +415,175 @@ function chonNoiDung(loai) {
       }).join('') + '</div>';
   } else {
     $('swTest').classList.add('active');
-    var ut = buildPdfUrl(details.bai_test.file_path);
-    than.innerHTML = thanhCongCu('📝 ' + details.bai_test.title, ut) +
-      '<iframe class="pdf-frame" src="' + ut + '#toolbar=1&navpanes=0"></iframe>';
+    if (interactiveQuestions.length > 0) {
+      renderInteractiveQuiz();
+    } else {
+      var ut = buildPdfUrl(details.bai_test.file_path);
+      than.innerHTML = thanhCongCu('📝 ' + details.bai_test.title, ut) +
+        '<iframe class="pdf-frame" src="' + ut + '#toolbar=1&navpanes=0"></iframe>';
+    }
   }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
+}
+
+function renderLatex(element) {
+  if (window.renderMathInElement) {
+    window.renderMathInElement(element, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+function chonDapAn(qId, key) {
+  if (testAttempt) return; // đã nộp bài, không cho sửa
+  selectedAnswers[qId] = key;
+  var choices = document.querySelectorAll('.choice-' + qId);
+  choices.forEach(function (el) {
+    if (el.getAttribute('data-key') === key) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+}
+
+async function nopBaiTracNghiem() {
+  if (testAttempt) { alert('Em đã nộp bài trắc nghiệm này rồi.'); return; }
+  
+  var qIds = interactiveQuestions.map(function (q) { return q.id; });
+  var countAnswered = 0;
+  qIds.forEach(function (qId) { if (selectedAnswers[qId]) countAnswered++; });
+  if (countAnswered === 0) { alert('Em vui lòng chọn ít nhất một đáp án trước khi nộp bài.'); return; }
+  
+  if (!confirm('Em chắc chắn muốn nộp bài kiểm tra trắc nghiệm này?')) return;
+  
+  var correctCount = 0;
+  var totalCount = interactiveQuestions.length;
+  var answerPayloads = [];
+  
+  interactiveQuestions.forEach(function (q) {
+    var chosen = selectedAnswers[q.id];
+    var isCorrect = false;
+    if (q.choices) {
+      q.choices.forEach(function (c) {
+        if (c.key === chosen && c.correct) {
+          isCorrect = true;
+          correctCount++;
+        }
+      });
+    }
+    answerPayloads.push({
+      question_id: q.id,
+      chosen_key: chosen || null,
+      is_correct: chosen ? isCorrect : false
+    });
+  });
+  
+  var score = (correctCount / totalCount) * 10;
+  
+  var rAttempt = await sb.from('attempts').insert({
+    student_id: nguoiDung.id,
+    lesson_id: lessonId,
+    score: parseFloat(score.toFixed(2)),
+    correct_n: correctCount,
+    total_n: totalCount,
+    submitted_at: new Date().toISOString()
+  }).select('id').single();
+  
+  if (rAttempt.error) {
+    alert('Lỗi nộp bài: ' + rAttempt.error.message);
+    return;
+  }
+  
+  var attemptId = rAttempt.data.id;
+  var answersToInsert = answerPayloads.map(function (ans) {
+    return {
+      attempt_id: attemptId,
+      question_id: ans.question_id,
+      chosen_key: ans.chosen_key,
+      is_correct: ans.is_correct
+    };
+  });
+  
+  var rAns = await sb.from('attempt_answers').insert(answersToInsert);
+  if (rAns.error) {
+    alert('Lỗi lưu kết quả chi tiết: ' + rAns.error.message);
+  }
+  
+  testAttempt = {
+    id: attemptId,
+    score: score,
+    submitted_at: new Date().toISOString(),
+    attempt_answers: answersToInsert
+  };
+  
+  renderInteractiveQuiz();
+}
+
+function renderInteractiveQuiz() {
+  var than = $('thanNoiDung');
+  var html = thanhCongCu('📝 Bài test trắc nghiệm cuối giờ', null) +
+    '<div class="quiz-container">';
+    
+  if (testAttempt) {
+    var dt = new Date(testAttempt.submitted_at).toLocaleString('vi-VN');
+    html += '<div class="card" style="margin-bottom: 20px; border-color: var(--ok); background: var(--ok-soft); color: var(--ok)">' +
+      '<b>✓ Đã hoàn thành bài làm!</b><br>' +
+      'Thời điểm nộp: ' + dt + ' · <b>Kết quả: ' + testAttempt.score.toFixed(1) + '/10 điểm (' +
+      testAttempt.attempt_answers.filter(function (x) { return x.is_correct; }).length + '/' + interactiveQuestions.length + ' câu đúng)</b>' +
+      '</div>';
+  }
+  
+  interactiveQuestions.forEach(function (q, idx) {
+    var selected = selectedAnswers[q.id];
+    var isSubmitted = !!testAttempt;
+    
+    html += '<div class="quiz-q">' +
+      '<div class="quiz-text">Câu ' + (idx + 1) + ': ' + q.content_latex + '</div>' +
+      '<div class="quiz-choices">';
+      
+    q.choices.forEach(function (c) {
+      var activeClass = '';
+      if (isSubmitted) {
+        var ansObj = testAttempt.attempt_answers.find(function (x) { return x.question_id === q.id; }) || {};
+        if (c.correct) {
+          activeClass = ' correct';
+        } else if (ansObj.chosen_key === c.key) {
+          activeClass = ' incorrect';
+        }
+      } else if (selected === c.key) {
+        activeClass = ' selected';
+      }
+      
+      html += '<div class="quiz-choice choice-' + q.id + activeClass + '" data-key="' + c.key + '" onclick="chonDapAn(\'' + q.id + '\', \'' + c.key + '\')">' +
+        '<span class="quiz-choice-key">' + c.key + '</span>' +
+        '<span>' + c.latex + '</span>' +
+        '</div>';
+    });
+    
+    html += '</div>';
+    
+    if (isSubmitted && q.solution_latex) {
+      html += '<div class="quiz-sol">' +
+        '<b>Lời giải chi tiết:</b><br>' +
+        '<div>' + q.solution_latex + '</div>' +
+        '</div>';
+    }
+    
+    html += '</div>';
+  });
+  
+  if (!testAttempt) {
+    html += '<button class="btn btn-primary" onclick="nopBaiTracNghiem()" style="margin-top: 10px; width: 100%; justify-content: center">Nộp bài kiểm tra</button>';
+  }
+  
+  html += '</div>';
+  than.innerHTML = html;
+  renderLatex(than);
 }
 
 function thanhCongCu(ten, urlTai) {

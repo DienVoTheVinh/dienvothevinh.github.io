@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soạn đề thi LaTeX — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media(max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+textarea.code { width: 100%; min-height: 360px; resize: vertical; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .85rem; line-height: 1.5; color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 14px; }
+textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.q-preview-card { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.q-preview-title { font-weight: 700; margin-bottom: 8px; font-size: .95rem; }
+.q-preview-choice { padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); margin-bottom: 6px; font-size: .88rem; }
+.q-preview-choice.correct { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 600; }
+.q-preview-sol { margin-top: 10px; padding: 10px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .85rem; }
+.empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="sec-label">Khu vực chuyên môn của thầy</div>
+      <h1>Quản lý đề thi & Luyện đề</h1>
+      <p style="margin-top:6px">Soạn đề thi bằng cách dán code LaTeX (ex_test), hệ thống tự bóc tách câu hỏi, đáp án, lời giải.</p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- Cột trái: Form tạo đề & Soạn LaTeX -->
+    <div class="card" style="display:flex; flex-direction:column; gap:16px">
+      <h3>🛠️ Tạo đề thi mới</h3>
+      <form onsubmit="parseAndSaveExam(event)">
+        <div class="field">
+          <label>Tiêu đề đề thi/đề luyện <b style="color:var(--accent)">*</b></label>
+          <input class="input" id="exTitle" required placeholder="Ví dụ: Đề thi thử lần 1 - Khối 12">
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Lớp áp dụng (Để trống = Mọi lớp)</label>
+            <select class="input" id="exLop">
+              <option value="">-- Mọi lớp --</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Thời gian làm bài (Phút) <b style="color:var(--accent)">*</b></label>
+            <input class="input" type="number" id="exDuration" value="90" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Mở lúc (Trống = mở ngay)</label>
+            <input class="input" type="datetime-local" id="exOpens">
+          </div>
+          <div class="field">
+            <label>Đóng lúc (Trống = không hạn chế)</label>
+            <input class="input" type="datetime-local" id="exCloses">
+          </div>
+        </div>
+        <div class="field" style="display:flex; gap:16px; margin: 10px 0">
+          <div class="switch-container">
+            <input type="checkbox" id="exShuffle" checked>
+            <label for="exShuffle" style="margin:0; font-weight:600">Xáo trộn câu hỏi</label>
+          </div>
+          <div class="switch-container">
+            <input type="checkbox" id="exPublished" checked>
+            <label for="exPublished" style="margin:0; font-weight:600">Xuất bản đề</label>
+          </div>
+        </div>
+        
+        <div class="field">
+          <label>Nội dung đề LaTeX (ex_test format) <b style="color:var(--accent)">*</b></label>
+          <textarea class="code" id="exLatex" required placeholder="\begin{ex}&#10;Đề bài toán...&#10;\choice&#10;{A. Lựa chọn 1}&#10;{\True B. Lựa chọn đúng}&#10;{C. Lựa chọn 3}&#10;{D. Lựa chọn 4}&#10;\loigiai{&#10;Lời giải chi tiết...&#10;}&#10;\end{ex}"></textarea>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:20px">
+          <button type="button" class="btn btn-secondary" onclick="demoParseLaTeX()" style="flex:1">🔍 Phân tích đề</button>
+          <button type="submit" class="btn btn-primary" id="btnSave" style="flex:1" disabled>💾 Lưu đề thi</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Cột phải: Xem thử & Danh sách đề hiện tại -->
+    <div style="display:flex; flex-direction:column; gap:24px">
+      <!-- Xem thử câu hỏi bóc tách -->
+      <div id="vungPreview" style="display:none">
+        <h3 style="margin-bottom:12px">👁️ Xem trước câu hỏi bóc tách (<span id="previewCount">0</span> câu)</h3>
+        <div id="dsPreview" style="max-height: 480px; overflow-y: auto; padding-right: 6px"></div>
+      </div>
+
+      <!-- Danh sách đề đã tạo -->
+      <div>
+        <h3 style="margin-bottom:12px">📋 Danh sách đề thi đã tạo</h3>
+        <div id="dsDeThi" style="display:flex; flex-direction:column; gap:12px">
+          <div class="empty card">Đang tải đề thi...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var listExams = [];
+var listClasses = [];
+var parsedQuestions = [];
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (!['admin', 'teacher'].includes(hoSo.role)) {
+    window.location.href = 'luyen-de.html';
+    return;
+  }
+  
+  // Tải lớp
+  var rCl = await sb.from('classes').select('id, name').order('name');
+  listClasses = rCl.data || [];
+  $('exLop').innerHTML = '<option value="">-- Mọi lớp --</option>' + 
+    listClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+    
+  await taiDanhSachDe();
+})();
+
+async function taiDanhSachDe() {
+  $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
+  var r = await sb.from('exams')
+    .select('id, title, duration_minutes, opens_at, closes_at, published, classes(name), exam_questions(count)')
+    .order('created_at', { ascending: false });
+    
+  listExams = r.data || [];
+  if (!listExams.length) {
+    $('dsDeThi').innerHTML = '<div class="empty card">Chưa có đề thi nào được tạo.</div>';
+    return;
+  }
+  
+  $('dsDeThi').innerHTML = listExams.map(function (e) {
+    var classLabel = e.classes ? e.classes.name : 'Mọi lớp';
+    var state = e.published ? '<span class="badge badge-ok">Đang mở</span>' : '<span class="badge badge-mute">Nháp</span>';
+    var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
+    
+    return '<div class="card" style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px">' +
+      '<div>' +
+        '<div style="display:flex; gap:8px; align-items:center">' +
+          '<b style="font-size:1.05rem">' + e.title + '</b>' +
+          state +
+        '</div>' +
+        '<div style="font-size:.82rem; color:var(--ink-2); margin-top:4px">' +
+          'Lớp: ' + classLabel + ' · Thời gian: ' + e.duration_minutes + ' phút · Số câu: ' + countQ +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function xoaDeThi(id) {
+  if (!confirm('Xóa đề thi này? Các câu hỏi đã tạo vẫn sẽ nằm trong ngân hàng câu hỏi nhưng đề thi sẽ biến mất.')) return;
+  var r = await sb.from('exams').delete().eq('id', id);
+  if (r.error) alert('Lỗi: ' + r.error.message);
+  else await taiDanhSachDe();
+}
+
+/* ----- Trình biên dịch LaTeX Parser ----- */
+function parseLatexQuestions(latexText) {
+  // Tìm tất cả khối \begin{ex} ... \end{ex}
+  var regexEx = /\\begin\{ex\}([\s\S]*?)\\end\{ex\}/g;
+  var match;
+  var questions = [];
+  
+  while ((match = regexEx.exec(latexText)) !== null) {
+    var content = match[1];
+    
+    // 1. Tách lời giải \loigiai{...}
+    var solution = "";
+    var solIndex = content.indexOf('\\loigiai');
+    if (solIndex !== -1) {
+      var braceStart = content.indexOf('{', solIndex);
+      if (braceStart !== -1) {
+        var braceCount = 1;
+        var i = braceStart + 1;
+        while (i < content.length && braceCount > 0) {
+          if (content[i] === '{') braceCount++;
+          else if (content[i] === '}') braceCount--;
+          i++;
+        }
+        solution = content.substring(braceStart + 1, i - 1);
+        content = content.substring(0, solIndex) + content.substring(i);
+      }
+    }
+    
+    // 2. Tách các phương án trắc nghiệm \choice{A}{B}{C}{D}
+    var choices = [];
+    var choiceIndex = content.indexOf('\\choice');
+    var questionBody = content;
+    
+    if (choiceIndex !== -1) {
+      questionBody = content.substring(0, choiceIndex).trim();
+      var remaining = content.substring(choiceIndex);
+      
+      var blocks = [];
+      var index = 0;
+      for (var b = 0; b < 4; b++) {
+        var start = remaining.indexOf('{', index);
+        if (start === -1) break;
+        var braceCount = 1;
+        var i = start + 1;
+        while (i < remaining.length && braceCount > 0) {
+          if (remaining[i] === '{') braceCount++;
+          else if (remaining[i] === '}') braceCount--;
+          i++;
+        }
+        blocks.push(remaining.substring(start + 1, i - 1));
+        index = i;
+      }
+      
+      var keys = ['A', 'B', 'C', 'D'];
+      blocks.forEach(function (block, idx) {
+        var isCorrect = false;
+        var cleaned = block.trim();
+        if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
+          isCorrect = true;
+          cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
+        }
+        cleaned = cleaned.replace(/^[A-D]\.\s*/i, ''); // xóa nhãn "A." nếu có
+        
+        choices.push({
+          key: keys[idx],
+          latex: cleaned,
+          correct: isCorrect
+        });
+      });
+    }
+    
+    questions.push({
+      content_latex: questionBody.trim(),
+      choices: choices,
+      solution_latex: solution.trim()
+    });
+  }
+  return questions;
+}
+
+function demoParseLaTeX() {
+  var raw = $('exLatex').value;
+  parsedQuestions = parseLatexQuestions(raw);
+  
+  if (!parsedQuestions.length) {
+    alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} trong đoạn code dán vào.');
+    $('vungPreview').style.display = 'none';
+    $('btnSave').disabled = true;
+    return;
+  }
+  
+  $('previewCount').textContent = parsedQuestions.length;
+  $('vungPreview').style.display = 'block';
+  $('btnSave').disabled = false;
+  
+  $('dsPreview').innerHTML = parsedQuestions.map(function (q, idx) {
+    var choicesHTML = q.choices.map(function (c) {
+      var correctClass = c.correct ? ' correct' : '';
+      return '<div class="q-preview-choice' + correctClass + '">' +
+        '<b>' + c.key + '.</b> ' + escapeHTML(c.latex) +
+        '</div>';
+    }).join('');
+    
+    var solHTML = q.solution_latex 
+      ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + escapeHTML(q.solution_latex) + '</div>'
+      : '';
+      
+    return '<div class="q-preview-card">' +
+      '<div class="q-preview-title">Câu ' + (idx + 1) + '</div>' +
+      '<div style="margin-bottom:10px">' + escapeHTML(q.content_latex) + '</div>' +
+      choicesHTML + solHTML +
+      '</div>';
+  }).join('');
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function parseAndSaveExam(e) {
+  e.preventDefault();
+  if (!parsedQuestions.length) {
+    alert('Vui lòng bấm "Phân tích đề" và kiểm tra trước khi lưu.');
+    return;
+  }
+  
+  var title = $('exTitle').value.trim();
+  var duration = parseInt($('exDuration').value) || 90;
+  var classId = $('exLop').value || null;
+  var opens = $('exOpens').value ? new Date($('exOpens').value).toISOString() : null;
+  var closes = $('exCloses').value ? new Date($('exCloses').value).toISOString() : null;
+  var shuffle = $('exShuffle').checked;
+  var published = $('exPublished').checked;
+  
+  var btn = $('btnSave');
+  btn.disabled = true; btn.textContent = '⏳ Đang lưu đề thi...';
+  
+  try {
+    // 1. Tạo Đề thi trong bảng exams
+    var rExam = await sb.from('exams').insert({
+      title: title,
+      class_id: classId,
+      duration_minutes: duration,
+      opens_at: opens,
+      closes_at: closes,
+      shuffle: shuffle,
+      published: published
+    }).select('id').single();
+    
+    if (rExam.error) throw new Error(rExam.error.message);
+    var examId = rExam.data.id;
+    
+    // 2. Lưu các câu hỏi vào bảng questions và liên kết
+    for (var i = 0; i < parsedQuestions.length; i++) {
+      var q = parsedQuestions[i];
+      
+      // Tạo mã câu hỏi ngẫu nhiên làm source_id
+      var sourceId = 'EX-' + Date.now().toString().slice(-6) + '-' + i;
+      
+      var rQ = await sb.from('questions').insert({
+        source_id: sourceId,
+        content_latex: q.content_latex,
+        choices: q.choices,
+        solution_latex: q.solution_latex || null,
+        difficulty: 'TH' // Mặc định trung bình
+      }).select('id').single();
+      
+      if (rQ.error) throw new Error('Lỗi lưu câu hỏi ' + (i+1) + ': ' + rQ.error.message);
+      
+      // Liên kết với exam_questions
+      var rLink = await sb.from('exam_questions').insert({
+        exam_id: examId,
+        question_id: rQ.data.id,
+        sort: i
+      });
+      if (rLink.error) throw new Error('Lỗi liên kết câu hỏi ' + (i+1) + ': ' + rLink.error.message);
+    }
+    
+    alert('✓ Lưu đề thi "' + title + '" thành công! Học sinh đã có thể luyện tập.');
+    
+    // Reset form
+    $('exTitle').value = '';
+    $('exLatex').value = '';
+    $('vungPreview').style.display = 'none';
+    parsedQuestions = [];
+    btn.disabled = true;
+    
+    await taiDanhSachDe();
+  } catch (err) {
+    alert('Lỗi: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = '💾 Lưu đề thi';
+}
+</script>
+</body>
+</html>

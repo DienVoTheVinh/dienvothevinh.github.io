@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch học của em — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 44px 0 20px; }
+.calendar-card { padding: 32px 24px; text-align: center; margin-bottom: 24px; }
+.calendar-card .ic { font-size: 3.5rem; margin-bottom: 12px; }
+.today-alert { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: var(--r-sm); margin-bottom: 24px; font-size: .95rem; }
+.today-alert b { color: var(--accent); }
+.tkb td, .tkb th { white-space: nowrap; }
+.sync-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+.section { margin-top: 28px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label" id="tenLop">Thời khóa biểu</div>
+    <h1>Lịch học của lớp em</h1>
+    <p style="margin-top:4px">Được cập nhật tự động từ trang quản trị của thầy Vinh.</p>
+  </div>
+
+  <!-- Buổi học hôm nay -->
+  <div class="today-alert" id="thongBaoHomNay">
+    Đang kiểm tra lịch học hôm nay...
+  </div>
+
+  <!-- Thẻ chính Calendar -->
+  <div class="card calendar-card">
+    <div class="ic">📅</div>
+    <h2>Đồng bộ hóa lịch học VinhMath</h2>
+    <p style="font-size:.9rem; color:var(--ink-2); margin-top:4px; max-width:520px; margin-left:auto; margin-right:auto">
+      Thầy hỗ trợ đồng bộ thời khóa biểu trực tiếp vào điện thoại của em. Hãy chọn hình thức đồng bộ bên dưới để không bỏ lỡ buổi học nào.
+    </p>
+    
+    <div class="sync-actions">
+      <button class="btn btn-primary btn-sm" onclick="syncAllGoogleCalendar()">📅 Thêm vào Google Calendar</button>
+      <button class="btn btn-secondary btn-sm" onclick="taiFileICS()">💾 Tải lịch học (.ics)</button>
+    </div>
+    <div style="font-size:.78rem; color:var(--ink-3); margin-top:10px">
+      * Đồng bộ Google Calendar sẽ mở từng buổi học lặp lại để lưu. Tải file `.ics` áp dụng cho cả Google Calendar, Apple Calendar và Outlook.
+    </div>
+  </div>
+
+  <!-- Thời khóa biểu chi tiết -->
+  <div class="section">
+    <div class="sec-label">Thời khóa biểu</div>
+    <h2 style="margin-bottom:16px">Giờ học định kỳ</h2>
+    <div class="card" style="padding:8px 4px; overflow-x:auto">
+      <table class="tkb">
+        <thead>
+          <tr>
+            <th>Thứ</th>
+            <th>Giờ học</th>
+            <th>Hình thức</th>
+            <th>Địa điểm / Meet</th>
+            <th>Ghi chú của thầy</th>
+          </tr>
+        </thead>
+        <tbody id="bangTKB">
+          <tr><td colspan="5" style="color:var(--ink-3)">Đang tải thời khóa biểu…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+var TKB_THU = { 1: 'MO', 2: 'TU', 3: 'WE', 4: 'TH', 5: 'FR', 6: 'SA', 7: 'SU' };
+var listSchedules = [];
+var classInfo = null;
+
+function gioDep(t) { return t ? t.slice(0, 5) : ''; }
+
+(async function () {
+  if (!daKetNoi()) {
+    $('bangTKB').innerHTML = '<tr><td colspan="5" style="color:var(--ink-3)">Chế độ xem thử — chưa kết nối Supabase.</td></tr>';
+    $('thongBaoHomNay').innerHTML = 'Chế độ xem thử: Hôm nay không có buổi học.';
+    return;
+  }
+
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  classInfo = hoSo.classes;
+  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Thời khóa biểu';
+
+  // 1. Tải thời khóa biểu lớp mình
+  var r = await sb.from('schedules')
+    .select('id, weekday, start_time, end_time, mode, location, note')
+    .eq('class_id', hoSo.class_id)
+    .order('weekday').order('start_time');
+  
+  listSchedules = r.data || [];
+  
+  // 2. Vẽ thời khóa biểu
+  if (!listSchedules.length) {
+    $('bangTKB').innerHTML = '<tr><td colspan="5" style="color:var(--ink-3)">Lớp của em hiện chưa được cập nhật thời khóa biểu định kỳ.</td></tr>';
+    $('thongBaoHomNay').innerHTML = 'Lớp chưa được thầy cấu hình thời khóa biểu.';
+    return;
+  }
+  
+  // 3. Tải link Google Meet phòng học riêng của lớp (nếu có)
+  var meetLink = '';
+  if (hoSo.class_id) {
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
+    if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+  }
+  if (!meetLink) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meetLink = lk.data ? lk.data.value : '';
+  }
+
+  $('bangTKB').innerHTML = listSchedules.map(function (s) {
+    var diaDiem = '';
+    if (s.mode === 'online') {
+      diaDiem = meetLink 
+        ? '<a href="' + meetLink + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline">🎥 Vào Google Meet</a>'
+        : '🎥 Link Google Meet';
+    } else {
+      diaDiem = '🏫 ' + (s.location || 'Tại lớp học');
+    }
+
+    return '<tr>' +
+      '<td><b>' + TEN_THU[s.weekday] + '</b></td>' +
+      '<td class="num">' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</td>' +
+      '<td>' + (s.mode === 'online' ? 'Online' : 'Offline') + '</td>' +
+      '<td>' + diaDiem + '</td>' +
+      '<td style="color:var(--ink-2)">' + (s.note || '—') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // 4. Kiểm tra buổi học hôm nay
+  var jsThu = new Date().getDay(); // 0=CN ... 6=T7
+  var homNay = jsThu === 0 ? 7 : jsThu;
+  var buoiHocHomNay = listSchedules.filter(function (s) { return s.weekday === homNay; });
+
+  if (buoiHocHomNay.length > 0) {
+    var str = buoiHocHomNay.map(function (s) {
+      var meetUrlHTML = (s.mode === 'online' && meetLink) 
+        ? ' (Link Meet: <a href="' + meetLink + '" target="_blank" style="color:#fff; text-decoration:underline; font-weight:700">Tại đây</a>)'
+        : '';
+      return '<b>' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</b> [' + (s.mode === 'online' ? 'Online' : 'Offline') + ']' + meetUrlHTML;
+    }).join(', ');
+    $('thongBaoHomNay').innerHTML = '🔔 <b>Hôm nay em có lịch học:</b> ' + str;
+    $('thongBaoHomNay').style.background = 'var(--accent)';
+    $('thongBaoHomNay').style.color = '#fff';
+    $('thongBaoHomNay').style.borderLeft = 'none';
+  } else {
+    $('thongBaoHomNay').innerHTML = '📅 Hôm nay em không có buổi học định kỳ nào theo lịch.';
+    $('thongBaoHomNay').style.background = 'var(--surface-2)';
+    $('thongBaoHomNay').style.color = 'var(--ink-2)';
+    $('thongBaoHomNay').style.borderLeft = '4px solid var(--line-2)';
+  }
+})();
+
+// Tìm ngày tiếp theo khớp với thứ được chọn
+function getNextDayOfWeek(dayOfWeek) {
+  var jsDay = dayOfWeek === 7 ? 0 : dayOfWeek; // đổi 7=CN thành 0
+  var today = new Date();
+  var resultDate = new Date();
+  resultDate.setDate(today.getDate() + (jsDay + 7 - today.getDay()) % 7);
+  return resultDate;
+}
+
+// 1. Đồng bộ Google Calendar bằng Template link
+function syncAllGoogleCalendar() {
+  if (!listSchedules.length) return;
+  var tenLop = classInfo ? classInfo.name : 'VinhMath';
+  
+  alert('Hệ thống sẽ mở ' + listSchedules.length + ' cửa sổ Google Calendar. Em vui lòng bấm "Lưu" ở từng tab để hoàn tất đồng bộ.');
+  
+  listSchedules.forEach(function (s) {
+    var nextDate = getNextDayOfWeek(s.weekday);
+    var datePart = nextDate.toISOString().slice(0, 10).replace(/-/g, '');
+    
+    var tStart = s.start_time.replace(/:/g, '').slice(0, 4) + '00';
+    var tEnd = s.end_time.replace(/:/g, '').slice(0, 4) + '00';
+    
+    var location = s.mode === 'online' ? 'Google Meet' : (s.location || 'Lớp Toán Thầy Vinh');
+    var details = encodeURIComponent(s.note || 'Lớp học Toán định kỳ Thầy Vinh');
+    var recurrence = 'RRULE:FREQ=WEEKLY;BYDAY=' + TKB_THU[s.weekday];
+    
+    var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+      '&text=' + encodeURIComponent('Lớp Toán VinhMath ' + tenLop) +
+      '&dates=' + datePart + 'T' + tStart + '/' + datePart + 'T' + tEnd +
+      '&location=' + encodeURIComponent(location) +
+      '&details=' + details +
+      '&recur=' + recurrence +
+      '&ctz=Asia/Ho_Chi_Minh';
+      
+    window.open(url, '_blank');
+  });
+}
+
+// 2. Tạo và tải xuống tệp iCalendar (.ics)
+function taiFileICS() {
+  if (!listSchedules.length) return;
+  var tenLop = classInfo ? classInfo.name : 'VinhMath';
+  
+  var icsLines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//VinhMath//Class Schedule//VI',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH'
+  ];
+  
+  listSchedules.forEach(function (s) {
+    var nextDate = getNextDayOfWeek(s.weekday);
+    var datePart = nextDate.toISOString().slice(0, 10).replace(/-/g, '');
+    
+    var tStart = s.start_time.replace(/:/g, '').slice(0, 4) + '00';
+    var tEnd = s.end_time.replace(/:/g, '').slice(0, 4) + '00';
+    
+    var location = s.mode === 'online' ? 'Google Meet' : (s.location || 'Lớp Toán Thầy Vinh');
+    var desc = s.note || 'Thời khóa biểu học Toán định kỳ tại VinhMath';
+    
+    icsLines.push('BEGIN:VEVENT');
+    icsLines.push('UID:' + s.id + '@vinhmath.app');
+    icsLines.push('DTSTAMP:' + datePart + 'T' + tStart);
+    icsLines.push('DTSTART;TZID=Asia/Ho_Chi_Minh:' + datePart + 'T' + tStart);
+    icsLines.push('DTEND;TZID=Asia/Ho_Chi_Minh:' + datePart + 'T' + tEnd);
+    icsLines.push('RRULE:FREQ=WEEKLY;BYDAY=' + TKB_THU[s.weekday]);
+    icsLines.push('SUMMARY:Lớp Toán VinhMath ' + tenLop);
+    icsLines.push('LOCATION:' + location);
+    icsLines.push('DESCRIPTION:' + desc);
+    icsLines.push('END:VEVENT');
+  });
+  
+  icsLines.push('END:VCALENDAR');
+  
+  var icsString = icsLines.join('\r\n');
+  var blob = new Blob([icsString], { type: 'text/calendar;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'lich-hoc-vinhmath-' + tenAnToan(tenLop) + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function tenAnToan(ten) {
+  return ten.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+</script>
+</body>
+</html>

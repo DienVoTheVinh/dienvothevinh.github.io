@@ -131,6 +131,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
+<script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
@@ -141,7 +142,7 @@ var hennDem = null;
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'hoc-tap.html'; return; }
+  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
 
   // Lớp
   var r = await sb.from('classes').select('id, name').order('name');

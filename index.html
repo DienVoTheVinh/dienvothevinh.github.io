@@ -957,6 +957,30 @@ footer .wrap {
       '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + (s.note || '') + '</td>' +
       '</tr>';
   }).join('');
+  // Kiểm tra đăng nhập để đổi nút Đăng nhập thành Vào học
+  try {
+    if (daKetNoi()) {
+      var s = await sb.auth.getSession();
+      if (s.data.session) {
+        var rUser = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+        if (rUser.data) {
+          var isStaff = ['admin', 'teacher', 'assistant'].indexOf(rUser.data.role) !== -1;
+          var btn = document.querySelector('.topbar .btn-primary');
+          if (btn) {
+            btn.textContent = isStaff ? 'Trang Quản trị' : 'Vào Lớp học';
+            btn.href = isStaff ? 'quan-tri-lop.html' : 'lop-hoc.html';
+          }
+          // Cập nhật navlinks
+          var nav = document.querySelector('.navlinks');
+          if (nav) {
+            nav.innerHTML = isStaff
+              ? '<a href="index.html" class="active">Trang chủ</a><a href="quan-tri-lop.html">Quản trị</a>'
+              : '<a href="index.html" class="active">Trang chủ</a><a href="lop-hoc.html">Lớp học</a><a href="luyen-de.html">Luyện đề</a>';
+          }
+        }
+      }
+    }
+  } catch (e) {}
 })();
 </script>
 </body>

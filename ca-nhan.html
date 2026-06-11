@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trang cá nhân — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 44px 0 20px; }
+.profile-grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin-top: 20px; align-items: start; }
+@media(max-width: 760px) { .profile-grid { grid-template-columns: 1fr; } }
+
+/* Cột trái: Ảnh đại diện & Thống kê chuyên cần */
+.avatar-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+.avatar-wrapper { position: relative; width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 3px solid var(--line); background: var(--surface-2); }
+.avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.avatar-card h3 { font-size: 1.25rem; font-weight: 700; margin-top: 8px; }
+.avatar-card p { font-size: .88rem; color: var(--ink-2); }
+
+/* Vòng tròn chuyên cần % */
+.attendance-ring-box { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 12px; }
+.progress-ring {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--percent, 0) * 1%), var(--surface-2) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: var(--shadow);
+  transition: background 0.3s ease;
+}
+.progress-ring::before {
+  content: "";
+  position: absolute;
+  width: 106px;
+  height: 106px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+.progress-ring span {
+  position: relative;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+.badge-motivate { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 99px; font-size: .8rem; font-weight: 700; margin-top: 8px; }
+
+/* Cột phải: Thông tin cá nhân & Điểm số */
+.main-profile { display: flex; flex-direction: column; gap: 24px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width: 500px) { .form-grid { grid-template-columns: 1fr; } }
+.score-badge { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Trang cá nhân của em</div>
+    <h1>Thiết lập tài khoản & Thành tích</h1>
+    <p style="margin-top:4px">Cập nhật hồ sơ, đặt mục tiêu học tập và theo dõi điểm số định kỳ.</p>
+  </div>
+
+  <div class="profile-grid">
+    <!-- Cột trái -->
+    <div style="display:flex; flex-direction:column; gap:20px">
+      <!-- Avatar Card -->
+      <div class="card avatar-card">
+        <div class="avatar-wrapper">
+          <img id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="Avatar">
+          <input type="file" class="avatar-input" id="avatarUpload" accept="image/*" onchange="uploadAvatar()">
+        </div>
+        <div>
+          <h3 id="profileName">Học sinh</h3>
+          <p id="profileClass">Lớp học: —</p>
+        </div>
+        <small style="color:var(--ink-3)">Nhấp vào ảnh để thay đổi avatar</small>
+      </div>
+
+      <!-- Chuyên cần Card -->
+      <div class="card avatar-card">
+        <h3>📊 Chuyên cần</h3>
+        <div class="attendance-ring-box">
+          <div class="progress-ring" id="attRing">
+            <span id="attPercent">0%</span>
+          </div>
+          <div class="badge-motivate" id="attBadge">Đang tính toán...</div>
+        </div>
+        <p style="font-size:.82rem; margin-top:8px; line-height:1.4">
+          Điểm danh quét QR khi vào lớp học để cải thiện tỷ lệ chuyên cần nhé!
+        </p>
+      </div>
+    </div>
+
+    <!-- Cột phải -->
+    <div class="main-profile">
+      <!-- Form chỉnh sửa thông tin -->
+      <div class="card">
+        <h3 style="margin-bottom:16px; border-bottom:1px solid var(--line); padding-bottom:8px">📝 Thông tin học sinh</h3>
+        <form onsubmit="updateProfileInfo(event)">
+          <div class="form-grid">
+            <div class="field">
+              <label>Họ và tên <b style="color:var(--accent)">*</b></label>
+              <input class="input" id="inpName" required>
+            </div>
+            <div class="field">
+              <label>Giới tính</label>
+              <select class="input" id="inpGender">
+                <option value="">Chưa chọn</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tên đăng nhập (Username - không thể sửa)</label>
+              <input class="input" id="inpUsername" disabled>
+            </div>
+            <div class="field">
+              <label>Email liên hệ</label>
+              <input class="input" type="email" id="inpEmail" placeholder="ten@email.com">
+            </div>
+            <div class="field">
+              <label>Trường đang theo học</label>
+              <input class="input" id="inpSchool" placeholder="Ví dụ: THPT Chuyên Lê Hồng Phong">
+            </div>
+            <div class="field">
+              <label>SĐT phụ huynh</label>
+              <input class="input" id="inpPhone" placeholder="Ví dụ: 0909123456">
+            </div>
+          </div>
+          
+          <div class="field">
+            <label>Mục tiêu học tập của em</label>
+            <textarea class="input" id="inpObjective" rows="2" placeholder="Ví dụ: Đạt điểm 9+ Toán thi tốt nghiệp THPT, đỗ trường chuyên..." style="resize:vertical"></textarea>
+          </div>
+          
+          <div style="display:flex; justify-content:flex-end; margin-top:10px">
+            <button type="submit" class="btn btn-primary btn-sm" id="btnUpdate">Lưu thay đổi</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Bảng điểm số học tập -->
+      <div class="card">
+        <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px">🏆 Bảng vàng điểm số</h3>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Nội dung làm bài</th>
+                <th>Phân loại</th>
+                <th>Ngày làm</th>
+                <th>Kết quả</th>
+              </tr>
+            </thead>
+            <tbody id="bangDiemHocSinh">
+              <tr><td colspan="4" style="text-align:center; color:var(--ink-3)">Đang tải điểm số...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var profileData = null;
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  profileData = hoSo;
+  
+  // 1. Đổ dữ liệu vào form
+  $('inpName').value = hoSo.full_name || '';
+  $('inpGender').value = hoSo.gender || '';
+  $('inpUsername').value = hoSo.username || '';
+  $('inpEmail').value = hoSo.email || '';
+  $('inpSchool').value = hoSo.school || '';
+  $('inpPhone').value = hoSo.phone || '';
+  $('inpObjective').value = hoSo.objective || '';
+  
+  $('profileName').textContent = hoSo.full_name;
+  $('profileClass').textContent = hoSo.classes ? 'Lớp: ' + hoSo.classes.name : 'Chưa xếp lớp';
+  
+  if (hoSo.avatar_url) {
+    $('profileAvatar').src = hoSo.avatar_url;
+  }
+  
+  // 2. Tính toán tỷ lệ chuyên cần
+  await tinhChuyenCan();
+  
+  // 3. Tải bảng điểm học sinh
+  await taiBangDiem();
+})();
+
+async function tinhChuyenCan() {
+  if (!profileData.class_id) {
+    $('attPercent').textContent = '—';
+    $('attRing').style.setProperty('--percent', '0');
+    $('attBadge').textContent = 'Chưa xếp lớp';
+    $('attBadge').className = 'badge-motivate badge-mute';
+    return;
+  }
+
+  try {
+    // Tổng số buổi học của lớp
+    var rSess = await sb.from('class_sessions').select('id', { count: 'exact' }).eq('class_id', profileData.class_id);
+    var totalSessions = rSess.count || 0;
+    
+    if (totalSessions === 0) {
+      $('attPercent').textContent = '100%';
+      $('attRing').style.setProperty('--percent', '100');
+      $('attBadge').textContent = '🛡️ Chiến binh xuất sắc';
+      $('attBadge').className = 'badge-motivate badge-ok';
+      return;
+    }
+    
+    // Số buổi đã tham gia điểm danh (status = present hoặc late)
+    var rAtt = await sb.from('attendance')
+      .select('status')
+      .eq('student_id', profileData.id)
+      .in('status', ['present', 'late']);
+    var attendedSessions = rAtt.data ? rAtt.data.length : 0;
+    
+    var percent = Math.round((attendedSessions / totalSessions) * 100);
+    $('attPercent').textContent = percent + '%';
+    $('attRing').style.setProperty('--percent', percent);
+    
+    var badgeText = 'Đang cố gắng';
+    var badgeClass = 'badge-mute';
+    if (percent >= 95) {
+      badgeText = '🛡️ Học thần cần mẫn';
+      badgeClass = 'badge-ok';
+    } else if (percent >= 85) {
+      badgeText = '⚔️ Chiến binh kiên trì';
+      badgeClass = 'badge-accent';
+    } else if (percent >= 70) {
+      badgeText = '🏃‍♂️ Đang tăng tốc';
+      badgeClass = 'badge-warn';
+    } else {
+      badgeText = '📚 Cần cố gắng hơn';
+      badgeClass = 'badge-err';
+    }
+    
+    // Đổi background badge
+    var b = $('attBadge');
+    b.textContent = badgeText;
+    // Tự động map style từ tokens.css
+    b.style.background = 'var(--' + (badgeClass === 'badge-ok' ? 'ok-soft' : badgeClass === 'badge-accent' ? 'accent-soft' : badgeClass === 'badge-warn' ? 'warn-soft' : 'err-soft') + ')';
+    b.style.color = 'var(--' + (badgeClass === 'badge-ok' ? 'ok' : badgeClass === 'badge-accent' ? 'accent' : badgeClass === 'badge-warn' ? 'warn' : 'err') + ')';
+  } catch (err) {
+    console.error('Lỗi tính chuyên cần:', err);
+  }
+}
+
+async function taiBangDiem() {
+  var r = await sb.from('attempts')
+    .select('score, started_at, submitted_at, lessons(title), exams(title)')
+    .eq('student_id', profileData.id)
+    .order('started_at', { ascending: false });
+    
+  var attempts = r.data || [];
+  
+  // Tải thêm các bài nộp tự luận để hiển thị điểm do thầy chấm
+  var rSub = await sb.from('submissions')
+    .select('score, submitted_at, feedback, lessons(title)')
+    .eq('student_id', profileData.id)
+    .eq('status', 'graded');
+  var subs = rSub.data || [];
+  
+  var combined = [];
+  attempts.forEach(function (a) {
+    if (a.submitted_at) {
+      combined.push({
+        title: a.lessons ? a.lessons.title : (a.exams ? a.exams.title : 'Đề luyện tập'),
+        type: a.exams ? 'Thi thử' : 'Trắc nghiệm bài học',
+        date: new Date(a.submitted_at).toLocaleDateString('vi-VN'),
+        score: a.score,
+        timestamp: new Date(a.submitted_at).getTime()
+      });
+    }
+  });
+  
+  subs.forEach(function (s) {
+    combined.push({
+      title: s.lessons ? s.lessons.title + ' (Tự luận)' : 'Bài tự luận',
+      type: 'Tự luận nộp tập',
+      date: new Date(s.submitted_at).toLocaleDateString('vi-VN'),
+      score: s.score,
+      timestamp: new Date(s.submitted_at).getTime()
+    });
+  });
+  
+  // Sắp xếp theo ngày mới nhất
+  combined.sort(function (a, b) { return b.timestamp - a.timestamp; });
+  
+  if (!combined.length) {
+    $('bangDiemHocSinh').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-3)">Em chưa hoàn thành bài luyện đề hay bài test nào. Cố gắng làm nhé!</td></tr>';
+    return;
+  }
+  
+  $('bangDiemHocSinh').innerHTML = combined.map(function (item) {
+    return '<tr>' +
+      '<td><b>' + item.title + '</b></td>' +
+      '<td>' + item.type + '</td>' +
+      '<td class="num">' + item.date + '</td>' +
+      '<td class="num"><span class="score-badge">' + item.score.toFixed(1) + '</span></td>' +
+      '</tr>';
+  }).join('');
+}
+
+async function updateProfileInfo(e) {
+  e.preventDefault();
+  var name = $('inpName').value.trim();
+  var gender = $('inpGender').value;
+  var email = $('inpEmail').value.trim();
+  var school = $('inpSchool').value.trim();
+  var phone = $('inpPhone').value.trim();
+  var objective = $('inpObjective').value.trim();
+  
+  var btn = $('btnUpdate');
+  btn.disabled = true; btn.textContent = '⏳ Đang lưu...';
+  
+  var r = await sb.from('profiles').update({
+    full_name: name,
+    gender: gender,
+    email: email,
+    school: school,
+    phone: phone,
+    objective: objective
+  }).eq('id', profileData.id);
+  
+  if (r.error) {
+    alert('Lỗi: ' + r.error.message);
+  } else {
+    alert('✓ Lưu thay đổi hồ sơ thành công!');
+    $('profileName').textContent = name;
+    profileData.full_name = name;
+    profileData.gender = gender;
+    profileData.email = email;
+    profileData.school = school;
+    profileData.phone = phone;
+    profileData.objective = objective;
+  }
+  btn.disabled = false; btn.textContent = 'Lưu thay đổi';
+}
+
+// 4. Upload Avatar
+async function uploadAvatar() {
+  var file = $('avatarUpload').files[0];
+  if (!file) return;
+  
+  var oldSrc = $('profileAvatar').src;
+  $('profileAvatar').src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999" class="spinner"%3E%3Cpath d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-6.8 5.2L3.74 7.74C2.96 8.97 2.5 10.43 2.5 12c0 4.42 3.58 8 8 8v-3l4 4-4 4v-3c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8z"/%3E%3C/style%3E';
+  
+  try {
+    // 1. Tạo bucket avatars nếu chưa có (có thể lỗi nếu đã có - bắt lỗi này)
+    try {
+      await sb.storage.createBucket('avatars', { public: true });
+    } catch(bErr) {}
+    
+    // 2. Upload file
+    var path = profileData.id + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.]/g, '');
+    var up = await sb.storage.from('avatars').upload(path, file, { contentType: file.type, upsert: true });
+    
+    if (up.error) throw new Error(up.error.message);
+    
+    var url = VM.SUPABASE_URL + '/storage/v1/object/public/avatars/' + path;
+    
+    // 3. Cập nhật hồ sơ profiles
+    var r = await sb.from('profiles').update({ avatar_url: url }).eq('id', profileData.id);
+    if (r.error) throw new Error(r.error.message);
+    
+    $('profileAvatar').src = url;
+    profileData.avatar_url = url;
+    alert('✓ Cập nhật ảnh đại diện thành công!');
+  } catch (err) {
+    alert('Lỗi tải ảnh lên: ' + err.message);
+    $('profileAvatar').src = oldSrc;
+  }
+}
+</script>
+</body>
+</html>

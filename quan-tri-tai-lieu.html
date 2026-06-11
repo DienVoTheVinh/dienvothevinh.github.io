@@ -104,6 +104,7 @@ select.input{width:auto}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
+<script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
 var pdfBlob = null; // PDF vừa biên dịch xong, chờ lưu
@@ -143,52 +144,57 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 \\usepackage{fouriernc}
 \\let\\widering\\relax
 
-% --- KHAI BÁO MÀU SẮC ---
+% --- BỘ NHẬN DIỆN THƯƠNG HIỆU VINHMATH BRAND COLORS ---
 \\usepackage[dvipsnames,table]{xcolor}
-\\definecolor{deepslate}{HTML}{2F4F4F}
-\\definecolor{softteal}{HTML}{008080}
-\\definecolor{mutedblue}{HTML}{4682B4}
-\\definecolor{warmgray}{HTML}{A9A9A9}
-\\definecolor{cleanblack}{HTML}{2C3E50}
+\\definecolor{vmAccent}{HTML}{B5483A}     % Đỏ son (Hanko Red) - Điểm nhấn chính
+\\definecolor{vmAccentSoft}{HTML}{F6E9E6} % Nền đỏ son nhạt
+\\definecolor{vmOk}{HTML}{5E7B5E}         % Xanh Matcha - Cho bài tập & section chính
+\\definecolor{vmOkSoft}{HTML}{EAF0EA}     % Nền xanh Matcha nhạt
+\\definecolor{vmWarn}{HTML}{A8842C}       % Vàng hổ phách trầm - Cho lý thuyết/định lý
+\\definecolor{vmWarnSoft}{HTML}{F5EEDD}   % Nền hổ phách nhạt
+\\definecolor{vmInk}{HTML}{1F1D1A}        % Mực charcoal đen dịu
+\\definecolor{vmBg}{HTML}{F7F5F1}         % Nền giấy Washi ấm
+\\definecolor{vmLine}{HTML}{E4E0D8}       % Màu đường kẻ phân cách
+\\definecolor{warmgray}{HTML}{A8A29A}     % Xám ấm thương hiệu (ink-3)
 
-\\def\\mauVD{softteal}
-\\def\\mauEX{mutedblue}
-\\def\\mauBT{deepslate} 
-\\def\\mauLG{red!80!black}
-\\def\\mauDA{\\mauEX}
-\\def\\mauTrue{red!70!black}
-\\def\\mauPART{cleanblack}
-\\def\\mauCHAP{softteal}
-\\def\\mauSEC{mutedblue}
-\\def\\mauSUBSEC{deepslate}
-\\def\\mauSUBSUBSEC{cleanblack}
-\\def\\mauphan{cleanblack}
-\\def\\mauchuphan{cleanblack}
-\\def\\mauchuong{softteal}
+\\def\\mauVD{vmAccent}                      % Màu chính cho Ví dụ (Đỏ son)
+\\def\\mauEX{vmOk}                          % Màu chính cho Câu hỏi / Đề bài (Matcha)
+\\def\\mauBT{vmWarn}                        % Màu chính cho Bài tập tự luyện (Amber)
+\\def\\mauLG{vmAccent}                      % Màu cho Lời giải (Đỏ son)
+\\def\\mauDA{\\mauEX}                        % Màu đáp án đúng
+\\def\\mauTrue{vmAccent}                    % Màu của đáp án khoanh tròn đúng
+\\def\\mauPART{vmInk}                       % Màu phần
+\\def\\mauCHAP{vmAccent}                    % Màu chương
+\\def\\mauSEC{vmOk}                         % Màu Section
+\\def\\mauSUBSEC{vmWarn}                    % Màu Subsection
+\\def\\mauSUBSUBSEC{vmInk}                  % Màu Subsubsection
+\\def\\mauphan{vmInk}
+\\def\\mauchuphan{vmInk}
+\\def\\mauchuong{vmAccent}
 \\def\\maunenmucluc{white}
-\\def\\maumlmot{softteal}
-\\def\\maumlhai{mutedblue}
-\\def\\maumlba{deepslate}
-\\def\\maubai{mutedblue}
-\\def\\mausubsec{deepslate}
-\\def\\mausubsecphu{softteal}
-\\def\\mausubsubsec{cleanblack}
-\\def\\maupara{cleanblack}
-\\def\\maufoot{cleanblack}
-\\def\\mauchufoot{cleanblack}
-\\def\\maufootmot{softteal}
-\\def\\maufoothai{mutedblue}
-\\def\\maufootba{deepslate}
-\\def\\maudang{softteal}
+\\def\\maumlmot{vmAccent}
+\\def\\maumlhai{vmOk}
+\\def\\maumlba{vmWarn}
+\\def\\maubai{vmOk}
+\\def\\mausubsec{vmWarn}
+\\def\\mausubsecphu{vmAccent}
+\\def\\mausubsubsec{vmInk}
+\\def\\maupara{vmInk}
+\\def\\maufoot{vmInk}
+\\def\\mauchufoot{vmInk}
+\\def\\maufootmot{vmAccent}
+\\def\\maufoothai{vmOk}
+\\def\\maufootba{vmWarn}
+\\def\\maudang{vmAccent}
 \\def\\maunendang{white}
-\\def\\maudl{cleanblack}
-\\def\\nendl{gray!5}
-\\def\\maudn{softteal}
-\\def\\nendn{teal!5}
-\\def\\maucy{red!70!black}
-\\def\\maupt{black}
-\\def\\mauitemCI{softteal}
-\\def\\mauitemKN{red!70!black}
+\\def\\maudl{vmInk}
+\\def\\nendl{vmBg}
+\\def\\maudn{vmAccent}
+\\def\\nendn{vmAccentSoft}
+\\def\\maucy{vmAccent}
+\\def\\maupt{vmInk}
+\\def\\mauitemCI{vmAccent}
+\\def\\mauitemKN{vmOk}
 \\def\\itemKN{\\color{\\mauitemKN}\\faCheckSquareO}
 \\def\\itemCI{\\color{\\mauitemCI}\\faCheckCircleO}
 
@@ -259,11 +265,11 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 \\AddEverypageHook{%
 \\begin{tikzpicture}[remember picture,overlay]
 \\coordinate (margin) at ([xshift=-5mm]current page.east);
-\\draw[softteal!40,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
-\\fill[red!50!black] ([yshift=7.2cm]margin) circle (1.5pt);
-\\node[rotate=90,anchor=center,font=\\fontfamily{qag}\\fontseries{b}\\fontsize{10}{12}\\selectfont,text=softteal!60] at (margin) {\\watermarktext};
-\\draw[softteal!40,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
-\\fill[red!50!black] ([yshift=-7.2cm]margin) circle (1.5pt);
+\\draw[vmAccent!40,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
+\\fill[vmAccent] ([yshift=7.2cm]margin) circle (1.5pt);
+\\node[rotate=90,anchor=center,font=\\fontfamily{qag}\\fontseries{b}\\fontsize{10}{12}\\selectfont,text=vmAccent!60] at (margin) {\\watermarktext};
+\\draw[vmAccent!40,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
+\\fill[vmAccent] ([yshift=-7.2cm]margin) circle (1.5pt);
 \\end{tikzpicture}%
 }
 
@@ -291,7 +297,7 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 
 % --- MÔI TRƯỜNG DẠNG, ĐỊNH LÝ, ĐỊNH NGHĨA ---
 \\usepackage[most]{tcolorbox}
-\\def\\beginboxVD{\\begin{tcolorbox}[enhanced,breakable,colback=\\mauVD!5,colframe=\\mauVD,coltitle=\\mauVD,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
+\\def\\beginboxVD{\\begin{tcolorbox}[enhanced,breakable,colback=vmAccentSoft,colframe=\\mauVD,coltitle=\\mauVD,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
 \\def\\beginboxEX{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauEX,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
 \\def\\beginboxBT{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauBT,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
 \\def\\endbox{\\end{tcolorbox}}
@@ -598,8 +604,10 @@ const EX_TEST_STY_CONTENT = `\\ProvidesPackage{ex_test}[17/07/2019 for Ex_test v
 }
 %Tương thích môi trường enumerate,itemize
 \\def\\hfillEX{}
-\\beforebegindoenv{enumerate}{\\hfillEX}
-\\beforebegindoenv{itemize}{\\hfillEX}
+\\BeforeBeginEnvironment{enumerate}
+{\\hfillEX}
+\\BeforeBeginEnvironment{itemize}
+{\\hfillEX}
 \\AtBeginEnvironment{multicols}
 {\\def\\hfillEX{}}
 \\newcommand{\\listenumerate}[1]{
@@ -1206,7 +1214,7 @@ const EX_TEST_STY_CONTENT = `\\ProvidesPackage{ex_test}[17/07/2019 for Ex_test v
 %{\\item[\\hskip\\labelsep \\theorem@headerfont ##1\\ ##2\\ (##3)\\theorem@separator]
 %	\\def\\labelthm{##1}%
 %	\\def\\labelthmfull{{\\theorem@headerfont ##1\\ ##2\\ (##3)\\theorem@separator\\ }}%
-%}%
+%}
 \\newtheoremstyle{immini}%
 {\\item[\\hskip\\labelsep \\theorem@headerfont ##1\\ ##2\\theorem@separator]
 	\\def\\thindent{%
@@ -1718,7 +1726,7 @@ const EX_TEST_STY_CONTENT = `\\ProvidesPackage{ex_test}[17/07/2019 for Ex_test v
 %	m%
 %	m%
 %}{%
-%	\\setbox\\imbox{\\hbox{#5}}
+%	\\setbox\\imbox=\\vbox{\\hbox{#5}}
 %	\\widthimmini=\\wd\\imbox
 %	\\heightimmini=\\ht\\imbox
 %	\\def\\vspaceIM{\\vspace{#2}}
@@ -2795,12 +2803,86 @@ Khi mọi thứ đã OK, hãy thay khai báo gói ex\\_test  bằng gói ex\\_te
 \\end{multicols}
 }%
 }
-%End of file \`ex_test.sty'.
-`;
+%End of file \`ex_test.sty'.`;
 
 async function taiExTestSty() {
   return EX_TEST_STY_CONTENT;
 }
+
+// ---- Cấu trúc titledot.sty nhúng trực tiếp ----
+const TITLE_DOT_STY_CONTENT = `% titledot.sty nhằm mục đích chấm các số tiêu đề và trong mục lục
+% Nguyễn Hữu Điển
+%ĐHKHTN, ĐHQG HN
+% 10/7/2009
+% Phiên bản 1.1 đã sửa đổi 23/12/2009
+%Gói lệnh đòi hỏi titlesec.sty và titletoc.sty
+
+\\ProvidesPackage{titledot}[2009/07/10 v1.0 Vietnamese section]
+
+\\RequirePackage{ifthen}
+\\RequirePackage{titlesec}
+\\RequirePackage{titletoc}
+
+\\newboolean{nosubsection}
+
+\\titlelabel{\\thetitle. }%\\quad
+\\contentsmargin{0pt}
+
+\\newcommand\\@tenchuong{Chương}
+\\newcommand{\\titlename}[1]{\\renewcommand{\\@tenchuong}{ #1}}
+
+\\titlecontents{chapter}[	1.8pc]
+  {\\addvspace{3pt}\\bfseries}
+ {\\@tenchuong \\ \\thecontentslabel.\\ }
+%  {\\contentslabel[\\hfill\\@tenchuong \\ \\thecontentslabel.\\ ]{4pc}}
+  {}
+  {\\dotfill\\quad\\thecontentspage}
+
+
+\\titlecontents{section}[3.8pc]
+  {\\addvspace{3pt}\\bfseries}
+ {\\thecontentslabel.\\ }
+ % {\\contentslabel[\\thecontentslabel.]{1.8pc}}
+  {}
+  {\\dotfill\\quad\\thecontentspage}
+
+\\titlecontents{subsection}[4.8pc]
+{\\small}
+ {\\thecontentslabel.\\ }
+%   {\\contentslabel[\\thecontentslabel.]{2.4pc}}
+  {}
+  {\\dotfill\\quad\\thecontentspage}
+
+\\titlecontents{subsubsection}[5.8pc]
+{\\small}
+   {\\thecontentslabel.\\  }
+  {}
+  {\\dotfill\\quad\\thecontentspage}
+
+
+\\DeclareOption{nosubsection}{
+\\titlecontents*{subsection}[1.8pc]
+  {\\small}
+  {\\thecontentslabel. }
+  {}
+  {, \\thecontentspage}
+  [.---][.]
+
+\\titlecontents*{subsubsection}[1.8pc]
+  {\\small}
+  {\\thecontentslabel. }
+  {}
+  {, \\thecontentspage}
+  [.---][.]
+}
+
+
+%%%%%%%%%%%
+
+\\ProcessOptions
+
+\\endinput
+`;
 
 // ---- Gửi LaTeX lên texlive.net, nhận về PDF ----
 async function bienDich() {
@@ -2815,14 +2897,15 @@ async function bienDich() {
 
   // Tự động nhúng ex_test.sty nếu tài liệu sử dụng gói này
   if (tex.includes('ex_test') && !tex.includes('begin{filecontents*}{ex_test.sty}')) {
-    bao('Đang tải cấu trúc gói ex_test.sty...', 'warn');
     const content = await taiExTestSty();
     if (content) {
-      tex = '\\begin{filecontents*}{ex_test.sty}\n' + content + '\n\\end{filecontents*}\n' + tex;
-    } else {
-      bao('Cảnh báo: Không thể tải ex_test.sty, việc biên dịch có thể bị lỗi.', 'warn');
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      tex = '\\\\begin{filecontents*}{ex_test.sty}\\n' + content + '\\n\\\\end{filecontents*}\\n' + tex;
     }
+  }
+
+  // Tự động nhúng titledot.sty nếu tài liệu sử dụng gói này
+  if (tex.includes('titledot') && !tex.includes('begin{filecontents*}{titledot.sty}')) {
+    tex = '\\\\begin{filecontents*}{titledot.sty}\\n' + TITLE_DOT_STY_CONTENT + '\\n\\\\end{filecontents*}\\n' + tex;
   }
 
   var nut = $('nutBienDich');
