@@ -65,7 +65,7 @@ async function layHoSo() {
   var s = await sb.auth.getSession();
   if (!s.data.session) return null;
   var r = await sb.from('profiles')
-    .select('id, role, username, full_name, class_id, classes(name)')
+    .select('id, role, username, full_name, class_id, classes(name, mode)')
     .eq('id', s.data.session.user.id).single();
   return r.data || null;
 }

@@ -45,7 +45,7 @@
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html">Học tập</a>
+      <a href="lop-hoc.html">Học tập</a>
       <a href="tai-lieu.html">Tài liệu</a>
       <a href="quan-tri-tai-lieu.html">Soạn tài liệu</a>
       <a href="quan-tri-bai-hoc.html" class="active">Bài giảng</a>
@@ -115,9 +115,12 @@
         </div>
         <div class="field">
           <label>Chuyên đề (Tuỳ chọn)</label>
-          <select class="input" id="bhChuyenDe">
-            <option value="">-- Chọn chuyên đề --</option>
-          </select>
+          <div style="display:flex; gap:8px;">
+            <select class="input" id="bhChuyenDe" style="flex:1">
+              <option value="">-- Chọn chuyên đề --</option>
+            </select>
+            <button type="button" class="btn btn-secondary" onclick="moQuanLyChuyenDe()" style="padding: 10px; flex:none;" title="Quản lý chuyên đề">⚙️</button>
+          </div>
         </div>
       </div>
 
@@ -190,6 +193,85 @@
         </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Quản Lý Chuyên Đề -->
+<div class="modal" id="modalChuyenDe" style="z-index:110">
+  <div class="modal-content" style="max-width:650px">
+    <button class="modal-close" onclick="dongQuanLyChuyenDe()">×</button>
+    <h2>Quản lý chuyên đề</h2>
+    
+    <!-- Form CRUD Chuyên Đề -->
+    <div class="card" style="padding:16px; margin-bottom:20px; background:var(--surface-2); border:none">
+      <h3 id="cdFormTitle" style="margin-bottom:12px; font-size:1rem">Thêm chuyên đề mới</h3>
+      <input type="hidden" id="cdId">
+      
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px">
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Tên chuyên đề <b style="color:var(--accent)">*</b></label>
+          <input class="input" id="cdName" placeholder="Ví dụ: Hàm số" style="padding:6px 10px; font-size:0.9rem" required>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Mã code <b style="color:var(--accent)">*</b></label>
+          <input class="input" id="cdCode" placeholder="Ví dụ: 12D1" style="padding:6px 10px; font-size:0.9rem" required>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Khối lớp <b style="color:var(--accent)">*</b></label>
+          <select class="input" id="cdGrade" style="padding:6px 10px; font-size:0.9rem" required>
+            <option value="12">Khối 12</option>
+            <option value="11">Khối 11</option>
+            <option value="10">Khối 10</option>
+            <option value="9">Khối 9</option>
+            <option value="8">Khối 8</option>
+            <option value="7">Khối 7</option>
+            <option value="6">Khối 6</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Thứ tự</label>
+          <input type="number" class="input" id="cdSort" value="0" style="padding:6px 10px; font-size:0.9rem">
+        </div>
+      </div>
+      
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px">
+        <button type="button" class="btn btn-ghost btn-sm" id="btnCancelCd" onclick="resetCdForm()" style="display:none">Hủy sửa</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="luuChuyenDe()">Lưu chuyên đề</button>
+      </div>
+    </div>
+
+    <!-- Bộ lọc khối -->
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap">
+      <span style="font-size:0.85rem; font-weight:600; color:var(--ink-2)">Lọc theo khối:</span>
+      <select class="input" id="locCdGrade" onchange="taiBangChuyenDe()" style="width:130px; padding:6px 10px; font-size:0.85rem">
+        <option value="all">Tất cả khối</option>
+        <option value="12">Khối 12</option>
+        <option value="11">Khối 11</option>
+        <option value="10">Khối 10</option>
+        <option value="9">Khối 9</option>
+        <option value="8">Khối 8</option>
+        <option value="7">Khối 7</option>
+        <option value="6">Khối 6</option>
+      </select>
+    </div>
+
+    <!-- Danh sách chuyên đề -->
+    <div style="overflow-y:auto; max-height:220px; border:1px solid var(--line); border-radius:var(--r-sm)">
+      <table style="font-size:0.85rem">
+        <thead>
+          <tr>
+            <th style="padding:8px">Mã</th>
+            <th style="padding:8px">Tên chuyên đề</th>
+            <th style="padding:8px">Khối</th>
+            <th style="padding:8px">Sắp xếp</th>
+            <th style="padding:8px; text-align:right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="bangChuyenDe">
+          <!-- Render động -->
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -291,15 +373,7 @@ async function taiDuLieuDanhMuc() {
   });
 
   // 2. Tải danh sách chuyên đề
-  var r2 = await sb.from('topics').select('id, name').order('sort');
-  tatCaChuyenDe = r2.data || [];
-  var formCdSelect = $('bhChuyenDe');
-  tatCaChuyenDe.forEach(function(c) {
-    var opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = c.name;
-    formCdSelect.appendChild(opt);
-  });
+  await napDropdownChuyenDe();
 
   // 3. Tải danh sách tài liệu PDF từ LaTeX
   var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
@@ -313,6 +387,133 @@ async function taiDuLieuDanhMuc() {
     formTlSelect.appendChild(opt);
     formTestSelect.appendChild(opt.cloneNode(true));
   });
+}
+
+// --- QUẢN LÝ CHUYÊN ĐỀ DỘNG ---
+function moQuanLyChuyenDe() {
+  resetCdForm();
+  $('locCdGrade').value = 'all';
+  $('modalChuyenDe').style.display = 'flex';
+  taiBangChuyenDe();
+}
+
+function dongQuanLyChuyenDe() {
+  $('modalChuyenDe').style.display = 'none';
+  napDropdownChuyenDe();
+}
+
+async function napDropdownChuyenDe() {
+  var r = await sb.from('topics').select('id, name, grade, code').order('sort');
+  tatCaChuyenDe = r.data || [];
+  
+  var formCdSelect = $('bhChuyenDe');
+  formCdSelect.innerHTML = '<option value="">-- Chọn chuyên đề --</option>';
+  tatCaChuyenDe.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = '[' + c.code + '] ' + c.name + ' (Khối ' + c.grade + ')';
+    formCdSelect.appendChild(opt);
+  });
+}
+
+async function taiBangChuyenDe() {
+  var gradeFilter = $('locCdGrade').value;
+  
+  var query = sb.from('topics').select('id, name, code, grade, sort').order('sort');
+  if (gradeFilter !== 'all') {
+    query = query.eq('grade', parseInt(gradeFilter));
+  }
+  
+  var r = await query;
+  var topics = r.data || [];
+  
+  var tbody = $('bangChuyenDe');
+  if (!topics.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Không có chuyên đề nào.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = topics.map(function(t) {
+    return '<tr>' +
+           '  <td style="padding:8px"><b>' + t.code + '</b></td>' +
+           '  <td style="padding:8px">' + t.name + '</td>' +
+           '  <td style="padding:8px" class="num">Lớp ' + t.grade + '</td>' +
+           '  <td style="padding:8px" class="num">' + t.sort + '</td>' +
+           '  <td style="padding:8px; text-align:right;">' +
+           '    <button type="button" class="btn btn-ghost btn-sm" onclick="suaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px;">Sửa</button>' +
+           '    <button type="button" class="btn btn-ghost btn-sm" onclick="xoaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px; color:var(--err);">Xóa</button>' +
+           '  </td>' +
+           '</tr>';
+  }).join('');
+}
+
+async function luuChuyenDe() {
+  var id = $('cdId').value;
+  var name = $('cdName').value.trim();
+  var code = $('cdCode').value.trim();
+  var grade = parseInt($('cdGrade').value);
+  var sort = parseInt($('cdSort').value) || 0;
+  
+  if (!name || !code) {
+    alert('Vui lòng điền đầy đủ Tên chuyên đề và Mã code.');
+    return;
+  }
+  
+  var data = { name: name, code: code, grade: grade, sort: sort };
+  
+  var r;
+  if (id) {
+    r = await sb.from('topics').update(data).eq('id', id);
+  } else {
+    r = await sb.from('topics').insert(data);
+  }
+  
+  if (r.error) {
+    alert('Lỗi lưu chuyên đề: ' + r.error.message);
+  } else {
+    resetCdForm();
+    await taiBangChuyenDe();
+  }
+}
+
+async function suaChuyenDe(id) {
+  var r = await sb.from('topics').select('id, name, code, grade, sort').eq('id', id).single();
+  if (r.error) {
+    alert('Lỗi tải dữ liệu chuyên đề: ' + r.error.message);
+    return;
+  }
+  var t = r.data;
+  $('cdId').value = t.id;
+  $('cdName').value = t.name;
+  $('cdCode').value = t.code;
+  $('cdGrade').value = t.grade;
+  $('cdSort').value = t.sort;
+  
+  $('cdFormTitle').textContent = 'Chỉnh sửa chuyên đề';
+  $('btnCancelCd').style.display = 'inline-flex';
+}
+
+async function xoaChuyenDe(id) {
+  if (!confirm('Thầy có chắc chắn muốn xóa chuyên đề này không? Các bài giảng hoặc câu hỏi đã gán chuyên đề này sẽ chuyển về trống.')) return;
+  
+  var r = await sb.from('topics').delete().eq('id', id);
+  if (r.error) {
+    alert('Lỗi xóa chuyên đề: ' + r.error.message);
+  } else {
+    resetCdForm();
+    await taiBangChuyenDe();
+  }
+}
+
+function resetCdForm() {
+  $('cdId').value = '';
+  $('cdName').value = '';
+  $('cdCode').value = '';
+  $('cdGrade').value = '12';
+  $('cdSort').value = '0';
+  
+  $('cdFormTitle').textContent = 'Thêm chuyên đề mới';
+  $('btnCancelCd').style.display = 'none';
 }
 
 async function taiDanhSachBaiHoc() {

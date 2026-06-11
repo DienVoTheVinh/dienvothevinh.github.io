@@ -26,7 +26,7 @@
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html">Học tập</a>
+      <a href="lop-hoc.html">Học tập</a>
       <a href="lop-online.html" class="active">Lớp Online</a>
       <a href="tai-lieu.html">Tài liệu</a>
     </nav>
@@ -116,15 +116,16 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
   // 2. Thời khóa biểu lớp mình
   var r = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, location, note')
+    .select('weekday, start_time, end_time, mode, location, note, recurrence')
     .eq('class_id', hoSo.class_id)
     .order('weekday').order('start_time');
   var ds = r.data || [];
   $('bangTKB').innerHTML = ds.length
     ? ds.map(function (s) {
+        var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
         return '<tr><td><b>' + TEN_THU[s.weekday] + '</b></td>' +
           '<td class="num">' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</td>' +
-          '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 ' + (s.location || 'Tại lớp')) + '</td>' +
+          '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 ' + (s.location || 'Tại lớp')) + recText + '</td>' +
           '<td style="color:var(--ink-2)">' + (s.note || '') + '</td></tr>';
       }).join('')
     : '<tr><td colspan="4" style="color:var(--ink-3)">Lớp em chưa có lịch — thầy sẽ cập nhật sớm.</td></tr>';
@@ -154,7 +155,7 @@ function diemDanhBangMa() {
   var ma = $('maDiemDanh').value.trim();
   if (!ma) { alert('Em dán mã điểm danh thầy đưa vào ô trước nhé.'); return; }
   // Nếu lỡ dán cả đường link thì tự rút mã ra
-  var m = ma.match(/token=([a-f0-9]+)/i);
+  var m = ma.match(/token=([^\s&]+)/i);
   window.location.href = 'diem-danh.html?token=' + (m ? m[1] : ma);
 }
 </script>

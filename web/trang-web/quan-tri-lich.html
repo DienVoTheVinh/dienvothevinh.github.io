@@ -18,6 +18,9 @@
 #khungQR { display: flex; justify-content: center; margin: 18px 0; background: #fff; padding: 16px; border-radius: 12px; }
 .token-text { font-family: Menlo, monospace; font-size: .85rem; background: var(--surface-2); border-radius: 8px; padding: 8px 12px; word-break: break-all; }
 .dem-so { font-size: 2.2rem; font-weight: 800; color: var(--ok); }
+.thu-btn { border-radius: 50% !important; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; border: 1px solid var(--line) !important; background: var(--surface) !important; color: var(--ink) !important; padding: 0 !important; }
+.thu-btn:hover { background: var(--surface-2) !important; }
+.thu-btn.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
 </style>
 </head>
 <body>
@@ -67,14 +70,24 @@
     <div class="card" style="margin-bottom:16px">
       <div class="form-grid">
         <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="schLop"></select></div>
-        <div><label style="font-size:.8rem;font-weight:600">Thứ</label><select class="input" id="schThu">
-          <option value="1">Thứ 2</option><option value="2">Thứ 3</option><option value="3">Thứ 4</option>
-          <option value="4">Thứ 5</option><option value="5">Thứ 6</option><option value="6">Thứ 7</option><option value="7">Chủ nhật</option>
-        </select></div>
+        <div style="grid-column: span 2; min-width: 280px;"><label style="font-size:.8rem;font-weight:600">Thứ (chọn nhiều thứ)</label>
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap" id="schThuContainer">
+            <button type="button" class="thu-btn active" data-val="1">T2</button>
+            <button type="button" class="thu-btn" data-val="2">T3</button>
+            <button type="button" class="thu-btn" data-val="3">T4</button>
+            <button type="button" class="thu-btn" data-val="4">T5</button>
+            <button type="button" class="thu-btn" data-val="5">T6</button>
+            <button type="button" class="thu-btn" data-val="6">T7</button>
+            <button type="button" class="thu-btn" data-val="7">CN</button>
+          </div>
+        </div>
         <div><label style="font-size:.8rem;font-weight:600">Từ</label><input class="input" type="time" id="schTu" value="19:30"></div>
         <div><label style="font-size:.8rem;font-weight:600">Đến</label><input class="input" type="time" id="schDen" value="21:30"></div>
         <div><label style="font-size:.8rem;font-weight:600">Hình thức</label><select class="input" id="schMode">
           <option value="online">🎥 Online</option><option value="offline">🏫 Tại lớp</option>
+        </select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Lặp lại</label><select class="input" id="schRecurrence">
+          <option value="weekly">🔄 Hàng tuần</option><option value="biweekly">🔄 2 tuần/lần</option>
         </select></div>
         <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
         <button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button>
@@ -120,7 +133,9 @@
     <h2 id="qrTen">Buổi học</h2>
     <p style="font-size:.88rem;color:var(--ink-2)">Học sinh quét QR hoặc nhập mã bên dưới vào trang Lớp Online</p>
     <div id="khungQR"></div>
-    <div class="token-text" id="qrToken"></div>
+    <div style="font-size:.9rem;color:var(--ink-2);margin-bottom:2px">Mã số điểm danh (nhập tay)</div>
+    <div style="font-size: 2.8rem; font-weight: 800; letter-spacing: 6px; color: var(--accent); margin: 6px 0;" id="qrCodeSo">0000</div>
+    <div class="token-text" id="qrToken" style="display:none"></div>
     <div style="font-size:.78rem;color:var(--ink-3);margin-top:6px">🔄 Mã tự đổi mỗi 30 giây — chống điểm danh hộ. Mở bảng này suốt buổi học.</div>
     <div style="margin-top:16px"><span class="dem-so" id="qrDem">0</span><div style="font-size:.85rem;color:var(--ink-2)">học sinh đã điểm danh</div></div>
     <div id="qrDanhSach" style="font-size:.85rem;color:var(--ink-2);margin-top:8px;max-height:120px;overflow-y:auto"></div>
@@ -158,6 +173,13 @@ var hennDem = null;
   taiMeetLop();
   taiLich();
   taiBuoi();
+
+  // Đăng ký sự kiện click cho các nút chọn Thứ
+  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      this.classList.toggle('active');
+    });
+  });
 })();
 
 /* ----- Meet theo lớp ----- */
@@ -197,15 +219,16 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, visible, classes(name)')
+    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, classes(name)')
     .order('weekday').order('start_time');
   var ds = r.data || [];
   $('bangLich').innerHTML = ds.length ? ds.map(function (s) {
+    var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
     return '<tr>' +
       '<td><b>' + (s.classes ? s.classes.name : '?') + '</b></td>' +
       '<td>' + TEN_THU[s.weekday] + '</td>' +
       '<td class="num">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
-      '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +
+      '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
       '<td style="color:var(--ink-2)">' + (s.note || '') + '</td>' +
       '<td><button class="btn btn-ghost btn-sm" onclick="doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + (s.visible ? '👁 Hiện' : '🚫 Ẩn') + '</button></td>' +
       '<td><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaLich(\'' + s.id + '\')">Xoá</button></td>' +
@@ -214,17 +237,61 @@ async function taiLich() {
 }
 
 async function themLich() {
-  var r = await sb.from('schedules').insert({
-    class_id: $('schLop').value,
-    weekday: parseInt($('schThu').value),
-    start_time: $('schTu').value,
-    end_time: $('schDen').value,
-    mode: $('schMode').value,
-    location: $('schMode').value === 'online' ? 'Google Meet' : null,
-    note: $('schNote').value.trim() || null
+  var classId = $('schLop').value;
+  var mode = $('schMode').value;
+  var rec = $('schRecurrence').value;
+  
+  var locationValue = null;
+  if (mode === 'online') {
+    // 1. Lấy link Meet riêng của lớp từ class_links
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+    var meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
+    
+    if (!meetLink) {
+      // 2. Lấy link chung dự phòng
+      var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+      meetLink = lk.data ? lk.data.value : '';
+    }
+    locationValue = meetLink || 'Google Meet';
+  }
+
+  var selectedDays = [];
+  document.querySelectorAll('.thu-btn.active').forEach(function (btn) {
+    selectedDays.push(parseInt(btn.getAttribute('data-val')));
   });
+
+  if (selectedDays.length === 0) {
+    alert('Vui lòng chọn ít nhất một Thứ trong tuần.');
+    return;
+  }
+
+  var rows = selectedDays.map(function (thu) {
+    return {
+      class_id: classId,
+      weekday: thu,
+      start_time: $('schTu').value,
+      end_time: $('schDen').value,
+      mode: mode,
+      location: locationValue,
+      recurrence: rec,
+      note: $('schNote').value.trim() || null
+    };
+  });
+
+  var r = await sb.from('schedules').insert(rows);
   if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  
   $('schNote').value = '';
+  
+  // Reset chọn Thứ (chỉ để Thứ 2 active làm mặc định)
+  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+    if (btn.getAttribute('data-val') === '1') {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
   taiLich();
 }
 
@@ -285,11 +352,20 @@ function taoToken() {
 async function xoayQR() {
   if (!buoiDangXem) return;
   var token = taoToken();
+  var code = Math.floor(1000 + Math.random() * 9000).toString(); // Mã 4 chữ số
+  
   var r = await sb.from('class_sessions')
-    .update({ qr_token: token, qr_expires: new Date(Date.now() + 120000).toISOString() })
+    .update({ 
+      qr_token: token, 
+      checkin_code: code,
+      attendance_open: true,
+      qr_expires: new Date(Date.now() + 120000).toISOString() 
+    })
     .eq('id', buoiDangXem);
   if (r.error) return;
+  
   $('qrToken').textContent = token;
+  $('qrCodeSo').textContent = code;
   $('khungQR').innerHTML = '';
   var url = new URL('diem-danh.html?token=' + token, window.location.href).href;
   new QRCode($('khungQR'), { text: url, width: 220, height: 220 });
@@ -318,10 +394,18 @@ async function demDiemDanh() {
   }).join('<br>');
 }
 
-function dongQR() {
+async function dongQR() {
   $('modalQR').style.display = 'none';
   if (hennDem) clearInterval(hennDem);
   if (hennXoay) clearInterval(hennXoay);
+  
+  if (buoiDangXem) {
+    // Đóng điểm danh trong CSDL ngay lập tức
+    await sb.from('class_sessions')
+      .update({ attendance_open: false, checkin_code: null })
+      .eq('id', buoiDangXem);
+  }
+  
   buoiDangXem = null;
   taiBuoi();
 }

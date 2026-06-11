@@ -28,23 +28,8 @@ begin
       initcap(replace(split_part(v_username, '.', 1), '-', ' '))
     );
     
-    -- 3. Tự động nhận diện lớp học dựa vào đuôi username (ví dụ: nguyenvana.12a1 -> lớp 12)
-    if position('.' in v_username) > 0 then
-      v_class_name := upper(split_part(v_username, '.', 2));
-      -- Trích xuất số lớp (ví dụ: 12A1 -> 12, LOP11 -> 11)
-      declare
-        v_grade text;
-      begin
-        v_grade := substring(v_class_name from '[0-9]+');
-        if v_grade is not null and v_grade <> '' then
-          select id into v_class_id from public.classes where name = 'Lớp ' || v_grade limit 1;
-        end if;
-        -- Nếu không tìm thấy, thử khớp chính xác tên lớp
-        if v_class_id is null then
-          select id into v_class_id from public.classes where upper(name) = v_class_name limit 1;
-        end if;
-      end;
-    end if;
+    -- 3. Không tự xếp lớp qua username nữa (Thầy Vinh sẽ xếp lớp thủ công trên web)
+    v_class_id := null;
   end if;
 
   -- 4. Chèn vào bảng profiles
