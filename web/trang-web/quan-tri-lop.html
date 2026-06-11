@@ -130,6 +130,7 @@
                 <th>SĐT phụ huynh</th>
                 <th>Email</th>
                 <th>Trường học</th>
+                <th>📖 Lý thuyết</th>
                 <th style="text-align:right">Thao tác</th>
               </tr>
             </thead>
@@ -467,9 +468,36 @@ async function taiLessonsLop() {
 }
 
 /* ----- Tab Học sinh ----- */
+var tpLessons = [];
+var tpProgMap = {};
+
 async function taiStudentsLop() {
-  $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
+  $('dsHocSinhLop').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
   
+  // 1. Tải danh sách bài giảng có lý thuyết chặn câu hỏi của lớp
+  var rLessons = await sb.from('lessons')
+    .select('id, title, theory_sections')
+    .eq('class_id', classDangChon.id);
+    
+  tpLessons = (rLessons.data || []).filter(function (l) {
+    return Array.isArray(l.theory_sections) && l.theory_sections.length > 0;
+  });
+  
+  // 2. Tải tiến độ học sinh
+  tpProgMap = {};
+  if (tpLessons.length > 0) {
+    var lessonIds = tpLessons.map(function (l) { return l.id; });
+    var rProg = await sb.from('student_lesson_progress')
+      .select('student_id, lesson_id, unlocked_section, completed_at')
+      .in('lesson_id', lessonIds);
+      
+    (rProg.data || []).forEach(function (p) {
+      tpProgMap[p.student_id] = tpProgMap[p.student_id] || {};
+      tpProgMap[p.student_id][p.lesson_id] = p;
+    });
+  }
+  
+  // 3. Tải danh sách học sinh
   var r = await sb.from('class_students')
     .select('student_id, profiles(id, full_name, username, phone, email, school)')
     .eq('class_id', classDangChon.id);
@@ -477,21 +505,36 @@ async function taiStudentsLop() {
   var items = r.data || [];
   var students = items.map(function (x) { return x.profiles; }).filter(Boolean);
   
-  // Sắp xếp theo tên học sinh tiếng Việt
   students.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
   
   if (!students.length) {
-    $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
+    $('dsHocSinhLop').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
     return;
   }
   
   $('dsHocSinhLop').innerHTML = students.map(function (s) {
+    var completedCount = 0;
+    if (tpLessons.length > 0 && tpProgMap[s.id]) {
+      tpLessons.forEach(function (l) {
+        if (tpProgMap[s.id][l.id] && tpProgMap[s.id][l.id].completed_at) {
+          completedCount++;
+        }
+      });
+    }
+    
+    var progressCell = '<span style="color:var(--ink-3)">—</span>';
+    if (tpLessons.length > 0) {
+      progressCell = '<b>' + completedCount + '/' + tpLessons.length + '</b> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="xemChiTietLyThuyet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:2px 6px; font-size:.8rem; color:var(--accent);">Chi tiết</button>';
+    }
+    
     return '<tr>' +
       '<td><b>' + s.full_name + '</b></td>' +
       '<td class="num">' + s.username + '</td>' +
       '<td class="num">' + (s.phone || '—') + '</td>' +
       '<td>' + (s.email || '—') + '</td>' +
       '<td>' + (s.school || '—') + '</td>' +
+      '<td>' + progressCell + '</td>' +
       '<td style="text-align:right">' +
       '  <button class="btn btn-ghost btn-sm" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
       '</td>' +
@@ -790,6 +833,67 @@ async function xoaBaiHoc() {
   if (r.error) alert('Lỗi: ' + r.error.message);
   else { dongForm(); await taiLessonsLop(); }
 }
+
+/* ----- CHI TIẾT TIẾN ĐỘ ĐỌC LÝ THUYẾT ----- */
+function xemChiTietLyThuyet(studentId, studentName) {
+  $('tpStudentName').textContent = studentName;
+  var container = $('tpContainer');
+  
+  var studentProg = tpProgMap[studentId] || {};
+  
+  if (tpLessons.length === 0) {
+    container.innerHTML = '<div class="empty">Lớp học không có bài giảng nào chứa lý thuyết chặn câu hỏi.</div>';
+    $('modalTheoryProgress').style.display = 'flex';
+    return;
+  }
+  
+  container.innerHTML = tpLessons.map(function (l) {
+    var prog = studentProg[l.id];
+    var badgeHTML = '<span class="badge badge-mute">Chưa đọc</span>';
+    var detailHTML = '';
+    
+    if (prog) {
+      if (prog.completed_at) {
+        var dt = new Date(prog.completed_at).toLocaleString('vi-VN');
+        badgeHTML = '<span class="badge badge-ok">Đã hoàn thành</span>';
+        detailHTML = '<div style="font-size:.8rem; color:var(--ink-3); margin-top:4px;">Thời gian hoàn thành: ' + dt + '</div>';
+      } else {
+        var totalSec = l.theory_sections.length;
+        badgeHTML = '<span class="badge badge-warn">Đang đọc</span>';
+        detailHTML = '<div style="font-size:.8rem; color:var(--ink-3); margin-top:4px;">Đã mở khóa: Đoạn ' + (prog.unlocked_section + 1) + '/' + totalSec + '</div>';
+      }
+    }
+    
+    return '<div class="card" style="padding:14px; border:1px solid var(--line); margin-bottom: 8px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">' +
+        '<b style="font-size:.92rem; line-height:1.45;">' + l.title + '</b>' +
+        badgeHTML +
+      '</div>' +
+      detailHTML +
+      '</div>';
+  }).join('');
+  
+  $('modalTheoryProgress').style.display = 'flex';
+}
+
+function dongTheoryProgress() {
+  $('modalTheoryProgress').style.display = 'none';
+}
 </script>
+
+<!-- Modal Chi Tiết Đọc Lý Thuyết -->
+<div class="modal" id="modalTheoryProgress" style="z-index: 106;">
+  <div class="modal-content" style="max-width: 550px;">
+    <button class="modal-close" onclick="dongTheoryProgress()">×</button>
+    <h2>Chi tiết đọc lý thuyết trước lớp</h2>
+    <p style="font-size:0.9rem; color:var(--ink-2); margin-top:-10px; margin-bottom:16px;">
+      Tiến độ đọc bài của học sinh: <b id="tpStudentName" style="color:var(--accent)">-</b>
+    </p>
+    <div id="tpContainer" style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Sẽ hiển thị động -->
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -191,13 +191,33 @@ async function xoaDeThi(id) {
 
 /* ----- Trình biên dịch LaTeX Parser ----- */
 function parseLatexQuestions(latexText) {
-  // Tìm tất cả khối \begin{ex} ... \end{ex}
-  var regexEx = /\\begin\{ex\}([\s\S]*?)\\end\{ex\}/g;
+  function parseBraces(text, count) {
+    var blocks = [];
+    var index = 0;
+    for (var b = 0; b < count; b++) {
+      var start = text.indexOf('{', index);
+      if (start === -1) break;
+      var braceCount = 1;
+      var i = start + 1;
+      while (i < text.length && braceCount > 0) {
+        if (text[i] === '{') braceCount++;
+        else if (text[i] === '}') braceCount--;
+        i++;
+      }
+      blocks.push(text.substring(start + 1, i - 1));
+      index = i;
+    }
+    return blocks;
+  }
+
+  // Tìm tất cả khối \begin{ex} ... \end{ex} hoặc \begin{bt} ... \end{bt}
+  var regexEx = /\\begin\{(ex|bt)\}([\s\S]*?)\\end\{\1\}/g;
   var match;
   var questions = [];
   
   while ((match = regexEx.exec(latexText)) !== null) {
-    var content = match[1];
+    var envType = match[1];
+    var content = match[2];
     
     // 1. Tách lời giải \loigiai{...}
     var solution = "";
@@ -217,47 +237,75 @@ function parseLatexQuestions(latexText) {
       }
     }
     
-    // 2. Tách các phương án trắc nghiệm \choice{A}{B}{C}{D}
+    // 2. Tách các phương án trắc nghiệm
     var choices = [];
+    var choiceTFIndex = content.indexOf('\\choiceTF');
     var choiceIndex = content.indexOf('\\choice');
     var questionBody = content;
     
-    if (choiceIndex !== -1) {
-      questionBody = content.substring(0, choiceIndex).trim();
-      var remaining = content.substring(choiceIndex);
-      
-      var blocks = [];
-      var index = 0;
-      for (var b = 0; b < 4; b++) {
-        var start = remaining.indexOf('{', index);
-        if (start === -1) break;
-        var braceCount = 1;
-        var i = start + 1;
-        while (i < remaining.length && braceCount > 0) {
-          if (remaining[i] === '{') braceCount++;
-          else if (remaining[i] === '}') braceCount--;
-          i++;
-        }
-        blocks.push(remaining.substring(start + 1, i - 1));
-        index = i;
-      }
-      
-      var keys = ['A', 'B', 'C', 'D'];
-      blocks.forEach(function (block, idx) {
-        var isCorrect = false;
-        var cleaned = block.trim();
-        if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
-          isCorrect = true;
-          cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
-        }
-        cleaned = cleaned.replace(/^[A-D]\.\s*/i, ''); // xóa nhãn "A." nếu có
-        
+    if (envType === 'bt') {
+      // Tự luận / Trả lời ngắn: Tìm đáp án trong lời giải
+      var ansMatch = solution.match(/\\textbf\{(Câu trả lời|Đáp số|Kết quả|Đáp án):?\}\s*([^\n}]+)/i);
+      if (ansMatch) {
+        var ansText = ansMatch[2].replace(/\.$/, '').trim();
         choices.push({
-          key: keys[idx],
-          latex: cleaned,
-          correct: isCorrect
+          key: 'short',
+          latex: ansText,
+          correct: true
         });
-      });
+      }
+    } else {
+      // Môi trường ex: có thể là Trắc nghiệm hoặc Đúng/Sai
+      if (choiceTFIndex !== -1) {
+        questionBody = content.substring(0, choiceTFIndex).trim();
+        var remaining = content.substring(choiceTFIndex + 9);
+        var blocks = parseBraces(remaining, 4);
+        var keys = ['a', 'b', 'c', 'd'];
+        blocks.forEach(function (block, idx) {
+          var isCorrect = false;
+          var cleaned = block.trim();
+          if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
+            isCorrect = true;
+            cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
+          }
+          cleaned = cleaned.replace(/^[a-d][\.\)]\s*/i, ''); // xóa nhãn
+          choices.push({
+            key: keys[idx],
+            latex: cleaned,
+            correct: isCorrect
+          });
+        });
+      } else if (choiceIndex !== -1) {
+        questionBody = content.substring(0, choiceIndex).trim();
+        var remaining = content.substring(choiceIndex + 7);
+        var blocks = parseBraces(remaining, 4);
+        var keys = ['A', 'B', 'C', 'D'];
+        blocks.forEach(function (block, idx) {
+          var isCorrect = false;
+          var cleaned = block.trim();
+          if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
+            isCorrect = true;
+            cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
+          }
+          cleaned = cleaned.replace(/^[A-D][\.\)]\s*/i, '');
+          choices.push({
+            key: keys[idx],
+            latex: cleaned,
+            correct: isCorrect
+          });
+        });
+      } else {
+        // Fallback: Nếu ex không có choice thì tìm câu trả lời ngắn trong lời giải
+        var ansMatch = solution.match(/\\textbf\{(Câu trả lời|Đáp số|Kết quả|Đáp án):?\}\s*([^\n}]+)/i);
+        if (ansMatch) {
+          var ansText = ansMatch[2].replace(/\.$/, '').trim();
+          choices.push({
+            key: 'short',
+            latex: ansText,
+            correct: true
+          });
+        }
+      }
     }
     
     questions.push({
@@ -274,7 +322,7 @@ function demoParseLaTeX() {
   parsedQuestions = parseLatexQuestions(raw);
   
   if (!parsedQuestions.length) {
-    alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} trong đoạn code dán vào.');
+    alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
     $('vungPreview').style.display = 'none';
     $('btnSave').disabled = true;
     return;
@@ -285,19 +333,39 @@ function demoParseLaTeX() {
   $('btnSave').disabled = false;
   
   $('dsPreview').innerHTML = parsedQuestions.map(function (q, idx) {
-    var choicesHTML = q.choices.map(function (c) {
-      var correctClass = c.correct ? ' correct' : '';
-      return '<div class="q-preview-choice' + correctClass + '">' +
-        '<b>' + c.key + '.</b> ' + escapeHTML(c.latex) +
-        '</div>';
-    }).join('');
+    var typeText = "";
+    var choicesHTML = "";
+    
+    var isTF = q.choices.length === 4 && q.choices[0].key === 'a';
+    var isShort = q.choices.length === 1 && q.choices[0].key === 'short';
+    
+    if (isShort) {
+      typeText = " (Phần III - Trả lời ngắn)";
+      choicesHTML = '<div class="q-preview-choice correct"><b>Đáp số đúng:</b> ' + escapeHTML(q.choices[0].latex) + '</div>';
+    } else if (isTF) {
+      typeText = " (Phần II - Đúng / Sai)";
+      choicesHTML = q.choices.map(function (c) {
+        var marker = c.correct ? '<span style="color:var(--ok);font-weight:bold">ĐÚNG</span>' : '<span style="color:var(--err);font-weight:bold">SAI</span>';
+        return '<div class="q-preview-choice">' +
+          '<b>' + c.key + ')</b> ' + escapeHTML(c.latex) + ' &rarr; ' + marker +
+          '</div>';
+      }).join('');
+    } else {
+      typeText = " (Phần I - Trắc nghiệm)";
+      choicesHTML = q.choices.map(function (c) {
+        var correctClass = c.correct ? ' correct' : '';
+        return '<div class="q-preview-choice' + correctClass + '">' +
+          '<b>' + c.key + '.</b> ' + escapeHTML(c.latex) +
+          '</div>';
+      }).join('');
+    }
     
     var solHTML = q.solution_latex 
       ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + escapeHTML(q.solution_latex) + '</div>'
       : '';
       
     return '<div class="q-preview-card">' +
-      '<div class="q-preview-title">Câu ' + (idx + 1) + '</div>' +
+      '<div class="q-preview-title">Câu ' + (idx + 1) + typeText + '</div>' +
       '<div style="margin-bottom:10px">' + escapeHTML(q.content_latex) + '</div>' +
       choicesHTML + solHTML +
       '</div>';

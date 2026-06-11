@@ -100,6 +100,34 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .quiz-choice.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); font-weight: 600; }
 .quiz-choice-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; font-weight: 700; font-size: .8rem; }
 .quiz-sol { margin-top: 14px; padding: 16px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .9rem; line-height: 1.6; }
+
+/* Gated Active Reading Styles */
+.theory-reading-container { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
+.theory-section-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; box-shadow: var(--shadow-sm); opacity: 0; transform: translateY(10px); animation: slideUp 0.3s forwards ease-out; }
+@keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+.theory-content { font-size: 1.05rem; line-height: 1.7; color: var(--ink); }
+.gate-box { border-top: 1px dashed var(--line-2); padding-top: 20px; margin-top: 20px; background: var(--surface-2); border-radius: var(--r-sm); padding: 16px; }
+.gate-box.correct { border: 1px solid var(--ok); background: var(--ok-soft); }
+.gate-title { font-weight: 700; margin-bottom: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+
+/* Giao diện Phần II (Đúng/Sai) */
+.tf-container { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.tf-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); gap: 12px; }
+.tf-statement { font-size: .92rem; flex: 1; }
+.tf-btns { display: flex; gap: 6px; }
+.tf-btn { border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); font-weight: 600; font-size: .82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+.tf-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tf-btn.selected-true { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tf-btn.selected-false { background: var(--err); border-color: var(--err); color: #fff; }
+.tf-btn.correct-true { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.tf-btn.correct-false { background: var(--err-soft); border-color: var(--err); color: var(--err); }
+
+/* Giao diện Phần III (Trả lời ngắn) */
+.short-input-container { margin-top: 12px; display: flex; gap: 10px; align-items: center; }
+.short-input { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); color: var(--ink); font-size: .95rem; width: 220px; font-weight: 600; transition: all .15s; }
+.short-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
+.short-input.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.short-input.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); }
 </style>
 </head>
 <body>
@@ -112,6 +140,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
     </div>
     <div class="switcher" id="boChuyen" style="display:none">
+      <button class="sw-btn" id="swLyThuyet" onclick="chonNoiDung('lythuyet')">📖 <span class="sw-text">Đọc lý thuyết</span></button>
       <button class="sw-btn" id="swTaiLieu" onclick="chonNoiDung('tailieu')">📄 <span class="sw-text">Tài liệu</span></button>
       <button class="sw-btn" id="swBang" onclick="chonNoiDung('bang')">🖼 <span class="sw-text">Bảng</span></button>
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
@@ -374,32 +403,45 @@ function renderBaiHoc() {
     vc.innerHTML = '<div class="no-content" style="background:var(--surface)"><div class="ic">📭</div><h3>Không có video</h3><p>Bài học này chưa gắn video bài giảng.</p></div>';
   }
 
-  // ---- Khung phải: 3 loại nội dung ----
+  // ---- Khung phải: 4 loại nội dung ----
+  var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
   var coTaiLieu = !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
   var coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
   $('boChuyen').style.display = 'flex';
+  $('swLyThuyet').style.display = coLyThuyet ? '' : 'none';
   $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
   $('swBang').style.display = dsAnh.length ? '' : 'none';
   $('swTest').style.display = coTest ? '' : 'none';
 
-  if (!coTaiLieu && !dsAnh.length && !coTest) {
+  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest) {
     $('boChuyen').style.display = 'none';
     $('thanNoiDung').innerHTML = '<div class="no-content"><div class="ic">📑</div><h3>Không có nội dung kèm theo</h3><p>Bài học này chỉ có video bài giảng.</p></div>';
     if ((ytId || driveId) && window.innerWidth > 820) phongToPane('video');
     return;
   }
-  chonNoiDung(coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
+  chonNoiDung(coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test')));
 }
 
-function chonNoiDung(loai) {
+async function chonNoiDung(loai) {
   noiDungDangChon = loai;
-  ['TaiLieu', 'Bang', 'Test'].forEach(function (t) { $('sw' + t).classList.remove('active'); });
+  ['LyThuyet', 'TaiLieu', 'Bang', 'Test'].forEach(function (t) { 
+    var el = $('sw' + t);
+    if (el) el.classList.remove('active'); 
+  });
   var than = $('thanNoiDung');
 
-  if (loai === 'tailieu') {
+  if (loai === 'lythuyet') {
+    $('swLyThuyet').classList.add('active');
+    than.innerHTML = thanhCongCu('📖 Đọc lý thuyết bài học', null) +
+      '<div class="no-content"><div class="spinner"></div><h3>Đang tải tiến trình đọc...</h3></div>';
+    await taiTienTrinhDoc();
+    await taiCauHoiChanData();
+    await autoUnlockProgress();
+    renderTheoryReading();
+  } else if (loai === 'tailieu') {
     $('swTaiLieu').classList.add('active');
     var u = buildPdfUrl(details.documents.file_path);
     than.innerHTML = thanhCongCu('📄 ' + details.documents.title, u) +
@@ -617,6 +659,272 @@ function phongToPane(loai) {
     bv.textContent = '⛶'; bc.textContent = '⛶';
     viewMode = 'split';
   }
+}
+
+/* ----- TIẾN TRÌNH ĐỌC LÝ THUYẾT & CÂU HỎI CHẶN (ACTIVE READING) ----- */
+var currentProgress = { unlocked_section: 0, completed_at: null, answers: {} };
+var gatedQuestionsMap = {};
+var currentGateSelection = {};
+
+function isShortAnswerCorrect(studentAns, correctAns) {
+  if (studentAns === undefined || studentAns === null || correctAns === undefined || correctAns === null) return false;
+  var s = studentAns.toString().trim().replace(/,/g, '.').replace(/\s+/g, '');
+  var c = correctAns.toString().trim().replace(/,/g, '.').replace(/\s+/g, '');
+  return s === c;
+}
+
+async function taiTienTrinhDoc() {
+  try {
+    var r = await sb.from('student_lesson_progress')
+      .select('unlocked_section, completed_at, answers')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .maybeSingle();
+      
+    if (r.data) {
+      currentProgress = r.data;
+      if (typeof currentProgress.answers === 'string') {
+        try { currentProgress.answers = JSON.parse(currentProgress.answers); } catch(e) {}
+      }
+      currentProgress.answers = currentProgress.answers || {};
+    } else {
+      currentProgress = { unlocked_section: 0, completed_at: null, answers: {} };
+    }
+  } catch (e) {
+    console.error('Lỗi tải tiến trình đọc:', e);
+  }
+}
+
+async function luuTienTrinhDoc() {
+  try {
+    await sb.from('student_lesson_progress').upsert({
+      student_id: nguoiDung.id,
+      lesson_id: lessonId,
+      unlocked_section: currentProgress.unlocked_section,
+      completed_at: currentProgress.completed_at,
+      answers: currentProgress.answers
+    });
+  } catch (e) {
+    console.error('Lỗi lưu tiến trình đọc:', e);
+  }
+}
+
+async function taiCauHoiChanData() {
+  var qIds = (details.theory_sections || [])
+    .map(function (s) { return s.question_id; })
+    .filter(Boolean);
+    
+  if (qIds.length > 0) {
+    try {
+      var r = await sb.from('questions')
+        .select('id, content_latex, choices, solution_latex')
+        .in('id', qIds);
+      
+      gatedQuestionsMap = {};
+      (r.data || []).forEach(function (q) {
+        gatedQuestionsMap[q.id] = q;
+      });
+    } catch (e) {
+      console.error('Lỗi tải câu hỏi chặn:', e);
+    }
+  }
+}
+
+async function autoUnlockProgress() {
+  var unlocked = currentProgress.unlocked_section || 0;
+  var total = (details.theory_sections || []).length;
+  
+  while (unlocked < total) {
+    var currentSec = details.theory_sections[unlocked];
+    if (!currentSec.question_id) {
+      unlocked++;
+    } else {
+      break;
+    }
+  }
+  
+  if (unlocked !== (currentProgress.unlocked_section || 0)) {
+    currentProgress.unlocked_section = unlocked;
+    if (unlocked === total) {
+      currentProgress.completed_at = new Date().toISOString();
+    }
+    await luuTienTrinhDoc();
+  }
+}
+
+function chonDapAnGate(qId, key) {
+  currentGateSelection[qId] = key;
+  var box = document.querySelector('[id^="secCard-"] .gate-box');
+  if (box) {
+    var choices = box.querySelectorAll('.quiz-choice');
+    choices.forEach(function (el) {
+      if (el.getAttribute('onclick').includes(key)) el.classList.add('selected');
+      else el.classList.remove('selected');
+    });
+  }
+}
+
+function chonDapAnGateTF(qId, key, val) {
+  currentGateSelection[qId] = currentGateSelection[qId] || {};
+  currentGateSelection[qId][key] = val;
+  renderTheoryReading();
+}
+
+function capNhatGateShortValue(qId, val) {
+  currentGateSelection[qId] = val;
+}
+
+async function kiemTraDapAnGate(qId, idx) {
+  var q = gatedQuestionsMap[qId];
+  if (!q) return;
+  
+  var studentAns = currentGateSelection[qId];
+  var isCorrect = false;
+  
+  var isPartI = q.choices && q.choices.length === 4 && ['A', 'B', 'C', 'D'].includes(q.choices[0].key);
+  var isPartII = q.choices && q.choices.length === 4 && ['a', 'b', 'c', 'd'].includes(q.choices[0].key);
+  var isPartIII = !q.choices || q.choices.length === 1 || q.choices[0].key === 'short';
+  
+  if (isPartI) {
+    var correctChoice = q.choices.find(function (c) { return c.correct; });
+    if (correctChoice && correctChoice.key === studentAns) isCorrect = true;
+  } else if (isPartII) {
+    var tfAns = studentAns || {};
+    var allCorrect = true;
+    q.choices.forEach(function (c) {
+      var correctVal = c.correct ? 'D' : 'S';
+      if (tfAns[c.key] !== correctVal) allCorrect = false;
+    });
+    isCorrect = allCorrect;
+  } else if (isPartIII) {
+    var correctVal = q.choices[0] ? q.choices[0].latex : '';
+    isCorrect = isShortAnswerCorrect(studentAns, correctVal);
+  }
+  
+  if (isCorrect) {
+    currentProgress.answers[qId] = studentAns;
+    currentProgress.unlocked_section = idx + 1;
+    if (idx + 1 === details.theory_sections.length) {
+      currentProgress.completed_at = new Date().toISOString();
+    }
+    
+    await luuTienTrinhDoc();
+    await autoUnlockProgress();
+    renderTheoryReading();
+    
+    setTimeout(function () {
+      var nextCard = $('secCard-' + (idx + 1));
+      if (nextCard) {
+        nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  } else {
+    alert('Câu trả lời chưa chính xác. Em hãy đọc kỹ lý thuyết bên trên và chọn lại nhé!');
+  }
+}
+
+function renderTheoryReading() {
+  var than = $('thanNoiDung');
+  var sections = details.theory_sections || [];
+  
+  var html = thanhCongCu('📖 Đọc lý thuyết bài học', null) +
+    '<div class="theory-reading-container" id="readingContainer">';
+    
+  var unlocked = currentProgress.unlocked_section || 0;
+  
+  if (currentProgress.completed_at) {
+    var dt = new Date(currentProgress.completed_at).toLocaleString('vi-VN');
+    html += '<div class="card" style="border-color: var(--ok); background: var(--ok-soft); color: var(--ok); padding: 14px; margin-bottom: 10px;">' +
+      '<b>🎉 Chúc mừng em đã hoàn thành đọc lý thuyết bài học này!</b><br>' +
+      'Đã ghi nhận chuyên cần lúc: ' + dt +
+      '</div>';
+  }
+  
+  sections.forEach(function (sec, idx) {
+    if (idx < unlocked) {
+      var gateHTML = '';
+      if (sec.question_id) {
+        gateHTML = '<div class="gate-box correct">' +
+          '<div class="gate-title">✓ Đã vượt qua câu hỏi chặn</div>' +
+          '</div>';
+      }
+      html += '<div class="theory-section-card" id="secCard-' + idx + '">' +
+        '<div class="theory-content">' + sec.content_latex + '</div>' +
+        gateHTML +
+        '</div>';
+    } else if (idx === unlocked) {
+      var gateHTML = '';
+      if (sec.question_id) {
+        var q = gatedQuestionsMap[sec.question_id];
+        if (q) {
+          var isPartI = q.choices && q.choices.length === 4 && ['A', 'B', 'C', 'D'].includes(q.choices[0].key);
+          var isPartII = q.choices && q.choices.length === 4 && ['a', 'b', 'c', 'd'].includes(q.choices[0].key);
+          var isPartIII = !q.choices || q.choices.length === 1 || q.choices[0].key === 'short';
+          
+          var questionChoicesHTML = '';
+          if (isPartI) {
+            var selected = currentGateSelection[q.id];
+            questionChoicesHTML = '<div class="quiz-choices">';
+            q.choices.forEach(function (c) {
+              var activeClass = (selected === c.key) ? ' selected' : '';
+              questionChoicesHTML += '<div class="quiz-choice' + activeClass + '" onclick="chonDapAnGate(\'' + q.id + '\', \'' + c.key + '\')">' +
+                '<span class="quiz-choice-key">' + c.key + '</span>' +
+                '<span>' + c.latex + '</span>' +
+                '</div>';
+            });
+            questionChoicesHTML += '</div>';
+          } else if (isPartII) {
+            var tfAns = currentGateSelection[q.id] || {};
+            questionChoicesHTML = '<div class="tf-container">';
+            q.choices.forEach(function (c) {
+              var studentChoice = tfAns[c.key] || '';
+              var btnTrueClass = 'tf-btn' + (studentChoice === 'D' ? ' selected-true' : '');
+              var btnFalseClass = 'tf-btn' + (studentChoice === 'S' ? ' selected-false' : '');
+              
+              questionChoicesHTML += '<div class="tf-row">' +
+                '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + c.latex + '</div>' +
+                '<div class="tf-btns">' +
+                  '<button class="' + btnTrueClass + '" onclick="chonDapAnGateTF(\'' + q.id + '\', \'' + c.key + '\', \'D\')">Đúng</button>' +
+                  '<button class="' + btnFalseClass + '" onclick="chonDapAnGateTF(\'' + q.id + '\', \'' + c.key + '\', \'S\')">Sai</button>' +
+                '</div>' +
+              '</div>';
+            });
+            questionChoicesHTML += '</div>';
+          } else if (isPartIII) {
+            var textVal = currentGateSelection[q.id] || '';
+            questionChoicesHTML = '<div class="short-input-container">' +
+              '<span>Nhập câu trả lời: </span>' +
+              '<input type="text" class="short-input" value="' + textVal + '" placeholder="Đáp số..." onchange="capNhatGateShortValue(\'' + q.id + '\', this.value)" oninput="capNhatGateShortValue(\'' + q.id + '\', this.value)">' +
+            '</div>';
+          }
+          
+          gateHTML = '<div class="gate-box">' +
+            '<div class="gate-title">🔒 Câu hỏi chặn: Trả lời đúng để đọc tiếp</div>' +
+            '<div style="font-weight: 600; margin-bottom: 12px;">' + q.content_latex + '</div>' +
+            questionChoicesHTML +
+            '<button class="btn btn-primary btn-sm" onclick="kiemTraDapAnGate(\'' + q.id + '\', ' + idx + ')" style="margin-top: 14px;">Xác nhận câu trả lời</button>' +
+            '</div>';
+        } else {
+          gateHTML = '<div class="gate-box">Đang tải câu hỏi chặn...</div>';
+        }
+      }
+      
+      html += '<div class="theory-section-card" id="secCard-' + idx + '">' +
+        '<div class="theory-content">' + sec.content_latex + '</div>' +
+        gateHTML +
+        '</div>';
+    } else {
+      if (idx === unlocked + 1) {
+        html += '<div class="theory-section-card locked" id="secCard-' + idx + '" style="text-align:center; padding:20px; border:1px dashed var(--line); color:var(--ink-3); font-size:.9rem;">' +
+          '🔒 Đoạn lý thuyết tiếp theo đang được khóa. Hãy hoàn thành câu hỏi chặn phía trên để mở khóa.' +
+          '</div>';
+      }
+    }
+  });
+  
+  html += '</div>';
+  than.innerHTML = html;
+  renderLatex(than);
 }
 </script>
 </body>
