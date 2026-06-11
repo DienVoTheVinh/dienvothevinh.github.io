@@ -1186,7 +1186,7 @@ async function generateAndCompilePDF() {
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
   
-  var preamble = layPreamble();
+  var preamble = PREAMBLE_MAC_DINH;
   
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
   preamble = preamble.replace(/\\documentclass\[.*\]\{book\}/, '\\documentclass[' + classOpt + ']{book}');
@@ -1319,6 +1319,23 @@ function downloadCompiledPDF() {
   link.download = currentExam.title + (pdfCompileMode === 'solution' ? '_loi_giai' : '') + '.pdf';
   link.click();
 }
+
+// Lưới an toàn: mọi lỗi khi sinh PDF phải hiện ra, không được treo vòng xoay
+var _gocSinhPDF = generateAndCompilePDF;
+generateAndCompilePDF = async function () {
+  try {
+    await _gocSinhPDF.apply(this, arguments);
+  } catch (e) {
+    console.error('Lỗi sinh PDF:', e);
+    var kh = $('pdfIframeContainer');
+    if (kh) {
+      kh.innerHTML = '<div class="card" style="padding:16px;border-color:var(--err);color:var(--err);margin-top:16px">Lỗi khi tạo PDF: ' + e.message + '</div>';
+      kh.style.display = 'block';
+    }
+    var ld = $('pdfLoading');
+    if (ld) ld.style.display = 'none';
+  }
+};
 
 function dongPdfPreview() {
   $('modalPdfPreview').style.display = 'none';
