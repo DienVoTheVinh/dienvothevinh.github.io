@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sổ tay quản trị VinhMath</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F1;--surface:#FFF;--surface-2:#EFECE6;
+  --ink:#1F1D1A;--ink-2:#6E6862;--ink-3:#A8A29A;
+  --line:#E4E0D8;--line-2:#D2CCC2;
+  --accent:#B5483A;--accent-soft:#F6E9E6;
+  --ok:#5E7B5E;--ok-soft:#EAF0EA;--warn:#A8842C;--warn-soft:#F5EEDD;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Be Vietnam Pro",sans-serif;font-size:15.5px;line-height:1.7}
+.wrap{max-width:860px;margin:0 auto;padding:56px 24px 120px}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.35rem;font-weight:700;margin:56px 0 12px;padding-top:24px;border-top:1px solid var(--line)}
+h2 .num{color:var(--accent);margin-right:8px}
+h3{font-size:1.02rem;font-weight:600;margin:24px 0 8px}
+p{margin:10px 0;color:var(--ink-2)}
+b,strong{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin:14px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th{text-align:left;font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2);background:var(--surface-2)}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+ol,ul{margin:10px 0 10px 24px;color:var(--ink-2)}
+li{margin:6px 0}
+code{font-family:Menlo,Consolas,monospace;font-size:.84em;background:var(--surface-2);padding:2px 7px;border-radius:6px;color:var(--ink)}
+pre{background:#26241F;color:#ECE8E1;border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:.82rem;line-height:1.6;margin:14px 0}
+pre code{background:none;color:inherit;padding:0}
+.note{background:var(--warn-soft);border-radius:12px;padding:13px 17px;margin:14px 0;font-size:.92rem;color:#7A6120}
+.tip{background:var(--ok-soft);border-radius:12px;padding:13px 17px;margin:14px 0;font-size:.92rem;color:#42593F}
+.danger{background:var(--accent-soft);border-radius:12px;padding:13px 17px;margin:14px 0;font-size:.92rem;color:#8F3A2E}
+a{color:var(--accent)}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 26px;margin-top:28px}
+.toc a{text-decoration:none;display:block;padding:4px 0;color:var(--ink-2)}
+.toc a:hover{color:var(--accent)}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;margin-bottom:20px}
+.logo .dot{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center}
+@media print{.toc{display:none}body{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="logo"><span class="dot">V</span>VinhMath · Sổ tay quản trị</div>
+<h1>Toàn quyền làm chủ hệ thống</h1>
+<p>Tài liệu này dành riêng cho thầy Vinh — chủ hệ thống. Không chia sẻ cho học sinh.<br>Cập nhật lần cuối: 10/6/2026.</p>
+
+<div class="toc">
+<b>Mục lục</b>
+<a href="#s1">1 · Bản đồ hệ thống: web của thầy gồm những gì</a>
+<a href="#s2">2 · Sửa giao diện, chữ nghĩa, màu sắc</a>
+<a href="#s3">3 · Thêm / đổi ảnh</a>
+<a href="#s4">4 · Cập nhật web lên mạng (quan trọng nhất)</a>
+<a href="#s5">5 · Thêm tài liệu PDF từ LaTeX</a>
+<a href="#s6">6 · Tạo lớp & cấp tài khoản học sinh</a>
+<a href="#s7">7 · Phân cấp tài khoản: thầy vs học sinh</a>
+<a href="#s8">8 · Cấp lại mật khẩu cho học sinh</a>
+<a href="#s9">9 · Sự cố thường gặp & cách xử lý</a>
+<a href="#s10">10 · Nhờ Claude làm tiếp như thế nào</a>
+</div>
+
+<h2 id="s1"><span class="num">1</span>Bản đồ hệ thống</h2>
+<p>Web VinhMath gồm <b>3 dịch vụ miễn phí</b> ghép lại. Mỗi nơi thầy có một tài khoản riêng:</p>
+<table>
+<tr><th>Dịch vụ</th><th>Vai trò</th><th>Địa chỉ</th><th>Đăng nhập bằng</th></tr>
+<tr><td><b>GitHub</b></td><td>Chứa code web — sửa giao diện thì cập nhật ở đây</td><td>github.com/DienVoTheVinh/dienvothevinh.github.io</td><td>Tài khoản GitHub của thầy</td></tr>
+<tr><td><b>Supabase</b></td><td>"Tủ hồ sơ": tài khoản HS, điểm, tài liệu, dữ liệu</td><td>supabase.com/dashboard</td><td>Email dienvothevinh29@gmail.com</td></tr>
+<tr><td><b>Web cho HS</b></td><td>Trang học sinh và thầy dùng hằng ngày</td><td><b>dienvothevinh.github.io</b></td><td>Tài khoản <code>thayvinh</code> (vai trò giáo viên)</td></tr>
+</table>
+<p>Bản gốc của toàn bộ code nằm trong thư mục <code>DAY HOC/web/trang-web</code> trên máy của thầy. Quy trình muôn thuở: <b>sửa file trong máy → xem thử → tải lên GitHub → web ngoài mạng đổi theo</b>.</p>
+<table>
+<tr><th>File trong trang-web</th><th>Nó là gì</th></tr>
+<tr><td><code>index.html</code></td><td>Trang chủ (câu chuyện, số liệu, slogan)</td></tr>
+<tr><td><code>dang-nhap.html</code></td><td>Trang đăng nhập</td></tr>
+<tr><td><code>hoc-tap.html</code></td><td>Trang Học tập của HS sau khi đăng nhập</td></tr>
+<tr><td><code>tai-lieu.html</code></td><td>Kho tài liệu HS xem/tải</td></tr>
+<tr><td><code>quan-tri-tai-lieu.html</code></td><td>Trang soạn tài liệu LaTeX (chỉ thầy thấy)</td></tr>
+<tr><td><code>tokens.css</code></td><td><b>Bảng màu & cỡ chữ toàn hệ thống</b> — đổi 1 chỗ, mọi trang đổi theo</td></tr>
+<tr><td><code>vinhmath.css</code></td><td>Linh kiện giao diện dùng chung (nút, thẻ, bảng…)</td></tr>
+<tr><td><code>config.js</code></td><td>2 mã kết nối tới Supabase — <b>đừng sửa</b></td></tr>
+<tr><td><code>vinhmath.js</code></td><td>Bộ não chung: đăng nhập, phân quyền, dark mode</td></tr>
+</table>
+
+<h2 id="s2"><span class="num">2</span>Sửa giao diện, chữ nghĩa, màu sắc</h2>
+<h3>Sửa chữ (slogan, số liệu, thông tin chuyên môn…)</h3>
+<ol>
+<li>Mở thư mục <code>DAY HOC/web/trang-web</code>, chuột phải file cần sửa (vd <code>index.html</code>) → Open With → <b>TextEdit</b>.</li>
+<li>Bấm <b>Cmd+F</b> tìm đúng câu chữ đang hiện trên web (vd "150+"), sửa thành nội dung mới, lưu lại (Cmd+S).</li>
+<li>Nháy đúp file để xem thử trong trình duyệt. Ưng rồi thì làm bước cập nhật ở mục 4.</li>
+</ol>
+<div class="note">Quy tắc an toàn: chỉ sửa phần chữ nằm <b>giữa</b> các dấu <code>&gt;…&lt;</code>. Đừng xoá các thẻ <code>&lt;div&gt;</code>, <code>&lt;p&gt;</code>… Lỡ hỏng thì đừng lo — GitHub giữ lại mọi phiên bản cũ, và Claude khôi phục được.</div>
+<h3>Đổi màu thương hiệu</h3>
+<p>Mở <code>tokens.css</code>, mọi màu đều có chú thích tiếng Việt. Ví dụ muốn đổi màu đỏ son sang xanh: sửa dòng <code>--accent: #B5483A;</code> thành mã màu khác (tra "color picker" trên Google để lấy mã). Lưu — toàn bộ web đổi theo, kể cả dark mode có khu riêng bên dưới.</p>
+
+<h2 id="s3"><span class="num">3</span>Thêm / đổi ảnh</h2>
+<ol>
+<li>Chuẩn bị ảnh JPG: ảnh chân dung đặt tên <b>anh-thay.jpg</b>, ảnh lớp học <b>anh-lop.jpg</b> (đúng tên, viết thường).</li>
+<li>Thả 2 file vào thư mục <code>trang-web</code>.</li>
+<li>Nháy đúp <code>index.html</code> kiểm tra ảnh đã hiện đúng chỗ.</li>
+<li>Tải 2 ảnh lên GitHub theo mục 4 — xong.</li>
+</ol>
+<p>Muốn thêm ảnh ở vị trí mới hoàn toàn (vd thư viện ảnh lớp): việc này cần thêm code — nhờ Claude (mục 10).</p>
+
+<h2 id="s4"><span class="num">4</span>Cập nhật web lên mạng — thao tác quan trọng nhất</h2>
+<p>Mỗi khi sửa bất kỳ file nào trong <code>trang-web</code>, làm 5 bước sau để web ngoài mạng đổi theo:</p>
+<ol>
+<li>Vào <b>github.com/DienVoTheVinh/dienvothevinh.github.io</b> (đăng nhập GitHub).</li>
+<li>Bấm nút <b>Add file</b> → <b>Upload files</b>.</li>
+<li><b>Kéo thả</b> các file vừa sửa từ thư mục <code>trang-web</code> vào trang (file trùng tên sẽ tự thay bản cũ).</li>
+<li>Bấm nút xanh <b>Commit changes</b>.</li>
+<li>Chờ 1–3 phút rồi mở <b>dienvothevinh.github.io</b> kiểm tra. Chưa thấy đổi thì bấm <b>Cmd+Shift+R</b> (tải lại bỏ qua bộ nhớ đệm).</li>
+</ol>
+<div class="tip">Mẹo: không nhớ đã sửa file nào thì cứ kéo thả <b>toàn bộ file</b> trong trang-web lên — GitHub tự so sánh, chỉ cập nhật phần thay đổi.</div>
+
+<h2 id="s5"><span class="num">5</span>Thêm tài liệu PDF từ LaTeX</h2>
+<ol>
+<li>Vào web, đăng nhập tài khoản <code>thayvinh</code>.</li>
+<li>Menu <b>Tài liệu</b> → nút <b>+ Soạn tài liệu</b> (nút này HS không nhìn thấy).</li>
+<li>Dán code LaTeX vào ô soạn, hoặc bấm <b>Chọn tệp</b> nạp file .tex có sẵn.</li>
+<li>Đặt <b>tiêu đề</b>, chọn <b>lớp được xem</b> (Mọi lớp = tất cả HS đều thấy).</li>
+<li>Bấm <b>▶ Biên dịch PDF</b> → chờ 10–30 giây → PDF hiện bên phải.</li>
+<li>Ưng thì bấm <b>💾 Lưu vào kho</b> — HS thấy ngay lập tức, không cần cập nhật GitHub.</li>
+</ol>
+<h3>Để tiếng Việt hiển thị đúng</h3>
+<p>Đầu file .tex cần có <code>\usepackage[utf8]{vietnam}</code> (dùng pdflatex). Nếu file của thầy dùng font đặc biệt thì chọn engine <b>xelatex</b>.</p>
+<h3>Xoá tài liệu đã đăng</h3>
+<p>Hiện tại làm qua Supabase: vào <b>Table Editor → bảng documents</b> → xoá dòng tương ứng (web sẽ hết hiện). Nút xoá ngay trên web sẽ được bổ sung sau.</p>
+<div class="note">texlive.net là máy chủ miễn phí của cộng đồng LaTeX — phù hợp soạn từng tài liệu, đừng đổ hàng loạt vài chục file một lúc.</div>
+
+<h2 id="s6"><span class="num">6</span>Tạo lớp & cấp tài khoản học sinh</h2>
+<p>Tài khoản HS gồm 2 phần: <b>tài khoản đăng nhập</b> (tạo ở mục Authentication) và <b>hồ sơ</b> (họ tên, lớp, vai trò — tạo bằng SQL). Em nào đăng nhập bằng tên nào là do thầy quyết: quy ước nên dùng là <code>tenem.lop</code>, ví dụ <code>nguyenvana.12a1</code>.</p>
+<h3>Bước A — Tạo lớp (làm 1 lần cho mỗi lớp)</h3>
+<p>Vào Supabase → <b>SQL Editor</b> → dán và Run (đổi tên lớp tuỳ ý):</p>
+<pre><code>insert into classes (name) values ('12A1');</code></pre>
+<h3>Bước B — Tạo tài khoản đăng nhập cho em HS</h3>
+<ol>
+<li>Supabase → <b>Authentication → Users</b> → <b>Add user → Create new user</b>.</li>
+<li>Email: <code>nguyenvana.12a1@hs.vinhmath.app</code> (tên đăng nhập + đuôi <code>@hs.vinhmath.app</code> — email ảo, không cần có thật).</li>
+<li>Mật khẩu: đặt tạm (vd <code>Toan2026@</code>), tick <b>Auto Confirm User</b> → <b>Create user</b>.</li>
+</ol>
+<h3>Bước C — Gắn hồ sơ (tên thật + lớp + vai trò)</h3>
+<p>SQL Editor → dán mẫu sau, đổi 3 chỗ in hoa → Run:</p>
+<pre><code>insert into profiles (id, role, username, full_name, class_id)
+select id, 'student', 'TEN_DANG_NHAP', 'HO TEN THAT',
+       (select id from classes where name = 'TEN_LOP')
+from auth.users
+where email = 'TEN_DANG_NHAP@hs.vinhmath.app';</code></pre>
+<p>Ví dụ thực tế: <code>'nguyenvana.12a1'</code>, <code>'Nguyễn Văn A'</code>, <code>'12A1'</code>. Xong — em A đăng nhập được ngay bằng <code>nguyenvana.12a1</code> + mật khẩu thầy cấp.</p>
+<div class="tip">Cấp cho cả lớp 40 em mà làm tay thì oải — đây chính là lý do bước tiếp theo của dự án là <b>trang quản trị cấp tài khoản hàng loạt</b> (dán danh sách từ Excel, bấm 1 nút). Nhắn Claude khi thầy muốn làm.</div>
+
+<h2 id="s7"><span class="num">7</span>Phân cấp tài khoản: thầy vs học sinh</h2>
+<p>Mọi tài khoản đều có cột <code>role</code> trong bảng <code>profiles</code>, chỉ nhận 1 trong 2 giá trị:</p>
+<table>
+<tr><th>role</th><th>Quyền</th></tr>
+<tr><td><code>teacher</code></td><td>Toàn quyền: thấy mọi dữ liệu, soạn tài liệu, sau này là giao bài, xem điểm cả lớp</td></tr>
+<tr><td><code>student</code></td><td>Chỉ thấy dữ liệu của chính mình + nội dung đã xuất bản cho lớp mình</td></tr>
+</table>
+<p>Phân quyền này được cài <b>bên trong cơ sở dữ liệu</b> (Row Level Security) chứ không chỉ ở giao diện — HS có giỏi máy tính đến đâu cũng không đọc được điểm bạn khác hay đề chưa công bố.</p>
+<p>Nâng một tài khoản lên quyền thầy (vd cấp cho trợ giảng) — chạy SQL:</p>
+<pre><code>update profiles set role = 'teacher' where username = 'TEN_DANG_NHAP';</code></pre>
+<p>Hạ xuống học sinh: đổi <code>'teacher'</code> thành <code>'student'</code> trong câu trên.</p>
+<div class="danger">Cẩn trọng: ai có role teacher là thấy được toàn bộ dữ liệu mọi học sinh. Chỉ cấp cho người thầy tin tưởng.</div>
+
+<h2 id="s8"><span class="num">8</span>Cấp lại mật khẩu cho học sinh</h2>
+<p>Email của HS là email ảo nên <b>không dùng được</b> tính năng "quên mật khẩu tự động". Cách làm: vào Supabase → <b>Authentication → Users</b> → tìm em đó (gõ tên vào ô tìm kiếm) → bấm dấu <b>⋯</b> cuối dòng → chọn mục đổi/đặt lại mật khẩu → đặt mật khẩu mới rồi nhắn cho em. Nếu giao diện Supabase thay đổi không tìm thấy mục này, nhắn Claude làm giúp trong 1 phút.</p>
+
+<h2 id="s9"><span class="num">9</span>Sự cố thường gặp</h2>
+<table>
+<tr><th>Hiện tượng</th><th>Nguyên nhân & cách xử lý</th></tr>
+<tr><td>Trang Supabase trắng xoá / báo lỗi</td><td>Google Dịch tự động phá trang. Tắt dịch cho supabase.com (Cài đặt Chrome → Ngôn ngữ) rồi Cmd+R.</td></tr>
+<tr><td>Sửa file rồi mà web không đổi</td><td>Chưa Commit trên GitHub, hoặc web chưa kịp cập nhật — chờ 2 phút, bấm Cmd+Shift+R.</td></tr>
+<tr><td>HS báo không đăng nhập được</td><td>Kiểm tra em gõ đúng tên đăng nhập chưa (không cần gõ phần @hs.vinhmath.app). Vẫn lỗi → cấp lại mật khẩu (mục 8).</td></tr>
+<tr><td>Biên dịch LaTeX báo lỗi</td><td>Đọc các dòng đầu của log lỗi hiện trên trang — thường do thiếu gói hoặc sai cú pháp. Bí quá thì gửi file .tex cho Claude.</td></tr>
+<tr><td>Lỡ xoá / sửa hỏng file</td><td>GitHub giữ mọi phiên bản: vào repo → History → mở phiên bản cũ để lấy lại. Hoặc nhờ Claude khôi phục.</td></tr>
+</table>
+
+<h2 id="s10"><span class="num">10</span>Nhờ Claude làm tiếp như thế nào</h2>
+<p>Mọi nâng cấp lớn (ngân hàng đề LaTeX, thi tự chấm, QR điểm danh, dashboard, cấp tài khoản hàng loạt…) đều theo một kịch bản:</p>
+<ol>
+<li>Mở app Claude → chế độ Cowork → chọn thư mục <b>DAY HOC/web</b>.</li>
+<li>Mô tả điều muốn làm bằng tiếng Việt thường, càng cụ thể càng tốt (kèm file mẫu nếu có — vd file .tex ngân hàng đề).</li>
+<li>Claude sửa code trong máy, kiểm tra, rồi cùng thầy đưa lên GitHub/Supabase như các buổi trước.</li>
+</ol>
+<p>Những gì còn lại trong lộ trình đã thống nhất: ngân hàng đề LaTeX gán ID theo chuyên đề · thi trắc nghiệm tự chấm · gán bài học video + bài tập · QR điểm danh · dashboard giám sát · trang cấp tài khoản hàng loạt · tên miền riêng (vd vinhmath.id.vn, ~60–70k/năm).</p>
+
+<p style="margin-top:48px;color:var(--ink-3);font-size:.85rem">VinhMath · Sổ tay quản trị v1 · Hệ thống: GitHub Pages + Supabase + texlive.net · 0 đồng/tháng</p>
+</div>
+</body>
+</html>

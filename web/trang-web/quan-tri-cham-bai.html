@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chấm bài — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 20px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+.tab-btn { background: transparent; border: 1px solid var(--line-2); padding: 7px 16px; font-family: inherit; font-size: .88rem; font-weight: 500; color: var(--ink-2); cursor: pointer; border-radius: 99px; }
+.tab-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.sub-card { margin-bottom: 16px; }
+.sub-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+.sub-files a { font-size: .88rem; }
+.grade-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; margin-top: 14px; align-items: start; }
+@media(max-width:640px) { .grade-row { grid-template-columns: 1fr; } }
+.empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Khu vực của thầy</div>
+    <h1>Chấm bài học sinh nộp</h1>
+    <p style="margin-top:6px">Bài nộp nằm trong Drive của thầy (thư mục <b>VINHMATH NOP BAI</b>). Chấm xong nhập điểm + lời phê, đính kèm file chấm nếu cần — học sinh thấy ngay.</p>
+  </div>
+
+  <div class="filters">
+    <button class="tab-btn active" id="loc-cho" onclick="locTheo('submitted')">🕐 Chờ chấm (<span id="demCho">0</span>)</button>
+    <button class="tab-btn" id="loc-xong" onclick="locTheo('graded')">✓ Đã chấm (<span id="demXong">0</span>)</button>
+    <button class="tab-btn" id="loc-tatca" onclick="locTheo('tatca')">Tất cả</button>
+  </div>
+
+  <div id="dsBaiNop"><div class="empty card">Đang tải…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var tatCa = [];
+var dangLoc = 'submitted';
+
+(async function () {
+  if (!daKetNoi()) { $('dsBaiNop').innerHTML = '<div class="empty card">Chưa kết nối Supabase.</div>'; return; }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+  await taiDanhSach();
+})();
+
+async function taiDanhSach() {
+  var r = await sb.from('submissions')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, lessons(title), profiles(full_name, username, classes(name))')
+    .order('submitted_at', { ascending: false });
+  if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
+  tatCa = r.data || [];
+  $('demCho').textContent = tatCa.filter(function (s) { return s.status === 'submitted'; }).length;
+  $('demXong').textContent = tatCa.filter(function (s) { return s.status === 'graded'; }).length;
+  veDanhSach();
+}
+
+function locTheo(loai) {
+  dangLoc = loai;
+  ['cho', 'xong', 'tatca'].forEach(function (k) { $('loc-' + k).classList.remove('active'); });
+  $('loc-' + (loai === 'submitted' ? 'cho' : loai === 'graded' ? 'xong' : 'tatca')).classList.add('active');
+  veDanhSach();
+}
+
+function veDanhSach() {
+  var ds = dangLoc === 'tatca' ? tatCa : tatCa.filter(function (s) { return s.status === dangLoc; });
+  if (!ds.length) {
+    $('dsBaiNop').innerHTML = '<div class="empty card">' + (dangLoc === 'submitted' ? 'Không có bài nào chờ chấm 🎉' : 'Trống.') + '</div>';
+    return;
+  }
+  $('dsBaiNop').innerHTML = ds.map(function (s) {
+    var hs = s.profiles || {};
+    var lop = hs.classes ? hs.classes.name : '—';
+    var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+    var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">📄 ' + f.name + '</a>'; }).join(' &nbsp; ');
+    var linksCham = (s.graded_files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">✏️ ' + f.name + '</a>'; }).join(' &nbsp; ');
+    var badge = s.status === 'graded'
+      ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>'
+      : '<span class="badge badge-warn">Chờ chấm</span>';
+    return '<div class="card sub-card" id="sub-' + s.id + '">' +
+      '<div class="sub-head">' +
+        '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
+        badge +
+      '</div>' +
+      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : 'Bài giảng đã xoá') + ' · ' + ngay + '</div>' +
+      '<div class="sub-files" style="margin-top:8px">' + links + '</div>' +
+      (linksCham ? '<div class="sub-files" style="margin-top:4px">' + linksCham + '</div>' : '') +
+      '<div class="grade-row">' +
+        '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? s.score : '') + '">' +
+        '<textarea class="input" rows="2" placeholder="Lời phê cho học sinh…" id="phe-' + s.id + '" style="resize:vertical">' + (s.feedback || '') + '</textarea>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
+        '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="font-size:.85rem;flex:1;min-width:200px">' +
+        '<button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function luuCham(id) {
+  var nut = $('luu-' + id);
+  nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
+  try {
+    // 1. Nếu có file chấm: gửi lên Drive qua trạm nop-bai
+    var fs = $('filecham-' + id).files;
+    if (fs.length) {
+      nut.textContent = '⏳ Đang tải file chấm…';
+      var fd = new FormData();
+      fd.append('kind', 'cham');
+      fd.append('submission_id', id);
+      for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
+      var r1 = await sb.functions.invoke('nop-bai', { body: fd });
+      if (r1.error) throw new Error(r1.error.message || 'Trạm lỗi');
+      if (r1.data && r1.data.error) throw new Error(r1.data.error);
+    }
+    // 2. Lưu điểm + lời phê
+    var diem = $('diem-' + id).value;
+    var r2 = await sb.from('submissions').update({
+      score: diem === '' ? null : parseFloat(diem),
+      feedback: $('phe-' + id).value.trim() || null,
+      status: 'graded',
+      graded_at: new Date().toISOString()
+    }).eq('id', id);
+    if (r2.error) throw new Error(r2.error.message);
+    await taiDanhSach();
+  } catch (e) {
+    alert('Lỗi khi lưu: ' + e.message);
+    nut.disabled = false; nut.textContent = '💾 Lưu & trả bài';
+  }
+}
+</script>
+</body>
+</html>

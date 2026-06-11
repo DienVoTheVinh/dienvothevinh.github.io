@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VinhMath — Lớp Toán Thầy Vinh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../thiet-ke/tokens.css">
+<link rel="stylesheet" href="../thiet-ke/vinhmath.css">
+<style>
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ---- Hero ---- */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center;padding:88px 0 72px}
+@media(max-width:860px){.hero{grid-template-columns:1fr;padding:48px 0}}
+.hero h1{font-size:clamp(2.2rem,5vw,3.3rem);font-weight:800;line-height:1.18}
+.hero h1 .accent{color:var(--accent)}
+.hero .sub{margin-top:20px;font-size:1.08rem;max-width:50ch}
+.hero .cta{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.hero .note{margin-top:22px;font-size:.875rem;color:var(--ink-3);display:flex;align-items:center;gap:8px}
+
+/* ---- Ảnh thầy + thẻ nổi ---- */
+.portrait{position:relative}
+.portrait .ph{
+  aspect-ratio:4/5;border-radius:var(--r-lg);overflow:hidden;
+  background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--ink-3);text-align:center;padding:20px;
+  font-size:.9rem;box-shadow:var(--shadow);
+}
+.portrait img{width:100%;height:100%;object-fit:cover}
+.float{
+  position:absolute;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:10px 16px;box-shadow:var(--shadow);
+  font-size:.82rem;display:flex;align-items:center;gap:10px;
+}
+.float b{display:block;font-size:.9rem}
+.float span{color:var(--ink-2)}
+.float .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:1rem;flex:none}
+.f1{top:7%;left:-9%}
+.f2{bottom:9%;right:-7%}
+@media(max-width:860px){.f1{left:0}.f2{right:0}}
+
+/* ---- Số liệu ---- */
+.stats{padding:8px 0 64px}
+
+/* ---- Câu chuyện ---- */
+.story{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center;padding:64px 0}
+@media(max-width:860px){.story{grid-template-columns:1fr}}
+.story .quote{font-size:clamp(1.6rem,3.2vw,2.2rem);font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.story .quote .accent{color:var(--accent)}
+.story .ph{aspect-ratio:4/3;border-radius:var(--r-lg);background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:.9rem;text-align:center;padding:20px;overflow:hidden}
+.story .ph img{width:100%;height:100%;object-fit:cover}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{
+  font-size:.85rem;font-weight:500;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--line-2);
+  border-radius:99px;padding:6px 14px;
+}
+
+/* ---- Tính năng ---- */
+.features{padding:32px 0 72px}
+.feature .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-size:1.2rem;margin-bottom:14px}
+.feature p{font-size:.9rem;margin-top:6px}
+
+/* ---- Chân trang ---- */
+footer{border-top:1px solid var(--line);padding:32px 0 48px;font-size:.875rem;color:var(--ink-3)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* ---- Hình nền toán mờ (tinh thần washi) ---- */
+.hero-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.hero-bg span{
+  position:absolute;font-weight:700;color:var(--ink);opacity:.035;
+  font-size:8rem;user-select:none;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="#"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <a href="#" class="active">Trang chủ</a>
+      <a href="#">Hôm nay</a>
+      <a href="#">Học tập</a>
+      <a href="#">Luyện đề</a>
+      <a href="#">Tài liệu</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <a class="btn btn-primary btn-sm" href="dang-nhap.html">Đăng nhập</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="position:relative">
+  <div class="hero-bg">
+    <span style="top:4%;left:2%">∫</span>
+    <span style="top:40%;right:4%">π</span>
+    <span style="bottom:6%;left:30%">Σ</span>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div>
+      <div class="sec-label">Lớp Toán Thầy Vinh · VinhMath</div>
+      <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
+      <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
+      <div class="cta">
+        <a class="btn btn-primary btn-lg" href="dang-nhap.html">Vào hệ thống học tập</a>
+        <a class="btn btn-secondary btn-lg" href="#" title="Thầy sẽ điền link sau">Nhắn Zalo</a>
+        <a class="btn btn-ghost btn-lg" href="#" title="Thầy sẽ điền link sau">Facebook</a>
+      </div>
+      <p class="note">🔑 Tài khoản do thầy cấp riêng cho từng học sinh của lớp.</p>
+    </div>
+    <div class="portrait">
+      <div class="ph">
+        <img src="anh-thay.jpg" alt="Thầy Vinh" onerror="this.parentElement.innerHTML='📷 Thả file ảnh thầy tên <b>anh-thay.jpg</b> vào thư mục ban-mau là ảnh tự hiện ở đây'">
+      </div>
+      <div class="float f1">
+        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
+        <div><b>Video bài giảng</b><span>Kèm bài tập tự chấm</span></div>
+      </div>
+      <div class="float f2">
+        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">📈</span>
+        <div><b>Tiến độ rõ ràng</b><span>Từng em, từng chuyên đề</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SỐ LIỆU (số tạm — thầy sửa sau) ===== -->
+  <section class="stats">
+    <div class="grid grid-4">
+      <div class="card stat"><b>150+</b><span>Học sinh đang học</span></div>
+      <div class="card stat"><b>8+</b><span>Năm kinh nghiệm</span></div>
+      <div class="card stat"><b>500+</b><span>Video bài giảng</span></div>
+      <div class="card stat"><b>96%</b><span>Đạt mục tiêu điểm</span></div>
+    </div>
+  </section>
+
+  <!-- ===== CÂU CHUYỆN ===== -->
+  <section class="story">
+    <div class="ph">
+      <img src="anh-lop.jpg" alt="Lớp học" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học tên <b>anh-lop.jpg</b> vào thư mục ban-mau'">
+    </div>
+    <div>
+      <div class="sec-label">Về Thầy Vinh</div>
+      <p class="quote">"Toán không phải là nhớ công thức.<br>Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
+      <p style="margin-top:18px;max-width:55ch">Mỗi bài toán đều có lý do để được giải theo cách của nó. Ở lớp thầy Vinh, học sinh không học vẹt dạng đề — các em học cách đặt câu hỏi đúng, để gặp đề lạ vẫn bình tĩnh tìm được lối đi.</p>
+      <div class="chips">
+        <span class="chip">🎓 [Bằng cấp — thầy điền sau]</span>
+        <span class="chip">🏫 [Trường đang dạy — thầy điền sau]</span>
+        <span class="chip">📍 [Địa điểm lớp — thầy điền sau]</span>
+        <span class="chip">📐 Chuyên luyện thi THPT Quốc gia</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HỆ THỐNG CÓ GÌ ===== -->
+  <section class="features">
+    <div class="sec-label">Hệ thống học tập</div>
+    <h2 style="margin-bottom:24px">Mỗi học sinh một tài khoản, một lộ trình</h2>
+    <div class="grid grid-2">
+      <div class="card feature">
+        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
+        <h3>Bài giảng video + bài tập</h3>
+        <p>Mỗi buổi học có video xem lại và bài tập kèm theo. Làm xong hệ thống chấm ngay, sai câu nào biết câu đó.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">✓</span>
+        <h3>Luyện đề theo chuyên đề</h3>
+        <p>Ngân hàng câu hỏi do thầy biên soạn, phân theo chuyên đề và mức độ — đúng cấu trúc đề thi của Bộ.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--warn-soft);color:var(--warn)">📈</span>
+        <h3>Tiến độ minh bạch</h3>
+        <p>Em và phụ huynh xem được điểm số, chuyên cần, những dạng bài hay sai — để biết cần tập trung vào đâu.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--surface-2);color:var(--ink-2)">📚</span>
+        <h3>Kho tài liệu</h3>
+        <p>Tài liệu, đề ôn do thầy biên soạn bằng LaTeX, trình bày chuẩn, tải về in được ngay.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 VinhMath · Lớp Toán Thầy Vinh</span>
+    <span>Liên hệ: [Zalo] · [Facebook]</span>
+  </div>
+</footer>
+
+<script>
+function toggleTheme(){
+  var h=document.documentElement;
+  var dark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('themeBtn').textContent=dark?'🌙':'☀️';
+  try{localStorage.setItem('vm-theme',dark?'light':'dark')}catch(e){}
+}
+try{
+  if(localStorage.getItem('vm-theme')==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeBtn').textContent='☀️';
+  }
+}catch(e){}
+</script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch & Điểm danh — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 16px; }
+.section { margin-top: 36px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+.modal-inner { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); max-width: 460px; width: 100%; padding: 32px; text-align: center; position: relative; }
+#khungQR { display: flex; justify-content: center; margin: 18px 0; background: #fff; padding: 16px; border-radius: 12px; }
+.token-text { font-family: Menlo, monospace; font-size: .85rem; background: var(--surface-2); border-radius: 8px; padding: 8px 12px; word-break: break-all; }
+.dem-so { font-size: 2.2rem; font-weight: 800; color: var(--ok); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <a href="quan-tri-bai-hoc.html">Bài giảng</a>
+      <a href="quan-tri-cham-bai.html">Chấm bài</a>
+      <a href="quan-tri-lich.html" class="active">Lịch & QR</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Khu vực của thầy</div>
+    <h1>Lịch học & Điểm danh QR</h1>
+  </div>
+
+  <!-- 1. Link Meet theo lớp -->
+  <div class="card section" style="margin-top:20px">
+    <h3>🎥 Link Google Meet theo lớp</h3>
+    <p style="font-size:.88rem;color:var(--ink-2);margin:6px 0 12px">Mỗi lớp một phòng riêng — học sinh lớp nào thấy link lớp đó. Lớp bỏ trống sẽ dùng link chung dự phòng.</p>
+    <div id="khungMeetLop" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="border-top:1px dashed var(--line-2);margin-top:16px;padding-top:14px">
+      <b style="font-size:.9rem">Link chung (dự phòng)</b>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <input class="input" id="meetLink" placeholder="https://meet.google.com/abc-defg-hij" style="flex:1;min-width:240px">
+        <button class="btn btn-secondary" onclick="luuMeet()">Lưu link chung</button>
+      </div>
+      <div id="tbMeet" style="font-size:.85rem;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- 2. Thời khóa biểu -->
+  <div class="section">
+    <div class="sec-label">Thời khóa biểu</div>
+    <h2 style="margin-bottom:6px">Lịch học các lớp</h2>
+    <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px">Lịch có bật "công khai" sẽ hiện ở trang chủ cho phụ huynh xem và đăng ký.</p>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="form-grid">
+        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="schLop"></select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Thứ</label><select class="input" id="schThu">
+          <option value="1">Thứ 2</option><option value="2">Thứ 3</option><option value="3">Thứ 4</option>
+          <option value="4">Thứ 5</option><option value="5">Thứ 6</option><option value="6">Thứ 7</option><option value="7">Chủ nhật</option>
+        </select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Từ</label><input class="input" type="time" id="schTu" value="19:30"></div>
+        <div><label style="font-size:.8rem;font-weight:600">Đến</label><input class="input" type="time" id="schDen" value="21:30"></div>
+        <div><label style="font-size:.8rem;font-weight:600">Hình thức</label><select class="input" id="schMode">
+          <option value="online">🎥 Online</option><option value="offline">🏫 Tại lớp</option>
+        </select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
+        <button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:8px 4px;overflow-x:auto">
+      <table>
+        <thead><tr><th>Lớp</th><th>Thứ</th><th>Giờ</th><th>Hình thức</th><th>Ghi chú</th><th>Công khai</th><th></th></tr></thead>
+        <tbody id="bangLich"><tr><td colspan="7" style="color:var(--ink-3)">Đang tải…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. Buổi học + QR -->
+  <div class="section">
+    <div class="sec-label">Điểm danh</div>
+    <h2 style="margin-bottom:6px">Tạo buổi học & mã QR</h2>
+    <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px">Tạo QR rồi chiếu lên màn hình (chia sẻ màn hình trong Meet) — học sinh quét bằng điện thoại để điểm danh.</p>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="form-grid">
+        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="ssLop"></select></div>
+        <div style="grid-column:span 2"><label style="font-size:.8rem;font-weight:600">Tên buổi học</label><input class="input" id="ssTen" placeholder="vd: Buổi 13 · Tích phân"></div>
+        <div><label style="font-size:.8rem;font-weight:600">QR hiệu lực (phút)</label><input class="input" type="number" id="ssPhut" value="45" min="5"></div>
+        <button class="btn btn-primary" onclick="taoBuoiHoc()">📍 Tạo & hiện QR</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:8px 4px">
+      <table>
+        <thead><tr><th>Buổi học</th><th>Lớp</th><th>Ngày</th><th>Đã điểm danh</th><th></th></tr></thead>
+        <tbody id="bangBuoi"><tr><td colspan="5" style="color:var(--ink-3)">Đang tải…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QR -->
+<div class="modal" id="modalQR">
+  <div class="modal-inner">
+    <button onclick="dongQR()" style="position:absolute;top:12px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+    <h2 id="qrTen">Buổi học</h2>
+    <p style="font-size:.88rem;color:var(--ink-2)">Học sinh quét QR hoặc nhập mã bên dưới vào trang Lớp Online</p>
+    <div id="khungQR"></div>
+    <div class="token-text" id="qrToken"></div>
+    <div style="font-size:.78rem;color:var(--ink-3);margin-top:6px">🔄 Mã tự đổi mỗi 30 giây — chống điểm danh hộ. Mở bảng này suốt buổi học.</div>
+    <div style="margin-top:16px"><span class="dem-so" id="qrDem">0</span><div style="font-size:.85rem;color:var(--ink-2)">học sinh đã điểm danh</div></div>
+    <div id="qrDanhSach" style="font-size:.85rem;color:var(--ink-2);margin-top:8px;max-height:120px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+var dsLop = [];
+var hennDem = null;
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+
+  // Lớp
+  var r = await sb.from('classes').select('id, name').order('name');
+  dsLop = r.data || [];
+  ['schLop', 'ssLop'].forEach(function (id) {
+    $(id).innerHTML = dsLop.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+  });
+
+  // Meet link
+  var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+  if (lk.data) $('meetLink').value = lk.data.value;
+
+  taiMeetLop();
+  taiLich();
+  taiBuoi();
+})();
+
+/* ----- Meet theo lớp ----- */
+async function taiMeetLop() {
+  var r = await sb.from('class_links').select('class_id, meet_link');
+  var map = {};
+  (r.data || []).forEach(function (x) { map[x.class_id] = x.meet_link; });
+  $('khungMeetLop').innerHTML = dsLop.map(function (l) {
+    return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+      '<b style="width:72px;flex:none;font-size:.9rem">' + l.name + '</b>' +
+      '<input class="input" style="flex:1;min-width:220px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
+      '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
+      '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
+      '</div>';
+  }).join('');
+}
+
+async function luuMeetLop(id) {
+  var v = $('ml-' + id).value.trim();
+  var r = await sb.from('class_links').upsert({ class_id: id, meet_link: v });
+  var t = $('mlt-' + id);
+  t.textContent = r.error ? '✗' : '✓';
+  t.title = r.error ? r.error.message : 'Đã lưu';
+  t.style.color = r.error ? 'var(--err)' : 'var(--ok)';
+}
+
+/* ----- Meet ----- */
+async function luuMeet() {
+  var v = $('meetLink').value.trim();
+  var r = await sb.from('app_settings').upsert({ key: 'meet_link', value: v });
+  $('tbMeet').textContent = r.error ? 'Lỗi: ' + r.error.message : '✓ Đã lưu — học sinh thấy ngay.';
+  $('tbMeet').style.color = r.error ? 'var(--err)' : 'var(--ok)';
+}
+
+/* ----- Thời khóa biểu ----- */
+function gioDep(t) { return t ? t.slice(0, 5) : ''; }
+
+async function taiLich() {
+  var r = await sb.from('schedules')
+    .select('id, weekday, start_time, end_time, mode, location, note, visible, classes(name)')
+    .order('weekday').order('start_time');
+  var ds = r.data || [];
+  $('bangLich').innerHTML = ds.length ? ds.map(function (s) {
+    return '<tr>' +
+      '<td><b>' + (s.classes ? s.classes.name : '?') + '</b></td>' +
+      '<td>' + TEN_THU[s.weekday] + '</td>' +
+      '<td class="num">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
+      '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +
+      '<td style="color:var(--ink-2)">' + (s.note || '') + '</td>' +
+      '<td><button class="btn btn-ghost btn-sm" onclick="doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + (s.visible ? '👁 Hiện' : '🚫 Ẩn') + '</button></td>' +
+      '<td><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaLich(\'' + s.id + '\')">Xoá</button></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="7" style="color:var(--ink-3)">Chưa có lịch nào.</td></tr>';
+}
+
+async function themLich() {
+  var r = await sb.from('schedules').insert({
+    class_id: $('schLop').value,
+    weekday: parseInt($('schThu').value),
+    start_time: $('schTu').value,
+    end_time: $('schDen').value,
+    mode: $('schMode').value,
+    location: $('schMode').value === 'online' ? 'Google Meet' : null,
+    note: $('schNote').value.trim() || null
+  });
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  $('schNote').value = '';
+  taiLich();
+}
+
+async function doiCongKhai(id, hien) {
+  await sb.from('schedules').update({ visible: hien }).eq('id', id);
+  taiLich();
+}
+
+async function xoaLich(id) {
+  if (!confirm('Xoá dòng lịch này?')) return;
+  await sb.from('schedules').delete().eq('id', id);
+  taiLich();
+}
+
+/* ----- Buổi học + QR ----- */
+async function taiBuoi() {
+  var r = await sb.from('class_sessions')
+    .select('id, title, held_on, qr_token, qr_expires, classes(name), attendance(count)')
+    .order('created_at', { ascending: false }).limit(15);
+  var ds = r.data || [];
+  $('bangBuoi').innerHTML = ds.length ? ds.map(function (b) {
+    var soDD = (b.attendance && b.attendance[0]) ? b.attendance[0].count : 0;
+    return '<tr>' +
+      '<td><b>' + b.title + '</b></td>' +
+      '<td>' + (b.classes ? b.classes.name : '?') + '</td>' +
+      '<td class="num">' + new Date(b.held_on).toLocaleDateString('vi-VN') + '</td>' +
+      '<td class="num">' + soDD + ' HS</td>' +
+      '<td><button class="btn btn-secondary btn-sm" onclick="hienQR(\'' + b.id + '\', \'' + b.qr_token + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">Hiện QR</button></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--ink-3)">Chưa có buổi học nào.</td></tr>';
+}
+
+async function taoBuoiHoc() {
+  var ten = $('ssTen').value.trim() || ('Buổi học ' + new Date().toLocaleDateString('vi-VN'));
+  var phut = parseInt($('ssPhut').value) || 45;
+  var r = await sb.from('class_sessions').insert({
+    class_id: $('ssLop').value,
+    title: ten,
+    qr_expires: new Date(Date.now() + phut * 60000).toISOString()
+  }).select('id, qr_token, title').single();
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  $('ssTen').value = '';
+  taiBuoi();
+  hienQR(r.data.id, r.data.qr_token, r.data.title);
+}
+
+var buoiDangXem = null;
+var hennXoay = null;
+
+// Sinh mã ngẫu nhiên mới (32 ký tự hex)
+function taoToken() {
+  var a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+// Xoay QR: đổi mã trong CSDL + vẽ lại QR — mã cũ chết ngay lập tức
+async function xoayQR() {
+  if (!buoiDangXem) return;
+  var token = taoToken();
+  var r = await sb.from('class_sessions')
+    .update({ qr_token: token, qr_expires: new Date(Date.now() + 120000).toISOString() })
+    .eq('id', buoiDangXem);
+  if (r.error) return;
+  $('qrToken').textContent = token;
+  $('khungQR').innerHTML = '';
+  var url = new URL('diem-danh.html?token=' + token, window.location.href).href;
+  new QRCode($('khungQR'), { text: url, width: 220, height: 220 });
+}
+
+function hienQR(id, token, ten) {
+  buoiDangXem = id;
+  $('qrTen').textContent = ten;
+  $('modalQR').style.display = 'flex';
+  xoayQR();                                   // sinh mã mới ngay khi mở
+  hennXoay = setInterval(xoayQR, 30000);      // tự đổi mã mỗi 30 giây
+  demDiemDanh();
+  hennDem = setInterval(demDiemDanh, 5000);
+}
+
+async function demDiemDanh() {
+  if (!buoiDangXem) return;
+  var r = await sb.from('attendance')
+    .select('checked_at, profiles(full_name)')
+    .eq('session_id', buoiDangXem)
+    .order('checked_at', { ascending: false });
+  var ds = r.data || [];
+  $('qrDem').textContent = ds.length;
+  $('qrDanhSach').innerHTML = ds.map(function (d) {
+    return '✓ ' + (d.profiles ? d.profiles.full_name : '?');
+  }).join('<br>');
+}
+
+function dongQR() {
+  $('modalQR').style.display = 'none';
+  if (hennDem) clearInterval(hennDem);
+  if (hennXoay) clearInterval(hennXoay);
+  buoiDangXem = null;
+  taiBuoi();
+}
+</script>
+</body>
+</html>

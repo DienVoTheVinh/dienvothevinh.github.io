@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý bài giảng — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.filters { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+.class-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.tab-btn { background: transparent; border: none; padding: 8px 16px; font-size: .92rem; font-weight: 500; color: var(--ink-2); cursor: pointer; border-radius: var(--r-sm); transition: all 0.15s; }
+.tab-btn:hover { background: var(--surface-2); color: var(--ink); }
+.tab-btn.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.grid-lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.lesson-card { display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+.lesson-card .badge-group { display: flex; gap: 6px; margin-bottom: 10px; }
+.lesson-card h3 { font-size: 1.1rem; margin-bottom: 8px; line-height: 1.4; }
+.lesson-card .desc { font-size: .88rem; color: var(--ink-2); margin-bottom: 16px; flex-grow: 1; }
+.lesson-card .meta-info { font-size: .8rem; color: var(--ink-3); margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed var(--line-2); padding-top: 10px; }
+.lesson-card .actions { display: flex; justify-content: space-between; align-items: center; }
+.lesson-card .yt-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; font-size: .82rem; }
+.lesson-card .pdf-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--ok); font-weight: 500; font-size: .82rem; }
+/* Modal Form */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
+.modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
+.modal-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3); }
+.modal-close:hover { color: var(--ink); }
+.modal h2 { margin-bottom: 24px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.empty { text-align: center; padding: 64px 24px; color: var(--ink-3); grid-column: 1 / -1; }
+.switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.switch-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <a href="hoc-tap.html">Học tập</a>
+      <a href="tai-lieu.html">Tài liệu</a>
+      <a href="quan-tri-tai-lieu.html">Soạn tài liệu</a>
+      <a href="quan-tri-bai-hoc.html" class="active">Bài giảng</a>
+      <a href="quan-tri-cham-bai.html">Chấm bài</a>
+      <a href="quan-tri-lich.html">Lịch & QR</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="sec-label">Khu vực chuyên môn của thầy</div>
+      <h1>Quản lý bài giảng & tài liệu</h1>
+      <p style="margin-top:6px">Tạo bài giảng mới, gán link video YouTube và chọn tài liệu PDF (LaTeX) đi kèm cho từng lớp từ Khối 6 đến Khối 12.</p>
+    </div>
+    <button class="btn btn-primary" onclick="moFormThemMoi()">+ Thêm bài giảng</button>
+  </div>
+
+  <!-- Bảng điều khiển quyền xem (chỉ admin thấy) -->
+  <div class="card" id="bangDieuKhien" style="display:none; margin-bottom:20px; padding:16px 20px">
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:space-between">
+      <div>
+        <b>🔐 Quyền xem bài giảng toàn hệ thống</b>
+        <div style="font-size:.85rem; color:var(--ink-3); margin-top:2px" id="moTaCheDo">Đang tải…</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" id="cd-class" onclick="doiCheDo('class')">🏫 Theo lớp</button>
+        <button class="btn btn-secondary btn-sm" id="cd-open" onclick="doiCheDo('open')">🌍 Mở tất cả</button>
+        <button class="btn btn-secondary btn-sm" id="cd-locked" onclick="doiCheDo('locked')">🔒 Khoá tất cả</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="class-tabs" id="tabKhongGianLop">
+    <button class="tab-btn active" onclick="locTheoLop('tat-ca')">Tất cả lớp</button>
+  </div>
+
+  <div class="grid-lessons" id="danhSachBaiHoc">
+    <div class="empty card">Đang tải danh sách bài học…</div>
+  </div>
+</div>
+
+<!-- Modal Form Thêm/Sửa Bài Học -->
+<div class="modal" id="modalForm">
+  <div class="modal-content">
+    <button class="modal-close" onclick="dongForm()">×</button>
+    <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
+    <form id="formBaiHoc" onsubmit="luuBaiHoc(event)">
+      <input type="hidden" id="bhId">
+      
+      <div class="field">
+        <label>Tiêu đề bài giảng <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="bhTieuDe" required placeholder="Ví dụ: Buổi 1 · Khái niệm về Khối đa diện">
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Lớp học áp dụng <b style="color:var(--accent)">*</b></label>
+          <select class="input" id="bhLop" required>
+            <option value="">-- Chọn lớp --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Chuyên đề (Tuỳ chọn)</label>
+          <select class="input" id="bhChuyenDe">
+            <option value="">-- Chọn chuyên đề --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Đường dẫn Video bài giảng (YouTube)</label>
+        <input class="input" id="bhYoutube" placeholder="Ví dụ: https://www.youtube.com/watch?v=abcdefghijk">
+      </div>
+
+      <div class="field">
+        <label>Tài liệu đọc & Bài tập kèm theo (PDF từ LaTeX)</label>
+        <select class="input" id="bhTaiLieu">
+          <option value="">-- Không đính kèm tài liệu --</option>
+        </select>
+        <small style="color:var(--ink-3); margin-top:4px; display:block">
+          Chọn tài liệu PDF từ thư viện đã soạn bằng LaTeX. Nếu chưa soạn, hãy vào mục <a href="quan-tri-tai-lieu.html" target="_blank" style="color:var(--accent); text-decoration:underline">Soạn tài liệu</a> trước.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Hoặc tải file PDF có sẵn từ máy (không qua LaTeX)</label>
+        <input type="file" class="input" id="bhPdfFile" accept=".pdf,application/pdf" style="padding:8px">
+        <small style="color:var(--ink-3); margin-top:4px; display:block">
+          Nếu chọn file ở đây, hệ thống tự đưa file vào kho tài liệu và đính kèm <b>thay cho</b> lựa chọn bên trên.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Ảnh buổi học (chụp bảng, phiếu bài…) — chọn được nhiều ảnh cùng lúc</label>
+        <input type="file" class="input" id="bhAnhFile" accept="image/*" multiple style="padding:8px">
+        <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
+
+      <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
+        <label>📝 Bài test cuối giờ (chọn PDF từ kho tài liệu)</label>
+        <select class="input" id="bhTestTaiLieu">
+          <option value="">-- Không có bài test --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hoặc tải file PDF bài test từ máy</label>
+        <input type="file" class="input" id="bhTestFile" accept=".pdf,application/pdf" style="padding:8px">
+        <small style="color:var(--ink-3); margin-top:4px; display:block">
+          Soạn test bằng LaTeX? Biên dịch trong mục <a href="quan-tri-tai-lieu.html" target="_blank" style="color:var(--accent)">Soạn tài liệu</a> rồi chọn ở ô trên.
+        </small>
+      </div>
+
+      <div class="field">
+        <label>Ghi chú bài học</label>
+        <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
+      </div>
+
+      <div class="form-row" style="margin-bottom: 24px">
+        <div class="field">
+          <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
+          <input type="number" class="input" id="bhSapXep" value="0">
+        </div>
+        <div class="field" style="display:flex; align-items:center">
+          <div class="switch-container">
+            <input type="checkbox" id="bhXuatBan" checked>
+            <label for="bhXuatBan" style="margin:0; font-weight:600">Xuất bản cho học sinh xem</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line-2); padding-top:20px">
+        <button type="button" class="btn btn-ghost" onclick="xoaBaiHoc()" id="nutXoa" style="color:var(--err); display:none">Xoá bài giảng</button>
+        <div style="display:flex; gap:12px; margin-left:auto">
+          <button type="button" class="btn btn-secondary" onclick="dongForm()">Huỷ bỏ</button>
+          <button type="submit" class="btn btn-primary" id="nutLuu">Lưu bài giảng</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var tatCaBaiHoc = [];
+var tatCaLop = [];
+var tatCaChuyenDe = [];
+var tatCaTaiLieu = [];
+var lopDangLoc = 'tat-ca';
+var vaiTro = null;
+
+/* ===== CHẾ ĐỘ XEM TOÀN HỆ THỐNG (chỉ admin đổi được) ===== */
+var MO_TA_CHE_DO = {
+  'class':  'Học sinh chỉ xem được bài giảng của lớp mình (mặc định).',
+  'open':   'MỌI tài khoản học sinh xem được TẤT CẢ bài giảng đã xuất bản, bất kể lớp.',
+  'locked': 'TOÀN BỘ bài giảng đang bị KHOÁ với học sinh. Giáo viên/admin vẫn xem được.'
+};
+
+async function taiCheDo() {
+  var r = await sb.from('app_settings').select('value').eq('key', 'video_mode').single();
+  veCheDo(r.data ? r.data.value : 'class');
+}
+
+function veCheDo(m) {
+  ['class', 'open', 'locked'].forEach(function (k) {
+    var b = $('cd-' + k);
+    b.className = 'btn btn-sm ' + (k === m ? 'btn-primary' : 'btn-secondary');
+  });
+  $('moTaCheDo').textContent = MO_TA_CHE_DO[m] || '';
+}
+
+async function doiCheDo(m) {
+  if (m === 'locked' && !confirm('Khoá TẤT CẢ bài giảng với học sinh?')) return;
+  if (m === 'open' && !confirm('Mở TẤT CẢ bài giảng cho MỌI tài khoản học sinh (bất kể lớp)?')) return;
+  var r = await sb.from('app_settings').upsert({ key: 'video_mode', value: m });
+  if (r.error) { alert('Lỗi đổi chế độ: ' + r.error.message); return; }
+  veCheDo(m);
+}
+
+/* ===== KHOÁ / MỞ TỪNG BÀI ===== */
+async function batTatKhoa(id, khoa) {
+  var r = await sb.from('lessons').update({ locked: khoa }).eq('id', id);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  await taiDanhSachBaiHoc();
+}
+
+(async function() {
+  if (!daKetNoi()) {
+    $('danhSachBaiHoc').innerHTML = '<div class="empty card">Chưa cấu hình kết nối Supabase.</div>';
+    return;
+  }
+
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role !== 'teacher' && hoSo.role !== 'admin') {
+    window.location.href = 'lop-hoc.html';
+    return;
+  }
+  vaiTro = hoSo.role;
+
+  // Menu quản trị động được tự động vẽ bởi menu.js
+  if (hoSo.role === 'admin') {
+    $('bangDieuKhien').style.display = 'block';
+    taiCheDo();
+  }
+
+  await taiDuLieuDanhMuc();
+  await taiDanhSachBaiHoc();
+})();
+
+async function taiDuLieuDanhMuc() {
+  // 1. Tải danh sách lớp (Khối 6 -> Khối 12)
+  var r1 = await sb.from('classes').select('id, name').order('name');
+  tatCaLop = r1.data || [];
+  
+  var tabContainer = $('tabKhongGianLop');
+  var formLopSelect = $('bhLop');
+  
+  // Nạp vào tab lọc và ô chọn trong form
+  tatCaLop.forEach(function(l) {
+    // Tab lọc
+    var btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.id = 'tab-' + l.id;
+    btn.textContent = l.name;
+    btn.onclick = function() { locTheoLop(l.id); };
+    tabContainer.appendChild(btn);
+
+    // Dropdown chọn lớp
+    var opt = document.createElement('option');
+    opt.value = l.id;
+    opt.textContent = l.name;
+    formLopSelect.appendChild(opt);
+  });
+
+  // 2. Tải danh sách chuyên đề
+  var r2 = await sb.from('topics').select('id, name').order('sort');
+  tatCaChuyenDe = r2.data || [];
+  var formCdSelect = $('bhChuyenDe');
+  tatCaChuyenDe.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    formCdSelect.appendChild(opt);
+  });
+
+  // 3. Tải danh sách tài liệu PDF từ LaTeX
+  var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
+  tatCaTaiLieu = r3.data || [];
+  var formTlSelect = $('bhTaiLieu');
+  var formTestSelect = $('bhTestTaiLieu');
+  tatCaTaiLieu.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.title + ' (' + t.file_path.split('-').slice(1).join('-') + ')';
+    formTlSelect.appendChild(opt);
+    formTestSelect.appendChild(opt.cloneNode(true));
+  });
+}
+
+async function taiDanhSachBaiHoc() {
+  var r = await sb.from('lessons')
+    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
+    .order('sort', { ascending: false })
+    .order('created_at', { ascending: false });
+  
+  tatCaBaiHoc = r.data || [];
+  hienThiBaiHoc();
+}
+
+function locTheoLop(lopId) {
+  lopDangLoc = lopId;
+  
+  // Cập nhật giao diện tab active
+  document.querySelectorAll('.class-tabs .tab-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  if (lopId === 'tat-ca') {
+    document.querySelector('.class-tabs button:first-child').classList.add('active');
+  } else {
+    var activeTab = $('tab-' + lopId);
+    if (activeTab) activeTab.classList.add('active');
+  }
+
+  hienThiBaiHoc();
+}
+
+function extractYoutubeId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+function extractDriveId(url) {
+  if (!url) return null;
+  var m1 = url.match(/\/file\/d\/([\w_-]+)/);
+  if (m1) return m1[1];
+  var m2 = url.match(/[?&]id=([\w_-]+)/);
+  if (m2 && url.includes('drive.google.com')) return m2[1];
+  return null;
+}
+
+function hienThiBaiHoc() {
+  var filtered = tatCaBaiHoc;
+  if (lopDangLoc !== 'tat-ca') {
+    filtered = tatCaBaiHoc.filter(function(b) { return b.class_id === lopDangLoc; });
+  }
+
+  var container = $('danhSachBaiHoc');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty card" style="grid-column: 1/-1">Không có bài giảng nào cho lớp học này. Hãy bấm "Thêm bài giảng" để bắt đầu soạn!</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(function(bh) {
+    var lopBadge = '<span class="badge badge-mute">' + (bh.classes ? bh.classes.name : 'Chưa xếp lớp') + '</span>';
+    var cdBadge = bh.topics ? '<span class="badge badge-accent">' + bh.topics.name + '</span>' : '';
+    var trangThaiBadge = bh.published
+      ? '<span class="badge badge-ok">Đã xuất bản</span>'
+      : '<span class="badge badge-mute">Nháp</span>';
+    var khoaBadge = bh.locked ? '<span class="badge badge-err">🔒 Đang khoá</span>' : '';
+    
+    var ytId = extractYoutubeId(bh.youtube_url);
+    var driveId = extractDriveId(bh.youtube_url);
+    var ytIndicator = (ytId || driveId)
+      ? '<span class="yt-indicator">🎥 Có video</span>' 
+      : '<span style="color:var(--ink-3); font-size:.82rem">Không có video</span>';
+      
+    var pdfIndicator = bh.document_id
+      ? '<span class="pdf-indicator">📄 Đính kèm PDF</span>'
+      : '<span style="color:var(--ink-3); font-size:.82rem">Không tài liệu</span>';
+
+    var soAnh = Array.isArray(bh.images) ? bh.images.length : 0;
+    var anhIndicator = soAnh
+      ? '<span class="pdf-indicator" style="color:var(--warn)">🖼 ' + soAnh + ' ảnh buổi học</span>'
+      : '';
+
+    var ngayVietNote = bh.note ? bh.note : 'Không có ghi chú dặn dò.';
+    if (ngayVietNote.length > 80) ngayVietNote = ngayVietNote.slice(0, 80) + '…';
+
+    var testIndicator = bh.test_document_id
+      ? '<span class="pdf-indicator" style="color:var(--accent)">📝 Có bài test</span>'
+      : '';
+
+    var nutKhoa = (vaiTro === 'admin')
+      ? (bh.locked
+        ? '<button class="btn btn-ghost btn-sm" style="color:var(--ok)" onclick="batTatKhoa(\'' + bh.id + '\', false)" title="Mở khoá bài này">🔓 Mở</button>'
+        : '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="batTatKhoa(\'' + bh.id + '\', true)" title="Khoá bài này">🔒 Khoá</button>')
+      : '';
+
+    return '<div class="card lesson-card">' +
+      '<div>' +
+        '<div class="badge-group">' + lopBadge + cdBadge + trangThaiBadge + khoaBadge + '</div>' +
+        '<h3>' + bh.title + '</h3>' +
+        '<p class="desc">' + ngayVietNote + '</p>' +
+      '</div>' +
+      '<div>' +
+        '<div class="meta-info">' +
+          '<div>' + ytIndicator + '</div>' +
+          '<div>' + pdfIndicator + '</div>' +
+          (anhIndicator ? '<div>' + anhIndicator + '</div>' : '') +
+          (testIndicator ? '<div>' + testIndicator + '</div>' : '') +
+          '<div>Thứ tự: <b class="num">' + bh.sort + '</b></div>' +
+        '</div>' +
+        '<div class="actions">' +
+          '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + bh.id + '" target="_blank">Xem trang học</a>' +
+          '<div style="display:flex;gap:6px">' + nutKhoa +
+          '<button class="btn btn-primary btn-sm" onclick="moFormSua(\'' + bh.id + '\')">Chỉnh sửa</button></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ====== ẢNH BUỔI HỌC: quản lý ảnh đã đính kèm ====== */
+var anhDaCo = []; // đường dẫn các ảnh đang gắn với bài (khi sửa)
+
+function urlAnh(p) {
+  return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+}
+
+function veAnhHienCo() {
+  var box = $('anhHienCo');
+  if (!anhDaCo.length) { box.innerHTML = ''; return; }
+  box.innerHTML = anhDaCo.map(function (p, i) {
+    return '<div style="position:relative">' +
+      '<img src="' + urlAnh(p) + '" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<button type="button" onclick="boAnh(' + i + ')" title="Gỡ ảnh này" ' +
+        'style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+}
+
+function boAnh(i) {
+  anhDaCo.splice(i, 1);
+  veAnhHienCo();
+}
+
+// Đổi tên file thành dạng an toàn cho kho (bỏ dấu tiếng Việt)
+function tenAnToan(ten) {
+  return ten.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9.]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+
+function moFormThemMoi() {
+  $('formBaiHoc').reset();
+  anhDaCo = []; veAnhHienCo();
+  $('bhId').value = '';
+  $('modalTieuDe').textContent = 'Thêm bài giảng mới';
+  $('nutXoa').style.display = 'none';
+  $('bhSapXep').value = '0';
+  $('bhXuatBan').checked = true;
+  
+  // Mặc định chọn lớp đang lọc nếu có
+  if (lopDangLoc !== 'tat-ca') {
+    $('bhLop').value = lopDangLoc;
+  }
+  
+  $('modalForm').style.display = 'flex';
+}
+
+function moFormSua(id) {
+  var bh = tatCaBaiHoc.find(function(b) { return b.id === id; });
+  if (!bh) return;
+
+  $('formBaiHoc').reset();
+  anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : [];
+  veAnhHienCo();
+  $('bhId').value = bh.id;
+  $('bhTieuDe').value = bh.title || '';
+  $('bhLop').value = bh.class_id || '';
+  $('bhChuyenDe').value = bh.topic_id || '';
+  $('bhYoutube').value = bh.youtube_url || '';
+  $('bhTaiLieu').value = bh.document_id || '';
+  $('bhTestTaiLieu').value = bh.test_document_id || '';
+  $('bhGhiChu').value = bh.note || '';
+  $('bhSapXep').value = bh.sort !== undefined ? bh.sort : 0;
+  $('bhXuatBan').checked = !!bh.published;
+
+  $('modalTieuDe').textContent = 'Chỉnh sửa bài giảng';
+  $('nutXoa').style.display = 'block';
+  $('modalForm').style.display = 'flex';
+}
+
+function dongForm() {
+  $('modalForm').style.display = 'none';
+}
+
+async function luuBaiHoc(e) {
+  e.preventDefault();
+  var id = $('bhId').value;
+  var data = {
+    title: $('bhTieuDe').value.trim(),
+    class_id: $('bhLop').value,
+    topic_id: $('bhChuyenDe').value || null,
+    youtube_url: $('bhYoutube').value.trim() || null,
+    document_id: $('bhTaiLieu').value || null,
+    test_document_id: $('bhTestTaiLieu').value || null,
+    note: $('bhGhiChu').value.trim() || null,
+    sort: parseInt($('bhSapXep').value) || 0,
+    published: $('bhXuatBan').checked
+  };
+
+  var nut = $('nutLuu');
+  nut.disabled = true;
+  nut.textContent = '⏳ Đang lưu…';
+
+  // ---- 1. Nếu thầy chọn file PDF từ máy: đưa vào kho + tự tạo tài liệu ----
+  var filePdf = $('bhPdfFile').files[0];
+  if (filePdf) {
+    nut.textContent = '⏳ Đang tải PDF lên…';
+    var duongDanPdf = Date.now() + '-' + tenAnToan(filePdf.name);
+    var up1 = await sb.storage.from('tai-lieu').upload(duongDanPdf, filePdf, { contentType: 'application/pdf' });
+    if (up1.error) {
+      alert('Lỗi tải PDF lên kho: ' + up1.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var tenTl = data.title ? (data.title + ' — Tài liệu') : filePdf.name.replace(/\.pdf$/i, '');
+    var insTl = await sb.from('documents')
+      .insert({ title: tenTl, class_id: data.class_id || null, file_path: duongDanPdf })
+      .select('id').single();
+    if (insTl.error) {
+      alert('Lỗi ghi tài liệu vào sổ: ' + insTl.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.document_id = insTl.data.id; // PDF từ máy thay cho lựa chọn dropdown
+  }
+
+  // ---- 1b. Nếu thầy chọn file PDF BÀI TEST từ máy ----
+  var fileTest = $('bhTestFile').files[0];
+  if (fileTest) {
+    nut.textContent = '⏳ Đang tải bài test lên…';
+    var duongDanTest = Date.now() + '-test-' + tenAnToan(fileTest.name);
+    var upT = await sb.storage.from('tai-lieu').upload(duongDanTest, fileTest, { contentType: 'application/pdf' });
+    if (upT.error) {
+      alert('Lỗi tải bài test: ' + upT.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var insT = await sb.from('documents')
+      .insert({ title: (data.title || 'Bài giảng') + ' — Bài test', class_id: data.class_id || null, file_path: duongDanTest })
+      .select('id').single();
+    if (insT.error) {
+      alert('Lỗi ghi bài test vào sổ: ' + insT.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.test_document_id = insT.data.id;
+  }
+
+  // ---- 2. Tải các ảnh buổi học mới chọn (nếu có) ----
+  var dsFileAnh = $('bhAnhFile').files;
+  if (dsFileAnh.length) {
+    for (var i = 0; i < dsFileAnh.length; i++) {
+      nut.textContent = '⏳ Đang tải ảnh ' + (i + 1) + '/' + dsFileAnh.length + '…';
+      var f = dsFileAnh[i];
+      var duongDanAnh = Date.now() + '-' + i + '-' + tenAnToan(f.name);
+      var up2 = await sb.storage.from('hinh-anh').upload(duongDanAnh, f, { contentType: f.type || 'image/jpeg' });
+      if (up2.error) {
+        alert('Lỗi tải ảnh "' + f.name + '": ' + up2.error.message);
+        nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+        return;
+      }
+      anhDaCo.push(duongDanAnh);
+    }
+  }
+  data.images = anhDaCo; // ảnh giữ lại + ảnh mới
+
+  var r;
+  if (id) {
+    // Sửa bài giảng
+    r = await sb.from('lessons').update(data).eq('id', id);
+  } else {
+    // Tạo bài giảng mới
+    r = await sb.from('lessons').insert(data);
+  }
+
+  if (r.error) {
+    alert('Lỗi lưu bài giảng: ' + r.error.message);
+  } else {
+    dongForm();
+    await taiDanhSachBaiHoc();
+  }
+  nut.disabled = false;
+  nut.textContent = 'Lưu bài giảng';
+}
+
+async function xoaBaiHoc() {
+  var id = $('bhId').value;
+  if (!id) return;
+  if (!confirm('Thầy có chắc chắn muốn xoá hoàn toàn bài giảng này không? Học sinh sẽ không thể truy cập được nữa.')) return;
+
+  var nut = $('nutXoa');
+  nut.disabled = true;
+  nut.textContent = '⏳ Đang xoá…';
+
+  var r = await sb.from('lessons').delete().eq('id', id);
+  if (r.error) {
+    alert('Lỗi khi xoá bài giảng: ' + r.error.message);
+  } else {
+    dongForm();
+    await taiDanhSachBaiHoc();
+  }
+  nut.disabled = false;
+  nut.textContent = 'Xoá bài giảng';
+}
+</script>
+</body>
+</html>

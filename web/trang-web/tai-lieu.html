@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tài liệu — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap{max-width:880px;margin:0 auto;padding:0 24px 96px}
+.head{padding:48px 0 24px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.doc{display:flex;align-items:center;gap:16px;padding:16px 20px}
+.doc + .doc{margin-top:12px}
+.doc .ic{width:44px;height:44px;border-radius:11px;background:var(--err-soft);color:var(--err);display:grid;place-items:center;font-size:1.1rem;flex:none}
+.doc .info{flex:1;min-width:0}
+.doc h3{font-size:1rem}
+.doc .meta{font-size:.8rem;color:var(--ink-3);margin-top:2px}
+.empty{text-align:center;padding:64px 24px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <a href="hoc-tap.html">Học tập</a>
+      <a href="#">Luyện đề</a>
+      <a href="tai-lieu.html" class="active">Tài liệu</a>
+      <a href="#">Kết quả</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="sec-label">Kho tài liệu</div>
+      <h1>Tài liệu của lớp</h1>
+      <p style="margin-top:6px">Tài liệu thầy biên soạn — xem online hoặc tải về in.</p>
+    </div>
+    <a class="btn btn-primary btn-sm" id="nutSoan" href="quan-tri-tai-lieu.html" style="display:none">+ Soạn tài liệu</a>
+  </div>
+
+  <div id="dsTaiLieu"><div class="empty card">Đang tải…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+function urlPdf(path) {
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + path;
+}
+
+(async function () {
+  if (!daKetNoi()) {
+    $('dsTaiLieu').innerHTML = '<div class="empty card">Chế độ xem thử — kết nối Supabase để thấy tài liệu thật.</div>';
+    return;
+  }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role === 'teacher' || hoSo.role === 'admin') $('nutSoan').style.display = '';
+
+  // Menu quản trị động được tự động vẽ bởi menu.js
+
+  var r = await sb.from('documents')
+    .select('id, title, file_path, created_at, classes(name), topics(name)')
+    .order('created_at', { ascending: false });
+  var ds = r.data || [];
+
+  if (!ds.length) {
+    $('dsTaiLieu').innerHTML = '<div class="empty card">Chưa có tài liệu nào — quay lại sau nhé!</div>';
+    return;
+  }
+  $('dsTaiLieu').innerHTML = ds.map(function (d) {
+    var ngay = new Date(d.created_at).toLocaleDateString('vi-VN');
+    var meta = [d.topics && d.topics.name, d.classes ? 'Lớp ' + d.classes.name : 'Mọi lớp', ngay]
+      .filter(Boolean).join(' · ');
+    return '<div class="card doc">' +
+      '<span class="ic">📄</span>' +
+      '<div class="info"><h3>' + d.title + '</h3><div class="meta">' + meta + '</div></div>' +
+      '<a class="btn btn-primary btn-sm" target="_blank" href="' + urlPdf(d.file_path) + '">Xem</a>' +
+      '<a class="btn btn-secondary btn-sm" download href="' + urlPdf(d.file_path) + '">Tải về</a>' +
+      '</div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

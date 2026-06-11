@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VinhMath — Lớp Toán Thầy Vinh</title>
+<meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+/* --- MATH GRID BACKGROUND --- */
+.math-grid {
+  background-image: 
+    linear-gradient(to right, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* --- HERO SECTION --- */
+.hero {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 56px;
+  align-items: center;
+  padding: 100px 0 80px;
+  position: relative;
+}
+@media(max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 64px 0 48px;
+  }
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 5.5vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+.hero h1 .accent {
+  color: var(--accent);
+  position: relative;
+  display: inline-block;
+}
+.hero h1 .accent::after {
+  content: "";
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  z-index: -1;
+  border-radius: 6px;
+}
+
+.hero .sub {
+  margin-top: 24px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 52ch;
+  color: var(--ink-2);
+}
+
+.hero .cta {
+  display: flex;
+  gap: 16px;
+  margin-top: 36px;
+  flex-wrap: wrap;
+}
+
+.hero .note {
+  margin-top: 24px;
+  font-size: .88rem;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+/* 3D Math Viewport & Ambient Glow */
+.hero-glow-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -2;
+  opacity: 0.15;
+  transition: all 0.5s ease;
+}
+[data-theme="dark"] .hero-glow-bubble {
+  opacity: 0.08;
+}
+.hero-glow-1 {
+  width: 350px;
+  height: 350px;
+  background: var(--accent);
+  top: 10%;
+  left: -10%;
+}
+.hero-glow-2 {
+  width: 400px;
+  height: 400px;
+  background: var(--ok);
+  bottom: 10%;
+  right: -10%;
+}
+
+.hero-math-decorations {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.hero-math-decorations span {
+  position: absolute;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.05;
+  font-size: 6rem;
+  font-family: serif;
+  font-style: italic;
+  user-select: none;
+}
+[data-theme="dark"] .hero-math-decorations span {
+  opacity: 0.035;
+}
+
+/* 3D Rotating Coordinate System in Hero */
+/* 3D Rotating Coordinate System in Hero */
+.hero-3d-scene {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  perspective: 800px;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 1;
+}
+
+/* Premium Brand Banner spanning full width */
+.hero-brand-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 48px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  padding: 16px 32px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: visible;
+}
+[data-theme="dark"] .hero-brand-banner {
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+}
+.brand-title {
+  font-family: var(--font-sans);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-transform: uppercase;
+  text-align: center;
+  flex: 1;
+  padding: 0 24px;
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-3d-scene-wrapper {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.hero-3d-scene-wrapper .hero-3d-scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  margin: 0;
+  opacity: 0.85;
+  z-index: 2;
+}
+@media(max-width: 680px) {
+  .hero-brand-banner {
+    padding: 12px 16px;
+    margin-bottom: 32px;
+  }
+  .hero-3d-scene-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+  .hero-3d-scene-wrapper .hero-3d-scene {
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  .brand-title {
+    font-size: 1.1rem;
+    padding: 0 12px;
+    letter-spacing: 0.08em;
+  }
+}
+.hero-3d-axes {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(60deg) rotateZ(45deg);
+  animation: rotate3dScene 25s linear infinite;
+}
+.hero-3d-axis {
+  position: absolute;
+  background: currentColor;
+  opacity: 0.3;
+}
+.hero-3d-axis-x { width: 140px; height: 1px; top: 100px; left: 30px; color: var(--accent); }
+.hero-3d-axis-y { width: 1px; height: 140px; left: 100px; top: 30px; color: var(--ok); }
+.hero-3d-axis-z { width: 140px; height: 1px; top: 100px; left: 30px; color: var(--warn); transform: rotateY(90deg); }
+
+/* Cube in positive octant */
+.hero-3d-cube {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  top: 75px;
+  left: 75px;
+  transform-style: preserve-3d;
+  animation: spinCube 12s linear infinite;
+}
+@keyframes spinCube {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+.hero-3d-face {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.hero-f-front  { transform: translateZ(25px); }
+.hero-f-back   { transform: rotateY(180deg) translateZ(25px); }
+.hero-f-left   { transform: rotateY(-90deg) translateZ(25px); }
+.hero-f-right  { transform: rotateY(90deg) translateZ(25px); }
+.hero-f-top    { transform: rotateX(90deg) translateZ(25px); }
+.hero-f-bottom { transform: rotateX(-90deg) translateZ(25px); }
+
+/* Sphere in negative octant */
+.hero-3d-sphere {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  top: 70px;
+  left: 70px;
+  transform-style: preserve-3d;
+  animation: spinSphere 15s linear infinite;
+}
+@keyframes spinSphere {
+  0% { transform: rotateY(0deg) rotateX(0deg); }
+  100% { transform: rotateY(360deg) rotateX(360deg); }
+}
+.sphere-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--ok);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.ring-y-0   { transform: rotateY(0deg); }
+.ring-y-30  { transform: rotateY(30deg); }
+.ring-y-60  { transform: rotateY(60deg); }
+.ring-y-90  { transform: rotateY(90deg); }
+.ring-y-120 { transform: rotateY(120deg); }
+.ring-y-150 { transform: rotateY(150deg); }
+.ring-x-90  { transform: rotateX(90deg); border-style: solid; border-color: var(--ok); }
+
+/* Brand Badge */
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 4%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Portrait Column Styling */
+.portrait {
+  position: relative;
+  height: 520px;
+}
+.portrait-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+.portrait-grid .ph-portrait {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 440px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+}
+.portrait-grid .ph-landscape {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  height: 410px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+.portrait-grid .ph-portrait:hover {
+  transform: translateY(-10px) scale(1.03);
+  z-index: 4;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+.portrait-grid .ph-landscape:hover {
+  transform: translateY(-10px) scale(1.03);
+  z-index: 4;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+@media(max-width: 860px) {
+  .portrait {
+    height: auto;
+    margin-top: 40px;
+  }
+  .portrait-grid {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    align-items: center;
+    height: auto;
+  }
+  .portrait-grid .ph-portrait,
+  .portrait-grid .ph-landscape {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 90%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 1/1.25;
+  }
+}
+.portrait-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vertical-text {
+  position: absolute;
+  left: -42px;
+  top: 15%;
+  writing-mode: vertical-rl;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  letter-spacing: 0.45em;
+  font-weight: 800;
+  opacity: 0.45;
+  user-select: none;
+}
+@media(max-width: 860px) {
+  .vertical-text { display: none; }
+}
+
+/* Floating Glassmorphic Labels */
+.float {
+  position: absolute;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid var(--line-2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  box-shadow: var(--shadow);
+  font-size: .84rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 3;
+  transition: all 0.2s ease;
+}
+.float:hover {
+  transform: scale(1.03);
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.float b {
+  display: block;
+  font-size: .9rem;
+  font-weight: 700;
+}
+.float span {
+  color: var(--ink-2);
+}
+.float .ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  flex: none;
+  font-weight: bold;
+}
+.f1 { top: -20px; left: -10px; }
+.f2 { bottom: -20px; right: -10px; }
+@media(max-width: 860px) {
+  .f1 { left: 4%; top: -24px; }
+  .f2 { right: 4%; bottom: -24px; }
+}
+
+/* Contact Links Premium Styling */
+.contact-channels {
+  display: flex;
+  gap: 16px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: .88rem;
+  text-decoration: none;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+}
+.contact-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.contact-link .icon-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+.contact-link:hover .icon-box {
+  transform: scale(1.1);
+}
+
+/* --- STATS SECTION --- */
+.stats {
+  padding: 24px 0 64px;
+}
+.stats .grid-4 {
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+.stats .stat {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 12px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+.stats .stat:hover {
+  transform: translateY(-2px);
+}
+.stats .stat:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: var(--line-2);
+}
+@media(max-width: 760px) {
+  .stats .stat:not(:last-child)::after {
+    display: none;
+  }
+}
+.stats .stat b {
+  font-size: 2.2rem;
+  color: var(--accent);
+  font-weight: 800;
+}
+.stats .stat span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+/* --- ABOUT THAY VINH --- */
+.story {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: start;
+  padding: 64px 0;
+  position: relative;
+}
+@media(max-width: 860px) {
+  .story {
+    grid-template-columns: 1fr;
+    padding: 32px 0;
+  }
+}
+.story .quote {
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+.story .quote .accent {
+  color: var(--accent);
+}
+.story-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+.story-grid .ph {
+  aspect-ratio: 4/3;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+}
+.story-grid .ph:hover {
+  transform: translateY(-2px);
+}
+.story-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.chip {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 8px 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+  transition: all 0.15s;
+}
+.chip:hover {
+  background: var(--surface-2);
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+
+/* --- FEATURES --- */
+.features {
+  padding: 48px 0 96px;
+}
+.features .feature {
+  transition: all 0.3s ease;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+.features .feature:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 
+    0 12px 30px rgba(31,29,26, 0.06),
+    0 1px 3px rgba(31,29,26, 0.02);
+}
+[data-theme="dark"] .features .feature:hover {
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.features .feature .ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+.features .feature h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.features .feature p {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* --- FOOTER --- */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 40px 0 56px;
+  font-size: .88rem;
+  color: var(--ink-2);
+  background: var(--surface-2);
+}
+footer .wrap {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* --- DYNAMIC ANIMATIONS --- */
+@keyframes rotate3dScene {
+  0% { transform: rotateX(60deg) rotateZ(45deg); }
+  100% { transform: rotateX(60deg) rotateZ(405deg); }
+}
+@keyframes floatSymbolY {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-15px); }
+}
+@keyframes floatSymbolX {
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(12px); }
+}
+@keyframes floatSymbolRotate {
+  0% { transform: rotate(0deg) translateY(0px); }
+  50% { transform: rotate(180deg) translateY(-10px); }
+  100% { transform: rotate(360deg) translateY(0px); }
+}
+.hero-math-decorations .s-int { top: 8%; left: 8%; animation: floatSymbolY 7s ease-in-out infinite alternate; }
+.hero-math-decorations .s-pi  { top: 22%; right: 28%; animation: floatSymbolRotate 15s ease-in-out infinite; }
+.hero-math-decorations .s-sum { bottom: 8%; left: 35%; animation: floatSymbolX 10s ease-in-out infinite alternate; }
+.hero-math-decorations .s-inf { bottom: 25%; left: 8%; animation: floatSymbolY 9s ease-in-out infinite alternate-reverse; }
+.hero-math-decorations .s-sqrt { top: 45%; right: 40%; animation: floatSymbolX 8s ease-in-out infinite alternate-reverse; }
+</style>
+</head>
+<body class="math-grid">
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <a href="index.html" class="active">Trang chủ</a>
+      <a href="lop-hoc.html">Lớp học</a>
+      <a href="luyen-de.html">Luyện đề</a>
+      <a href="tai-lieu.html">Tài liệu</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <a class="btn btn-primary btn-sm" href="dang-nhap.html">Đăng nhập</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="position:relative">
+  <!-- Glowing ambient bubbles -->
+  <div class="hero-glow-bubble hero-glow-1"></div>
+  <div class="hero-glow-bubble hero-glow-2"></div>
+
+  <!-- Animated math symbols in background -->
+  <div class="hero-math-decorations">
+    <span class="s-int">∫</span>
+    <span class="s-pi">π</span>
+    <span class="s-sum">∑</span>
+    <span class="s-inf">∞</span>
+    <span class="s-sqrt">√x</span>
+  </div>
+
+  <section class="hero">
+    <!-- Brand Header Banner (Sphere on left, Title in middle, Cube on right) -->
+    <div class="hero-brand-banner">
+      <!-- 3D Sphere (Left) -->
+      <div class="hero-3d-scene-wrapper">
+        <div class="hero-3d-scene">
+          <div class="hero-3d-axes">
+            <div class="hero-3d-axis hero-3d-axis-x"></div>
+            <div class="hero-3d-axis hero-3d-axis-y"></div>
+            <div class="hero-3d-axis hero-3d-axis-z"></div>
+            <div class="hero-3d-sphere">
+              <div class="sphere-ring ring-y-0"></div>
+              <div class="sphere-ring ring-y-30"></div>
+              <div class="sphere-ring ring-y-60"></div>
+              <div class="sphere-ring ring-y-90"></div>
+              <div class="sphere-ring ring-y-120"></div>
+              <div class="sphere-ring ring-y-150"></div>
+              <div class="sphere-ring ring-x-90"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stretched Brand Title -->
+      <div class="brand-title">Lớp Toán Thầy Vinh - VinhMath</div>
+      
+      <!-- 3D Cube (Right) -->
+      <div class="hero-3d-scene-wrapper">
+        <div class="hero-3d-scene">
+          <div class="hero-3d-axes">
+            <div class="hero-3d-axis hero-3d-axis-x"></div>
+            <div class="hero-3d-axis hero-3d-axis-y"></div>
+            <div class="hero-3d-axis hero-3d-axis-z"></div>
+            <div class="hero-3d-cube">
+              <div class="hero-3d-face hero-f-front"></div>
+              <div class="hero-3d-face hero-f-back"></div>
+              <div class="hero-3d-face hero-f-left"></div>
+              <div class="hero-3d-face hero-f-right"></div>
+              <div class="hero-3d-face hero-f-top"></div>
+              <div class="hero-3d-face hero-f-bottom"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
+      <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
+      
+      <div style="margin-top:32px">
+        <a class="btn btn-primary btn-lg" href="dang-nhap.html" style="box-shadow: 0 4px 14px var(--accent-soft)">Vào hệ thống học tập</a>
+      </div>
+
+      <div class="contact-channels">
+        <a class="contact-link" href="https://zalo.me/0794742199" target="_blank" title="Nhắn Zalo: 0794742199">
+          <span class="icon-box" style="background:#E1F0FF; color:#0068FF">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><text x="8.5" y="15" font-family="system-ui, sans-serif" font-weight="800" font-size="10.5" fill="currentColor">Z</text></svg>
+          </span>
+          Nhắn Zalo (0794742199)
+        </a>
+        <a class="contact-link" href="https://www.facebook.com/ienvothevinh" target="_blank" title="Facebook Thầy Vinh">
+          <span class="icon-box" style="background:#E7EBFF; color:#1877F2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+          </span>
+          Facebook
+        </a>
+        <a class="contact-link" href="tel:0866197857" title="Gọi trực tiếp: 0866197857">
+          <span class="icon-box" style="background:var(--warn-soft); color:var(--warn)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          </span>
+          SĐT: 0866.197.857
+        </a>
+      </div>
+
+      <p class="note">🔑 Tài khoản do thầy cấp riêng cho từng học sinh của lớp.</p>
+    </div>
+    
+    <div class="portrait">
+      <div class="vertical-text">HIỂU BẢN CHẤT</div>
+      <div class="portrait-grid">
+        <div class="ph-portrait">
+          <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.parentElement.innerHTML='📷 Thả ảnh thầy chân dung tên <b>anh-thay.jpg</b> vào thư mục trang-web'">
+          <div class="photo-caption">Thầy Thế Vinh</div>
+        </div>
+        <div class="ph-landscape">
+          <img src="anh-cu-nhan.jpg" alt="Thầy Thế Vinh tốt nghiệp cử nhân" onerror="this.parentElement.innerHTML='📷 Thả ảnh tốt nghiệp tên <b>anh-cu-nhan.jpg</b> vào thư mục trang-web'">
+          <div class="photo-caption">Cử nhân Sư phạm Toán</div>
+        </div>
+      </div>
+      
+      <!-- Interactive floating cards -->
+      <div class="float f1">
+        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
+        <div><b>Video bài giảng</b><span>Kèm bài tập tự chấm</span></div>
+      </div>
+      <div class="float f2">
+        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">📈</span>
+        <div><b>Tiến độ rõ ràng</b><span>Từng em, từng chuyên đề</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="grid grid-4">
+      <div class="stat"><b>150+</b><span>Học sinh đang học</span></div>
+      <div class="stat"><b>8+</b><span>Năm kinh nghiệm</span></div>
+      <div class="stat"><b>500+</b><span>Video bài giảng</span></div>
+      <div class="stat"><b>96%</b><span>Đạt mục tiêu điểm</span></div>
+    </div>
+  </section>
+
+  <section class="story">
+    <div class="story-grid">
+      <div class="ph" style="position:relative">
+        <img src="anh-lop.jpg" alt="Lớp học VinhMath 1" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 1 tên <b>anh-lop.jpg</b> vào thư mục trang-web'">
+        <div class="photo-caption">Lớp học VinhMath</div>
+      </div>
+      <div class="ph" style="position:relative">
+        <img src="anh-lop-2.jpg" alt="Lớp học VinhMath 2" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 2 tên <b>anh-lop-2.jpg</b> vào thư mục trang-web'">
+        <div class="photo-caption">Không khí ấm áp tại lớp</div>
+      </div>
+      <div class="ph" style="position:relative">
+        <img src="anh-lam-viec.jpg" alt="Góc soạn bài giảng hình học" onerror="this.parentElement.innerHTML='📷 Thả ảnh góc làm việc tên <b>anh-lam-viec.jpg</b> vào thư mục trang-web'">
+        <div class="photo-caption">Chuẩn bị bài giảng hình học</div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label">Về Thầy Vinh</div>
+      <p class="quote">"Học toán không phải là học thuộc công thức,<br>mà là <span class="accent">thưởng thức hành trình</span> đi tìm lời giải."</p>
+      <p style="margin-top:18px;max-width:55ch">Thầy tốt nghiệp loại giỏi ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, hiện đang theo học cao học chuyên ngành Lý luận và phương pháp dạy học bộ môn Toán theo trường phái Didactic Toán của Pháp (Định hướng nghiên cứu). Với 8 năm kinh nghiệm giảng dạy từ lớp 6 đến lớp 12, dạy bồi dưỡng HSG bậc THCS và luyện thi TS10 tại các trường điểm như Nguyễn Thượng Hiền, Trần Phú... thầy luôn đồng hành giúp các em hiểu bản chất cốt lõi của môn học.</p>
+      <div class="chips">
+        <span class="chip">🎓 Cử nhân Sư phạm Toán (Loại Giỏi) - ĐH Sư phạm TPHCM</span>
+        <span class="chip">📚 Học viên Cao học Didactic Toán (Định hướng nghiên cứu)</span>
+        <span class="chip">📐 8 năm kinh nghiệm luyện thi TS10 & THPT Quốc gia, bồi dưỡng HSG</span>
+        <span class="chip">📍 CS1: Trung tâm Duy Minh tại 248A, Phường 14, Tân Bình, TPHCM</span>
+        <span class="chip">📍 CS2: Lớp toán VinhMath tại 637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5, TPHCM</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="sec-label">Hệ thống học tập</div>
+    <h2 style="margin-bottom:24px">Mỗi học sinh một tài khoản, một lộ trình</h2>
+    <div class="grid grid-2">
+      <div class="card feature">
+        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
+        <h3>Bài giảng video + bài tập</h3>
+        <p>Mỗi buổi học có video xem lại và bài tập kèm theo. Làm xong hệ thống chấm ngay, sai câu nào biết câu đó.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">✓</span>
+        <h3>Luyện đề theo chuyên đề</h3>
+        <p>Ngân hàng câu hỏi do thầy biên soạn, phân theo chuyên đề và mức độ — đúng cấu trúc đề thi của Bộ.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--warn-soft);color:var(--warn)">📈</span>
+        <h3>Tiến độ minh bạch</h3>
+        <p>Em và phụ huynh xem được điểm số, chuyên cần, những dạng bài hay sai — để biết cần tập trung vào đâu.</p>
+      </div>
+      <div class="card feature">
+        <span class="ic" style="background:var(--surface-2);color:var(--ink-2)">📚</span>
+        <h3>Kho tài liệu</h3>
+        <p>Tài liệu, đề ôn do thầy biên soạn bằng LaTeX, trình bày chuẩn, tải về in được ngay.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LỊCH HỌC CÁC LỚP (công khai cho phụ huynh) ===== -->
+  <section class="features" id="lich-hoc">
+    <div class="sec-label">Lịch học · Tuyển sinh</div>
+    <h2 style="margin-bottom:8px">Lịch các lớp đang mở</h2>
+    <p style="margin-bottom:20px;color:var(--ink-2);max-width:60ch">Phụ huynh xem khung giờ phù hợp và liên hệ thầy qua Zalo/điện thoại bên dưới để đăng ký cho con.</p>
+    <div class="card" style="padding:8px 4px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.92rem">
+        <thead><tr>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lớp</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Thứ</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Giờ học</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Hình thức</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Ghi chú</th>
+        </tr></thead>
+        <tbody id="bangLichCongKhai">
+          <tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Đang tải lịch học…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 VinhMath · Lớp Toán Thầy Vinh</span>
+    <span>Liên hệ: <a href="tel:0866197857" style="text-decoration:underline">SĐT: 0866197857</a> · <a href="https://zalo.me/0794742199" target="_blank" style="text-decoration:underline">Zalo: 0794742199</a> · <a href="https://www.facebook.com/ienvothevinh" target="_blank" style="text-decoration:underline">Facebook</a></span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="analytics.js"></script>
+<script>
+// Lịch học công khai (đọc được không cần đăng nhập)
+(async function () {
+  var o = document.getElementById('bangLichCongKhai');
+  if (!daKetNoi()) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch đang cập nhật.</td></tr>'; return; }
+  var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+  var r = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, note, classes(name)')
+    .order('weekday').order('start_time');
+  var ds = r.data || [];
+  if (!ds.length) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch khai giảng sẽ được cập nhật sớm — phụ huynh liên hệ Zalo để được tư vấn.</td></tr>'; return; }
+  // Gom theo lớp cho dễ đọc
+  ds.sort(function (a, b) { return (a.classes ? a.classes.name : '').localeCompare(b.classes ? b.classes.name : '', 'vi', { numeric: true }) || a.weekday - b.weekday; });
+  o.innerHTML = ds.map(function (s) {
+    return '<tr>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)"><b>' + (s.classes ? s.classes.name : '?') + '</b></td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + TEN_THU[s.weekday] + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums">' + s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5) + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + (s.note || '') + '</td>' +
+      '</tr>';
+  }).join('');
+  // Kiểm tra đăng nhập để đổi nút Đăng nhập thành Vào học
+  try {
+    if (daKetNoi()) {
+      var s = await sb.auth.getSession();
+      if (s.data.session) {
+        var rUser = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+        if (rUser.data) {
+          var isStaff = ['admin', 'teacher', 'assistant'].indexOf(rUser.data.role) !== -1;
+          var btn = document.querySelector('.topbar .btn-primary');
+          if (btn) {
+            btn.textContent = isStaff ? 'Trang Quản trị' : 'Vào Lớp học';
+            btn.href = isStaff ? 'quan-tri-lop.html' : 'lop-hoc.html';
+          }
+          // Cập nhật navlinks
+          var nav = document.querySelector('.navlinks');
+          if (nav) {
+            nav.innerHTML = isStaff
+              ? '<a href="index.html" class="active">Trang chủ</a><a href="quan-tri-lop.html">Quản trị</a>'
+              : '<a href="index.html" class="active">Trang chủ</a><a href="lop-hoc.html">Lớp học</a><a href="luyen-de.html">Luyện đề</a>';
+          }
+        }
+      }
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

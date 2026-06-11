@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lớp Online — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 44px 0 20px; }
+.join-card { text-align: center; padding: 40px 24px; }
+.join-card .ic { font-size: 3rem; margin-bottom: 10px; }
+.today { font-size: .95rem; color: var(--ink-2); margin: 8px 0 20px; }
+.tkb td, .tkb th { white-space: nowrap; }
+.dd-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+.dd-row input { max-width: 240px; text-align: center; letter-spacing: .08em; }
+.section { margin-top: 28px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <a href="hoc-tap.html">Học tập</a>
+      <a href="lop-online.html" class="active">Lớp Online</a>
+      <a href="tai-lieu.html">Tài liệu</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label" id="tenLop">Lớp Online</div>
+    <h1>Buổi học trực tuyến</h1>
+  </div>
+
+  <!-- Vào lớp Meet -->
+  <div class="card join-card">
+    <div class="ic">🎥</div>
+    <h2>Phòng học Google Meet của thầy</h2>
+    <p class="today" id="buoiHomNay">Đang xem lịch hôm nay…</p>
+    <a class="btn btn-primary btn-lg" id="nutVaoMeet" href="#" target="_blank" style="display:none">Vào lớp ngay</a>
+    <p id="chuaCoLink" style="display:none;color:var(--ink-3);font-size:.9rem">Thầy chưa cài link Meet — quay lại sau nhé.</p>
+
+    <div style="border-top:1px dashed var(--line-2);margin-top:24px;padding-top:20px">
+      <b>📍 Điểm danh buổi học</b>
+      <p style="font-size:.88rem;color:var(--ink-2);margin-top:4px">Khi thầy chiếu mã QR: quét bằng camera điện thoại, hoặc nhập mã thầy đưa vào ô dưới.</p>
+      <div class="dd-row">
+        <input class="input" id="maDiemDanh" placeholder="dán mã điểm danh">
+        <button class="btn btn-secondary" onclick="diemDanhBangMa()">✓ Điểm danh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thời khóa biểu -->
+  <div class="section">
+    <div class="sec-label">Thời khóa biểu</div>
+    <h2 style="margin-bottom:16px">Lịch học của lớp em</h2>
+    <div class="card" style="padding:8px 4px;overflow-x:auto">
+      <table class="tkb">
+        <thead><tr><th>Thứ</th><th>Giờ học</th><th>Hình thức</th><th>Ghi chú</th></tr></thead>
+        <tbody id="bangTKB"><tr><td colspan="4" style="color:var(--ink-3)">Đang tải…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lịch sử điểm danh của em -->
+  <div class="section">
+    <div class="sec-label">Chuyên cần</div>
+    <h2 style="margin-bottom:16px">Các buổi em đã điểm danh</h2>
+    <div class="card" style="padding:8px 4px">
+      <table>
+        <thead><tr><th>Buổi học</th><th>Thời điểm quét</th></tr></thead>
+        <tbody id="bangDiemDanh"><tr><td colspan="2" style="color:var(--ink-3)">Đang tải…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+function gioDep(t) { return t ? t.slice(0, 5) : ''; }
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Lớp Online';
+
+  // 1. Link Meet: ưu tiên phòng riêng của lớp, không có thì dùng link chung
+  var meet = '';
+  if (hoSo.class_id) {
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
+    if (lr.data && lr.data.meet_link) meet = lr.data.meet_link;
+  }
+  if (!meet) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meet = lk.data ? lk.data.value : '';
+  }
+  if (meet) { $('nutVaoMeet').href = meet; $('nutVaoMeet').style.display = 'inline-flex'; }
+  else { $('chuaCoLink').style.display = 'block'; }
+
+  // 2. Thời khóa biểu lớp mình
+  var r = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, location, note')
+    .eq('class_id', hoSo.class_id)
+    .order('weekday').order('start_time');
+  var ds = r.data || [];
+  $('bangTKB').innerHTML = ds.length
+    ? ds.map(function (s) {
+        return '<tr><td><b>' + TEN_THU[s.weekday] + '</b></td>' +
+          '<td class="num">' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</td>' +
+          '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 ' + (s.location || 'Tại lớp')) + '</td>' +
+          '<td style="color:var(--ink-2)">' + (s.note || '') + '</td></tr>';
+      }).join('')
+    : '<tr><td colspan="4" style="color:var(--ink-3)">Lớp em chưa có lịch — thầy sẽ cập nhật sớm.</td></tr>';
+
+  // Buổi hôm nay?
+  var jsThu = new Date().getDay();           // 0=CN … 6=T7
+  var homNay = jsThu === 0 ? 7 : jsThu;      // đổi sang 1=T2 … 7=CN
+  var buoi = ds.filter(function (s) { return s.weekday === homNay; });
+  $('buoiHomNay').innerHTML = buoi.length
+    ? '🔔 Hôm nay lớp em có buổi học: <b>' + buoi.map(function (s) { return gioDep(s.start_time) + '–' + gioDep(s.end_time); }).join(', ') + '</b>'
+    : 'Hôm nay lớp em không có buổi học theo lịch.';
+
+  // 3. Lịch sử điểm danh của mình
+  var dd = await sb.from('attendance')
+    .select('checked_at, class_sessions(title, held_on)')
+    .order('checked_at', { ascending: false }).limit(20);
+  var dsDD = dd.data || [];
+  $('bangDiemDanh').innerHTML = dsDD.length
+    ? dsDD.map(function (d) {
+        return '<tr><td>' + (d.class_sessions ? d.class_sessions.title : '—') + '</td>' +
+          '<td class="num">' + new Date(d.checked_at).toLocaleString('vi-VN') + '</td></tr>';
+      }).join('')
+    : '<tr><td colspan="2" style="color:var(--ink-3)">Em chưa điểm danh buổi nào.</td></tr>';
+})();
+
+function diemDanhBangMa() {
+  var ma = $('maDiemDanh').value.trim();
+  if (!ma) { alert('Em dán mã điểm danh thầy đưa vào ô trước nhé.'); return; }
+  // Nếu lỡ dán cả đường link thì tự rút mã ra
+  var m = ma.match(/token=([a-f0-9]+)/i);
+  window.location.href = 'diem-danh.html?token=' + (m ? m[1] : ma);
+}
+</script>
+</body>
+</html>

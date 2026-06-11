@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài học — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<style>
+body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); }
+.lesson-container { display:flex; flex-direction:column; height:100vh; }
+
+/* ===== Thanh trên cùng ===== */
+.topbar-lesson {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 16px; border-bottom:1px solid var(--line);
+  background:var(--surface); height:60px; flex-shrink:0;
+}
+.topbar-lesson .left { display:flex; align-items:center; gap:10px; min-width:0; }
+.back-btn { display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; font-size:.9rem; color:var(--ink-2); flex-shrink:0; }
+.back-btn:hover { color:var(--accent); }
+.lesson-title { font-size:1.02rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.switcher { display:flex; gap:6px; flex-shrink:0; }
+.sw-btn {
+  border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2);
+  font-family:inherit; font-size:.84rem; font-weight:600; padding:7px 14px;
+  border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+}
+.sw-btn:hover { color:var(--ink); border-color:var(--ink-3); }
+.sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.sw-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ===== Bố cục 3 cột: mục lục | video | nội dung ===== */
+.layout { display:flex; flex:1; min-height:0; }
+
+/* Mục lục trái */
+.sidebar {
+  width:268px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--line);
+  overflow-y:auto; padding:14px 0 24px;
+}
+.sidebar .sb-head { padding:4px 18px 10px; font-size:.78rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+.sb-group { padding:10px 18px 4px; font-size:.76rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
+.sb-item {
+  display:block; padding:8px 18px; font-size:.86rem; color:var(--ink-2);
+  text-decoration:none; line-height:1.45; border-left:3px solid transparent;
+}
+.sb-item:hover { background:var(--surface-2); color:var(--ink); }
+.sb-item.current { background:var(--accent-soft); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
+.sb-item .lock { font-size:.75rem; margin-left:4px; }
+
+/* Vùng làm việc */
+.workspace { display:flex; flex:1; min-width:0; background:var(--surface-2); }
+.pane { flex:1; display:flex; flex-direction:column; min-width:0; position:relative; background:var(--surface); }
+.pane-video { border-right:1px solid var(--line); }
+.video-wrapper { width:100%; height:100%; background:#000; display:flex; flex-direction:column; }
+.video-wrapper iframe { flex:1; width:100%; border:none; }
+.pane-control { position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:6px; }
+.ctrl-btn { background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:6px; width:30px; height:30px; display:grid; place-items:center; cursor:pointer; font-size:.85rem; }
+.ctrl-btn:hover { background:rgba(0,0,0,.8); }
+.content-body { flex:1; display:flex; flex-direction:column; min-height:0; }
+.pdf-frame { flex:1; width:100%; border:none; background:#f4f4f4; }
+.no-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; color:var(--ink-3); height:100%; }
+.no-content .ic { font-size:3rem; margin-bottom:14px; }
+.no-content h3 { color:var(--ink); margin-bottom:8px; }
+
+/* Tabs di động */
+.mobile-tabs { display:none; background:var(--surface); border-bottom:1px solid var(--line); height:46px; flex-shrink:0; }
+.mobile-tab-btn { flex:1; border:none; background:transparent; font-family:inherit; font-size:.86rem; font-weight:600; color:var(--ink-2); cursor:pointer; border-bottom:2px solid transparent; }
+.mobile-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+@media (max-width:980px) {
+  .sidebar { position:fixed; left:0; top:60px; bottom:0; z-index:50; transform:translateX(-100%); transition:transform .2s; box-shadow:var(--shadow); }
+  .sidebar.open { transform:translateX(0); }
+  .lesson-title { display:none; }
+}
+@media (max-width:820px) {
+  .workspace { flex-direction:column; }
+  .pane-video, .pane-content { display:none !important; }
+  .workspace.show-video .pane-video { display:flex !important; }
+  .workspace.show-content .pane-content { display:flex !important; }
+  .mobile-tabs { display:flex; }
+  .pane-control { display:none; }
+  .switcher .sw-text { display:none; }
+}
+
+/* Quiz CSS */
+.quiz-container { padding: 24px; overflow-y: auto; flex: 1; background: var(--surface); display: flex; flex-direction: column; gap: 24px; }
+.quiz-q { padding-bottom: 20px; border-bottom: 1px dashed var(--line); }
+.quiz-text { font-weight: 700; margin-bottom: 14px; font-size: 1.02rem; line-height: 1.5; }
+.quiz-choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.quiz-choice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all .15s; font-size: .92rem; }
+.quiz-choice:hover { background: var(--surface-2); }
+.quiz-choice.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.quiz-choice.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.quiz-choice.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); font-weight: 600; }
+.quiz-choice-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; font-weight: 700; font-size: .8rem; }
+.quiz-sol { margin-top: 14px; padding: 16px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .9rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="lesson-container">
+  <header class="topbar-lesson">
+    <div class="left">
+      <button class="btn btn-ghost btn-sm" onclick="batTatMucLuc()" title="Mục lục">☰</button>
+      <a href="lop-hoc.html" class="back-btn"><span>←</span><span class="sw-text">Lớp học</span></a>
+      <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
+    </div>
+    <div class="switcher" id="boChuyen" style="display:none">
+      <button class="sw-btn" id="swTaiLieu" onclick="chonNoiDung('tailieu')">📄 <span class="sw-text">Tài liệu</span></button>
+      <button class="sw-btn" id="swBang" onclick="chonNoiDung('bang')">🖼 <span class="sw-text">Bảng</span></button>
+      <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+      <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </header>
+
+  <!-- Hộp nộp bài -->
+  <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;position:relative">
+      <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+      <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
+      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px" id="nbTenBai"></p>
+      <div id="nbDaNop"></div>
+      <div class="field" style="margin-top:14px">
+        <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
+        <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
+      </div>
+      <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
+      <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
+    </div>
+  </div>
+
+  <div class="mobile-tabs">
+    <button class="mobile-tab-btn active" id="tabVideo" onclick="hienMobilePane('video')">🎥 Video</button>
+    <button class="mobile-tab-btn" id="tabNoiDung" onclick="hienMobilePane('content')">📄 Nội dung</button>
+  </div>
+
+  <div class="layout">
+    <!-- Mục lục bên trái -->
+    <nav class="sidebar" id="mucLuc">
+      <div class="sb-head">Mục lục bài giảng</div>
+      <div id="dsMucLuc"><div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Đang tải…</div></div>
+    </nav>
+
+    <!-- Vùng học -->
+    <main class="workspace show-video" id="khongGianHoc">
+      <section class="pane pane-video" id="khungTrangVideo">
+        <div class="pane-control">
+          <button class="ctrl-btn" onclick="phongToPane('video')" title="Phóng to Video" id="btnMaxVideo">⛶</button>
+        </div>
+        <div class="video-wrapper" id="videoWrapper">
+          <div class="no-content"><div class="ic">🎬</div><h3>Đang tải video bài giảng…</h3></div>
+        </div>
+      </section>
+
+      <section class="pane pane-content" id="khungTrangNoiDung">
+        <div class="pane-control">
+          <button class="ctrl-btn" onclick="phongToPane('content')" title="Phóng to nội dung" id="btnMaxContent">⛶</button>
+        </div>
+        <div class="content-body" id="thanNoiDung">
+          <div class="no-content"><div class="ic">📄</div><h3>Đang tải nội dung…</h3></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="analytics.js"></script>
+<script>
+var lessonId = null;
+var details = null;
+var viewMode = 'split';
+var noiDungDangChon = null;   // 'tailieu' | 'bang' | 'test'
+var interactiveQuestions = [];
+var selectedAnswers = {};
+var testAttempt = null;
+
+(async function () {
+  var params = new URLSearchParams(window.location.search);
+  lessonId = params.get('id');
+  if (!lessonId) { window.location.href = 'lop-hoc.html'; return; }
+  if (!daKetNoi()) { alert('Chưa kết nối Supabase.'); return; }
+
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  nguoiDung = hoSo;
+  $('nutNopBai').style.display = '';
+
+  // Tải song song: chi tiết bài + mục lục
+  taiMucLuc();
+  await taiChiTietBaiHoc();
+})();
+
+/* ===== NỘP BÀI ===== */
+var nguoiDung = null;
+
+function moNopBai() {
+  $('modalNopBai').style.display = 'flex';
+  $('nbTenBai').textContent = details ? details.title : '';
+  $('nbThongBao').textContent = '';
+  taiBaiDaNop();
+}
+function dongNopBai() { $('modalNopBai').style.display = 'none'; }
+
+async function taiBaiDaNop() {
+  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
+  var r = await sb.from('submissions')
+    .select('id, submitted_at, files, status, score, feedback, graded_files')
+    .eq('lesson_id', lessonId)
+    .eq('student_id', nguoiDung.id)
+    .order('submitted_at', { ascending: false });
+  var ds = r.data || [];
+  if (!ds.length) { $('nbDaNop').innerHTML = ''; return; }
+  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;font-weight:600;margin-bottom:8px">Bài em đã nộp:</div>' +
+    ds.map(function (s) {
+      var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+      var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ');
+      var kq;
+      if (s.status === 'graded') {
+        kq = '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + ' điểm' : '') + '</span>' +
+          (s.feedback ? '<div style="font-size:.85rem;margin-top:6px;color:var(--ink-2)">💬 ' + s.feedback + '</div>' : '') +
+          ((s.graded_files || []).length
+            ? '<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: ' + s.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ') + '</div>'
+            : '');
+      } else {
+        kq = '<span class="badge badge-warn">Chờ thầy chấm</span>';
+      }
+      return '<div class="card" style="padding:12px 16px;margin-bottom:10px">' +
+        '<div style="font-size:.8rem;color:var(--ink-3)">' + ngay + '</div>' +
+        '<div style="font-size:.85rem;margin:6px 0">' + links + '</div>' + kq + '</div>';
+    }).join('');
+}
+
+async function guiBaiNop() {
+  var fs = $('nbFiles').files;
+  var tb = $('nbThongBao');
+  if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
+  var nut = $('nbGui');
+  nut.disabled = true; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
+  try {
+    var fd = new FormData();
+    fd.append('kind', 'nop');
+    fd.append('lesson_id', lessonId);
+    for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
+    var r = await sb.functions.invoke('nop-bai', { body: fd });
+    if (r.error) throw new Error(r.error.message || 'Trạm nộp bài lỗi');
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    $('nbFiles').value = '';
+    tb.textContent = '✓ Nộp bài thành công!';
+    tb.style.color = 'var(--ok)';
+    taiBaiDaNop();
+  } catch (e) {
+    tb.textContent = 'Lỗi: ' + e.message;
+    tb.style.color = 'var(--err)';
+  }
+  nut.disabled = false; nut.textContent = 'Gửi bài cho thầy';
+}
+
+/* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
+async function taiMucLuc() {
+  var r = await sb.from('lessons')
+    .select('id, title, sort, locked, topics(name), classes(name)')
+    .order('sort', { ascending: false });
+  var ds = r.data || [];
+  if (!ds.length) {
+    $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';
+    return;
+  }
+  // Gom nhóm theo chuyên đề
+  var nhom = {};
+  ds.forEach(function (b) {
+    var ten = b.topics ? b.topics.name : 'Bài giảng khác';
+    (nhom[ten] = nhom[ten] || []).push(b);
+  });
+  var html = '';
+  Object.keys(nhom).forEach(function (ten) {
+    html += '<div class="sb-group">' + ten + '</div>';
+    html += nhom[ten].map(function (b) {
+      var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
+      return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc.html?id=' + b.id + '">' + b.title + khoa + '</a>';
+    }).join('');
+  });
+  $('dsMucLuc').innerHTML = html;
+}
+
+function batTatMucLuc() { $('mucLuc').classList.toggle('open'); }
+
+/* ===== CHI TIẾT BÀI HỌC ===== */
+async function taiChiTietBaiHoc() {
+  var r = await sb.from('lessons')
+    .select('id, title, youtube_url, note, images, locked, document_id, test_document_id, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .eq('id', lessonId)
+    .single();
+
+  if (r.error || !r.data) {
+    alert('Bài giảng này đang bị khoá hoặc không tồn tại.');
+    window.location.href = 'lop-hoc.html';
+    return;
+  }
+  details = r.data;
+
+  // Tải câu hỏi trắc nghiệm liên kết với bài học này (nếu có)
+  try {
+    var rq = await sb.from('lesson_questions')
+      .select('question_id, sort, questions(id, content_latex, choices, solution_latex)')
+      .eq('lesson_id', lessonId)
+      .order('sort');
+    interactiveQuestions = (rq.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+
+    // Tải lượt làm bài trước đó (nếu có)
+    var ra = await sb.from('attempts')
+      .select('id, score, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .maybeSingle();
+    if (ra.data) {
+      testAttempt = ra.data;
+      if (ra.data.attempt_answers) {
+        ra.data.attempt_answers.forEach(function (ans) {
+          selectedAnswers[ans.question_id] = ans.chosen_key;
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Lỗi tải câu hỏi/lượt làm bài:', e);
+  }
+
+  renderBaiHoc();
+}
+
+function extractYoutubeId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function extractDriveId(url) {
+  if (!url) return null;
+  var m1 = url.match(/\/file\/d\/([\w_-]+)/);
+  if (m1) return m1[1];
+  var m2 = url.match(/[?&]id=([\w_-]+)/);
+  if (m2 && url.includes('drive.google.com')) return m2[1];
+  return null;
+}
+function buildPdfUrl(p) { return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p; }
+function urlAnh(p) { return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p; }
+
+function renderBaiHoc() {
+  $('tieuDeBaiHoc').textContent = details.title;
+  document.title = details.title + ' — VinhMath';
+
+  // ---- Video ----
+  var ytId = extractYoutubeId(details.youtube_url);
+  var driveId = extractDriveId(details.youtube_url);
+  var vc = $('videoWrapper');
+  if (ytId) {
+    vc.innerHTML = '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+  } else if (driveId) {
+    vc.innerHTML = '<iframe src="https://drive.google.com/file/d/' + driveId + '/preview" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>' +
+      '<div style="background:#1a1a1a;color:#aaa;font-size:.8rem;padding:7px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<span>Video không chạy? Trình duyệt có thể chặn Drive nhúng.</span>' +
+      '<a class="btn btn-secondary btn-sm" style="padding:3px 10px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở cửa sổ riêng</a></div>';
+  } else {
+    vc.innerHTML = '<div class="no-content" style="background:var(--surface)"><div class="ic">📭</div><h3>Không có video</h3><p>Bài học này chưa gắn video bài giảng.</p></div>';
+  }
+
+  // ---- Khung phải: 3 loại nội dung ----
+  var coTaiLieu = !!(details.documents && details.documents.file_path);
+  var dsAnh = Array.isArray(details.images) ? details.images : [];
+  var coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
+
+  // Bật/tắt các nút chuyển
+  $('boChuyen').style.display = 'flex';
+  $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
+  $('swBang').style.display = dsAnh.length ? '' : 'none';
+  $('swTest').style.display = coTest ? '' : 'none';
+
+  if (!coTaiLieu && !dsAnh.length && !coTest) {
+    $('boChuyen').style.display = 'none';
+    $('thanNoiDung').innerHTML = '<div class="no-content"><div class="ic">📑</div><h3>Không có nội dung kèm theo</h3><p>Bài học này chỉ có video bài giảng.</p></div>';
+    if ((ytId || driveId) && window.innerWidth > 820) phongToPane('video');
+    return;
+  }
+  chonNoiDung(coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
+}
+
+function chonNoiDung(loai) {
+  noiDungDangChon = loai;
+  ['TaiLieu', 'Bang', 'Test'].forEach(function (t) { $('sw' + t).classList.remove('active'); });
+  var than = $('thanNoiDung');
+
+  if (loai === 'tailieu') {
+    $('swTaiLieu').classList.add('active');
+    var u = buildPdfUrl(details.documents.file_path);
+    than.innerHTML = thanhCongCu('📄 ' + details.documents.title, u) +
+      '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
+  } else if (loai === 'bang') {
+    $('swBang').classList.add('active');
+    var dsAnh = details.images || [];
+    than.innerHTML = thanhCongCu('🖼 Ảnh bảng buổi học (' + dsAnh.length + ')', null) +
+      '<div style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)">' +
+      dsAnh.map(function (p) {
+        var u = urlAnh(p);
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+      }).join('') + '</div>';
+  } else {
+    $('swTest').classList.add('active');
+    if (interactiveQuestions.length > 0) {
+      renderInteractiveQuiz();
+    } else {
+      var ut = buildPdfUrl(details.bai_test.file_path);
+      than.innerHTML = thanhCongCu('📝 ' + details.bai_test.title, ut) +
+        '<iframe class="pdf-frame" src="' + ut + '#toolbar=1&navpanes=0"></iframe>';
+    }
+  }
+  // Trên di động: chuyển sang tab nội dung
+  if (window.innerWidth <= 820) hienMobilePane('content');
+}
+
+function renderLatex(element) {
+  if (window.renderMathInElement) {
+    window.renderMathInElement(element, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+function chonDapAn(qId, key) {
+  if (testAttempt) return; // đã nộp bài, không cho sửa
+  selectedAnswers[qId] = key;
+  var choices = document.querySelectorAll('.choice-' + qId);
+  choices.forEach(function (el) {
+    if (el.getAttribute('data-key') === key) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+}
+
+async function nopBaiTracNghiem() {
+  if (testAttempt) { alert('Em đã nộp bài trắc nghiệm này rồi.'); return; }
+  
+  var qIds = interactiveQuestions.map(function (q) { return q.id; });
+  var countAnswered = 0;
+  qIds.forEach(function (qId) { if (selectedAnswers[qId]) countAnswered++; });
+  if (countAnswered === 0) { alert('Em vui lòng chọn ít nhất một đáp án trước khi nộp bài.'); return; }
+  
+  if (!confirm('Em chắc chắn muốn nộp bài kiểm tra trắc nghiệm này?')) return;
+  
+  var correctCount = 0;
+  var totalCount = interactiveQuestions.length;
+  var answerPayloads = [];
+  
+  interactiveQuestions.forEach(function (q) {
+    var chosen = selectedAnswers[q.id];
+    var isCorrect = false;
+    if (q.choices) {
+      q.choices.forEach(function (c) {
+        if (c.key === chosen && c.correct) {
+          isCorrect = true;
+          correctCount++;
+        }
+      });
+    }
+    answerPayloads.push({
+      question_id: q.id,
+      chosen_key: chosen || null,
+      is_correct: chosen ? isCorrect : false
+    });
+  });
+  
+  var score = (correctCount / totalCount) * 10;
+  
+  var rAttempt = await sb.from('attempts').insert({
+    student_id: nguoiDung.id,
+    lesson_id: lessonId,
+    score: parseFloat(score.toFixed(2)),
+    correct_n: correctCount,
+    total_n: totalCount,
+    submitted_at: new Date().toISOString()
+  }).select('id').single();
+  
+  if (rAttempt.error) {
+    alert('Lỗi nộp bài: ' + rAttempt.error.message);
+    return;
+  }
+  
+  var attemptId = rAttempt.data.id;
+  var answersToInsert = answerPayloads.map(function (ans) {
+    return {
+      attempt_id: attemptId,
+      question_id: ans.question_id,
+      chosen_key: ans.chosen_key,
+      is_correct: ans.is_correct
+    };
+  });
+  
+  var rAns = await sb.from('attempt_answers').insert(answersToInsert);
+  if (rAns.error) {
+    alert('Lỗi lưu kết quả chi tiết: ' + rAns.error.message);
+  }
+  
+  testAttempt = {
+    id: attemptId,
+    score: score,
+    submitted_at: new Date().toISOString(),
+    attempt_answers: answersToInsert
+  };
+  
+  renderInteractiveQuiz();
+}
+
+function renderInteractiveQuiz() {
+  var than = $('thanNoiDung');
+  var html = thanhCongCu('📝 Bài test trắc nghiệm cuối giờ', null) +
+    '<div class="quiz-container">';
+    
+  if (testAttempt) {
+    var dt = new Date(testAttempt.submitted_at).toLocaleString('vi-VN');
+    html += '<div class="card" style="margin-bottom: 20px; border-color: var(--ok); background: var(--ok-soft); color: var(--ok)">' +
+      '<b>✓ Đã hoàn thành bài làm!</b><br>' +
+      'Thời điểm nộp: ' + dt + ' · <b>Kết quả: ' + testAttempt.score.toFixed(1) + '/10 điểm (' +
+      testAttempt.attempt_answers.filter(function (x) { return x.is_correct; }).length + '/' + interactiveQuestions.length + ' câu đúng)</b>' +
+      '</div>';
+  }
+  
+  interactiveQuestions.forEach(function (q, idx) {
+    var selected = selectedAnswers[q.id];
+    var isSubmitted = !!testAttempt;
+    
+    html += '<div class="quiz-q">' +
+      '<div class="quiz-text">Câu ' + (idx + 1) + ': ' + q.content_latex + '</div>' +
+      '<div class="quiz-choices">';
+      
+    q.choices.forEach(function (c) {
+      var activeClass = '';
+      if (isSubmitted) {
+        var ansObj = testAttempt.attempt_answers.find(function (x) { return x.question_id === q.id; }) || {};
+        if (c.correct) {
+          activeClass = ' correct';
+        } else if (ansObj.chosen_key === c.key) {
+          activeClass = ' incorrect';
+        }
+      } else if (selected === c.key) {
+        activeClass = ' selected';
+      }
+      
+      html += '<div class="quiz-choice choice-' + q.id + activeClass + '" data-key="' + c.key + '" onclick="chonDapAn(\'' + q.id + '\', \'' + c.key + '\')">' +
+        '<span class="quiz-choice-key">' + c.key + '</span>' +
+        '<span>' + c.latex + '</span>' +
+        '</div>';
+    });
+    
+    html += '</div>';
+    
+    if (isSubmitted && q.solution_latex) {
+      html += '<div class="quiz-sol">' +
+        '<b>Lời giải chi tiết:</b><br>' +
+        '<div>' + q.solution_latex + '</div>' +
+        '</div>';
+    }
+    
+    html += '</div>';
+  });
+  
+  if (!testAttempt) {
+    html += '<button class="btn btn-primary" onclick="nopBaiTracNghiem()" style="margin-top: 10px; width: 100%; justify-content: center">Nộp bài kiểm tra</button>';
+  }
+  
+  html += '</div>';
+  than.innerHTML = html;
+  renderLatex(than);
+}
+
+function thanhCongCu(ten, urlTai) {
+  return '<div style="background:var(--surface);border-bottom:1px solid var(--line);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+    '<span style="font-size:.85rem;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + ten + '</span>' +
+    (urlTai ? '<a class="btn btn-primary btn-sm" style="padding:4px 10px;flex-shrink:0" download href="' + urlTai + '">Tải về</a>' : '') +
+    '</div>';
+}
+
+/* ===== Chuyển tab di động & phóng to ===== */
+function hienMobilePane(loai) {
+  var kg = $('khongGianHoc');
+  if (loai === 'video') {
+    kg.className = 'workspace show-video';
+    $('tabVideo').classList.add('active'); $('tabNoiDung').classList.remove('active');
+  } else {
+    kg.className = 'workspace show-content';
+    $('tabNoiDung').classList.add('active'); $('tabVideo').classList.remove('active');
+  }
+}
+
+function phongToPane(loai) {
+  var v = $('khungTrangVideo'), c = $('khungTrangNoiDung');
+  var bv = $('btnMaxVideo'), bc = $('btnMaxContent');
+  if (viewMode === 'split') {
+    if (loai === 'video') { v.style.flex = 'none'; v.style.width = '100%'; c.style.display = 'none'; bv.textContent = '⧉'; viewMode = 'video-only'; }
+    else { c.style.flex = 'none'; c.style.width = '100%'; v.style.display = 'none'; bc.textContent = '⧉'; viewMode = 'content-only'; }
+  } else {
+    v.style.display = 'flex'; v.style.width = ''; v.style.flex = '1';
+    c.style.display = 'flex'; c.style.width = ''; c.style.flex = '1';
+    bv.textContent = '⛶'; bc.textContent = '⛶';
+    viewMode = 'split';
+  }
+}
+</script>
+</body>
+</html>

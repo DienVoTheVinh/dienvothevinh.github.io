@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Lớp học — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.classroom-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin-top: 20px; align-items: start; }
+@media(max-width: 900px) { .classroom-layout { grid-template-columns: 1fr; } }
+
+/* Cột trái: Khối lớp & Lớp học */
+.sidebar-classes { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; box-shadow: var(--shadow); }
+.grade-group { margin-bottom: 20px; }
+.grade-title { font-size: .85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 6px; border-bottom: 1px solid var(--line-2); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.class-list { display: flex; flex-direction: column; gap: 4px; }
+.class-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: var(--r-sm); text-decoration: none; color: var(--ink-2); font-size: .92rem; font-weight: 500; transition: all .15s; background: transparent; border: none; width: 100%; text-align: left; cursor: pointer; }
+.class-item:hover { background: var(--surface-2); color: var(--ink); }
+.class-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.class-item .badge { font-size: .7rem; padding: 2px 6px; }
+
+/* Cột phải: Chi tiết lớp học */
+.main-classroom { display: flex; flex-direction: column; gap: 24px; }
+.classroom-card-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.tab-headers { display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-top: 10px; }
+.tab-header-btn { background: transparent; border: none; padding: 8px 16px; font-size: .9rem; font-weight: 600; color: var(--ink-2); cursor: pointer; border-radius: var(--r-sm); transition: all 0.15s; }
+.tab-header-btn:hover { background: var(--surface-2); color: var(--ink); }
+.tab-header-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+.lesson-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); transition: all .2s; }
+.lesson-row:hover { border-color: var(--line-2); transform: translateY(-1px); box-shadow: var(--shadow); }
+.lesson-info { display: flex; flex-direction: column; gap: 4px; }
+.lesson-title { font-weight: 600; font-size: .98rem; }
+.lesson-meta { font-size: .8rem; color: var(--ink-3); display: flex; gap: 12px; }
+.lesson-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* Modals */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
+.modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
+.modal-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3); }
+.modal-close:hover { color: var(--ink); }
+.modal h2 { margin-bottom: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
+.switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.switch-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="sec-label">Khu vực quản trị</div>
+      <h1>Quản lý Khối & Lớp học</h1>
+      <p style="margin-top:6px">Tạo/xóa khối lớp và các lớp học. Xem danh sách bài giảng, học sinh tương ứng trong từng lớp.</p>
+    </div>
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-secondary btn-sm" onclick="moFormLop()">+ Tạo lớp mới</button>
+    </div>
+  </div>
+
+  <div class="classroom-layout">
+    <!-- Cột trái: Sidebar Khối lớp & Lớp học -->
+    <div class="sidebar-classes">
+      <h3 style="margin-bottom:16px; font-size:1rem; border-bottom:1px solid var(--line); padding-bottom:8px">🏫 Lớp học</h3>
+      <div id="dsKhoiLop">Đang tải danh sách...</div>
+    </div>
+
+    <!-- Cột phải: Vùng chi tiết lớp học -->
+    <div class="main-classroom" id="vungChiTiet" style="display:none">
+      <div class="card classroom-card-head">
+        <div>
+          <span class="badge badge-accent" id="detMode">Online</span>
+          <h2 id="detTenLop" style="font-size:1.8rem; margin-top:6px">Lớp học</h2>
+          <p id="detNienKhoa" style="font-size:.88rem; color:var(--ink-2); margin-top:2px">Niên khóa: 2026-2027</p>
+        </div>
+        <div style="display:flex; gap:10px">
+          <button class="btn btn-secondary btn-sm" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-headers">
+        <button class="tab-header-btn active" id="tabLessons" onclick="doiPhanHeLop('lessons')">📖 Bài giảng</button>
+        <button class="tab-header-btn" id="tabStudents" onclick="doiPhanHeLop('students')">👥 Học sinh</button>
+      </div>
+
+      <!-- Tab Bài giảng -->
+      <div id="phanHeLessons" style="display:flex; flex-direction:column; gap:12px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
+          <h3 style="font-size:1.1rem">Danh sách bài học</h3>
+          <button class="btn btn-primary btn-sm" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
+        </div>
+        <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
+      </div>
+
+      <!-- Tab Học sinh -->
+      <div id="phanHeStudents" style="display:none; flex-direction:column; gap:12px">
+        <h3 style="font-size:1.1rem; margin-top:10px">Danh sách học sinh</h3>
+        <div class="card" style="padding:0; overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Học sinh</th>
+                <th>Tên đăng nhập</th>
+                <th>SĐT phụ huynh</th>
+                <th>Email</th>
+                <th>Trường học</th>
+              </tr>
+            </thead>
+            <tbody id="dsHocSinhLop"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vùng trống khi chưa chọn lớp -->
+    <div class="card" id="chuaChonLop" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 24px; text-align:center; color:var(--ink-2)">
+      <div style="font-size:3.5rem; margin-bottom:12px">🏫</div>
+      <h3>Chưa chọn lớp học</h3>
+      <p style="margin-top:6px; font-size:.9rem">Thầy vui lòng bấm chọn một lớp học ở danh sách bên trái để bắt đầu quản trị.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Tạo Lớp Học -->
+<div class="modal" id="modalLop">
+  <div class="modal-content" style="max-width: 440px">
+    <button class="modal-close" onclick="dongFormLop()">×</button>
+    <h2>Tạo lớp học mới</h2>
+    <form onsubmit="luuLopHoc(event)">
+      <div class="field">
+        <label>Khối lớp <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="classGrade" required>
+          <option value="6">Khối 6</option>
+          <option value="7">Khối 7</option>
+          <option value="8">Khối 8</option>
+          <option value="9">Khối 9</option>
+          <option value="10">Khối 10</option>
+          <option value="11">Khối 11</option>
+          <option value="12">Khối 12</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tên lớp học <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="className" required placeholder="Ví dụ: 7 HSG Online, 7 Trung tâm">
+      </div>
+      <div class="field">
+        <label>Hình thức học <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="classMode" required>
+          <option value="online">🎥 Online trực tuyến</option>
+          <option value="offline">🏫 Trực tiếp tại trung tâm</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Niên khóa</label>
+        <input class="input" id="classYear" value="2026-2027" required>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
+        <button type="button" class="btn btn-secondary" onclick="dongFormLop()">Hủy bỏ</button>
+        <button type="submit" class="btn btn-primary">Tạo lớp</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Bài Học -->
+<div class="modal" id="modalForm">
+  <div class="modal-content">
+    <button class="modal-close" onclick="dongForm()">×</button>
+    <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
+    <form id="formBaiHoc" onsubmit="luuBaiHoc(event)">
+      <input type="hidden" id="bhId">
+      
+      <div class="field">
+        <label>Tiêu đề bài giảng <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="bhTieuDe" required placeholder="Ví dụ: Buổi 1 · Khái niệm về Khối đa diện">
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Chuyên đề (Tuỳ chọn)</label>
+          <select class="input" id="bhChuyenDe">
+            <option value="">-- Chọn chuyên đề --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
+          <input type="number" class="input" id="bhSapXep" value="0">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Đường dẫn Video bài giảng (YouTube hoặc Google Drive)</label>
+        <input class="input" id="bhYoutube" placeholder="Ví dụ: https://www.youtube.com/watch?v=abcdefghijk">
+      </div>
+
+      <div class="field">
+        <label>Tài liệu đọc & Bài tập kèm theo (Dropdown kho PDF)</label>
+        <select class="input" id="bhTaiLieu">
+          <option value="">-- Không đính kèm tài liệu --</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Hoặc tải file PDF mới trực tiếp từ máy</label>
+        <input type="file" class="input" id="bhPdfFile" accept=".pdf,application/pdf" style="padding:8px">
+      </div>
+
+      <div class="field">
+        <label>Ảnh chụp bảng buổi học (phiếu bài, ghi chép...) — chọn nhiều ảnh được</label>
+        <input type="file" class="input" id="bhAnhFile" accept="image/*" multiple style="padding:8px">
+        <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
+
+      <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
+        <label>📝 Bài kiểm tra trắc nghiệm LaTeX ngắn cuối giờ (chọn PDF từ kho tài liệu)</label>
+        <select class="input" id="bhTestTaiLieu">
+          <option value="">-- Không có bài test --</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Ghi chú bài học</label>
+        <textarea class="input" id="bhGhiChu" rows="2" placeholder="Dặn dò học sinh làm bài tập..." style="resize:vertical"></textarea>
+      </div>
+
+      <div class="switch-container" style="margin-bottom: 24px">
+        <input type="checkbox" id="bhXuatBan" checked>
+        <label for="bhXuatBan" style="margin:0; font-weight:600">Xuất bản cho học sinh xem</label>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line-2); padding-top:20px">
+        <button type="button" class="btn btn-ghost" onclick="xoaBaiHoc()" id="nutXoa" style="color:var(--err); display:none">Xoá bài</button>
+        <div style="display:flex; gap:12px; margin-left:auto">
+          <button type="button" class="btn btn-secondary" onclick="dongForm()">Huỷ</button>
+          <button type="submit" class="btn btn-primary" id="nutLuu">Lưu bài giảng</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+var dsLop = [];
+var classDangChon = null;
+var tabDangChon = 'lessons';
+var tatCaChuyenDe = [];
+var tatCaTaiLieu = [];
+var anhDaCo = [];
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (!['admin', 'teacher'].includes(hoSo.role)) {
+    window.location.href = 'lop-hoc.html';
+    return;
+  }
+  
+  await loadingSidebar();
+  await taiDuLieuDanhMuc();
+})();
+
+/* ----- Danh sách lớp sidebar ----- */
+async function loadingSidebar() {
+  var r = await sb.from('classes').select('id, name, grade, mode').order('grade').order('name');
+  dsLop = r.data || [];
+  
+  // Group theo grade
+  var groups = {};
+  dsLop.forEach(function (l) {
+    var g = l.grade || 12; // mặc định khối 12 nếu null
+    (groups[g] = groups[g] || []).push(l);
+  });
+  
+  var html = '';
+  Object.keys(groups).sort(function(a, b){ return a - b; }).forEach(function (g) {
+    html += '<div class="grade-group">' +
+      '<div class="grade-title">Khối ' + g + '</div>' +
+      '<div class="class-list">' +
+        groups[g].map(function (l) {
+          var modeLabel = l.mode === 'online' ? '🎥' : '🏫';
+          var activeClass = (classDangChon && classDangChon.id === l.id) ? ' active' : '';
+          return '<button class="class-item' + activeClass + '" onclick="chonLopHoc(\'' + l.id + '\')">' +
+            '<span>' + l.name + '</span>' +
+            '<span class="badge badge-mute">' + modeLabel + '</span>' +
+            '</button>';
+        }).join('') +
+      '</div>' +
+      '</div>';
+  });
+  
+  $('dsKhoiLop').innerHTML = html || '<div class="empty">Chưa có lớp học nào.</div>';
+}
+
+function chonLopHoc(id) {
+  var cl = dsLop.find(function (l) { return l.id === id; });
+  if (!cl) return;
+  classDangChon = cl;
+  
+  // Highlight active
+  document.querySelectorAll('.class-item').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+  loadingSidebar(); // vẽ lại để giữ highlight
+  
+  $('chuaChonLop').style.display = 'none';
+  $('vungChiTiet').style.display = 'flex';
+  
+  $('detTenLop').textContent = cl.name;
+  $('detMode').textContent = cl.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
+  $('detMode').className = 'badge ' + (cl.mode === 'online' ? 'badge-accent' : 'badge-ok');
+  
+  doiPhanHeLop(tabDangChon);
+}
+
+async function xoaLopHocCurrent() {
+  if (!classDangChon) return;
+  if (!confirm('Thầy có chắc chắn muốn xóa hoàn toàn lớp "' + classDangChon.name + '"? Thao tác này sẽ xóa mọi bài giảng, chuyên đề thuộc lớp này.')) return;
+  
+  var r = await sb.from('classes').delete().eq('id', classDangChon.id);
+  if (r.error) {
+    alert('Lỗi khi xóa: ' + r.error.message);
+  } else {
+    classDangChon = null;
+    $('vungChiTiet').style.display = 'none';
+    $('chuaChonLop').style.display = 'flex';
+    loadingSidebar();
+  }
+}
+
+/* ----- Chuyển đổi tab ----- */
+function doiPhanHeLop(tab) {
+  tabDangChon = tab;
+  ['Lessons', 'Students'].forEach(function (t) {
+    $('tab' + t).classList.remove('active');
+    $('phanHe' + t).style.display = 'none';
+  });
+  $('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  $('phanHe' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = 'flex';
+  
+  if (tab === 'lessons') taiLessonsLop();
+  else taiStudentsLop();
+}
+
+/* ----- Tab Bài giảng ----- */
+async function taiLessonsLop() {
+  $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
+  var r = await sb.from('lessons')
+    .select('id, title, youtube_url, note, published, images, document_id, test_document_id, sort, topics(name), documents!lessons_document_id_fkey(title, file_path)')
+    .eq('class_id', classDangChon.id)
+    .order('sort', { ascending: false });
+  
+  var lessons = r.data || [];
+  if (!lessons.length) {
+    $('dsBaiHocLop').innerHTML = '<div class="empty card">Lớp này chưa có bài giảng nào. Bấm "+ Thêm bài giảng" ở trên để tạo buổi đầu tiên!</div>';
+    return;
+  }
+  
+  $('dsBaiHocLop').innerHTML = lessons.map(function (b) {
+    var iconVideo = b.youtube_url ? '<span style="color:var(--accent)">🎥 Video</span>' : '<span style="color:var(--ink-3)">Không video</span>';
+    var iconDoc = b.document_id ? '<span style="color:var(--ok)">📄 Tài liệu</span>' : '<span style="color:var(--ink-3)">Không tài liệu</span>';
+    var iconImages = (b.images && b.images.length) ? '<span style="color:var(--warn)">🖼️ ' + b.images.length + ' ảnh bảng</span>' : '';
+    var iconTest = b.test_document_id ? '<span style="color:var(--accent)">📝 Bài test</span>' : '';
+    
+    var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
+    
+    return '<div class="lesson-row">' +
+      '<div class="lesson-info">' +
+        '<div style="display:flex; gap:8px; align-items:center">' +
+          '<span class="lesson-title">' + b.title + '</span>' +
+          stateBadge +
+        '</div>' +
+        '<div class="lesson-meta">' +
+          iconVideo + iconDoc +
+          (iconImages ? '<span>' + iconImages + '</span>' : '') +
+          (iconTest ? '<span>' + iconTest + '</span>' : '') +
+          '<span>Thứ tự: ' + b.sort + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px">' +
+        '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
+        '<button class="btn btn-primary btn-sm" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+/* ----- Tab Học sinh ----- */
+async function taiStudentsLop() {
+  $('dsHocSinhLop').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
+  var r = await sb.from('profiles')
+    .select('id, full_name, username, phone, email, school')
+    .eq('class_id', classDangChon.id)
+    .order('full_name');
+  
+  var students = r.data || [];
+  if (!students.length) {
+    $('dsHocSinhLop').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này.</td></tr>';
+    return;
+  }
+  
+  $('dsHocSinhLop').innerHTML = students.map(function (s) {
+    return '<tr>' +
+      '<td><b>' + s.full_name + '</b></td>' +
+      '<td class="num">' + s.username + '</td>' +
+      '<td class="num">' + (s.phone || '—') + '</td>' +
+      '<td>' + (s.email || '—') + '</td>' +
+      '<td>' + (s.school || '—') + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+/* ----- Thư mục / Dropdown dữ liệu ----- */
+async function taiDuLieuDanhMuc() {
+  var r2 = await sb.from('topics').select('id, name').order('sort');
+  tatCaChuyenDe = r2.data || [];
+  var formCdSelect = $('bhChuyenDe');
+  tatCaChuyenDe.forEach(function(c) {
+    var opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name;
+    formCdSelect.appendChild(opt);
+  });
+
+  var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
+  tatCaTaiLieu = r3.data || [];
+  var formTlSelect = $('bhTaiLieu');
+  var formTestSelect = $('bhTestTaiLieu');
+  tatCaTaiLieu.forEach(function(t) {
+    var opt = document.createElement('option'); opt.value = t.id;
+    opt.textContent = t.title + ' (' + t.file_path.split('-').slice(1).join('-') + ')';
+    formTlSelect.appendChild(opt);
+    formTestSelect.appendChild(opt.cloneNode(true));
+  });
+}
+
+/* ----- Form Lớp Học ----- */
+function moFormLop() { $('modalLop').style.display = 'flex'; }
+function dongFormLop() { $('modalLop').style.display = 'none'; }
+async function luuLopHoc(e) {
+  e.preventDefault();
+  var name = $('className').value.trim();
+  var grade = parseInt($('classGrade').value);
+  var mode = $('classMode').value;
+  var year = $('classYear').value;
+  
+  var r = await sb.from('classes').insert({ name: name, grade: grade, mode: mode, school_year: year }).select('id').single();
+  if (r.error) {
+    alert('Lỗi: ' + r.error.message);
+  } else {
+    dongFormLop();
+    await loadingSidebar();
+    chonLopHoc(r.data.id);
+  }
+}
+
+/* ----- Form Bài học ----- */
+function tenAnToan(ten) {
+  return ten.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9.]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+function extractYoutubeId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function extractDriveId(url) {
+  if (!url) return null;
+  var m1 = url.match(/\/file\/d\/([\w_-]+)/);
+  return m1 ? m1[1] : null;
+}
+
+function veAnhHienCo() {
+  var box = $('anhHienCo');
+  if (!anhDaCo.length) { box.innerHTML = ''; return; }
+  box.innerHTML = anhDaCo.map(function (p, i) {
+    var u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+    return '<div style="position:relative">' +
+      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<button type="button" onclick="boAnh(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+}
+function boAnh(i) { anhDaCo.splice(i, 1); veAnhHienCo(); }
+
+function moFormThemBaiGiang() {
+  if (!classDangChon) return;
+  $('formBaiHoc').reset();
+  anhDaCo = []; veAnhHienCo();
+  $('bhId').value = '';
+  $('modalTieuDe').textContent = 'Thêm bài giảng mới';
+  $('nutXoa').style.display = 'none';
+  $('bhSapXep').value = '0';
+  $('bhXuatBan').checked = true;
+  $('modalForm').style.display = 'flex';
+}
+
+async function moFormSua(id) {
+  var r = await sb.from('lessons').select('*').eq('id', id).single();
+  if (r.error || !r.data) return;
+  var bh = r.data;
+  
+  $('formBaiHoc').reset();
+  anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : [];
+  veAnhHienCo();
+  $('bhId').value = bh.id;
+  $('bhTieuDe').value = bh.title || '';
+  $('bhChuyenDe').value = bh.topic_id || '';
+  $('bhYoutube').value = bh.youtube_url || '';
+  $('bhTaiLieu').value = bh.document_id || '';
+  $('bhTestTaiLieu').value = bh.test_document_id || '';
+  $('bhGhiChu').value = bh.note || '';
+  $('bhSapXep').value = bh.sort || 0;
+  $('bhXuatBan').checked = !!bh.published;
+  
+  $('modalTieuDe').textContent = 'Chỉnh sửa bài giảng';
+  $('nutXoa').style.display = 'block';
+  $('modalForm').style.display = 'flex';
+}
+
+function dongForm() { $('modalForm').style.display = 'none'; }
+
+async function luuBaiHoc(e) {
+  e.preventDefault();
+  if (!classDangChon) return;
+  var id = $('bhId').value;
+  var data = {
+    title: $('bhTieuDe').value.trim(),
+    class_id: classDangChon.id,
+    topic_id: $('bhChuyenDe').value || null,
+    youtube_url: $('bhYoutube').value.trim() || null,
+    document_id: $('bhTaiLieu').value || null,
+    test_document_id: $('bhTestTaiLieu').value || null,
+    note: $('bhGhiChu').value.trim() || null,
+    sort: parseInt($('bhSapXep').value) || 0,
+    published: $('bhXuatBan').checked
+  };
+
+  var nut = $('nutLuu');
+  nut.disabled = true; nut.textContent = '⏳ Đang lưu...';
+
+  // File PDF tải lên trực tiếp
+  var filePdf = $('bhPdfFile').files[0];
+  if (filePdf) {
+    nut.textContent = '⏳ Đang tải PDF...';
+    var path = Date.now() + '-' + tenAnToan(filePdf.name);
+    var up = await sb.storage.from('tai-lieu').upload(path, filePdf, { contentType: 'application/pdf' });
+    if (up.error) {
+      alert('Lỗi PDF: ' + up.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var ins = await sb.from('documents').insert({ title: data.title + ' — Tài liệu', class_id: data.class_id, file_path: path }).select('id').single();
+    if (ins.error) {
+      alert('Lỗi ghi CSDL tài liệu: ' + ins.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.document_id = ins.data.id;
+  }
+
+  // Tải các hình ảnh lên
+  var fileAnhs = $('bhAnhFile').files;
+  if (fileAnhs.length) {
+    for (var i = 0; i < fileAnhs.length; i++) {
+      nut.textContent = '⏳ Đang tải ảnh ' + (i+1) + '/' + fileAnhs.length + '...';
+      var f = fileAnhs[i];
+      var imgPath = Date.now() + '-' + i + '-' + tenAnToan(f.name);
+      var upImg = await sb.storage.from('hinh-anh').upload(imgPath, f, { contentType: f.type || 'image/jpeg' });
+      if (upImg.error) {
+        alert('Lỗi tải ảnh: ' + upImg.error.message);
+        nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+        return;
+      }
+      anhDaCo.push(imgPath);
+    }
+  }
+  data.images = anhDaCo;
+
+  var r;
+  if (id) {
+    r = await sb.from('lessons').update(data).eq('id', id);
+  } else {
+    r = await sb.from('lessons').insert(data);
+  }
+
+  if (r.error) {
+    alert('Lỗi: ' + r.error.message);
+  } else {
+    dongForm();
+    await taiLessonsLop();
+  }
+  nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+}
+
+async function xoaBaiHoc() {
+  var id = $('bhId').value;
+  if (!id) return;
+  if (!confirm('Xoá bài giảng này?')) return;
+  var r = await sb.from('lessons').delete().eq('id', id);
+  if (r.error) alert('Lỗi: ' + r.error.message);
+  else { dongForm(); await taiLessonsLop(); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lớp học của em — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
+.greet{padding:48px 0 8px}
+.greet h1{font-size:1.8rem}
+.greet p{margin-top:6px}
+.stats{padding:24px 0 8px}
+.lessons{padding:32px 0}
+.lesson{display:flex;flex-direction:column;overflow:hidden;padding:0;transition:all .3s ease;border:1px solid var(--line)}
+.lesson:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:var(--shadow); }
+.lesson .thumb{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);position:relative}
+.lesson .thumb img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.lesson .thumb .play{width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:1.1rem;padding-left:4px;position:relative;z-index:1}
+.lesson .body{padding:18px 20px 20px}
+.lesson .body p{font-size:.875rem;margin-top:4px}
+.lesson .foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.alert-demo{font-size:.875rem;border-radius:var(--r-md);padding:11px 14px;margin-top:20px;background:var(--warn-soft);color:var(--warn)}
+.empty{text-align:center;padding:48px 24px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section class="greet">
+    <div class="sec-label" id="tenLop">VinhMath</div>
+    <h1 id="loiChao">Chào em 👋</h1>
+    <p>Hôm nay học gì tiếp nào?</p>
+    <div class="alert-demo" id="canhBaoDemo" style="display:none">
+      Chế độ xem thử — dữ liệu bên dưới là dữ liệu mẫu. Khi kết nối Supabase, bài học thật của lớp sẽ hiện ở đây.
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="grid grid-3">
+      <div class="card stat"><b id="tkDiem">—</b><span>Điểm trung bình</span></div>
+      <div class="card stat"><b id="tkChuyenCan">—</b><span>Chuyên cần</span></div>
+      <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
+    </div>
+  </section>
+
+  <section class="lessons">
+    <div class="sec-label">Bài học của lớp</div>
+    <h2 style="margin-bottom:24px">Danh sách bài học</h2>
+    <div class="grid grid-2" id="dsBaiHoc"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+// Lấy mã video từ link YouTube để hiện ảnh bìa
+function youtubeId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+// Vẽ một thẻ bài học
+function theBaiHoc(bh) {
+  var vid = youtubeId(bh.youtube_url);
+  var thumb = vid
+    ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
+  var href = bh.id ? 'bai-hoc.html?id=' + bh.id : '#';
+  return '<div class="card lesson">' +
+    '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
+    '<div class="body">' +
+      '<span class="badge badge-accent">' + (bh.topics ? bh.topics.name : 'Bài học') + '</span>' +
+      '<h3 style="margin-top:10px">' + bh.title + '</h3>' +
+      '<p>' + (bh.note || 'Video bài giảng + tài liệu kèm theo') + '</p>' +
+      '<div class="foot"><span style="font-size:.82rem;color:var(--ink-3)">' +
+        (bh.so_cau ? bh.so_cau + ' câu hỏi' : '') + '</span>' +
+        '<a class="btn btn-primary btn-sm" href="' + href + '">Vào học</a>' +
+      '</div>' +
+    '</div></div>';
+}
+
+// Dữ liệu mẫu cho chế độ xem thử
+var BAI_HOC_MAU = [
+  { title: 'Buổi 12 · Cực trị của hàm số', topics: { name: 'Hàm số' }, note: 'Video + 15 bài tập', so_cau: 15, youtube_url: '' },
+  { title: 'Buổi 11 · Tính đơn điệu', topics: { name: 'Hàm số' }, note: 'Video + 20 bài tập', so_cau: 20, youtube_url: '' }
+];
+
+(async function () {
+  if (!daKetNoi()) {
+    // ----- CHẾ ĐỘ XEM THỬ -----
+    $('canhBaoDemo').style.display = 'block';
+    $('loiChao').textContent = chao() + ', Học sinh 👋';
+    $('tenLop').textContent = 'Lớp 12A1 · VinhMath';
+    $('tkDiem').textContent = '8.4';
+    $('tkChuyenCan').textContent = '92%';
+    $('tkBaiHoc').textContent = '14/18';
+    $('dsBaiHoc').innerHTML = BAI_HOC_MAU.map(theBaiHoc).join('');
+    return;
+  }
+
+  // ----- CHẾ ĐỘ THẬT -----
+  var hoSo = await yeuCauDangNhap();          // chưa đăng nhập → tự chuyển trang
+  if (!hoSo) return;
+  $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
+  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
+
+  // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)
+  var r = await sb.from('lessons')
+    .select('id, title, youtube_url, note, topics(name)')
+    .order('sort', { ascending: false });
+  var ds = r.data || [];
+  $('dsBaiHoc').innerHTML = ds.length
+    ? ds.map(theBaiHoc).join('')
+    : '<div class="empty card" style="grid-column:1/-1">Thầy chưa đăng bài học nào cho lớp em — quay lại sau nhé!</div>';
+
+  // Thống kê nhanh
+  var att = await sb.from('attempts').select('score', { count: 'exact' }).not('submitted_at', 'is', null);
+  if (att.data && att.data.length) {
+    var tb = att.data.reduce(function (s, a) { return s + (a.score || 0); }, 0) / att.data.length;
+    $('tkDiem').textContent = tb.toFixed(1);
+    $('tkBaiHoc').textContent = att.data.length;
+  } else { $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0'; }
+
+  var dd = await sb.from('attendance').select('status');
+  if (dd.data && dd.data.length) {
+    var coMat = dd.data.filter(function (d) { return d.status !== 'absent'; }).length;
+    $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
+  } else { $('tkChuyenCan').textContent = '—'; }
+})();
+</script>
+</body>
+</html>

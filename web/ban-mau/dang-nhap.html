@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../thiet-ke/tokens.css">
+<link rel="stylesheet" href="../thiet-ke/vinhmath.css">
+<style>
+body{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:860px){body{grid-template-columns:1fr}.side{display:none!important}}
+
+/* ---- Nửa trái: câu chuyện ---- */
+.side{
+  background:var(--surface-2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:48px 56px;position:relative;overflow:hidden;
+}
+.side .math{position:absolute;inset:0;pointer-events:none}
+.side .math span{position:absolute;font-weight:700;color:var(--ink);opacity:.04;font-size:7rem;user-select:none}
+.side .quote{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:700;line-height:1.35;letter-spacing:-.01em;max-width:18ch}
+.side .quote .accent{color:var(--accent)}
+.side .who{font-size:.9rem;color:var(--ink-2);margin-top:16px}
+
+/* ---- Nửa phải: form ---- */
+.main{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 24px;position:relative}
+.box{width:100%;max-width:380px}
+.box h1{font-size:1.6rem;margin:28px 0 6px}
+.box .sub{font-size:.94rem;margin-bottom:28px}
+.theme-toggle{position:absolute;top:20px;right:24px}
+.hint{
+  margin-top:24px;font-size:.85rem;color:var(--ink-3);text-align:center;
+  background:var(--surface-2);border-radius:var(--r-md);padding:12px 16px;
+}
+.show-pass{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-3);
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Nửa trái: thương hiệu + câu nói ===== -->
+<div class="side">
+  <div class="math">
+    <span style="top:6%;right:8%">∂</span>
+    <span style="top:42%;left:4%">√</span>
+    <span style="bottom:8%;right:18%">∞</span>
+  </div>
+  <a class="logo" href="trang-chu.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+  <div>
+    <p class="quote">"Toán không phải là nhớ công thức. Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
+    <p class="who">— Thầy Vinh</p>
+  </div>
+  <p style="font-size:.82rem;color:var(--ink-3)">© 2026 VinhMath</p>
+</div>
+
+<!-- ===== Nửa phải: form đăng nhập ===== -->
+<div class="main">
+  <button class="btn btn-ghost btn-sm theme-toggle" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  <div class="box">
+    <a class="logo" href="trang-chu.html" style="display:inline-flex"><span class="dot">V</span>VinhMath</a>
+    <h1>Chào em 👋</h1>
+    <p class="sub">Đăng nhập bằng tài khoản thầy đã cấp để vào lớp.</p>
+
+    <form onsubmit="event.preventDefault();alert('Bản mẫu giao diện — chức năng đăng nhập thật sẽ hoạt động khi kết nối Supabase.')">
+      <div class="field">
+        <label>Tên đăng nhập</label>
+        <input class="input" placeholder="vd: nguyenvana.12a1" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Mật khẩu</label>
+        <div style="position:relative">
+          <input class="input" type="password" id="pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px">
+          <button type="button" class="show-pass" onclick="togglePass()" id="eyeBtn">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg" type="submit" style="width:100%">Vào lớp học</button>
+    </form>
+
+    <p class="hint">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
+  </div>
+</div>
+
+<script>
+function toggleTheme(){
+  var h=document.documentElement;
+  var dark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('themeBtn').textContent=dark?'🌙':'☀️';
+  try{localStorage.setItem('vm-theme',dark?'light':'dark')}catch(e){}
+}
+try{
+  if(localStorage.getItem('vm-theme')==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeBtn').textContent='☀️';
+  }
+}catch(e){}
+function togglePass(){
+  var p=document.getElementById('pass');
+  p.type=p.type==='password'?'text':'password';
+  document.getElementById('eyeBtn').textContent=p.type==='password'?'👁':'🙈';
+}
+</script>
+</body>
+</html>

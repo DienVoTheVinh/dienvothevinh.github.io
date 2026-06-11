@@ -1,0 +1,72 @@
+/* ============================================
+   VINHMATH — DESIGN TOKENS (bộ biến giao diện chuẩn)
+   Tối giản kiểu Nhật: nền giấy washi, mực đen dịu,
+   một điểm nhấn đỏ son (hanko) dùng tiết chế.
+   File này sẽ được import vào web app sau này.
+   ============================================ */
+
+:root {
+  /* --- Màu nền & bề mặt (giấy) --- */
+  --bg:            #F7F5F1;  /* nền chính — giấy washi ấm */
+  --surface:       #FFFFFF;  /* thẻ, khối nội dung */
+  --surface-2:     #EFECE6;  /* khối phụ, hover nhẹ */
+
+  /* --- Mực (chữ) --- */
+  --ink:           #1F1D1A;  /* chữ chính */
+  --ink-2:         #6E6862;  /* chữ phụ, chú thích */
+  --ink-3:         #A8A29A;  /* chữ mờ, placeholder */
+
+  /* --- Viền --- */
+  --line:          #E4E0D8;  /* viền mảnh */
+  --line-2:        #D2CCC2;  /* viền đậm hơn khi cần */
+
+  /* --- Điểm nhấn: đỏ son (shu-iro) --- */
+  --accent:        #B5483A;  /* nút chính, liên kết, dấu nhấn */
+  --accent-hover:  #9E3C30;
+  --accent-soft:   #F6E9E6;  /* nền nhạt của điểm nhấn */
+
+  /* --- Màu trạng thái (dịu, không chói) --- */
+  --ok:            #5E7B5E;  /* đúng / thành công — xanh matcha */
+  --ok-soft:       #EAF0EA;
+  --warn:          #A8842C;  /* cảnh báo — hổ phách trầm */
+  --warn-soft:     #F5EEDD;
+  --err:           #A4453B;  /* sai / lỗi */
+  --err-soft:      #F6E9E6;
+
+  /* --- Chữ --- */
+  --font-sans: "Be Vietnam Pro", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-h1: 2.0rem;   --fs-h2: 1.5rem;   --fs-h3: 1.17rem;
+  --fs-body: 1rem;   --fs-small: .875rem; --fs-tiny: .8rem;
+
+  /* --- Bo góc & bóng (rất nhẹ — tinh thần tối giản) --- */
+  --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;
+  --shadow: 0 1px 3px rgba(31,29,26,.06), 0 4px 16px rgba(31,29,26,.05);
+
+  /* --- Khoảng cách --- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+}
+
+/* ============ CHẾ ĐỘ TỐI (cho HS học đêm) ============ */
+[data-theme="dark"] {
+  --bg:            #181715;
+  --surface:       #201E1B;
+  --surface-2:     #2A2724;
+
+  --ink:           #ECE8E1;
+  --ink-2:         #A39D94;
+  --ink-3:         #6E6962;
+
+  --line:          #34312C;
+  --line-2:        #45413B;
+
+  --accent:        #D97A6B;
+  --accent-hover:  #E08D80;
+  --accent-soft:   #34231F;
+
+  --ok:            #8FAE8F;  --ok-soft:   #232B23;
+  --warn:          #C5A75B;  --warn-soft: #2E2817;
+  --err:           #D08077;  --err-soft:  #342220;
+
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+}

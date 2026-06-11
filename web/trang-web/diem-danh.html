@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Điểm danh — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+body { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.box { max-width: 420px; width: 100%; text-align: center; padding: 40px 28px; }
+.box .ic { font-size: 4rem; margin-bottom: 12px; }
+.box h1 { font-size: 1.4rem; margin-bottom: 8px; }
+.box p { font-size: .95rem; }
+</style>
+</head>
+<body>
+
+<div class="card box">
+  <div class="ic" id="bieuTuong">⏳</div>
+  <h1 id="tieuDe">Đang điểm danh…</h1>
+  <p id="noiDung">Chờ một chút nhé.</p>
+  <a class="btn btn-primary" href="lich-hoc.html" style="margin-top:20px">← Về Lịch học</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="analytics.js"></script>
+<script>
+function ketQua(ic, tieuDe, noiDung) {
+  $('bieuTuong').textContent = ic;
+  $('tieuDe').textContent = tieuDe;
+  $('noiDung').innerHTML = noiDung;
+}
+
+(async function () {
+  if (!daKetNoi()) { ketQua('⚠️', 'Chưa kết nối', 'Hệ thống chưa sẵn sàng.'); return; }
+  var hoSo = await yeuCauDangNhap(); // chưa đăng nhập → tự chuyển về trang đăng nhập
+  if (!hoSo) return;
+
+  var token = new URLSearchParams(window.location.search).get('token');
+  if (!token) { ketQua('❓', 'Thiếu mã', 'Đường link điểm danh không có mã. Em quét lại QR nhé.'); return; }
+
+  // Tìm buổi học theo mã QR (phân quyền chỉ cho thấy buổi của lớp mình)
+  var r = await sb.from('class_sessions')
+    .select('id, title, held_on, qr_expires')
+    .eq('qr_token', token)
+    .maybeSingle();
+
+  if (!r.data) {
+    ketQua('🚫', 'Mã không hợp lệ', 'Mã này không tồn tại hoặc không thuộc lớp của em.');
+    return;
+  }
+  var buoi = r.data;
+  if (buoi.qr_expires && new Date(buoi.qr_expires) < new Date()) {
+    ketQua('⌛', 'Mã đã hết hạn', 'QR của buổi <b>' + buoi.title + '</b> đã đóng. Em báo thầy mở lại nhé.');
+    return;
+  }
+
+  // Ghi điểm danh
+  var ins = await sb.from('attendance').insert({ session_id: buoi.id, student_id: hoSo.id });
+  if (ins.error) {
+    if ((ins.error.code || '') === '23505' || /duplicate/i.test(ins.error.message)) {
+      ketQua('✅', 'Em đã điểm danh rồi!', 'Buổi <b>' + buoi.title + '</b> đã ghi nhận em từ trước. Yên tâm học tiếp nhé.');
+    } else {
+      ketQua('⚠️', 'Có lỗi xảy ra', ins.error.message);
+    }
+    return;
+  }
+  ketQua('🎉', 'Điểm danh thành công!', 'Chào mừng <b>' + hoSo.full_name + '</b> đến với buổi <b>' + buoi.title + '</b>.');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VinhMath — Bộ giao diện chuẩn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ====== TOKENS (bản sao của tokens.css) ====== */
+:root{
+  --bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#EFECE6;
+  --ink:#1F1D1A;--ink-2:#6E6862;--ink-3:#A8A29A;
+  --line:#E4E0D8;--line-2:#D2CCC2;
+  --accent:#B5483A;--accent-hover:#9E3C30;--accent-soft:#F6E9E6;
+  --ok:#5E7B5E;--ok-soft:#EAF0EA;--warn:#A8842C;--warn-soft:#F5EEDD;
+  --err:#A4453B;--err-soft:#F6E9E6;
+  --font-sans:"Be Vietnam Pro",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r-sm:8px;--r-md:12px;--r-lg:16px;
+  --shadow:0 1px 3px rgba(31,29,26,.06),0 4px 16px rgba(31,29,26,.05);
+}
+[data-theme="dark"]{
+  --bg:#181715;--surface:#201E1B;--surface-2:#2A2724;
+  --ink:#ECE8E1;--ink-2:#A39D94;--ink-3:#6E6962;
+  --line:#34312C;--line-2:#45413B;
+  --accent:#D97A6B;--accent-hover:#E08D80;--accent-soft:#34231F;
+  --ok:#8FAE8F;--ok-soft:#232B23;--warn:#C5A75B;--warn-soft:#2E2817;
+  --err:#D08077;--err-soft:#342220;
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+
+/* ====== NỀN TẢNG ====== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-sans);font-size:16px;line-height:1.65;
+  transition:background .25s,color .25s;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 24px 96px}
+h1{font-size:2rem;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+h2{font-size:1.5rem;font-weight:600;letter-spacing:-.01em}
+h3{font-size:1.17rem;font-weight:600}
+p{color:var(--ink-2)}
+section{margin-top:72px}
+.sec-label{
+  font-size:.8rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:8px;
+}
+.sec-desc{margin:8px 0 28px;max-width:60ch}
+
+/* ====== THANH ĐẦU TRANG ====== */
+header{
+  position:sticky;top:0;z-index:10;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav{max-width:880px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.12rem;letter-spacing:-.01em}
+.logo .dot{
+  width:30px;height:30px;border-radius:8px;background:var(--accent);
+  color:#fff;display:grid;place-items:center;font-size:.95rem;font-weight:700;
+}
+.logo small{font-weight:500;color:var(--ink-2);font-size:.8rem;margin-left:2px}
+
+/* ====== NÚT ====== */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:inherit;font-size:.94rem;font-weight:600;
+  padding:10px 20px;border-radius:var(--r-sm);border:1px solid transparent;
+  cursor:pointer;transition:all .15s;text-decoration:none;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line-2)}
+.btn-secondary:hover{border-color:var(--ink-3)}
+.btn-ghost{background:transparent;color:var(--ink-2)}
+.btn-ghost:hover{background:var(--surface-2);color:var(--ink)}
+.btn-sm{padding:6px 14px;font-size:.85rem}
+
+/* ====== Ô NHẬP ====== */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.875rem;font-weight:500;margin-bottom:6px}
+.input{
+  width:100%;font-family:inherit;font-size:.95rem;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm);
+  padding:10px 14px;transition:border-color .15s,box-shadow .15s;
+}
+.input::placeholder{color:var(--ink-3)}
+.input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ====== THẺ ====== */
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow);
+}
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+
+/* ====== NHÃN (badge) ====== */
+.badge{
+  display:inline-block;font-size:.78rem;font-weight:600;
+  padding:3px 10px;border-radius:99px;
+}
+.badge-accent{background:var(--accent-soft);color:var(--accent)}
+.badge-ok{background:var(--ok-soft);color:var(--ok)}
+.badge-warn{background:var(--warn-soft);color:var(--warn)}
+.badge-err{background:var(--err-soft);color:var(--err)}
+.badge-mute{background:var(--surface-2);color:var(--ink-2)}
+
+/* ====== BẢNG MÀU ====== */
+.swatch{border-radius:var(--r-md);border:1px solid var(--line);overflow:hidden}
+.swatch .chip{height:64px}
+.swatch .meta{padding:10px 12px;background:var(--surface)}
+.swatch .meta b{display:block;font-size:.85rem}
+.swatch .meta span{font-size:.76rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+/* ====== CÂU HỎI TRẮC NGHIỆM ====== */
+.quiz .stem{font-size:1.02rem;margin:4px 0 18px;color:var(--ink)}
+.choice{
+  display:flex;align-items:flex-start;gap:12px;
+  border:1px solid var(--line-2);border-radius:var(--r-md);
+  padding:12px 16px;margin-bottom:10px;cursor:pointer;transition:all .15s;
+  background:var(--surface);
+}
+.choice:hover{border-color:var(--ink-3)}
+.choice .key{
+  flex:none;width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;font-size:.85rem;font-weight:600;
+  background:var(--surface-2);color:var(--ink-2);transition:all .15s;
+}
+.choice.selected{border-color:var(--accent);background:var(--accent-soft)}
+.choice.selected .key{background:var(--accent);color:#fff}
+.choice.correct{border-color:var(--ok);background:var(--ok-soft)}
+.choice.correct .key{background:var(--ok);color:#fff}
+.choice.wrong{border-color:var(--err);background:var(--err-soft)}
+.choice.wrong .key{background:var(--err);color:#fff}
+
+/* ====== BẢNG DỮ LIỆU ====== */
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{
+  text-align:left;font-size:.78rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);
+  padding:10px 14px;border-bottom:1px solid var(--line-2);
+}
+td{padding:12px 14px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.num{font-variant-numeric:tabular-nums}
+
+/* ====== THẺ BÀI HỌC ====== */
+.lesson{display:flex;flex-direction:column;gap:0;overflow:hidden;padding:0}
+.lesson .thumb{
+  aspect-ratio:16/9;background:var(--surface-2);
+  display:grid;place-items:center;color:var(--ink-3);position:relative;
+}
+.lesson .thumb .play{
+  width:52px;height:52px;border-radius:50%;background:var(--accent);
+  display:grid;place-items:center;color:#fff;font-size:1.1rem;padding-left:4px;
+}
+.lesson .body{padding:18px 20px 20px}
+.lesson .body p{font-size:.875rem;margin-top:4px}
+.lesson .foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+
+/* ====== THANH TIẾN ĐỘ ====== */
+.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+
+/* ====== THỐNG KÊ ====== */
+.stat b{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;display:block;line-height:1.2}
+.stat span{font-size:.85rem;color:var(--ink-2)}
+
+footer{margin-top:96px;border-top:1px solid var(--line);padding-top:24px;font-size:.85rem;color:var(--ink-3)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo">
+      <span class="dot">V</span>
+      VinhMath <small>· Lớp Toán Thầy Vinh</small>
+    </div>
+    <button class="btn btn-secondary btn-sm" id="themeBtn" onclick="toggleTheme()">🌙 Chế độ tối</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section style="margin-top:64px">
+    <div class="sec-label">Bộ giao diện chuẩn · v1</div>
+    <h1>Lớp Toán Thầy Vinh — VinhMath</h1>
+    <p class="sec-desc">Tối giản kiểu Nhật: nền giấy ấm, mực đen dịu, một điểm nhấn <b style="color:var(--accent)">đỏ son</b> dùng tiết chế. Mọi trang của web sau này — đăng nhập, làm bài, kho tài liệu, trang quản trị — đều lấy từ bộ chuẩn này. Hãy bấm nút "Chế độ tối" góc phải trên để xem cả hai phiên bản.</p>
+    <a class="btn btn-primary" href="#quiz">Xem câu hỏi mẫu</a>
+    <a class="btn btn-secondary" href="#colors" style="margin-left:8px">Xem bảng màu</a>
+  </section>
+
+  <section id="colors">
+    <div class="sec-label">01 · Bảng màu</div>
+    <h2>Trung tính, ấm, một điểm nhấn</h2>
+    <p class="sec-desc">Màu tự đổi khi chuyển chế độ tối. Đỏ son chỉ dùng cho hành động chính và điểm nhấn — không lạm dụng.</p>
+    <div class="grid grid-3">
+      <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="meta"><b>Nền giấy</b><span>--bg</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--surface);border-bottom:1px solid var(--line)"></div><div class="meta"><b>Bề mặt thẻ</b><span>--surface</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--ink)"></div><div class="meta"><b>Mực — chữ chính</b><span>--ink</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--ink-2)"></div><div class="meta"><b>Chữ phụ</b><span>--ink-2</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--accent)"></div><div class="meta"><b>Đỏ son — nhấn</b><span>--accent</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--ok)"></div><div class="meta"><b>Matcha — đúng</b><span>--ok</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--warn)"></div><div class="meta"><b>Hổ phách — cảnh báo</b><span>--warn</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--err)"></div><div class="meta"><b>Đỏ trầm — sai</b><span>--err</span></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--line)"></div><div class="meta"><b>Viền mảnh</b><span>--line</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">02 · Chữ</div>
+    <h2>Be Vietnam Pro</h2>
+    <p class="sec-desc">Font thiết kế riêng cho tiếng Việt, dấu thanh hiển thị chuẩn, hiện đại và dễ đọc trên màn hình.</p>
+    <div class="card">
+      <h1>Tiêu đề lớn — Chinh phục điểm 9+</h1>
+      <h2 style="margin-top:12px">Tiêu đề mục — Chuyên đề Hàm số</h2>
+      <h3 style="margin-top:12px">Tiêu đề nhỏ — Buổi 12: Cực trị của hàm số</h3>
+      <p style="margin-top:12px">Chữ thường: Học sinh hoàn thành bài tập về nhà trước buổi học kế tiếp. Công thức toán hiển thị mượt trong câu: \(y = ax^3 + bx^2 + cx + d\) với \(a \ne 0\).</p>
+      <p style="margin-top:8px;font-size:.875rem;color:var(--ink-3)">Chữ chú thích nhỏ — Cập nhật lần cuối: hôm nay</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">03 · Nút & điều khiển</div>
+    <h2>Hành động</h2>
+    <p class="sec-desc">Một trang chỉ nên có một nút đỏ son (hành động chính). Còn lại dùng nút viền hoặc nút chìm.</p>
+    <div class="card">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary">Nộp bài</button>
+        <button class="btn btn-secondary">Lưu nháp</button>
+        <button class="btn btn-ghost">Quay lại</button>
+        <span class="badge badge-accent">Chuyên đề mới</span>
+        <span class="badge badge-ok">Đã hoàn thành</span>
+        <span class="badge badge-warn">Sắp hết hạn</span>
+        <span class="badge badge-err">Quá hạn</span>
+        <span class="badge badge-mute">Nháp</span>
+      </div>
+      <div style="max-width:380px;margin-top:24px">
+        <div class="field">
+          <label>Tên đăng nhập</label>
+          <input class="input" placeholder="vd: nguyenvana.12a1">
+        </div>
+        <div class="field">
+          <label>Mật khẩu</label>
+          <input class="input" type="password" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center">Đăng nhập</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="quiz">
+    <div class="sec-label">04 · Câu hỏi trắc nghiệm</div>
+    <h2>Toán render bằng KaTeX</h2>
+    <p class="sec-desc">Đây chính là cách đề LaTeX của thầy sẽ hiện ra với học sinh — không cần server TeX Live. Bấm thử vào các phương án.</p>
+    <div class="card quiz">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span class="badge badge-accent">Hàm số · Mức vận dụng</span>
+        <span style="font-size:.85rem;color:var(--ink-3)">Câu 7/50 · ID: 2D1B3-1</span>
+      </div>
+      <p class="stem">Cho hàm số \(y = \dfrac{2x+1}{x-1}\). Tổng số đường tiệm cận đứng và tiệm cận ngang của đồ thị hàm số là</p>
+      <div class="choice" onclick="pick(this)"><span class="key">A</span><span>\(0\)</span></div>
+      <div class="choice" onclick="pick(this)"><span class="key">B</span><span>\(1\)</span></div>
+      <div class="choice selected" onclick="pick(this)"><span class="key">C</span><span>\(2\)</span></div>
+      <div class="choice" onclick="pick(this)"><span class="key">D</span><span>\(3\)</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:18px">
+        <button class="btn btn-ghost btn-sm">← Câu trước</button>
+        <button class="btn btn-primary btn-sm">Câu tiếp →</button>
+      </div>
+    </div>
+
+    <div class="card quiz" style="margin-top:16px">
+      <p style="font-size:.85rem;margin-bottom:12px"><b style="color:var(--ink)">Sau khi nộp bài</b> — hệ thống hiện đúng/sai và lời giải:</p>
+      <p class="stem">Nghiệm của phương trình \(\log_2(x-1) = 3\) là</p>
+      <div class="choice wrong"><span class="key">A</span><span>\(x = 7\) — em đã chọn</span></div>
+      <div class="choice correct"><span class="key">B</span><span>\(x = 9\) — đáp án đúng</span></div>
+      <div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px 18px;margin-top:14px;font-size:.92rem">
+        <b>Lời giải.</b> Điều kiện \(x > 1\). Ta có \(\log_2(x-1)=3 \Leftrightarrow x-1 = 2^3 = 8 \Leftrightarrow x = 9\).
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">05 · Thẻ bài học & thống kê</div>
+    <h2>Trang chủ của học sinh</h2>
+    <p class="sec-desc">Bài học gồm video YouTube nhúng + bài tập kèm theo. Thống kê cho cả học sinh lẫn trang quản trị của thầy.</p>
+    <div class="grid grid-3" style="margin-bottom:16px">
+      <div class="card stat"><b>8.4</b><span>Điểm trung bình</span></div>
+      <div class="card stat"><b>92%</b><span>Chuyên cần</span></div>
+      <div class="card stat"><b>14/18</b><span>Bài đã hoàn thành</span></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card lesson">
+        <div class="thumb"><div class="play">▶</div></div>
+        <div class="body">
+          <span class="badge badge-accent">Chuyên đề Hàm số</span>
+          <h3 style="margin-top:10px">Buổi 12 · Cực trị của hàm số</h3>
+          <p>Video bài giảng + 15 bài tập trắc nghiệm</p>
+          <div class="bar" style="margin-top:14px"><i style="width:60%"></i></div>
+          <div class="foot">
+            <span style="font-size:.82rem;color:var(--ink-3)">9/15 câu</span>
+            <button class="btn btn-primary btn-sm">Tiếp tục</button>
+          </div>
+        </div>
+      </div>
+      <div class="card lesson">
+        <div class="thumb"><div class="play">▶</div></div>
+        <div class="body">
+          <span class="badge badge-ok">Đã hoàn thành</span>
+          <h3 style="margin-top:10px">Buổi 11 · Tính đơn điệu</h3>
+          <p>Video bài giảng + 20 bài tập trắc nghiệm</p>
+          <div class="bar" style="margin-top:14px"><i style="width:100%;background:var(--ok)"></i></div>
+          <div class="foot">
+            <span style="font-size:.82rem;color:var(--ink-3)">20/20 câu · 9.0 điểm</span>
+            <button class="btn btn-secondary btn-sm">Xem lại</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label">06 · Bảng dữ liệu</div>
+    <h2>Trang giám sát của thầy</h2>
+    <p class="sec-desc">Theo dõi từng học sinh: điểm, chuyên cần, câu hay sai.</p>
+    <div class="card" style="padding:8px 4px">
+      <table>
+        <thead><tr><th>Học sinh</th><th>Lớp</th><th>Điểm TB</th><th>Chuyên cần</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <tr><td>Nguyễn Văn An</td><td>12A1</td><td class="num">8.7</td><td class="num">95%</td><td><span class="badge badge-ok">Đúng tiến độ</span></td></tr>
+          <tr><td>Trần Thị Bình</td><td>12A1</td><td class="num">7.2</td><td class="num">88%</td><td><span class="badge badge-warn">Chậm 2 bài</span></td></tr>
+          <tr><td>Lê Hoàng Cường</td><td>12A2</td><td class="num">5.8</td><td class="num">71%</td><td><span class="badge badge-err">Cần nhắc nhở</span></td></tr>
+          <tr><td>Phạm Minh Dung</td><td>12A2</td><td class="num">9.1</td><td class="num">100%</td><td><span class="badge badge-ok">Xuất sắc</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    VinhMath · Bộ giao diện chuẩn v1 · Màu, chữ, nút trong file này là nguồn chân lý duy nhất cho mọi trang về sau.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  var h=document.documentElement;
+  var dark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('themeBtn').textContent=dark?'🌙 Chế độ tối':'☀️ Chế độ sáng';
+  try{localStorage.setItem('vm-theme',dark?'light':'dark')}catch(e){}
+}
+try{
+  if(localStorage.getItem('vm-theme')==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeBtn').textContent='☀️ Chế độ sáng';
+  }
+}catch(e){}
+function pick(el){
+  var sib=el.parentElement.querySelectorAll('.choice');
+  sib.forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var t=setInterval(function(){
+    if(window.renderMathInElement){
+      clearInterval(t);
+      renderMathInElement(document.body,{delimiters:[
+        {left:'\\(',right:'\\)',display:false},
+        {left:'\\[',right:'\\]',display:true},
+        {left:'$$',right:'$$',display:true}
+      ]});
+    }
+  },100);
+});
+</script>
+</body>
+</html>
