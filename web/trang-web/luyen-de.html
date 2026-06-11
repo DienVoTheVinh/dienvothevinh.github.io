@@ -938,34 +938,34 @@ var pdfBlob = null;
 var cachedExTestSty = '';
 var cachedTitleDotSty = '';
 
-var PREAMBLE_MAC_DINH = `\\documentclass[12pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
+var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
 \\usepackage{fouriernc}
 \\let\\widering\\relax
 
 % --- BỘ NHẬN DIỆN THƯƠNG HIỆU VINHMATH BRAND COLORS ---
 \\usepackage[dvipsnames,table]{xcolor}
-\\definecolor{vmAccent}{HTML}{B5483A}     % Đỏ son
+\\definecolor{vmAccent}{HTML}{B5483A}     % Đỏ son (Hanko Red) - Điểm nhấn chính
 \\definecolor{vmAccentSoft}{HTML}{F6E9E6} % Nền đỏ son nhạt
-\\definecolor{vmOk}{HTML}{5E7B5E}         % Xanh Matcha
+\\definecolor{vmOk}{HTML}{5E7B5E}         % Xanh Matcha - Cho bài tập & section chính
 \\definecolor{vmOkSoft}{HTML}{EAF0EA}     % Nền xanh Matcha nhạt
-\\definecolor{vmWarn}{HTML}{A8842C}       % Vàng hổ phách trầm
+\\definecolor{vmWarn}{HTML}{A8842C}       % Vàng hổ phách trầm - Cho lý thuyết/định lý
 \\definecolor{vmWarnSoft}{HTML}{F5EEDD}   % Nền hổ phách nhạt
 \\definecolor{vmInk}{HTML}{1F1D1A}        % Mực charcoal đen dịu
 \\definecolor{vmBg}{HTML}{F7F5F1}         % Nền giấy Washi ấm
 \\definecolor{vmLine}{HTML}{E4E0D8}       % Màu đường kẻ phân cách
-\\definecolor{warmgray}{HTML}{A8A29A}     % Xám ấm thương hiệu
+\\definecolor{warmgray}{HTML}{A8A29A}     % Xám ấm thương hiệu (ink-3)
 
-\\def\\mauVD{vmAccent}
-\\def\\mauEX{vmOk}
-\\def\\mauBT{vmWarn}
-\\def\\mauLG{vmAccent}
-\\def\\mauDA{\\mauEX}
-\\def\\mauTrue{vmAccent}
-\\def\\mauPART{vmInk}
-\\def\\mauCHAP{vmAccent}
-\\def\\mauSEC{vmOk}
-\\def\\mauSUBSEC{vmWarn}
-\\def\\mauSUBSUBSEC{vmInk}
+\\def\\mauVD{vmAccent}                      % Màu chính cho Ví dụ (Đỏ son)
+\\def\\mauEX{vmOk}                          % Màu chính cho Câu hỏi / Đề bài (Matcha)
+\\def\\mauBT{vmWarn}                        % Màu chính cho Bài tập tự luyện (Amber)
+\\def\\mauLG{vmAccent}                      % Màu cho Lời giải (Đỏ son)
+\\def\\mauDA{\\mauEX}                        % Màu đáp án đúng
+\\def\\mauTrue{vmAccent}                    % Màu của đáp án khoanh tròn đúng
+\\def\\mauPART{vmInk}                       % Màu phần
+\\def\\mauCHAP{vmAccent}                    % Màu chương
+\\def\\mauSEC{vmOk}                         % Màu Section
+\\def\\mauSUBSEC{vmWarn}                    % Màu Subsection
+\\def\\mauSUBSUBSEC{vmInk}                  % Màu Subsubsection
 \\def\\mauphan{vmInk}
 \\def\\mauchuphan{vmInk}
 \\def\\mauchuong{vmAccent}
@@ -999,14 +999,14 @@ var PREAMBLE_MAC_DINH = `\\documentclass[12pt,a4paper,onecolumn,titlepage,twosid
 % --- THÔNG SỐ TRANG ---
 \\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
 \\def\\watermarktext{VinhMath}
-\\def\\DC{637 Tran Hung Dao, Phuong Cho Quan, Quan 5}
+\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
 \\def\\SDT{0866197857}
 
 % --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---
 \\usepackage{longtable,multirow,makecell,tabularx}
 \\usepackage{diagbox}
 \\usepackage[shortlabels]{enumitem}
-\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom}
+\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
 \\usepackage{tikz} 
 \\usepackage{tkz-euclide}
 \\usepackage{tikz-3dplot}
@@ -1017,7 +1017,7 @@ var PREAMBLE_MAC_DINH = `\\documentclass[12pt,a4paper,onecolumn,titlepage,twosid
 \\usepackage{scalerel}
 \\usepackage{array}
 \\usepackage{xcolor,colortbl,tasks}
-\\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
+\\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
 \\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
 \\usetikzlibrary{shadings,fadings}
 \\usepackage{pgfplots}
@@ -1047,8 +1047,8 @@ var PREAMBLE_MAC_DINH = `\\documentclass[12pt,a4paper,onecolumn,titlepage,twosid
 % --- GÓI TRẮC NGHIỆM EX_TEST ---
 \\usepackage[loigiai]{ex_test} 
 \\font\\damEX=ugqb8v at 13pt
-\\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Loi giai.}
-\\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} Câu}
+\\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Lời giải.}
+\\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} \\iconVD Câu}
 \\def\\qedEX{\\color{\\mauDC}\\ensuremath{\\square}}
 \\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
 \\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right.}
@@ -1076,7 +1076,9 @@ var PREAMBLE_MAC_DINH = `\\documentclass[12pt,a4paper,onecolumn,titlepage,twosid
 \\pagestyle{fancy}
 \\fancyhf{}
 \\renewcommand{\\headrulewidth}{0.5pt}
-\\fancyhead[L]{\\color{\\maufoot}\\sffamily\\bfseries Lop Toan Thay Vinh}
+\\renewcommand{\\footrulewidth}{0pt}
+\\renewcommand{\\headrule}{\\hbox to\\headwidth{\\color{\\maufoot}\\leaders\\hrule height \\headrulewidth\\hfill}}
+\\fancyhead[L]{\\color{\\maufoot}\\sffamily\\bfseries Lớp Toán Thầy Vinh}
 \\fancyhead[R]{\\color{\\maufoot}\\sffamily\\bfseries VinhMath}
 \\fancyfoot[L]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faMapMarker\\ \\DC}
 \\fancyfoot[C]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faPhone\\ \\SDT}
@@ -1183,7 +1185,7 @@ async function generateAndCompilePDF() {
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
   
-  var preamble = PREAMBLE_MAC_DINH;
+  var preamble = layPreamble();
   
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
   preamble = preamble.replace(/\\documentclass\[.*\]\{book\}/, '\\documentclass[' + classOpt + ']{book}');
@@ -1199,7 +1201,7 @@ async function generateAndCompilePDF() {
     phai = (parseFloat(phai) + 4.0).toString();
   }
   var marginDefs = '\\def\\tren{' + tren + '}\\def\\duoi{' + duoi + '}\\def\\trai{' + trai + '}\\def\\phai{' + phai + '}';
-  preamble = preamble.replace(/\\def\\tren\{1\.65\}\\def\\duoi\{1\.5\}\\def\\trai\{1\}\\def\\phai\{1\}/, marginDefs);
+  preamble = preamble.replace(/\\def\\tren\{[^}]*\}\\def\\duoi\{[^}]*\}\\def\\trai\{[^}]*\}\\def\\phai\{[^}]*\}/, marginDefs);
   
   var exTestOpt = pdfCompileMode === 'solution' ? '[loigiai]' : '';
   preamble = preamble.replace(/\\usepackage\[loigiai\]\{ex_test\}/, '\\usepackage' + exTestOpt + '{ex_test}');
