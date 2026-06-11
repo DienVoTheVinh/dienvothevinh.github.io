@@ -44,19 +44,31 @@ function ketQua(ic, tieuDe, noiDung) {
   var token = new URLSearchParams(window.location.search).get('token');
   if (!token) { ketQua('❓', 'Thiếu mã', 'Đường link điểm danh không có mã. Em quét lại QR nhé.'); return; }
 
-  // Tìm buổi học theo mã QR (phân quyền chỉ cho thấy buổi của lớp mình)
-  var r = await sb.from('class_sessions')
-    .select('id, title, held_on, qr_expires')
-    .eq('qr_token', token)
-    .maybeSingle();
+  var r;
+  if (token.length <= 6) {
+    // Học sinh nhập mã số bằng tay (vd: "4829")
+    r = await sb.from('class_sessions')
+      .select('id, title, held_on, qr_expires, attendance_open')
+      .eq('class_id', hoSo.class_id)
+      .eq('checkin_code', token)
+      .eq('attendance_open', true)
+      .maybeSingle();
+  } else {
+    // Học sinh quét mã QR
+    r = await sb.from('class_sessions')
+      .select('id, title, held_on, qr_expires, attendance_open')
+      .eq('qr_token', token)
+      .eq('attendance_open', true)
+      .maybeSingle();
+  }
 
   if (!r.data) {
-    ketQua('🚫', 'Mã không hợp lệ', 'Mã này không tồn tại hoặc không thuộc lớp của em.');
+    ketQua('🚫', 'Chưa mở điểm danh', 'Thầy chưa mở điểm danh, mã đã hết hạn hoặc không thuộc lớp của em. Em chờ thầy mở nhé!');
     return;
   }
   var buoi = r.data;
   if (buoi.qr_expires && new Date(buoi.qr_expires) < new Date()) {
-    ketQua('⌛', 'Mã đã hết hạn', 'QR của buổi <b>' + buoi.title + '</b> đã đóng. Em báo thầy mở lại nhé.');
+    ketQua('⌛', 'Mã đã hết hạn', 'Mã điểm danh của buổi <b>' + buoi.title + '</b> đã hết hiệu lực. Em báo thầy mở lại nhé.');
     return;
   }
 

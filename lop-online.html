@@ -155,7 +155,7 @@ function diemDanhBangMa() {
   var ma = $('maDiemDanh').value.trim();
   if (!ma) { alert('Em dán mã điểm danh thầy đưa vào ô trước nhé.'); return; }
   // Nếu lỡ dán cả đường link thì tự rút mã ra
-  var m = ma.match(/token=([a-f0-9]+)/i);
+  var m = ma.match(/token=([^\s&]+)/i);
   window.location.href = 'diem-danh.html?token=' + (m ? m[1] : ma);
 }
 </script>
