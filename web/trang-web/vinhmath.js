@@ -68,6 +68,10 @@ async function layHoSo() {
     .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode))')
     .eq('id', s.data.session.user.id).single();
   
+  if (r.error) {
+    console.error("Lỗi layHoSo:", r.error);
+  }
+  
   if (r.data) {
     r.data.class_students = r.data.class_students || [];
     if (r.data.class_students.length > 0) {
