@@ -605,7 +605,7 @@ if (!daKetNoi()) {
 // Đã đăng nhập từ trước → vào thẳng trang học tập
 if (daKetNoi()) {
   sb.auth.getSession().then(function (s) {
-    if (s.data.session) window.location.href = 'hoc-tap.html';
+    if (s.data.session) window.location.href = 'lop-hoc.html';
   });
 }
 
@@ -619,7 +619,7 @@ $('formDangNhap').addEventListener('submit', async function (e) {
     baoLoi(r.error);
     nut.disabled = false; nut.textContent = 'Vào lớp học';
   } else {
-    window.location.href = 'hoc-tap.html';
+    window.location.href = 'lop-hoc.html';
   }
 });
 </script>

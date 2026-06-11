@@ -117,7 +117,10 @@
 
       <!-- Tab Học sinh -->
       <div id="phanHeStudents" style="display:none; flex-direction:column; gap:12px">
-        <h3 style="font-size:1.1rem; margin-top:10px">Danh sách học sinh</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
+          <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
+          <button class="btn btn-primary btn-sm" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
+        </div>
         <div class="card" style="padding:0; overflow-x:auto">
           <table>
             <thead>
@@ -127,6 +130,7 @@
                 <th>SĐT phụ huynh</th>
                 <th>Email</th>
                 <th>Trường học</th>
+                <th style="text-align:right">Thao tác</th>
               </tr>
             </thead>
             <tbody id="dsHocSinhLop"></tbody>
@@ -259,6 +263,43 @@
         </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Xếp Học Sinh Vào Lớp -->
+<div class="modal" id="modalXepLop" style="z-index: 105;">
+  <div class="modal-content" style="max-width: 650px;">
+    <button class="modal-close" onclick="dongFormXepLop()">×</button>
+    <h2>Xếp học sinh vào lớp</h2>
+    <p style="font-size:0.9rem; color:var(--ink-2); margin-top:-10px; margin-bottom:16px;">
+      Thêm học sinh chưa phân lớp hoặc chuyển lớp cho học sinh khác vào lớp: <b id="xlTenLop" style="color:var(--accent)">-</b>.
+    </p>
+    
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
+      <input class="input" id="searchXepLop" placeholder="Tìm theo họ tên hoặc username..." oninput="taiDanhSachChoXepLop()" style="flex:1; padding:8px 12px; font-size:0.9rem;">
+      <select class="input" id="filterXepLopClass" onchange="taiDanhSachChoXepLop()" style="width:200px; padding:8px 12px; font-size:0.9rem;">
+        <option value="none">Chưa xếp lớp (Khuyên dùng)</option>
+        <option value="all">Tất cả học sinh</option>
+      </select>
+    </div>
+    
+    <!-- Danh sách học sinh chờ xếp lớp -->
+    <div style="overflow-y:auto; max-height:300px; border:1px solid var(--line); border-radius:var(--r-sm);">
+      <table style="font-size: 0.88rem;">
+        <thead>
+          <tr>
+            <th style="padding:8px 12px;">Học sinh</th>
+            <th style="padding:8px 12px;">Username</th>
+            <th style="padding:8px 12px;">Lớp hiện tại</th>
+            <th style="padding:8px 12px; text-align:right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="dsHocSinhChoXepLop">
+          <tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:16px;">Đang tải danh sách...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -415,7 +456,7 @@ async function taiLessonsLop() {
 
 /* ----- Tab Học sinh ----- */
 async function taiStudentsLop() {
-  $('dsHocSinhLop').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
+  $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
   var r = await sb.from('profiles')
     .select('id, full_name, username, phone, email, school')
     .eq('class_id', classDangChon.id)
@@ -423,7 +464,7 @@ async function taiStudentsLop() {
   
   var students = r.data || [];
   if (!students.length) {
-    $('dsHocSinhLop').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này.</td></tr>';
+    $('dsHocSinhLop').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
     return;
   }
   
@@ -434,8 +475,97 @@ async function taiStudentsLop() {
       '<td class="num">' + (s.phone || '—') + '</td>' +
       '<td>' + (s.email || '—') + '</td>' +
       '<td>' + (s.school || '—') + '</td>' +
+      '<td style="text-align:right">' +
+      '  <button class="btn btn-ghost btn-sm" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
+      '</td>' +
       '</tr>';
   }).join('');
+}
+
+async function xoaHocSinhKhoiLop(studentId, name) {
+  if (!confirm('Thầy có chắc muốn xóa học sinh "' + name + '" khỏi lớp này?')) return;
+  var r = await sb.from('profiles').update({ class_id: null }).eq('id', studentId);
+  if (r.error) {
+    alert('Lỗi khi xóa học sinh: ' + r.error.message);
+  } else {
+    await taiStudentsLop();
+  }
+}
+
+/* ----- Xếp lớp học sinh trực tuyến ----- */
+function moFormXepLop() {
+  if (!classDangChon) return;
+  $('xlTenLop').textContent = classDangChon.name;
+  $('searchXepLop').value = '';
+  $('filterXepLopClass').value = 'none';
+  $('modalXepLop').style.display = 'flex';
+  taiDanhSachChoXepLop();
+}
+
+function dongFormXepLop() {
+  $('modalXepLop').style.display = 'none';
+  taiStudentsLop();
+}
+
+async function taiDanhSachChoXepLop() {
+  var tbody = $('dsHocSinhChoXepLop');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:16px;">Đang tìm kiếm...</td></tr>';
+  
+  var searchQuery = $('searchXepLop').value.trim();
+  var classFilter = $('filterXepLopClass').value;
+  
+  var query = sb.from('profiles')
+    .select('id, full_name, username, class_id, classes(name)')
+    .eq('role', 'student')
+    .order('full_name');
+    
+  if (classFilter === 'none') {
+    query = query.is('class_id', null);
+  } else {
+    query = query.or('class_id.neq.' + classDangChon.id + ',class_id.is.null');
+  }
+  
+  var r = await query;
+  if (r.error) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--err); padding:16px;">Lỗi: ' + r.error.message + '</td></tr>';
+    return;
+  }
+  
+  var students = r.data || [];
+  
+  if (searchQuery) {
+    var q = searchQuery.toLowerCase();
+    students = students.filter(function (s) {
+      return (s.full_name && s.full_name.toLowerCase().includes(q)) ||
+             (s.username && s.username.toLowerCase().includes(q));
+    });
+  }
+  
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:16px;">Không tìm thấy học sinh phù hợp.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = students.map(function (s) {
+    var currentClassName = s.classes ? s.classes.name : '<span style="color:var(--ink-3)">Chưa xếp lớp</span>';
+    var actionBtn = '<button class="btn btn-primary btn-sm" onclick="themHocSinhVaoLop(\'' + s.id + '\')" style="padding:4px 10px;">Thêm</button>';
+    return '<tr>' +
+           '  <td style="padding:8px 12px;"><b>' + s.full_name + '</b></td>' +
+           '  <td style="padding:8px 12px;" class="num">' + s.username + '</td>' +
+           '  <td style="padding:8px 12px;">' + currentClassName + '</td>' +
+           '  <td style="padding:8px 12px; text-align:right;">' + actionBtn + '</td>' +
+           '</tr>';
+  }).join('');
+}
+
+async function themHocSinhVaoLop(studentId) {
+  if (!classDangChon) return;
+  var r = await sb.from('profiles').update({ class_id: classDangChon.id }).eq('id', studentId);
+  if (r.error) {
+    alert('Lỗi xếp lớp: ' + r.error.message);
+  } else {
+    await taiDanhSachChoXepLop();
+  }
 }
 
 /* ----- Thư mục / Dropdown dữ liệu ----- */

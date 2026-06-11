@@ -45,11 +45,7 @@ tr:last-child td{border-bottom:none}
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Giám sát</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html">Học tập</a>
-      <a href="tai-lieu.html">Tài liệu</a>
-      <a href="quan-tri-bai-hoc.html">Bài giảng</a>
-      <a href="quan-tri-tai-lieu.html">Soạn tài liệu</a>
-      <a href="quan-tri-truy-cap.html" class="active">Giám sát</a>
+      <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -123,7 +119,7 @@ tr:last-child td{border-bottom:none}
   if (!hoSo) return;
   if (hoSo.role !== 'admin') {
     // Không phải admin -> đưa về trang học tập
-    window.location.href = 'hoc-tap.html';
+    window.location.href = 'lop-hoc.html';
     return;
   }
 

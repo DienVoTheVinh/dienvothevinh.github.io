@@ -15,9 +15,172 @@
 .calendar-card .ic { font-size: 3.5rem; margin-bottom: 12px; }
 .today-alert { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: var(--r-sm); margin-bottom: 24px; font-size: .95rem; }
 .today-alert b { color: var(--accent); }
-.tkb td, .tkb th { white-space: nowrap; }
 .sync-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
 .section { margin-top: 28px; }
+
+/* Weekly Slider */
+.week-slider {
+  display: flex;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+  gap: 8px;
+}
+.week-day {
+  flex: 1;
+  min-width: 65px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  border: 1px solid transparent;
+}
+.week-day:hover {
+  background: var(--surface-2);
+}
+.week-day.active-day {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+}
+.week-day.today {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.week-day.today .day-num {
+  background: var(--accent);
+  color: #fff;
+}
+.week-day .day-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+.week-day .day-num {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Schedule Card List */
+.schedule-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+.schedule-card {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, border-color 0.2s;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.schedule-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-2);
+}
+.schedule-card.today-card {
+  border-left: 5px solid var(--accent);
+}
+.schedule-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.schedule-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.schedule-info {
+  display: flex;
+  flex-direction: column;
+}
+.schedule-time {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.schedule-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 2px 0;
+}
+.schedule-details {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.schedule-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pulse-btn {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(181, 72, 58, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(181, 72, 58, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(181, 72, 58, 0);
+  }
+}
+.empty-class-state {
+  text-align: center;
+  padding: 48px 24px;
+}
+.empty-class-state .ic {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .divider-meet { display: none; }
+  .schedule-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .schedule-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
 </style>
 </head>
 <body>
@@ -39,50 +202,94 @@
   <div class="head">
     <div class="sec-label" id="tenLop">Thời khóa biểu</div>
     <h1>Lịch học của lớp em</h1>
-    <p style="margin-top:4px">Được cập nhật tự động từ trang quản trị của thầy Vinh.</p>
+    <p style="margin-top:4px" id="subHeadTieuDe">Được cập nhật tự động từ trang quản trị của thầy Vinh.</p>
   </div>
 
-  <!-- Buổi học hôm nay -->
-  <div class="today-alert" id="thongBaoHomNay">
-    Đang kiểm tra lịch học hôm nay...
-  </div>
-
-  <!-- Thẻ chính Calendar -->
-  <div class="card calendar-card">
-    <div class="ic">📅</div>
-    <h2>Đồng bộ hóa lịch học VinhMath</h2>
-    <p style="font-size:.9rem; color:var(--ink-2); margin-top:4px; max-width:520px; margin-left:auto; margin-right:auto">
-      Thầy hỗ trợ đồng bộ thời khóa biểu trực tiếp vào điện thoại của em. Hãy chọn hình thức đồng bộ bên dưới để không bỏ lỡ buổi học nào.
+  <!-- Trạng thái chưa xếp lớp -->
+  <div class="card empty-class-state" id="chuaCoLopContainer" style="display: none;">
+    <div class="ic">⛩️</div>
+    <h2>Chưa được xếp lớp học</h2>
+    <p style="font-size:.95rem; color:var(--ink-2); margin:12px auto 24px; max-width:480px;">
+      Tài khoản của em chưa được xếp vào lớp học nào trên hệ thống. Em vui lòng liên hệ thầy Vinh để được kích hoạt và phân lớp học nhé!
     </p>
-    
-    <div class="sync-actions">
-      <button class="btn btn-primary btn-sm" onclick="syncAllGoogleCalendar()">📅 Thêm vào Google Calendar</button>
-      <button class="btn btn-secondary btn-sm" onclick="taiFileICS()">💾 Tải lịch học (.ics)</button>
-    </div>
-    <div style="font-size:.78rem; color:var(--ink-3); margin-top:10px">
-      * Đồng bộ Google Calendar sẽ mở từng buổi học lặp lại để lưu. Tải file `.ics` áp dụng cho cả Google Calendar, Apple Calendar và Outlook.
-    </div>
+    <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
   </div>
 
-  <!-- Thời khóa biểu chi tiết -->
-  <div class="section">
-    <div class="sec-label">Thời khóa biểu</div>
-    <h2 style="margin-bottom:16px">Giờ học định kỳ</h2>
-    <div class="card" style="padding:8px 4px; overflow-x:auto">
-      <table class="tkb">
-        <thead>
-          <tr>
-            <th>Thứ</th>
-            <th>Giờ học</th>
-            <th>Hình thức</th>
-            <th>Địa điểm / Meet</th>
-            <th>Ghi chú của thầy</th>
-          </tr>
-        </thead>
-        <tbody id="bangTKB">
-          <tr><td colspan="5" style="color:var(--ink-3)">Đang tải thời khóa biểu…</td></tr>
-        </tbody>
-      </table>
+  <!-- Container khi đã có lớp -->
+  <div id="coLopContainer">
+    <!-- Lịch tuần trực quan dạng slider -->
+    <div id="timelineSlider" class="week-slider">
+      <!-- Sẽ render bằng JavaScript -->
+    </div>
+
+    <!-- Buổi học hôm nay -->
+    <div class="today-alert" id="thongBaoHomNay">
+      Đang kiểm tra lịch học hôm nay...
+    </div>
+
+    <!-- Lớp học trực tuyến & Điểm danh -->
+    <div class="card" id="khuOnline" style="padding: 24px; margin-bottom: 24px; border: 1px solid var(--line);">
+      <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+        
+        <!-- Cột trái: Vào Meet -->
+        <div style="flex: 1; min-width: 280px;">
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 2rem;">🎥</span>
+            <div>
+              <h2 style="font-size: 1.1rem; margin: 0;">Lớp học trực tuyến</h2>
+              <p style="font-size: .85rem; color: var(--ink-2); margin: 2px 0 0;" id="ghiChuMeet">Vào phòng Google Meet của lớp em.</p>
+            </div>
+          </div>
+          <a class="btn btn-primary" id="nutVaoMeet" href="#" target="_blank" style="display: none; width: 100%; justify-content: center; padding: 10px 16px;">Vào lớp ngay</a>
+          <p id="chuaCoLink" style="display: none; color: var(--ink-3); font-size: .88rem; text-align: center; margin: 12px 0 0;">Thầy chưa cài link Meet cho lớp này — em quay lại sau nhé.</p>
+        </div>
+
+        <!-- Đường ngăn giữa -->
+        <div style="width: 1px; background: var(--line-2); align-self: stretch;" class="divider-meet"></div>
+
+        <!-- Cột phải: Điểm danh -->
+        <div style="flex: 1; min-width: 280px;">
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 2rem;">📍</span>
+            <div>
+              <h2 style="font-size: 1.1rem; margin: 0;">Điểm danh buổi học</h2>
+              <p style="font-size: .85rem; color: var(--ink-2); margin: 2px 0 0;">Dán hoặc nhập mã điểm danh thầy chiếu để điểm danh.</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input class="input" id="maDiemDanh" placeholder="Dán mã điểm danh..." style="flex: 1; padding: 9px 12px; font-size: .9rem;">
+            <button class="btn btn-secondary" onclick="diemDanhBangMa()" style="padding: 9px 16px; font-size: .9rem; flex: none;">✓ Điểm danh</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Thẻ chính Calendar -->
+    <div class="card calendar-card" style="margin-bottom: 24px;">
+      <div class="ic">📅</div>
+      <h2>Đồng bộ hóa lịch học VinhMath</h2>
+      <p style="font-size:.9rem; color:var(--ink-2); margin-top:4px; max-width:520px; margin-left:auto; margin-right:auto">
+        Thầy hỗ trợ đồng bộ thời khóa biểu trực tiếp vào điện thoại của em. Hãy chọn hình thức đồng bộ bên dưới để không bỏ lỡ buổi học nào.
+      </p>
+      
+      <div class="sync-actions">
+        <button class="btn btn-primary btn-sm" onclick="syncAllGoogleCalendar()">📅 Thêm vào Google Calendar</button>
+        <button class="btn btn-secondary btn-sm" onclick="taiFileICS()">💾 Tải lịch học (.ics)</button>
+      </div>
+      <div style="font-size:.78rem; color:var(--ink-3); margin-top:10px">
+        * Đồng bộ Google Calendar sẽ mở từng buổi học lặp lại để lưu. Tải file `.ics` áp dụng cho cả Google Calendar, Apple Calendar và Outlook.
+      </div>
+    </div>
+
+    <!-- Danh sách buổi học dạng Card -->
+    <div class="section">
+      <div class="sec-label">Lịch học chi tiết</div>
+      <h2 style="margin-bottom:16px">Các ca học tuần này</h2>
+      
+      <div id="danhSachBuoiHoc" class="schedule-list">
+        <div style="color:var(--ink-3)">Đang tải thời khóa biểu…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -94,21 +301,186 @@
 <script src="analytics.js"></script>
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+var TEN_THU_NGAN = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
 var TKB_THU = { 1: 'MO', 2: 'TU', 3: 'WE', 4: 'TH', 5: 'FR', 6: 'SA', 7: 'SU' };
 var listSchedules = [];
 var classInfo = null;
+var selectedDayFilter = null;
+var meetLinkGlobal = '';
 
 function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
+function layCacNgayTrongTuan() {
+  var now = new Date();
+  var day = now.getDay();
+  var diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  var monday = new Date(now.setDate(diff));
+  
+  var weekDates = [];
+  for (var i = 0; i < 7; i++) {
+    var temp = new Date(monday);
+    temp.setDate(monday.getDate() + i);
+    weekDates.push(temp);
+  }
+  return weekDates;
+}
+
+function veSliderTuan(schedules) {
+  var container = $('timelineSlider');
+  if (!container) return;
+  
+  var weekDates = layCacNgayTrongTuan();
+  var now = new Date();
+  var jsThu = now.getDay();
+  var todayWeekday = jsThu === 0 ? 7 : jsThu;
+  
+  var html = '';
+  weekDates.forEach(function (date, index) {
+    var weekday = index + 1;
+    var isToday = (weekday === todayWeekday);
+    var hasSession = schedules.some(function (s) { return s.weekday === weekday; });
+    var dotHtml = hasSession ? '<div style="width: 5px; height: 5px; background: var(--accent); border-radius: 50%; margin-top: 4px;"></div>' : '';
+    
+    var dateStr = date.getDate().toString().padStart(2, '0');
+    var activeClass = (selectedDayFilter === weekday) ? ' active-day' : '';
+    var todayClass = isToday ? ' today' : '';
+    
+    html += '<div class="week-day' + todayClass + activeClass + '" onclick="locTheoThu(' + weekday + ')">' +
+            '  <span class="day-name">' + TEN_THU_NGAN[weekday] + '</span>' +
+            '  <span class="day-num">' + dateStr + '</span>' +
+            dotHtml +
+            '</div>';
+  });
+  
+  var showAllActive = (selectedDayFilter === null) ? ' active-day' : '';
+  html += '<div class="week-day' + showAllActive + '" onclick="locTheoThu(null)" style="min-width: 65px; justify-content: center;">' +
+          '  <span class="day-name" style="margin-bottom:0">Tất cả</span>' +
+          '</div>';
+          
+  container.innerHTML = html;
+  container.style.display = 'flex';
+}
+
+function veDanhSachBuoiHoc(schedules, meetLink) {
+  var container = $('danhSachBuoiHoc');
+  if (!container) return;
+  
+  var now = new Date();
+  var jsThu = now.getDay();
+  var todayWeekday = jsThu === 0 ? 7 : jsThu;
+  var nowMinutes = now.getHours() * 60 + now.getMinutes();
+  
+  var schedulesToShow = schedules;
+  if (selectedDayFilter !== null) {
+    schedulesToShow = schedules.filter(function (s) { return s.weekday === selectedDayFilter; });
+  }
+  
+  if (schedulesToShow.length === 0) {
+    var thongBaoLoc = selectedDayFilter 
+      ? 'Hôm ' + TEN_THU[selectedDayFilter] + ' lớp em không có ca học định kỳ.'
+      : 'Lớp của em hiện chưa được cập nhật thời khóa biểu định kỳ.';
+    container.innerHTML = '<div style="color:var(--ink-3); text-align:center; padding: 32px 0;">' + thongBaoLoc + '</div>';
+    return;
+  }
+  
+  container.innerHTML = schedulesToShow.map(function (s) {
+    var isToday = (s.weekday === todayWeekday);
+    var status = 'SẮP TỚI';
+    var statusClass = 'badge-mute';
+    var isOngoing = false;
+    
+    var startParts = s.start_time.split(':');
+    var startTime = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    var endParts = s.end_time.split(':');
+    var endTime = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    
+    if (s.weekday < todayWeekday) {
+      status = 'ĐÃ QUA';
+      statusClass = 'badge-mute';
+    } else if (s.weekday > todayWeekday) {
+      status = 'SẮP TỚI';
+      statusClass = 'badge-warn';
+    } else {
+      if (nowMinutes < startTime) {
+        status = 'SẮP TỚI';
+        statusClass = 'badge-warn';
+      } else if (nowMinutes > endTime) {
+        status = 'ĐÃ QUA';
+        statusClass = 'badge-mute';
+      } else {
+        status = 'ĐANG HỌC';
+        statusClass = 'badge-ok';
+        isOngoing = true;
+      }
+    }
+    
+    var diaDiem = '';
+    var meetButton = '';
+    if (s.mode === 'online') {
+      diaDiem = meetLink 
+        ? '<a href="' + meetLink + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline">🎥 Vào Google Meet</a>'
+        : '🎥 Link Google Meet';
+      
+      if (isOngoing && meetLink) {
+        meetButton = '<a href="' + meetLink + '" target="_blank" class="btn btn-primary btn-sm pulse-btn">VÀO LỚP NGAY</a>';
+      }
+    } else {
+      diaDiem = '🏫 ' + (s.location || 'Tại lớp học');
+    }
+    
+    var cardTodayClass = isToday ? ' today-card' : '';
+    var icon = s.mode === 'online' ? '💻' : '🏫';
+    
+    return '<div class="schedule-card' + cardTodayClass + '">' +
+           '  <div class="schedule-left">' +
+           '    <div class="schedule-icon">' + icon + '</div>' +
+           '    <div class="schedule-info">' +
+           '      <div class="schedule-time">' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</div>' +
+           '      <div class="schedule-title">' + TEN_THU[s.weekday] + ' — ' + (s.mode === 'online' ? 'Học trực tuyến' : 'Học tại lớp') + '</div>' +
+           '      <div class="schedule-details">' +
+           '        <span>Hình thức: <b>' + (s.mode === 'online' ? 'Online' : 'Offline') + '</b></span>' +
+           '        <span>Địa điểm: <b>' + diaDiem + '</b></span>' +
+           '      </div>' +
+           (s.note ? '      <div style="font-size:.85rem; color:var(--ink-2); margin-top:6px; font-style:italic;">Ghi chú: ' + s.note + '</div>' : '') +
+           '    </div>' +
+           '  </div>' +
+           '  <div class="schedule-right">' +
+           '    <span class="badge ' + statusClass + '">' + status + '</span>' +
+           meetButton +
+           '  </div>' +
+           '</div>';
+  }).join('');
+}
+
+function locTheoThu(weekday) {
+  if (selectedDayFilter === weekday) {
+    selectedDayFilter = null;
+  } else {
+    selectedDayFilter = weekday;
+  }
+  veSliderTuan(listSchedules);
+  veDanhSachBuoiHoc(listSchedules, meetLinkGlobal);
+}
+
 (async function () {
   if (!daKetNoi()) {
-    $('bangTKB').innerHTML = '<tr><td colspan="5" style="color:var(--ink-3)">Chế độ xem thử — chưa kết nối Supabase.</td></tr>';
+    $('danhSachBuoiHoc').innerHTML = '<div style="color:var(--ink-3); text-align:center;">Chế độ xem thử — chưa kết nối Supabase.</div>';
     $('thongBaoHomNay').innerHTML = 'Chế độ xem thử: Hôm nay không có buổi học.';
     return;
   }
 
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
+
+  // Kiểm tra trạng thái xếp lớp
+  if (!hoSo.class_id) {
+    $('coLopContainer').style.display = 'none';
+    $('chuaCoLopContainer').style.display = 'block';
+    $('tenLop').textContent = 'Thời khóa biểu';
+    $('subHeadTieuDe').textContent = 'Vui lòng liên hệ thầy Vinh để phân lớp trước khi xem lịch học.';
+    return;
+  }
+
   classInfo = hoSo.classes;
   $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Thời khóa biểu';
 
@@ -120,52 +492,41 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
   
   listSchedules = r.data || [];
   
-  // 2. Vẽ thời khóa biểu
+  // 2. Tải link Google Meet phòng học riêng của lớp (nếu có)
+  if (hoSo.class_id) {
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
+    if (lr.data && lr.data.meet_link) meetLinkGlobal = lr.data.meet_link;
+  }
+  if (!meetLinkGlobal) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meetLinkGlobal = lk.data ? lk.data.value : '';
+  }
+
+  if (meetLinkGlobal) {
+    $('nutVaoMeet').href = meetLinkGlobal;
+    $('nutVaoMeet').style.display = 'inline-flex';
+  } else {
+    $('chuaCoLink').style.display = 'block';
+  }
+
+  // 3. Vẽ Slider và danh sách buổi học
+  veSliderTuan(listSchedules);
+  veDanhSachBuoiHoc(listSchedules, meetLinkGlobal);
+  
   if (!listSchedules.length) {
-    $('bangTKB').innerHTML = '<tr><td colspan="5" style="color:var(--ink-3)">Lớp của em hiện chưa được cập nhật thời khóa biểu định kỳ.</td></tr>';
     $('thongBaoHomNay').innerHTML = 'Lớp chưa được thầy cấu hình thời khóa biểu.';
     return;
   }
-  
-  // 3. Tải link Google Meet phòng học riêng của lớp (nếu có)
-  var meetLink = '';
-  if (hoSo.class_id) {
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
-    if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-  }
-  if (!meetLink) {
-    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
-    meetLink = lk.data ? lk.data.value : '';
-  }
-
-  $('bangTKB').innerHTML = listSchedules.map(function (s) {
-    var diaDiem = '';
-    if (s.mode === 'online') {
-      diaDiem = meetLink 
-        ? '<a href="' + meetLink + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline">🎥 Vào Google Meet</a>'
-        : '🎥 Link Google Meet';
-    } else {
-      diaDiem = '🏫 ' + (s.location || 'Tại lớp học');
-    }
-
-    return '<tr>' +
-      '<td><b>' + TEN_THU[s.weekday] + '</b></td>' +
-      '<td class="num">' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</td>' +
-      '<td>' + (s.mode === 'online' ? 'Online' : 'Offline') + '</td>' +
-      '<td>' + diaDiem + '</td>' +
-      '<td style="color:var(--ink-2)">' + (s.note || '—') + '</td>' +
-      '</tr>';
-  }).join('');
 
   // 4. Kiểm tra buổi học hôm nay
-  var jsThu = new Date().getDay(); // 0=CN ... 6=T7
+  var jsThu = new Date().getDay();
   var homNay = jsThu === 0 ? 7 : jsThu;
   var buoiHocHomNay = listSchedules.filter(function (s) { return s.weekday === homNay; });
 
   if (buoiHocHomNay.length > 0) {
     var str = buoiHocHomNay.map(function (s) {
-      var meetUrlHTML = (s.mode === 'online' && meetLink) 
-        ? ' (Link Meet: <a href="' + meetLink + '" target="_blank" style="color:#fff; text-decoration:underline; font-weight:700">Tại đây</a>)'
+      var meetUrlHTML = (s.mode === 'online' && meetLinkGlobal) 
+        ? ' (Link Meet: <a href="' + meetLinkGlobal + '" target="_blank" style="color:#fff; text-decoration:underline; font-weight:700">Tại đây</a>)'
         : '';
       return '<b>' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</b> [' + (s.mode === 'online' ? 'Online' : 'Offline') + ']' + meetUrlHTML;
     }).join(', ');
@@ -183,14 +544,13 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
 // Tìm ngày tiếp theo khớp với thứ được chọn
 function getNextDayOfWeek(dayOfWeek) {
-  var jsDay = dayOfWeek === 7 ? 0 : dayOfWeek; // đổi 7=CN thành 0
+  var jsDay = dayOfWeek === 7 ? 0 : dayOfWeek;
   var today = new Date();
   var resultDate = new Date();
   resultDate.setDate(today.getDate() + (jsDay + 7 - today.getDay()) % 7);
   return resultDate;
 }
 
-// 1. Đồng bộ Google Calendar bằng Template link
 function syncAllGoogleCalendar() {
   if (!listSchedules.length) return;
   var tenLop = classInfo ? classInfo.name : 'VinhMath';
@@ -220,7 +580,6 @@ function syncAllGoogleCalendar() {
   });
 }
 
-// 2. Tạo và tải xuống tệp iCalendar (.ics)
 function taiFileICS() {
   if (!listSchedules.length) return;
   var tenLop = classInfo ? classInfo.name : 'VinhMath';
@@ -271,6 +630,13 @@ function taiFileICS() {
 
 function tenAnToan(ten) {
   return ten.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+
+function diemDanhBangMa() {
+  var ma = $('maDiemDanh').value.trim();
+  if (!ma) { alert('Em dán mã điểm danh thầy đưa vào ô trước nhé.'); return; }
+  var m = ma.match(/token=([a-f0-9]+)/i);
+  window.location.href = 'diem-danh.html?token=' + (m ? m[1] : ma);
 }
 </script>
 </body>

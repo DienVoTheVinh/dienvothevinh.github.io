@@ -161,6 +161,115 @@
         </form>
       </div>
 
+      <!-- Lịch chuyên cần tháng -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--line); padding-bottom:8px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0; display:flex; align-items:center; gap:8px;">📅 Lịch học & Chuyên cần tháng</h3>
+          <div style="display:flex; gap:6px; align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="prevMonth()" style="padding:4px 8px; font-size:0.8rem;"><</button>
+            <span id="monthYearLabel" style="font-weight:700; font-size:0.95rem; min-width:90px; text-align:center;">Tháng --/----</span>
+            <button class="btn btn-secondary btn-sm" onclick="nextMonth()" style="padding:4px 8px; font-size:0.8rem;">></button>
+          </div>
+        </div>
+        
+        <!-- Thống kê chi tiết -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-bottom:16px;" id="statsTheoDoi">
+          <div class="card" style="padding:12px; text-align:center; background:var(--surface-2); border:none;">
+            <span style="font-size:0.8rem; color:var(--ink-2); display:block; margin-bottom:4px;">CÓ MẶT</span>
+            <b style="font-size:1.4rem; color:var(--ok);" id="statCoMat">0/0</b>
+          </div>
+          <div class="card" style="padding:12px; text-align:center; background:var(--surface-2); border:none;">
+            <span style="font-size:0.8rem; color:var(--ink-2); display:block; margin-bottom:4px;">CHUỖI ĐI HỌC 🔥</span>
+            <b style="font-size:1.4rem; color:var(--accent);" id="statStreak">0</b>
+          </div>
+          <div class="card" style="padding:12px; text-align:center; background:var(--surface-2); border:none;">
+            <span style="font-size:0.8rem; color:var(--ink-2); display:block; margin-bottom:4px;">GẦN NHẤT 📍</span>
+            <b style="font-size:0.9rem; color:var(--ink); display:block; margin-top:4px;" id="statGanNhat">—</b>
+          </div>
+        </div>
+        
+        <!-- Lưới Lịch -->
+        <style>
+          .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+          }
+          .cal-header {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--line);
+          }
+          .cal-cell {
+            position: relative;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--r-sm);
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            min-height: 48px;
+          }
+          .cal-cell.empty-cell {
+            background: transparent;
+            border-color: transparent;
+          }
+          .cal-cell.today-cell {
+            border: 2px solid var(--accent);
+          }
+          .cal-cell.session-attended {
+            background: var(--ok-soft);
+            border-color: var(--ok);
+            color: var(--ok);
+          }
+          .cal-cell.session-missed {
+            background: var(--err-soft);
+            border-color: var(--err);
+            color: var(--err);
+          }
+          .cal-cell.session-future {
+            background: var(--surface-2);
+            border-color: var(--line-2);
+            color: var(--ink-2);
+          }
+          .cal-cell .cal-badge {
+            position: absolute;
+            top: 2px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 1px 3px;
+            border-radius: 4px;
+            line-height: 1;
+          }
+          .cal-cell.exam-day {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--accent);
+          }
+        </style>
+        
+        <div class="cal-grid">
+          <div class="cal-header">T2</div>
+          <div class="cal-header">T3</div>
+          <div class="cal-header">T4</div>
+          <div class="cal-header">T5</div>
+          <div class="cal-header">T6</div>
+          <div class="cal-header">T7</div>
+          <div class="cal-header">CN</div>
+        </div>
+        <div class="cal-grid" id="calendarBody" style="margin-top: 6px;">
+          <div style="grid-column: span 7; color:var(--ink-3); padding:16px 0;">Đang tải lịch tháng...</div>
+        </div>
+      </div>
+
       <!-- Bảng điểm số học tập -->
       <div class="card">
         <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px">🏆 Bảng vàng điểm số</h3>
@@ -191,6 +300,11 @@
 <script src="analytics.js"></script>
 <script>
 var profileData = null;
+var currentYear = new Date().getFullYear();
+var currentMonth = new Date().getMonth();
+var allSessions = [];
+var allAttendance = {};
+var allExams = [];
 
 (async function () {
   if (!daKetNoi()) return;
@@ -219,7 +333,200 @@ var profileData = null;
   
   // 3. Tải bảng điểm học sinh
   await taiBangDiem();
+
+  // 4. Tải dữ liệu theo dõi lịch và chuyên cần tháng
+  await taiDuLieuTheoDoi();
 })();
+
+async function taiDuLieuTheoDoi() {
+  if (!profileData.class_id) {
+    $('calendarBody').innerHTML = '<div style="grid-column: span 7; color:var(--ink-3); padding:16px 0;">Em chưa được xếp vào lớp học nào.</div>';
+    $('statGanNhat').textContent = 'Chưa xếp lớp';
+    return;
+  }
+  
+  try {
+    // 1. Tải danh sách các buổi học của lớp
+    var rSess = await sb.from('class_sessions')
+      .select('id, held_on, title')
+      .eq('class_id', profileData.class_id);
+    allSessions = rSess.data || [];
+    
+    // 2. Tải điểm danh cá nhân
+    var rAtt = await sb.from('attendance')
+      .select('session_id, status, checked_at')
+      .eq('student_id', profileData.id);
+    var attList = rAtt.data || [];
+    allAttendance = {};
+    attList.forEach(function (a) {
+      allAttendance[a.session_id] = a;
+    });
+    
+    // 3. Tải lịch thi cử
+    var rEx = await sb.from('exams')
+      .select('id, title, opens_at, closes_at')
+      .eq('published', true)
+      .or('class_id.eq.' + profileData.class_id + ',class_id.is.null');
+    allExams = rEx.data || [];
+    
+    // 4. Vẽ lịch tháng
+    veLichThang(currentYear, currentMonth);
+    
+    // 5. Tính toán & Cập nhật thống kê chi tiết
+    capNhatThongKe();
+  } catch (err) {
+    console.error('Lỗi tải lịch theo dõi:', err);
+  }
+}
+
+function tinhChuoiStreak() {
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  
+  var pastSessions = allSessions.filter(function (s) {
+    return new Date(s.held_on) <= today;
+  });
+  
+  pastSessions.sort(function (a, b) {
+    return new Date(b.held_on) - new Date(a.held_on);
+  });
+  
+  var streak = 0;
+  var todayStr = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+  
+  for (var i = 0; i < pastSessions.length; i++) {
+    var s = pastSessions[i];
+    var att = allAttendance[s.id];
+    var attended = att && (att.status === 'present' || att.status === 'late');
+    
+    if (attended) {
+      streak++;
+    } else {
+      if (s.held_on === todayStr) {
+        continue;
+      }
+      break;
+    }
+  }
+  return streak;
+}
+
+function prevMonth() {
+  currentMonth--;
+  if (currentMonth < 0) {
+    currentMonth = 11;
+    currentYear--;
+  }
+  veLichThang(currentYear, currentMonth);
+}
+
+function nextMonth() {
+  currentMonth++;
+  if (currentMonth > 11) {
+    currentMonth = 0;
+    currentYear++;
+  }
+  veLichThang(currentYear, currentMonth);
+}
+
+function veLichThang(year, month) {
+  $('monthYearLabel').textContent = 'Tháng ' + (month + 1).toString().padStart(2, '0') + '/' + year;
+  
+  var firstDayIndex = new Date(year, month, 1).getDay();
+  var numDays = new Date(year, month + 1, 0).getDate();
+  var startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+  
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  
+  var html = '';
+  for (var i = 0; i < startOffset; i++) {
+    html += '<div class="cal-cell empty-cell"></div>';
+  }
+  
+  for (var day = 1; day <= numDays; day++) {
+    var dateObj = new Date(year, month, day);
+    var dateStr = year + '-' + (month + 1).toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0');
+    var isToday = (year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
+    
+    var sessionsOnDay = allSessions.filter(function (s) {
+      return s.held_on === dateStr;
+    });
+    
+    var examsOnDay = allExams.filter(function (e) {
+      if (!e.opens_at) return false;
+      var examDate = new Date(e.opens_at).toISOString().split('T')[0];
+      return examDate === dateStr;
+    });
+    
+    var cellClass = '';
+    var badgeHtml = '';
+    
+    if (sessionsOnDay.length > 0) {
+      var sess = sessionsOnDay[0];
+      var att = allAttendance[sess.id];
+      var hasAttended = att && (att.status === 'present' || att.status === 'late');
+      
+      if (hasAttended) {
+        cellClass = ' session-attended';
+        badgeHtml = '<span class="cal-badge" style="background:var(--ok); color:#fff;">HỌC</span>';
+      } else {
+        if (dateObj < today) {
+          cellClass = ' session-missed';
+          badgeHtml = '<span class="cal-badge" style="background:var(--err); color:#fff;">VẮNG</span>';
+        } else {
+          cellClass = ' session-future';
+          badgeHtml = '<span class="cal-badge" style="background:var(--ink-2); color:#fff;">HỌC</span>';
+        }
+      }
+    } else if (examsOnDay.length > 0) {
+      cellClass = ' exam-day';
+      badgeHtml = '<span class="cal-badge" style="background:var(--accent); color:#fff;">THI</span>';
+    }
+    
+    var todayClass = isToday ? ' today-cell' : '';
+    
+    html += '<div class="cal-cell' + cellClass + todayClass + '">' +
+            '  <span>' + day + '</span>' +
+            badgeHtml +
+            '</div>';
+  }
+  
+  $('calendarBody').innerHTML = html;
+}
+
+function capNhatThongKe() {
+  var totalSessions = allSessions.length;
+  var attendedSessions = Object.keys(allAttendance).filter(function (sid) {
+    var status = allAttendance[sid].status;
+    return status === 'present' || status === 'late';
+  }).length;
+  
+  $('statCoMat').textContent = attendedSessions + '/' + totalSessions;
+  
+  var streak = tinhChuoiStreak();
+  $('statStreak').textContent = streak;
+  
+  if (totalSessions > 0) {
+    var attSessions = allSessions.filter(function (s) {
+      return allAttendance[s.id];
+    });
+    attSessions.sort(function (a, b) {
+      return new Date(b.held_on) - new Date(a.held_on);
+    });
+    
+    if (attSessions.length > 0) {
+      var latest = attSessions[0];
+      var d = new Date(latest.held_on);
+      var statusText = allAttendance[latest.id].status === 'present' ? 'Có mặt' : 'Muộn';
+      $('statGanNhat').textContent = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + ' (' + statusText + ')';
+    } else {
+      $('statGanNhat').textContent = 'Chưa đi học';
+    }
+  } else {
+    $('statGanNhat').textContent = '—';
+  }
+}
 
 async function tinhChuyenCan() {
   if (!profileData.class_id) {

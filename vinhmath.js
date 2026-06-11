@@ -71,7 +71,7 @@ async function layHoSo() {
 }
 
 /* ---------- 4. CHẶN TRANG CẦN ĐĂNG NHẬP ---------- */
-// Gọi ở đầu các trang như hoc-tap.html. Chưa đăng nhập → đưa về trang đăng nhập.
+// Gọi ở đầu các trang như lop-hoc.html. Chưa đăng nhập → đưa về trang đăng nhập.
 async function yeuCauDangNhap() {
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
   var s = await sb.auth.getSession();

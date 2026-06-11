@@ -36,7 +36,7 @@ select.input{width:auto}
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html">Học tập</a>
+      <a href="lop-hoc.html">Học tập</a>
       <a href="tai-lieu.html">Tài liệu</a>
       <a href="quan-tri-bai-hoc.html">Bài giảng</a>
       <a href="quan-tri-tai-lieu.html" class="active">Soạn tài liệu</a>
@@ -120,16 +120,9 @@ function bao(msg, loai) {
   if (!daKetNoi()) { bao('Chưa kết nối Supabase.', 'warn'); return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (hoSo.role !== 'teacher' && hoSo.role !== 'admin') { window.location.href = 'hoc-tap.html'; return; }
+  if (hoSo.role !== 'teacher' && hoSo.role !== 'admin') { window.location.href = 'lop-hoc.html'; return; }
 
-  // Hiện menu quản trị động dựa trên vai trò
-  if (hoSo.role === 'admin') {
-    var nav = document.querySelector('.navlinks');
-    if (nav) {
-      var a = document.createElement('a'); a.href = 'quan-tri-truy-cap.html'; a.textContent = 'Giám sát';
-      nav.appendChild(a);
-    }
-  }
+  // Menu quản trị động được tự động vẽ bởi menu.js
   // nạp danh sách lớp vào ô chọn
   var r = await sb.from('classes').select('id, name').order('name');
   (r.data || []).forEach(function (l) {

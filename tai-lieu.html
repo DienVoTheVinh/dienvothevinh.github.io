@@ -26,10 +26,9 @@
   <div class="nav">
     <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html">Học tập</a>
-      <a href="#">Luyện đề</a>
+      <a href="lop-hoc.html">Học tập</a>
+      <a href="luyen-de.html">Luyện đề</a>
       <a href="tai-lieu.html" class="active">Tài liệu</a>
-      <a href="#">Kết quả</a>
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -70,20 +69,7 @@ function urlPdf(path) {
   if (!hoSo) return;
   if (hoSo.role === 'teacher' || hoSo.role === 'admin') $('nutSoan').style.display = '';
 
-  // Hiện menu quản trị động dựa trên vai trò
-  var nav = document.querySelector('.navlinks');
-  if (nav) {
-    if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
-      var a1 = document.createElement('a'); a1.href = 'quan-tri-bai-hoc.html'; a1.textContent = 'Bài giảng';
-      nav.appendChild(a1);
-      var a2 = document.createElement('a'); a2.href = 'quan-tri-tai-lieu.html'; a2.textContent = 'Soạn tài liệu';
-      nav.appendChild(a2);
-    }
-    if (hoSo.role === 'admin') {
-      var a3 = document.createElement('a'); a3.href = 'quan-tri-truy-cap.html'; a3.textContent = 'Giám sát';
-      nav.appendChild(a3);
-    }
-  }
+  // Menu quản trị động được tự động vẽ bởi menu.js
 
   var r = await sb.from('documents')
     .select('id, title, file_path, created_at, classes(name), topics(name)')

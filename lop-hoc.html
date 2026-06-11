@@ -46,25 +46,37 @@
   <section class="greet">
     <div class="sec-label" id="tenLop">VinhMath</div>
     <h1 id="loiChao">Chào em 👋</h1>
-    <p>Hôm nay học gì tiếp nào?</p>
+    <p id="loiChaoSub">Hôm nay học gì tiếp nào?</p>
     <div class="alert-demo" id="canhBaoDemo" style="display:none">
       Chế độ xem thử — dữ liệu bên dưới là dữ liệu mẫu. Khi kết nối Supabase, bài học thật của lớp sẽ hiện ở đây.
     </div>
   </section>
 
-  <section class="stats">
-    <div class="grid grid-3">
-      <div class="card stat"><b id="tkDiem">—</b><span>Điểm trung bình</span></div>
-      <div class="card stat"><b id="tkChuyenCan">—</b><span>Chuyên cần</span></div>
-      <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
-    </div>
-  </section>
+  <!-- Trạng thái chưa xếp lớp -->
+  <div class="card empty-class-state" id="chuaCoLopContainer" style="display: none; text-align: center; padding: 64px 24px; margin-top: 24px;">
+    <div style="font-size: 4rem; margin-bottom: 16px;">⛩️</div>
+    <h2>Chưa được xếp lớp học</h2>
+    <p style="font-size:.95rem; color:var(--ink-2); margin:12px auto 24px; max-width:480px;">
+      Tài khoản của em chưa được xếp vào lớp học nào trên hệ thống. Em vui lòng liên hệ thầy Vinh để được kích hoạt và phân lớp học nhé!
+    </p>
+    <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
+  </div>
 
-  <section class="lessons">
-    <div class="sec-label">Bài học của lớp</div>
-    <h2 style="margin-bottom:24px">Danh sách bài học</h2>
-    <div class="grid grid-2" id="dsBaiHoc"></div>
-  </section>
+  <div id="coLopContainer">
+    <section class="stats">
+      <div class="grid grid-3">
+        <div class="card stat"><b id="tkDiem">—</b><span>Điểm trung bình</span></div>
+        <div class="card stat"><b id="tkChuyenCan">—</b><span>Chuyên cần</span></div>
+        <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
+      </div>
+    </section>
+
+    <section class="lessons">
+      <div class="sec-label">Bài học của lớp</div>
+      <h2 style="margin-bottom:24px">Danh sách bài học</h2>
+      <div class="grid grid-2" id="dsBaiHoc"></div>
+    </section>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -122,6 +134,15 @@ var BAI_HOC_MAU = [
   var hoSo = await yeuCauDangNhap();          // chưa đăng nhập → tự chuyển trang
   if (!hoSo) return;
   $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
+
+  if (!hoSo.class_id) {
+    $('coLopContainer').style.display = 'none';
+    $('chuaCoLopContainer').style.display = 'block';
+    $('tenLop').textContent = 'VinhMath';
+    $('loiChaoSub').textContent = 'Tài khoản của em chưa được kích hoạt lớp học.';
+    return;
+  }
+
   $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
 
   // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)

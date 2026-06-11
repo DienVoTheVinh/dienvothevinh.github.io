@@ -69,12 +69,24 @@
 
   <div class="wrap">
     <div class="head">
-      <div class="sec-label">Khu vực kiểm tra</div>
+      <div class="sec-label" id="labelKhuVuc">Khu vực kiểm tra</div>
       <h1>Luyện đề & Thi thử</h1>
-      <p style="margin-top:4px">Nơi tổng hợp đề thi thử chất lượng cao, chấm điểm trắc nghiệm trực tuyến.</p>
+      <p style="margin-top:4px" id="subHeadTieuDe">Nơi tổng hợp đề thi thử chất lượng cao, chấm điểm trắc nghiệm trực tuyến.</p>
     </div>
 
-    <div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div>
+    <!-- Trạng thái chưa xếp lớp -->
+    <div class="card empty-class-state" id="chuaCoLopContainer" style="display: none; text-align: center; padding: 64px 24px;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">⛩️</div>
+      <h2>Chưa được xếp lớp học</h2>
+      <p style="font-size:.95rem; color:var(--ink-2); margin:12px auto 24px; max-width:480px;">
+        Tài khoản của em chưa được xếp vào lớp học nào trên hệ thống. Em vui lòng liên hệ thầy Vinh để được kích hoạt lớp học và luyện đề nhé!
+      </p>
+      <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
+    </div>
+
+    <div id="coLopContainer">
+      <div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div>
+    </div>
   </div>
 </div>
 
@@ -127,6 +139,14 @@ var timeLeftSeconds = 0;
   
   studentInfo = await yeuCauDangNhap();
   if (!studentInfo) return;
+  
+  if (!studentInfo.class_id) {
+    $('coLopContainer').style.display = 'none';
+    $('chuaCoLopContainer').style.display = 'block';
+    $('labelKhuVuc').textContent = 'Luyện đề & Thi thử';
+    $('subHeadTieuDe').textContent = 'Vui lòng liên hệ thầy Vinh để xếp lớp trước khi luyện đề.';
+    return;
+  }
   
   await taiDanhSachDe();
 })();
