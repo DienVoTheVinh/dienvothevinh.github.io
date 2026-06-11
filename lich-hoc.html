@@ -430,6 +430,7 @@ function veDanhSachBuoiHoc(schedules, meetLink) {
     
     var cardTodayClass = isToday ? ' today-card' : '';
     var icon = s.mode === 'online' ? '💻' : '🏫';
+    var lapText = s.recurrence === 'biweekly' ? '2 tuần/lần' : 'Hàng tuần';
     
     return '<div class="schedule-card' + cardTodayClass + '">' +
            '  <div class="schedule-left">' +
@@ -439,6 +440,7 @@ function veDanhSachBuoiHoc(schedules, meetLink) {
            '      <div class="schedule-title">' + TEN_THU[s.weekday] + ' — ' + (s.mode === 'online' ? 'Học trực tuyến' : 'Học tại lớp') + '</div>' +
            '      <div class="schedule-details">' +
            '        <span>Hình thức: <b>' + (s.mode === 'online' ? 'Online' : 'Offline') + '</b></span>' +
+           '        <span>Lặp lại: <b>' + lapText + '</b></span>' +
            '        <span>Địa điểm: <b>' + diaDiem + '</b></span>' +
            '      </div>' +
            (s.note ? '      <div style="font-size:.85rem; color:var(--ink-2); margin-top:6px; font-style:italic;">Ghi chú: ' + s.note + '</div>' : '') +
@@ -486,7 +488,7 @@ function locTheoThu(weekday) {
 
   // 1. Tải thời khóa biểu lớp mình
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note')
+    .select('id, weekday, start_time, end_time, mode, location, note, recurrence')
     .eq('class_id', hoSo.class_id)
     .order('weekday').order('start_time');
   
@@ -567,6 +569,9 @@ function syncAllGoogleCalendar() {
     var location = s.mode === 'online' ? 'Google Meet' : (s.location || 'Lớp Toán Thầy Vinh');
     var details = encodeURIComponent(s.note || 'Lớp học Toán định kỳ Thầy Vinh');
     var recurrence = 'RRULE:FREQ=WEEKLY;BYDAY=' + TKB_THU[s.weekday];
+    if (s.recurrence === 'biweekly') {
+      recurrence = 'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=' + TKB_THU[s.weekday];
+    }
     
     var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
       '&text=' + encodeURIComponent('Lớp Toán VinhMath ' + tenLop) +
@@ -602,12 +607,17 @@ function taiFileICS() {
     var location = s.mode === 'online' ? 'Google Meet' : (s.location || 'Lớp Toán Thầy Vinh');
     var desc = s.note || 'Thời khóa biểu học Toán định kỳ tại VinhMath';
     
+    var rrule = 'RRULE:FREQ=WEEKLY;BYDAY=' + TKB_THU[s.weekday];
+    if (s.recurrence === 'biweekly') {
+      rrule = 'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=' + TKB_THU[s.weekday];
+    }
+    
     icsLines.push('BEGIN:VEVENT');
     icsLines.push('UID:' + s.id + '@vinhmath.app');
     icsLines.push('DTSTAMP:' + datePart + 'T' + tStart);
     icsLines.push('DTSTART;TZID=Asia/Ho_Chi_Minh:' + datePart + 'T' + tStart);
     icsLines.push('DTEND;TZID=Asia/Ho_Chi_Minh:' + datePart + 'T' + tEnd);
-    icsLines.push('RRULE:FREQ=WEEKLY;BYDAY=' + TKB_THU[s.weekday]);
+    icsLines.push(rrule);
     icsLines.push('SUMMARY:Lớp Toán VinhMath ' + tenLop);
     icsLines.push('LOCATION:' + location);
     icsLines.push('DESCRIPTION:' + desc);
