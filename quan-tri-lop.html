@@ -279,8 +279,8 @@
     <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
       <input class="input" id="searchXepLop" placeholder="Tìm theo họ tên hoặc username..." oninput="taiDanhSachChoXepLop()" style="flex:1; padding:8px 12px; font-size:0.9rem;">
       <select class="input" id="filterXepLopClass" onchange="taiDanhSachChoXepLop()" style="width:200px; padding:8px 12px; font-size:0.9rem;">
-        <option value="none">Chưa xếp lớp (Khuyên dùng)</option>
-        <option value="all">Tất cả học sinh</option>
+        <option value="all">Tất cả học sinh (Chưa vào lớp này)</option>
+        <option value="none">Học sinh chưa xếp lớp nào</option>
       </select>
     </div>
     
@@ -517,7 +517,7 @@ function moFormXepLop() {
   if (!classDangChon) return;
   $('xlTenLop').textContent = classDangChon.name;
   $('searchXepLop').value = '';
-  $('filterXepLopClass').value = 'none';
+  $('filterXepLopClass').value = 'all';
   $('modalXepLop').style.display = 'flex';
   taiDanhSachChoXepLop();
 }
