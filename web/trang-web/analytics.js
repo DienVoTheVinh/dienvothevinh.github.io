@@ -70,15 +70,15 @@
 
     // 4. Đồng bộ hoặc tạo mới phiên truy cập trong CSDL
     if (!sessionDbId) {
-      // Phiên mới hoàn toàn
-      var insertRes = await sb.from('analytics_sessions').insert({
+      // Phiên mới hoàn toàn (sử dụng upsert để tránh lỗi 409 Conflict)
+      var insertRes = await sb.from('analytics_sessions').upsert({
         profile_id: profileId,
         session_key: sessionKey,
         device_type: deviceType,
         os: os,
         browser: browser,
         user_agent: navigator.userAgent
-      }).select('id').single();
+      }, { onConflict: 'session_key' }).select('id').single();
 
       if (insertRes.data) {
         sessionDbId = insertRes.data.id;
