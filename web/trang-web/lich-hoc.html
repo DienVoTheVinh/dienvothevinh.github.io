@@ -475,7 +475,7 @@ function locTheoThu(weekday) {
   if (!hoSo) return;
 
   // Kiểm tra trạng thái xếp lớp
-  if (!hoSo.class_id) {
+  if (!hoSo.class_students || hoSo.class_students.length === 0) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('tenLop').textContent = 'Thời khóa biểu';
@@ -483,22 +483,24 @@ function locTheoThu(weekday) {
     return;
   }
 
-  classInfo = hoSo.classes;
-  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Thời khóa biểu';
+  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'Thời khóa biểu';
 
-  // 1. Tải thời khóa biểu lớp mình
+  // 1. Tải thời khóa biểu tất cả các lớp của học sinh
+  var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
   var r = await sb.from('schedules')
     .select('id, weekday, start_time, end_time, mode, location, note, recurrence')
-    .eq('class_id', hoSo.class_id)
+    .in('class_id', classIds)
     .order('weekday').order('start_time');
   
   listSchedules = r.data || [];
   
-  // 2. Tải link Google Meet phòng học riêng của lớp (nếu có)
-  if (hoSo.class_id) {
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
-    if (lr.data && lr.data.meet_link) meetLinkGlobal = lr.data.meet_link;
-  }
+  // 2. Tải link Google Meet phòng học riêng (ưu tiên lấy link đầu tiên tìm thấy)
+  var meetLinkGlobal = '';
+  var lr = await sb.from('class_links').select('meet_link').in('class_id', classIds);
+  var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+  if (firstLink) meetLinkGlobal = firstLink.meet_link;
+
   if (!meetLinkGlobal) {
     var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
     meetLinkGlobal = lk.data ? lk.data.value : '';
@@ -555,7 +557,8 @@ function getNextDayOfWeek(dayOfWeek) {
 
 function syncAllGoogleCalendar() {
   if (!listSchedules.length) return;
-  var tenLop = classInfo ? classInfo.name : 'VinhMath';
+  var classNames = (hoSo && hoSo.class_students) ? hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ') : '';
+  var tenLop = classNames || 'VinhMath';
   
   alert('Hệ thống sẽ mở ' + listSchedules.length + ' cửa sổ Google Calendar. Em vui lòng bấm "Lưu" ở từng tab để hoàn tất đồng bộ.');
   
@@ -587,7 +590,8 @@ function syncAllGoogleCalendar() {
 
 function taiFileICS() {
   if (!listSchedules.length) return;
-  var tenLop = classInfo ? classInfo.name : 'VinhMath';
+  var classNames = (hoSo && hoSo.class_students) ? hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ') : '';
+  var tenLop = classNames || 'VinhMath';
   
   var icsLines = [
     'BEGIN:VCALENDAR',

@@ -99,13 +99,18 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'Lớp Online';
+  
+  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'Lớp Online';
+
+  var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
 
   // 1. Link Meet: ưu tiên phòng riêng của lớp, không có thì dùng link chung
   var meet = '';
-  if (hoSo.class_id) {
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', hoSo.class_id).maybeSingle();
-    if (lr.data && lr.data.meet_link) meet = lr.data.meet_link;
+  if (classIds.length > 0) {
+    var lr = await sb.from('class_links').select('meet_link').in('class_id', classIds);
+    var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+    if (firstLink) meet = firstLink.meet_link;
   }
   if (!meet) {
     var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
@@ -114,10 +119,10 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
   if (meet) { $('nutVaoMeet').href = meet; $('nutVaoMeet').style.display = 'inline-flex'; }
   else { $('chuaCoLink').style.display = 'block'; }
 
-  // 2. Thời khóa biểu lớp mình
+  // 2. Thời khóa biểu tất cả các lớp của học sinh
   var r = await sb.from('schedules')
     .select('weekday, start_time, end_time, mode, location, note, recurrence')
-    .eq('class_id', hoSo.class_id)
+    .in('class_id', classIds)
     .order('weekday').order('start_time');
   var ds = r.data || [];
   $('bangTKB').innerHTML = ds.length

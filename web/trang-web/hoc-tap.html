@@ -124,7 +124,16 @@ var BAI_HOC_MAU = [
   var hoSo = await yeuCauDangNhap();          // chưa đăng nhập → tự chuyển trang
   if (!hoSo) return;
   $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
-  $('tenLop').textContent = (hoSo.classes ? 'Lớp ' + hoSo.classes.name + ' · ' : '') + 'VinhMath';
+
+  var classIds = (hoSo.class_students || []).map(function (c) { return c.class_id; });
+  if (classIds.length === 0) {
+    $('dsBaiHoc').innerHTML = '<div class="empty card" style="grid-column:1/-1">Tài khoản của em chưa được kích hoạt lớp học. Vui lòng báo thầy Vinh.</div>';
+    $('tenLop').textContent = 'VinhMath';
+    return;
+  }
+
+  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
 
   // (Menu giờ do menu.js vẽ thống nhất cho mọi trang)
 
