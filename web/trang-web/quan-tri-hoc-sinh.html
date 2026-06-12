@@ -210,6 +210,14 @@ async function taiTatCa() {
   veBang();
 }
 
+function layBadgeMini(score) {
+  if (score >= 9.0) return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; background:linear-gradient(135deg, #fbc2eb, #a6c1ee); color:#4A148C; margin-left:6px;">👑 Kim cương</span>';
+  if (score >= 8.0) return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; background:linear-gradient(135deg, #00C9FF, #92FE9D); color:#1F1D1A; margin-left:6px;">💎 Bạch kim</span>';
+  if (score >= 6.5) return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; background:linear-gradient(135deg, #F39C12, #F1C40F); color:#fff; margin-left:6px;">🥇 Vàng</span>';
+  if (score >= 5.0) return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; background:linear-gradient(135deg, #7F8C8D, #BDC3C7); color:#2c3e50; margin-left:6px;">🥈 Bạc</span>';
+  return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; background:linear-gradient(135deg, #8D5B4C, #CD7F32); color:#fff; margin-left:6px;">🥉 Đồng</span>';
+}
+
 function veBang() {
   var lopChon = $('locLop').value;
   var tim = $('oTimTen').value.trim().toLowerCase();
@@ -241,16 +249,34 @@ function veBang() {
       : '<b style="color:' + (s.chuyenCan >= 85 ? 'var(--ok)' : s.chuyenCan >= 60 ? 'var(--warn)' : 'var(--err)') + '">' + s.chuyenCan + '%</b>';
     var diem = s.diemTB == null ? '—'
       : '<b>' + s.diemTB.toFixed(1) + '</b> <span style="color:var(--ink-3)">(' + s.soBai + ' bài)</span>';
+      
+    // Tính Rank badge cho học sinh
+    var ccScore = s.chuyenCan !== null ? s.chuyenCan / 10 : 10;
+    var hoursScore = Math.min(10, (s.tongGiay / 3600) * 0.5);
+    var quizScore = s.diemTB !== null ? s.diemTB : null;
+
+    var scoreSum = ccScore * 0.3 + hoursScore * 0.3;
+    var weightSum = 0.6;
+    if (quizScore !== null) {
+      scoreSum += quizScore * 0.4;
+      weightSum += 0.4;
+    }
+    var weightedScore = scoreSum / weightSum;
+    var badgeHtml = layBadgeMini(weightedScore);
+    
     return '<tr>' +
       '<td><div style="display:flex; align-items:center; gap:10px">' + anh +
-        '<div><b>' + s.ten + '</b><div style="font-size:.78rem; color:var(--ink-3)">' + s.username + '</div></div></div></td>' +
+        '<div><div style="display:flex; align-items:center; flex-wrap:wrap;"><b>' + s.ten + '</b>' + badgeHtml + '</div><div style="font-size:.78rem; color:var(--ink-3)">' + s.username + '</div></div></div></td>' +
       '<td>' + s.tenLop + '</td>' +
       '<td>' + truyCap + '</td>' +
       '<td class="num2">' + phienTxt + '</td>' +
       '<td class="num2">' + phutDep(s.tongGiay) + '</td>' +
       '<td class="num2">' + cc + '</td>' +
       '<td class="num2">' + diem + '</td>' +
-      '<td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="padding:4px 10px">Chi tiết</button></td>' +
+      '<td style="text-align:right; white-space:nowrap; gap:6px;">' +
+        '<a class="btn btn-primary btn-sm" href="ca-nhan.html?studentId=' + s.id + '" style="padding:4px 10px; text-decoration:none; display:inline-block; font-weight:700;">Báo cáo</a>' +
+        '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="padding:4px 10px">Log Web</button>' +
+      '</td>' +
       '</tr>';
   }).join('');
 }

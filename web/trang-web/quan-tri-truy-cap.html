@@ -8,14 +8,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
+<!-- Thư viện biểu đồ Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px 96px}
 .head{padding:40px 0 24px}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:32px}
 .metric{display:flex;align-items:center;gap:16px;padding:20px 24px}
 .metric .ic{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;flex:none}
 .metric .val{font-size:1.8rem;font-weight:700;line-height:1.2;margin-top:2px}
 .metric span{font-size:.85rem;color:var(--ink-2)}
+
+/* Chart Dashboard Layout */
+.chart-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+@media(max-width: 950px) { .chart-grid { grid-template-columns: 1fr 1fr; } .chart-grid > *:first-child { grid-column: span 2; } }
+@media(max-width: 650px) { .chart-grid { grid-template-columns: 1fr; } .chart-grid > *:first-child { grid-column: span 1; } }
+.chart-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.chart-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.chart-container { position: relative; height: 200px; width: 100%; }
+
 .table-card{padding:0;overflow:hidden}
 .table-card h2{padding:20px 24px 12px;border-bottom:1px solid var(--line)}
 .table-wrap{overflow-x:auto}
@@ -76,6 +87,28 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <!-- Bổ sung Hàng biểu đồ giao diện đo lường trực quan -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>📈 Lượng học & Truy cập 30 ngày qua</h3>
+      <div class="chart-container">
+        <canvas id="chartTrafficDaily"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>💻 Cơ cấu loại thiết bị</h3>
+      <div class="chart-container">
+        <canvas id="chartTrafficDevices"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>⏰ Khung giờ học sinh tập trung học</h3>
+      <div class="chart-container">
+        <canvas id="chartTrafficHours"></canvas>
+      </div>
+    </div>
+  </div>
+
   <div class="card table-card">
     <h2>Nhật ký học tập trực tuyến</h2>
     <div class="table-wrap">
@@ -108,23 +141,26 @@ tr:last-child td{border-bottom:none}
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
+// Biến giữ tham chiếu biểu đồ Chart.js
+var charts = { daily: null, devices: null, hours: null };
+
 // Kiểm tra quyền Admin
 (async function () {
   if (!daKetNoi()) {
-    document.getElementById('duLieuLog').innerHTML = '<tr><td colspan="8" class="empty">Chưa kết nối CSDL Supabase.</td></tr>';
+    document.getElementById('duLieuLog').innerHTML = '<tr><td colspan="8" class="empty">Chưa kết nối CSDL Supabase. Đang xem ở chế độ demo.</td></tr>';
+    mockupTrafficOffline();
     return;
   }
   
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (hoSo.role !== 'admin') {
-    // Không phải admin -> đưa về trang học tập
     window.location.href = 'lop-hoc.html';
     return;
   }
 
   // Tải dữ liệu phân tích từ Supabase
-  loadAnalytics();
+  await loadAnalytics();
 })();
 
 async function loadAnalytics() {
@@ -184,9 +220,9 @@ async function loadAnalytics() {
     return '<tr>' +
       '<td>' + hoTen + '</td>' +
       '<td class="num">' + userName + '</td>' +
-      '<td><span class="device-badge">' + row.device_type + '</span></td>' +
-      '<td>' + row.os + '</td>' +
-      '<td>' + row.browser + '</td>' +
+      '<td><span class="device-badge">' + (row.device_type || 'PC') + '</span></td>' +
+      '<td>' + (row.os || '—') + '</td>' +
+      '<td>' + (row.browser || '—') + '</td>' +
       '<td class="num">' + started + '</td>' +
       '<td>' + statusHtml + '</td>' +
       '<td class="num time-badge">' + timeStr + '</td>' +
@@ -194,6 +230,177 @@ async function loadAnalytics() {
   }).join('');
 
   document.getElementById('duLieuLog').innerHTML = html;
+
+  // Vẽ các biểu đồ đo lường lưu lượng
+  renderTrafficCharts(data);
+}
+
+function renderTrafficCharts(data) {
+  var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  
+  if (charts.daily) charts.daily.destroy();
+  if (charts.devices) charts.devices.destroy();
+  if (charts.hours) charts.hours.destroy();
+
+  // 1. Biểu đồ 1: Truy cập và thời lượng 30 ngày qua
+  var dailyCounts = {};
+  var dailyHours = {};
+  var dateLabels = [];
+  
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    var key = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+    dailyCounts[key] = 0;
+    dailyHours[key] = 0;
+    dateLabels.push(key);
+  }
+  
+  data.forEach(function(row) {
+    if (!row.started_at) return;
+    var d = new Date(row.started_at);
+    var key = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+    if (dailyCounts[key] !== undefined) {
+      dailyCounts[key]++;
+      dailyHours[key] += (row.duration_seconds || 0) / 3600;
+    }
+  });
+  
+  var countsArr = dateLabels.map(function(k) { return dailyCounts[k]; });
+  var hoursArr = dateLabels.map(function(k) { return Math.round(dailyHours[k] * 10) / 10; });
+
+  var ctxDaily = document.getElementById('chartTrafficDaily').getContext('2d');
+  charts.daily = new Chart(ctxDaily, {
+    type: 'line',
+    data: {
+      labels: dateLabels,
+      datasets: [
+        {
+          label: 'Lượt truy cập',
+          data: countsArr,
+          borderColor: '#4A6FA5',
+          backgroundColor: 'rgba(74, 111, 165, 0.07)',
+          yAxisID: 'y',
+          tension: 0.35,
+          borderWidth: 2.5
+        },
+        {
+          label: 'Giờ tự học (h)',
+          data: hoursArr,
+          borderColor: '#B5483A',
+          backgroundColor: 'rgba(181, 72, 58, 0.07)',
+          yAxisID: 'y1',
+          tension: 0.35,
+          borderWidth: 2.5
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          grid: { color: themeIsDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)' }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          grid: { drawOnChartArea: false }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // 2. Biểu đồ 2: Cơ cấu loại thiết bị
+  var deviceCounts = { Mobile: 0, Desktop: 0, Tablet: 0, Unknown: 0 };
+  data.forEach(function(row) {
+    var dev = row.device_type || 'Desktop';
+    if (deviceCounts[dev] !== undefined) deviceCounts[dev]++;
+    else deviceCounts.Unknown++;
+  });
+  
+  var ctxDev = document.getElementById('chartTrafficDevices').getContext('2d');
+  charts.devices = new Chart(ctxDev, {
+    type: 'doughnut',
+    data: {
+      labels: ['Di động', 'Máy tính (PC)', 'Tablet', 'Khác'],
+      datasets: [{
+        data: [deviceCounts.Mobile, deviceCounts.Desktop, deviceCounts.Tablet, deviceCounts.Unknown],
+        backgroundColor: ['#5E7B5E', '#4A6FA5', '#A8842C', '#6E6862'],
+        borderWidth: themeIsDark ? 2 : 1,
+        borderColor: themeIsDark ? '#201E1B' : '#FFFFFF'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // 3. Biểu đồ 3: Lượng truy cập theo khung giờ vàng
+  var hourlyCounts = Array(24).fill(0);
+  data.forEach(function(row) {
+    if (!row.started_at) return;
+    var hr = new Date(row.started_at).getHours();
+    hourlyCounts[hr]++;
+  });
+  
+  var hourLabels = Array(24).fill(0).map(function(_, i) { return i + 'h'; });
+
+  var ctxHr = document.getElementById('chartTrafficHours').getContext('2d');
+  charts.hours = new Chart(ctxHr, {
+    type: 'bar',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        data: hourlyCounts,
+        backgroundColor: 'rgba(123, 94, 167, 0.8)',
+        borderColor: '#7B5EA7',
+        borderWidth: 1.5,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: themeIsDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function mockupTrafficOffline() {
+  document.getElementById('totalVisits').textContent = '245';
+  document.getElementById('totalHours').textContent = '112.5';
+  document.getElementById('mobilePercent').textContent = '42%';
+
+  // Tạo một số dữ liệu ảo cho chế độ offline demo
+  var data = [];
+  for (var i = 0; i < 200; i++) {
+    var randDays = Math.floor(Math.random() * 30);
+    var d = new Date();
+    d.setDate(d.getDate() - randDays);
+    d.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60));
+    
+    data.push({
+      started_at: d.toISOString(),
+      duration_seconds: Math.floor(Math.random() * 7200),
+      device_type: Math.random() > 0.45 ? 'Desktop' : 'Mobile'
+    });
+  }
+  renderTrafficCharts(data);
 }
 </script>
 </body>
