@@ -50,11 +50,21 @@
     <p style="margin-top:6px">Bài nộp nằm trong Drive của thầy (thư mục <b>VINHMATH NOP BAI</b>). Chấm xong nhập điểm + lời phê, đính kèm file chấm nếu cần — học sinh thấy ngay.</p>
   </div>
 
-  <div class="filters">
+  <div class="filters" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
     <button class="tab-btn active" id="loc-cho" onclick="locTheo('submitted')">🕐 Chờ chấm (<span id="demCho">0</span>)</button>
     <button class="tab-btn" id="loc-xong" onclick="locTheo('graded')">✓ Đã chấm (<span id="demXong">0</span>)</button>
     <button class="tab-btn" id="loc-tatca" onclick="locTheo('tatca')">Tất cả</button>
     <button class="tab-btn" id="loc-test" onclick="locTheo('test')">📝 Trắc nghiệm cuối giờ (<span id="demTest">0</span>)</button>
+    <button class="tab-btn" id="loc-luyende" onclick="locTheo('luyende')">🎯 Luyện đề (<span id="demLuyenDe">0</span>)</button>
+    
+    <div style="display:flex; gap:10px; margin-left:auto; align-items:center; flex-wrap:wrap">
+      <select class="input" id="selLop" onchange="capNhatDropdownBoLoc(); locDuLieu();" style="width:160px; padding:6px 12px; font-size:0.85rem">
+        <option value="">-- Tất cả các lớp --</option>
+      </select>
+      <select class="input" id="selBai" onchange="locDuLieu()" style="width:200px; padding:6px 12px; font-size:0.85rem">
+        <option value="">-- Tất cả các bài giảng --</option>
+      </select>
+    </div>
   </div>
 
   <div id="dsBaiNop"><div class="empty card">Đang tải…</div></div>
@@ -78,6 +88,10 @@
 <script>
 var tatCa = [];
 var dsTestAttempts = [];
+var dsLuyenDeAttempts = [];
+var dsLop = [];
+var dsBai = [];
+var dsDe = [];
 var dangLoc = 'submitted';
 
 (async function () {
@@ -85,12 +99,66 @@ var dangLoc = 'submitted';
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+  
+  try {
+    var rLop = await sb.from('classes').select('id, name').order('grade').order('name');
+    dsLop = rLop.data || [];
+    
+    var rBai = await sb.from('lessons').select('id, title, class_id').order('title');
+    dsBai = rBai.data || [];
+    
+    var rDe = await sb.from('exams').select('id, title, class_id').order('title');
+    dsDe = rDe.data || [];
+    
+    $('selLop').innerHTML = '<option value="">-- Tất cả các lớp --</option>' + 
+      dsLop.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+      
+    capNhatDropdownBoLoc();
+  } catch (e) {
+    console.error('Lỗi tải dữ liệu bộ lọc:', e);
+  }
+  
   await taiDanhSach();
 })();
 
+function capNhatDropdownBoLoc() {
+  var selLopVal = $('selLop').value;
+  var selBai = $('selBai');
+  
+  if (dangLoc === 'luyende') {
+    var dsDeLoc = dsDe;
+    if (selLopVal) {
+      dsDeLoc = dsDe.filter(function (d) { return d.class_id === selLopVal || d.class_id === null; });
+    }
+    selBai.innerHTML = '<option value="">-- Tất cả đề thi --</option>' +
+      dsDeLoc.map(function (d) { return '<option value="' + d.id + '">' + d.title + '</option>'; }).join('');
+  } else {
+    var dsBaiLoc = dsBai;
+    if (selLopVal) {
+      dsBaiLoc = dsBai.filter(function (b) { return b.class_id === selLopVal; });
+    }
+    selBai.innerHTML = '<option value="">-- Tất cả bài giảng --</option>' +
+      dsBaiLoc.map(function (b) { return '<option value="' + b.id + '">' + b.title + '</option>'; }).join('');
+  }
+}
+
+function locDuLieu() {
+  veDanhSach();
+}
+
 async function taiAttempts() {
   var r = await sb.from('attempts')
-    .select('id, submitted_at, score, correct_n, total_n, lessons(title), profiles(full_name, username, class_students(classes(name)))')
+    .select('id, submitted_at, score, correct_n, total_n, lesson_id, lessons(title), profiles(full_name, username, class_students(class_id, classes(name)))')
+    .not('lesson_id', 'is', null)
+    .not('submitted_at', 'is', null)
+    .order('submitted_at', { ascending: false });
+  return r.data || [];
+}
+
+async function taiAttemptsLuyenDe() {
+  var r = await sb.from('attempts')
+    .select('id, submitted_at, score, correct_n, total_n, exam_id, exams(title), profiles(full_name, username, class_students(class_id, classes(name)))')
+    .not('exam_id', 'is', null)
     .not('submitted_at', 'is', null)
     .order('submitted_at', { ascending: false });
   return r.data || [];
@@ -98,41 +166,64 @@ async function taiAttempts() {
 
 async function taiDanhSach() {
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, lessons(title), profiles(full_name, username, class_students(classes(name)))')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, lesson_id, lessons(title), profiles(full_name, username, class_students(class_id, classes(name)))')
     .order('submitted_at', { ascending: false });
   if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
   tatCa = r.data || [];
   $('demCho').textContent = tatCa.filter(function (s) { return s.status === 'submitted'; }).length;
   $('demXong').textContent = tatCa.filter(function (s) { return s.status === 'graded'; }).length;
   
-  // Đếm số lượt nộp trắc nghiệm
-  var rTest = await sb.from('attempts').select('id', { count: 'exact', head: true }).not('submitted_at', 'is', null);
+  var rTest = await sb.from('attempts').select('id', { count: 'exact', head: true }).not('lesson_id', 'is', null).not('submitted_at', 'is', null);
   $('demTest').textContent = rTest.count || 0;
+  
+  var rLuyenDe = await sb.from('attempts').select('id', { count: 'exact', head: true }).not('exam_id', 'is', null).not('submitted_at', 'is', null);
+  $('demLuyenDe').textContent = rLuyenDe.count || 0;
   
   if (dangLoc === 'test') {
     dsTestAttempts = await taiAttempts();
+  } else if (dangLoc === 'luyende') {
+    dsLuyenDeAttempts = await taiAttemptsLuyenDe();
   }
   veDanhSach();
 }
 
 async function locTheo(loai) {
   dangLoc = loai;
-  ['cho', 'xong', 'tatca', 'test'].forEach(function (k) { $('loc-' + k).classList.remove('active'); });
-  var mapping = { submitted: 'cho', graded: 'xong', tatca: 'tatca', test: 'test' };
+  ['cho', 'xong', 'tatca', 'test', 'luyende'].forEach(function (k) { $('loc-' + k).classList.remove('active'); });
+  var mapping = { submitted: 'cho', graded: 'xong', tatca: 'tatca', test: 'test', luyende: 'luyende' };
   $('loc-' + mapping[loai]).classList.add('active');
+  
+  capNhatDropdownBoLoc();
+  $('selBai').value = '';
   
   if (loai === 'test') {
     $('dsBaiNop').innerHTML = '<div class="empty card">Đang tải kết quả trắc nghiệm…</div>';
     dsTestAttempts = await taiAttempts();
+  } else if (loai === 'luyende') {
+    $('dsBaiNop').innerHTML = '<div class="empty card">Đang tải kết quả luyện đề…</div>';
+    dsLuyenDeAttempts = await taiAttemptsLuyenDe();
   }
   veDanhSach();
 }
 
 function veDanhSach() {
+  var selectedLop = $('selLop').value;
+  var selectedSub = $('selBai').value;
+  
+  function studentInClass(hs) {
+    if (!selectedLop) return true;
+    var studentClassIds = (hs.class_students || []).map(function (cs) { return cs.class_id; });
+    return studentClassIds.includes(selectedLop);
+  }
+  
   if (dangLoc === 'test') {
-    var ds = dsTestAttempts;
+    var ds = dsTestAttempts.filter(function (s) {
+      if (!studentInClass(s.profiles)) return false;
+      if (selectedSub && s.lesson_id !== selectedSub) return false;
+      return true;
+    });
     if (!ds.length) {
-      $('dsBaiNop').innerHTML = '<div class="empty card">Chưa có học sinh nào nộp bài trắc nghiệm cuối giờ.</div>';
+      $('dsBaiNop').innerHTML = '<div class="empty card">Chưa có kết quả trắc nghiệm cuối giờ nào phù hợp bộ lọc.</div>';
       return;
     }
     $('dsBaiNop').innerHTML = ds.map(function (s) {
@@ -154,7 +245,41 @@ function veDanhSach() {
     return;
   }
 
+  if (dangLoc === 'luyende') {
+    var ds = dsLuyenDeAttempts.filter(function (s) {
+      if (!studentInClass(s.profiles)) return false;
+      if (selectedSub && s.exam_id !== selectedSub) return false;
+      return true;
+    });
+    if (!ds.length) {
+      $('dsBaiNop').innerHTML = '<div class="empty card">Chưa có kết quả luyện đề nào phù hợp bộ lọc.</div>';
+      return;
+    }
+    $('dsBaiNop').innerHTML = ds.map(function (s) {
+      var hs = s.profiles || {};
+      var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+      var lop = classNames || '—';
+      var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+      return '<div class="card sub-card">' +
+        '<div class="sub-head">' +
+          '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
+          '<span class="badge badge-ok">' + s.score.toFixed(1) + 'đ (' + s.correct_n + '/' + s.total_n + ' câu)</span>' +
+        '</div>' +
+        '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.exams ? s.exams.title : 'Đề thi đã xoá') + ' · ' + ngay + '</div>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:10px">' +
+          '<button class="btn btn-secondary btn-sm" onclick="xemChiTietTest(\'' + s.id + '\', \'' + (hs.full_name || '?').replace(/'/g, "\\'") + '\', \'' + (s.exams ? s.exams.title : '').replace(/'/g, "\\'") + '\')">👁 Xem chi tiết bài làm</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+    return;
+  }
+
   var ds = dangLoc === 'tatca' ? tatCa : tatCa.filter(function (s) { return s.status === dangLoc; });
+  ds = ds.filter(function (s) {
+    if (!studentInClass(s.profiles)) return false;
+    if (selectedSub && s.lesson_id !== selectedSub) return false;
+    return true;
+  });
   if (!ds.length) {
     $('dsBaiNop').innerHTML = '<div class="empty card">' + (dangLoc === 'submitted' ? 'Không có bài nào chờ chấm 🎉' : 'Trống.') + '</div>';
     return;
@@ -221,9 +346,9 @@ async function luuCham(id) {
   }
 }
 
-async function xemChiTietTest(attemptId, hsName, lessonTitle) {
+async function xemChiTietTest(attemptId, hsName, title) {
   $('mtTieuDe').textContent = 'Chi tiết bài trắc nghiệm — ' + hsName;
-  $('mtThongTin').textContent = 'Bài học: ' + lessonTitle;
+  $('mtThongTin').textContent = 'Nội dung: ' + title;
   $('mtDanhSach').innerHTML = '<p style="color:var(--ink-3)">Đang tải chi tiết bài làm…</p>';
   $('modalTest').style.display = 'flex';
   
