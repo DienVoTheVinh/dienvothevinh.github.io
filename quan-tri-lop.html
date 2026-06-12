@@ -442,6 +442,7 @@ async function napNutMeet(classId) {
   if (!classDangChon || classDangChon.id !== classId) return;
   if (r.data && r.data.meet_link) {
     nutCo.href = r.data.meet_link;
+    nutCo.onclick = function () { baoLopBatDau(classId, r.data.meet_link); };
     nutCo.style.display = 'inline-flex';
   } else {
     nutChua.style.display = 'inline-flex';
@@ -595,6 +596,33 @@ async function taiStudentsLop() {
       '</td>' +
       '</tr>';
   }).join('');
+}
+
+/* ----- Báo cả lớp: thầy đã vào phòng Meet ----- */
+async function baoLopBatDau(classId, meetLink) {
+  try {
+    // chống dội chuông: 20 phút gần đây đã báo lớp này thì thôi
+    var moc = new Date(Date.now() - 20 * 60000).toISOString();
+    var daBao = await sb.from('notifications').select('id', { count: 'exact', head: true })
+      .eq('kind', 'class_start').eq('class_ref', classId).gte('created_at', moc);
+    if ((daBao.count || 0) > 0) return;
+    var hs = await sb.from('class_students').select('student_id').eq('class_id', classId);
+    var tenLop = classDangChon ? classDangChon.name : 'của em';
+    var ds = (hs.data || []).map(function (x) {
+      return {
+        user_id: x.student_id,
+        title: '🔴 Lớp ' + tenLop + ' đã bắt đầu!',
+        body: 'Thầy đã vào phòng học trực tuyến. Em vào lớp ngay nhé!',
+        link: meetLink,
+        kind: 'class_start',
+        class_ref: classId
+      };
+    });
+    if (ds.length) {
+      var r2 = await sb.from('notifications').insert(ds);
+      if (!r2.error) console.log('Đã báo ' + ds.length + ' học sinh vào lớp.');
+    }
+  } catch (e) { console.error('Lỗi báo lớp bắt đầu:', e); }
 }
 
 /* ----- Nhận xét theo buổi học ----- */
