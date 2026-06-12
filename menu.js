@@ -47,8 +47,33 @@ function apDungMenu(role) {
   }).join('');
 }
 
+// Nút ☰ cho màn hình hẹp: tự chèn vào thanh đầu trang (mọi trang dùng menu.js)
+function damBaoNutMenuMobile() {
+  var nav = document.querySelector('.topbar .nav');
+  var links = document.querySelector('.navlinks');
+  if (!nav || !links || document.getElementById('navBurger')) return;
+  var nut = document.createElement('button');
+  nut.id = 'navBurger';
+  nut.className = 'nav-burger';
+  nut.innerHTML = '☰';
+  nut.setAttribute('aria-label', 'Mở menu');
+  nut.onclick = function (e) { e.stopPropagation(); links.classList.toggle('open'); };
+  nav.appendChild(nut);
+  document.addEventListener('click', function (e) {
+    if (!nav.contains(e.target)) links.classList.remove('open');
+  });
+  links.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') links.classList.remove('open');
+  });
+}
+
 // Tự chạy: lấy vai trò người đang đăng nhập rồi vẽ menu
 (async function () {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', damBaoNutMenuMobile);
+  } else {
+    damBaoNutMenuMobile();
+  }
   try {
     if (typeof daKetNoi !== 'function' || !daKetNoi()) return;
     var s = await sb.auth.getSession();
