@@ -53,7 +53,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
   <div class="cols">
     <!-- Cột trái: Form tạo đề & Soạn LaTeX -->
     <div class="card" style="display:flex; flex-direction:column; gap:16px">
-      <h3>🛠️ Tạo đề thi mới</h3>
+      <h3 id="formTitle">🛠️ Tạo đề thi mới</h3>
       <form onsubmit="parseAndSaveExam(event)">
         <div class="field">
           <label>Tiêu đề đề thi/đề luyện <b style="color:var(--accent)">*</b></label>
@@ -101,6 +101,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
           <button type="button" class="btn btn-secondary" onclick="demoParseLaTeX()" style="flex:1">🔍 Phân tích đề</button>
           <button type="submit" class="btn btn-primary" id="btnSave" style="flex:1" disabled>💾 Lưu đề thi</button>
         </div>
+        <button type="button" class="btn btn-ghost" id="btnCancelEdit" style="display:none; margin-top:10px; width:100%; color:var(--ink-3)" onclick="cancelEditExam()">❌ Huỷ chỉnh sửa (Tạo đề mới)</button>
       </form>
     </div>
 
@@ -133,6 +134,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 var listExams = [];
 var listClasses = [];
 var parsedQuestions = [];
+var editingExamId = null;
 
 (async function () {
   if (!daKetNoi()) return;
@@ -169,10 +171,10 @@ async function taiDanhSachDe() {
     var state = e.published ? '<span class="badge badge-ok">Đang mở</span>' : '<span class="badge badge-mute">Nháp</span>';
     var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
     
-    return '<div class="card" style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px">' +
+    return '<div class="card" style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer" title="Bấm vào để xem và chỉnh sửa" onclick="loadExamForEdit(\'' + e.id + '\')">' +
       '<div>' +
         '<div style="display:flex; gap:8px; align-items:center">' +
-          '<b style="font-size:1.05rem">' + e.title + '</b>' +
+          '<b style="font-size:1.05rem; color:var(--accent); text-decoration:underline">' + e.title + '</b>' +
           state +
         '</div>' +
         '<div style="font-size:.82rem; color:var(--ink-2); margin-top:4px">' +
@@ -180,7 +182,7 @@ async function taiDanhSachDe() {
         '</div>' +
       '</div>' +
       '<div>' +
-        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
+        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="event.stopPropagation(); xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
       '</div>' +
       '</div>';
   }).join('');
@@ -383,6 +385,94 @@ function escapeHTML(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+async function loadExamForEdit(examId) {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  $('formTitle').textContent = '⏳ Đang tải đề thi...';
+  
+  try {
+    var r = await sb.from('exams').select('*').eq('id', examId).single();
+    if (r.error || !r.data) {
+      alert('Không tìm thấy đề thi.');
+      cancelEditExam();
+      return;
+    }
+    var exam = r.data;
+    
+    editingExamId = exam.id;
+    $('formTitle').textContent = '🛠️ Chỉnh sửa đề thi';
+    $('btnSave').textContent = '💾 Cập nhật đề thi';
+    $('btnCancelEdit').style.display = 'block';
+    
+    $('exTitle').value = exam.title || '';
+    $('exLop').value = exam.class_id || '';
+    $('exDuration').value = exam.duration_minutes || 90;
+    
+    $('exOpens').value = exam.opens_at ? new Date(new Date(exam.opens_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
+    $('exCloses').value = exam.closes_at ? new Date(new Date(exam.closes_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
+    
+    $('exShuffle').checked = !!exam.shuffle;
+    $('exPublished').checked = !!exam.published;
+    
+    var rQ = await sb.from('exam_questions')
+      .select('sort, questions(id, content_latex, choices, solution_latex)')
+      .eq('exam_id', examId)
+      .order('sort');
+      
+    var questions = (rQ.data || []).map(function (eq) { return eq.questions; }).filter(Boolean);
+    var latexArr = questions.map(function (q) {
+      var env = 'ex';
+      var choiceText = '';
+      var isShort = q.choices && q.choices.length === 1 && q.choices[0].key === 'short';
+      var isTF = q.choices && q.choices.length === 4 && q.choices[0].key === 'a';
+      
+      if (isShort) {
+        env = 'bt';
+      } else if (isTF) {
+        env = 'ex';
+        choiceText = '\n\\choiceTF\n' + q.choices.map(function (c) {
+          var truePrefix = c.correct ? '\\True ' : '';
+          return '  {' + truePrefix + c.key + ') ' + c.latex + '}';
+        }).join('\n');
+      } else if (q.choices && q.choices.length > 0) {
+        env = 'ex';
+        choiceText = '\n\\choice\n' + q.choices.map(function (c) {
+          var truePrefix = c.correct ? '\\True ' : '';
+          return '  {' + truePrefix + c.key + '. ' + c.latex + '}';
+        }).join('\n');
+      }
+      
+      var solText = q.solution_latex ? '\n\\loigiai{\n' + q.solution_latex + '\n}' : '';
+      return '\\begin{' + env + '}\n' + q.content_latex + choiceText + solText + '\n\\end{' + env + '}';
+    });
+    
+    $('exLatex').value = latexArr.join('\n\n');
+    demoParseLaTeX();
+  } catch (err) {
+    alert('Lỗi tải đề thi: ' + err.message);
+    cancelEditExam();
+  }
+}
+
+function cancelEditExam() {
+  editingExamId = null;
+  $('formTitle').textContent = '🛠️ Tạo đề thi mới';
+  $('btnSave').textContent = '💾 Lưu đề thi';
+  $('btnCancelEdit').style.display = 'none';
+  
+  $('exTitle').value = '';
+  $('exLop').value = '';
+  $('exDuration').value = '90';
+  $('exOpens').value = '';
+  $('exCloses').value = '';
+  $('exShuffle').checked = true;
+  $('exPublished').checked = true;
+  $('exLatex').value = '';
+  $('vungPreview').style.display = 'none';
+  parsedQuestions = [];
+  $('btnSave').disabled = true;
+}
+
 async function parseAndSaveExam(e) {
   e.preventDefault();
   if (!parsedQuestions.length) {
@@ -402,25 +492,44 @@ async function parseAndSaveExam(e) {
   btn.disabled = true; btn.textContent = '⏳ Đang lưu đề thi...';
   
   try {
-    // 1. Tạo Đề thi trong bảng exams
-    var rExam = await sb.from('exams').insert({
-      title: title,
-      class_id: classId,
-      duration_minutes: duration,
-      opens_at: opens,
-      closes_at: closes,
-      shuffle: shuffle,
-      published: published
-    }).select('id').single();
+    var examId = editingExamId;
     
-    if (rExam.error) throw new Error(rExam.error.message);
-    var examId = rExam.data.id;
+    if (editingExamId) {
+      // 1. Cập nhật Đề thi trong bảng exams
+      var rExam = await sb.from('exams').update({
+        title: title,
+        class_id: classId,
+        duration_minutes: duration,
+        opens_at: opens,
+        closes_at: closes,
+        shuffle: shuffle,
+        published: published
+      }).eq('id', editingExamId);
+      
+      if (rExam.error) throw new Error(rExam.error.message);
+      
+      // 2. Xóa các câu hỏi cũ liên kết với đề thi này
+      var rDel = await sb.from('exam_questions').delete().eq('exam_id', editingExamId);
+      if (rDel.error) throw new Error('Lỗi dọn dẹp câu hỏi cũ: ' + rDel.error.message);
+    } else {
+      // 1. Tạo Đề thi mới trong bảng exams
+      var rExam = await sb.from('exams').insert({
+        title: title,
+        class_id: classId,
+        duration_minutes: duration,
+        opens_at: opens,
+        closes_at: closes,
+        shuffle: shuffle,
+        published: published
+      }).select('id').single();
+      
+      if (rExam.error) throw new Error(rExam.error.message);
+      examId = rExam.data.id;
+    }
     
-    // 2. Lưu các câu hỏi vào bảng questions và liên kết
+    // 3. Lưu các câu hỏi mới vào bảng questions và liên kết
     for (var i = 0; i < parsedQuestions.length; i++) {
       var q = parsedQuestions[i];
-      
-      // Tạo mã câu hỏi ngẫu nhiên làm source_id
       var sourceId = 'EX-' + Date.now().toString().slice(-6) + '-' + i;
       
       var rQ = await sb.from('questions').insert({
@@ -428,12 +537,11 @@ async function parseAndSaveExam(e) {
         content_latex: q.content_latex,
         choices: q.choices,
         solution_latex: q.solution_latex || null,
-        difficulty: 'TH' // Mặc định trung bình
+        difficulty: 'TH'
       }).select('id').single();
       
       if (rQ.error) throw new Error('Lỗi lưu câu hỏi ' + (i+1) + ': ' + rQ.error.message);
       
-      // Liên kết với exam_questions
       var rLink = await sb.from('exam_questions').insert({
         exam_id: examId,
         question_id: rQ.data.id,
@@ -442,20 +550,13 @@ async function parseAndSaveExam(e) {
       if (rLink.error) throw new Error('Lỗi liên kết câu hỏi ' + (i+1) + ': ' + rLink.error.message);
     }
     
-    alert('✓ Lưu đề thi "' + title + '" thành công! Học sinh đã có thể luyện tập.');
-    
-    // Reset form
-    $('exTitle').value = '';
-    $('exLatex').value = '';
-    $('vungPreview').style.display = 'none';
-    parsedQuestions = [];
-    btn.disabled = true;
-    
+    alert('✓ ' + (editingExamId ? 'Cập nhật' : 'Lưu') + ' đề thi "' + title + '" thành công!');
+    cancelEditExam();
     await taiDanhSachDe();
   } catch (err) {
     alert('Lỗi: ' + err.message);
   }
-  btn.disabled = false; btn.textContent = '💾 Lưu đề thi';
+  btn.disabled = false; btn.textContent = editingExamId ? '💾 Cập nhật đề thi' : '💾 Lưu đề thi';
 }
 </script>
 </body>
