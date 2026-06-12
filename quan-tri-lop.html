@@ -228,6 +228,12 @@
       </div>
 
       <div class="field">
+        <label>📄 Tài liệu LaTeX của bài (tự biên dịch trên màn hình học sinh)</label>
+        <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code LaTeX (ex_test)… Học sinh mở tab Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+        <small style="color:var(--ink-3);margin-top:4px;display:block">Nếu điền ô này, nó được <b>ưu tiên</b> hiển thị thay cho PDF chọn từ kho bên dưới.</small>
+      </div>
+
+      <div class="field">
         <label>Tài liệu đọc & Bài tập kèm theo (Dropdown kho PDF)</label>
         <select class="input" id="bhTaiLieu">
           <option value="">-- Không đính kèm tài liệu --</option>
@@ -806,6 +812,7 @@ async function moFormSua(id) {
   $('bhChuyenDe').value = bh.topic_id || '';
   $('bhYoutube').value = bh.youtube_url || '';
   $('bhTaiLieu').value = bh.document_id || '';
+  $('bhLatexDoc').value = bh.latex_content || '';
   $('bhTestTaiLieu').value = bh.test_document_id || '';
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort || 0;
@@ -828,6 +835,7 @@ async function luuBaiHoc(e) {
     topic_id: $('bhChuyenDe').value || null,
     youtube_url: $('bhYoutube').value.trim() || null,
     document_id: $('bhTaiLieu').value || null,
+    latex_content: $('bhLatexDoc').value.trim() || null,
     test_document_id: $('bhTestTaiLieu').value || null,
     note: $('bhGhiChu').value.trim() || null,
     sort: parseInt($('bhSapXep').value) || 0,
