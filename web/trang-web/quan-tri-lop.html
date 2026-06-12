@@ -260,6 +260,11 @@
       </div>
 
       <div class="field">
+        <label>⏱ Thời gian làm bài mặc định (phút)</label>
+        <input type="number" class="input" id="bhTestDuration" value="15" min="1">
+      </div>
+
+      <div class="field">
         <label>Ghi chú bài học</label>
         <textarea class="input" id="bhGhiChu" rows="2" placeholder="Dặn dò học sinh làm bài tập..." style="resize:vertical"></textarea>
       </div>
@@ -277,6 +282,27 @@
         </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Kích hoạt Test -->
+<div class="modal" id="modalKichHoatTest" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
+  <div class="modal-content" style="max-width: 400px; padding: 24px;">
+    <button onclick="$('modalKichHoatTest').style.display='none'" style="position:absolute;top:12px;right:14px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+    <h3 style="margin-top:0;margin-bottom:8px">⏱ Kích hoạt kiểm tra cuối giờ</h3>
+    <p style="font-size:0.88rem;color:var(--ink-2);margin-bottom:16px;line-height:1.4" id="khtTenBai"></p>
+    
+    <input type="hidden" id="khtLessonId">
+    
+    <div class="field" style="margin-bottom:20px">
+      <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px">Thời gian làm bài (phút)</label>
+      <input type="number" class="input" id="khtDuration" value="15" min="1" style="width:100%">
+    </div>
+    
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-secondary btn-sm" onclick="$('modalKichHoatTest').style.display='none'">Huỷ</button>
+      <button class="btn btn-primary btn-sm" id="btnXacNhanKichHoat" onclick="xacNhanKichHoatTest()">🚀 Kích hoạt ngay</button>
+    </div>
   </div>
 </div>
 
@@ -546,15 +572,34 @@ async function taiLessonsLop() {
   }).join('');
 }
 
-function moKichHoatTest(lessonId, title) {
-  var durationStr = prompt('Nhập thời gian kiểm tra cuối buổi cho bài "' + title + '" (phút):', '15');
-  if (durationStr === null) return;
-  var duration = parseInt(durationStr);
+async function moKichHoatTest(lessonId, title) {
+  $('khtLessonId').value = lessonId;
+  $('khtTenBai').textContent = 'Bài giảng: ' + title;
+  
+  var r = await sb.from('lessons').select('test_duration_minutes').eq('id', lessonId).single();
+  var duration = (r.data && r.data.test_duration_minutes) ? r.data.test_duration_minutes : 15;
+  
+  $('khtDuration').value = duration;
+  $('modalKichHoatTest').style.display = 'flex';
+}
+
+async function xacNhanKichHoatTest() {
+  var lessonId = $('khtLessonId').value;
+  var duration = parseInt($('khtDuration').value);
   if (!duration || duration <= 0) {
     alert('Thời gian không hợp lệ.');
     return;
   }
-  kichHoatTest(lessonId, duration);
+  
+  var btn = $('btnXacNhanKichHoat');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang kích hoạt...';
+  
+  await kichHoatTest(lessonId, duration);
+  
+  btn.disabled = false;
+  btn.textContent = '🚀 Kích hoạt ngay';
+  $('modalKichHoatTest').style.display = 'none';
 }
 
 async function kichHoatTest(lessonId, duration) {
@@ -980,6 +1025,7 @@ function moFormThemBaiGiang() {
   $('formBaiHoc').reset();
   anhDaCo = []; veAnhHienCo();
   $('bhId').value = '';
+  $('bhTestDuration').value = '15';
   $('modalTieuDe').textContent = 'Thêm bài giảng mới';
   $('nutXoa').style.display = 'none';
   $('bhSapXep').value = '0';
@@ -1002,6 +1048,7 @@ async function moFormSua(id) {
   $('bhTaiLieu').value = bh.document_id || '';
   $('bhLatexDoc').value = bh.latex_content || '';
   $('bhTestTaiLieu').value = bh.test_document_id || '';
+  $('bhTestDuration').value = bh.test_duration_minutes || 15;
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort || 0;
   $('bhXuatBan').checked = !!bh.published;
@@ -1025,6 +1072,7 @@ async function luuBaiHoc(e) {
     document_id: $('bhTaiLieu').value || null,
     latex_content: $('bhLatexDoc').value.trim() || null,
     test_document_id: $('bhTestTaiLieu').value || null,
+    test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
     note: $('bhGhiChu').value.trim() || null,
     sort: parseInt($('bhSapXep').value) || 0,
     published: $('bhXuatBan').checked
