@@ -299,7 +299,7 @@ async function guiBaiNop() {
 /* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
 async function taiMucLuc() {
   var r = await sb.from('lessons')
-    .select('id, title, sort, locked, topics(name), classes(name)')
+    .select('id, title, sort, locked, topics(name, color), classes(name)')
     .order('sort', { ascending: false });
   var ds = r.data || [];
   if (!ds.length) {
@@ -307,14 +307,15 @@ async function taiMucLuc() {
     return;
   }
   // Gom nhóm theo chuyên đề
-  var nhom = {};
+  var nhom = {}, mauNhom = {};
   ds.forEach(function (b) {
     var ten = b.topics ? b.topics.name : 'Bài giảng khác';
+    if (b.topics && b.topics.color) mauNhom[ten] = b.topics.color;
     (nhom[ten] = nhom[ten] || []).push(b);
   });
   var html = '';
   Object.keys(nhom).forEach(function (ten) {
-    html += '<div class="sb-group">' + ten + '</div>';
+    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + ten + '</div>';
     html += nhom[ten].map(function (b) {
       var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
       return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc.html?id=' + b.id + '">' + b.title + khoa + '</a>';
@@ -328,7 +329,7 @@ function batTatMucLuc() { $('mucLuc').classList.toggle('open'); }
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, images, locked, document_id, test_document_id, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, youtube_url, note, images, locked, latex_content, document_id, test_document_id, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -405,7 +406,7 @@ function renderBaiHoc() {
 
   // ---- Khung phải: 4 loại nội dung ----
   var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
-  var coTaiLieu = !!(details.documents && details.documents.file_path);
+  var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
   var coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
@@ -423,6 +424,53 @@ function renderBaiHoc() {
     return;
   }
   chonNoiDung(coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test')));
+}
+
+/* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
+var pdfTaiLieuTex = null;
+var dangBienDichTex = false;
+
+async function hienTaiLieuTex() {
+  var than = $('thanNoiDung');
+  if (pdfTaiLieuTex) { veTaiLieuTex(); return; }
+  than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
+    '<div class="no-content"><div class="ic">⏳</div><h3>Đang biên dịch tài liệu…</h3><p>Khoảng 5–20 giây, em chờ chút nhé.</p></div>';
+  if (dangBienDichTex) return;
+  dangBienDichTex = true;
+  try {
+    var tex = details.latex_content;
+    if (!/\\documentclass/.test(tex)) {
+      var sty = '';
+      try { var rs = await fetch('ex_test.sty'); if (rs.ok) sty = await rs.text(); } catch (e) {}
+      tex = (sty ? '\\begin{filecontents*}{ex_test.sty}\n' + sty + '\n\\end{filecontents*}\n' : '') +
+        '\\documentclass[12pt]{article}\\usepackage[utf8]{vietnam}\\usepackage{amsmath,amssymb}\\usepackage[margin=2cm]{geometry}' +
+        (sty ? '\\usepackage{ex_test}' : '') +
+        '\n\\begin{document}\n' + tex + '\n\\end{document}';
+    }
+    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+    if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
+    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+      pdfTaiLieuTex = r.data;
+      veTaiLieuTex();
+    } else {
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
+      var dongLoi = log.split('\n').filter(function (l) { return l.indexOf('!') === 0; }).slice(0, 4).join('\n');
+      than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
+        '<div class="no-content"><div class="ic">⚠️</div><h3>Tài liệu chưa biên dịch được</h3><p style="font-family:monospace;font-size:.78rem;white-space:pre-wrap;max-width:480px">' + (dongLoi || 'Em báo thầy kiểm tra lại nhé.') + '</p></div>';
+    }
+  } catch (e) {
+    than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
+      '<div class="no-content"><div class="ic">⚠️</div><h3>Lỗi biên dịch</h3><p>' + e.message + '</p></div>';
+  }
+  dangBienDichTex = false;
+}
+
+function veTaiLieuTex() {
+  var u = URL.createObjectURL(pdfTaiLieuTex);
+  var than = $('thanNoiDung');
+  than.innerHTML = thanhCongCu('📄 Tài liệu bài học (PDF)', null) +
+    '<div style="padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--line)"><a class="btn btn-primary btn-sm" style="padding:4px 12px" download="tai-lieu-bai-hoc.pdf" href="' + u + '">💾 Tải PDF về máy</a></div>' +
+    '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
 }
 
 async function chonNoiDung(loai) {
@@ -443,9 +491,13 @@ async function chonNoiDung(loai) {
     renderTheoryReading();
   } else if (loai === 'tailieu') {
     $('swTaiLieu').classList.add('active');
-    var u = buildPdfUrl(details.documents.file_path);
-    than.innerHTML = thanhCongCu('📄 ' + details.documents.title, u) +
-      '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
+    if (details.latex_content) {
+      await hienTaiLieuTex();
+    } else {
+      var u = buildPdfUrl(details.documents.file_path);
+      than.innerHTML = thanhCongCu('📄 ' + details.documents.title, u) +
+        '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
+    }
   } else if (loai === 'bang') {
     $('swBang').classList.add('active');
     var dsAnh = details.images || [];

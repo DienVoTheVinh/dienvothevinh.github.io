@@ -159,6 +159,7 @@
     <div class="exam-timer" id="wkTimer">00:00:00</div>
     <div>
       <button class="btn btn-primary btn-sm" id="wkSubmitBtn" onclick="nopBaiExam()">Nộp bài thi</button>
+      <button class="btn btn-secondary btn-sm" id="wkRetryBtn" onclick="lamLuotMoi()" style="display:none">🔄 Làm lượt mới</button>
       <button class="btn btn-ghost btn-sm" id="wkExitBtn" onclick="exitWorkspace()" style="display:none">Thoát</button>
     </div>
   </header>
@@ -335,6 +336,7 @@
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
 <script src="menu.js"></script>
+<script src="latex-view.js"></script>
 <script src="analytics.js"></script>
 <script>
 var listExams = [];
@@ -391,31 +393,35 @@ async function taiDanhSachDe(classIds) {
   
   // Lấy lịch sử làm bài thi của học sinh
   var rAttempts = await sb.from('attempts')
-    .select('id, exam_id, score, submitted_at')
+    .select('id, exam_id, score, submitted_at, started_at')
     .eq('student_id', studentInfo.id)
     .not('exam_id', 'is', null);
   
-  var attemptsMap = {};
+  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat }
   (rAttempts.data || []).forEach(function (att) {
-    // Lưu lượt làm bài mới nhất (hoặc đã nộp)
-    if (!attemptsMap[att.exam_id] || att.submitted_at) {
-      attemptsMap[att.exam_id] = att;
+    var th = attemptsMap[att.exam_id];
+    if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null };
+    if (!th.latest || new Date(att.started_at) > new Date(th.latest.started_at)) th.latest = att;
+    if (att.submitted_at) {
+      th.soLuotNop++;
+      if (th.diemCaoNhat === null || att.score > th.diemCaoNhat) th.diemCaoNhat = att.score;
     }
   });
 
   $('dsDeThi').innerHTML = listExams.map(function (e) {
     var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
-    var attempt = attemptsMap[e.id];
+    var tk = attemptsMap[e.id];
     var badgeHTML = '<span class="badge badge-mute">Chưa làm</span>';
     var actionBtnText = 'Làm bài';
     
-    if (attempt) {
-      if (attempt.submitted_at) {
-        badgeHTML = '<span class="badge badge-ok">Hoàn thành · ' + attempt.score.toFixed(1) + 'đ</span>';
-        actionBtnText = 'Xem kết quả';
-      } else {
-        badgeHTML = '<span class="badge badge-warn">Đang làm dở</span>';
+    if (tk) {
+      if (tk.latest && !tk.latest.submitted_at) {
+        badgeHTML = '<span class="badge badge-warn">Đang làm dở (lượt ' + (tk.soLuotNop + 1) + ')</span>';
         actionBtnText = 'Làm tiếp';
+      } else if (tk.soLuotNop > 0) {
+        badgeHTML = '<span class="badge badge-ok">Cao nhất · ' + tk.diemCaoNhat.toFixed(1) + 'đ' +
+          (tk.soLuotNop > 1 ? ' (' + tk.soLuotNop + ' lượt)' : '') + '</span>';
+        actionBtnText = 'Xem / Làm lại';
       }
     }
     
@@ -460,6 +466,8 @@ async function startExam(examId) {
     .select('id, score, started_at, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
     .eq('exam_id', examId)
     .eq('student_id', studentInfo.id)
+    .order('started_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
     
   var att = rAtt.data;
@@ -476,6 +484,7 @@ async function startExam(examId) {
   
   // 2. Chưa làm hoặc làm dở -> Bắt đầu làm bài
   $('wkExitBtn').style.display = 'none';
+  $('wkRetryBtn').style.display = 'none';
   $('wkSubmitBtn').style.display = 'inline-flex';
   
   if (att) {
@@ -577,7 +586,7 @@ function renderExamQuestions(isSubmitted) {
         
         return '<div class="choice-row choice-' + q.id + stateClass + '" data-key="' + c.key + '" onclick="chonDapAnExam(\'' + q.id + '\', \'' + c.key + '\')">' +
           '<span class="choice-key">' + c.key + '</span>' +
-          '<span>' + c.latex + '</span>' +
+          '<span>' + latexRaHTML(c.latex) + '</span>' +
           '</div>';
       }).join('') + '</div>';
     } else if (isPartII) {
@@ -612,7 +621,7 @@ function renderExamQuestions(isSubmitted) {
         var onclickFalse = isSubmitted ? '' : 'onclick="chonDapAnTF(\'' + q.id + '\', \'' + c.key + '\', \'S\')"';
         
         choicesHTML += '<div class="tf-row">' +
-          '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + c.latex + '</div>' +
+          '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + latexRaHTML(c.latex) + '</div>' +
           '<div class="tf-btns">' +
             '<button class="' + btnTrueClass + '" ' + onclickTrue + '>Đúng</button>' +
             '<button class="' + btnFalseClass + '" ' + onclickFalse + '>Sai</button>' +
@@ -672,13 +681,13 @@ function renderExamQuestions(isSubmitted) {
     if (isSubmitted) {
       var solHTML = '<div class="sol-panel">' +
         '<div style="font-weight: 700; color: var(--accent); margin-bottom: 8px;">📖 Hướng dẫn giải chi tiết:</div>' +
-        '<div>' + (q.solution_latex || 'Chưa cập nhật lời giải chi tiết cho câu hỏi này.') + '</div>' +
+        '<div>' + (q.solution_latex ? latexRaHTML(q.solution_latex) : 'Chưa cập nhật lời giải chi tiết cho câu hỏi này.') + '</div>' +
         '</div>';
         
       return partHeaderHTML +
         '<div class="q-box-result" id="qBox-' + q.id + '">' +
           '<div>' +
-            '<div class="q-title">' + questionNumText + ': ' + q.content_latex + '</div>' +
+            '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
             choicesHTML +
           '</div>' +
           solHTML +
@@ -686,7 +695,7 @@ function renderExamQuestions(isSubmitted) {
     } else {
       return partHeaderHTML +
         '<div class="q-box" id="qBox-' + q.id + '">' +
-          '<div class="q-title">' + questionNumText + ': ' + q.content_latex + '</div>' +
+          '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
           choicesHTML +
         '</div>';
     }
@@ -913,6 +922,7 @@ function showExamResults() {
   
   $('wkSubmitBtn').style.display = 'none';
   $('wkExitBtn').style.display = 'inline-flex';
+  $('wkRetryBtn').style.display = 'inline-flex';
   $('btnPdfSolution').style.display = 'inline-flex';
   
   $('wkTimer').textContent = currentAttempt.score.toFixed(2) + 'đ';
@@ -923,6 +933,28 @@ function showExamResults() {
   
   renderExamQuestions(true);
   renderExamNav(true);
+}
+
+async function lamLuotMoi() {
+  if (!confirm('Bắt đầu lượt làm mới? Kết quả các lượt trước vẫn được lưu lại.')) return;
+  var rNew = await sb.from('attempts').insert({
+    student_id: studentInfo.id,
+    exam_id: currentExam.id,
+    started_at: new Date().toISOString()
+  }).select('id, started_at').single();
+  if (rNew.error) { alert('Không tạo được lượt mới: ' + rNew.error.message); return; }
+  currentAttempt = rNew.data;
+  currentAttempt.attempt_answers = [];
+  selectedAnswers = {};
+  timeLeftSeconds = currentExam.duration_minutes * 60;
+  $('wkSubmitBtn').style.display = 'inline-flex';
+  $('wkExitBtn').style.display = 'none';
+  $('wkRetryBtn').style.display = 'none';
+  $('btnPdfSolution').style.display = 'none';
+  $('wkTitle').textContent = currentExam.title;
+  renderExamQuestions(false);
+  renderExamNav(false);
+  runTimer();
 }
 
 function exitWorkspace() {
@@ -1047,6 +1079,8 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 % --- GÓI TRẮC NGHIỆM EX_TEST ---
 \\usepackage[loigiai]{ex_test} 
 \\font\\damEX=ugqb8v at 13pt
+\\def\\iconVD{\\faEdit}                      % Icon trước chữ "Câu"
+\\def\\mauDC{vmInk}                          % Màu dấu kết thúc lời giải
 \\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Lời giải.}
 \\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} \\iconVD Câu}
 \\def\\qedEX{\\color{\\mauDC}\\ensuremath{\\square}}
@@ -1185,7 +1219,7 @@ async function generateAndCompilePDF() {
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
   
-  var preamble = layPreamble();
+  var preamble = PREAMBLE_MAC_DINH;
   
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
   preamble = preamble.replace(/\\documentclass\[.*\]\{book\}/, '\\documentclass[' + classOpt + ']{book}');
@@ -1318,6 +1352,23 @@ function downloadCompiledPDF() {
   link.download = currentExam.title + (pdfCompileMode === 'solution' ? '_loi_giai' : '') + '.pdf';
   link.click();
 }
+
+// Lưới an toàn: mọi lỗi khi sinh PDF phải hiện ra, không được treo vòng xoay
+var _gocSinhPDF = generateAndCompilePDF;
+generateAndCompilePDF = async function () {
+  try {
+    await _gocSinhPDF.apply(this, arguments);
+  } catch (e) {
+    console.error('Lỗi sinh PDF:', e);
+    var kh = $('pdfIframeContainer');
+    if (kh) {
+      kh.innerHTML = '<div class="card" style="padding:16px;border-color:var(--err);color:var(--err);margin-top:16px">Lỗi khi tạo PDF: ' + e.message + '</div>';
+      kh.style.display = 'block';
+    }
+    var ld = $('pdfLoading');
+    if (ld) ld.style.display = 'none';
+  }
+};
 
 function dongPdfPreview() {
   $('modalPdfPreview').style.display = 'none';

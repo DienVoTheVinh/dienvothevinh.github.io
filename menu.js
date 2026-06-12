@@ -14,12 +14,17 @@ function apDungMenu(role) {
   if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
     // ----- MENU CỦA THẦY / TRỢ GIẢNG -----
     muc = [
-      ['quan-tri-lop.html', 'Lớp học'],
+      ['quan-tri-lop.html', 'Lớp học']
+    ];
+    if (role === 'admin' || role === 'teacher') {
+      muc.push(['quan-tri-hoc-sinh.html', 'Học sinh']);
+    }
+    muc.push(
       ['quan-tri-lich.html', 'Lịch học'],
       ['quan-tri-de.html', 'Luyện đề'],
       ['quan-tri-cham-bai.html', 'Chấm bài'],
       ['ca-nhan.html', 'Cá nhân']
-    ];
+    );
     if (role === 'admin') {
       muc.push(['quan-tri-truy-cap.html', 'Giám sát']);
     }

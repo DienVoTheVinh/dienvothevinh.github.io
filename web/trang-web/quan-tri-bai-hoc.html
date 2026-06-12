@@ -149,7 +149,12 @@
         </div>
 
         <div class="field">
-          <label>Hoặc tải file PDF có sẵn từ máy (không qua LaTeX)</label>
+          <label>📄 Tài liệu LaTeX của bài (tự biên dịch trên màn hình học sinh)</label>
+        <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code LaTeX (ex_test)… Học sinh mở mục Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+        <small style="color:var(--ink-3);margin-top:4px;display:block">Nếu điền ô này, nó được ưu tiên hiển thị thay cho PDF chọn từ kho bên trên.</small>
+      </div>
+      <div class="field">
+        <label>Hoặc tải file PDF có sẵn từ máy (không qua LaTeX)</label>
           <input type="file" class="input" id="bhPdfFile" accept=".pdf,application/pdf" style="padding:8px">
           <small style="color:var(--ink-3); margin-top:4px; display:block">
             Nếu chọn file ở đây, hệ thống tự đưa file vào kho tài liệu và đính kèm <b>thay cho</b> lựa chọn bên trên.
@@ -252,6 +257,10 @@
         <div class="field" style="margin-bottom:0">
           <label style="font-size:0.8rem">Thứ tự</label>
           <input type="number" class="input" id="cdSort" value="0" style="padding:6px 10px; font-size:0.9rem">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Màu sắc</label>
+          <input type="color" class="input" id="cdColor" value="#5E7B5E" style="padding:2px 4px; height:35px; cursor:pointer">
         </div>
       </div>
       
@@ -411,6 +420,10 @@ async function taiDuLieuDanhMuc() {
 }
 
 // --- QUẢN LÝ CHUYÊN ĐỀ DỘNG ---
+if (location.hash === '#chuyende') {
+  window.addEventListener('load', function () { setTimeout(function () { moQuanLyChuyenDe(); }, 800); });
+}
+
 function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = 'all';
@@ -429,18 +442,25 @@ async function napDropdownChuyenDe() {
   
   var formCdSelect = $('bhChuyenDe');
   formCdSelect.innerHTML = '<option value="">-- Chọn chuyên đề --</option>';
-  tatCaChuyenDe.forEach(function(c) {
-    var opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = '[' + c.code + '] ' + c.name + ' (Khối ' + c.grade + ')';
-    formCdSelect.appendChild(opt);
+  var theoKhoi = {};
+  tatCaChuyenDe.forEach(function (c) { (theoKhoi[c.grade] = theoKhoi[c.grade] || []).push(c); });
+  Object.keys(theoKhoi).sort(function (a, b) { return b - a; }).forEach(function (g) {
+    var og = document.createElement('optgroup');
+    og.label = 'Khối ' + g;
+    theoKhoi[g].forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = '[' + c.code + '] ' + c.name;
+      og.appendChild(opt);
+    });
+    formCdSelect.appendChild(og);
   });
 }
 
 async function taiBangChuyenDe() {
   var gradeFilter = $('locCdGrade').value;
   
-  var query = sb.from('topics').select('id, name, code, grade, sort').order('sort');
+  var query = sb.from('topics').select('id, name, code, grade, sort, color').order('sort');
   if (gradeFilter !== 'all') {
     query = query.eq('grade', parseInt(gradeFilter));
   }
@@ -457,7 +477,7 @@ async function taiBangChuyenDe() {
   tbody.innerHTML = topics.map(function(t) {
     return '<tr>' +
            '  <td style="padding:8px"><b>' + t.code + '</b></td>' +
-           '  <td style="padding:8px">' + t.name + '</td>' +
+           '  <td style="padding:8px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + (t.color || 'var(--ink-3)') + ';margin-right:7px;vertical-align:middle"></span>' + t.name + '</td>' +
            '  <td style="padding:8px" class="num">Lớp ' + t.grade + '</td>' +
            '  <td style="padding:8px" class="num">' + t.sort + '</td>' +
            '  <td style="padding:8px; text-align:right;">' +
@@ -480,7 +500,7 @@ async function luuChuyenDe() {
     return;
   }
   
-  var data = { name: name, code: code, grade: grade, sort: sort };
+  var data = { name: name, code: code, grade: grade, sort: sort, color: $('cdColor').value };
   
   var r;
   if (id) {
@@ -498,7 +518,7 @@ async function luuChuyenDe() {
 }
 
 async function suaChuyenDe(id) {
-  var r = await sb.from('topics').select('id, name, code, grade, sort').eq('id', id).single();
+  var r = await sb.from('topics').select('id, name, code, grade, sort, color').eq('id', id).single();
   if (r.error) {
     alert('Lỗi tải dữ liệu chuyên đề: ' + r.error.message);
     return;
@@ -509,6 +529,7 @@ async function suaChuyenDe(id) {
   $('cdCode').value = t.code;
   $('cdGrade').value = t.grade;
   $('cdSort').value = t.sort;
+  $('cdColor').value = t.color || '#5E7B5E';
   
   $('cdFormTitle').textContent = 'Chỉnh sửa chuyên đề';
   $('btnCancelCd').style.display = 'inline-flex';
@@ -532,6 +553,7 @@ function resetCdForm() {
   $('cdCode').value = '';
   $('cdGrade').value = '12';
   $('cdSort').value = '0';
+  $('cdColor').value = '#5E7B5E';
   
   $('cdFormTitle').textContent = 'Thêm chuyên đề mới';
   $('btnCancelCd').style.display = 'none';
@@ -539,7 +561,7 @@ function resetCdForm() {
 
 async function taiDanhSachBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, theory_sections, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, theory_sections, latex_content, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
     .order('sort', { ascending: false })
     .order('created_at', { ascending: false });
   
@@ -848,6 +870,7 @@ function moFormSua(id) {
   $('bhChuyenDe').value = bh.topic_id || '';
   $('bhYoutube').value = bh.youtube_url || '';
   $('bhTaiLieu').value = bh.document_id || '';
+  $('bhLatexDoc').value = bh.latex_content || '';
   $('bhTestTaiLieu').value = bh.test_document_id || '';
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort !== undefined ? bh.sort : 0;
@@ -875,6 +898,7 @@ async function luuBaiHoc(e) {
     topic_id: $('bhChuyenDe').value || null,
     youtube_url: $('bhYoutube').value.trim() || null,
     document_id: $('bhTaiLieu').value || null,
+    latex_content: $('bhLatexDoc').value.trim() || null,
     test_document_id: $('bhTestTaiLieu').value || null,
     note: $('bhGhiChu').value.trim() || null,
     sort: parseInt($('bhSapXep').value) || 0,

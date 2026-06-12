@@ -132,7 +132,7 @@ function theBaiHoc(bh) {
   return '<div class="card lesson">' +
     '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
     '<div class="body">' +
-      '<span class="badge badge-accent">' + (bh.topics ? bh.topics.name : 'Bài học') + '</span>' +
+      badgeChuyenDeHS(bh.topics) +
       '<h3 style="margin-top:10px">' + bh.title + '</h3>' +
       '<p>' + (bh.note || 'Video bài giảng + tài liệu kèm theo') + '</p>' +
       '<div class="foot"><span style="font-size:.82rem;color:var(--ink-3)">' +
@@ -212,7 +212,7 @@ var BAI_HOC_MAU = [
 
   // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, topics(name)')
+    .select('id, title, youtube_url, note, topics(name, color)')
     .order('sort', { ascending: false });
   var ds = r.data || [];
   $('dsBaiHoc').innerHTML = ds.length
@@ -233,6 +233,12 @@ var BAI_HOC_MAU = [
     $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
   } else { $('tkChuyenCan').textContent = '—'; }
 })();
+
+function badgeChuyenDeHS(t) {
+  if (!t) return '<span class="badge badge-accent">Bài học</span>';
+  var c = t.color || '#A8A29A';
+  return '<span class="badge" style="background:' + c + '22; color:' + c + '; border:1px solid ' + c + '66">' + t.name + '</span>';
+}
 </script>
 </body>
 </html>

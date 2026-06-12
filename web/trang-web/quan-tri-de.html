@@ -8,6 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -124,6 +127,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
 <script src="menu.js"></script>
+<script src="latex-view.js"></script>
 <script src="analytics.js"></script>
 <script>
 var listExams = [];
@@ -191,6 +195,8 @@ async function xoaDeThi(id) {
 
 /* ----- Trình biên dịch LaTeX Parser ----- */
 function parseLatexQuestions(latexText) {
+  // Bỏ các dòng chú thích %... trước khi bóc tách (giữ \%)
+  latexText = lamSachLatex(latexText);
   function parseBraces(text, count) {
     var blocks = [];
     var index = 0;
@@ -341,13 +347,13 @@ function demoParseLaTeX() {
     
     if (isShort) {
       typeText = " (Phần III - Trả lời ngắn)";
-      choicesHTML = '<div class="q-preview-choice correct"><b>Đáp số đúng:</b> ' + escapeHTML(q.choices[0].latex) + '</div>';
+      choicesHTML = '<div class="q-preview-choice correct"><b>Đáp số đúng:</b> ' + latexRaHTML(q.choices[0].latex) + '</div>';
     } else if (isTF) {
       typeText = " (Phần II - Đúng / Sai)";
       choicesHTML = q.choices.map(function (c) {
         var marker = c.correct ? '<span style="color:var(--ok);font-weight:bold">ĐÚNG</span>' : '<span style="color:var(--err);font-weight:bold">SAI</span>';
         return '<div class="q-preview-choice">' +
-          '<b>' + c.key + ')</b> ' + escapeHTML(c.latex) + ' &rarr; ' + marker +
+          '<b>' + c.key + ')</b> ' + latexRaHTML(c.latex) + ' &rarr; ' + marker +
           '</div>';
       }).join('');
     } else {
@@ -355,21 +361,22 @@ function demoParseLaTeX() {
       choicesHTML = q.choices.map(function (c) {
         var correctClass = c.correct ? ' correct' : '';
         return '<div class="q-preview-choice' + correctClass + '">' +
-          '<b>' + c.key + '.</b> ' + escapeHTML(c.latex) +
+          '<b>' + c.key + '.</b> ' + latexRaHTML(c.latex) +
           '</div>';
       }).join('');
     }
-    
-    var solHTML = q.solution_latex 
-      ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + escapeHTML(q.solution_latex) + '</div>'
+
+    var solHTML = q.solution_latex
+      ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>'
       : '';
-      
+
     return '<div class="q-preview-card">' +
       '<div class="q-preview-title">Câu ' + (idx + 1) + typeText + '</div>' +
-      '<div style="margin-bottom:10px">' + escapeHTML(q.content_latex) + '</div>' +
+      '<div style="margin-bottom:10px">' + latexRaHTML(q.content_latex) + '</div>' +
       choicesHTML + solHTML +
       '</div>';
   }).join('');
+  renderToanTrong($('dsPreview')); // vẽ công thức toán bằng KaTeX
 }
 
 function escapeHTML(str) {
