@@ -373,6 +373,14 @@ var anhDaCo = [];
   await loadingSidebar();
   console.log("6. Tải sidebar xong, đang tải danh mục...");
   await taiDuLieuDanhMuc();
+  
+  // Tự động chọn lớp từ URL (nếu có)
+  var params = new URLSearchParams(window.location.search);
+  var urlClassId = params.get('classId');
+  if (urlClassId) {
+    chonLopHoc(urlClassId);
+  }
+  
   console.log("7. Khởi tạo trang: Hoàn tất!");
 })();
 
@@ -482,7 +490,7 @@ function doiPhanHeLop(tab) {
 async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, images, document_id, test_document_id, sort, topics(name, color), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, title, youtube_url, note, published, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topics(name, color), documents!lessons_document_id_fkey(title, file_path)')
     .eq('class_id', classDangChon.id)
     .order('sort', { ascending: false });
   
@@ -500,6 +508,21 @@ async function taiLessonsLop() {
     
     var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
     
+    var testBtn = '';
+    var isTestRunning = false;
+    if (b.test_started_at) {
+      var end = new Date(b.test_started_at).getTime() + (b.test_duration_minutes || 15) * 60000;
+      if (end > Date.now()) {
+        isTestRunning = true;
+      }
+    }
+    
+    if (isTestRunning) {
+      testBtn = '<button class="btn btn-sm chi-gv" style="background:#e74c3c; color:#fff; border-color:#e74c3c; padding:4px 10px;" onclick="dungTest(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">⏹ Dừng test</button>';
+    } else {
+      testBtn = '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px;" onclick="moKichHoatTest(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">⏱ Kích hoạt test</button>';
+    }
+    
     return '<div class="lesson-row">' +
       '<div class="lesson-info">' +
         '<div style="display:flex; gap:8px; align-items:center">' +
@@ -515,11 +538,51 @@ async function taiLessonsLop() {
         '</div>' +
       '</div>' +
       '<div style="display:flex; gap:8px">' +
+        testBtn +
         '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
         '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
       '</div>' +
       '</div>';
   }).join('');
+}
+
+function moKichHoatTest(lessonId, title) {
+  var durationStr = prompt('Nhập thời gian kiểm tra cuối buổi cho bài "' + title + '" (phút):', '15');
+  if (durationStr === null) return;
+  var duration = parseInt(durationStr);
+  if (!duration || duration <= 0) {
+    alert('Thời gian không hợp lệ.');
+    return;
+  }
+  kichHoatTest(lessonId, duration);
+}
+
+async function kichHoatTest(lessonId, duration) {
+  var r = await sb.from('lessons').update({
+    test_started_at: new Date().toISOString(),
+    test_duration_minutes: duration
+  }).eq('id', lessonId);
+  
+  if (r.error) {
+    alert('Lỗi kích hoạt: ' + r.error.message);
+  } else {
+    alert('Đã kích hoạt bài test thành công! Học sinh đang xem bài giảng này sẽ tự động đếm ngược.');
+    taiLessonsLop();
+  }
+}
+
+async function dungTest(lessonId, title) {
+  if (!confirm('Thầy/Cô có chắc chắn muốn dừng sớm bài kiểm tra của bài "' + title + '" không?')) return;
+  var r = await sb.from('lessons').update({
+    test_started_at: null
+  }).eq('id', lessonId);
+  
+  if (r.error) {
+    alert('Lỗi dừng test: ' + r.error.message);
+  } else {
+    alert('Đã dừng bài kiểm tra.');
+    taiLessonsLop();
+  }
 }
 
 /* ----- Tab Học sinh ----- */

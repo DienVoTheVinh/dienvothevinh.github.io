@@ -8,6 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
+<!-- KaTeX for math rendering in quiz viewer -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <style>
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
@@ -20,6 +24,8 @@
 .grade-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; margin-top: 14px; align-items: start; }
 @media(max-width:640px) { .grade-row { grid-template-columns: 1fr; } }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 640px; padding: 28px; max-height: 88vh; overflow-y: auto; position: relative; }
 </style>
 </head>
 <body>
@@ -48,9 +54,20 @@
     <button class="tab-btn active" id="loc-cho" onclick="locTheo('submitted')">🕐 Chờ chấm (<span id="demCho">0</span>)</button>
     <button class="tab-btn" id="loc-xong" onclick="locTheo('graded')">✓ Đã chấm (<span id="demXong">0</span>)</button>
     <button class="tab-btn" id="loc-tatca" onclick="locTheo('tatca')">Tất cả</button>
+    <button class="tab-btn" id="loc-test" onclick="locTheo('test')">📝 Trắc nghiệm cuối giờ (<span id="demTest">0</span>)</button>
   </div>
 
   <div id="dsBaiNop"><div class="empty card">Đang tải…</div></div>
+</div>
+
+<!-- Modal chi tiết bài trắc nghiệm -->
+<div class="modal" id="modalTest" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
+  <div class="modal-content">
+    <button onclick="$('modalTest').style.display='none'" style="position:absolute;top:16px;right:18px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+    <h2 style="font-size:1.2rem;margin-bottom:4px;" id="mtTieuDe">Chi tiết bài trắc nghiệm</h2>
+    <p style="font-size:.9rem;color:var(--ink-3);margin-bottom:14px;" id="mtThongTin"></p>
+    <div id="mtDanhSach" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -60,6 +77,7 @@
 <script src="analytics.js"></script>
 <script>
 var tatCa = [];
+var dsTestAttempts = [];
 var dangLoc = 'submitted';
 
 (async function () {
@@ -70,6 +88,14 @@ var dangLoc = 'submitted';
   await taiDanhSach();
 })();
 
+async function taiAttempts() {
+  var r = await sb.from('attempts')
+    .select('id, submitted_at, score, correct_n, total_n, lessons(title), profiles(full_name, username, class_students(classes(name)))')
+    .not('submitted_at', 'is', null)
+    .order('submitted_at', { ascending: false });
+  return r.data || [];
+}
+
 async function taiDanhSach() {
   var r = await sb.from('submissions')
     .select('id, submitted_at, files, status, score, feedback, graded_files, lessons(title), profiles(full_name, username, class_students(classes(name)))')
@@ -78,17 +104,56 @@ async function taiDanhSach() {
   tatCa = r.data || [];
   $('demCho').textContent = tatCa.filter(function (s) { return s.status === 'submitted'; }).length;
   $('demXong').textContent = tatCa.filter(function (s) { return s.status === 'graded'; }).length;
+  
+  // Đếm số lượt nộp trắc nghiệm
+  var rTest = await sb.from('attempts').select('id', { count: 'exact', head: true }).not('submitted_at', 'is', null);
+  $('demTest').textContent = rTest.count || 0;
+  
+  if (dangLoc === 'test') {
+    dsTestAttempts = await taiAttempts();
+  }
   veDanhSach();
 }
 
-function locTheo(loai) {
+async function locTheo(loai) {
   dangLoc = loai;
-  ['cho', 'xong', 'tatca'].forEach(function (k) { $('loc-' + k).classList.remove('active'); });
-  $('loc-' + (loai === 'submitted' ? 'cho' : loai === 'graded' ? 'xong' : 'tatca')).classList.add('active');
+  ['cho', 'xong', 'tatca', 'test'].forEach(function (k) { $('loc-' + k).classList.remove('active'); });
+  var mapping = { submitted: 'cho', graded: 'xong', tatca: 'tatca', test: 'test' };
+  $('loc-' + mapping[loai]).classList.add('active');
+  
+  if (loai === 'test') {
+    $('dsBaiNop').innerHTML = '<div class="empty card">Đang tải kết quả trắc nghiệm…</div>';
+    dsTestAttempts = await taiAttempts();
+  }
   veDanhSach();
 }
 
 function veDanhSach() {
+  if (dangLoc === 'test') {
+    var ds = dsTestAttempts;
+    if (!ds.length) {
+      $('dsBaiNop').innerHTML = '<div class="empty card">Chưa có học sinh nào nộp bài trắc nghiệm cuối giờ.</div>';
+      return;
+    }
+    $('dsBaiNop').innerHTML = ds.map(function (s) {
+      var hs = s.profiles || {};
+      var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+      var lop = classNames || '—';
+      var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+      return '<div class="card sub-card">' +
+        '<div class="sub-head">' +
+          '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
+          '<span class="badge badge-ok">' + s.score.toFixed(1) + 'đ (' + s.correct_n + '/' + s.total_n + ' câu)</span>' +
+        '</div>' +
+        '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : 'Bài giảng đã xoá') + ' · ' + ngay + '</div>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:10px">' +
+          '<button class="btn btn-secondary btn-sm" onclick="xemChiTietTest(\'' + s.id + '\', \'' + (hs.full_name || '?').replace(/'/g, "\\'") + '\', \'' + (s.lessons ? s.lessons.title : '').replace(/'/g, "\\'") + '\')">👁 Xem chi tiết bài làm</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+    return;
+  }
+
   var ds = dangLoc === 'tatca' ? tatCa : tatCa.filter(function (s) { return s.status === dangLoc; });
   if (!ds.length) {
     $('dsBaiNop').innerHTML = '<div class="empty card">' + (dangLoc === 'submitted' ? 'Không có bài nào chờ chấm 🎉' : 'Trống.') + '</div>';
@@ -153,6 +218,60 @@ async function luuCham(id) {
   } catch (e) {
     alert('Lỗi khi lưu: ' + e.message);
     nut.disabled = false; nut.textContent = '💾 Lưu & trả bài';
+  }
+}
+
+async function xemChiTietTest(attemptId, hsName, lessonTitle) {
+  $('mtTieuDe').textContent = 'Chi tiết bài trắc nghiệm — ' + hsName;
+  $('mtThongTin').textContent = 'Bài học: ' + lessonTitle;
+  $('mtDanhSach').innerHTML = '<p style="color:var(--ink-3)">Đang tải chi tiết bài làm…</p>';
+  $('modalTest').style.display = 'flex';
+  
+  try {
+    var r = await sb.from('attempts')
+      .select('id, score, correct_n, total_n, attempt_answers(chosen_key, is_correct, questions(content_latex, choices, solution_latex))')
+      .eq('id', attemptId)
+      .single();
+      
+    var data = r.data;
+    if (!data) {
+      $('mtDanhSach').innerHTML = '<p style="color:var(--err)">Không tải được chi tiết bài làm.</p>';
+      return;
+    }
+    
+    var listHtml = (data.attempt_answers || []).map(function (ans, idx) {
+      var q = ans.questions || {};
+      var correctAns = (q.choices || []).find(function (c) { return c.correct; }) || {};
+      
+      var resBadge = ans.is_correct 
+        ? '<span style="color:var(--ok);font-weight:700">✓ Đúng</span>' 
+        : '<span style="color:var(--err);font-weight:700">✗ Sai</span>';
+        
+      return '<div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;font-size:.88rem;background:var(--surface)">' +
+        '<div style="line-height:1.4"><b>Câu ' + (idx + 1) + ': </b>' + q.content_latex + '</div>' +
+        '<div style="margin-top:8px;display:flex;gap:12px;align-items:center;font-size:.85rem">' +
+          '<span>Đã chọn: <b style="color:' + (ans.is_correct ? 'var(--ok)' : 'var(--err)') + '">' + (ans.chosen_key || '—') + '</b></span>' +
+          '<span>Đáp án đúng: <b style="color:var(--ok)">' + (correctAns.key || '—') + '</b></span>' +
+          resBadge +
+        '</div>' +
+        (q.solution_latex ? '<div style="margin-top:8px;color:var(--ink-3);padding-top:8px;border-top:1px dashed var(--line);font-size:.82rem;line-height:1.4"><b>Lời giải: </b>' + q.solution_latex + '</div>' : '') +
+        '</div>';
+    }).join('');
+    
+    $('mtDanhSach').innerHTML = listHtml || '<p style="color:var(--ink-3)">Không tìm thấy câu trả lời nào.</p>';
+    if (window.renderMathInElement) {
+      window.renderMathInElement($('mtDanhSach'), {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false
+      });
+    }
+  } catch (err) {
+    $('mtDanhSach').innerHTML = '<p style="color:var(--err)">Lỗi: ' + err.message + '</p>';
   }
 }
 </script>

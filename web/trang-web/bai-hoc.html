@@ -128,6 +128,56 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .short-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
 .short-input.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
 .short-input.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); }
+
+/* Sidebar transition & collapse */
+.sidebar {
+  transition: width 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+}
+.sidebar.collapsed {
+  width: 0 !important;
+  padding: 0 !important;
+  border-right: none !important;
+  overflow: hidden !important;
+}
+
+/* Workspace resizer */
+.resizer {
+  width: 8px;
+  background: var(--line);
+  cursor: col-resize;
+  z-index: 10;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  position: relative;
+}
+.resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 1px;
+}
+.resizer:hover, .resizer.dragging {
+  background: var(--accent);
+}
+.resizer:hover::after, .resizer.dragging::after {
+  background: rgba(255, 255, 255, 0.5);
+}
+.workspace.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.workspace.dragging iframe {
+  pointer-events: none;
+}
+@media (max-width:820px) {
+  .resizer { display: none !important; }
+  .pane { width: 100% !important; flex: 1 !important; }
+}
 </style>
 </head>
 <body>
@@ -136,7 +186,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   <header class="topbar-lesson">
     <div class="left">
       <button class="btn btn-ghost btn-sm" onclick="batTatMucLuc()" title="Mục lục">☰</button>
-      <a href="lop-hoc.html" class="back-btn"><span>←</span><span class="sw-text">Lớp học</span></a>
+      <a href="lop-hoc.html" class="back-btn" id="nutBackLopHoc"><span>←</span><span class="sw-text">Lớp học</span></a>
       <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
     </div>
     <div class="switcher" id="boChuyen" style="display:none">
@@ -175,8 +225,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   <div class="layout">
     <!-- Mục lục bên trái -->
     <nav class="sidebar" id="mucLuc">
-      <div class="sb-head">Mục lục bài giảng</div>
-      <div id="dsMucLuc"><div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Đang tải…</div></div>
+      <div style="width:267px; overflow:hidden">
+        <div class="sb-head">Mục lục bài giảng</div>
+        <div id="dsMucLuc"><div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Đang tải…</div></div>
+      </div>
     </nav>
 
     <!-- Vùng học -->
@@ -189,6 +241,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
           <div class="no-content"><div class="ic">🎬</div><h3>Đang tải video bài giảng…</h3></div>
         </div>
       </section>
+
+      <div class="resizer" id="workspaceResizer"></div>
 
       <section class="pane pane-content" id="khungTrangNoiDung">
         <div class="pane-control">
@@ -210,6 +264,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 var lessonId = null;
 var details = null;
 var viewMode = 'split';
+var leftPaneWidthPercent = 50;
 var noiDungDangChon = null;   // 'tailieu' | 'bang' | 'test'
 var interactiveQuestions = [];
 var selectedAnswers = {};
@@ -229,6 +284,7 @@ var testAttempt = null;
   // Tải song song: chi tiết bài + mục lục
   taiMucLuc();
   await taiChiTietBaiHoc();
+  khoiTaoResizer();
 })();
 
 /* ===== NỘP BÀI ===== */
@@ -324,12 +380,20 @@ async function taiMucLuc() {
   $('dsMucLuc').innerHTML = html;
 }
 
-function batTatMucLuc() { $('mucLuc').classList.toggle('open'); }
+function batTatMucLuc() {
+  var sidebar = $('mucLuc');
+  if (window.innerWidth > 980) {
+    sidebar.classList.toggle('collapsed');
+  } else {
+    sidebar.classList.toggle('open');
+    sidebar.classList.remove('collapsed');
+  }
+}
 
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, images, locked, latex_content, document_id, test_document_id, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, test_document_id, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -339,6 +403,14 @@ async function taiChiTietBaiHoc() {
     return;
   }
   details = r.data;
+
+  // Thiết lập link nút quay lại theo vai trò
+  if (nguoiDung && ['admin', 'teacher', 'assistant'].includes(nguoiDung.role)) {
+    var backBtn = $('nutBackLopHoc');
+    if (backBtn && details.class_id) {
+      backBtn.href = 'quan-tri-lop.html?classId=' + details.class_id;
+    }
+  }
 
   // Tải câu hỏi trắc nghiệm liên kết với bài học này (nếu có)
   try {
@@ -424,6 +496,10 @@ function renderBaiHoc() {
     return;
   }
   chonNoiDung(coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test')));
+
+  // Khởi động bộ đếm giờ kiểm tra
+  kiemTraVaChayTestTimer();
+  dangKyRealtimeTest();
 }
 
 /* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
@@ -545,15 +621,17 @@ function chonDapAn(qId, key) {
   });
 }
 
-async function nopBaiTracNghiem() {
-  if (testAttempt) { alert('Em đã nộp bài trắc nghiệm này rồi.'); return; }
+async function nopBaiTracNghiem(isAuto) {
+  if (testAttempt) { if (!isAuto) alert('Em đã nộp bài trắc nghiệm này rồi.'); return; }
   
   var qIds = interactiveQuestions.map(function (q) { return q.id; });
   var countAnswered = 0;
   qIds.forEach(function (qId) { if (selectedAnswers[qId]) countAnswered++; });
-  if (countAnswered === 0) { alert('Em vui lòng chọn ít nhất một đáp án trước khi nộp bài.'); return; }
   
-  if (!confirm('Em chắc chắn muốn nộp bài kiểm tra trắc nghiệm này?')) return;
+  if (!isAuto) {
+    if (countAnswered === 0) { alert('Em vui lòng chọn ít nhất một đáp án trước khi nộp bài.'); return; }
+    if (!confirm('Em chắc chắn muốn nộp bài kiểm tra trắc nghiệm này?')) return;
+  }
   
   var correctCount = 0;
   var totalCount = interactiveQuestions.length;
@@ -680,6 +758,178 @@ function renderInteractiveQuiz() {
   renderLatex(than);
 }
 
+var testTimerInterval = null;
+
+function kiemTraVaChayTestTimer() {
+  if (!details) return;
+  
+  var banner = document.getElementById('divTestTimer');
+  
+  if (!details.test_started_at) {
+    if (testTimerInterval) {
+      clearInterval(testTimerInterval);
+      testTimerInterval = null;
+    }
+    $('boChuyen').style.display = 'flex';
+    if (banner) banner.remove();
+    return;
+  }
+
+  var start = new Date(details.test_started_at).getTime();
+  var duration = (details.test_duration_minutes || 15) * 60 * 1000;
+  var end = start + duration;
+  var conLai = end - Date.now();
+
+  if (conLai <= 0) {
+    if (testTimerInterval) {
+      clearInterval(testTimerInterval);
+      testTimerInterval = null;
+    }
+    $('boChuyen').style.display = 'flex';
+    if (banner) banner.remove();
+    return;
+  }
+
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'divTestTimer';
+    banner.style.cssText = 'background:#c0392b; color:#fff; font-weight:700; text-align:center; padding:10px; font-size:1.05rem; position:sticky; top:0; z-index:99; display:flex; align-items:center; justify-content:center; gap:10px; border-bottom: 2px solid rgba(0,0,0,0.15);';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  chonNoiDung('test');
+  $('boChuyen').style.display = 'none';
+
+  if (testTimerInterval) clearInterval(testTimerInterval);
+
+  testTimerInterval = setInterval(function () {
+    var conLaiReal = end - Date.now();
+    if (conLaiReal <= 0) {
+      clearInterval(testTimerInterval);
+      testTimerInterval = null;
+      banner.innerHTML = '⏱ HẾT GIỜ LÀM BÀI!';
+      setTimeout(function () {
+        banner.remove();
+        $('boChuyen').style.display = 'flex';
+        if (!testAttempt) {
+          nopBaiTracNghiem(true);
+        }
+      }, 1500);
+    } else {
+      var p = Math.floor(conLaiReal / 60000);
+      var g = Math.floor((conLaiReal % 60000) / 1000);
+      banner.innerHTML = '⏱ BÀI KIỂM TRA ĐANG DIỄN RA! CÒN LẠI: ' + String(p).padStart(2, '0') + ':' + String(g).padStart(2, '0');
+    }
+  }, 1000);
+}
+
+function dangKyRealtimeTest() {
+  try {
+    sb.channel('lesson-test-' + lessonId)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
+        if (payload.new) {
+          details.test_started_at = payload.new.test_started_at;
+          details.test_duration_minutes = payload.new.test_duration_minutes;
+          kiemTraVaChayTestTimer();
+        }
+      })
+      .subscribe();
+  } catch (e) {
+    console.warn("Không đăng ký được realtime test:", e);
+  }
+}
+
+function khoiTaoResizer() {
+  var resizer = $('workspaceResizer');
+  var leftPane = $('khungTrangVideo');
+  var rightPane = $('khungTrangNoiDung');
+  var workspace = $('khongGianHoc');
+  
+  if (!resizer || !leftPane || !rightPane || !workspace) return;
+  
+  var startX, startLeftWidth;
+  
+  resizer.addEventListener('mousedown', initDrag);
+  resizer.addEventListener('touchstart', initTouchDrag);
+  
+  function initDrag(e) {
+    startX = e.clientX;
+    startLeftWidth = leftPane.getBoundingClientRect().width;
+    
+    workspace.classList.add('dragging');
+    resizer.classList.add('dragging');
+    
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
+    e.preventDefault();
+  }
+  
+  function doDrag(e) {
+    var deltaX = e.clientX - startX;
+    var totalWidth = workspace.getBoundingClientRect().width;
+    var newLeftWidth = startLeftWidth + deltaX;
+    
+    var minWidth = 150; // pixels
+    if (newLeftWidth < minWidth) newLeftWidth = minWidth;
+    if (newLeftWidth > totalWidth - minWidth) newLeftWidth = totalWidth - minWidth;
+    
+    leftPaneWidthPercent = (newLeftWidth / totalWidth) * 100;
+    var rightPercent = 100 - leftPaneWidthPercent;
+    
+    leftPane.style.flex = 'none';
+    leftPane.style.width = leftPaneWidthPercent + '%';
+    rightPane.style.flex = 'none';
+    rightPane.style.width = rightPercent + '%';
+  }
+  
+  function stopDrag() {
+    workspace.classList.remove('dragging');
+    resizer.classList.remove('dragging');
+    document.removeEventListener('mousemove', doDrag);
+    document.removeEventListener('mouseup', stopDrag);
+  }
+  
+  function initTouchDrag(e) {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startLeftWidth = leftPane.getBoundingClientRect().width;
+    
+    workspace.classList.add('dragging');
+    resizer.classList.add('dragging');
+    
+    document.addEventListener('touchmove', doTouchDrag, { passive: false });
+    document.addEventListener('touchend', stopTouchDrag);
+  }
+  
+  function doTouchDrag(e) {
+    if (e.touches.length !== 1) return;
+    var deltaX = e.touches[0].clientX - startX;
+    var totalWidth = workspace.getBoundingClientRect().width;
+    var newLeftWidth = startLeftWidth + deltaX;
+    
+    var minWidth = 150;
+    if (newLeftWidth < minWidth) newLeftWidth = minWidth;
+    if (newLeftWidth > totalWidth - minWidth) newLeftWidth = totalWidth - minWidth;
+    
+    leftPaneWidthPercent = (newLeftWidth / totalWidth) * 100;
+    var rightPercent = 100 - leftPaneWidthPercent;
+    
+    leftPane.style.flex = 'none';
+    leftPane.style.width = leftPaneWidthPercent + '%';
+    rightPane.style.flex = 'none';
+    rightPane.style.width = rightPercent + '%';
+    
+    e.preventDefault();
+  }
+  
+  function stopTouchDrag() {
+    workspace.classList.remove('dragging');
+    resizer.classList.remove('dragging');
+    document.removeEventListener('touchmove', doTouchDrag);
+    document.removeEventListener('touchend', stopTouchDrag);
+  }
+}
+
 function thanhCongCu(ten, urlTai) {
   return '<div style="background:var(--surface);border-bottom:1px solid var(--line);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
     '<span style="font-size:.85rem;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + ten + '</span>' +
@@ -702,14 +952,36 @@ function hienMobilePane(loai) {
 function phongToPane(loai) {
   var v = $('khungTrangVideo'), c = $('khungTrangNoiDung');
   var bv = $('btnMaxVideo'), bc = $('btnMaxContent');
+  var resizer = $('workspaceResizer');
+  
   if (viewMode === 'split') {
-    if (loai === 'video') { v.style.flex = 'none'; v.style.width = '100%'; c.style.display = 'none'; bv.textContent = '⧉'; viewMode = 'video-only'; }
-    else { c.style.flex = 'none'; c.style.width = '100%'; v.style.display = 'none'; bc.textContent = '⧉'; viewMode = 'content-only'; }
+    if (loai === 'video') { 
+      v.style.flex = 'none'; 
+      v.style.width = '100%'; 
+      c.style.display = 'none'; 
+      bv.textContent = '⧉'; 
+      viewMode = 'video-only'; 
+    } else { 
+      c.style.flex = 'none'; 
+      c.style.width = '100%'; 
+      v.style.display = 'none'; 
+      bc.textContent = '⧉'; 
+      viewMode = 'content-only'; 
+    }
+    if (resizer) resizer.style.display = 'none';
   } else {
-    v.style.display = 'flex'; v.style.width = ''; v.style.flex = '1';
-    c.style.display = 'flex'; c.style.width = ''; c.style.flex = '1';
-    bv.textContent = '⛶'; bc.textContent = '⛶';
+    v.style.display = 'flex'; 
+    v.style.width = leftPaneWidthPercent + '%'; 
+    v.style.flex = 'none';
+    
+    c.style.display = 'flex'; 
+    c.style.width = (100 - leftPaneWidthPercent) + '%'; 
+    c.style.flex = 'none';
+    
+    bv.textContent = '⛶'; 
+    bc.textContent = '⛶';
     viewMode = 'split';
+    if (resizer && window.innerWidth > 820) resizer.style.display = 'block';
   }
 }
 
