@@ -345,20 +345,38 @@
 
 <!-- Modal Nhận xét buổi học -->
 <div class="modal" id="modalNhanXet" style="z-index:120">
-  <div class="modal-content" style="max-width:560px">
+  <div class="modal-content" style="max-width:620px">
     <button class="modal-close" onclick="dongNhanXet()">×</button>
-    <h2 style="font-size:1.25rem">💬 Nhận xét buổi học</h2>
+    <h2 style="font-size:1.25rem">💬 Nhận xét & Đánh giá buổi học</h2>
     <p id="nxTenHS" style="margin:4px 0 16px; color:var(--ink-2); font-size:.92rem"></p>
     <div class="field">
       <label>Buổi học ngày</label>
       <input type="date" class="input" id="nxNgay" onchange="napNhanXetTheoNgay()">
     </div>
-    <div class="field">
-      <label>Nhận xét (thái độ, mức độ hiểu bài, điều cần cải thiện…)</label>
-      <textarea class="input" id="nxNoiDung" rows="4" placeholder="Ví dụ: Em tập trung tốt, làm đúng 8/10 bài. Cần ôn lại cách xét dấu tam thức bậc hai." style="resize:vertical"></textarea>
+    <div style="display:grid; grid-template-columns: 1fr 165px; gap: 16px; align-items: start;">
+      <div class="field" style="margin-bottom: 0;">
+        <label>Nhận xét (thái độ, mức độ hiểu bài, điều cần cải thiện…)</label>
+        <textarea class="input" id="nxNoiDung" rows="4" placeholder="Ví dụ: Em tập trung tốt, làm đúng 8/10 bài. Cần ôn lại cách xét dấu tam thức bậc hai." style="resize:vertical; height: 110px;"></textarea>
+      </div>
+      <div class="field" style="margin-bottom: 0;">
+        <label>Điểm thái độ</label>
+        <select class="input" id="nxThaiDo" style="height: 110px;" size="5">
+          <option value="" selected>-- Chưa chấm --</option>
+          <option value="10">10 (Xuất sắc) 🔥</option>
+          <option value="9">9 (Rất tốt) ✨</option>
+          <option value="8">8 (Tốt) 👍</option>
+          <option value="7">7 (Khá) 👌</option>
+          <option value="6">6 (Trung bình)</option>
+          <option value="5">5 (Yếu) ⚠️</option>
+          <option value="4">4 (Kém)</option>
+          <option value="3">3 (Rất kém) ❌</option>
+          <option value="2">2 (Tệ)</option>
+          <option value="1">1 (Quá tệ)</option>
+        </select>
+      </div>
     </div>
-    <div style="display:flex; justify-content:flex-end; gap:8px">
-      <button class="btn btn-primary btn-sm" id="nxNutLuu" onclick="luuNhanXet()">💾 Lưu nhận xét</button>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top: 12px;">
+      <button class="btn btn-primary btn-sm" id="nxNutLuu" onclick="luuNhanXet()">💾 Lưu nhận xét & Đánh giá</button>
     </div>
     <h3 style="font-size:.95rem; margin:18px 0 8px; border-top:1px solid var(--line); padding-top:14px">Các nhận xét gần đây của em này</h3>
     <div id="nxLichSu" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto"></div>
@@ -746,6 +764,7 @@ async function moNhanXet(studentId, name) {
   $('nxTenHS').textContent = 'Học sinh: ' + name + ' · Lớp: ' + classDangChon.name;
   $('nxNgay').value = homNayISO();
   $('nxNoiDung').value = '';
+  $('nxThaiDo').value = '';
   $('modalNhanXet').style.display = 'flex';
   await napNhanXetTheoNgay();
   await taiLichSuNhanXet();
@@ -755,54 +774,66 @@ function dongNhanXet() { $('modalNhanXet').style.display = 'none'; }
 
 // Nếu ngày đã có nhận xét -> nạp lên để sửa tiếp
 async function napNhanXetTheoNgay() {
-  var r = await sb.from('session_remarks').select('remark')
+  var r = await sb.from('session_remarks').select('remark, attitude_score')
     .eq('class_id', classDangChon.id).eq('student_id', nxHocSinhId).eq('ngay', $('nxNgay').value)
     .maybeSingle();
   $('nxNoiDung').value = (r.data && r.data.remark) || '';
+  $('nxThaiDo').value = (r.data && r.data.attitude_score !== null && r.data.attitude_score !== undefined) ? r.data.attitude_score : '';
 }
 
 async function taiLichSuNhanXet() {
   var khung = $('nxLichSu');
   khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Đang tải…</p>';
   var r = await sb.from('session_remarks')
-    .select('ngay, remark, author_name, classes(name)')
+    .select('ngay, remark, attitude_score, author_name, classes(name)')
     .eq('student_id', nxHocSinhId)
     .order('ngay', { ascending: false })
     .limit(10);
   var ds = r.data || [];
   if (!ds.length) { khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Chưa có nhận xét nào.</p>'; return; }
   khung.innerHTML = ds.map(function (n) {
+    var scoreBadge = '';
+    if (n.attitude_score !== null && n.attitude_score !== undefined) {
+      scoreBadge = ' <span style="background:var(--accent-soft); color:var(--accent); font-weight:bold; padding:2px 6px; border-radius:4px; font-size:0.75rem; margin-right:8px;">Thái độ: ' + n.attitude_score + '/10</span>';
+    }
     return '<div style="border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; font-size:.85rem">' +
-      '<b>' + new Date(n.ngay + 'T00:00:00').toLocaleDateString('vi-VN') + (n.classes ? ' · ' + n.classes.name : '') + '</b>' +
-      ' <span style="color:var(--ink-3)">— ' + (n.author_name || '') + '</span>' +
-      '<div style="margin-top:3px; white-space:pre-wrap">' + n.remark + '</div></div>';
+      '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 4px;">' +
+        '<b>' + new Date(n.ngay + 'T00:00:00').toLocaleDateString('vi-VN') + (n.classes ? ' · ' + n.classes.name : '') + '</b>' +
+        '<div style="display:flex; align-items:center;">' + scoreBadge + '<span style="color:var(--ink-3)">— ' + (n.author_name || '') + '</span></div>' +
+      '</div>' +
+      '<div style="margin-top:3px; white-space:pre-wrap">' + (n.remark || 'Không có nhận xét viết tay.') + '</div></div>';
   }).join('');
 }
 
 async function luuNhanXet() {
   var noiDung = $('nxNoiDung').value.trim();
+  var thaiDo = $('nxThaiDo').value;
   var ngay = $('nxNgay').value;
-  if (!noiDung) { alert('Thầy/cô nhập nội dung nhận xét trước nhé.'); return; }
+  if (!noiDung && !thaiDo) { alert('Thầy/cô nhập nhận xét hoặc chấm điểm thái độ trước nhé.'); return; }
   if (!ngay) { alert('Chọn ngày buổi học.'); return; }
   var nut = $('nxNutLuu');
   nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
   var u = await sb.auth.getUser();
   var hs = await sb.from('profiles').select('full_name, role').eq('id', u.data.user.id).single();
   var tenNguoiGhi = (hs.data ? hs.data.full_name : '') + (hs.data && hs.data.role === 'assistant' ? ' (Trợ giảng)' : '');
-  var r = await sb.from('session_remarks').upsert({
+  
+  var record = {
     class_id: classDangChon.id,
     student_id: nxHocSinhId,
     ngay: ngay,
     remark: noiDung,
+    attitude_score: thaiDo ? parseFloat(thaiDo) : null,
     author_id: u.data.user.id,
     author_name: tenNguoiGhi,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'class_id,student_id,ngay' });
-  nut.disabled = false; nut.textContent = '💾 Lưu nhận xét';
+  };
+  
+  var r = await sb.from('session_remarks').upsert(record, { onConflict: 'class_id,student_id,ngay' });
+  nut.disabled = false; nut.textContent = '💾 Lưu nhận xét & Đánh giá';
   if (r.error) { alert('Lỗi lưu nhận xét: ' + r.error.message); return; }
   await taiLichSuNhanXet();
   nut.textContent = '✓ Đã lưu!';
-  setTimeout(function () { nut.textContent = '💾 Lưu nhận xét'; }, 1500);
+  setTimeout(function () { nut.textContent = '💾 Lưu nhận xét & Đánh giá'; }, 1500);
 }
 
 async function xoaHocSinhKhoiLop(studentId, name) {
