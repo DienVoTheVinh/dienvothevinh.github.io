@@ -51,6 +51,7 @@
 .empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
 .switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .switch-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent); }
+.vai-tro-tg .chi-gv { display: none !important; }
 </style>
 </head>
 <body>
@@ -76,7 +77,7 @@
       <p style="margin-top:6px">Tạo/xóa khối lớp và các lớp học. Xem danh sách bài giảng, học sinh tương ứng trong từng lớp.</p>
     </div>
     <div style="display:flex; gap:10px">
-      <button class="btn btn-secondary btn-sm" onclick="moFormLop()">+ Tạo lớp mới</button>
+      <button class="btn btn-secondary btn-sm chi-gv" onclick="moFormLop()">+ Tạo lớp mới</button>
     </div>
   </div>
 
@@ -98,7 +99,7 @@
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <a class="btn btn-primary btn-sm" id="nutMeetLop" href="#" target="_blank" style="display:none">🎥 Vào phòng Meet</a>
           <a class="btn btn-ghost btn-sm" id="nutChuaMeet" href="quan-tri-lich.html" style="display:none" title="Lớp chưa có link Meet — bấm để cài trong trang Lịch & QR">＋ Gắn link Meet</a>
-          <button class="btn btn-secondary btn-sm" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
+          <button class="btn btn-secondary btn-sm chi-gv" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
         </div>
       </div>
 
@@ -112,7 +113,7 @@
       <div id="phanHeLessons" style="display:flex; flex-direction:column; gap:12px">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
           <h3 style="font-size:1.1rem">Danh sách bài học</h3>
-          <button class="btn btn-primary btn-sm" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
+          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
         </div>
         <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
       </div>
@@ -121,7 +122,7 @@
       <div id="phanHeStudents" style="display:none; flex-direction:column; gap:12px">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
           <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
-          <button class="btn btn-primary btn-sm" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
+          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
         </div>
         <div class="card" style="padding:0; overflow-x:auto">
           <table>
@@ -316,6 +317,28 @@
   </div>
 </div>
 
+<!-- Modal Nhận xét buổi học -->
+<div class="modal" id="modalNhanXet" style="z-index:120">
+  <div class="modal-content" style="max-width:560px">
+    <button class="modal-close" onclick="dongNhanXet()">×</button>
+    <h2 style="font-size:1.25rem">💬 Nhận xét buổi học</h2>
+    <p id="nxTenHS" style="margin:4px 0 16px; color:var(--ink-2); font-size:.92rem"></p>
+    <div class="field">
+      <label>Buổi học ngày</label>
+      <input type="date" class="input" id="nxNgay" onchange="napNhanXetTheoNgay()">
+    </div>
+    <div class="field">
+      <label>Nhận xét (thái độ, mức độ hiểu bài, điều cần cải thiện…)</label>
+      <textarea class="input" id="nxNoiDung" rows="4" placeholder="Ví dụ: Em tập trung tốt, làm đúng 8/10 bài. Cần ôn lại cách xét dấu tam thức bậc hai." style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px">
+      <button class="btn btn-primary btn-sm" id="nxNutLuu" onclick="luuNhanXet()">💾 Lưu nhận xét</button>
+    </div>
+    <h3 style="font-size:.95rem; margin:18px 0 8px; border-top:1px solid var(--line); padding-top:14px">Các nhận xét gần đây của em này</h3>
+    <div id="nxLichSu" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
@@ -339,7 +362,8 @@ var anhDaCo = [];
   var hoSo = await yeuCauDangNhap();
   console.log("3. Đã đăng nhập, hồ sơ:", hoSo);
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) {
+  if (hoSo.role === 'assistant') document.body.classList.add('vai-tro-tg');
+  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) {
     console.log("4. Vai trò không hợp lệ, chuyển hướng...");
     window.location.href = 'lop-hoc.html';
     return;
@@ -491,7 +515,7 @@ async function taiLessonsLop() {
       '</div>' +
       '<div style="display:flex; gap:8px">' +
         '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
-        '<button class="btn btn-primary btn-sm" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
+        '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
       '</div>' +
       '</div>';
   }).join('');
@@ -566,10 +590,83 @@ async function taiStudentsLop() {
       '<td>' + (s.school || '—') + '</td>' +
       '<td>' + progressCell + '</td>' +
       '<td style="text-align:right">' +
-      '  <button class="btn btn-ghost btn-sm" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
+      '  <button class="btn btn-primary btn-sm" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">💬 Nhận xét</button> ' +
+      '  <button class="btn btn-ghost btn-sm chi-gv" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
       '</td>' +
       '</tr>';
   }).join('');
+}
+
+/* ----- Nhận xét theo buổi học ----- */
+var nxHocSinhId = null;
+
+function homNayISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+async function moNhanXet(studentId, name) {
+  nxHocSinhId = studentId;
+  $('nxTenHS').textContent = 'Học sinh: ' + name + ' · Lớp: ' + classDangChon.name;
+  $('nxNgay').value = homNayISO();
+  $('nxNoiDung').value = '';
+  $('modalNhanXet').style.display = 'flex';
+  await napNhanXetTheoNgay();
+  await taiLichSuNhanXet();
+}
+
+function dongNhanXet() { $('modalNhanXet').style.display = 'none'; }
+
+// Nếu ngày đã có nhận xét -> nạp lên để sửa tiếp
+async function napNhanXetTheoNgay() {
+  var r = await sb.from('session_remarks').select('remark')
+    .eq('class_id', classDangChon.id).eq('student_id', nxHocSinhId).eq('ngay', $('nxNgay').value)
+    .maybeSingle();
+  $('nxNoiDung').value = (r.data && r.data.remark) || '';
+}
+
+async function taiLichSuNhanXet() {
+  var khung = $('nxLichSu');
+  khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Đang tải…</p>';
+  var r = await sb.from('session_remarks')
+    .select('ngay, remark, author_name, classes(name)')
+    .eq('student_id', nxHocSinhId)
+    .order('ngay', { ascending: false })
+    .limit(10);
+  var ds = r.data || [];
+  if (!ds.length) { khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Chưa có nhận xét nào.</p>'; return; }
+  khung.innerHTML = ds.map(function (n) {
+    return '<div style="border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; font-size:.85rem">' +
+      '<b>' + new Date(n.ngay + 'T00:00:00').toLocaleDateString('vi-VN') + (n.classes ? ' · ' + n.classes.name : '') + '</b>' +
+      ' <span style="color:var(--ink-3)">— ' + (n.author_name || '') + '</span>' +
+      '<div style="margin-top:3px; white-space:pre-wrap">' + n.remark + '</div></div>';
+  }).join('');
+}
+
+async function luuNhanXet() {
+  var noiDung = $('nxNoiDung').value.trim();
+  var ngay = $('nxNgay').value;
+  if (!noiDung) { alert('Thầy/cô nhập nội dung nhận xét trước nhé.'); return; }
+  if (!ngay) { alert('Chọn ngày buổi học.'); return; }
+  var nut = $('nxNutLuu');
+  nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
+  var u = await sb.auth.getUser();
+  var hs = await sb.from('profiles').select('full_name, role').eq('id', u.data.user.id).single();
+  var tenNguoiGhi = (hs.data ? hs.data.full_name : '') + (hs.data && hs.data.role === 'assistant' ? ' (Trợ giảng)' : '');
+  var r = await sb.from('session_remarks').upsert({
+    class_id: classDangChon.id,
+    student_id: nxHocSinhId,
+    ngay: ngay,
+    remark: noiDung,
+    author_id: u.data.user.id,
+    author_name: tenNguoiGhi,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'class_id,student_id,ngay' });
+  nut.disabled = false; nut.textContent = '💾 Lưu nhận xét';
+  if (r.error) { alert('Lỗi lưu nhận xét: ' + r.error.message); return; }
+  await taiLichSuNhanXet();
+  nut.textContent = '✓ Đã lưu!';
+  setTimeout(function () { nut.textContent = '💾 Lưu nhận xét'; }, 1500);
 }
 
 async function xoaHocSinhKhoiLop(studentId, name) {

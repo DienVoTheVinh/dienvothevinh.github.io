@@ -270,6 +270,14 @@
         </div>
       </div>
 
+      <!-- Nhận xét theo buổi học -->
+      <div class="card" id="cardNhanXet">
+        <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px">💬 Nhận xét từ thầy & trợ giảng</h3>
+        <div id="dsNhanXetEm" style="display:flex; flex-direction:column; gap:10px">
+          <p style="color:var(--ink-3); font-size:.9rem">Đang tải nhận xét…</p>
+        </div>
+      </div>
+
       <!-- Bảng điểm số học tập -->
       <div class="card">
         <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px">🏆 Bảng vàng điểm số</h3>
@@ -333,6 +341,7 @@ var allExams = [];
   
   // 3. Tải bảng điểm học sinh
   await taiBangDiem();
+  await taiNhanXetCuaEm();
 
   // 4. Tải dữ liệu theo dõi lịch và chuyên cần tháng
   await taiDuLieuTheoDoi();
@@ -648,6 +657,32 @@ async function taiBangDiem() {
       '<td class="num">' + item.date + '</td>' +
       '<td class="num"><span class="score-badge">' + item.score.toFixed(1) + '</span></td>' +
       '</tr>';
+  }).join('');
+}
+
+// Nhận xét theo buổi học của chính mình (HS); GV/TG sẽ trống -> ẩn card
+async function taiNhanXetCuaEm() {
+  var khung = $('dsNhanXetEm');
+  var r = await sb.from('session_remarks')
+    .select('remark, ngay, author_name, classes(name)')
+    .eq('student_id', profileData.id)
+    .order('ngay', { ascending: false })
+    .limit(30);
+  var ds = r.data || [];
+  if (r.error || !ds.length) {
+    if (profileData.role && profileData.role !== 'student') { $('cardNhanXet').style.display = 'none'; return; }
+    khung.innerHTML = '<p style="color:var(--ink-3); font-size:.9rem">Chưa có nhận xét nào. Các nhận xét của thầy và trợ giảng sau mỗi buổi học sẽ hiện ở đây để em xem lại và tiến bộ hơn nhé!</p>';
+    return;
+  }
+  khung.innerHTML = ds.map(function (n) {
+    var ngay = new Date(n.ngay + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' });
+    return '<div style="border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--r-sm); padding:12px 14px">' +
+      '<div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:6px">' +
+        '<b style="font-size:.88rem">' + ngay + (n.classes ? ' · ' + n.classes.name : '') + '</b>' +
+        '<span style="font-size:.8rem; color:var(--ink-3)">✍️ ' + (n.author_name || 'Thầy/Trợ giảng') + '</span>' +
+      '</div>' +
+      '<p style="font-size:.92rem; line-height:1.55; white-space:pre-wrap">' + n.remark + '</p>' +
+      '</div>';
   }).join('');
 }
 
