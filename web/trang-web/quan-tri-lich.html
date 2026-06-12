@@ -319,9 +319,22 @@ async function taiBuoi() {
       '<td>' + (b.classes ? b.classes.name : '?') + '</td>' +
       '<td class="num">' + new Date(b.held_on).toLocaleDateString('vi-VN') + '</td>' +
       '<td class="num">' + soDD + ' HS</td>' +
-      '<td><button class="btn btn-secondary btn-sm" onclick="hienQR(\'' + b.id + '\', \'' + b.qr_token + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">Hiện QR</button></td>' +
+      '<td>' +
+        '<button class="btn btn-secondary btn-sm" onclick="hienQR(\'' + b.id + '\', \'' + b.qr_token + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">Hiện QR</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="xoaBuoiHoc(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')" style="color:var(--err); margin-left:8px; padding:4px 8px;">Xóa</button>' +
+      '</td>' +
       '</tr>';
   }).join('') : '<tr><td colspan="5" style="color:var(--ink-3)">Chưa có buổi học nào.</td></tr>';
+}
+
+async function xoaBuoiHoc(id, title) {
+  if (!confirm('Thầy/Cô có chắc muốn xóa buổi học "' + title + '" không? Tất cả dữ liệu điểm danh của buổi này cũng sẽ bị xóa.')) return;
+  var r = await sb.from('class_sessions').delete().eq('id', id);
+  if (r.error) {
+    alert('Lỗi xóa buổi học: ' + r.error.message);
+  } else {
+    taiBuoi();
+  }
 }
 
 async function taoBuoiHoc() {
