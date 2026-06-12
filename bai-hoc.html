@@ -299,7 +299,7 @@ async function guiBaiNop() {
 /* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
 async function taiMucLuc() {
   var r = await sb.from('lessons')
-    .select('id, title, sort, locked, topics(name), classes(name)')
+    .select('id, title, sort, locked, topics(name, color), classes(name)')
     .order('sort', { ascending: false });
   var ds = r.data || [];
   if (!ds.length) {
@@ -307,14 +307,15 @@ async function taiMucLuc() {
     return;
   }
   // Gom nhóm theo chuyên đề
-  var nhom = {};
+  var nhom = {}, mauNhom = {};
   ds.forEach(function (b) {
     var ten = b.topics ? b.topics.name : 'Bài giảng khác';
+    if (b.topics && b.topics.color) mauNhom[ten] = b.topics.color;
     (nhom[ten] = nhom[ten] || []).push(b);
   });
   var html = '';
   Object.keys(nhom).forEach(function (ten) {
-    html += '<div class="sb-group">' + ten + '</div>';
+    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + ten + '</div>';
     html += nhom[ten].map(function (b) {
       var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
       return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc.html?id=' + b.id + '">' + b.title + khoa + '</a>';

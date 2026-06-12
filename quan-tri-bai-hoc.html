@@ -258,6 +258,10 @@
           <label style="font-size:0.8rem">Thứ tự</label>
           <input type="number" class="input" id="cdSort" value="0" style="padding:6px 10px; font-size:0.9rem">
         </div>
+        <div class="field" style="margin-bottom:0">
+          <label style="font-size:0.8rem">Màu sắc</label>
+          <input type="color" class="input" id="cdColor" value="#5E7B5E" style="padding:2px 4px; height:35px; cursor:pointer">
+        </div>
       </div>
       
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px">
@@ -416,6 +420,10 @@ async function taiDuLieuDanhMuc() {
 }
 
 // --- QUẢN LÝ CHUYÊN ĐỀ DỘNG ---
+if (location.hash === '#chuyende') {
+  window.addEventListener('load', function () { setTimeout(function () { moQuanLyChuyenDe(); }, 800); });
+}
+
 function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = 'all';
@@ -434,18 +442,25 @@ async function napDropdownChuyenDe() {
   
   var formCdSelect = $('bhChuyenDe');
   formCdSelect.innerHTML = '<option value="">-- Chọn chuyên đề --</option>';
-  tatCaChuyenDe.forEach(function(c) {
-    var opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = '[' + c.code + '] ' + c.name + ' (Khối ' + c.grade + ')';
-    formCdSelect.appendChild(opt);
+  var theoKhoi = {};
+  tatCaChuyenDe.forEach(function (c) { (theoKhoi[c.grade] = theoKhoi[c.grade] || []).push(c); });
+  Object.keys(theoKhoi).sort(function (a, b) { return b - a; }).forEach(function (g) {
+    var og = document.createElement('optgroup');
+    og.label = 'Khối ' + g;
+    theoKhoi[g].forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = '[' + c.code + '] ' + c.name;
+      og.appendChild(opt);
+    });
+    formCdSelect.appendChild(og);
   });
 }
 
 async function taiBangChuyenDe() {
   var gradeFilter = $('locCdGrade').value;
   
-  var query = sb.from('topics').select('id, name, code, grade, sort').order('sort');
+  var query = sb.from('topics').select('id, name, code, grade, sort, color').order('sort');
   if (gradeFilter !== 'all') {
     query = query.eq('grade', parseInt(gradeFilter));
   }
@@ -462,7 +477,7 @@ async function taiBangChuyenDe() {
   tbody.innerHTML = topics.map(function(t) {
     return '<tr>' +
            '  <td style="padding:8px"><b>' + t.code + '</b></td>' +
-           '  <td style="padding:8px">' + t.name + '</td>' +
+           '  <td style="padding:8px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + (t.color || 'var(--ink-3)') + ';margin-right:7px;vertical-align:middle"></span>' + t.name + '</td>' +
            '  <td style="padding:8px" class="num">Lớp ' + t.grade + '</td>' +
            '  <td style="padding:8px" class="num">' + t.sort + '</td>' +
            '  <td style="padding:8px; text-align:right;">' +
@@ -485,7 +500,7 @@ async function luuChuyenDe() {
     return;
   }
   
-  var data = { name: name, code: code, grade: grade, sort: sort };
+  var data = { name: name, code: code, grade: grade, sort: sort, color: $('cdColor').value };
   
   var r;
   if (id) {
@@ -503,7 +518,7 @@ async function luuChuyenDe() {
 }
 
 async function suaChuyenDe(id) {
-  var r = await sb.from('topics').select('id, name, code, grade, sort').eq('id', id).single();
+  var r = await sb.from('topics').select('id, name, code, grade, sort, color').eq('id', id).single();
   if (r.error) {
     alert('Lỗi tải dữ liệu chuyên đề: ' + r.error.message);
     return;
@@ -514,6 +529,7 @@ async function suaChuyenDe(id) {
   $('cdCode').value = t.code;
   $('cdGrade').value = t.grade;
   $('cdSort').value = t.sort;
+  $('cdColor').value = t.color || '#5E7B5E';
   
   $('cdFormTitle').textContent = 'Chỉnh sửa chuyên đề';
   $('btnCancelCd').style.display = 'inline-flex';
@@ -537,6 +553,7 @@ function resetCdForm() {
   $('cdCode').value = '';
   $('cdGrade').value = '12';
   $('cdSort').value = '0';
+  $('cdColor').value = '#5E7B5E';
   
   $('cdFormTitle').textContent = 'Thêm chuyên đề mới';
   $('btnCancelCd').style.display = 'none';
