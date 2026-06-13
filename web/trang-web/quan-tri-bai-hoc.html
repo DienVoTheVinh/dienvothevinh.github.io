@@ -69,17 +69,29 @@
     <button class="btn btn-primary" onclick="moFormThemMoi()">+ Thêm bài giảng</button>
   </div>
 
-  <!-- Bảng điều khiển quyền xem (chỉ admin thấy) -->
-  <div class="card" id="bangDieuKhien" style="display:none; margin-bottom:20px; padding:16px 20px">
-    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:space-between">
-      <div>
-        <b>🔐 Quyền xem bài giảng toàn hệ thống</b>
-        <div style="font-size:.85rem; color:var(--ink-3); margin-top:2px" id="moTaCheDo">Đang tải…</div>
+  <!-- Bảng điều khiển quyền xem (cả admin và teacher đều thấy) -->
+  <div class="card" id="bangDieuKhien" style="display:none; margin-bottom:20px; padding:20px">
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:space-between; border-bottom:1px solid var(--line-2); padding-bottom:14px">
+        <div>
+          <b>🔐 Quyền xem bài giảng toàn hệ thống</b>
+          <div style="font-size:.85rem; color:var(--ink-3); margin-top:2px" id="moTaCheDo">Đang tải…</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" id="cd-class" onclick="doiCheDo('class')">🏫 Theo lớp</button>
+          <button class="btn btn-secondary btn-sm" id="cd-open" onclick="doiCheDo('open')">🌍 Mở tất cả</button>
+          <button class="btn btn-secondary btn-sm" id="cd-locked" onclick="doiCheDo('locked')">🔒 Khoá tất cả</button>
+        </div>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" id="cd-class" onclick="doiCheDo('class')">🏫 Theo lớp</button>
-        <button class="btn btn-secondary btn-sm" id="cd-open" onclick="doiCheDo('open')">🌍 Mở tất cả</button>
-        <button class="btn btn-secondary btn-sm" id="cd-locked" onclick="doiCheDo('locked')">🔒 Khoá tất cả</button>
+      
+      <div>
+        <b style="display:block; margin-bottom:8px">⚡ Thao tác khóa nhanh bài giảng</b>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" style="color:var(--err); border-color:var(--err)" onclick="batTatKhoaToanBo(true)">🔒 Khóa toàn bộ bài giảng</button>
+          <button class="btn btn-secondary btn-sm" style="color:var(--ok); border-color:var(--ok)" onclick="batTatKhoaToanBo(false)">🔓 Mở khóa toàn bộ bài giảng</button>
+          <button class="btn btn-secondary btn-sm" id="btnKhoaLop" style="color:var(--err); border-color:var(--err); display:none" onclick="batTatKhoaTheoLop(true)">🔒 Khóa tất cả bài giảng của lớp</button>
+          <button class="btn btn-secondary btn-sm" id="btnMoKhoaLop" style="color:var(--ok); border-color:var(--ok); display:none" onclick="batTatKhoaTheoLop(false)">🔓 Mở khóa tất cả bài giảng của lớp</button>
+        </div>
       </div>
     </div>
   </div>
@@ -353,6 +365,45 @@ async function batTatKhoa(id, khoa) {
   await taiDanhSachBaiHoc();
 }
 
+/* ===== KHOÁ / MỞ TOÀN BỘ HỆ THỐNG BÀI GIẢNG ===== */
+async function batTatKhoaToanBo(khoa) {
+  var msg = khoa 
+    ? 'Bạn có chắc chắn muốn KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?'
+    : 'Bạn có chắc chắn muốn MỞ KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?';
+  if (!confirm(msg)) return;
+  
+  var r = await sb.from('lessons').update({ locked: khoa }).neq('id', '00000000-0000-0000-0000-000000000000');
+  if (r.error) {
+    alert('Lỗi: ' + r.error.message);
+  } else {
+    alert('Đã ' + (khoa ? 'khóa' : 'mở khóa') + ' toàn bộ bài giảng thành công!');
+    await taiDanhSachBaiHoc();
+  }
+}
+
+/* ===== KHOÁ / MỞ THEO LỚP CỤ THỂ ===== */
+async function batTatKhoaTheoLop(khoa) {
+  if (lopDangLoc === 'tat-ca') {
+    alert('Vui lòng chọn một lớp cụ thể ở tab bộ lọc bên dưới để khóa theo lớp.');
+    return;
+  }
+  var lopObj = tatCaLop.find(function(l) { return l.id === lopDangLoc; });
+  var lopName = lopObj ? lopObj.name : 'lớp đang chọn';
+  
+  var msg = khoa 
+    ? 'Bạn có chắc chắn muốn KHÓA toàn bộ bài giảng của lớp ' + lopName + ' không?'
+    : 'Bạn có chắc chắn muốn MỞ KHÓA toàn bộ bài giảng của lớp ' + lopName + ' không?';
+  if (!confirm(msg)) return;
+  
+  var r = await sb.from('lessons').update({ locked: khoa }).eq('class_id', lopDangLoc);
+  if (r.error) {
+    alert('Lỗi: ' + r.error.message);
+  } else {
+    alert('Đã ' + (khoa ? 'khóa' : 'mở khóa') + ' toàn bộ bài giảng của lớp ' + lopName + ' thành công!');
+    await taiDanhSachBaiHoc();
+  }
+}
+
 (async function() {
   if (!daKetNoi()) {
     $('danhSachBaiHoc').innerHTML = '<div class="empty card">Chưa cấu hình kết nối Supabase.</div>';
@@ -367,8 +418,8 @@ async function batTatKhoa(id, khoa) {
   }
   vaiTro = hoSo.role;
 
-  // Menu quản trị động được tự động vẽ bởi menu.js
-  if (hoSo.role === 'admin') {
+  // Cả Admin và Teacher đều được xem bảng điều khiển khóa nhanh
+  if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
     $('bangDieuKhien').style.display = 'block';
     taiCheDo();
   }
@@ -578,9 +629,18 @@ function locTheoLop(lopId) {
   });
   if (lopId === 'tat-ca') {
     document.querySelector('.class-tabs button:first-child').classList.add('active');
+    $('btnKhoaLop').style.display = 'none';
+    $('btnMoKhoaLop').style.display = 'none';
   } else {
     var activeTab = $('tab-' + lopId);
     if (activeTab) activeTab.classList.add('active');
+    
+    var lopObj = tatCaLop.find(function(l) { return l.id === lopId; });
+    var lopName = lopObj ? lopObj.name : 'lớp này';
+    $('btnKhoaLop').style.display = 'inline-flex';
+    $('btnKhoaLop').textContent = '🔒 Khóa tất cả ' + lopName;
+    $('btnMoKhoaLop').style.display = 'inline-flex';
+    $('btnMoKhoaLop').textContent = '🔓 Mở khóa tất cả ' + lopName;
   }
 
   hienThiBaiHoc();
@@ -643,7 +703,7 @@ function hienThiBaiHoc() {
       ? '<span class="pdf-indicator" style="color:var(--accent)">📝 Có bài test</span>'
       : '';
 
-    var nutKhoa = (vaiTro === 'admin')
+    var nutKhoa = (vaiTro === 'admin' || vaiTro === 'teacher')
       ? (bh.locked
         ? '<button class="btn btn-ghost btn-sm" style="color:var(--ok)" onclick="batTatKhoa(\'' + bh.id + '\', false)" title="Mở khoá bài này">🔓 Mở</button>'
         : '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="batTatKhoa(\'' + bh.id + '\', true)" title="Khoá bài này">🔒 Khoá</button>')

@@ -18,6 +18,7 @@ function apDungMenu(role) {
     ];
     if (role === 'admin' || role === 'teacher') {
       muc.push(['quan-tri-tai-lieu.html', 'Soạn tài liệu']);
+      muc.push(['quan-tri-bai-hoc.html', 'Khóa bài giảng']);
       muc.push(['quan-tri-hoc-sinh.html', 'Học sinh']);
     }
     muc.push(
