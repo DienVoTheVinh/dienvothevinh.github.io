@@ -414,6 +414,30 @@
               <button type="submit" class="btn btn-primary btn-sm" id="btnUpdate">Lưu thay đổi hồ sơ</button>
             </div>
           </form>
+
+          <hr style="border:none; border-top:1px solid var(--line); margin:20px 0;">
+          <h3 style="margin:0 0 12px; font-size:1rem; display:flex; align-items:center; gap:8px;">🔑 Đổi mật khẩu</h3>
+          <p style="font-size:0.82rem; color:var(--ink-2); margin-bottom:14px;">Nhập mật khẩu hiện tại, sau đó đặt mật khẩu mới (tối thiểu 6 ký tự).</p>
+          <form onsubmit="doiMatKhau(event)">
+            <div class="form-grid">
+              <div class="field">
+                <label>Mật khẩu hiện tại <b style="color:var(--accent)">*</b></label>
+                <input class="input" type="password" id="pwCurrent" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label>Mật khẩu mới <b style="color:var(--accent)">*</b></label>
+                <input class="input" type="password" id="pwNew" autocomplete="new-password" required minlength="6">
+              </div>
+              <div class="field">
+                <label>Xác nhận mật khẩu mới <b style="color:var(--accent)">*</b></label>
+                <input class="input" type="password" id="pwNew2" autocomplete="new-password" required minlength="6">
+              </div>
+            </div>
+            <div id="pwMsg" style="font-size:0.85rem; margin-top:8px;"></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:10px">
+              <button type="submit" class="btn btn-primary btn-sm" id="btnDoiMK">Đổi mật khẩu</button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -1416,6 +1440,48 @@ async function updateProfileInfo(e) {
     profileData.objective = objective;
   }
   btn.disabled = false; btn.textContent = 'Lưu thay đổi';
+}
+
+// Đổi mật khẩu (xác minh mật khẩu hiện tại trước)
+async function doiMatKhau(e) {
+  e.preventDefault();
+  var cur = $('pwCurrent').value;
+  var p1 = $('pwNew').value;
+  var p2 = $('pwNew2').value;
+  var msg = $('pwMsg');
+  function loi(t) { msg.style.color = '#e74c3c'; msg.textContent = t; }
+
+  if (p1.length < 6) { loi('Mật khẩu mới phải có ít nhất 6 ký tự.'); return; }
+  if (p1 !== p2) { loi('Hai ô mật khẩu mới chưa khớp nhau.'); return; }
+  if (p1 === cur) { loi('Mật khẩu mới phải khác mật khẩu hiện tại.'); return; }
+
+  var btn = $('btnDoiMK');
+  btn.disabled = true; btn.textContent = '⏳ Đang xử lý...';
+  msg.style.color = 'var(--ink-2)'; msg.textContent = 'Đang xác minh mật khẩu hiện tại...';
+
+  var u = await sb.auth.getUser();
+  var email = (u && u.data && u.data.user) ? u.data.user.email : null;
+  if (!email) {
+    loi('Không xác định được tài khoản. Hãy đăng nhập lại rồi thử lại.');
+    btn.disabled = false; btn.textContent = 'Đổi mật khẩu'; return;
+  }
+
+  var v = await sb.auth.signInWithPassword({ email: email, password: cur });
+  if (v.error) {
+    loi('Mật khẩu hiện tại không đúng.');
+    btn.disabled = false; btn.textContent = 'Đổi mật khẩu'; return;
+  }
+
+  var up = await sb.auth.updateUser({ password: p1 });
+  if (up.error) {
+    loi('Lỗi đổi mật khẩu: ' + up.error.message);
+    btn.disabled = false; btn.textContent = 'Đổi mật khẩu'; return;
+  }
+
+  msg.style.color = '#1a9e5c';
+  msg.textContent = '✓ Đổi mật khẩu thành công! Lần sau hãy đăng nhập bằng mật khẩu mới.';
+  $('pwCurrent').value = ''; $('pwNew').value = ''; $('pwNew2').value = '';
+  btn.disabled = false; btn.textContent = 'Đổi mật khẩu';
 }
 
 // Tải ảnh đại diện
