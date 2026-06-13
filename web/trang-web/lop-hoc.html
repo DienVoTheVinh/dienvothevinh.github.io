@@ -76,6 +76,9 @@
     <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
   </div>
 
+  <!-- Màn hình dành cho Trợ giảng / Giáo viên / Admin (danh sách lớp theo lịch) -->
+  <div id="staffHomeContainer" style="display:none; margin-top:24px"></div>
+
   <div id="coLopContainer">
     <!-- Banner Link Google Meet cho lớp Online -->
     <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
@@ -170,6 +173,12 @@ var BAI_HOC_MAU = [
   if (!hoSo) return;
   $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
 
+  // Trợ giảng / Giáo viên / Admin: bỏ trạng thái "chưa xếp lớp", hiện danh sách lớp theo lịch
+  if (hoSo.role && hoSo.role !== 'student') {
+    await renderStaffHome(hoSo);
+    return;
+  }
+
   if (!hoSo.class_id) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
@@ -233,6 +242,74 @@ var BAI_HOC_MAU = [
     $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
   } else { $('tkChuyenCan').textContent = '—'; }
 })();
+
+// ===== Màn hình trang chủ cho Trợ giảng / Giáo viên / Admin =====
+async function renderStaffHome(hoSo) {
+  $('chuaCoLopContainer').style.display = 'none';
+  $('coLopContainer').style.display = 'none';
+  var roleLabel = hoSo.role === 'admin' ? 'Quản trị viên' : (hoSo.role === 'teacher' ? 'Giáo viên' : 'Trợ giảng');
+  $('tenLop').textContent = roleLabel + ' · VinhMath';
+  $('loiChaoSub').textContent = 'Danh sách lớp sắp theo lịch — bấm để vào phòng học nhanh.';
+
+  var box = $('staffHomeContainer');
+  box.style.display = 'block';
+  box.innerHTML = '<div class="empty card">Đang tải lịch lớp…</div>';
+
+  var rs = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, note, recurrence, class_id, classes(name, mode)')
+    .order('weekday').order('start_time');
+  var scheds = rs.data || [];
+
+  var rl = await sb.from('class_links').select('class_id, meet_link');
+  var meetMap = {};
+  (rl.data || []).forEach(function (x) { if (x.meet_link) meetMap[x.class_id] = x.meet_link; });
+
+  var jsDay = new Date().getDay();
+  var today = jsDay === 0 ? 7 : jsDay;
+  scheds.sort(function (a, b) {
+    var da = ((a.weekday - today) + 7) % 7;
+    var db = ((b.weekday - today) + 7) % 7;
+    return da - db || a.start_time.localeCompare(b.start_time);
+  });
+
+  var btnQuanTri = '<a class="btn btn-secondary btn-sm" href="quan-tri-lop.html">⚙️ Quản trị lớp học</a>';
+  var header = '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px">' +
+    '<h2 style="margin:0">📅 Lớp học theo lịch</h2>' + btnQuanTri + '</div>';
+
+  if (!scheds.length) {
+    box.innerHTML = header + '<div class="empty card">Chưa có lịch lớp nào. Vào trang <a href="quan-tri-lich.html">Lịch &amp; QR</a> để thêm lịch học.</div>';
+    return;
+  }
+
+  var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
+  var th = function (t) { return '<th style="text-align:left; font-size:.78rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); padding:10px 14px; border-bottom:1px solid var(--line-2)">' + t + '</th>'; };
+  var tdSty = 'padding:12px 14px; border-bottom:1px solid var(--line)';
+
+  var rows = scheds.map(function (s) {
+    var laHomNay = s.weekday === today;
+    var ten = s.classes ? s.classes.name : '?';
+    var online = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
+    var meet = meetMap[s.class_id];
+    var phong = online
+      ? (meet ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Vào Meet</a>'
+              : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa gắn link</span>')
+      : '<span style="font-size:.85rem; color:var(--ink-2)">🏫 Tại lớp</span>';
+    var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
+    return '<tr style="' + (laHomNay ? 'background:var(--accent-soft)' : '') + '">' +
+      '<td style="' + tdSty + '"><b>' + ten + '</b>' + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</td>' +
+      '<td style="' + tdSty + '">' + TEN_THU[s.weekday] + recText + '</td>' +
+      '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5) + '</td>' +
+      '<td style="' + tdSty + '">' + (online ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +
+      '<td style="' + tdSty + '">' + phong + '</td>' +
+      '</tr>';
+  }).join('');
+
+  box.innerHTML = header +
+    '<div class="card" style="padding:8px 4px; overflow-x:auto">' +
+    '<table style="width:100%; border-collapse:collapse; font-size:.92rem"><thead><tr>' +
+    th('Lớp') + th('Thứ') + th('Giờ học') + th('Hình thức') + th('Phòng học') +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
 
 function badgeChuyenDeHS(t) {
   if (!t) return '<span class="badge badge-accent">Bài học</span>';
