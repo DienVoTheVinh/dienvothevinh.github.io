@@ -127,3 +127,32 @@ tr:last-child td{border-bottom:none}
 
 /* ---- Nhãn mục ---- */
 .sec-label{font-size:.8rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+
+/* ---- Hiệu ứng vinh danh Sáng lập/Owner ---- */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.name-owner {
+  font-weight: 800 !important;
+  color: #e74c3c !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge-owner {
+  background: linear-gradient(120deg, #FFD700 0%, #FF8C00 50%, #FFD700 100%) !important;
+  background-size: 200% auto !important;
+  color: #fff !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 1px 3px rgba(230,126,34,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  animation: shimmer 3s linear infinite !important;
+  display: inline-block;
+  vertical-align: middle;
+}
+

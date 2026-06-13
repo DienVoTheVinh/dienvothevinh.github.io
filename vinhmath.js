@@ -37,13 +37,25 @@ if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
 function daKetNoi() { return sb !== null; }
 
 /* ---------- 3. ĐĂNG NHẬP / ĐĂNG XUẤT ---------- */
-// HS dùng "tên đăng nhập" (vd nguyenvana.12a1). Supabase cần email,
-// nên ta tự ghép đuôi cố định — HS không cần biết điều này.
-var DUOI_EMAIL = '@hs.vinhmath.app';
-
+// HS dùng "tên đăng nhập" (vd DienVoTheVinh@ad.vinhmath). Supabase cần email,
+// nên ta tự ghép đuôi cố định ngầm (.com) — HS không cần biết điều này.
 async function dangNhap(username, password) {
   if (!daKetNoi()) return { error: 'Web đang ở chế độ xem thử — chưa kết nối Supabase.' };
-  var email = username.includes('@') ? username : (username.trim().toLowerCase() + DUOI_EMAIL);
+  
+  var u = username.trim().toLowerCase();
+  var email = "";
+  if (!u.includes('@')) {
+    // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
+    email = u + '@hs.vinhmath.com';
+  } else {
+    // Nếu nhập có đuôi phân quyền, tự động thêm đuôi .com ngầm
+    if (u.endsWith('@hs.vinhmath')) email = u + '.com';
+    else if (u.endsWith('@tg.vinhmath')) email = u + '.com';
+    else if (u.endsWith('@gv.vinhmath')) email = u + '.com';
+    else if (u.endsWith('@ad.vinhmath')) email = u + '.com';
+    else email = u;
+  }
+  
   var r = await sb.auth.signInWithPassword({ email: email, password: password });
   if (r.error) {
     var msg = r.error.message || '';
@@ -53,6 +65,20 @@ async function dangNhap(username, password) {
   }
   return { ok: true };
 }
+
+// Định dạng tên người nhận xét kèm nhãn đặc quyền cho Sáng lập
+function formatAuthorName(name) {
+  if (!name) return 'Thầy/Trợ giảng';
+  var clean = name.trim();
+  if (clean.indexOf('Điền Võ Thế Vinh') !== -1 || clean === 'Thầy Vinh (Admin)' || clean === 'Thầy Vinh' || clean.indexOf('dienvothevinh') !== -1) {
+    return '<span class="name-owner">Thầy Điền Võ Thế Vinh <span class="badge-owner">Sáng lập 👑</span></span>';
+  }
+  if (clean.indexOf('Trợ giảng') !== -1 || clean.indexOf('(TG)') !== -1) {
+    return '<span style="color: var(--ink-2); font-weight: 500;">' + clean + '</span>';
+  }
+  return '<span style="color: var(--ink-1); font-weight: 600;">' + clean + '</span>';
+}
+
 
 async function dangXuat() {
   if (daKetNoi()) await sb.auth.signOut();

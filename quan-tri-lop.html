@@ -801,7 +801,7 @@ async function taiLichSuNhanXet() {
     return '<div style="border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; font-size:.85rem">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 4px;">' +
         '<b>' + new Date(n.ngay + 'T00:00:00').toLocaleDateString('vi-VN') + (n.classes ? ' · ' + n.classes.name : '') + '</b>' +
-        '<div style="display:flex; align-items:center;">' + scoreBadge + '<span style="color:var(--ink-3)">— ' + (n.author_name || '') + '</span></div>' +
+        '<div style="display:flex; align-items:center;">' + scoreBadge + '<span style="color:var(--ink-3)">— ' + formatAuthorName(n.author_name) + '</span></div>' +
       '</div>' +
       '<div style="margin-top:3px; white-space:pre-wrap">' + (n.remark || 'Không có nhận xét viết tay.') + '</div></div>';
   }).join('');
