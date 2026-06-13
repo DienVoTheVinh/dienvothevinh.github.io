@@ -99,6 +99,7 @@
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <a class="btn btn-primary btn-sm" id="nutMeetLop" href="#" target="_blank" style="display:none">🎥 Vào phòng Meet</a>
           <a class="btn btn-ghost btn-sm" id="nutChuaMeet" href="quan-tri-lich.html" style="display:none" title="Lớp chưa có link Meet — bấm để cài trong trang Lịch & QR">＋ Gắn link Meet</a>
+          <button class="btn btn-secondary btn-sm chi-gv" onclick="doiTenLopCurrent()">✏️ Đổi tên lớp</button>
           <button class="btn btn-secondary btn-sm chi-gv" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
         </div>
       </div>
@@ -498,6 +499,28 @@ async function napNutMeet(classId) {
     nutCo.style.display = 'inline-flex';
   } else {
     nutChua.style.display = 'inline-flex';
+  }
+}
+
+async function doiTenLopCurrent() {
+  if (!classDangChon) return;
+  var tenMoi = prompt('Nhập tên mới cho lớp "' + classDangChon.name + '":', classDangChon.name);
+  if (tenMoi === null) return;
+  tenMoi = tenMoi.trim();
+  if (!tenMoi) {
+    alert('Tên lớp không được để trống.');
+    return;
+  }
+  if (tenMoi === classDangChon.name) return;
+
+  var r = await sb.from('classes').update({ name: tenMoi }).eq('id', classDangChon.id);
+  if (r.error) {
+    alert('Lỗi khi đổi tên lớp: ' + r.error.message);
+  } else {
+    classDangChon.name = tenMoi;
+    $('detTenLop').textContent = tenMoi;
+    await loadingSidebar();
+    alert('Đã đổi tên lớp thành công!');
   }
 }
 
