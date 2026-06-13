@@ -17,6 +17,7 @@ function apDungMenu(role) {
       ['quan-tri-lop.html', 'Lớp học']
     ];
     if (role === 'admin' || role === 'teacher') {
+      muc.push(['quan-tri-tai-lieu.html', 'Soạn tài liệu']);
       muc.push(['quan-tri-hoc-sinh.html', 'Học sinh']);
     }
     muc.push(
@@ -33,6 +34,7 @@ function apDungMenu(role) {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
       ['lop-hoc.html', 'Lớp học'],
+      ['tai-lieu.html', 'Tài liệu'],
       ['lich-hoc.html', 'Lịch học'],
       ['luyen-de.html', 'Luyện đề'],
       ['bang-vang.html', 'Bảng vàng'],
@@ -49,6 +51,8 @@ function apDungMenu(role) {
       activeClass = ' class="active"'; // bài học thuộc phân hệ Lớp học
     } else if (m[0] === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
       activeClass = ' class="active"'; // bài giảng thuộc phân hệ Lớp học của GV
+    } else if (m[0] === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
+      activeClass = ' class="active"'; // khi GV đang xem tài liệu tĩnh
     }
     return '<a href="' + m[0] + '"' + activeClass + '>' + m[1] + '</a>';
   }).join('');
