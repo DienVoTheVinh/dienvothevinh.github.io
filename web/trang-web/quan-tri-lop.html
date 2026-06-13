@@ -534,7 +534,7 @@ function doiPhanHeLop(tab) {
 async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topics(name, color), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topics(name, color), documents!lessons_document_id_fkey(title, file_path)')
     .eq('class_id', classDangChon.id)
     .order('sort', { ascending: false });
   
@@ -573,6 +573,7 @@ async function taiLessonsLop() {
           '<span class="lesson-title">' + b.title + '</span>' +
           badgeChuyenDe(b.topics) +
           stateBadge +
+          (b.locked ? '<span class="badge" style="background:#e74c3c;color:#fff">🔒 Đã khoá</span>' : '') +
         '</div>' +
         '<div class="lesson-meta">' +
           iconVideo + iconDoc +
@@ -583,6 +584,7 @@ async function taiLessonsLop() {
       '</div>' +
       '<div style="display:flex; gap:8px">' +
         testBtn +
+        '<button class="btn btn-sm chi-gv" style="' + (b.locked ? 'background:#e74c3c;color:#fff;border-color:#e74c3c;' : '') + 'padding:4px 10px;" onclick="toggleKhoaBai(\'' + b.id + '\', ' + (b.locked ? 'true' : 'false') + ')">' + (b.locked ? '🔓 Mở khoá' : '🔒 Khoá') + '</button>' +
         '<a class="btn btn-secondary btn-sm" href="bai-hoc.html?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
         '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
       '</div>' +
@@ -1090,6 +1092,15 @@ async function moFormSua(id) {
 }
 
 function dongForm() { $('modalForm').style.display = 'none'; }
+
+async function toggleKhoaBai(id, dangKhoa) {
+  var moi = !dangKhoa;
+  var hoi = (moi ? 'Khoá bài giảng này? Học sinh sẽ KHÔNG còn nhìn thấy bài.' : 'Mở khoá bài giảng này? Học sinh sẽ xem lại được bài.');
+  if (!confirm(hoi)) return;
+  var r = await sb.from('lessons').update({ locked: moi }).eq('id', id);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  taiLessonsLop();
+}
 
 async function luuBaiHoc(e) {
   e.preventDefault();
