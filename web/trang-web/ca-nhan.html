@@ -294,24 +294,9 @@
         </div>
       </div>
 
-      <!-- Khối chi tiết: Bảng Vàng bên trái, Nhật ký/Chi tiết bên phải -->
-      <div class="detail-grid" id="studentDetailGrid">
-        <!-- Cột trái: Bảng vàng VinhMath (Hall of Fame) -->
-        <div class="card" style="display:flex; flex-direction:column;">
-          <h3 style="margin-bottom:8px; font-size:1.05rem; display:flex; align-items:center; gap:8px;">🏆 Bảng Vàng VinhMath</h3>
-          <p style="font-size: 0.82rem; color: var(--ink-2); margin-bottom: 16px;">Vinh danh những chiến binh chăm ngoan học giỏi có điểm học tập cao nhất toàn trung tâm.</p>
-          
-          <div class="leaderboard-tabs">
-            <button class="leaderboard-tab active" id="tabLBHethong" onclick="toggleLeaderboard('global')">Toàn hệ thống</button>
-            <button class="leaderboard-tab" id="tabLBLop" onclick="toggleLeaderboard('class')">Lớp của em</button>
-          </div>
-
-          <div class="leaderboard-list" id="leaderboardContainer">
-            <p style="color:var(--ink-3); text-align:center; padding:24px 0; font-size: 0.9rem;">Đang tải bảng vàng...</p>
-          </div>
-        </div>
-
-        <!-- Cột phải: Bảng điểm & Nhận xét cũ -->
+      <!-- Khối chi tiết (Bảng Vàng đã tách sang trang riêng: bang-vang.html) -->
+      <div id="studentDetailGrid">
+        <!-- Bảng điểm & Nhận xét -->
         <div style="display:flex; flex-direction:column; gap:20px;">
           <!-- Lưới lịch chuyên cần tháng -->
           <div class="card">
@@ -558,10 +543,9 @@ var charts = {
 
   // Thực hiện tính toán toàn bộ số liệu & render dashboard
   await runLearningAnalytics();
-  
-  // Tải danh sách vinh danh (Hall of Fame)
-  await taiLeaderboard();
-  
+
+  // (Bảng Vàng đã tách sang trang riêng bang-vang.html)
+
   // Tải lịch học chuyên cần tháng
   await taiDuLieuTheoDoi();
   await taiNhanXetCuaEm();
