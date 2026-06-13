@@ -907,78 +907,82 @@ footer .wrap {
     <h2 style="margin-bottom:8px">Hành trình của Thầy Điền Võ Thế Vinh</h2>
     <p style="margin-bottom:24px;color:var(--ink-2);max-width:65ch">Nhìn lại những chặng đường đã qua, từ những năm tháng học trò nỗ lực cho đến những lớp học VinhMath đong đầy tâm huyết hôm nay. Mỗi bức ảnh là một lát cắt kỷ niệm giản dị trên con đường dạy học của mình.</p>
     
-    <div class="timeline-track">
-      <div class="timeline-card">
-        <img src="lop12.jpeg" alt="Thời học sinh cấp 3" onerror="this.src='anh-lop.jpg'">
-        <h4>Thời học sinh cấp 3</h4>
-        <p>Những năm học cấp 3 đầy nỗ lực dưới mái trường THPT, đặt nền móng và nuôi dưỡng đam mê dành cho môn Toán.</p>
+    <div class="timeline-wrapper">
+      <button class="timeline-nav-btn prev-btn" onclick="scrollTimeline(-1)" title="Xem trước">←</button>
+      <div class="timeline-track" id="journeyTrack">
+        <div class="timeline-card">
+          <img src="lop12.jpeg" alt="Thời học sinh cấp 3" onerror="this.src='anh-lop.jpg'">
+          <h4>Thời học sinh cấp 3</h4>
+          <p>Những năm học cấp 3 đầy nỗ lực dưới mái trường THPT, đặt nền móng và nuôi dưỡng đam mê dành cho môn Toán.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="svnangdong.jpg" alt="Sinh viên năng động" onerror="this.src='anh-thay.jpg'">
+          <h4>Sinh viên năng động</h4>
+          <p>Trở thành sinh viên ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, năng nổ tham gia các hoạt động tập thể.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="hoctapcangthang.jpg" alt="Những giờ học căng thẳng" onerror="this.src='anh-lop.jpg'">
+          <h4>Những giờ học căng thẳng</h4>
+          <p>Những kỳ thi áp lực, những giờ thảo luận bài tập lớn cùng bạn bè để hiểu sâu kiến thức chuyên ngành Toán.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="vuahocvualam.jpg" alt="Vừa học vừa làm" onerror="this.src='anh-thay.jpg'">
+          <h4>Vừa học vừa làm</h4>
+          <p>Tranh thủ đi dạy thêm từ thời sinh viên để tích lũy trải nghiệm thực tế, rèn luyện kỹ năng truyền đạt kiến thức.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="tthongchuyen.jpg" alt="Tổ trưởng Tổ Toán Hồng Chuyên" onerror="this.src='anh-lop.jpg'">
+          <h4>Tổ trưởng Tổ Toán Hồng Chuyên</h4>
+          <p>Được tin tưởng giao trọng trách Tổ trưởng Tổ Toán tại trung tâm Hồng Chuyên, có cơ hội làm quen việc quản lý giáo dục.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="ttdm.jpg" alt="Giảng viên tại Duy Minh" onerror="this.src='anh-lam-viec.jpg'">
+          <h4>Giảng viên tại Duy Minh</h4>
+          <p>Trở thành giảng viên chính thức tại trung tâm Duy Minh, đồng hành cùng nhiều thế hệ học sinh ôn thi chuyên và thi điểm.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="khoaluan.jpg" alt="Đủ điều kiện làm Khóa luận tốt nghiệp" onerror="this.src='anh-cu-nhan.jpg'">
+          <h4>Khóa luận tốt nghiệp năm 3</h4>
+          <p>Nỗ lực đạt kết quả tốt giúp mình đủ điều kiện thực hiện khóa luận tốt nghiệp chuyên ngành Toán từ năm thứ 3 Đại học.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="totnghiep.jpg" alt="Tốt nghiệp loại Giỏi" onerror="this.src='anh-cu-nhan.jpg'">
+          <h4>Tốt nghiệp cử nhân loại Giỏi</h4>
+          <p>Nhận tấm bằng tốt nghiệp cử nhân loại Giỏi ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, chính thức bước vào nghề dạy học.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="GPA.jpg" alt="Điểm chuyên ngành xuất sắc" onerror="this.src='anh-cu-nhan.jpg'">
+          <h4>Điểm chuyên ngành xuất sắc</h4>
+          <p>Bảng điểm GPA các học phần Phương pháp dạy học Toán đạt kết quả rất cao, minh chứng cho sự chuẩn bị kỹ lưỡng với chuyên môn.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="hoinghisach.jpg" alt="Bắt nhịp xu hướng giáo dục" onerror="this.src='anh-lam-viec.jpg'">
+          <h4>Bắt nhịp xu hướng giáo dục</h4>
+          <p>Tích cực tham gia các buổi tập huấn nâng cao chuyên môn và hội nghị sách để cập nhật các xu hướng dạy học của thời đại.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="ths.jpg" alt="Nghiên cứu bậc Thạc sĩ" onerror="this.src='anh-cu-nhan.jpg'">
+          <h4>Nghiên cứu bậc Thạc sĩ</h4>
+          <p>Theo học Cao học chuyên ngành Lí luận và phương pháp dạy học bộ môn Toán (định hướng nghiên cứu) với điểm số từ B+ trở lên.</p>
+        </div>
+        
+        <div class="timeline-card">
+          <img src="vinhmath.jpg" alt="Sáng lập lớp học VinhMath" onerror="this.src='anh-lop.jpg'">
+          <h4>Sáng lập lớp học VinhMath</h4>
+          <p>Vào năm 2025, lớp toán VinhMath chính thức ra đời tại Quận 5, mở đầu một chương mới đầy nhiệt huyết giảng dạy độc lập.</p>
+        </div>
       </div>
-      
-      <div class="timeline-card">
-        <img src="svnangdong.jpg" alt="Sinh viên năng động" onerror="this.src='anh-thay.jpg'">
-        <h4>Sinh viên năng động</h4>
-        <p>Trở thành sinh viên ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, năng nổ tham gia các hoạt động tập thể.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="hoctapcangthang.jpg" alt="Những giờ học căng thẳng" onerror="this.src='anh-lop.jpg'">
-        <h4>Những giờ học căng thẳng</h4>
-        <p>Những kỳ thi áp lực, những giờ thảo luận bài tập lớn cùng bạn bè để hiểu sâu kiến thức chuyên ngành Toán.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="vuahocvualam.jpg" alt="Vừa học vừa làm" onerror="this.src='anh-thay.jpg'">
-        <h4>Vừa học vừa làm</h4>
-        <p>Tranh thủ đi dạy thêm từ thời sinh viên để tích lũy trải nghiệm thực tế, rèn luyện kỹ năng truyền đạt kiến thức.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="tthongchuyen.jpg" alt="Tổ trưởng Tổ Toán Hồng Chuyên" onerror="this.src='anh-lop.jpg'">
-        <h4>Tổ trưởng Tổ Toán Hồng Chuyên</h4>
-        <p>Được tin tưởng giao trọng trách Tổ trưởng Tổ Toán tại trung tâm Hồng Chuyên, có cơ hội làm quen việc quản lý giáo dục.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="ttdm.jpg" alt="Giảng viên tại Duy Minh" onerror="this.src='anh-lam-viec.jpg'">
-        <h4>Giảng viên tại Duy Minh</h4>
-        <p>Trở thành giảng viên chính thức tại trung tâm Duy Minh, đồng hành cùng nhiều thế hệ học sinh ôn thi chuyên và thi điểm.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="khoaluan.jpg" alt="Đủ điều kiện làm Khóa luận tốt nghiệp" onerror="this.src='anh-cu-nhan.jpg'">
-        <h4>Khóa luận tốt nghiệp năm 3</h4>
-        <p>Nỗ lực đạt kết quả tốt giúp mình đủ điều kiện thực hiện khóa luận tốt nghiệp chuyên ngành Toán từ năm thứ 3 Đại học.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="totnghiep.jpg" alt="Tốt nghiệp loại Giỏi" onerror="this.src='anh-cu-nhan.jpg'">
-        <h4>Tốt nghiệp cử nhân loại Giỏi</h4>
-        <p>Nhận tấm bằng tốt nghiệp cử nhân loại Giỏi ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, chính thức bước vào nghề dạy học.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="GPA.jpg" alt="Điểm chuyên ngành xuất sắc" onerror="this.src='anh-cu-nhan.jpg'">
-        <h4>Điểm chuyên ngành xuất sắc</h4>
-        <p>Bảng điểm GPA các học phần Phương pháp dạy học Toán đạt kết quả rất cao, minh chứng cho sự chuẩn bị kỹ lưỡng với chuyên môn.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="hoinghisach.jpg" alt="Bắt nhịp xu hướng giáo dục" onerror="this.src='anh-lam-viec.jpg'">
-        <h4>Bắt nhịp xu hướng giáo dục</h4>
-        <p>Tích cực tham gia các buổi tập huấn nâng cao chuyên môn và hội nghị sách để cập nhật các xu hướng dạy học của thời đại.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="ths.jpg" alt="Nghiên cứu bậc Thạc sĩ" onerror="this.src='anh-cu-nhan.jpg'">
-        <h4>Nghiên cứu bậc Thạc sĩ</h4>
-        <p>Theo học Cao học chuyên ngành Lí luận và phương pháp dạy học bộ môn Toán (định hướng nghiên cứu) với điểm số từ B+ trở lên.</p>
-      </div>
-      
-      <div class="timeline-card">
-        <img src="vinhmath.jpg" alt="Sáng lập lớp học VinhMath" onerror="this.src='anh-lop.jpg'">
-        <h4>Sáng lập lớp học VinhMath</h4>
-        <p>Vào năm 2025, lớp toán VinhMath chính thức ra đời tại Quận 5, mở đầu một chương mới đầy nhiệt huyết giảng dạy độc lập.</p>
-      </div>
+      <button class="timeline-nav-btn next-btn" onclick="scrollTimeline(1)" title="Xem tiếp">→</button>
     </div>
   </section>
 
@@ -1135,6 +1139,82 @@ document.addEventListener("DOMContentLoaded", function () {
         el.textContent = Math.floor(current) + suffix;
       }
     }, stepTime);
+  }
+
+  // 3. Navigation và Drag-to-scroll cho Timeline Hành trình
+  const track = document.getElementById('journeyTrack');
+  const prevBtn = document.querySelector('.prev-btn');
+  const nextBtn = document.querySelector('.next-btn');
+
+  if (track) {
+    // Kéo thả bằng chuột trên Desktop
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    track.addEventListener('mousedown', (e) => {
+      isDown = true;
+      track.style.scrollSnapType = 'none';
+      track.style.cursor = 'grabbing';
+      startX = e.pageX - track.offsetLeft;
+      scrollLeft = track.scrollLeft;
+    });
+
+    track.addEventListener('mouseleave', () => {
+      isDown = false;
+      track.style.cursor = 'grab';
+      track.style.scrollSnapType = 'x mandatory';
+    });
+
+    track.addEventListener('mouseup', () => {
+      isDown = false;
+      track.style.cursor = 'grab';
+      track.style.scrollSnapType = 'x mandatory';
+    });
+
+    track.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - track.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      track.scrollLeft = scrollLeft - walk;
+    });
+
+    // Hàm cập nhật trạng thái hiển thị nút điều hướng
+    function updateNavButtons() {
+      if (!prevBtn || !nextBtn) return;
+      
+      // Ở đầu
+      if (track.scrollLeft <= 5) {
+        prevBtn.classList.add('disabled');
+      } else {
+        prevBtn.classList.remove('disabled');
+      }
+
+      // Ở cuối
+      const maxScrollLeft = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= maxScrollLeft - 5) {
+        nextBtn.classList.add('disabled');
+      } else {
+        nextBtn.classList.remove('disabled');
+      }
+    }
+
+    track.addEventListener('scroll', updateNavButtons);
+    window.addEventListener('resize', updateNavButtons);
+    
+    // Cuộn mượt khi click nút
+    window.scrollTimeline = function (direction) {
+      const cardWidth = 320 + 24; // width + gap
+      const scrollAmount = cardWidth * 2 * direction; // Cuộn 2 card mỗi lần click
+      track.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
+    };
+
+    // Khởi tạo trạng thái nút ban đầu
+    setTimeout(updateNavButtons, 300);
   }
 });
 </script>
