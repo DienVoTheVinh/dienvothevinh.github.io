@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trang chủ — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<style>
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
+.greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.greet h1 { font-size: 1.8rem; font-weight: 800; }
+.greet p { margin-top: 4px; color: var(--ink-2); }
+
+/* --- GRID DASHBOARD --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  margin-top: 12px;
+}
+@media (max-width: 960px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- LEFT COLUMN: DATE & COUNTDOWN --- */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.date-display-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+}
+.date-display-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(181,72,58,0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+.date-day-num {
+  font-size: 5.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: -0.04em;
+}
+.date-day-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 12px;
+  color: var(--ink);
+}
+.date-month-year {
+  font-size: 0.95rem;
+  color: var(--ink-3);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.countdown-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.countdown-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.countdown-event-name {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.countdown-timer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.timer-box {
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: 12px 4px;
+  text-align: center;
+}
+.timer-box b {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 750;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.timer-box span {
+  font-size: 0.62rem;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+}
+
+/* --- RIGHT COLUMN: CALENDAR & CLASSES --- */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.calendar-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.calendar-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.calendar-nav {
+  display: flex;
+  gap: 6px;
+}
+.calendar-nav button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+}
+.calendar-nav button:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.cal-day-header {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  padding: 8px 0;
+  text-transform: uppercase;
+}
+.cal-day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  position: relative;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.cal-day-cell:hover {
+  background: var(--surface-2);
+}
+.cal-day-cell.other-month {
+  color: var(--ink-3);
+  opacity: 0.35;
+}
+.cal-day-cell.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.cal-day-cell.today {
+  background: var(--accent);
+  color: #fff !important;
+  font-weight: 800;
+}
+.cal-day-cell.today .event-dot {
+  background: #fff !important;
+}
+
+/* Event styles */
+.cal-day-cell.has-schedule {
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+  color: var(--ok);
+}
+.cal-day-cell.has-exam {
+  background: color-mix(in srgb, var(--err) 8%, transparent);
+  color: var(--err);
+}
+.cal-day-cell.has-both {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ok) 8%, transparent) 50%, color-mix(in srgb, var(--err) 8%, transparent) 50%);
+  color: var(--accent);
+}
+.event-dot-container {
+  display: flex;
+  gap: 3px;
+  position: absolute;
+  bottom: 4px;
+}
+.event-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.event-dot.schedule { background: var(--ok); }
+.event-dot.exam { background: var(--err); }
+
+/* --- EVENT DETAIL LIST --- */
+.day-events-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.day-events-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 10px;
+}
+.event-list-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.event-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  align-items: center;
+}
+.event-item-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.event-item-icon.schedule { background: var(--ok-soft); color: var(--ok); }
+.event-item-icon.exam { background: var(--err-soft); color: var(--err); }
+.event-item-body { flex-grow: 1; }
+.event-item-title { font-weight: 700; font-size: 0.92rem; color: var(--ink); }
+.event-item-time { font-size: 0.78rem; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+.event-item-note { font-size: 0.8rem; color: var(--ink-2); margin-top: 4px; font-style: italic; }
+
+.empty-events {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 0.88rem;
+}
+
+/* Styled Table for classes */
+.staff-schedules-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.staff-schedules-card h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.pulse-btn {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(181, 72, 58, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(181, 72, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(181, 72, 58, 0); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small id="lblLogoSub">· Học tập</small></a>
+    <nav class="navlinks">
+      <!-- Tự động vẽ qua menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section class="greet">
+    <div>
+      <div class="sec-label" id="tenLop">VinhMath</div>
+      <h1 id="loiChao">Chào em 👋</h1>
+      <p id="loiChaoSub">Chào mừng em quay trở lại học tập hôm nay!</p>
+    </div>
+  </section>
+
+  <!-- Banner Link Google Meet cho học sinh lớp Online -->
+  <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
+    <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1">
+      <div style="display: flex; gap: 16px; align-items: center">
+        <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
+        <div>
+          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
+          <p style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
+        </div>
+      </div>
+      <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
+        Vào lớp học ngay 🚀
+      </a>
+    </div>
+  </div>
+
+  <!-- Bảng thống kê nhanh của học sinh -->
+  <section class="stats" id="khungThongKeHocSinh" style="display:none; margin-bottom: 24px;">
+    <div class="grid grid-3">
+      <div class="card stat"><b id="tkDiem">—</b><span>Điểm trung bình</span></div>
+      <div class="card stat"><b id="tkChuyenCan">—</b><span>Chuyên cần</span></div>
+      <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
+    </div>
+  </section>
+
+  <!-- Danh sách lịch dạy cho Trợ giảng/GV/Admin -->
+  <div class="staff-schedules-card" id="staffHomeContainer" style="display:none; margin-bottom:24px">
+    <h2>📅 Lịch dạy lớp sắp tới</h2>
+    <div id="dsLichDay" class="empty">Đang tải lịch dạy...</div>
+  </div>
+
+  <!-- DASHBOARD CHÍNH: SMART CALENDAR -->
+  <div class="dashboard-grid">
+    <!-- CỘT TRÁI: NGÀY & ĐẾM NGƯỢC -->
+    <div class="left-panel">
+      <!-- Date Display Card -->
+      <div class="date-display-card">
+        <div class="date-day-num" id="lblDayNum">14</div>
+        <div class="date-day-name" id="lblDayName">Chủ nhật</div>
+        <div class="date-month-year" id="lblMonthYear">Tháng 06, 2026</div>
+      </div>
+      
+      <!-- Countdown Card -->
+      <div class="countdown-card" id="khungCountdown" style="display:none">
+        <div class="countdown-title">⏰ Sự kiện sắp tới</div>
+        <div class="countdown-event-name" id="lblCountdownEvent">Đang tải...</div>
+        <div class="countdown-timer-grid">
+          <div class="timer-box"><b id="timerDays">00</b><span>Ngày</span></div>
+          <div class="timer-box"><b id="timerHours">00</b><span>Giờ</span></div>
+          <div class="timer-box"><b id="timerMins">00</b><span>Phút</span></div>
+          <div class="timer-box"><b id="timerSecs">00</b><span>Giây</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CỘT PHẢI: LỊCH THÁNG & DANH SÁCH SỰ KIỆN TRONG NGÀY -->
+    <div class="right-panel">
+      <!-- Calendar Container -->
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <h3 id="lblCalMonthYear">Tháng 06, 2026</h3>
+          <div class="calendar-nav">
+            <button onclick="prevMonth()" aria-label="Tháng trước">‹</button>
+            <button onclick="nextMonth()" aria-label="Tháng sau">›</button>
+          </div>
+        </div>
+        
+        <div class="calendar-grid" id="calGrid">
+          <!-- Render động -->
+        </div>
+      </div>
+      
+      <!-- Selected Day Events List -->
+      <div class="day-events-card">
+        <div class="day-events-title">⚡ Sự kiện trong ngày <span style="font-weight:normal; font-size:0.85rem; color:var(--ink-3); margin-left:6px;" id="lblSelectedDateDetail">14/06/2026</span></div>
+        <div class="event-list-box" id="dsSuKienNgay">
+          <!-- Render động -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+// ----- KHỞI TẠO BIẾN TOÀN CỤC -----
+var hoSoNguoiDung = null;
+var tatCaLop = [];
+var tatCaSchedules = [];
+var tatCaExams = [];
+var suKienThang = {}; // keyed by YYYY-MM-DD
+
+var namDangXem = new Date().getFullYear();
+var thangDangXem = new Date().getMonth(); // 0-11
+var ngayDangChon = new Date().getDate(); // 1-31
+
+var selectedYear = namDangXem;
+var selectedMonth = thangDangXem;
+var selectedDay = ngayDangChon;
+
+var countdownInterval = null;
+var closestEventTime = null;
+var closestEventTitle = "";
+
+var THU_TRONG_TUAN = {
+  0: 'Chủ nhật',
+  1: 'Thứ hai',
+  2: 'Thứ ba',
+  3: 'Thứ tư',
+  4: 'Thứ năm',
+  5: 'Thứ sáu',
+  6: 'Thứ bảy'
+};
+
+var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+
+// ----- TỰ CHẠY KHI TẢI TRANG -----
+(async function() {
+  if (!daKetNoi()) {
+    // Chế độ Xem thử (Demo)
+    hoSoNguoiDung = { role: 'student', full_name: 'Học sinh Demo' };
+    $('lblLogoSub').textContent = '· Xem thử';
+    $('loiChao').textContent = chao() + ', Học sinh 👋';
+    $('tenLop').textContent = 'Lớp 12A1 · VinhMath';
+    
+    // Thống kê demo
+    $('khungThongKeHocSinh').style.display = 'block';
+    $('tkDiem').textContent = '8.4';
+    $('tkChuyenCan').textContent = '92%';
+    $('tkBaiHoc').textContent = '14/18';
+    
+    // Meet link demo
+    $('linkMeetHoc').href = 'https://meet.google.com/abc-defg-hij';
+    $('khungMeetHoc').style.display = 'block';
+    
+    // Nạp lịch demo
+    napLichDemo();
+    return;
+  }
+
+  // Chế độ Thật
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  hoSoNguoiDung = hoSo;
+  
+  var roleLabel = 'Học sinh';
+  if (hoSo.role === 'admin') roleLabel = 'Quản trị';
+  else if (hoSo.role === 'teacher') roleLabel = 'Giáo viên';
+  else if (hoSo.role === 'assistant') roleLabel = 'Trợ giảng';
+  $('lblLogoSub').textContent = '· ' + roleLabel;
+  
+  $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
+
+  if (hoSo.role && hoSo.role !== 'student') {
+    // QUẢN TRỊ (GV/TG/Admin)
+    $('tenLop').textContent = roleLabel + ' · VinhMath';
+    $('loiChaoSub').textContent = 'Chào mừng thầy quay lại bảng điều khiển giảng dạy.';
+    $('staffHomeContainer').style.display = 'block';
+    
+    await taiSchedulesVaExamsStaff();
+    await veLichDayStaff();
+  } else {
+    // HỌC SINH
+    if (!hoSo.class_students || !hoSo.class_students.length) {
+      $('tenLop').textContent = 'VinhMath';
+      $('loiChaoSub').textContent = 'Tài khoản chưa được xếp vào lớp học nào.';
+      // Ẩn các khung chính
+      document.querySelector('.dashboard-grid').style.display = 'none';
+      return;
+    }
+    
+    var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+    $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
+    $('loiChaoSub').textContent = 'Hôm nay lớp mình học gì tiếp nào?';
+    
+    // Meet Link Online
+    var coLopOnline = hoSo.class_students.some(function (c) { return c.classes && c.classes.mode === 'online'; });
+    if (coLopOnline) {
+      var meetLink = '';
+      var onlineClassIds = hoSo.class_students
+        .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
+        .map(function (c) { return c.class_id; });
+        
+      var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
+      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+      if (firstLink) meetLink = firstLink.meet_link;
+      
+      if (!meetLink) {
+        var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+        meetLink = lk.data ? lk.data.value : '';
+      }
+      
+      if (meetLink) {
+        $('linkMeetHoc').href = meetLink;
+        $('khungMeetHoc').style.display = 'block';
+      }
+    }
+    
+    // Thống kê nhanh học sinh (tổng hợp qua tất cả các lớp của học sinh)
+    $('khungThongKeHocSinh').style.display = 'block';
+    await taiThongKeTongHopHS();
+    
+    // Tải lịch & bài thi học sinh
+    await taiSchedulesVaExamsStudent();
+  }
+
+  // Khởi dựng Lịch tháng & Đếm ngược
+  capNhatSuKienThang();
+  veLichThangGrid();
+  chonNgayLich(selectedYear, selectedMonth, selectedDay);
+  khoiDongCountdown();
+})();
+
+// ----- TẢI DỮ LIỆU STAFF -----
+async function taiSchedulesVaExamsStaff() {
+  // 1. Tải toàn bộ lớp để mapping
+  var rClasses = await sb.from('classes').select('id, name');
+  tatCaLop = rClasses.data || [];
+  
+  // 2. Tải toàn bộ lịch học (schedules)
+  var rSched = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, note, class_id, classes(name, mode)')
+    .order('weekday').order('start_time');
+  tatCaSchedules = rSched.data || [];
+  
+  // 3. Tải toàn bộ kỳ thi (exams) đã xuất bản
+  var rExams = await sb.from('exams')
+    .select('id, title, opens_at, closes_at, class_id')
+    .eq('published', true);
+  tatCaExams = rExams.data || [];
+}
+
+// ----- TẢI DỮ LIỆU HỌC SINH -----
+async function taiSchedulesVaExamsStudent() {
+  var classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  
+  // 1. Tải lịch học lớp học sinh tham gia
+  var rSched = await sb.from('schedules')
+    .select('weekday, start_time, end_time, mode, note, class_id, classes(name, mode)')
+    .in('class_id', classIds);
+  tatCaSchedules = rSched.data || [];
+  
+  // 2. Tải kỳ thi lớp học sinh tham gia
+  var rExams = await sb.from('exams')
+    .select('id, title, opens_at, closes_at, class_id')
+    .in('class_id', classIds)
+    .eq('published', true);
+  tatCaExams = rExams.data || [];
+}
+
+// ----- THỐNG KÊ TỔNG HỢP HỌC SINH -----
+async function taiThongKeTongHopHS() {
+  var classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  var rLessons = await sb.from('lessons').select('id').in('class_id', classIds);
+  var lessonIds = (rLessons.data || []).map(function (l) { return l.id; });
+  
+  if (lessonIds.length > 0) {
+    var att = await sb.from('attempts')
+      .select('score')
+      .in('lesson_id', lessonIds)
+      .not('submitted_at', 'is', null);
+      
+    if (att.data && att.data.length) {
+      var tb = att.data.reduce(function (s, a) { return s + (a.score || 0); }, 0) / att.data.length;
+      $('tkDiem').textContent = tb.toFixed(1);
+      $('tkBaiHoc').textContent = att.data.length;
+    } else {
+      $('tkDiem').textContent = '—';
+      $('tkBaiHoc').textContent = '0';
+    }
+  } else {
+    $('tkDiem').textContent = '—';
+    $('tkBaiHoc').textContent = '0';
+  }
+
+  var dd = await sb.from('attendance')
+    .select('status')
+    .in('class_id', classIds);
+    
+  if (dd.data && dd.data.length) {
+    var coMat = dd.data.filter(function (d) { return d.status !== 'absent'; }).length;
+    $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
+  } else {
+    $('tkChuyenCan').textContent = '—';
+  }
+}
+
+// ----- VỀ LỊCH DẠY CHO STAFF -----
+async function veLichDayStaff() {
+  var container = $('dsLichDay');
+  if (!tatCaSchedules.length) {
+    container.innerHTML = '<div class="empty card">Chưa có lịch dạy nào được thiết lập. Vào mục <a href="quan-tri-lich.html">Lịch học</a> để thiết lập lịch.</div>';
+    return;
+  }
+  
+  var todayJs = new Date().getDay();
+  var todayWeekday = todayJs === 0 ? 7 : todayJs;
+  
+  // Sắp xếp lịch dạy theo ngày gần hôm nay nhất
+  var schedsSorted = [...tatCaSchedules];
+  schedsSorted.sort(function (a, b) {
+    var diffA = ((a.weekday - todayWeekday) + 7) % 7;
+    var diffB = ((b.weekday - todayWeekday) + 7) % 7;
+    return diffA - diffB || a.start_time.localeCompare(b.start_time);
+  });
+  
+  // Link meet
+  var rl = await sb.from('class_links').select('class_id, meet_link');
+  var meetMap = {};
+  (rl.data || []).forEach(function (x) { if (x.meet_link) meetMap[x.class_id] = x.meet_link; });
+  
+  var TEN_THU_VIET = { 1: 'Thứ hai', 2: 'Thứ ba', 3: 'Thứ tư', 4: 'Thứ năm', 5: 'Thứ sáu', 6: 'Thứ bảy', 7: 'Chủ nhật' };
+  var tdSty = 'padding:12px 14px; border-bottom:1px solid var(--line)';
+  
+  var rowsHtml = schedsSorted.slice(0, 5).map(function (s) {
+    var laHomNay = s.weekday === todayWeekday;
+    var tenLop = s.classes ? s.classes.name : '?';
+    var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
+    var meet = meetMap[s.class_id];
+    var phongDichVu = isOnline
+      ? (meet ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Dạy Meet</a>'
+              : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>')
+      : '<span style="font-size:.85rem; color:var(--ink-2)">🏫 Tại trung tâm</span>';
+      
+    return '<tr style="' + (laHomNay ? 'background:var(--accent-soft)' : '') + '">' +
+      '<td style="' + tdSty + '"><b>' + tenLop + '</b>' + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</td>' +
+      '<td style="' + tdSty + '">' + TEN_THU_VIET[s.weekday] + '</td>' +
+      '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0,5) + ' – ' + s.end_time.slice(0,5) + '</td>' +
+      '<td style="' + tdSty + '">' + phongDichVu + '</td>' +
+      '</tr>';
+  }).join('');
+  
+  container.innerHTML = '<div style="overflow-x:auto"><table>' +
+    '<thead><tr>' +
+      '<th style="text-align:left; font-size:.78rem; color:var(--ink-3); padding:10px 14px; border-bottom:1px solid var(--line-2)">Lớp</th>' +
+      '<th style="text-align:left; font-size:.78rem; color:var(--ink-3); padding:10px 14px; border-bottom:1px solid var(--line-2)">Thứ</th>' +
+      '<th style="text-align:left; font-size:.78rem; color:var(--ink-3); padding:10px 14px; border-bottom:1px solid var(--line-2)">Giờ dạy</th>' +
+      '<th style="text-align:left; font-size:.78rem; color:var(--ink-3); padding:10px 14px; border-bottom:1px solid var(--line-2)">Hình thức</th>' +
+    '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+}
+
+// ----- PHÂN TÍCH VÀ ĐÁNH DẤU SỰ KIỆN TRONG THÁNG -----
+function capNhatSuKienThang() {
+  suKienThang = {};
+  
+  var soNgay = new Date(namDangXem, thangDangXem + 1, 0).getDate();
+  for (var d = 1; d <= soNgay; d++) {
+    var dObj = new Date(namDangXem, thangDangXem, d);
+    var jsDay = dObj.getDay();
+    var weekdayVal = jsDay === 0 ? 7 : jsDay;
+    
+    var dateKey = formatDateKey(namDangXem, thangDangXem, d);
+    
+    // Tích hợp schedules
+    var dayScheds = tatCaSchedules.filter(function (s) { return s.weekday === weekdayVal; });
+    dayScheds.forEach(function (s) {
+      suKienThang[dateKey] = suKienThang[dateKey] || [];
+      suKienThang[dateKey].push({
+        type: 'schedule',
+        title: 'Lớp: ' + (s.classes ? s.classes.name : 'Toán học'),
+        time: s.start_time.slice(0, 5) + ' - ' + s.end_time.slice(0, 5),
+        note: (s.mode === 'online' ? '🎥 Lớp Online' : '🏫 Lớp Offline') + (s.note ? ' · ' + s.note : '')
+      });
+    });
+  }
+  
+  // Tích hợp exams
+  tatCaExams.forEach(function (e) {
+    if (!e.opens_at) return;
+    var dObj = new Date(e.opens_at);
+    if (dObj.getFullYear() === namDangXem && dObj.getMonth() === thangDangXem) {
+      var dVal = dObj.getDate();
+      var dateKey = formatDateKey(namDangXem, thangDangXem, dVal);
+      suKienThang[dateKey] = suKienThang[dateKey] || [];
+      
+      var timeStr = dObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      suKienThang[dateKey].push({
+        type: 'exam',
+        title: '📝 Thi: ' + e.title,
+        time: timeStr,
+        note: 'Thời gian làm bài: ' + (e.duration_minutes || 45) + ' phút'
+      });
+    }
+  });
+}
+
+// ----- VẼ LỊCH THÁNG GRID -----
+function veLichThangGrid() {
+  $('lblCalMonthYear').textContent = 'Tháng ' + ((thangDangXem + 1) < 10 ? '0' + (thangDangXem + 1) : (thangDangXem + 1)) + ', ' + namDangXem;
+  
+  var grid = $('calGrid');
+  grid.innerHTML = '';
+  
+  // Vẽ tiêu đề Thứ trong tuần
+  var headers = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  headers.forEach(function(h) {
+    var cell = document.createElement('div');
+    cell.className = 'cal-day-header';
+    cell.textContent = h;
+    grid.appendChild(cell);
+  });
+  
+  // Xác định ngày đầu tiên của tháng
+  var firstDayJs = new Date(namDangXem, thangDangXem, 1).getDay(); // 0: CN, 1: T2, ...
+  var paddingLeft = firstDayJs === 0 ? 6 : firstDayJs - 1; // Số ô trống cần vẽ của tháng trước
+  
+  // Vẽ ô trống tháng trước
+  var prevMonthLastDay = new Date(namDangXem, thangDangXem, 0).getDate();
+  for (var i = paddingLeft - 1; i >= 0; i--) {
+    var pD = prevMonthLastDay - i;
+    var cell = document.createElement('div');
+    cell.className = 'cal-day-cell other-month';
+    cell.textContent = pD;
+    grid.appendChild(cell);
+  }
+  
+  // Vẽ ngày trong tháng
+  var totalDays = new Date(namDangXem, thangDangXem + 1, 0).getDate();
+  var today = new Date();
+  var laThangHienTai = today.getFullYear() === namDangXem && today.getMonth() === thangDangXem;
+  
+  for (var d = 1; d <= totalDays; d++) {
+    var cell = document.createElement('div');
+    cell.className = 'cal-day-cell';
+    cell.textContent = d;
+    
+    var dateKey = formatDateKey(namDangXem, thangDangXem, d);
+    var items = suKienThang[dateKey] || [];
+    
+    var coSchedule = items.some(function(it) { return it.type === 'schedule'; });
+    var coExam = items.some(function(it) { return it.type === 'exam'; });
+    
+    if (coSchedule && coExam) {
+      cell.classList.add('has-both');
+    } else if (coSchedule) {
+      cell.classList.add('has-schedule');
+    } else if (coExam) {
+      cell.classList.add('has-exam');
+    }
+    
+    // Thêm các dấu chấm sự kiện (dot) dưới ô
+    if (items.length > 0) {
+      var dotBox = document.createElement('div');
+      dotBox.className = 'event-dot-container';
+      if (coSchedule) {
+        var dot = document.createElement('div');
+        dot.className = 'event-dot schedule';
+        dotBox.appendChild(dot);
+      }
+      if (coExam) {
+        var dot = document.createElement('div');
+        dot.className = 'event-dot exam';
+        dotBox.appendChild(dot);
+      }
+      cell.appendChild(dotBox);
+    }
+    
+    // Highlight hôm nay
+    if (laThangHienTai && today.getDate() === d) {
+      cell.classList.add('today');
+    }
+    
+    // Highlight ngày đang chọn
+    if (selectedYear === namDangXem && selectedMonth === thangDangXem && selectedDay === d) {
+      cell.classList.add('selected');
+    }
+    
+    // Event click ngày
+    (function(dayVal) {
+      cell.onclick = function() {
+        chonNgayLich(namDangXem, thangDangXem, dayVal);
+      };
+    })(d);
+    
+    grid.appendChild(cell);
+  }
+  
+  // Vẽ ô trống tháng sau
+  var totalCells = paddingLeft + totalDays;
+  var paddingRight = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (var d = 1; d <= paddingRight; d++) {
+    var cell = document.createElement('div');
+    cell.className = 'cal-day-cell other-month';
+    cell.textContent = d;
+    grid.appendChild(cell);
+  }
+}
+
+// ----- ĐIỀU HƯỚNG THÁNG -----
+function prevMonth() {
+  thangDangXem--;
+  if (thangDangXem < 0) {
+    thangDangXem = 11;
+    namDangXem--;
+  }
+  capNhatSuKienThang();
+  veLichThangGrid();
+}
+
+function nextMonth() {
+  thangDangXem++;
+  if (thangDangXem > 11) {
+    thangDangXem = 0;
+    namDangXem++;
+  }
+  capNhatSuKienThang();
+  veLichThangGrid();
+}
+
+// ----- CHỌN NGÀY VÀ HIỂN THỊ SỰ KIỆN -----
+function chonNgayLich(nam, thang, ngay) {
+  selectedYear = nam;
+  selectedMonth = thang;
+  selectedDay = ngay;
+  
+  // Vẽ lại grid để cập nhật viền selected
+  var cells = document.querySelectorAll('.calendar-grid .cal-day-cell:not(.other-month)');
+  cells.forEach(function(c) {
+    c.classList.remove('selected');
+    if (parseInt(c.childNodes[0].textContent) === ngay && namDangXem === selectedYear && thangDangXem === selectedMonth) {
+      c.classList.add('selected');
+    }
+  });
+  
+  // Cập nhật bảng thông tin bên trái
+  $('lblDayNum').textContent = ngay < 10 ? '0' + ngay : ngay;
+  var dObj = new Date(nam, thang, ngay);
+  $('lblDayName').textContent = THU_TRONG_TUAN[dObj.getDay()];
+  
+  var monthsViet = ['Tháng 01', 'Tháng 02', 'Tháng 03', 'Tháng 04', 'Tháng 05', 'Tháng 06', 'Tháng 07', 'Tháng 08', 'Tháng 09', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+  $('lblMonthYear').textContent = monthsViet[thang] + ', ' + nam;
+  
+  $('lblSelectedDateDetail').textContent = (ngay < 10 ? '0' + ngay : ngay) + '/' + ((thang + 1) < 10 ? '0' + (thang + 1) : (thang + 1)) + '/' + nam;
+  
+  // Render danh sách sự kiện
+  var dateKey = formatDateKey(nam, thang, ngay);
+  var events = suKienThang[dateKey] || [];
+  
+  var container = $('dsSuKienNgay');
+  if (events.length === 0) {
+    container.innerHTML = '<div class="empty-events">Không có lịch học hoặc kiểm tra nào trong ngày này.</div>';
+    return;
+  }
+  
+  container.innerHTML = events.map(function(ev) {
+    var icon = ev.type === 'schedule' ? '📚' : '📝';
+    var iconClass = ev.type === 'schedule' ? 'schedule' : 'exam';
+    return '<div class="event-item">' +
+      '<div class="event-item-icon ' + iconClass + '">' + icon + '</div>' +
+      '<div class="event-item-body">' +
+        '<div class="event-item-title">' + ev.title + '</div>' +
+        '<div class="event-item-time">🕒 ' + ev.time + '</div>' +
+        (ev.note ? '<div class="event-item-note">' + ev.note + '</div>' : '') +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ----- KHỞI DỰNG VÀ CHẠY ĐỒNG HỒ ĐẾM NGƯỢC -----
+function khoiDongCountdown() {
+  timSuKienGanNhat();
+  
+  if (countdownInterval) clearInterval(countdownInterval);
+  
+  if (!closestEventTime) {
+    $('khungCountdown').style.display = 'none';
+    return;
+  }
+  
+  $('khungCountdown').style.display = 'block';
+  $('lblCountdownEvent').textContent = closestEventTitle;
+  
+  capNhatGiaoDienCountdown();
+  countdownInterval = setInterval(function() {
+    capNhatGiaoDienCountdown();
+  }, 1000);
+}
+
+function timSuKienGanNhat() {
+  closestEventTime = null;
+  closestEventTitle = "";
+  
+  var bayGio = new Date();
+  var minDiff = Infinity;
+  
+  // 1. Quét schedules trong 30 ngày tới
+  for (var i = 0; i < 30; i++) {
+    var scanDate = new Date();
+    scanDate.setDate(bayGio.getDate() + i);
+    var jsDay = scanDate.getDay();
+    var weekdayVal = jsDay === 0 ? 7 : jsDay;
+    
+    var dayScheds = tatCaSchedules.filter(function(s) { return s.weekday === weekdayVal; });
+    dayScheds.forEach(function(s) {
+      var timeParts = s.start_time.split(':');
+      var eventDate = new Date(scanDate.getFullYear(), scanDate.getMonth(), scanDate.getDate(), parseInt(timeParts[0]), parseInt(timeParts[1] || 0), 0);
+      var diff = eventDate.getTime() - bayGio.getTime();
+      if (diff > 0 && diff < minDiff) {
+        minDiff = diff;
+        closestEventTime = eventDate;
+        closestEventTitle = '📚 Buổi học: ' + (s.classes ? s.classes.name : 'Toán học') + ' (' + s.start_time.slice(0,5) + ')';
+      }
+    });
+  }
+  
+  // 2. Quét kỳ thi (exams) có lịch bắt đầu trong tương lai
+  tatCaExams.forEach(function(e) {
+    if (!e.opens_at) return;
+    var eventDate = new Date(e.opens_at);
+    var diff = eventDate.getTime() - bayGio.getTime();
+    if (diff > 0 && diff < minDiff) {
+      minDiff = diff;
+      closestEventTime = eventDate;
+      closestEventTitle = '📝 Kỳ thi: ' + e.title + ' (' + eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ngày ' + eventDate.getDate() + '/' + (eventDate.getMonth() + 1) + ')';
+    }
+  });
+}
+
+function capNhatGiaoDienCountdown() {
+  if (!closestEventTime) return;
+  var bayGio = new Date().getTime();
+  var target = closestEventTime.getTime();
+  var diff = target - bayGio;
+  
+  if (diff <= 0) {
+    timSuKienGanNhat();
+    if (!closestEventTime) {
+      $('khungCountdown').style.display = 'none';
+      if (countdownInterval) clearInterval(countdownInterval);
+      return;
+    }
+    $('lblCountdownEvent').textContent = closestEventTitle;
+    diff = closestEventTime.getTime() - bayGio;
+  }
+  
+  var d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  var h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  var s = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  $('timerDays').textContent = d < 10 ? '0' + d : d;
+  $('timerHours').textContent = h < 10 ? '0' + h : h;
+  $('timerMins').textContent = m < 10 ? '0' + m : m;
+  $('timerSecs').textContent = s < 10 ? '0' + s : s;
+}
+
+// ----- NẠP DỮ LIỆU GIẢ LẬP DEMO -----
+function napLichDemo() {
+  tatCaSchedules = [
+    { weekday: 2, start_time: '18:00:00', end_time: '19:30:00', mode: 'offline', note: 'Phòng 201' },
+    { weekday: 4, start_time: '18:00:00', end_time: '19:30:00', mode: 'online', note: 'Video phòng Meet' },
+    { weekday: 6, start_time: '19:45:00', end_time: '21:15:00', mode: 'offline', note: 'Phòng 202' }
+  ];
+  
+  var nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 3);
+  nextWeek.setHours(19, 0, 0, 0);
+  
+  var opensAtStr = nextWeek.toISOString();
+  tatCaExams = [
+    { title: 'Kiểm tra Giữa kỳ Toán hình học', opens_at: opensAtStr, duration_minutes: 45 }
+  ];
+  
+  capNhatSuKienThang();
+  veLichThangGrid();
+  chonNgayLich(selectedYear, selectedMonth, selectedDay);
+  khoiDongCountdown();
+}
+
+function formatDateKey(y, m, d) {
+  var mm = (m + 1) < 10 ? '0' + (m + 1) : (m + 1);
+  var dd = d < 10 ? '0' + d : d;
+  return y + '-' + mm + '-' + dd;
+}
+</script>
+</body>
+</html>

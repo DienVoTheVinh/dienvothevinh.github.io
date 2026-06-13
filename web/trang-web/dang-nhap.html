@@ -602,10 +602,10 @@ if (!daKetNoi()) {
   baoLoi('Chế độ xem thử: web chưa kết nối Supabase nên chưa đăng nhập được thật.', 'warn');
 }
 
-// Đã đăng nhập từ trước → vào thẳng trang học tập
+// Đã đăng nhập từ trước → vào thẳng trang chủ
 if (daKetNoi()) {
   sb.auth.getSession().then(function (s) {
-    if (s.data.session) window.location.href = 'lop-hoc.html';
+    if (s.data.session) window.location.href = 'trang-chu.html';
   });
 }
 
@@ -619,7 +619,7 @@ $('formDangNhap').addEventListener('submit', async function (e) {
     baoLoi(r.error);
     nut.disabled = false; nut.textContent = 'Vào lớp học';
   } else {
-    window.location.href = 'lop-hoc.html';
+    window.location.href = 'trang-chu.html';
   }
 });
 </script>

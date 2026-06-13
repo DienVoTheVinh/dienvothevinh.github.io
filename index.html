@@ -1080,15 +1080,15 @@ footer .wrap {
           var isStaff = ['admin', 'teacher', 'assistant'].indexOf(rUser.data.role) !== -1;
           var btn = document.querySelector('.topbar .btn-primary');
           if (btn) {
-            btn.textContent = isStaff ? 'Trang Quản trị' : 'Vào Lớp học';
-            btn.href = isStaff ? 'quan-tri-lop.html' : 'lop-hoc.html';
+            btn.textContent = isStaff ? 'Trang chủ Quản trị' : 'Vào Trang chủ';
+            btn.href = 'trang-chu.html';
           }
           // Cập nhật navlinks
           var nav = document.querySelector('.navlinks');
           if (nav) {
             nav.innerHTML = isStaff
-              ? '<a href="index.html" class="active">Trang chủ</a><a href="quan-tri-lop.html">Quản trị</a>'
-              : '<a href="index.html" class="active">Trang chủ</a><a href="lop-hoc.html">Lớp học</a><a href="luyen-de.html">Luyện đề</a>';
+              ? '<a href="index.html" class="active">Giới thiệu</a><a href="trang-chu.html">Trang chủ</a><a href="quan-tri-lop.html">Lớp học</a>'
+              : '<a href="index.html" class="active">Giới thiệu</a><a href="trang-chu.html">Trang chủ</a><a href="lop-hoc.html">Lớp học</a><a href="luyen-de.html">Luyện đề</a>';
           }
         }
       }

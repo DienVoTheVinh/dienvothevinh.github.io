@@ -14,6 +14,7 @@ function apDungMenu(role) {
   if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
     // ----- MENU CỦA THẦY / TRỢ GIẢNG -----
     muc = [
+      ['trang-chu.html', 'Trang chủ'],
       ['quan-tri-lop.html', 'Lớp học']
     ];
     if (role === 'admin' || role === 'teacher') {
@@ -34,6 +35,7 @@ function apDungMenu(role) {
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
+      ['trang-chu.html', 'Trang chủ'],
       ['lop-hoc.html', 'Lớp học'],
       ['tai-lieu.html', 'Tài liệu'],
       ['lich-hoc.html', 'Lịch học'],
