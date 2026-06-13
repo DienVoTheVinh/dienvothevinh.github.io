@@ -39,6 +39,11 @@
     box-shadow: 0 0 0 0 rgba(181, 72, 58, 0);
   }
 }
+.class-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab-btn { background: transparent; border: none; padding: 8px 16px; font-size: .92rem; font-weight: 500; color: var(--ink-2); cursor: pointer; border-radius: var(--r-sm); transition: all 0.15s; }
+.tab-btn:hover { background: var(--surface-2); color: var(--ink); }
+.tab-btn.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.topic-divider { display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); padding: 12px 16px; border-radius: var(--r-md); font-weight: 700; font-size: 0.95rem; text-transform: uppercase; color: var(--ink); border: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -107,8 +112,12 @@
 
     <section class="lessons">
       <div class="sec-label">Bài học của lớp</div>
-      <h2 style="margin-bottom:24px">Danh sách bài học</h2>
-      <div class="grid grid-2" id="dsBaiHoc"></div>
+      <h2 style="margin-bottom:16px">Danh sách bài học</h2>
+      
+      <!-- Bộ chọn lớp học của học sinh (tab button) -->
+      <div class="class-tabs" id="tabLopHocSinh" style="display:none; margin-bottom:20px;"></div>
+      
+      <div id="dsBaiHocGomNhom"></div>
     </section>
   </div>
 </div>
@@ -151,6 +160,9 @@ var BAI_HOC_MAU = [
   { title: 'Buổi 11 · Tính đơn điệu', topics: { name: 'Hàm số' }, note: 'Video + 20 bài tập', so_cau: 20, youtube_url: '' }
 ];
 
+var dsHocSinhLop = [];
+var selectedClassId = null;
+
 (async function () {
   if (!daKetNoi()) {
     // ----- CHẾ ĐỘ XEM THỬ -----
@@ -160,7 +172,7 @@ var BAI_HOC_MAU = [
     $('tkDiem').textContent = '8.4';
     $('tkChuyenCan').textContent = '92%';
     $('tkBaiHoc').textContent = '14/18';
-    $('dsBaiHoc').innerHTML = BAI_HOC_MAU.map(theBaiHoc).join('');
+    hienThiLessonsGomNhom(BAI_HOC_MAU);
     
     // Hiện Meet link demo
     $('linkMeetHoc').href = 'https://meet.google.com/abc-defg-hij';
@@ -179,7 +191,7 @@ var BAI_HOC_MAU = [
     return;
   }
 
-  if (!hoSo.class_id) {
+  if (!hoSo.class_students || !hoSo.class_students.length) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('tenLop').textContent = 'VinhMath';
@@ -187,9 +199,8 @@ var BAI_HOC_MAU = [
     return;
   }
 
-  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
-  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
-
+  $('tenLop').textContent = 'Lớp học của em · VinhMath';
+  
   // Hiển thị link Google Meet nếu lớp học hình thức Online
   var coLopOnline = hoSo.class_students.some(function (c) { return c.classes && c.classes.mode === 'online'; });
   if (coLopOnline) {
@@ -219,29 +230,172 @@ var BAI_HOC_MAU = [
     }
   }
 
-  // Bài học đã xuất bản của lớp (phân quyền RLS tự lọc đúng lớp)
+  // Nạp danh sách lớp của học sinh
+  dsHocSinhLop = hoSo.class_students || [];
+  if (dsHocSinhLop.length > 0) {
+    selectedClassId = dsHocSinhLop[0].class_id;
+  }
+
+  // Vẽ các tab chuyển lớp (luôn vẽ nếu có ít nhất 1 lớp)
+  if (dsHocSinhLop.length > 0) {
+    var tabsBox = $('tabLopHocSinh');
+    tabsBox.style.display = 'flex';
+    tabsBox.innerHTML = dsHocSinhLop.map(function (cs, idx) {
+      var name = cs.classes ? cs.classes.name : 'Khác';
+      var active = idx === 0 ? ' active' : '';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+    }).join('');
+  }
+
+  await taiLessonsHocSinh();
+  await taiThongKeLop();
+})();
+
+async function chonLopHocSinh(classId) {
+  selectedClassId = classId;
+  
+  // Cập nhật tab active
+  document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+  var actTab = $('tab-class-' + classId);
+  if (actTab) actTab.classList.add('active');
+  
+  await taiLessonsHocSinh();
+  await taiThongKeLop();
+}
+
+async function taiLessonsHocSinh() {
+  if (!selectedClassId) {
+    $('dsBaiHocGomNhom').innerHTML = '<div class="empty card">Không tìm thấy lớp học.</div>';
+    return;
+  }
+  $('dsBaiHocGomNhom').innerHTML = '<div class="empty">Đang tải danh sách bài học...</div>';
+  
+  // Tải các bài học đã xuất bản của lớp đang chọn
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, topics(name, color)')
-    .order('sort', { ascending: false });
+    .select('id, title, youtube_url, note, sort, topic_id, topics(id, name, color, sort)')
+    .eq('class_id', selectedClassId)
+    .eq('published', true);
+    
   var ds = r.data || [];
-  $('dsBaiHoc').innerHTML = ds.length
-    ? ds.map(theBaiHoc).join('')
-    : '<div class="empty card" style="grid-column:1/-1">Thầy chưa đăng bài học nào cho lớp em — quay lại sau nhé!</div>';
+  hienThiLessonsGomNhom(ds);
+}
 
-  // Thống kê nhanh
-  var att = await sb.from('attempts').select('score', { count: 'exact' }).not('submitted_at', 'is', null);
-  if (att.data && att.data.length) {
-    var tb = att.data.reduce(function (s, a) { return s + (a.score || 0); }, 0) / att.data.length;
-    $('tkDiem').textContent = tb.toFixed(1);
-    $('tkBaiHoc').textContent = att.data.length;
-  } else { $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0'; }
+async function taiThongKeLop() {
+  if (!selectedClassId) return;
+  
+  // 1. Tải điểm trung bình và số bài đã làm của lớp đang chọn
+  var rLessons = await sb.from('lessons').select('id').eq('class_id', selectedClassId);
+  var lessonIds = (rLessons.data || []).map(function (l) { return l.id; });
+  
+  if (lessonIds.length > 0) {
+    var att = await sb.from('attempts')
+      .select('score')
+      .in('lesson_id', lessonIds)
+      .not('submitted_at', 'is', null);
+      
+    if (att.data && att.data.length) {
+      var tb = att.data.reduce(function (s, a) { return s + (a.score || 0); }, 0) / att.data.length;
+      $('tkDiem').textContent = tb.toFixed(1);
+      $('tkBaiHoc').textContent = att.data.length;
+    } else {
+      $('tkDiem').textContent = '—';
+      $('tkBaiHoc').textContent = '0';
+    }
+  } else {
+    $('tkDiem').textContent = '—';
+    $('tkBaiHoc').textContent = '0';
+  }
 
-  var dd = await sb.from('attendance').select('status');
+  // 2. Tải chuyên cần cho lớp đang chọn
+  var dd = await sb.from('attendance')
+    .select('status')
+    .eq('class_id', selectedClassId);
+    
   if (dd.data && dd.data.length) {
     var coMat = dd.data.filter(function (d) { return d.status !== 'absent'; }).length;
     $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
-  } else { $('tkChuyenCan').textContent = '—'; }
-})();
+  } else {
+    $('tkChuyenCan').textContent = '—';
+  }
+}
+
+function hienThiLessonsGomNhom(ds) {
+  if (!ds || !ds.length) {
+    $('dsBaiHocGomNhom').innerHTML = '<div class="empty card">Thầy chưa đăng bài học nào cho lớp em — quay lại sau nhé!</div>';
+    return;
+  }
+  
+  // Gom nhóm
+  var groups = {};
+  var topicOrder = [];
+  var noTopicLessons = [];
+  
+  ds.forEach(function (b) {
+    if (b.topics) {
+      var tName = b.topics.name || 'Chuyên đề';
+      var tId = b.topics.id || tName;
+      if (!groups[tId]) {
+        groups[tId] = {
+          topic: b.topics,
+          lessons: []
+        };
+        topicOrder.push(groups[tId]);
+      }
+      groups[tId].lessons.push(b);
+    } else {
+      noTopicLessons.push(b);
+    }
+  });
+  
+  // Sắp xếp các chuyên đề theo thứ tự tăng dần của topic.sort
+  topicOrder.sort(function (a, b) {
+    return (a.topic.sort || 0) - (b.topic.sort || 0);
+  });
+  
+  // Sắp xếp bài giảng trong chuyên đề theo sort giảm dần
+  topicOrder.forEach(function (g) {
+    g.lessons.sort(function (a, b) {
+      return (b.sort || 0) - (a.sort || 0);
+    });
+  });
+  
+  // Sắp xếp bài giảng không chuyên đề theo sort giảm dần
+  noTopicLessons.sort(function (a, b) {
+    return (b.sort || 0) - (a.sort || 0);
+  });
+  
+  var html = '';
+  
+  // Render chuyên đề có bài học
+  topicOrder.forEach(function (g) {
+    var tColor = g.topic.color || 'var(--accent)';
+    var tName = g.topic.name || 'Chuyên đề';
+    html += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 24px 0 12px 0; border: 1px solid var(--line); border-left: 5px solid ' + tColor + '">' +
+      '<span>📚 ' + tName + '</span>' +
+      '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
+      '</div>';
+    
+    html += '<div class="grid grid-2" style="margin-bottom:20px">' +
+      g.lessons.map(theBaiHoc).join('') +
+      '</div>';
+  });
+  
+  // Render bài giảng không có chuyên đề
+  if (noTopicLessons.length > 0) {
+    html += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 24px 0 12px 0; border: 1px solid var(--line); border-left: 5px solid #A8A29A">' +
+      '<span>📎 BÀI GIẢNG KHÁC / TỰ DO</span>' +
+      '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
+      '</div>';
+      
+    html += '<div class="grid grid-2" style="margin-bottom:20px">' +
+      noTopicLessons.map(theBaiHoc).join('') +
+      '</div>';
+  }
+  
+  $('dsBaiHocGomNhom').innerHTML = html;
+}
 
 // ===== Màn hình trang chủ cho Trợ giảng / Giáo viên / Admin =====
 async function renderStaffHome(hoSo) {
