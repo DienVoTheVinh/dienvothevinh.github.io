@@ -23,6 +23,7 @@ function apDungMenu(role) {
       ['quan-tri-lich.html', 'Lịch học'],
       ['quan-tri-de.html', 'Luyện đề'],
       ['quan-tri-cham-bai.html', 'Chấm bài'],
+      ['bang-vang.html', 'Bảng vàng'],
       ['ca-nhan.html', 'Cá nhân']
     );
     if (role === 'admin') {
@@ -34,6 +35,7 @@ function apDungMenu(role) {
       ['lop-hoc.html', 'Lớp học'],
       ['lich-hoc.html', 'Lịch học'],
       ['luyen-de.html', 'Luyện đề'],
+      ['bang-vang.html', 'Bảng vàng'],
       ['ca-nhan.html', 'Cá nhân']
     ];
   }
