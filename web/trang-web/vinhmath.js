@@ -619,6 +619,60 @@ window.VM_AI_SETTINGS = {
   enabled: false,
   key: ''
 };
+window.VM_AI_SCREENSHOT = null;
+
+// Tải động và cấu hình MathJax (đảm bảo dịch LaTeX trên mọi trang)
+function damBaoMathJax(callback) {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    if (callback) callback();
+    return;
+  }
+  
+  if (!document.getElementById('MathJax-script')) {
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.id = 'MathJax-script';
+    script.async = true;
+    script.onload = function() {
+      if (callback) callback();
+    };
+    document.head.appendChild(script);
+  } else {
+    // Nếu script đã được tạo nhưng chưa load xong, check định kỳ
+    var timer = setInterval(function() {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        clearInterval(timer);
+        if (callback) callback();
+      }
+    }, 100);
+  }
+}
+
+// Tải động html2canvas để quét màn hình
+function taiHtml2Canvas(callback) {
+  if (window.html2canvas) {
+    callback();
+    return;
+  }
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = callback;
+  script.onerror = function() {
+    console.error("Không thể tải thư viện html2canvas");
+    alert("Có lỗi xảy ra khi chuẩn bị quét màn hình. Sếp hãy kiểm tra lại kết nối mạng nhé!");
+  };
+  document.head.appendChild(script);
+}
 
 async function tailaiCaiDatAI() {
   if (!daKetNoi()) return;
@@ -630,6 +684,9 @@ async function tailaiCaiDatAI() {
       window.VM_AI_SETTINGS.enabled = en ? (en.value === 'true') : false;
       window.VM_AI_SETTINGS.key = ky ? ky.value : '';
       capNhatChatbotUI();
+      if (window.VM_AI_SETTINGS.enabled) {
+        damBaoMathJax();
+      }
     }
   } catch (e) { console.error("Lỗi tailaiCaiDatAI:", e); }
 }
@@ -643,6 +700,9 @@ function dangKyRealtimeAI() {
         if (row.key === 'ai_enabled') {
           window.VM_AI_SETTINGS.enabled = row.value === 'true';
           capNhatChatbotUI();
+          if (window.VM_AI_SETTINGS.enabled) {
+            damBaoMathJax();
+          }
           var sw = document.getElementById('ccSwitchAI');
           if (sw) sw.checked = window.VM_AI_SETTINGS.enabled;
         } else if (row.key === 'gemini_api_key') {
@@ -703,9 +763,23 @@ function taoChatbotWidget() {
     '<div class="acb-body" id="aiChatBody">' +
       '<div class="acb-msg ai">Xin chào! Em có thắc mắc gì về bài học hoặc cách dùng website không? Thầy Vinh AI sẵn sàng hỗ trợ nhé!</div>' +
     '</div>' +
-    '<div class="acb-footer">' +
-      '<input type="text" id="aiChatInput" placeholder="Nhập câu hỏi của em...">' +
-      '<button class="btn btn-primary btn-sm" id="aiChatSend">Gửi</button>' +
+    '<!-- Khu vực hiển thị preview ảnh chụp màn hình -->' +
+    '<div id="aiScreenshotArea" style="display:none; padding:8px 12px; background:var(--surface-2); border-top:1px solid var(--line-2); align-items:center; gap:10px;">' +
+      '<div style="position:relative; width:60px; height:45px; border-radius:4px; overflow:hidden; border:1px solid var(--line);">' +
+        '<img id="aiScreenshotImg" style="width:100%; height:100%; object-fit:cover;">' +
+        '<button id="aiScreenshotRemove" style="position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:rgba(0,0,0,0.6); color:#fff; border:none; font-size:10px; cursor:pointer; display:grid; place-items:center; line-height:1;">×</button>' +
+      '</div>' +
+      '<span style="font-size:0.75rem; color:var(--ink-2)">Đã đính kèm ảnh chụp màn hình</span>' +
+    '</div>' +
+    '<div class="acb-footer" style="display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--line-2); background:var(--surface-solid);">' +
+      '<button id="aiChatCapture" class="btn btn-secondary btn-sm" title="Quét màn hình hiện tại" style="padding: 8px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line-2); color: var(--ink-2); cursor: pointer; width: 38px; height: 38px;">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;">' +
+          '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>' +
+          '<circle cx="12" cy="13" r="4"></circle>' +
+        '</svg>' +
+      '</button>' +
+      '<input type="text" id="aiChatInput" placeholder="Nhập câu hỏi của em..." style="flex-grow:1; border:1px solid var(--line-2); border-radius:8px; padding:8px 12px; background:var(--surface); color:var(--ink); outline:none; font-size:0.9rem;">' +
+      '<button class="btn btn-primary btn-sm" id="aiChatSend" style="flex-shrink:0; padding:8px 16px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; background:var(--accent-gradient); color:#fff; border:none;">Gửi</button>' +
     '</div>';
     
   document.body.appendChild(bubble);
@@ -742,6 +816,78 @@ function taoChatbotWidget() {
   inp.addEventListener('keyup', function(e) {
     if (e.key === 'Enter') guiTinNhanAI();
   });
+
+  // Event listener cho nút quét/chụp màn hình
+  var btnCapture = document.getElementById('aiChatCapture');
+  var scArea = document.getElementById('aiScreenshotArea');
+  var scImg = document.getElementById('aiScreenshotImg');
+  var scRemove = document.getElementById('aiScreenshotRemove');
+  
+  btnCapture.addEventListener('click', function(e) {
+    e.stopPropagation();
+    
+    btnCapture.disabled = true;
+    var originalHTML = btnCapture.innerHTML;
+    btnCapture.innerHTML = '⏳';
+    
+    taiHtml2Canvas(function() {
+      // Ẩn các thành phần giao diện của chat để tránh lọt vào ảnh chụp
+      var bubbleEl = document.getElementById('aiChatBubble');
+      var boxEl = document.getElementById('aiChatBox');
+      var ccEl = document.getElementById('controlCenterWrapper');
+      var oldBubbleDisplay = bubbleEl ? bubbleEl.style.display : '';
+      var oldBoxDisplay = boxEl ? boxEl.style.display : '';
+      
+      if (bubbleEl) bubbleEl.style.setProperty('display', 'none', 'important');
+      if (boxEl) boxEl.style.setProperty('display', 'none', 'important');
+      if (ccEl) ccEl.style.setProperty('display', 'none', 'important');
+      
+      setTimeout(function() {
+        html2canvas(document.body, {
+          scale: 0.8,
+          logging: false,
+          useCORS: true
+        }).then(function(canvas) {
+          // Khôi phục hiển thị
+          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
+          if (boxEl) boxEl.style.display = oldBoxDisplay;
+          if (ccEl) ccEl.style.display = '';
+          
+          try {
+            var imgData = canvas.toDataURL('image/jpeg', 0.75);
+            window.VM_AI_SCREENSHOT = imgData;
+            
+            // Hiển thị preview
+            scImg.src = imgData;
+            scArea.style.display = 'flex';
+          } catch(err) {
+            console.error("Lỗi xử lý canvas:", err);
+            alert("Không thể quét màn hình do chính sách bảo mật trình duyệt.");
+          }
+          
+          btnCapture.disabled = false;
+          btnCapture.innerHTML = originalHTML;
+        }).catch(function(err) {
+          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
+          if (boxEl) boxEl.style.display = oldBoxDisplay;
+          if (ccEl) ccEl.style.display = '';
+          
+          console.error("Lỗi quét canvas:", err);
+          alert("Lỗi quét màn hình: " + err.message);
+          
+          btnCapture.disabled = false;
+          btnCapture.innerHTML = originalHTML;
+        });
+      }, 200);
+    });
+  });
+  
+  scRemove.addEventListener('click', function(e) {
+    e.stopPropagation();
+    window.VM_AI_SCREENSHOT = null;
+    scArea.style.display = 'none';
+    scImg.src = '';
+  });
 }
 
 function cuonXuongChat() {
@@ -755,13 +901,52 @@ async function guiTinNhanAI() {
   var inp = document.getElementById('aiChatInput');
   var body = document.getElementById('aiChatBody');
   var text = inp.value.trim();
-  if (!text) return;
+  if (!text && !window.VM_AI_SCREENSHOT) return;
   
   var userMsg = document.createElement('div');
   userMsg.className = 'acb-msg user';
-  userMsg.textContent = text;
+  
+  var userParts = [];
+  
+  // 1. Đính kèm ảnh chụp màn hình nếu có
+  if (window.VM_AI_SCREENSHOT) {
+    var img = document.createElement('img');
+    img.src = window.VM_AI_SCREENSHOT;
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '6px';
+    img.style.marginBottom = '6px';
+    img.style.display = 'block';
+    userMsg.appendChild(img);
+    
+    var base64Data = window.VM_AI_SCREENSHOT.split(',')[1];
+    userParts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: base64Data
+      }
+    });
+  }
+  
+  // 2. Đính kèm text câu hỏi
+  if (text) {
+    var textSpan = document.createElement('span');
+    textSpan.textContent = text;
+    userMsg.appendChild(textSpan);
+    userParts.push({ text: text });
+  } else {
+    userParts.push({ text: "Hãy phân tích hình ảnh màn hình này và giải đáp các câu hỏi trong đó." });
+  }
+  
   body.appendChild(userMsg);
   inp.value = '';
+  
+  // Dọn dẹp preview ảnh chụp màn hình sau khi gửi
+  window.VM_AI_SCREENSHOT = null;
+  var scArea = document.getElementById('aiScreenshotArea');
+  if (scArea) scArea.style.display = 'none';
+  var scImg = document.getElementById('aiScreenshotImg');
+  if (scImg) scImg.src = '';
+  
   cuonXuongChat();
   
   var typing = document.createElement('div');
@@ -771,7 +956,7 @@ async function guiTinNhanAI() {
   body.appendChild(typing);
   cuonXuongChat();
   
-  aiChatHistory.push({ role: 'user', parts: [{ text: text }] });
+  aiChatHistory.push({ role: 'user', parts: userParts });
   
   var lessonTitle = 'Bài giảng';
   var pageH1 = document.querySelector('.lh-header h1, h1');
@@ -862,12 +1047,16 @@ async function guiTinNhanAI() {
     cuonXuongChat();
     
     if (data.candidates && data.candidates[0]) {
+      // Lưu lại hội thoại (chỉ lưu phần text để tránh phình to lịch sử chat turn sau)
       aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
     }
     
-    if (window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise([aiMsg]).catch(function(e) { console.error("MathJax error:", e); });
-    }
+    // Đảm bảo MathJax biên dịch nóng câu trả lời của AI thành công thức toán học chuyên nghiệp
+    damBaoMathJax(function() {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([aiMsg]).catch(function(e) { console.error("MathJax error:", e); });
+      }
+    });
   } catch(err) {
     console.error("Lỗi gọi Gemini:", err);
     var tEl = document.getElementById('aiChatTyping');
