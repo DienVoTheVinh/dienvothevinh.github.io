@@ -679,7 +679,7 @@ async function layAnhChupManHinh() {
   if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
     try {
       var stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "browser" },
+        video: true,
         audio: false
       });
       
