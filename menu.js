@@ -21,7 +21,6 @@ function apDungMenu(role) {
         items: [
           { path: 'quan-tri-lop.html', label: 'Lớp học' },
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu.html', label: 'Soạn tài liệu' } : null),
-          (role === 'admin' ? { path: 'viet-blog.html', label: '✍️ Viết blog' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc.html', label: 'Khóa bài giảng' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh.html', label: 'Học sinh' } : null),
           { path: 'quan-tri-lich.html', label: 'Lịch học' },
@@ -30,9 +29,10 @@ function apDungMenu(role) {
           (role === 'admin' ? { path: 'quan-tri-truy-cap.html', label: 'Giám sát' } : null)
         ].filter(Boolean)
       },
+      (role === 'admin' ? { type: 'link', path: 'viet-blog.html', label: '✍️ Viết blog' } : null),
       { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
       { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
-    ];
+    ].filter(Boolean);
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [

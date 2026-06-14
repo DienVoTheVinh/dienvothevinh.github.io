@@ -614,12 +614,345 @@ function khoiTaoControlCenter() {
   });
 }
 
+/* ---------- 7. TRỢ LÝ AI HỌC TẬP (GEMINI) ---------- */
+window.VM_AI_SETTINGS = {
+  enabled: false,
+  key: ''
+};
+
+async function tailaiCaiDatAI() {
+  if (!daKetNoi()) return;
+  try {
+    var r = await sb.from('app_settings').select('key, value');
+    if (r.data) {
+      var en = r.data.find(function(x) { return x.key === 'ai_enabled'; });
+      var ky = r.data.find(function(x) { return x.key === 'gemini_api_key'; });
+      window.VM_AI_SETTINGS.enabled = en ? (en.value === 'true') : false;
+      window.VM_AI_SETTINGS.key = ky ? ky.value : '';
+      capNhatChatbotUI();
+    }
+  } catch (e) { console.error("Lỗi tailaiCaiDatAI:", e); }
+}
+
+function dangKyRealtimeAI() {
+  if (!daKetNoi()) return;
+  try {
+    sb.channel('realtime-ai-settings')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings' }, function(payload) {
+        var row = payload.new;
+        if (row.key === 'ai_enabled') {
+          window.VM_AI_SETTINGS.enabled = row.value === 'true';
+          capNhatChatbotUI();
+          var sw = document.getElementById('ccSwitchAI');
+          if (sw) sw.checked = window.VM_AI_SETTINGS.enabled;
+        } else if (row.key === 'gemini_api_key') {
+          window.VM_AI_SETTINGS.key = row.value;
+          var inp = document.getElementById('ccInputGeminiKey');
+          if (inp) inp.value = row.value;
+          capNhatChatbotUI();
+        }
+      })
+      .subscribe();
+  } catch(e) { console.error("Lỗi dangKyRealtimeAI:", e); }
+}
+
+let aiChatWidgetCreated = false;
+let aiChatHistory = [];
+
+function capNhatChatbotUI() {
+  var enabled = window.VM_AI_SETTINGS.enabled && window.VM_AI_SETTINGS.key;
+  var bubble = document.getElementById('aiChatBubble');
+  var box = document.getElementById('aiChatBox');
+  
+  if (enabled) {
+    if (!aiChatWidgetCreated) {
+      taoChatbotWidget();
+      // Lấy lại các element vừa tạo
+      bubble = document.getElementById('aiChatBubble');
+    }
+    if (bubble) bubble.style.display = 'grid';
+  } else {
+    if (bubble) bubble.style.display = 'none';
+    if (box) box.style.display = 'none';
+  }
+}
+
+function taoChatbotWidget() {
+  if (aiChatWidgetCreated) return;
+  
+  // 1. Tạo Bubble
+  var bubble = document.createElement('div');
+  bubble.className = 'ai-chat-bubble';
+  bubble.id = 'aiChatBubble';
+  bubble.title = 'Hỏi đáp với Trợ Lý AI';
+  bubble.innerHTML = 
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>' +
+    '</svg>';
+  
+  // 2. Tạo Chat Box
+  var box = document.createElement('div');
+  box.className = 'ai-chat-box';
+  box.id = 'aiChatBox';
+  box.style.display = 'none';
+  box.innerHTML = 
+    '<div class="acb-header">' +
+      '<div class="acb-title">🤖 Trợ Lý VinhMath AI</div>' +
+      '<button class="acb-close" id="aiChatClose">×</button>' +
+    '</div>' +
+    '<div class="acb-body" id="aiChatBody">' +
+      '<div class="acb-msg ai">Xin chào! Em có thắc mắc gì về bài học hoặc cách dùng website không? Thầy Vinh AI sẵn sàng hỗ trợ nhé!</div>' +
+    '</div>' +
+    '<div class="acb-footer">' +
+      '<input type="text" id="aiChatInput" placeholder="Nhập câu hỏi của em...">' +
+      '<button class="btn btn-primary btn-sm" id="aiChatSend">Gửi</button>' +
+    '</div>';
+    
+  document.body.appendChild(bubble);
+  document.body.appendChild(box);
+  aiChatWidgetCreated = true;
+  
+  // Event listeners
+  bubble.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var show = box.style.display === 'none';
+    box.style.display = show ? 'flex' : 'none';
+    if (show) {
+      document.getElementById('aiChatInput').focus();
+      cuonXuongChat();
+    }
+  });
+  
+  document.getElementById('aiChatClose').addEventListener('click', function() {
+    box.style.display = 'none';
+  });
+  
+  box.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  
+  document.addEventListener('click', function() {
+    box.style.display = 'none';
+  });
+  
+  var inp = document.getElementById('aiChatInput');
+  var btn = document.getElementById('aiChatSend');
+  
+  btn.addEventListener('click', guiTinNhanAI);
+  inp.addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') guiTinNhanAI();
+  });
+}
+
+function cuonXuongChat() {
+  var body = document.getElementById('aiChatBody');
+  if (body) {
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+async function guiTinNhanAI() {
+  var inp = document.getElementById('aiChatInput');
+  var body = document.getElementById('aiChatBody');
+  var text = inp.value.trim();
+  if (!text) return;
+  
+  var userMsg = document.createElement('div');
+  userMsg.className = 'acb-msg user';
+  userMsg.textContent = text;
+  body.appendChild(userMsg);
+  inp.value = '';
+  cuonXuongChat();
+  
+  var typing = document.createElement('div');
+  typing.className = 'acb-typing';
+  typing.id = 'aiChatTyping';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  body.appendChild(typing);
+  cuonXuongChat();
+  
+  aiChatHistory.push({ role: 'user', parts: [{ text: text }] });
+  
+  var lessonTitle = 'Bài giảng';
+  var pageH1 = document.querySelector('.lh-header h1, h1');
+  if (pageH1) lessonTitle = pageH1.textContent.trim();
+  
+  var systemPrompt = '';
+  var pathname = window.location.pathname;
+  if (pathname.indexOf('bai-hoc.html') !== -1) {
+    systemPrompt = "Bạn là trợ lý AI hướng dẫn học tập tại Lớp Toán Thầy Vinh (VinhMath). Bạn đang hỗ trợ học sinh học trực tuyến chuyên đề: '" + lessonTitle + "'. Hãy trả lời ngắn gọn, có tính sư phạm cao, định hướng cách giải thay vì giải hộ hoàn toàn. Các công thức toán hãy viết theo định dạng LaTeX kẹp trong dấu $...$ (nếu cùng dòng) hoặc $$...$$ (nếu xuống dòng) để hiển thị chuyên nghiệp.";
+  } else {
+    systemPrompt = "Bạn là trợ lý AI hướng dẫn học tập tại Lớp Toán Thầy Vinh (VinhMath). Bạn đang ở trang chủ/trang giới thiệu để hỗ trợ học sinh sử dụng website vinhmath.com hiệu quả. Các mục chính của web gồm: Lớp học (học video bài giảng, lý thuyết), Luyện đề (làm đề tự chấm), Tài liệu (tải tài liệu học tập), Bảng vàng (xem thành tích của bạn học sinh). Hãy trả lời ngắn gọn, thân thiện, và định hướng học sinh.";
+  }
+  
+  try {
+    var apiKey = window.VM_AI_SETTINGS.key;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+    
+    var response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: aiChatHistory,
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        }
+      })
+    });
+    
+    var data = await response.json();
+    var reply = '';
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+      reply = data.candidates[0].content.parts[0].text;
+    } else {
+      reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
+    }
+    
+    var tEl = document.getElementById('aiChatTyping');
+    if (tEl) tEl.remove();
+    
+    var aiMsg = document.createElement('div');
+    aiMsg.className = 'acb-msg ai';
+    
+    var html = String(reply)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br>');
+    
+    aiMsg.innerHTML = html;
+    body.appendChild(aiMsg);
+    cuonXuongChat();
+    
+    aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+    
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([aiMsg]).catch(function(e) { console.error("MathJax error:", e); });
+    }
+  } catch(err) {
+    console.error("Lỗi gọi Gemini:", err);
+    var tEl = document.getElementById('aiChatTyping');
+    if (tEl) tEl.remove();
+    
+    var errMsg = document.createElement('div');
+    errMsg.className = 'acb-msg ai';
+    errMsg.textContent = 'Lỗi kết nối với Trợ lý AI. Em hãy kiểm tra lại kết nối mạng nhé!';
+    body.appendChild(errMsg);
+    cuonXuongChat();
+  }
+}
+
+function themAdminControlsVaoCC() {
+  var ccPanel = document.getElementById('ccPanel');
+  if (!ccPanel) return;
+  
+  var adminDiv = document.createElement('div');
+  adminDiv.id = 'ccAdminControls';
+  adminDiv.style.borderTop = '1px solid var(--line-2)';
+  adminDiv.style.marginTop = '10px';
+  adminDiv.style.paddingTop = '10px';
+  adminDiv.style.display = 'flex';
+  adminDiv.style.flexDirection = 'column';
+  adminDiv.style.gap = '10px';
+  
+  var enabled = window.VM_AI_SETTINGS.enabled;
+  var key = window.VM_AI_SETTINGS.key;
+  
+  adminDiv.innerHTML = 
+    '<div class="cc-color-label">Cài đặt Quản trị AI</div>' +
+    
+    '<div class="cc-toggle-row">' +
+      '<div class="cc-toggle-label">' +
+        '<b>Trợ Lý AI Học Tập</b>' +
+        '<span>Cho phép học sinh hỏi đáp</span>' +
+      '</div>' +
+      '<label class="cc-switch">' +
+        '<input type="checkbox" id="ccSwitchAI" ' + (enabled ? 'checked' : '') + '>' +
+        '<span class="cc-slider-switch"></span>' +
+      '</label>' +
+    '</div>' +
+    
+    '<div class="cc-input-row">' +
+      '<div class="cc-input-label">Gemini API Key</div>' +
+      '<div class="cc-input-group">' +
+        '<input type="password" id="ccInputGeminiKey" value="' + key + '" placeholder="Nhập API Key...">' +
+        '<button class="btn btn-primary btn-sm" id="ccBtnSaveAIKey">Lưu</button>' +
+      '</div>' +
+    '</div>';
+    
+  ccPanel.appendChild(adminDiv);
+  
+  var sw = document.getElementById('ccSwitchAI');
+  sw.addEventListener('change', async function() {
+    var isChecked = sw.checked;
+    sw.disabled = true;
+    try {
+      var r = await sb.from('app_settings').upsert({ key: 'ai_enabled', value: isChecked ? 'true' : 'false' });
+      if (r.error) throw r.error;
+    } catch (err) {
+      alert("Lỗi cập nhật AI: " + err.message);
+      sw.checked = !isChecked;
+    } finally {
+      sw.disabled = false;
+    }
+  });
+  
+  var btnSave = document.getElementById('ccBtnSaveAIKey');
+  btnSave.addEventListener('click', async function() {
+    var inp = document.getElementById('ccInputGeminiKey');
+    var val = inp.value.trim();
+    btnSave.disabled = true;
+    var oldText = btnSave.textContent;
+    btnSave.textContent = '⏳';
+    try {
+      var r = await sb.from('app_settings').upsert({ key: 'gemini_api_key', value: val });
+      if (r.error) throw r.error;
+      alert("Đã lưu Gemini API Key thành công!");
+    } catch (err) {
+      alert("Lỗi lưu API Key: " + err.message);
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = oldText;
+    }
+  });
+}
+
+// Khởi chạy các dịch vụ khi DOM sẵn sàng
 if (document.readyState !== 'loading') {
   khoiTaoControlCenter();
   capNhatNutTheme();
+  tailaiCaiDatAI().then(dangKyRealtimeAI);
+  
+  // Tự động kiểm tra vai trò admin để vẽ thêm cài đặt AI
+  (async function() {
+    if (!daKetNoi()) return;
+    try {
+      var s = await sb.auth.getSession();
+      if (!s.data.session) return;
+      var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+      if (rp.data && rp.data.role === 'admin') {
+        themAdminControlsVaoCC();
+      }
+    } catch (e) { console.error("Lỗi CC Admin check:", e); }
+  })();
 } else {
   document.addEventListener('DOMContentLoaded', function () {
     khoiTaoControlCenter();
     capNhatNutTheme();
+    tailaiCaiDatAI().then(dangKyRealtimeAI);
+    
+    (async function() {
+      if (!daKetNoi()) return;
+      try {
+        var s = await sb.auth.getSession();
+        if (!s.data.session) return;
+        var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+        if (rp.data && rp.data.role === 'admin') {
+          themAdminControlsVaoCC();
+        }
+      } catch (e) { console.error("Lỗi CC Admin check:", e); }
+    })();
   });
 }
+
