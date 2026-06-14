@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Đăng nhập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="vinhmath.css">
 <style>
@@ -17,6 +17,7 @@ body {
   overflow-x: hidden;
   background: var(--bg);
   transition: background 0.3s ease;
+  font-family: var(--font-sans);
 }
 
 @media(max-width: 900px) {
@@ -28,17 +29,20 @@ body {
   }
 }
 
-/* --- MATH GRID BACKGROUND --- */
-.math-grid {
-  background-image: 
-    linear-gradient(to right, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
+/* Fullscreen Cyberpunk Canvas */
+#cyberCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* --- SIDE PANEL (LEFT) --- */
 .side {
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface) 20%, transparent);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -47,170 +51,11 @@ body {
   position: relative;
   overflow: hidden;
   z-index: 1;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Ambient Glow Bubbles */
-.glow-bubble {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  z-index: -1;
-  opacity: 0.15;
-  transition: all 0.5s ease;
-}
-[data-theme="dark"] .glow-bubble {
-  opacity: 0.1;
-}
-.glow-1 {
-  width: 300px;
-  height: 300px;
-  background: var(--accent);
-  top: -50px;
-  left: -50px;
-}
-.glow-2 {
-  width: 350px;
-  height: 350px;
-  background: var(--ok);
-  bottom: -50px;
-  right: -50px;
-}
-
-/* 3D Space and Coordinate Axis */
-.math-scene {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  perspective: 800px;
-  z-index: -1;
-}
-
-/* 3D Coordinate Axis */
-.axis-container {
-  position: absolute;
-  transform-style: preserve-3d;
-  transform: rotateX(-20deg) rotateY(25deg);
-  animation: slowOrbit 30s linear infinite;
-  width: 200px;
-  height: 200px;
-}
-.axis {
-  position: absolute;
-  background: currentColor;
-  opacity: 0.35;
-}
-.axis-x {
-  width: 240px;
-  height: 1.5px;
-  top: 100px;
-  left: -20px;
-  color: var(--accent);
-}
-.axis-y {
-  width: 1.5px;
-  height: 240px;
-  left: 100px;
-  top: -20px;
-  color: var(--ok);
-}
-.axis-z {
-  width: 240px;
-  height: 1.5px;
-  top: 100px;
-  left: -20px;
-  color: var(--warn);
-  transform: rotateY(90deg);
-}
-
-/* 3D Wireframe Cube */
-.cube-3d {
-  width: 80px;
-  height: 80px;
-  position: absolute;
-  top: 60px;
-  left: 60px;
-  transform-style: preserve-3d;
-  transform: translate3d(60px, -60px, 50px);
-  animation: spinCube 12s linear infinite;
-}
-@keyframes spinCube {
-  0% { transform: translate3d(60px, -60px, 50px) rotateX(0deg) rotateY(0deg); }
-  100% { transform: translate3d(60px, -60px, 50px) rotateX(360deg) rotateY(360deg); }
-}
-.face {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 15%, transparent);
-  opacity: 0.85;
-}
-.front  { transform: translateZ(40px); }
-.back   { transform: rotateY(180deg) translateZ(40px); }
-.left   { transform: rotateY(-90deg) translateZ(40px); }
-.right  { transform: rotateY(90deg) translateZ(40px); }
-.top    { transform: rotateX(90deg) translateZ(40px); }
-.bottom { transform: rotateX(-90deg) translateZ(40px); }
-
-/* 3D Wireframe Sphere */
-.sphere-3d {
-  width: 90px;
-  height: 90px;
-  position: absolute;
-  top: 55px;
-  left: 55px;
-  transform-style: preserve-3d;
-  transform: translate3d(-60px, 60px, -50px);
-  animation: spinSphere 15s linear infinite;
-}
-@keyframes spinSphere {
-  0% { transform: translate3d(-60px, 60px, -50px) rotateY(0deg) rotateX(0deg); }
-  100% { transform: translate3d(-60px, 60px, -50px) rotateY(360deg) rotateX(360deg); }
-}
-.sphere-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 1px dashed var(--ok);
-  border-radius: 50%;
-  box-sizing: border-box;
-}
-.ring-y-0   { transform: rotateY(0deg); }
-.ring-y-30  { transform: rotateY(30deg); }
-.ring-y-60  { transform: rotateY(60deg); }
-.ring-y-90  { transform: rotateY(90deg); }
-.ring-y-120 { transform: rotateY(120deg); }
-.ring-y-150 { transform: rotateY(150deg); }
-.ring-x-90  { transform: rotateX(90deg); border-style: solid; border-color: var(--ok); }
-
-/* Floating Symbols */
-.math-symbol {
-  position: absolute;
-  font-family: serif;
-  font-style: italic;
-  font-weight: 700;
-  color: var(--ink);
-  opacity: 0.08;
-  user-select: none;
-  font-size: 5rem;
-  transition: opacity 0.3s ease;
-}
-[data-theme="dark"] .math-symbol {
-  opacity: 0.06;
-}
-.s-int { top: 12%; right: 15%; animation: floatY 8s ease-in-out infinite alternate; }
-.s-sum { bottom: 15%; left: 10%; animation: floatY 11s ease-in-out infinite alternate-reverse; }
-.s-inf { top: 40%; left: 15%; animation: floatX 9s ease-in-out infinite alternate; }
-.s-pi  { bottom: 20%; right: 12%; animation: floatRotate 13s ease-in-out infinite; }
-/* Photo Stack in Login Page */
+/* Hologram Photo Scanner */
 .photo-stack {
   position: relative;
   width: 100%;
@@ -224,7 +69,7 @@ body {
 .photo-card {
   position: absolute;
   width: 150px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
   border: 1px solid var(--line-2);
   padding: 8px 8px 16px;
   box-shadow: var(--shadow);
@@ -232,17 +77,18 @@ body {
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 .photo-card img {
   width: 100%;
   aspect-ratio: 1/1;
   object-fit: cover;
   border-radius: var(--r-sm);
-  border: 1px solid var(--line-3);
+  border: 1px solid var(--line-2);
 }
 .photo-card .photo-label {
-  font-family: inherit;
-  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--ink-2);
   text-align: center;
@@ -263,6 +109,29 @@ body {
 .photo-stack:hover .card-grad {
   transform: rotate(3deg) translateX(50px) translateY(-5px);
   z-index: 3;
+}
+
+/* Photo scanning light line */
+.photo-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: hologram-scan 3s linear infinite;
+  z-index: 5;
+}
+.photo-card.card-grad::before {
+  background: linear-gradient(90deg, transparent, var(--warn), transparent);
+  animation-delay: 1.5s;
+}
+@keyframes hologram-scan {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
 
 .side .quote {
@@ -315,47 +184,54 @@ body {
   position: relative;
 }
 
-/* Glassmorphic Login Box */
+/* Cyberpunk Glassmorphic Box */
 .box {
   width: 100%;
   max-width: 400px;
-  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
   border: 1px solid var(--line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-radius: var(--r-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--r-md);
   padding: 40px;
-  box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.03), 
-    0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--shadow), 0 0 20px var(--accent-soft);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.box::before, .box::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--accent);
+  border-style: solid;
+  pointer-events: none;
+  transition: border-color 0.3s ease;
+}
+.box::before {
+  top: -1px;
+  left: -1px;
+  border-width: 3px 0 0 3px;
+}
+.box::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 3px 3px 0;
 }
 .box:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 10px 40px rgba(31,29,26, 0.05),
-    0 1px 3px rgba(31,29,26, 0.02);
-}
-[data-theme="dark"] .box {
-  background: color-mix(in srgb, var(--surface) 65%, transparent);
-  box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.2), 
-    0 1px 3px rgba(0, 0, 0, 0.1);
-}
-[data-theme="dark"] .box:hover {
-  box-shadow: 
-    0 10px 40px rgba(0, 0, 0, 0.3),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 0 25px var(--accent-soft);
 }
 
 .box h1 {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   margin: 24px 0 8px;
   letter-spacing: -0.02em;
+  font-family: var(--font-mono);
 }
 .box .sub {
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   margin-bottom: 32px;
   color: var(--ink-2);
 }
@@ -374,6 +250,7 @@ body {
   box-shadow: var(--shadow);
   cursor: pointer;
   transition: all 0.2s ease;
+  z-index: 10;
 }
 .theme-toggle:hover {
   transform: scale(1.08);
@@ -382,15 +259,32 @@ body {
 
 .field {
   position: relative;
+  margin-bottom: 24px;
 }
 .field label {
-  font-weight: 600;
-  color: var(--ink);
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
 }
 .input {
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--surface-2) 40%, transparent);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  width: 100%;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 .input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-soft);
   transform: translateY(-1px);
 }
 
@@ -411,6 +305,18 @@ body {
 }
 
 .btn-primary {
+  background: var(--accent-gradient);
+  border: none;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: var(--r-sm);
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px var(--accent-soft);
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -429,6 +335,10 @@ body {
 }
 .btn-primary:hover::after {
   transform: translateX(100%);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--accent-soft), 0 0 15px var(--accent);
 }
 
 .hint {
@@ -467,72 +377,28 @@ body {
   border-color: color-mix(in srgb, var(--warn) 15%, transparent);
 }
 
-/* --- KEYFRAME ANIMATIONS --- */
-@keyframes slowOrbit {
-  0% { transform: rotateX(-20deg) rotateY(0deg); }
-  100% { transform: rotateX(-20deg) rotateY(360deg); }
-}
-@keyframes floatY {
-  0% { transform: translateY(0px); }
-  100% { transform: translateY(-15px); }
-}
-@keyframes floatX {
-  0% { transform: translateX(0px); }
-  100% { transform: translateX(15px); }
-}
-@keyframes floatRotate {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(180deg); }
-  100% { transform: translateY(0px) rotate(360deg); }
-}
 @keyframes slideDown {
   from { transform: translateY(-10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+.cyber-cursor {
+  animation: blink 1s step-start infinite;
+  color: var(--accent);
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
 </style>
 </head>
-<body class="math-grid">
+<body>
+
+<canvas id="cyberCanvas"></canvas>
 
 <div class="side">
-  <div class="glow-bubble glow-1"></div>
-  <div class="glow-bubble glow-2"></div>
-  
-  <div class="math-scene">
-    <div class="axis-container">
-      <div class="axis axis-x"></div>
-      <div class="axis axis-y"></div>
-      <div class="axis axis-z"></div>
-      <!-- Cube in positive octant -->
-      <div class="cube-3d">
-        <div class="face front"></div>
-        <div class="face back"></div>
-        <div class="face left"></div>
-        <div class="face right"></div>
-        <div class="face top"></div>
-        <div class="face bottom"></div>
-      </div>
-
-      <!-- Sphere in negative octant -->
-      <div class="sphere-3d">
-        <div class="sphere-ring ring-y-0"></div>
-        <div class="sphere-ring ring-y-30"></div>
-        <div class="sphere-ring ring-y-60"></div>
-        <div class="sphere-ring ring-y-90"></div>
-        <div class="sphere-ring ring-y-120"></div>
-        <div class="sphere-ring ring-y-150"></div>
-        <div class="sphere-ring ring-x-90"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="math-symbol s-int">∫</div>
-  <div class="math-symbol s-sum">∑</div>
-  <div class="math-symbol s-inf">∞</div>
-  <div class="math-symbol s-pi">π</div>
-
   <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
   
-  <!-- Polaroid Photo Stack -->
+  <!-- Polaroid Photo Stack with Hologram lines -->
   <div class="photo-stack">
     <div class="photo-card card-avatar">
       <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.style.display='none'">
@@ -548,43 +414,223 @@ body {
     <p class="quote">"Toán không phải là nhớ công thức. Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
     <p class="who">Thầy Vinh</p>
   </div>
-  <p style="font-size:0.82rem;color:var(--ink-3)">© 2026 VinhMath · Lớp Toán Thầy Vinh</p>
+  <p style="font-size:0.82rem;color:var(--ink-3); font-family: var(--font-mono)">© 2026 VinhMath · Lớp Toán Thầy Vinh</p>
 </div>
 
 <div class="main">
   <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Đổi chế độ sáng/tối">🌙</button>
   <div class="box">
     <a class="logo" href="index.html" style="display:inline-flex"><span class="dot">V</span>VinhMath</a>
-    <h1>Chào em 👋</h1>
-    <p class="sub">Đăng nhập bằng tài khoản thầy đã cấp để vào lớp.</p>
+    <h1>SYSTEM_ACCESS<span class="cyber-cursor">_</span></h1>
+    <p class="sub">Đăng nhập cổng bảo mật để vào hệ thống học tập.</p>
 
     <div class="alert" id="thongBao"></div>
 
     <form id="formDangNhap">
       <div class="field">
-        <label for="user">Tên đăng nhập</label>
+        <label for="user">USER_NAME</label>
         <input class="input" id="user" placeholder="vd: NguyenVanA@hs.vinhmath" autocomplete="username" required>
       </div>
       <div class="field">
-        <label for="pass">Mật khẩu</label>
+        <label for="pass">PASSWORD</label>
         <div style="position:relative">
           <input class="input" type="password" id="pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px" required>
           <button type="button" class="show-pass" onclick="togglePass()" id="eyeBtn">👁</button>
         </div>
       </div>
-      <button class="btn btn-primary btn-lg" type="submit" id="nutVao" style="width:100%; margin-top: 10px;">Vào lớp học</button>
+      <button class="btn btn-primary" type="submit" id="nutVao" style="width:100%; margin-top: 10px;">AUTH_SIGN_IN</button>
     </form>
 
-    <p class="hint">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
+    <p class="hint" style="font-family: var(--font-mono);">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
   </div>
 </div>
 
-<!-- Thư viện Supabase (nạp từ CDN) -->
+<!-- Thư viện Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="vinhmath.js"></script>
 <script src="analytics.js"></script>
 <script>
+// --- INTERACTIVE CYBERMATH CANVAS ---
+var canvas = document.getElementById('cyberCanvas');
+var ctx = canvas.getContext('2d');
+
+var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+// Resizing
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initMatrix();
+}
+window.addEventListener('resize', resize);
+
+// Matrix rain variables
+var mathSymbols = ['∫', '∑', '∞', 'π', 'θ', 'λ', '√', 'Δ', '∇', '∂', 'f(x)', 'e^{iπ}+1=0', 'lim', 'dx', 'dy', 'log', 'matrix', 'sin(x)', 'cos(x)', 'x²', 'y³', 'λ', 'θ', 'δ', 'dx/dy', 'G(x)', 'P(A|B)'];
+var columns = [];
+
+function initMatrix() {
+  var cols = Math.floor(canvas.width / 24);
+  columns = [];
+  for (var i = 0; i < cols; i++) {
+    columns.push({
+      x: i * 24,
+      y: Math.random() * -canvas.height,
+      speed: 0.5 + Math.random() * 1.5
+    });
+  }
+}
+
+// Lorenz Attractor simulation
+var points = [];
+var lx = 0.1, ly = 0, lz = 0;
+var sigma = 10, rho = 28, beta = 8/3;
+var dt = 0.005;
+
+// Generate Lorenz points
+for (var i = 0; i < 900; i++) {
+  var dx = sigma * (ly - lx) * dt;
+  var dy = (lx * (rho - lz) - ly) * dt;
+  var dz = (lx * ly - beta * lz) * dt;
+  lx += dx;
+  ly += dy;
+  lz += dz;
+  points.push({ x: lx, y: ly, z: lz });
+}
+
+// 3D rotation angles
+var angleX = -0.3;
+var angleY = 0.5;
+var mouseX = window.innerWidth / 2;
+var mouseY = window.innerHeight / 2;
+
+window.addEventListener('mousemove', function(e) {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+// Animation loop
+function draw() {
+  themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  
+  // Matrix rain fade background
+  ctx.fillStyle = themeIsDark ? 'rgba(5, 8, 17, 0.15)' : 'rgba(245, 248, 255, 0.15)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw Matrix Rain
+  ctx.font = '11px monospace';
+  for (var i = 0; i < columns.length; i++) {
+    var col = columns[i];
+    var sym = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
+    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.07)' : 'rgba(37, 99, 235, 0.05)';
+    ctx.fillText(sym, col.x, col.y);
+    col.y += col.speed * 4;
+    if (col.y > canvas.height) {
+      col.y = Math.random() * -100;
+    }
+  }
+  
+  // Smoothly rotate toward mouse
+  var targetAngleX = (mouseY - canvas.height / 2) * 0.001;
+  var targetAngleY = (mouseX - canvas.width / 2) * 0.001;
+  angleX += (targetAngleX - angleX) * 0.05;
+  angleY += (targetAngleY - angleY) * 0.05;
+  
+  // 3D projection params
+  var centerX = canvas.width * 0.28; // Center it on the left panel area
+  if (window.innerWidth <= 900) {
+    centerX = canvas.width / 2;
+  }
+  var centerY = canvas.height / 2;
+  var zoom = Math.min(canvas.width, canvas.height) * 0.012;
+  var focalLength = 300;
+  
+  // Project function
+  function project(pt) {
+    var cx = pt.x;
+    var cy = pt.y;
+    var cz = pt.z - 25; // center the attractor
+    
+    // Rotate Y
+    var cosY = Math.cos(angleY);
+    var sinY = Math.sin(angleY);
+    var x1 = cx * cosY - cz * sinY;
+    var z1 = cx * sinY + cz * cosY;
+    
+    // Rotate X
+    var cosX = Math.cos(angleX);
+    var sinX = Math.sin(angleX);
+    var y2 = cy * cosX - z1 * sinX;
+    var z2 = cy * sinX + z1 * cosX;
+    
+    var scale = focalLength / (focalLength + z2);
+    return {
+      x: centerX + x1 * scale * zoom,
+      y: centerY + y2 * scale * zoom,
+      depth: z2
+    };
+  }
+  
+  // Draw 3D Axes
+  var axes = [
+    { pt: { x: 30, y: 0, z: 25 }, label: 'X_axis', color: themeIsDark ? 'rgba(0, 240, 255, 0.4)' : 'rgba(37, 99, 235, 0.3)' },
+    { pt: { x: 0, y: 30, z: 25 }, label: 'Y_axis', color: themeIsDark ? 'rgba(255, 0, 127, 0.4)' : 'rgba(239, 68, 68, 0.3)' },
+    { pt: { x: 0, y: 0, z: 55 }, label: 'Z_axis', color: themeIsDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.3)' }
+  ];
+  
+  var originProj = project({ x: 0, y: 0, z: 25 });
+  ctx.lineWidth = 1.2;
+  axes.forEach(function(axis) {
+    var ptProj = project(axis.pt);
+    ctx.strokeStyle = axis.color;
+    ctx.beginPath();
+    ctx.moveTo(originProj.x, originProj.y);
+    ctx.lineTo(ptProj.x, ptProj.y);
+    ctx.stroke();
+    
+    ctx.fillStyle = axis.color;
+    ctx.font = '9px monospace';
+    ctx.fillText(axis.label, ptProj.x + 4, ptProj.y + 4);
+  });
+  
+  // Draw Lorenz Attractor Path
+  ctx.beginPath();
+  var start = project(points[0]);
+  ctx.moveTo(start.x, start.y);
+  
+  for (var i = 1; i < points.length; i++) {
+    var pt = project(points[i]);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  
+  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
+  
+  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.35)' : 'rgba(37, 99, 235, 0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  // Draw flowing sparks along the attractor path
+  var timeIndex = Math.floor((Date.now() / 15) % points.length);
+  var sparkCount = 3;
+  ctx.fillStyle = themeIsDark ? '#ffffff' : accentColor;
+  for (var j = 0; j < sparkCount; j++) {
+    var idx = (timeIndex + Math.floor(j * points.length / sparkCount)) % points.length;
+    var sparkProj = project(points[idx]);
+    ctx.beginPath();
+    ctx.arc(sparkProj.x, sparkProj.y, 4, 0, Math.PI * 2);
+    ctx.shadowBlur = themeIsDark ? 10 : 0;
+    ctx.shadowColor = accentColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  
+  requestAnimationFrame(draw);
+}
+
+resize();
+draw();
+
+// --- LOGIN LOGIC ---
 function togglePass() {
   var p = $('pass');
   p.type = p.type === 'password' ? 'text' : 'password';
@@ -609,15 +655,15 @@ if (daKetNoi()) {
   });
 }
 
-// Xử lý khi bấm nút "Vào lớp học"
+// Xử lý khi bấm nút "AUTH_SIGN_IN"
 $('formDangNhap').addEventListener('submit', async function (e) {
   e.preventDefault();
   var nut = $('nutVao');
-  nut.disabled = true; nut.textContent = 'Đang kiểm tra…';
+  nut.disabled = true; nut.textContent = 'CHECKING_CREDENTIALS…';
   var r = await dangNhap($('user').value, $('pass').value);
   if (r.error) {
     baoLoi(r.error);
-    nut.disabled = false; nut.textContent = 'Vào lớp học';
+    nut.disabled = false; nut.textContent = 'AUTH_SIGN_IN';
   } else {
     window.location.href = 'trang-chu.html';
   }
