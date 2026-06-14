@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.3">
+<link rel="stylesheet" href="vinhmath.css?v=2.4">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -205,12 +205,14 @@ tr:last-child td{border-bottom:none}
         </tbody>
       </table>
     </div>
+    <!-- Bộ điều hướng phân trang nhật ký -->
+    <div id="logsPagination"></div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.3"></script>
+<script src="vinhmath.js?v=2.4"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -265,17 +267,22 @@ function getRGBA(colorStr, opacity) {
   await loadAnalytics();
 })();
 
+var logsPageSize = 15;
+var logsCurrentPage = 1;
+
 async function loadAnalytics() {
-  // 1. Fetch dữ liệu từ bảng analytics_sessions kết hợp profiles
+  // 1. Fetch tối đa 300 dòng gần nhất từ bảng analytics_sessions kết hợp profiles để bảo vệ hiệu năng
   var r = await sb.from('analytics_sessions')
     .select('id, started_at, last_active_at, duration_seconds, device_type, os, browser, profiles(full_name, username)')
-    .order('last_active_at', { ascending: false });
+    .order('last_active_at', { ascending: false })
+    .limit(300);
   
   var data = r.data || [];
   cachedAnalyticsData = data; // Lưu dữ liệu vào cache
   
   if (!data.length) {
     document.getElementById('duLieuLog').innerHTML = '<tr><td colspan="8" class="empty">Chưa có dữ liệu truy cập nào được ghi nhận.</td></tr>';
+    document.getElementById('logsPagination').innerHTML = '';
     return;
   }
 
@@ -291,9 +298,21 @@ async function loadAnalytics() {
   document.getElementById('totalHours').textContent = totalHours;
   document.getElementById('mobilePercent').textContent = mobilePct;
 
-  // 3. Render bảng danh sách chi tiết
+  // 3. Khởi tạo phân trang
+  logsCurrentPage = 1;
+  renderLogsPage();
+
+  // Vẽ các biểu đồ đo lường lưu lượng
+  renderTrafficCharts(data);
+}
+
+function renderLogsPage() {
   var now = new Date();
-  var html = data.map(function (row) {
+  var startIdx = (logsCurrentPage - 1) * logsPageSize;
+  var endIdx = startIdx + logsPageSize;
+  var pageData = cachedAnalyticsData.slice(startIdx, endIdx);
+  
+  var html = pageData.map(function (row) {
     var p = row.profiles || {};
     var hoTen = p.full_name || '<span style="color:var(--ink-3)">Khách vãng lai</span>';
     var userName = p.username || '—';
@@ -334,9 +353,41 @@ async function loadAnalytics() {
   }).join('');
 
   document.getElementById('duLieuLog').innerHTML = html;
+  
+  // Vẽ nút điều khiển phân trang
+  renderPaginationControls();
+}
 
-  // Vẽ các biểu đồ đo lường lưu lượng
-  renderTrafficCharts(data);
+function renderPaginationControls() {
+  var totalPages = Math.ceil(cachedAnalyticsData.length / logsPageSize);
+  var wrapper = document.getElementById('logsPagination');
+  if (!wrapper) return;
+  
+  if (totalPages <= 1) {
+    wrapper.innerHTML = '';
+    return;
+  }
+  
+  var html = '<div style="display:flex; align-items:center; justify-content:center; gap:12px; padding:16px 24px; border-top:1px solid var(--line); background:var(--surface);">';
+  
+  // Nút trước
+  var prevDisabled = logsCurrentPage === 1;
+  html += '<button class="btn btn-secondary btn-sm" ' + (prevDisabled ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'onclick="changeLogsPage(' + (logsCurrentPage - 1) + ')"') + '>« Trước</button>';
+  
+  // Thông tin số trang
+  html += '<span style="font-size:0.85rem; font-weight:600; color:var(--ink-2);">Trang ' + logsCurrentPage + ' / ' + totalPages + ' (' + cachedAnalyticsData.length + ' bản ghi)</span>';
+  
+  // Nút sau
+  var nextDisabled = logsCurrentPage === totalPages;
+  html += '<button class="btn btn-secondary btn-sm" ' + (nextDisabled ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : 'onclick="changeLogsPage(' + (logsCurrentPage + 1) + ')"') + '>Sau »</button>';
+  
+  html += '</div>';
+  wrapper.innerHTML = html;
+}
+
+function changeLogsPage(page) {
+  logsCurrentPage = page;
+  renderLogsPage();
 }
 
 function renderTrafficCharts(data) {

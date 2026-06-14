@@ -6,8 +6,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=2.3">
-<link rel="stylesheet" href="vinhmath.css?v=2.3">
+<link rel="stylesheet" href="tokens.css?v=2.4">
+<link rel="stylesheet" href="vinhmath.css?v=2.4">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -476,11 +476,116 @@
       <div id="weekCal" class="gcal"></div>
     </div>
   </div>
+
+  <!-- ===== PHÂN HỆ BLOG TRÊN TRANG CHỦ ===== -->
+  <style>
+  .blog-sec { margin-top: 32px; margin-bottom: 24px; }
+  .blog-sec-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:16px; }
+  .blog-sec-head h2 { font-size:1.2rem; font-weight:800; display:flex; align-items:center; gap:8px; margin:0; }
+  .blog-slider-container {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 16px);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .blog-slider {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+  }
+  .blog-slider::-webkit-scrollbar {
+    height: 6px;
+  }
+  .blog-slider::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .blog-slider::-webkit-scrollbar-thumb {
+    background: var(--line-2, rgba(0,0,0,0.1));
+    border-radius: 99px;
+  }
+  .blog-slider::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+  .blog-card {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg, 14px);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.2s ease;
+  }
+  .blog-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  }
+  .blog-card .bc-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .blog-card .bc-ex {
+    font-size: .86rem;
+    color: var(--ink-2);
+    line-height: 1.5;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .blog-card .bc-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    font-size: .78rem;
+    color: var(--ink-3);
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+  }
+  .blog-card .bc-foot .bc-auth {
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .blog-empty2 {
+    color: var(--ink-3);
+    font-size: .92rem;
+    padding: 16px 0;
+    text-align: center;
+    width: 100%;
+  }
+  </style>
+
+  <section class="blog-sec" id="blogTrangChuSec" style="display:none">
+    <div class="blog-sec-head">
+      <h2>📝 Blog & Chia sẻ từ Thầy Vinh</h2>
+      <a class="btn btn-secondary btn-sm" id="btnVietBlogTrangChu" href="viet-blog.html" style="display:none">✍️ Viết blog</a>
+    </div>
+    <div class="blog-slider-container">
+      <div id="blogTrangChu" class="blog-slider">
+        <div class="blog-empty2">Đang tải blog...</div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.3"></script>
+<script src="vinhmath.js?v=2.4"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -609,6 +714,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   }
 
   // Khởi dựng Lịch tuần & Đếm ngược
+  await taiBlogTrangChu();
   veLichTuan();
   khoiDongCountdown();
 })();
@@ -690,6 +796,58 @@ async function toggleViec(el, id, dangXong) {
     await sb.from('reminder_done').insert({ reminder_id: id, student_id: vclMyId });
   }
   await taiViecCanLam();
+}
+
+// ===== TẢI BLOG TRÊN TRANG CHỦ =====
+async function taiBlogTrangChu() {
+  var sec = $('blogTrangChuSec'), box = $('blogTrangChu');
+  if (!sec || !box) return;
+  sec.style.display = 'block';
+  
+  if (hoSoNguoiDung && hoSoNguoiDung.role === 'admin') {
+    var b = $('btnVietBlogTrangChu');
+    if (b) b.style.display = 'inline-flex';
+  }
+  
+  box.innerHTML = '<div class="blog-empty2">Đang tải blog…</div>';
+  try {
+    var r = await sb.from('blog_posts').select('id,title,excerpt,author_name,created_at').eq('published', true).order('created_at', { ascending: false }).limit(12);
+    var ds = (r && r.data) ? r.data : [];
+    if (!ds.length) {
+      box.innerHTML = '<div class="blog-empty2">Chưa có bài blog nào được xuất bản.</div>';
+      return;
+    }
+    
+    var ids = ds.map(function(p) { return p.id; });
+    var likeMap = {}, cmtMap = {};
+    try {
+      var rl = await sb.from('blog_likes').select('post_id').in('post_id', ids);
+      (rl.data || []).forEach(function(x) {
+        likeMap[x.post_id] = (likeMap[x.post_id] || 0) + 1;
+      });
+    } catch(e) {}
+    try {
+      var rc = await sb.from('blog_comments').select('post_id').in('post_id', ids);
+      (rc.data || []).forEach(function(x) {
+        cmtMap[x.post_id] = (cmtMap[x.post_id] || 0) + 1;
+      });
+    } catch(e) {}
+    
+    function esc(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    
+    box.innerHTML = ds.map(function(p) {
+      var d = new Date(p.created_at).toLocaleDateString('vi-VN');
+      return '<a class="blog-card" href="blog.html?id=' + p.id + '">' +
+        '<div class="bc-title">' + esc(p.title) + '</div>' +
+        '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
+        '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Vinh') + '</span><span>' + d + '</span>' +
+        '<span style="margin-left:auto">❤️ ' + (likeMap[p.id]||0) + '</span><span>💬 ' + (cmtMap[p.id]||0) + '</span></div>' +
+      '</a>';
+    }).join('');
+  } catch(err) {
+    console.error("Lỗi tải blog:", err);
+    box.innerHTML = '<div class="blog-empty2">Không tải được blog.</div>';
+  }
 }
 
 // ----- TẢI DỮ LIỆU STAFF -----

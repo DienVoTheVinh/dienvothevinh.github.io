@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.3">
+<link rel="stylesheet" href="vinhmath.css?v=2.4">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -258,7 +258,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.3"></script>
+<script src="vinhmath.js?v=2.4"></script>
 <script src="analytics.js"></script>
 <script>
 var lessonId = null;
@@ -549,7 +549,14 @@ function renderPDFWithJS(pdfUrl, container) {
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
     script.id = 'pdfjs-script';
     script.onload = function() {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      // Tạo Blob URL cho worker để vượt qua chính sách Same-Origin đối với Web Worker của trình duyệt
+      var workerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      try {
+        var blob = new Blob(['importScripts("' + workerUrl + '");'], { type: 'application/javascript' });
+        pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+      } catch (e) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+      }
       startRendering();
     };
     script.onerror = function() {
@@ -568,7 +575,13 @@ function renderPDFWithJS(pdfUrl, container) {
     container.innerHTML = '<div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
     var canvasContainer = document.getElementById('pdfCanvasContainer');
     
-    var loadingTask = pdfjsLib.getDocument(pdfUrl);
+    // Thêm cache-busting cho URL của Supabase để tránh việc trình duyệt cache kết quả request không có CORS
+    var fetchUrl = pdfUrl;
+    if (fetchUrl.indexOf('blob:') !== 0 && fetchUrl.indexOf('data:') !== 0) {
+      fetchUrl += (fetchUrl.indexOf('?') !== -1 ? '&' : '?') + 't=' + Date.now();
+    }
+    
+    var loadingTask = pdfjsLib.getDocument(fetchUrl);
     loadingTask.promise.then(function(pdf) {
       for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         (function(num) {

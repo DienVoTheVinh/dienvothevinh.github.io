@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.3">
+<link rel="stylesheet" href="vinhmath.css?v=2.4">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -387,6 +387,25 @@
         </div>
       </div>
 
+      <!-- ===== BLOG VINHMATH (hiển thị cho mọi vai trò) ===== -->
+      <style>
+      .blog-sec { margin-top: 28px; }
+      .blog-sec-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px; }
+      .blog-sec-head h2 { font-size:1.2rem; font-weight:800; display:flex; align-items:center; gap:8px; }
+      .blog-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+      .blog-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r-lg,14px); background:var(--surface); box-shadow:var(--shadow); padding:18px; text-decoration:none; color:var(--ink); transition:all .2s ease; }
+      .blog-card:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:0 10px 28px rgba(0,0,0,.12); }
+      .blog-card .bc-title { font-size:1.05rem; font-weight:800; line-height:1.35; margin-bottom:6px; }
+      .blog-card .bc-ex { font-size:.86rem; color:var(--ink-2); line-height:1.5; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+      .blog-card .bc-foot { display:flex; align-items:center; gap:12px; margin-top:12px; font-size:.78rem; color:var(--ink-3); }
+      .blog-card .bc-foot .bc-auth { font-weight:700; color:var(--ink-2); }
+      .blog-empty2 { color:var(--ink-3); font-size:.92rem; padding:8px 0; }
+      </style>
+      <section class="blog-sec" id="blogCaNhanSec" style="display:none">
+        <div class="blog-sec-head"><h2>📝 Blog VinhMath</h2><a class="btn btn-ghost btn-sm" id="btnVietBlog" href="viet-blog.html" style="display:none">✍️ Viết blog</a></div>
+        <div id="blogCaNhan" class="blog-grid"></div>
+      </section>
+
       <!-- Form thiết lập tài khoản (Ban đầu ẩn, bấm nút hiện ra dưới cùng) -->
       <div class="card" id="cardSettings" style="margin-top: 24px; display: none;">
         <div class="settings-header" onclick="toggleSettings()">
@@ -469,7 +488,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.3"></script>
+<script src="vinhmath.js?v=2.4"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -609,6 +628,9 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   
   // Lời chào ở tiêu đề
   $('titleChao').textContent = chao() + ', ' + (profileData.full_name.split(' ').pop()) + '!';
+
+  // Blog VinhMath — Đã chuyển sang Trang chủ (trang-chu.html) theo yêu cầu của Sếp
+  // await taiBlogCaNhan();
 
   // Trợ giảng / Giáo viên / Admin xem trang của CHÍNH MÌNH → hiện dashboard giảng dạy, bỏ chỉ số học sinh
   if (isStaff && !targetStudentId) {
@@ -1693,6 +1715,32 @@ async function updateProfileInfo(e) {
 }
 
 // Đổi mật khẩu (xác minh mật khẩu hiện tại trước)
+// ===== BLOG VINHMATH trên trang Cá nhân =====
+async function taiBlogCaNhan(){
+  var sec = $('blogCaNhanSec'), box = $('blogCaNhan');
+  if (!sec || !box) return;
+  sec.style.display = 'block';
+  if (myHoSo && myHoSo.role === 'admin'){ var b = $('btnVietBlog'); if (b) b.style.display = 'inline-flex'; }
+  box.innerHTML = '<div class="blog-empty2">Đang tải blog…</div>';
+  var r = await sb.from('blog_posts').select('id,title,excerpt,author_name,created_at').eq('published', true).order('created_at', { ascending: false }).limit(12);
+  var ds = (r && r.data) ? r.data : [];
+  if (!ds.length){ box.innerHTML = '<div class="blog-empty2">Chưa có bài blog nào được xuất bản.</div>'; return; }
+  var ids = ds.map(function(p){ return p.id; });
+  var likeMap = {}, cmtMap = {};
+  try { var rl = await sb.from('blog_likes').select('post_id').in('post_id', ids); (rl.data||[]).forEach(function(x){ likeMap[x.post_id] = (likeMap[x.post_id]||0)+1; }); } catch(e){}
+  try { var rc = await sb.from('blog_comments').select('post_id').in('post_id', ids); (rc.data||[]).forEach(function(x){ cmtMap[x.post_id] = (cmtMap[x.post_id]||0)+1; }); } catch(e){}
+  function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  box.innerHTML = ds.map(function(p){
+    var d = new Date(p.created_at).toLocaleDateString('vi-VN');
+    return '<a class="blog-card" href="blog.html?id=' + p.id + '">' +
+      '<div class="bc-title">' + esc(p.title) + '</div>' +
+      '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
+      '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Vinh') + '</span><span>' + d + '</span>' +
+      '<span style="margin-left:auto">❤️ ' + (likeMap[p.id]||0) + '</span><span>💬 ' + (cmtMap[p.id]||0) + '</span></div>' +
+    '</a>';
+  }).join('');
+}
+
 async function doiMatKhau(e) {
   e.preventDefault();
   var cur = $('pwCurrent').value;

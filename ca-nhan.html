@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.3">
+<link rel="stylesheet" href="vinhmath.css?v=2.4">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -488,7 +488,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.3"></script>
+<script src="vinhmath.js?v=2.4"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -629,8 +629,8 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   // Lời chào ở tiêu đề
   $('titleChao').textContent = chao() + ', ' + (profileData.full_name.split(' ').pop()) + '!';
 
-  // Blog VinhMath — hiển thị cho mọi vai trò
-  await taiBlogCaNhan();
+  // Blog VinhMath — Đã chuyển sang Trang chủ (trang-chu.html) theo yêu cầu của Sếp
+  // await taiBlogCaNhan();
 
   // Trợ giảng / Giáo viên / Admin xem trang của CHÍNH MÌNH → hiện dashboard giảng dạy, bỏ chỉ số học sinh
   if (isStaff && !targetStudentId) {
