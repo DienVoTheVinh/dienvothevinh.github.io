@@ -386,9 +386,17 @@ function khoiTaoControlCenter() {
   
   // 2. Tạo nút bấm Control Center (Biểu tượng sliders)
   ccWrapper.innerHTML = 
-    '<button class="control-center-btn" id="ccBtn" title="Trung tâm điều khiển giao diện">' +
-      '<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;">' +
-        '<path d="M3 17h18v2H3v-2zm0-6h18v2H3v-2zm0-6h18v2H3V5z"/>' +
+    '<button class="control-center-btn" id="ccBtn" title="Điều chỉnh độ mờ trong suốt (Liquid Glass)">' +
+      '<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;">' +
+        '<line x1="4" y1="21" x2="4" y2="14"></line>' +
+        '<line x1="4" y1="10" x2="4" y2="3"></line>' +
+        '<line x1="12" y1="21" x2="12" y2="12"></line>' +
+        '<line x1="12" y1="8" x2="12" y2="3"></line>' +
+        '<line x1="20" y1="21" x2="20" y2="16"></line>' +
+        '<line x1="20" y1="12" x2="20" y2="3"></line>' +
+        '<line x1="2" y1="14" x2="6" y2="14"></line>' +
+        '<line x1="10" y1="8" x2="14" y2="8"></line>' +
+        '<line x1="18" y1="16" x2="22" y2="16"></line>' +
       '</svg>' +
     '</button>';
     
@@ -556,6 +564,10 @@ function khoiTaoControlCenter() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+if (document.readyState !== 'loading') {
   khoiTaoControlCenter();
-});
+} else {
+  document.addEventListener('DOMContentLoaded', function () {
+    khoiTaoControlCenter();
+  });
+}
