@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viết Blog — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="vinhmath.css">
+<script>
+  window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<style>
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 96px; }
+.vb-head { padding: 28px 0 18px; }
+.vb-head h1 { font-size:1.7rem; font-weight:900; }
+.vb-head p { color:var(--ink-2); margin-top:4px; font-size:.92rem; }
+.vb-posts { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
+.vb-post { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--line); border-radius:var(--r-md,10px); background:var(--surface); }
+.vb-post .t { flex:1; min-width:0; }
+.vb-post .t b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vb-badge { font-size:.7rem; font-weight:800; padding:2px 9px; border-radius:99px; }
+.vb-badge.pub { background:var(--ok-soft, #d6f5e3); color:var(--ok,#1a9e5c); }
+.vb-badge.draft { background:var(--surface-2); color:var(--ink-3); border:1px solid var(--line); }
+.vb-editor { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
+@media(max-width: 900px){ .vb-editor { grid-template-columns: 1fr; } }
+.vb-pane { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,14px); padding:18px; box-shadow:var(--shadow); }
+.vb-pane h3 { font-size:1rem; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.vb-pane input.title { width:100%; font-size:1.15rem; font-weight:800; border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink); padding:8px 2px; margin-bottom:12px; font-family:inherit; }
+.vb-pane input.title:focus { outline:none; border-color:var(--accent); }
+.vb-pane textarea.body { width:100%; min-height:460px; border:1px solid var(--line); border-radius:var(--r-md,10px); padding:12px 14px; background:var(--surface); color:var(--ink); font-family:Menlo,Consolas,monospace; font-size:.9rem; line-height:1.6; resize:vertical; }
+.vb-toolbar { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.vb-hint { font-size:.78rem; color:var(--ink-3); margin-top:8px; line-height:1.5; }
+/* preview = giống trang đọc */
+.article { font-size:1rem; line-height:1.8; color:var(--ink); overflow-wrap:break-word; }
+.article h1,.article h2,.article h3,.article h4 { font-weight:800; line-height:1.3; margin:1.4em 0 .5em; }
+.article h1{font-size:1.5rem;} .article h2{font-size:1.3rem;} .article h3{font-size:1.12rem;}
+.article p { margin:0 0 1em; }
+.article ul,.article ol { margin:0 0 1em; padding-left:1.5em; }
+.article a { color:var(--accent); text-decoration:underline; }
+.article code { background:var(--surface-2); padding:1px 6px; border-radius:5px; font-family:Menlo,monospace; font-size:.92em; }
+.article blockquote { border-left:4px solid var(--accent); background:var(--surface-2); margin:0 0 1em; padding:8px 16px; border-radius:0 8px 8px 0; color:var(--ink-2); }
+.article hr { border:none; border-top:1px solid var(--line); margin:1.6em 0; }
+.article mjx-container { overflow-x:auto; max-width:100%; }
+.vb-deny { text-align:center; padding:80px 24px; color:var(--ink-3); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks"></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="vbWrap" style="display:none">
+  <div class="vb-head">
+    <h1>✍️ Viết Blog</h1>
+    <p>Soạn bài bằng văn bản thô + công thức LaTeX ($...$). Không cần khai báo gì. Bấm <b>Xuất bản</b> để mọi người đọc được.</p>
+  </div>
+
+  <div class="vb-posts" id="dsBaiViet"></div>
+
+  <div class="vb-editor">
+    <div class="vb-pane">
+      <h3>📝 Soạn thảo <span id="lblTrangThai" style="font-size:.72rem;font-weight:700;color:var(--ink-3)"></span></h3>
+      <input type="hidden" id="postId">
+      <input class="title" id="postTitle" placeholder="Tiêu đề bài viết…">
+      <textarea class="body" id="postBody" placeholder="Viết nội dung ở đây…
+
+Ví dụ:
+# Tiêu đề lớn
+Đoạn văn bình thường, có công thức $a^2+b^2=c^2$ ngay trong dòng.
+
+$$\int_0^1 x^2\,dx = \frac{1}{3}$$
+
+- Gạch đầu dòng
+**in đậm**, *in nghiêng*, `mã`"></textarea>
+      <div class="vb-toolbar">
+        <button class="btn btn-secondary btn-sm" onclick="moBaiMoi()">＋ Bài mới</button>
+        <button class="btn btn-secondary btn-sm" id="btnLuuNhap" onclick="luuBai(false)">💾 Lưu nháp</button>
+        <button class="btn btn-primary btn-sm" id="btnXuatBan" onclick="luuBai(true)">🚀 Xuất bản</button>
+        <button class="btn btn-ghost btn-sm" id="btnXoa" style="color:var(--err,#e74c3c); display:none" onclick="xoaBai()">Xoá bài</button>
+        <a class="btn btn-ghost btn-sm" id="btnXem" style="display:none" target="_blank">↗ Xem trang đọc</a>
+      </div>
+      <div class="vb-hint">Hỗ trợ: <b># / ## / ###</b> tiêu đề · <b>**đậm**</b> · <b>*nghiêng*</b> · <b>- danh sách</b> · <b>&gt; trích dẫn</b> · công thức <b>$...$</b> (cùng dòng) và <b>$$...$$</b> (riêng dòng).</div>
+    </div>
+
+    <div class="vb-pane">
+      <h3>👁️ Xem trước (đúng như học sinh thấy)</h3>
+      <div class="article" id="preview"><p style="color:var(--ink-3)">Bản xem trước hiện ở đây…</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap"><div class="vb-deny" id="vbDeny" style="display:none">⛔ Trang này chỉ dành cho tài khoản Quản trị.</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="vinhmath.js?v=1.3"></script>
+<script src="menu.js"></script>
+<script src="analytics.js"></script>
+<script>
+function blogEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderBlog(src){
+  src = String(src || '');
+  var math = [];
+  src = src.replace(/\$\$([\s\S]+?)\$\$/g, function(m){ math.push(m); return ' ' + (math.length-1) + ' '; });
+  src = src.replace(/\\\[([\s\S]+?)\\\]/g, function(m){ math.push(m); return ' ' + (math.length-1) + ' '; });
+  src = src.replace(/\$([^\$\n]+?)\$/g, function(m){ math.push(m); return ' ' + (math.length-1) + ' '; });
+  src = src.replace(/\\\(([\s\S]+?)\\\)/g, function(m){ math.push(m); return ' ' + (math.length-1) + ' '; });
+  function inline(t){
+    t = blogEsc(t);
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return t;
+  }
+  var lines = src.split(/\r?\n/), html = '', para = [], inUl = false, inOl = false;
+  function flushPara(){ if(para.length){ html += '<p>' + inline(para.join(' ')) + '</p>'; para = []; } }
+  function closeLists(){ if(inUl){ html += '</ul>'; inUl = false; } if(inOl){ html += '</ol>'; inOl = false; } }
+  lines.forEach(function(ln){
+    var t = ln.trim();
+    if(t === ''){ flushPara(); closeLists(); return; }
+    var hm = t.match(/^(#{1,4})\s+(.*)$/);
+    if(hm){ flushPara(); closeLists(); var lvl = hm[1].length; html += '<h' + lvl + '>' + inline(hm[2]) + '</h' + lvl + '>'; return; }
+    if(/^(---|\*\*\*|___)$/.test(t)){ flushPara(); closeLists(); html += '<hr>'; return; }
+    if(/^>\s?/.test(t)){ flushPara(); closeLists(); html += '<blockquote>' + inline(t.replace(/^>\s?/, '')) + '</blockquote>'; return; }
+    var um = t.match(/^[-*]\s+(.*)$/);
+    if(um){ flushPara(); if(inOl){ html += '</ol>'; inOl = false; } if(!inUl){ html += '<ul>'; inUl = true; } html += '<li>' + inline(um[1]) + '</li>'; return; }
+    var om = t.match(/^\d+\.\s+(.*)$/);
+    if(om){ flushPara(); if(inUl){ html += '</ul>'; inUl = false; } if(!inOl){ html += '<ol>'; inOl = true; } html += '<li>' + inline(om[1]) + '</li>'; return; }
+    para.push(t);
+  });
+  flushPara(); closeLists();
+  html = html.replace(/ (\d+) /g, function(_, i){ return math[+i]; });
+  return html;
+}
+function trichDoan(src){
+  var t = String(src||'').replace(/\$\$[\s\S]+?\$\$/g,' ').replace(/\$[^\$\n]+?\$/g,' ')
+    .replace(/[#>*`_\-]/g,' ').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\s+/g,' ').trim();
+  return t.slice(0, 180);
+}
+
+var vbProfile = null;
+var previewTimer = null;
+
+(async function(){
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  vbProfile = hoSo;
+  if (hoSo.role !== 'admin'){
+    document.getElementById('vbDeny').style.display = 'block';
+    return;
+  }
+  document.getElementById('vbWrap').style.display = 'block';
+  document.getElementById('postBody').addEventListener('input', function(){
+    clearTimeout(previewTimer); previewTimer = setTimeout(capNhatXemTruoc, 250);
+  });
+  capNhatXemTruoc();
+  await taiDsBai();
+})();
+
+function capNhatXemTruoc(){
+  var el = document.getElementById('preview');
+  var content = document.getElementById('postBody').value;
+  el.innerHTML = content.trim() ? renderBlog(content) : '<p style="color:var(--ink-3)">Bản xem trước hiện ở đây…</p>';
+  if (window.MathJax && window.MathJax.typesetPromise){ window.MathJax.typesetPromise([el]); }
+}
+
+async function taiDsBai(){
+  var box = document.getElementById('dsBaiViet');
+  var r = await sb.from('blog_posts').select('id, title, published, updated_at').order('updated_at', { ascending: false });
+  var ds = r.data || [];
+  if (!ds.length){ box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có bài viết nào. Soạn bài đầu tiên bên dưới!</div>'; return; }
+  box.innerHTML = ds.map(function(p){
+    return '<div class="vb-post"><div class="t"><b>' + blogEsc(p.title) + '</b>' +
+      '<span style="font-size:.76rem;color:var(--ink-3)">Cập nhật: ' + new Date(p.updated_at).toLocaleDateString('vi-VN') + '</span></div>' +
+      '<span class="vb-badge ' + (p.published ? 'pub">● Đã xuất bản' : 'draft">○ Nháp') + '</span>' +
+      '<button class="btn btn-secondary btn-sm" onclick="suaBai(\'' + p.id + '\')">Sửa</button></div>';
+  }).join('');
+}
+
+function moBaiMoi(){
+  document.getElementById('postId').value = '';
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postBody').value = '';
+  document.getElementById('btnXoa').style.display = 'none';
+  document.getElementById('btnXem').style.display = 'none';
+  document.getElementById('lblTrangThai').textContent = '· Bài mới';
+  capNhatXemTruoc();
+  window.scrollTo({ top: document.querySelector('.vb-editor').offsetTop - 80, behavior: 'smooth' });
+}
+
+async function suaBai(id){
+  var r = await sb.from('blog_posts').select('*').eq('id', id).single();
+  if (r.error || !r.data){ alert('Không tải được bài viết.'); return; }
+  var p = r.data;
+  document.getElementById('postId').value = p.id;
+  document.getElementById('postTitle').value = p.title || '';
+  document.getElementById('postBody').value = p.content || '';
+  document.getElementById('btnXoa').style.display = 'inline-flex';
+  var xem = document.getElementById('btnXem'); xem.style.display = 'inline-flex'; xem.href = 'blog.html?id=' + p.id;
+  document.getElementById('lblTrangThai').textContent = p.published ? '· Đang sửa (đã xuất bản)' : '· Đang sửa (nháp)';
+  capNhatXemTruoc();
+  window.scrollTo({ top: document.querySelector('.vb-editor').offsetTop - 80, behavior: 'smooth' });
+}
+
+async function luuBai(publish){
+  var id = document.getElementById('postId').value;
+  var title = document.getElementById('postTitle').value.trim();
+  var content = document.getElementById('postBody').value;
+  if (!title){ alert('Nhập tiêu đề bài viết trước nhé.'); return; }
+  if (!content.trim()){ alert('Nội dung bài viết đang trống.'); return; }
+  var btn = publish ? document.getElementById('btnXuatBan') : document.getElementById('btnLuuNhap');
+  var oldTxt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Đang lưu…';
+  var u = await sb.auth.getUser();
+  var rec = {
+    title: title, content: content, excerpt: trichDoan(content),
+    published: publish, author_id: u.data.user.id,
+    author_name: (vbProfile && vbProfile.full_name) ? vbProfile.full_name : 'Thầy Vinh',
+    updated_at: new Date().toISOString()
+  };
+  var r;
+  if (id){ r = await sb.from('blog_posts').update(rec).eq('id', id).select('id').single(); }
+  else { r = await sb.from('blog_posts').insert(rec).select('id').single(); }
+  btn.disabled = false; btn.textContent = oldTxt;
+  if (r.error){ alert('Lỗi lưu bài: ' + r.error.message); return; }
+  if (!id && r.data){ document.getElementById('postId').value = r.data.id; document.getElementById('btnXoa').style.display='inline-flex'; var xem=document.getElementById('btnXem'); xem.style.display='inline-flex'; xem.href='blog.html?id='+r.data.id; }
+  document.getElementById('lblTrangThai').textContent = publish ? '· ✓ Đã xuất bản' : '· ✓ Đã lưu nháp';
+  await taiDsBai();
+  alert(publish ? '🚀 Đã xuất bản! Bài viết hiện trên trang cá nhân của mọi người và trang giới thiệu.' : '💾 Đã lưu nháp (chỉ thầy/trợ giảng thấy).');
+}
+
+async function xoaBai(){
+  var id = document.getElementById('postId').value;
+  if (!id) return;
+  if (!confirm('Xoá hẳn bài viết này? Không thể hoàn tác.')) return;
+  var r = await sb.from('blog_posts').delete().eq('id', id);
+  if (r.error){ alert('Lỗi xoá: ' + r.error.message); return; }
+  moBaiMoi();
+  await taiDsBai();
+}
+</script>
+</body>
+</html>
