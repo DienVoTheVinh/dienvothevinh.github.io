@@ -786,7 +786,26 @@ async function guiTinNhanAI() {
   }
   
   try {
-    var apiKey = window.VM_AI_SETTINGS.key;
+    var apiKey = window.VM_AI_SETTINGS.key ? window.VM_AI_SETTINGS.key.trim() : '';
+    var isPlaceholder = (apiKey === 'NHAP_GEMINI_KEY_TAI_DAY' || apiKey === '');
+    
+    var tEl = document.getElementById('aiChatTyping');
+    
+    if (isPlaceholder) {
+      if (tEl) tEl.remove();
+      var aiMsg = document.createElement('div');
+      aiMsg.className = 'acb-msg ai';
+      var isAdminUser = !!document.getElementById('ccAdminControls');
+      if (isAdminUser) {
+        aiMsg.innerHTML = '<strong>Sếp ơi!</strong> Gemini API Key hiện tại chưa được cấu hình (vẫn là placeholder <code>NHAP_GEMINI_KEY_TAI_DAY</code>). Sếp vui lòng mở <strong>Trung tâm điều khiển (Control Center)</strong> ở góc trên thanh menu (biểu tượng thanh gạt 🎛️), nhập API Key thực tế và nhấn <strong>Lưu</strong> nhé!';
+      } else {
+        aiMsg.textContent = 'Hệ thống Trợ lý AI đang được bảo trì để nâng cấp. Em vui lòng quay lại hỏi đáp sau nhé!';
+      }
+      body.appendChild(aiMsg);
+      cuonXuongChat();
+      return;
+    }
+
     var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
     
     var response = await fetch(url, {
@@ -802,30 +821,49 @@ async function guiTinNhanAI() {
     
     var data = await response.json();
     var reply = '';
+    var isHtml = false;
+    
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
       reply = data.candidates[0].content.parts[0].text;
     } else {
-      reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
+      console.error("Gemini API error response:", data);
+      var isAdminUser = !!document.getElementById('ccAdminControls');
+      if (data.error) {
+        if (isAdminUser) {
+          reply = '<strong>Lỗi Gemini API (Chỉ hiển thị với Admin):</strong> ' + (data.error.message || JSON.stringify(data.error)) + '<br><br>Sếp vui lòng kiểm tra lại tính chính xác của Gemini API Key trong Trung tâm điều khiển (Control Center) nhé!';
+          isHtml = true;
+        } else {
+          reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
+        }
+      } else {
+        reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
+      }
     }
     
-    var tEl = document.getElementById('aiChatTyping');
     if (tEl) tEl.remove();
     
     var aiMsg = document.createElement('div');
     aiMsg.className = 'acb-msg ai';
     
-    var html = String(reply)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\n/g, '<br>');
+    var html = '';
+    if (isHtml) {
+      html = reply;
+    } else {
+      html = String(reply)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+    }
     
     aiMsg.innerHTML = html;
     body.appendChild(aiMsg);
     cuonXuongChat();
     
-    aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+    if (data.candidates && data.candidates[0]) {
+      aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+    }
     
     if (window.MathJax && window.MathJax.typesetPromise) {
       window.MathJax.typesetPromise([aiMsg]).catch(function(e) { console.error("MathJax error:", e); });
