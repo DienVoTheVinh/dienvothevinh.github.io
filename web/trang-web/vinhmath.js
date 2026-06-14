@@ -5,24 +5,80 @@
 // File này là JS thuần — không cần build, mở file là chạy.
 // ============================================================
 
-/* ---------- 1. CHẾ ĐỘ SÁNG / TỐI ---------- */
+/* ---------- 1. CHẾ ĐỘ SÁNG / TỐI & HỆ THỐNG GIAO DIỆN LIQUID GLASS ---------- */
 function toggleTheme() {
   var h = document.documentElement;
   var dark = h.getAttribute('data-theme') === 'dark';
-  h.setAttribute('data-theme', dark ? 'light' : 'dark');
+  var newTheme = dark ? 'light' : 'dark';
+  h.setAttribute('data-theme', newTheme);
+  
   var btn = document.getElementById('themeBtn');
   if (btn) btn.textContent = dark ? '🌙' : '☀️';
-  try { localStorage.setItem('vm-theme', dark ? 'light' : 'dark'); } catch (e) {}
-}
-(function () { // áp dụng lựa chọn đã lưu ngay khi trang mở
-  try {
-    if (localStorage.getItem('vm-theme') === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      document.addEventListener('DOMContentLoaded', function () {
-        var btn = document.getElementById('themeBtn');
-        if (btn) btn.textContent = '☀️';
-      });
+  
+  // Đồng bộ cả nút ở Control Center nếu đang mở
+  var ccLight = document.getElementById('ccBtnLight');
+  var ccDark = document.getElementById('ccBtnDark');
+  if (ccLight && ccDark) {
+    if (newTheme === 'dark') {
+      ccDark.classList.add('active');
+      ccLight.classList.remove('active');
+    } else {
+      ccLight.classList.add('active');
+      ccDark.classList.remove('active');
     }
+  }
+
+  var activeColor = localStorage.getItem('vm-accent') || 'blue';
+  apdungMauAccent(h, activeColor, newTheme === 'dark');
+  
+  try { localStorage.setItem('vm-theme', newTheme); } catch (e) {}
+}
+
+function apdungMauAccent(el, color, isDark) {
+  var map = {
+    light: {
+      blue:   { accent: '#2563eb', grad: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', soft: 'rgba(37, 99, 235, 0.08)' },
+      violet: { accent: '#8b5cf6', grad: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', soft: 'rgba(139, 92, 246, 0.08)' },
+      coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.08)' },
+      green:  { accent: '#10b981', grad: 'linear-gradient(135deg, #34d399 0%, #059669 100%)', soft: 'rgba(16, 185, 129, 0.08)' },
+      amber:  { accent: '#f59e0b', grad: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', soft: 'rgba(245, 158, 11, 0.08)' }
+    },
+    dark: {
+      blue:   { accent: '#00f2fe', grad: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', soft: 'rgba(0, 242, 254, 0.12)' },
+      violet: { accent: '#c084fc', grad: 'linear-gradient(135deg, #e9d5ff 0%, #a855f7 100%)', soft: 'rgba(192, 132, 252, 0.12)' },
+      coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.12)' },
+      green:  { accent: '#34d399', grad: 'linear-gradient(135deg, #6ee7b7 0%, #10b981 100%)', soft: 'rgba(52, 211, 153, 0.12)' },
+      amber:  { accent: '#fbbf24', grad: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)', soft: 'rgba(251, 191, 36, 0.12)' }
+    }
+  };
+  var themeSet = isDark ? map.dark : map.light;
+  var target = themeSet[color] || themeSet.blue;
+  el.style.setProperty('--accent', target.accent);
+  el.style.setProperty('--accent-gradient', target.grad);
+  el.style.setProperty('--accent-soft', target.soft);
+}
+
+(function () { // áp dụng cài đặt giao diện đã lưu ngay lập tức để tránh chớp giật (FOUC)
+  try {
+    var root = document.documentElement;
+    
+    // 1. Theme
+    var savedTheme = localStorage.getItem('vm-theme') || 'dark'; // mặc định tối cho ngầu
+    root.setAttribute('data-theme', savedTheme);
+    
+    // 2. Transparency & Blur
+    var savedTrans = localStorage.getItem('vm-transparency');
+    if (savedTrans !== null) {
+      root.style.setProperty('--glass-opacity', savedTrans);
+    }
+    var savedBlur = localStorage.getItem('vm-blur');
+    if (savedBlur !== null) {
+      root.style.setProperty('--glass-blur-radius', savedBlur + 'px');
+    }
+    
+    // 3. Accent Color
+    var savedColor = localStorage.getItem('vm-accent') || 'blue';
+    apdungMauAccent(root, savedColor, savedTheme === 'dark');
   } catch (e) {}
 })();
 
@@ -314,3 +370,192 @@ function showSamSuccess(msg) {
     dongModalDiemDanhStudent();
   }, 2000);
 }
+
+/* ---------- 6. KHỞI TẠO TRUNG TÂM ĐIỀU KHIỂN (APPLE CONTROL CENTER) ---------- */
+function khoiTaoControlCenter() {
+  var nav = document.querySelector('.topbar .nav') || document.querySelector('.nav') || document.querySelector('.topbar');
+  if (!nav) return;
+  
+  // Tránh khởi tạo nhiều lần
+  if ($('controlCenterWrapper')) return;
+  
+  // 1. Tạo wrapper Control Center
+  var ccWrapper = document.createElement('div');
+  ccWrapper.className = 'control-center-wrapper';
+  ccWrapper.id = 'controlCenterWrapper';
+  
+  // 2. Tạo nút bấm Control Center (Biểu tượng sliders)
+  ccWrapper.innerHTML = 
+    '<button class="control-center-btn" id="ccBtn" title="Trung tâm điều khiển giao diện">' +
+      '<svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;">' +
+        '<path d="M3 17h18v2H3v-2zm0-6h18v2H3v-2zm0-6h18v2H3V5z"/>' +
+      '</svg>' +
+    '</button>';
+    
+  // 3. Tạo Panel Control Center
+  var panel = document.createElement('div');
+  panel.className = 'control-center-panel';
+  panel.id = 'ccPanel';
+  
+  var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  var isDark = currentTheme === 'dark';
+  var currentTrans = localStorage.getItem('vm-transparency') || (isDark ? '0.6' : '0.45');
+  var currentBlur = localStorage.getItem('vm-blur') || '20';
+  var currentAccent = localStorage.getItem('vm-accent') || 'blue';
+  
+  panel.innerHTML = 
+    '<!-- Widgets Grid -->' +
+    '<div class="cc-widgets-grid">' +
+      '<div class="cc-widget">' +
+        '<div class="cc-widget-icon" style="background:#3b82f6;">🌐</div>' +
+        '<div class="cc-widget-info">' +
+          '<b>Mạng Wifi</b>' +
+          '<span>VinhMath 5G</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cc-widget">' +
+        '<div class="cc-widget-icon" style="background:#10b981;">⚡</div>' +
+        '<div class="cc-widget-info">' +
+          '<b>Máy chủ</b>' +
+          '<span>Đang chạy</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    
+    '<!-- Theme switcher -->' +
+    '<div class="cc-theme-switcher">' +
+      '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">☀️ Sáng</button>' +
+      '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">🌙 Tối</button>' +
+    '</div>' +
+    
+    '<!-- Transparency (Opacity) slider -->' +
+    '<div class="cc-control-row">' +
+      '<div class="cc-control-label">' +
+        '<span>Trong suốt (Liquid Glass)</span>' +
+        '<span id="lblOpacity">' + Math.round(currentTrans * 100) + '%</span>' +
+      '</div>' +
+      '<div class="cc-slider-wrap">' +
+        '<input type="range" min="0.1" max="0.9" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
+      '</div>' +
+    '</div>' +
+    
+    '<!-- Blur slider -->' +
+    '<div class="cc-control-row">' +
+      '<div class="cc-control-label">' +
+        '<span>Độ mờ gương (Blur)</span>' +
+        '<span id="lblBlur">' + currentBlur + 'px</span>' +
+      '</div>' +
+      '<div class="cc-slider-wrap">' +
+        '<input type="range" min="0" max="40" step="1" value="' + currentBlur + '" class="cc-slider" id="sldBlur">' +
+      '</div>' +
+    '</div>' +
+    
+    '<!-- Accent Color picker -->' +
+    '<div class="cc-color-picker">' +
+      '<div class="cc-color-label">Màu chủ đề</div>' +
+      '<div class="cc-color-dots">' +
+        '<div class="cc-color-dot ' + (currentAccent === 'blue' ? 'active' : '') + '" style="background:#2563eb;" data-color="blue" title="Xanh dương"></div>' +
+        '<div class="cc-color-dot ' + (currentAccent === 'violet' ? 'active' : '') + '" style="background:#8b5cf6;" data-color="violet" title="Tím"></div>' +
+        '<div class="cc-color-dot ' + (currentAccent === 'coral' ? 'active' : '') + '" style="background:#ff5e62;" data-color="coral" title="Đỏ son"></div>' +
+        '<div class="cc-color-dot ' + (currentAccent === 'green' ? 'active' : '') + '" style="background:#10b981;" data-color="green" title="Xanh lá"></div>' +
+        '<div class="cc-color-dot ' + (currentAccent === 'amber' ? 'active' : '') + '" style="background:#f59e0b;" data-color="amber" title="Hổ phách"></div>' +
+      '</div>' +
+    '</div>';
+    
+  ccWrapper.appendChild(panel);
+  
+  // Chèn vào đầu trang bên cạnh nút đăng xuất hoặc cuối navlinks
+  var navLinks = nav.querySelector('.navlinks') || nav;
+  if (navLinks === nav) {
+    nav.appendChild(ccWrapper);
+  } else {
+    // Chèn trước con đầu tiên của navlinks để hiển thị đẹp đẽ cạnh các nút khác
+    navLinks.insertBefore(ccWrapper, navLinks.firstChild);
+  }
+  
+  // 4. Đăng ký các sự kiện tương tác
+  var ccBtn = $('ccBtn');
+  var ccPanel = $('ccPanel');
+  
+  // Toggle panel
+  ccBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    ccPanel.classList.toggle('open');
+  });
+  
+  // Click ngoài đóng panel
+  document.addEventListener('click', function() {
+    ccPanel.classList.remove('open');
+  });
+  ccPanel.addEventListener('click', function(e) {
+    e.stopPropagation(); // chặn không đóng khi tương tác bên trong panel
+  });
+  
+  // Thay đổi Theme
+  var btnLight = $('ccBtnLight');
+  var btnDark = $('ccBtnDark');
+  
+  function setCCTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('vm-theme', theme);
+    
+    // Cập nhật nút trong CC
+    if (theme === 'dark') {
+      btnDark.classList.add('active');
+      btnLight.classList.remove('active');
+    } else {
+      btnLight.classList.add('active');
+      btnDark.classList.remove('active');
+    }
+    
+    // Cập nhật nút cũ (nếu có trên trang)
+    var oldBtn = $('themeBtn');
+    if (oldBtn) oldBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    
+    // Cập nhật màu accent theo theme
+    var activeColor = localStorage.getItem('vm-accent') || 'blue';
+    apdungMauAccent(document.documentElement, activeColor, theme === 'dark');
+  }
+  
+  btnLight.addEventListener('click', function() { setCCTheme('light'); });
+  btnDark.addEventListener('click', function() { setCCTheme('dark'); });
+  
+  // Slider Opacity
+  var sldOpacity = $('sldOpacity');
+  var lblOpacity = $('lblOpacity');
+  sldOpacity.addEventListener('input', function() {
+    var val = sldOpacity.value;
+    lblOpacity.textContent = Math.round(val * 100) + '%';
+    document.documentElement.style.setProperty('--glass-opacity', val);
+    localStorage.setItem('vm-transparency', val);
+  });
+  
+  // Slider Blur
+  var sldBlur = $('sldBlur');
+  var lblBlur = $('lblBlur');
+  sldBlur.addEventListener('input', function() {
+    var val = sldBlur.value;
+    lblBlur.textContent = val + 'px';
+    document.documentElement.style.setProperty('--glass-blur-radius', val + 'px');
+    localStorage.setItem('vm-blur', val);
+  });
+  
+  // Color dots selection
+  var dots = ccPanel.querySelectorAll('.cc-color-dot');
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      dots.forEach(function(d) { d.classList.remove('active'); });
+      dot.classList.add('active');
+      
+      var color = dot.getAttribute('data-color');
+      localStorage.setItem('vm-accent', color);
+      
+      var isD = document.documentElement.getAttribute('data-theme') === 'dark';
+      apdungMauAccent(document.documentElement, color, isD);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  khoiTaoControlCenter();
+});

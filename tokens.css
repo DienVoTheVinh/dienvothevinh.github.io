@@ -23,12 +23,16 @@
   --r-md: 14px;
   --r-lg: 24px;
   
+  /* --- ĐỘ TRONG SUỐT VÀ BLUR (Liquid Glass Controls) --- */
+  --glass-opacity: 0.45;
+  --glass-blur-radius: 20px;
+  
   /* --- CHẾ ĐỘ SÁNG (LIQUID GLASS / GLASSMORPHISM) --- */
   --bg: #f5f8ff; /* Nền xanh pastel nhạt cực sang */
   --bg-gradient: linear-gradient(135deg, #f5f8ff 0%, #eef2f7 50%, #e0e7ff 100%);
   
-  --surface: rgba(255, 255, 255, 0.45); /* Kính mờ tráng gương */
-  --surface-2: rgba(255, 255, 255, 0.75); /* Hover kính rõ hơn */
+  --surface: rgba(255, 255, 255, var(--glass-opacity)); /* Kính mờ tráng gương */
+  --surface-2: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.3)); /* Hover kính rõ hơn */
   --surface-solid: #ffffff;
   
   --line: rgba(255, 255, 255, 0.6); /* Đường viền kính mờ */
@@ -51,17 +55,20 @@
   --err-soft: rgba(239, 68, 68, 0.1);
   
   --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
-  --glass-blur: blur(20px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(var(--glass-blur-radius));
+  --glass-border: 1px solid rgba(255, 255, 255, calc(var(--glass-opacity) + 0.05));
 }
 
 [data-theme="dark"] {
   /* --- CHẾ ĐỘ TỐI (NEON TERMINAL / BLACKBOX) --- */
+  --glass-opacity: 0.6;
+  --glass-blur-radius: 20px;
+
   --bg: #050811; /* Xanh đen sâu thẳm */
   --bg-gradient: radial-gradient(circle at top, #0b1124 0%, #050811 100%);
   
-  --surface: rgba(13, 20, 38, 0.6); /* Kính mờ đen tối */
-  --surface-2: rgba(20, 30, 58, 0.85); /* Hover kính tối */
+  --surface: rgba(13, 20, 38, var(--glass-opacity)); /* Kính mờ đen tối */
+  --surface-2: rgba(20, 30, 58, calc(var(--glass-opacity) + 0.25)); /* Hover kính tối */
   --surface-solid: #0d1426;
   
   --line: rgba(255, 255, 255, 0.08); /* Viền kính tối */
@@ -84,6 +91,6 @@
   --err-soft: rgba(255, 94, 98, 0.15);
   
   --shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.6);
-  --glass-blur: blur(20px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(var(--glass-blur-radius));
+  --glass-border: 1px solid rgba(255, 255, 255, calc(var(--glass-opacity) - 0.5));
 }
