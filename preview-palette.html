@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bản thử nghiệm Giao diện mới — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* DARK THEME (Neon Terminal) */
+  --bg: #090a0f;
+  --surface: #12131a;
+  --surface-2: #1a1c29;
+  --line: #1f2235;
+  --line-2: #2a2e4b;
+  --ink: #f8fafc;
+  --ink-2: #94a3b8;
+  --ink-3: #64748b;
+  
+  --math-axis: #00f2fe;
+  --math-curve: #ff5e62;
+  --math-axis-soft: rgba(0, 242, 254, 0.15);
+  --math-curve-soft: rgba(255, 94, 98, 0.15);
+  --grid-color: rgba(31, 34, 53, 0.4);
+  
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --r-md: 12px;
+  --r-lg: 20px;
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}
+
+[data-theme="light"] {
+  /* LIGHT THEME (Blueprint / Engineering Draft) */
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --line: #e2e8f0;
+  --line-2: #cbd5e1;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  
+  --math-axis: #1d4ed8;
+  --math-curve: #e11d48;
+  --math-axis-soft: rgba(29, 78, 216, 0.08);
+  --math-curve-soft: rgba(225, 29, 72, 0.08);
+  --grid-color: #e2e8f0;
+  
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+.topbar {
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+.logo {
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-box {
+  width: 28px;
+  height: 28px;
+  background: var(--math-curve);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px var(--math-curve-soft);
+}
+.theme-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.theme-btn:hover {
+  background: var(--line);
+}
+
+.container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  flex-grow: 1;
+}
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- CANVAS GRAPH CARD --- */
+.graph-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.badge-tech {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--math-axis-soft);
+  color: var(--math-axis);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.canvas-container {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1.5;
+  cursor: crosshair;
+}
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.coordinate-tooltip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: none;
+}
+[data-theme="light"] .coordinate-tooltip {
+  background: rgba(255, 255, 255, 0.9);
+  color: #000;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* --- CODE & STATS COLUMN --- */
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.code-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.code-box {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.code-comment { color: var(--ink-3); font-style: italic; }
+.code-keyword { color: var(--math-curve); font-weight: 600; }
+.code-function { color: var(--math-axis); font-weight: 600; }
+.code-number { color: #f59e0b; }
+.code-text { color: #10b981; }
+
+.stats-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+}
+.stat-box {
+  text-align: center;
+}
+.stat-box b {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.stat-box span {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-top: 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-box">V</div>
+    VinhMath <span style="font-weight:400; color:var(--ink-2); font-size:1rem; margin-left:4px;">· Studio Thiết Kế</span>
+  </div>
+  <button class="theme-btn" onclick="toggleLocalTheme()" id="btnSwitch">
+    <span id="btnIcon">☀️</span> <span id="btnText">Chế độ Sáng</span>
+  </button>
+</div>
+
+<div class="container">
+  <!-- CỘT TRÁI: DỰ ÁN HÌNH HỌC ĐỘNG -->
+  <div class="graph-card">
+    <div class="card-header">
+      <div class="card-title">📉 Đồ thị hình học tương tác</div>
+      <div class="badge-tech">y = A * sin(ωx + φ)</div>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--ink-2)">Di chuột trên lưới tọa độ để tương tác vẽ tọa độ của trỏ chuột thời gian thực.</p>
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="graphCanvas"></canvas>
+      <div class="coordinate-tooltip" id="tooltip">x: 0.0, y: 0.0</div>
+    </div>
+  </div>
+
+  <!-- CỘT PHẢI: CODE VÀ THÔNG SỐ -->
+  <div class="right-column">
+    <!-- Thẻ bài giảng cú pháp lập trình -->
+    <div class="code-card">
+      <div class="card-header">
+        <div class="card-title">💻 Định lý Toán học (Cú pháp Code)</div>
+        <div class="badge-tech">python3 / math</div>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--ink-2)">Trình bày định nghĩa toán học dưới dạng khối lệnh code chuyên nghiệp.</p>
+      
+      <div class="code-box">
+        <span class="code-comment"># Định nghĩa đạo hàm tại một điểm</span><br>
+        <span class="code-keyword">def</span> <span class="code-function">derivative</span>(f, x, h=<span class="code-number">1e-5</span>):<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;dy = f(x + h) - f(x)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;dx = h<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> dy / dx<br><br>
+        <span class="code-comment"># Áp dụng cho hàm bậc hai y = x² tại x = 3</span><br>
+        y = <span class="code-keyword">lambda</span> x: x**<span class="code-number">2</span><br>
+        slope = derivative(y, <span class="code-number">3</span>) <span class="code-comment"># Kết quả: ~ 6.00001</span>
+      </div>
+    </div>
+
+    <!-- Khối chỉ số dashboard -->
+    <div class="stats-card">
+      <div class="stat-box">
+        <b style="color: var(--math-axis)">8.6</b>
+        <span>Điểm Trung Bình</span>
+      </div>
+      <div class="stat-box">
+        <b style="color: var(--math-curve)">94%</b>
+        <span>Chuyên Cần</span>
+      </div>
+      <div class="stat-box">
+        <b>16</b>
+        <span>Bài Hoàn Thành</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ----- CHUYỂN ĐỔI CHẾ ĐỘ SÁNG / TỐI -----
+function toggleLocalTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  
+  // Cập nhật nút bấm
+  const icon = document.getElementById('btnIcon');
+  const text = document.getElementById('btnText');
+  
+  if (newTheme === 'light') {
+    icon.textContent = '🌙';
+    text.textContent = 'Chế độ Tối';
+  } else {
+    icon.textContent = '☀️';
+    text.textContent = 'Chế độ Sáng';
+  }
+  
+  // Vẽ lại canvas đồ thị
+  drawGraph();
+}
+
+// ----- KHỞI TẠO CANVAS HÌNH HỌC ĐỘNG -----
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvasContainer');
+const tooltip = document.getElementById('tooltip');
+
+let mouseX = -1;
+let mouseY = -1;
+
+// Đặt kích thước thực tế cho canvas
+function resizeCanvas() {
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+  drawGraph();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// Lấy biến CSS
+function getCssVariable(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// Hàm vẽ chính
+function drawGraph() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  const originX = w / 2;
+  const originY = h / 2;
+  
+  const scale = 40; // Pixel mỗi đơn vị lưới
+  
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  
+  // 1. Vẽ lưới (Grid)
+  ctx.strokeStyle = getCssVariable('--grid-color');
+  ctx.lineWidth = 1;
+  
+  // Dọc
+  for (let x = originX; x < w; x += scale) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let x = originX; x > 0; x -= scale) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  // Ngang
+  for (let y = originY; y < h; y += scale) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  for (let y = originY; y > 0; y -= scale) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  
+  // 2. Vẽ Trục tọa độ chính (Oxy)
+  ctx.strokeStyle = getCssVariable('--math-axis');
+  ctx.lineWidth = 2;
+  // Trục Ox
+  ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(w, originY); strokeAxis();
+  function strokeAxis() { ctx.stroke(); }
+  // Trục Oy
+  ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, h); strokeAxis();
+  
+  // Số mốc tọa độ
+  ctx.fillStyle = getCssVariable('--ink-3');
+  ctx.font = '10px Fira Code';
+  ctx.fillText('O', originX + 5, originY + 15);
+  ctx.fillText('x', w - 15, originY - 10);
+  ctx.fillText('y', originX + 10, 15);
+
+  // 3. Vẽ đồ thị hàm số y = A * sin(x)
+  ctx.strokeStyle = getCssVariable('--math-curve');
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  
+  const amplitude = 1.5; // Đơn vị tọa độ
+  const freq = 0.5;
+  
+  for (let px = 0; px < w; px++) {
+    // Chuyển pixel x sang đơn vị toán học
+    const x = (px - originX) / scale;
+    const y = amplitude * Math.sin(freq * x);
+    // Chuyển đơn vị y sang pixel y
+    const py = originY - y * scale;
+    
+    if (px === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  
+  // 4. Vẽ tương tác con trỏ chuột
+  if (mouseX >= 0 && mouseY >= 0) {
+    // Tọa độ toán học
+    const mathX = ((mouseX - originX) / scale).toFixed(1);
+    const mathY = ((originY - mouseY) / scale).toFixed(1);
+    
+    // Đường dóng đứt đoạn
+    ctx.strokeStyle = getCssVariable('--math-axis');
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    
+    // Dóng sang Ox
+    ctx.beginPath(); ctx.moveTo(mouseX, mouseY); ctx.lineTo(mouseX, originY); ctx.stroke();
+    // Dóng sang Oy
+    ctx.beginPath(); ctx.moveTo(mouseX, mouseY); ctx.lineTo(originX, mouseY); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Điểm tại trỏ chuột
+    ctx.fillStyle = getCssVariable('--math-axis');
+    ctx.beginPath();
+    ctx.arc(mouseX, mouseY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Vòng tròn hào quang
+    ctx.strokeStyle = getCssVariable('--math-axis');
+    ctx.beginPath();
+    ctx.arc(mouseX, mouseY, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Cập nhật tooltip
+    tooltip.textContent = `x: ${mathX}, y: ${mathY}`;
+    tooltip.style.left = (mouseX + 15) + 'px';
+    tooltip.style.top = (mouseY + 15) + 'px';
+    tooltip.style.display = 'block';
+  } else {
+    tooltip.style.display = 'none';
+  }
+}
+
+// ----- EVENT LISENERS CHUỘT -----
+container.addEventListener('mousemove', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+  drawGraph();
+});
+
+container.addEventListener('mouseleave', function() {
+  mouseX = -1;
+  mouseY = -1;
+  drawGraph();
+});
+
+// Khởi chạy
+setTimeout(resizeCanvas, 100);
+</script>
+</body>
+</html>
