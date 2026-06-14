@@ -6,14 +6,22 @@
 // ============================================================
 
 /* ---------- 1. CHẾ ĐỘ SÁNG / TỐI & HỆ THỐNG GIAO DIỆN LIQUID GLASS ---------- */
+function capNhatNutTheme() {
+  var btn = document.getElementById('themeBtn');
+  if (!btn) return;
+  var theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  var svgMoon = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+  var svgSun = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+  btn.innerHTML = (theme === 'dark') ? svgMoon : svgSun;
+}
+
 function toggleTheme() {
   var h = document.documentElement;
   var dark = h.getAttribute('data-theme') === 'dark';
   var newTheme = dark ? 'light' : 'dark';
   h.setAttribute('data-theme', newTheme);
   
-  var btn = document.getElementById('themeBtn');
-  if (btn) btn.textContent = dark ? '🌙' : '☀️';
+  capNhatNutTheme();
   
   // Đồng bộ cả nút ở Control Center nếu đang mở
   var ccLight = document.getElementById('ccBtnLight');
@@ -416,14 +424,18 @@ function khoiTaoControlCenter() {
     '<!-- Widgets Grid -->' +
     '<div class="cc-widgets-grid">' +
       '<div class="cc-widget">' +
-        '<div class="cc-widget-icon" style="background:#3b82f6;">🌐</div>' +
+        '<div class="cc-widget-icon" style="background:#3b82f6; display:grid; place-items:center;">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20" stroke-width="3"></line></svg>' +
+        '</div>' +
         '<div class="cc-widget-info">' +
           '<b>Mạng Wifi</b>' +
           '<span>VinhMath 5G</span>' +
         '</div>' +
       '</div>' +
       '<div class="cc-widget">' +
-        '<div class="cc-widget-icon" style="background:#10b981;">⚡</div>' +
+        '<div class="cc-widget-icon" style="background:#10b981; display:grid; place-items:center;">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon></svg>' +
+        '</div>' +
         '<div class="cc-widget-info">' +
           '<b>Máy chủ</b>' +
           '<span>Đang chạy</span>' +
@@ -433,8 +445,14 @@ function khoiTaoControlCenter() {
     
     '<!-- Theme switcher -->' +
     '<div class="cc-theme-switcher">' +
-      '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">☀️ Sáng</button>' +
-      '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">🌙 Tối</button>' +
+      '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">' +
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' +
+        'Sáng' +
+      '</button>' +
+      '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">' +
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>' +
+        'Tối' +
+      '</button>' +
     '</div>' +
     
     '<!-- Transparency (Opacity) slider -->' +
@@ -522,8 +540,7 @@ function khoiTaoControlCenter() {
     }
     
     // Cập nhật nút cũ (nếu có trên trang)
-    var oldBtn = $('themeBtn');
-    if (oldBtn) oldBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    capNhatNutTheme();
     
     // Cập nhật màu accent theo theme
     var activeColor = localStorage.getItem('vm-accent') || 'blue';
@@ -573,8 +590,10 @@ function khoiTaoControlCenter() {
 
 if (document.readyState !== 'loading') {
   khoiTaoControlCenter();
+  capNhatNutTheme();
 } else {
   document.addEventListener('DOMContentLoaded', function () {
     khoiTaoControlCenter();
+    capNhatNutTheme();
   });
 }

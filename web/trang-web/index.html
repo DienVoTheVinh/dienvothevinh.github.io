@@ -1058,22 +1058,30 @@ body.math-grid {
     <h2 style="margin-bottom:24px">Mỗi học sinh một tài khoản, một lộ trình</h2>
     <div class="grid grid-2">
       <div class="card feature">
-        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
+        <span class="ic" style="background:var(--accent-soft);color:var(--accent); display:grid; place-items:center;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </span>
         <h3>Bài giảng video + bài tập</h3>
         <p>Mỗi buổi học có video xem lại và bài tập kèm theo. Làm xong hệ thống chấm ngay, sai câu nào biết câu đó.</p>
       </div>
       <div class="card feature">
-        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">✓</span>
+        <span class="ic" style="background:var(--ok-soft);color:var(--ok); display:grid; place-items:center;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span>
         <h3>Luyện đề theo chuyên đề</h3>
         <p>Ngân hàng câu hỏi do thầy biên soạn, phân theo chuyên đề và mức độ — đúng cấu trúc đề thi của Bộ.</p>
       </div>
       <div class="card feature">
-        <span class="ic" style="background:var(--warn-soft);color:var(--warn)">📈</span>
+        <span class="ic" style="background:var(--warn-soft);color:var(--warn); display:grid; place-items:center;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+        </span>
         <h3>Tiến độ minh bạch</h3>
         <p>Em và phụ huynh xem được điểm số, chuyên cần, những dạng bài hay sai — để biết cần tập trung vào đâu.</p>
       </div>
       <div class="card feature">
-        <span class="ic" style="background:var(--surface-2);color:var(--ink-2)">📚</span>
+        <span class="ic" style="background:var(--surface-2);color:var(--ink-2); display:grid; place-items:center;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </span>
         <h3>Kho tài liệu</h3>
         <p>Tài liệu, đề ôn do thầy biên soạn bằng LaTeX, trình bày chuẩn, tải về in được ngay.</p>
       </div>
@@ -1465,21 +1473,34 @@ function initMatrix() {
   }
 }
 
-// Lorenz Attractor simulation
-var points = [];
-var lx = 0.1, ly = 0, lz = 0;
+// Lorenz Attractor simulation (Butterfly Effect: two paths with slight variation)
+var points1 = [];
+var points2 = [];
+var lx1 = 0.1, ly1 = 0, lz1 = 0;
+var lx2 = 0.101, ly2 = 0, lz2 = 0; // slight difference in initial conditions
 var sigma = 10, rho = 28, beta = 8/3;
 var dt = 0.005;
 
-// Generate Lorenz points
+// Generate Lorenz points for Path 1
 for (var i = 0; i < 900; i++) {
-  var dx = sigma * (ly - lx) * dt;
-  var dy = (lx * (rho - lz) - ly) * dt;
-  var dz = (lx * ly - beta * lz) * dt;
-  lx += dx;
-  ly += dy;
-  lz += dz;
-  points.push({ x: lx, y: ly, z: lz });
+  var dx = sigma * (ly1 - lx1) * dt;
+  var dy = (lx1 * (rho - lz1) - ly1) * dt;
+  var dz = (lx1 * ly1 - beta * lz1) * dt;
+  lx1 += dx;
+  ly1 += dy;
+  lz1 += dz;
+  points1.push({ x: lx1, y: ly1, z: lz1 });
+}
+
+// Generate Lorenz points for Path 2 (diverges slightly)
+for (var i = 0; i < 900; i++) {
+  var dx = sigma * (ly2 - lx2) * dt;
+  var dy = (lx2 * (rho - lz2) - ly2) * dt;
+  var dz = (lx2 * ly2 - beta * lz2) * dt;
+  lx2 += dx;
+  ly2 += dy;
+  lz2 += dz;
+  points2.push({ x: lx2, y: ly2, z: lz2 });
 }
 
 // 3D rotation angles
@@ -1493,39 +1514,90 @@ window.addEventListener('mousemove', function(e) {
   mouseY = e.clientY;
 });
 
+// Helper function to draw concentric 3D orbit grids
+function drawMathRings(origin, radius, color, projectFn) {
+  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = color;
+  ctx.setLineDash([4, 4]); // tech dashed lines
+  
+  // Equator circle (Horizontal)
+  ctx.beginPath();
+  for (var theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.1) {
+    var pt = {
+      x: origin.x + radius * Math.cos(theta),
+      y: origin.y + radius * Math.sin(theta),
+      z: origin.z
+    };
+    var proj = projectFn(pt);
+    if (theta === 0) ctx.moveTo(proj.x, proj.y);
+    else ctx.lineTo(proj.x, proj.y);
+  }
+  ctx.stroke();
+  
+  // Prime Meridian circle (Vertical)
+  ctx.beginPath();
+  for (var theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.1) {
+    var pt = {
+      x: origin.x + radius * Math.cos(theta),
+      y: origin.y,
+      z: origin.z + radius * Math.sin(theta)
+    };
+    var proj = projectFn(pt);
+    if (theta === 0) ctx.moveTo(proj.x, proj.y);
+    else ctx.lineTo(proj.x, proj.y);
+  }
+  ctx.stroke();
+  
+  ctx.setLineDash([]); // reset dash style
+}
+
 // Animation loop
 function draw() {
   themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
   
-  // Matrix rain fade background
-  ctx.fillStyle = themeIsDark ? 'rgba(5, 8, 17, 0.15)' : 'rgba(245, 248, 255, 0.15)';
+  // Matrix rain fade background (smaller opacity for longer/clearer trails)
+  ctx.fillStyle = themeIsDark ? 'rgba(5, 8, 17, 0.12)' : 'rgba(245, 248, 255, 0.12)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Draw Matrix Rain
-  ctx.font = '11px monospace';
+  // Draw Matrix Rain (increased contrast and size)
+  ctx.font = '12px monospace';
   for (var i = 0; i < columns.length; i++) {
     var col = columns[i];
     var sym = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
-    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.07)' : 'rgba(37, 99, 235, 0.05)';
+    
+    // Faint trails
+    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.16)' : 'rgba(37, 99, 235, 0.13)';
     ctx.fillText(sym, col.x, col.y);
-    col.y += col.speed * 4;
+    
+    // Glowing active head of the rain column
+    if (Math.random() > 0.35) {
+      ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(37, 99, 235, 0.65)';
+      ctx.fillText(sym, col.x, col.y);
+    }
+    
+    col.y += col.speed * 3.5;
     if (col.y > canvas.height) {
       col.y = Math.random() * -100;
     }
   }
   
-  // Smoothly rotate toward mouse
-  var targetAngleX = (mouseY - canvas.height / 2) * 0.001;
-  var targetAngleY = (mouseX - canvas.width / 2) * 0.001;
+  // Smooth automatic continuous Y rotation + subtle mouse offset tilt
+  var autoRotateY = Date.now() * 0.0003;
+  var autoRotateX = Math.sin(Date.now() * 0.0001) * 0.15;
+  var targetAngleX = autoRotateX + (mouseY - canvas.height / 2) * 0.0005;
+  var targetAngleY = autoRotateY + (mouseX - canvas.width / 2) * 0.0005;
   angleX += (targetAngleX - angleX) * 0.05;
   angleY += (targetAngleY - angleY) * 0.05;
   
-  // 3D projection params
-  var centerX = canvas.width * 0.76; // Center it on the right side (.portrait area)
-  if (window.innerWidth <= 860) {
-    centerX = canvas.width / 2;
-  }
+  // Dynamic centering: Position it perfectly behind the .portrait container
+  var portraitEl = document.querySelector('.portrait');
+  var centerX = canvas.width * 0.76;
   var centerY = canvas.height * 0.55;
+  if (portraitEl) {
+    var rect = portraitEl.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+  }
   var zoom = Math.min(canvas.width, canvas.height) * 0.012;
   var focalLength = 300;
   
@@ -1555,7 +1627,7 @@ function draw() {
     };
   }
   
-  // Draw 3D Axes
+  // Draw 3D Axes (subtle)
   var axes = [
     { pt: { x: 30, y: 0, z: 25 }, label: 'X_axis', color: themeIsDark ? 'rgba(0, 240, 255, 0.4)' : 'rgba(37, 99, 235, 0.3)' },
     { pt: { x: 0, y: 30, z: 25 }, label: 'Y_axis', color: themeIsDark ? 'rgba(255, 0, 127, 0.4)' : 'rgba(239, 68, 68, 0.3)' },
@@ -1577,36 +1649,68 @@ function draw() {
     ctx.fillText(axis.label, ptProj.x + 4, ptProj.y + 4);
   });
   
-  // Draw Lorenz Attractor Path
-  ctx.beginPath();
-  var start = project(points[0]);
-  ctx.moveTo(start.x, start.y);
-  
-  for (var i = 1; i < points.length; i++) {
-    var pt = project(points[i]);
-    ctx.lineTo(pt.x, pt.y);
-  }
+  // Draw concentric math coordinate grid rings (New Decor)
+  var ringColor = themeIsDark ? 'rgba(0, 242, 254, 0.12)' : 'rgba(37, 99, 235, 0.1)';
+  drawMathRings({ x: 0, y: 0, z: 25 }, 24, ringColor, project);
+  drawMathRings({ x: 0, y: 0, z: 25 }, 36, ringColor, project);
   
   var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
   
-  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.35)' : 'rgba(37, 99, 235, 0.25)';
-  ctx.lineWidth = 1.5;
+  // Draw Lorenz Attractor Path 1 (Cyan/Blue)
+  ctx.beginPath();
+  var start = project(points1[0]);
+  ctx.moveTo(start.x, start.y);
+  for (var i = 1; i < points1.length; i++) {
+    var pt = project(points1[i]);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.65)' : 'rgba(37, 99, 235, 0.5)';
+  ctx.lineWidth = 1.6;
+  ctx.shadowBlur = themeIsDark ? 8 : 2;
+  ctx.shadowColor = themeIsDark ? '#00f2fe' : accentColor;
   ctx.stroke();
   
-  // Draw flowing sparks along the attractor path
-  var timeIndex = Math.floor((Date.now() / 15) % points.length);
+  // Draw Lorenz Attractor Path 2 (Divergent Path - Yellow/Violet)
+  ctx.beginPath();
+  var start2 = project(points2[0]);
+  ctx.moveTo(start2.x, start2.y);
+  for (var i = 1; i < points2.length; i++) {
+    var pt = project(points2[i]);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.strokeStyle = themeIsDark ? 'rgba(245, 158, 11, 0.45)' : 'rgba(139, 92, 246, 0.38)';
+  ctx.lineWidth = 1.3;
+  ctx.shadowColor = themeIsDark ? '#fbbf24' : '#8b5cf6';
+  ctx.stroke();
+  
+  ctx.shadowBlur = 0; // reset blur
+  
+  // Draw flowing sparks along Path 1
+  var timeIndex = Math.floor((Date.now() / 15) % points1.length);
   var sparkCount = 3;
   ctx.fillStyle = themeIsDark ? '#ffffff' : accentColor;
   for (var j = 0; j < sparkCount; j++) {
-    var idx = (timeIndex + Math.floor(j * points.length / sparkCount)) % points.length;
-    var sparkProj = project(points[idx]);
+    var idx = (timeIndex + Math.floor(j * points1.length / sparkCount)) % points1.length;
+    var sparkProj = project(points1[idx]);
     ctx.beginPath();
-    ctx.arc(sparkProj.x, sparkProj.y, 4, 0, Math.PI * 2);
-    ctx.shadowBlur = themeIsDark ? 10 : 0;
-    ctx.shadowColor = accentColor;
+    ctx.arc(sparkProj.x, sparkProj.y, 4.5, 0, Math.PI * 2);
+    ctx.shadowBlur = themeIsDark ? 12 : 3;
+    ctx.shadowColor = themeIsDark ? '#00f2fe' : accentColor;
     ctx.fill();
-    ctx.shadowBlur = 0;
   }
+  
+  // Draw divergent sparks along Path 2
+  ctx.fillStyle = themeIsDark ? '#ffeeb5' : '#8b5cf6';
+  for (var j = 0; j < sparkCount; j++) {
+    var idx = (timeIndex + Math.floor(j * points2.length / sparkCount) + 120) % points2.length;
+    var sparkProj = project(points2[idx]);
+    ctx.beginPath();
+    ctx.arc(sparkProj.x, sparkProj.y, 3.5, 0, Math.PI * 2);
+    ctx.shadowBlur = themeIsDark ? 8 : 2;
+    ctx.shadowColor = themeIsDark ? '#fbbf24' : '#8b5cf6';
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
   
   requestAnimationFrame(draw);
 }
