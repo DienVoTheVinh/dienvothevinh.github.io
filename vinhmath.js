@@ -44,7 +44,7 @@ function apdungMauAccent(el, color, isDark) {
       amber:  { accent: '#f59e0b', grad: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', soft: 'rgba(245, 158, 11, 0.08)' }
     },
     dark: {
-      blue:   { accent: '#00f2fe', grad: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', soft: 'rgba(0, 242, 254, 0.12)' },
+      blue:   { accent: '#2563eb', grad: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)', soft: 'rgba(37, 99, 235, 0.15)' },
       violet: { accent: '#c084fc', grad: 'linear-gradient(135deg, #e9d5ff 0%, #a855f7 100%)', soft: 'rgba(192, 132, 252, 0.12)' },
       coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.12)' },
       green:  { accent: '#34d399', grad: 'linear-gradient(135deg, #6ee7b7 0%, #10b981 100%)', soft: 'rgba(52, 211, 153, 0.12)' },
