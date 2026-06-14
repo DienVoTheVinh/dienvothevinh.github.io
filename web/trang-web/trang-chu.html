@@ -447,39 +447,9 @@
     <div id="dsLichDay" class="empty">Đang tải lịch dạy...</div>
   </div>
 
-  <!-- DASHBOARD CHÍNH: SMART CALENDAR -->
-  <div class="dashboard-grid">
-    <!-- CỘT TRÁI: NGÀY & ĐẾM NGƯỢC -->
-    <div class="left-panel">
-      <!-- Date Display Card -->
-      <div class="date-display-card">
-        <div class="date-day-num" id="lblDayNum">14</div>
-        <div class="date-day-name" id="lblDayName">Chủ nhật</div>
-        <div class="date-month-year" id="lblMonthYear">Tháng 06, 2026</div>
-      </div>
-      
-      <!-- Countdown Card -->
-      <div class="countdown-card" id="khungCountdown" style="display:none">
-        <div class="countdown-title">⏰ Sự kiện sắp tới</div>
-        <div class="countdown-event-name" id="lblCountdownEvent">Đang tải...</div>
-        <div class="countdown-timer-grid">
-          <div class="timer-box"><b id="timerDays">00</b><span>Ngày</span></div>
-          <div class="timer-box"><b id="timerHours">00</b><span>Giờ</span></div>
-          <div class="timer-box"><b id="timerMins">00</b><span>Phút</span></div>
-          <div class="timer-box"><b id="timerSecs">00</b><span>Giây</span></div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
-    <div class="right-panel">
-      <div id="weekCal" class="gcal"></div>
-    </div>
-  </div>
-
   <!-- ===== PHÂN HỆ BLOG TRÊN TRANG CHỦ ===== -->
   <style>
-  .blog-sec { margin-top: 32px; margin-bottom: 24px; }
+  .blog-sec { margin-top: 12px; margin-bottom: 28px; }
   .blog-sec-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:16px; }
   .blog-sec-head h2 { font-size:1.2rem; font-weight:800; display:flex; align-items:center; gap:8px; margin:0; }
   .blog-slider-container {
@@ -581,6 +551,36 @@
       </div>
     </div>
   </section>
+
+  <!-- DASHBOARD CHÍNH: SMART CALENDAR -->
+  <div class="dashboard-grid">
+    <!-- CỘT TRÁI: NGÀY & ĐẾM NGƯỢC -->
+    <div class="left-panel">
+      <!-- Date Display Card -->
+      <div class="date-display-card">
+        <div class="date-day-num" id="lblDayNum">14</div>
+        <div class="date-day-name" id="lblDayName">Chủ nhật</div>
+        <div class="date-month-year" id="lblMonthYear">Tháng 06, 2026</div>
+      </div>
+      
+      <!-- Countdown Card -->
+      <div class="countdown-card" id="khungCountdown" style="display:none">
+        <div class="countdown-title">⏰ Sự kiện sắp tới</div>
+        <div class="countdown-event-name" id="lblCountdownEvent">Đang tải...</div>
+        <div class="countdown-timer-grid">
+          <div class="timer-box"><b id="timerDays">00</b><span>Ngày</span></div>
+          <div class="timer-box"><b id="timerHours">00</b><span>Giờ</span></div>
+          <div class="timer-box"><b id="timerMins">00</b><span>Phút</span></div>
+          <div class="timer-box"><b id="timerSecs">00</b><span>Giây</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
+    <div class="right-panel">
+      <div id="weekCal" class="gcal"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
