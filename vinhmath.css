@@ -112,6 +112,91 @@ img{max-width:100%;display:block}
   border-radius: 99px;
   box-shadow: 0 0 8px var(--accent);
 }
+
+/* ---- Dropdown menu quản trị ---- */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.nav-dropdown-btn {
+  text-decoration: none;
+  font-size: .92rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-dropdown-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.nav-dropdown-btn.active {
+  color: var(--accent);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--accent-soft);
+  position: relative;
+}
+.nav-dropdown-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  width: 70%;
+  height: 3px;
+  background: var(--accent-gradient);
+  border-radius: 99px;
+  box-shadow: 0 0 8px var(--accent);
+}
+.nav-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: var(--r-sm);
+  min-width: 180px;
+  z-index: 500;
+  padding: 6px 0;
+  margin-top: 6px;
+}
+.nav-dropdown-content a {
+  display: block;
+  padding: 8px 16px;
+  font-size: 0.88rem !important;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 0 !important;
+}
+.nav-dropdown-content a:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.nav-dropdown-content a.active {
+  color: var(--accent) !important;
+  font-weight: 700;
+  background: var(--accent-soft);
+}
+.nav-dropdown-content a.active::after {
+  display: none !important; /* Không vẽ gạch dưới ở trong dropdown */
+}
+@media (min-width: 761px) {
+  .nav-dropdown:hover .nav-dropdown-content {
+    display: block;
+  }
+}
+
 /* ---- Chuông thông báo ---- */
 .bell-wrap{position:relative;flex:none}
 .nav-bell{position:relative;border:1px solid var(--line-2);background:var(--surface);width:38px;height:38px;border-radius:var(--r-sm);cursor:pointer;font-size:1.02rem;display:grid;place-items:center}
@@ -135,6 +220,32 @@ img{max-width:100%;display:block}
   .navlinks{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;padding:8px 16px 14px;gap:2px;z-index:99}
   .navlinks.open{display:flex}
   .navlinks a{padding:12px 14px;font-size:1rem}
+  .nav-dropdown {
+    width: 100%;
+  }
+  .nav-dropdown-btn {
+    width: 100%;
+    justify-content: space-between;
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+  .nav-dropdown-btn.active::after {
+    display: none !important; /* Không vẽ gạch dưới ở nút khi ở mobile */
+  }
+  .nav-dropdown-content {
+    display: none;
+    position: static;
+    transform: none;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    padding: 0 0 0 16px;
+    margin-top: 0;
+  }
+  .nav-dropdown.open .nav-dropdown-content {
+    display: block;
+  }
 }
 
 /* ---- Nút ---- */

@@ -12,52 +12,79 @@ function apDungMenu(role) {
 
   var muc;
   if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
-    // ----- MENU CỦA THẦY / TRỢ GIẢNG -----
+    // ----- MENU CỦA THẦY / TRỢ GIẢNG (Gom nhóm Quản trị) -----
     muc = [
-      ['trang-chu.html', 'Trang chủ'],
-      ['quan-tri-lop.html', 'Lớp học']
+      { type: 'link', path: 'trang-chu.html', label: 'Trang chủ' },
+      {
+        type: 'dropdown',
+        label: 'Quản trị ▾',
+        items: [
+          { path: 'quan-tri-lop.html', label: 'Lớp học' },
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu.html', label: 'Soạn tài liệu' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc.html', label: 'Khóa bài giảng' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh.html', label: 'Học sinh' } : null),
+          { path: 'quan-tri-lich.html', label: 'Lịch học' },
+          { path: 'quan-tri-de.html', label: 'Luyện đề' },
+          { path: 'quan-tri-cham-bai.html', label: 'Chấm bài' },
+          (role === 'admin' ? { path: 'quan-tri-truy-cap.html', label: 'Giám sát' } : null)
+        ].filter(Boolean)
+      },
+      { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
+      { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
     ];
-    if (role === 'admin' || role === 'teacher') {
-      muc.push(['quan-tri-tai-lieu.html', 'Soạn tài liệu']);
-      muc.push(['quan-tri-bai-hoc.html', 'Khóa bài giảng']);
-      muc.push(['quan-tri-hoc-sinh.html', 'Học sinh']);
-    }
-    muc.push(
-      ['quan-tri-lich.html', 'Lịch học'],
-      ['quan-tri-de.html', 'Luyện đề'],
-      ['quan-tri-cham-bai.html', 'Chấm bài'],
-      ['bang-vang.html', 'Bảng vàng'],
-      ['ca-nhan.html', 'Cá nhân']
-    );
-    if (role === 'admin') {
-      muc.push(['quan-tri-truy-cap.html', 'Giám sát']);
-    }
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
-      ['trang-chu.html', 'Trang chủ'],
-      ['lop-hoc.html', 'Lớp học'],
-      ['tai-lieu.html', 'Tài liệu'],
-      ['lich-hoc.html', 'Lịch học'],
-      ['luyen-de.html', 'Luyện đề'],
-      ['bang-vang.html', 'Bảng vàng'],
-      ['ca-nhan.html', 'Cá nhân']
+      { type: 'link', path: 'trang-chu.html', label: 'Trang chủ' },
+      { type: 'link', path: 'lop-hoc.html', label: 'Lớp học' },
+      { type: 'link', path: 'tai-lieu.html', label: 'Tài liệu' },
+      { type: 'link', path: 'lich-hoc.html', label: 'Lịch học' },
+      { type: 'link', path: 'luyen-de.html', label: 'Luyện đề' },
+      { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
+      { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
     ];
   }
 
   nav.innerHTML = muc.map(function (m) {
-    // Để khớp active cho cả các trang chi tiết bài học...
-    var activeClass = '';
-    if (m[0] === trang) {
-      activeClass = ' class="active"';
-    } else if (m[0] === 'lop-hoc.html' && trang === 'bai-hoc.html') {
-      activeClass = ' class="active"'; // bài học thuộc phân hệ Lớp học
-    } else if (m[0] === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
-      activeClass = ' class="active"'; // bài giảng thuộc phân hệ Lớp học của GV
-    } else if (m[0] === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
-      activeClass = ' class="active"'; // khi GV đang xem tài liệu tĩnh
+    if (m.type === 'link') {
+      var activeClass = '';
+      if (m.path === trang) {
+        activeClass = ' class="active"';
+      } else if (m.path === 'lop-hoc.html' && trang === 'bai-hoc.html') {
+        activeClass = ' class="active"';
+      } else if (m.path === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
+        activeClass = ' class="active"';
+      } else if (m.path === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
+        activeClass = ' class="active"';
+      }
+      return '<a href="' + m.path + '"' + activeClass + '>' + m.label + '</a>';
+    } else if (m.type === 'dropdown') {
+      var dropdownActive = false;
+      var itemsHtml = m.items.map(function(sub) {
+        var isSubActive = false;
+        if (sub.path === trang) {
+          isSubActive = true;
+        } else if (sub.path === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
+          isSubActive = true;
+        } else if (sub.path === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
+          isSubActive = true;
+        }
+        
+        var activeClass = '';
+        if (isSubActive) {
+          activeClass = ' class="active"';
+          dropdownActive = true;
+        }
+        return '<a href="' + sub.path + '"' + activeClass + '>' + sub.label + '</a>';
+      }).join('');
+      
+      var btnActive = dropdownActive ? ' active' : '';
+      return '<div class="nav-dropdown">' +
+             '  <button class="nav-dropdown-btn' + btnActive + '">' + m.label + '</button>' +
+             '  <div class="nav-dropdown-content">' + itemsHtml + '</div>' +
+             '</div>';
     }
-    return '<a href="' + m[0] + '"' + activeClass + '>' + m[1] + '</a>';
+    return '';
   }).join('');
 }
 
@@ -189,3 +216,21 @@ async function veDanhSachThongBao() {
     };
   });
 }
+
+// Đóng mở dropdown khi click (dành cho mobile và đóng khi click ngoài)
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('nav-dropdown-btn')) {
+    e.stopPropagation();
+    var dropdown = e.target.closest('.nav-dropdown');
+    if (dropdown) {
+      document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+        if (d !== dropdown) d.classList.remove('open');
+      });
+      dropdown.classList.toggle('open');
+    }
+  } else {
+    document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+      d.classList.remove('open');
+    });
+  }
+});

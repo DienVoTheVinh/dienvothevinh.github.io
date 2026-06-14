@@ -2892,13 +2892,13 @@ async function bienDich() {
   if (tex.includes('ex_test') && !tex.includes('begin{filecontents*}{ex_test.sty}')) {
     const content = await taiExTestSty();
     if (content) {
-      tex = '\\\\begin{filecontents*}{ex_test.sty}\\n' + content + '\\n\\\\end{filecontents*}\\n' + tex;
+      tex = '\\begin{filecontents*}{ex_test.sty}\n' + content + '\n\\end{filecontents*}\n' + tex;
     }
   }
 
   // Tự động nhúng titledot.sty nếu tài liệu sử dụng gói này
   if (tex.includes('titledot') && !tex.includes('begin{filecontents*}{titledot.sty}')) {
-    tex = '\\\\begin{filecontents*}{titledot.sty}\\n' + TITLE_DOT_STY_CONTENT + '\\n\\\\end{filecontents*}\\n' + tex;
+    tex = '\\begin{filecontents*}{titledot.sty}\n' + TITLE_DOT_STY_CONTENT + '\n\\end{filecontents*}\n' + tex;
   }
 
   var nut = $('nutBienDich');
