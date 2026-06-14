@@ -209,24 +209,33 @@ img{max-width:100%;display:block}
   cursor: pointer;
   display: grid;
   place-items: center;
-  color: var(--ink-2);
+  color: var(--warn);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nav-bell:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--warn);
+  color: var(--warn);
   background: var(--surface-2);
-  box-shadow: 0 0 10px var(--accent-soft);
+  box-shadow: 0 0 12px var(--warn-soft);
 }
 .bell-svg {
   width: 20px;
   height: 20px;
-  fill: none;
   stroke: currentColor;
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
   transition: transform 0.2s ease;
+}
+.bell-svg path {
+  fill: none;
+  stroke: currentColor;
+}
+.bell-svg path:first-child {
+  fill: var(--warn-soft);
+}
+.bell-svg path:last-child {
+  fill: currentColor;
 }
 .nav-bell:hover .bell-svg {
   transform: rotate(15deg);
