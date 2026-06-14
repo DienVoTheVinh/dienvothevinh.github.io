@@ -191,10 +191,8 @@ img{max-width:100%;display:block}
 .nav-dropdown-content a.active::after {
   display: none !important; /* Không vẽ gạch dưới ở trong dropdown */
 }
-@media (min-width: 761px) {
-  .nav-dropdown:hover .nav-dropdown-content {
-    display: block;
-  }
+.nav-dropdown.open .nav-dropdown-content {
+  display: block;
 }
 
 /* ---- Chuông thông báo ---- */
