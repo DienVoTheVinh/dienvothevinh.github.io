@@ -976,11 +976,12 @@ async function guiTinNhanAI() {
     
     var tEl = document.getElementById('aiChatTyping');
     
+    var isAdminUser = (window.VM_USER_ROLE === 'admin') || !!document.getElementById('ccAdminControls');
+    
     if (isPlaceholder) {
       if (tEl) tEl.remove();
       var aiMsg = document.createElement('div');
       aiMsg.className = 'acb-msg ai';
-      var isAdminUser = !!document.getElementById('ccAdminControls');
       if (isAdminUser) {
         aiMsg.innerHTML = '<strong>Sếp ơi!</strong> Gemini API Key hiện tại chưa được cấu hình (vẫn là placeholder <code>NHAP_GEMINI_KEY_TAI_DAY</code>). Sếp vui lòng mở <strong>Trung tâm điều khiển (Control Center)</strong> ở góc trên thanh menu (biểu tượng thanh gạt 🎛️), nhập API Key thực tế và nhấn <strong>Lưu</strong> nhé!';
       } else {
@@ -1012,7 +1013,6 @@ async function guiTinNhanAI() {
       reply = data.candidates[0].content.parts[0].text;
     } else {
       console.error("Gemini API error response:", data);
-      var isAdminUser = !!document.getElementById('ccAdminControls');
       if (data.error) {
         if (isAdminUser) {
           reply = '<strong>Lỗi Gemini API (Chỉ hiển thị với Admin):</strong> ' + (data.error.message || JSON.stringify(data.error)) + '<br><br>Sếp vui lòng kiểm tra lại tính chính xác của Gemini API Key trong Trung tâm điều khiển (Control Center) nhé!';
@@ -1158,8 +1158,11 @@ if (document.readyState !== 'loading') {
       var s = await sb.auth.getSession();
       if (!s.data.session) return;
       var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-      if (rp.data && rp.data.role === 'admin') {
-        themAdminControlsVaoCC();
+      if (rp.data) {
+        window.VM_USER_ROLE = rp.data.role;
+        if (window.VM_USER_ROLE === 'admin') {
+          themAdminControlsVaoCC();
+        }
       }
     } catch (e) { console.error("Lỗi CC Admin check:", e); }
   })();
@@ -1175,8 +1178,11 @@ if (document.readyState !== 'loading') {
         var s = await sb.auth.getSession();
         if (!s.data.session) return;
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-        if (rp.data && rp.data.role === 'admin') {
-          themAdminControlsVaoCC();
+        if (rp.data) {
+          window.VM_USER_ROLE = rp.data.role;
+          if (window.VM_USER_ROLE === 'admin') {
+            themAdminControlsVaoCC();
+          }
         }
       } catch (e) { console.error("Lỗi CC Admin check:", e); }
     })();
