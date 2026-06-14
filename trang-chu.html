@@ -579,7 +579,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, classes(name, mode)')
+    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -596,7 +596,7 @@ async function taiSchedulesVaExamsStudent() {
   
   // 1. Tải lịch học lớp học sinh tham gia
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, classes(name, mode)')
+    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -645,6 +645,13 @@ async function taiThongKeTongHopHS() {
   }
 }
 
+function formatNgayDep(dStr) {
+  if (!dStr) return '';
+  var parts = dStr.split('-');
+  if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+  return dStr;
+}
+
 // ----- VỀ LỊCH DẠY CHO STAFF -----
 async function veLichDayStaff() {
   var container = $('dsLichDay');
@@ -655,9 +662,18 @@ async function veLichDayStaff() {
   
   var todayJs = new Date().getDay();
   var todayWeekday = todayJs === 0 ? 7 : todayJs;
+  var todayStr = new Date().toISOString().split('T')[0];
+  
+  // Loại bỏ các lịch "Chỉ một lần" trong quá khứ
+  var validSchedules = tatCaSchedules.filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date >= todayStr;
+    }
+    return true;
+  });
   
   // Sắp xếp lịch dạy theo ngày gần hôm nay nhất
-  var schedsSorted = [...tatCaSchedules];
+  var schedsSorted = [...validSchedules];
   schedsSorted.sort(function (a, b) {
     var diffA = ((a.weekday - todayWeekday) + 7) % 7;
     var diffB = ((b.weekday - todayWeekday) + 7) % 7;
@@ -673,7 +689,7 @@ async function veLichDayStaff() {
   var tdSty = 'padding:12px 14px; border-bottom:1px solid var(--line)';
   
   var rowsHtml = schedsSorted.slice(0, 5).map(function (s) {
-    var laHomNay = s.weekday === todayWeekday;
+    var laHomNay = s.recurrence === 'once' ? (s.date === todayStr) : (s.weekday === todayWeekday);
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = meetMap[s.class_id];
@@ -682,9 +698,11 @@ async function veLichDayStaff() {
               : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>')
       : '<span style="font-size:.85rem; color:var(--ink-2)">🏫 Tại trung tâm</span>';
       
+    var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU_VIET[s.weekday] + ')' : TEN_THU_VIET[s.weekday];
+      
     return '<tr style="' + (laHomNay ? 'background:var(--accent-soft)' : '') + '">' +
       '<td style="' + tdSty + '"><b>' + tenLop + '</b>' + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</td>' +
-      '<td style="' + tdSty + '">' + TEN_THU_VIET[s.weekday] + '</td>' +
+      '<td style="' + tdSty + '">' + thuText + '</td>' +
       '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0,5) + ' – ' + s.end_time.slice(0,5) + '</td>' +
       '<td style="' + tdSty + '">' + phongDichVu + '</td>' +
       '</tr>';
@@ -712,14 +730,20 @@ function capNhatSuKienThang() {
     var dateKey = formatDateKey(namDangXem, thangDangXem, d);
     
     // Tích hợp schedules
-    var dayScheds = tatCaSchedules.filter(function (s) { return s.weekday === weekdayVal; });
+    var dayScheds = tatCaSchedules.filter(function (s) {
+      if (s.recurrence === 'once') {
+        return s.date === dateKey;
+      }
+      return s.weekday === weekdayVal;
+    });
     dayScheds.forEach(function (s) {
       suKienThang[dateKey] = suKienThang[dateKey] || [];
+      var recNote = s.recurrence === 'once' ? ' (Buổi học bất chợt)' : '';
       suKienThang[dateKey].push({
         type: 'schedule',
         title: 'Lớp: ' + (s.classes ? s.classes.name : 'Toán học'),
         time: s.start_time.slice(0, 5) + ' - ' + s.end_time.slice(0, 5),
-        note: (s.mode === 'online' ? '🎥 Lớp Online' : '🏫 Lớp Offline') + (s.note ? ' · ' + s.note : '')
+        note: (s.mode === 'online' ? '🎥 Lớp Online' : '🏫 Lớp Offline') + recNote + (s.note ? ' · ' + s.note : '')
       });
     });
   }
@@ -950,7 +974,13 @@ function timSuKienGanNhat() {
     var jsDay = scanDate.getDay();
     var weekdayVal = jsDay === 0 ? 7 : jsDay;
     
-    var dayScheds = tatCaSchedules.filter(function(s) { return s.weekday === weekdayVal; });
+    var dateKey = formatDateKey(scanDate.getFullYear(), scanDate.getMonth(), scanDate.getDate());
+    var dayScheds = tatCaSchedules.filter(function(s) {
+      if (s.recurrence === 'once') {
+        return s.date === dateKey;
+      }
+      return s.weekday === weekdayVal;
+    });
     dayScheds.forEach(function(s) {
       var timeParts = s.start_time.split(':');
       var eventDate = new Date(scanDate.getFullYear(), scanDate.getMonth(), scanDate.getDate(), parseInt(timeParts[0]), parseInt(timeParts[1] || 0), 0);
@@ -958,7 +988,8 @@ function timSuKienGanNhat() {
       if (diff > 0 && diff < minDiff) {
         minDiff = diff;
         closestEventTime = eventDate;
-        closestEventTitle = '📚 Buổi học: ' + (s.classes ? s.classes.name : 'Toán học') + ' (' + s.start_time.slice(0,5) + ')';
+        var onceLabel = s.recurrence === 'once' ? ' (1 lần)' : '';
+        closestEventTitle = '📚 Buổi học: ' + (s.classes ? s.classes.name : 'Toán học') + onceLabel + ' (' + s.start_time.slice(0,5) + ')';
       }
     });
   }

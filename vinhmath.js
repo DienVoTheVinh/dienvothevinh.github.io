@@ -107,6 +107,11 @@ async function layHoSo() {
       r.data.class_id = null;
       r.data.classes = null;
     }
+    
+    // Tự động khởi chạy poller điểm danh nếu là học sinh
+    if (r.data.role === 'student' && !window.pollerDiemDanhInterval) {
+      setTimeout(function () { khoiChayPollerDiemDanh(r.data); }, 1000);
+    }
   }
   return r.data || null;
 }
@@ -128,4 +133,184 @@ function chao() { // lời chào theo giờ trong ngày
   if (h < 14) return 'Chào buổi trưa';
   if (h < 18) return 'Chào buổi chiều';
   return 'Chào buổi tối';
+}
+
+/* ---------- 5. ĐIỂM DANH POP-UP TỰ ĐỘNG CHO HỌC SINH ---------- */
+window.pollerDiemDanhInterval = null;
+var studentActiveSession = null;
+var studentActiveId = null;
+
+async function khoiChayPollerDiemDanh(hoSo) {
+  if (!hoSo || hoSo.role !== 'student') return;
+  if (!hoSo.class_students || hoSo.class_students.length === 0) return;
+  
+  var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
+  var studentId = hoSo.id;
+  
+  kiemTraDiemDanhPoller(classIds, studentId);
+  window.pollerDiemDanhInterval = setInterval(function () {
+    kiemTraDiemDanhPoller(classIds, studentId);
+  }, 10000);
+}
+
+async function kiemTraDiemDanhPoller(classIds, studentId) {
+  if (!daKetNoi()) return;
+  
+  var nowIso = new Date().toISOString();
+  var r = await sb.from('class_sessions')
+    .select('id, title, qr_expires, class_id')
+    .in('class_id', classIds)
+    .eq('attendance_open', true)
+    .gt('qr_expires', nowIso)
+    .order('created_at', { ascending: false });
+    
+  if (r.error || !r.data || r.data.length === 0) {
+    dongModalDiemDanhStudent();
+    return;
+  }
+  
+  var buoi = r.data[0];
+  
+  if (sessionStorage.getItem('vm-dismissed-session-' + buoi.id) === 'true') {
+    return;
+  }
+  
+  var att = await sb.from('attendance')
+    .select('session_id')
+    .eq('session_id', buoi.id)
+    .eq('student_id', studentId)
+    .maybeSingle();
+    
+  if (att.data) {
+    dongModalDiemDanhStudent();
+    return;
+  }
+  
+  hienModalDiemDanhStudent(buoi, studentId);
+}
+
+function hienModalDiemDanhStudent(buoi, studentId) {
+  studentActiveSession = buoi;
+  studentActiveId = studentId;
+  
+  var modal = $('studentAttendanceModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'studentAttendanceModal';
+    modal.className = 'student-attendance-modal';
+    modal.innerHTML = 
+      '<div class="sam-inner">' +
+        '<button class="sam-close" onclick="huyModalDiemDanhStudent()">×</button>' +
+        '<div class="sam-icon">🔔</div>' +
+        '<h2>Điểm danh buổi học!</h2>' +
+        '<p>Thầy đang mở điểm danh cho buổi học:</p>' +
+        '<div class="sam-session-title" id="samSessionTitle"></div>' +
+        '<div class="sam-input-wrapper">' +
+          '<input type="text" id="samCodeInput" class="input" placeholder="Nhập mã 4 chữ số" maxlength="4" ' +
+                 'style="text-align:center; font-size:1.8rem; letter-spacing:4px; font-weight:800; height:50px;">' +
+        '</div>' +
+        '<div id="samErrorMsg" style="color:var(--err); font-size:0.85rem; margin-top:8px; display:none"></div>' +
+        '<button class="btn btn-primary" id="samSubmitBtn" onclick="xacNhanDiemDanhStudent()" style="width:100%; margin-top:16px">Xác nhận điểm danh</button>' +
+      '</div>';
+    document.body.appendChild(modal);
+    
+    $('samCodeInput').addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') {
+        xacNhanDiemDanhStudent();
+      }
+    });
+  }
+  
+  $('samSessionTitle').textContent = buoi.title;
+  modal.style.display = 'flex';
+}
+
+function dongModalDiemDanhStudent() {
+  var modal = $('studentAttendanceModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  studentActiveSession = null;
+}
+
+function huyModalDiemDanhStudent() {
+  if (studentActiveSession) {
+    sessionStorage.setItem('vm-dismissed-session-' + studentActiveSession.id, 'true');
+  }
+  dongModalDiemDanhStudent();
+}
+
+async function xacNhanDiemDanhStudent() {
+  if (!studentActiveSession || !studentActiveId) return;
+  
+  var code = $('samCodeInput').value.trim();
+  if (code.length === 0) {
+    showSamError('Vui lòng nhập mã điểm danh.');
+    return;
+  }
+  
+  var btn = $('samSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Đang kiểm tra...';
+  
+  var r = await sb.from('class_sessions')
+    .select('id, title')
+    .eq('id', studentActiveSession.id)
+    .eq('checkin_code', code)
+    .eq('attendance_open', true)
+    .maybeSingle();
+    
+  if (r.error || !r.data) {
+    showSamError('Mã điểm danh không chính xác. Em kiểm tra lại nhé.');
+    btn.disabled = false;
+    btn.textContent = 'Xác nhận điểm danh';
+    return;
+  }
+  
+  var ins = await sb.from('attendance').insert({ 
+    session_id: studentActiveSession.id, 
+    student_id: studentActiveId 
+  });
+  
+  if (ins.error) {
+    if ((ins.error.code || '') === '23505' || /duplicate/i.test(ins.error.message)) {
+      showSamSuccess('Em đã điểm danh buổi này rồi!');
+    } else {
+      showSamError('Lỗi điểm danh: ' + ins.error.message);
+      btn.disabled = false;
+      btn.textContent = 'Xác nhận điểm danh';
+    }
+    return;
+  }
+  
+  showSamSuccess('🎉 Điểm danh thành công!');
+}
+
+function showSamError(msg) {
+  var el = $('samErrorMsg');
+  if (el) {
+    el.textContent = msg;
+    el.style.color = 'var(--err)';
+    el.style.display = 'block';
+  }
+}
+
+function showSamSuccess(msg) {
+  var el = $('samErrorMsg');
+  if (el) {
+    el.textContent = msg;
+    el.style.color = 'var(--ok)';
+    el.style.display = 'block';
+  }
+  var input = $('samCodeInput');
+  if (input) input.disabled = true;
+  var btn = $('samSubmitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Đã điểm danh ✅';
+  }
+  
+  setTimeout(function() {
+    dongModalDiemDanhStudent();
+  }, 2000);
 }
