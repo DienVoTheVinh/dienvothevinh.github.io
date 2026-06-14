@@ -674,6 +674,93 @@ function taiHtml2Canvas(callback) {
   document.head.appendChild(script);
 }
 
+// Tự động quét màn hình sử dụng API chia sẻ màn hình trình duyệt (getDisplayMedia) hoặc html2canvas làm fallback
+async function layAnhChupManHinh() {
+  if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+    try {
+      var stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: "browser" },
+        audio: false
+      });
+      
+      var video = document.createElement('video');
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      
+      return new Promise(function(resolve, reject) {
+        video.onloadedmetadata = function() {
+          setTimeout(function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Tắt biểu tượng đang quay chụp của trình duyệt
+            stream.getTracks().forEach(function(t) { t.stop(); });
+            
+            try {
+              var imgData = canvas.toDataURL('image/jpeg', 0.75);
+              resolve(imgData);
+            } catch(e) {
+              reject(e);
+            }
+          }, 300);
+        };
+        video.onerror = function(e) {
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          reject(e);
+        };
+      });
+    } catch(err) {
+      if (err.name === 'NotAllowedError') {
+        throw err;
+      }
+      console.warn("getDisplayMedia không thành công, chuyển sang html2canvas:", err);
+    }
+  }
+  
+  // html2canvas fallback
+  return new Promise(function(resolve, reject) {
+    taiHtml2Canvas(function() {
+      var bubbleEl = document.getElementById('aiChatBubble');
+      var boxEl = document.getElementById('aiChatBox');
+      var ccEl = document.getElementById('controlCenterWrapper');
+      var oldBubbleDisplay = bubbleEl ? bubbleEl.style.display : '';
+      var oldBoxDisplay = boxEl ? boxEl.style.display : '';
+      
+      if (bubbleEl) bubbleEl.style.setProperty('display', 'none', 'important');
+      if (boxEl) boxEl.style.setProperty('display', 'none', 'important');
+      if (ccEl) ccEl.style.setProperty('display', 'none', 'important');
+      
+      setTimeout(function() {
+        html2canvas(document.body, {
+          scale: 0.8,
+          logging: false,
+          useCORS: true
+        }).then(function(canvas) {
+          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
+          if (boxEl) boxEl.style.display = oldBoxDisplay;
+          if (ccEl) ccEl.style.display = '';
+          
+          try {
+            var imgData = canvas.toDataURL('image/jpeg', 0.75);
+            resolve(imgData);
+          } catch(e) {
+            reject(e);
+          }
+        }).catch(function(e) {
+          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
+          if (boxEl) boxEl.style.display = oldBoxDisplay;
+          if (ccEl) ccEl.style.display = '';
+          reject(e);
+        });
+      }, 150);
+    });
+  });
+}
+
 async function tailaiCaiDatAI() {
   if (!daKetNoi()) return;
   try {
@@ -823,63 +910,31 @@ function taoChatbotWidget() {
   var scImg = document.getElementById('aiScreenshotImg');
   var scRemove = document.getElementById('aiScreenshotRemove');
   
-  btnCapture.addEventListener('click', function(e) {
+  btnCapture.addEventListener('click', async function(e) {
     e.stopPropagation();
     
     btnCapture.disabled = true;
     var originalHTML = btnCapture.innerHTML;
     btnCapture.innerHTML = '⏳';
     
-    taiHtml2Canvas(function() {
-      // Ẩn các thành phần giao diện của chat để tránh lọt vào ảnh chụp
-      var bubbleEl = document.getElementById('aiChatBubble');
-      var boxEl = document.getElementById('aiChatBox');
-      var ccEl = document.getElementById('controlCenterWrapper');
-      var oldBubbleDisplay = bubbleEl ? bubbleEl.style.display : '';
-      var oldBoxDisplay = boxEl ? boxEl.style.display : '';
+    try {
+      var imgData = await layAnhChupManHinh();
+      window.VM_AI_SCREENSHOT = imgData;
       
-      if (bubbleEl) bubbleEl.style.setProperty('display', 'none', 'important');
-      if (boxEl) boxEl.style.setProperty('display', 'none', 'important');
-      if (ccEl) ccEl.style.setProperty('display', 'none', 'important');
-      
-      setTimeout(function() {
-        html2canvas(document.body, {
-          scale: 0.8,
-          logging: false,
-          useCORS: true
-        }).then(function(canvas) {
-          // Khôi phục hiển thị
-          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
-          if (boxEl) boxEl.style.display = oldBoxDisplay;
-          if (ccEl) ccEl.style.display = '';
-          
-          try {
-            var imgData = canvas.toDataURL('image/jpeg', 0.75);
-            window.VM_AI_SCREENSHOT = imgData;
-            
-            // Hiển thị preview
-            scImg.src = imgData;
-            scArea.style.display = 'flex';
-          } catch(err) {
-            console.error("Lỗi xử lý canvas:", err);
-            alert("Không thể quét màn hình do chính sách bảo mật trình duyệt.");
-          }
-          
-          btnCapture.disabled = false;
-          btnCapture.innerHTML = originalHTML;
-        }).catch(function(err) {
-          if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
-          if (boxEl) boxEl.style.display = oldBoxDisplay;
-          if (ccEl) ccEl.style.display = '';
-          
-          console.error("Lỗi quét canvas:", err);
-          alert("Lỗi quét màn hình: " + err.message);
-          
-          btnCapture.disabled = false;
-          btnCapture.innerHTML = originalHTML;
-        });
-      }, 200);
-    });
+      // Hiển thị preview
+      scImg.src = imgData;
+      scArea.style.display = 'flex';
+    } catch(err) {
+      if (err.name === 'NotAllowedError') {
+        console.log("Người dùng từ chối/hủy chia sẻ màn hình.");
+      } else {
+        console.error("Lỗi chụp màn hình:", err);
+        alert("Lỗi khi chụp màn hình: " + err.message);
+      }
+    } finally {
+      btnCapture.disabled = false;
+      btnCapture.innerHTML = originalHTML;
+    }
   });
   
   scRemove.addEventListener('click', function(e) {
