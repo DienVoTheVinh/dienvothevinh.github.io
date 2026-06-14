@@ -139,7 +139,13 @@ function khoiDongChuong(uid) {
   var wrap = document.createElement('div');
   wrap.className = 'bell-wrap';
   wrap.innerHTML =
-    '<button class="nav-bell" id="nutChuong" aria-label="Thông báo">🔔<span class="bell-badge" id="demChuong" style="display:none">0</span></button>' +
+    '<button class="nav-bell" id="nutChuong" aria-label="Thông báo">' +
+      '<svg viewBox="0 0 24 24" class="bell-svg">' +
+        '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>' +
+        '<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' +
+      '</svg>' +
+      '<span class="bell-badge" id="demChuong" style="display:none">0</span>' +
+    '</button>' +
     '<div class="bell-panel" id="bangThongBao" style="display:none">' +
       '<div class="bell-head"><b style="font-size:.9rem">Thông báo</b><button class="bell-readall" id="nutDocHet">✓ Đọc hết</button></div>' +
       '<div class="bell-list" id="dsThongBao"></div>' +
