@@ -700,9 +700,84 @@ footer .wrap {
 .hero-math-decorations .s-sum { bottom: 8%; left: 35%; animation: floatSymbolX 10s ease-in-out infinite alternate; }
 .hero-math-decorations .s-inf { bottom: 25%; left: 8%; animation: floatSymbolY 9s ease-in-out infinite alternate-reverse; }
 .hero-math-decorations .s-sqrt { top: 45%; right: 40%; animation: floatSymbolX 8s ease-in-out infinite alternate-reverse; }
+
+/* Cyberpunk / Hologram modifications */
+#cyberCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Add canvas visibility through transparent bodies */
+body.math-grid {
+  position: relative;
+}
+
+/* Translucent panels for high contrast */
+.topbar {
+  background: color-mix(in srgb, var(--surface) 60%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+.hero-brand-banner {
+  background: color-mix(in srgb, var(--surface) 75%, transparent) !important;
+}
+.hero-brand-banner::before, .hero-brand-banner::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--accent);
+  border-style: solid;
+  pointer-events: none;
+  transition: border-color 0.3s ease;
+}
+.hero-brand-banner::before {
+  top: -1px;
+  left: -1px;
+  border-width: 3px 0 0 3px;
+}
+.hero-brand-banner::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 3px 3px 0;
+}
+
+/* Hologram laser scanner effect on hero portraits */
+.portrait-grid .ph-portrait, .portrait-grid .ph-landscape {
+  overflow: hidden;
+}
+.portrait-grid .ph-portrait::before, .portrait-grid .ph-landscape::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: hologram-scan 3s linear infinite;
+  z-index: 5;
+}
+.portrait-grid .ph-landscape::before {
+  background: linear-gradient(90deg, transparent, var(--warn), transparent);
+  animation-delay: 1.5s;
+}
+
+@keyframes hologram-scan {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
 </style>
 </head>
 <body class="math-grid">
+
+<canvas id="cyberCanvas"></canvas>
 
 <div class="topbar">
   <div class="nav">
@@ -825,15 +900,6 @@ footer .wrap {
         </div>
       </div>
       
-      <!-- Interactive floating cards -->
-      <div class="float f1">
-        <span class="ic" style="background:var(--accent-soft);color:var(--accent)">▶</span>
-        <div><b>Video bài giảng</b><span>Kèm bài tập tự chấm</span></div>
-      </div>
-      <div class="float f2">
-        <span class="ic" style="background:var(--ok-soft);color:var(--ok)">📈</span>
-        <div><b>Tiến độ rõ ràng</b><span>Từng em, từng chuyên đề</span></div>
-      </div>
     </div>
   </section>
 
@@ -1366,6 +1432,187 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 350);
   }
 });
+</script>
+
+<script>
+// --- INTERACTIVE CYBERMATH CANVAS ---
+var canvas = document.getElementById('cyberCanvas');
+var ctx = canvas.getContext('2d');
+
+var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+// Resizing
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initMatrix();
+}
+window.addEventListener('resize', resize);
+
+// Matrix rain variables
+var mathSymbols = ['∫', '∑', '∞', 'π', 'θ', 'λ', '√', 'Δ', '∇', '∂', 'f(x)', 'e^{iπ}+1=0', 'lim', 'dx', 'dy', 'log', 'matrix', 'sin(x)', 'cos(x)', 'x²', 'y³', 'λ', 'θ', 'δ', 'dx/dy', 'G(x)', 'P(A|B)'];
+var columns = [];
+
+function initMatrix() {
+  var cols = Math.floor(canvas.width / 24);
+  columns = [];
+  for (var i = 0; i < cols; i++) {
+    columns.push({
+      x: i * 24,
+      y: Math.random() * -canvas.height,
+      speed: 0.5 + Math.random() * 1.5
+    });
+  }
+}
+
+// Lorenz Attractor simulation
+var points = [];
+var lx = 0.1, ly = 0, lz = 0;
+var sigma = 10, rho = 28, beta = 8/3;
+var dt = 0.005;
+
+// Generate Lorenz points
+for (var i = 0; i < 900; i++) {
+  var dx = sigma * (ly - lx) * dt;
+  var dy = (lx * (rho - lz) - ly) * dt;
+  var dz = (lx * ly - beta * lz) * dt;
+  lx += dx;
+  ly += dy;
+  lz += dz;
+  points.push({ x: lx, y: ly, z: lz });
+}
+
+// 3D rotation angles
+var angleX = -0.3;
+var angleY = 0.5;
+var mouseX = window.innerWidth / 2;
+var mouseY = window.innerHeight / 2;
+
+window.addEventListener('mousemove', function(e) {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+// Animation loop
+function draw() {
+  themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  
+  // Matrix rain fade background
+  ctx.fillStyle = themeIsDark ? 'rgba(5, 8, 17, 0.15)' : 'rgba(245, 248, 255, 0.15)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw Matrix Rain
+  ctx.font = '11px monospace';
+  for (var i = 0; i < columns.length; i++) {
+    var col = columns[i];
+    var sym = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
+    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.07)' : 'rgba(37, 99, 235, 0.05)';
+    ctx.fillText(sym, col.x, col.y);
+    col.y += col.speed * 4;
+    if (col.y > canvas.height) {
+      col.y = Math.random() * -100;
+    }
+  }
+  
+  // Smoothly rotate toward mouse
+  var targetAngleX = (mouseY - canvas.height / 2) * 0.001;
+  var targetAngleY = (mouseX - canvas.width / 2) * 0.001;
+  angleX += (targetAngleX - angleX) * 0.05;
+  angleY += (targetAngleY - angleY) * 0.05;
+  
+  // 3D projection params
+  var centerX = canvas.width * 0.76; // Center it on the right side (.portrait area)
+  if (window.innerWidth <= 860) {
+    centerX = canvas.width / 2;
+  }
+  var centerY = canvas.height * 0.55;
+  var zoom = Math.min(canvas.width, canvas.height) * 0.012;
+  var focalLength = 300;
+  
+  // Project function
+  function project(pt) {
+    var cx = pt.x;
+    var cy = pt.y;
+    var cz = pt.z - 25; // center the attractor
+    
+    // Rotate Y
+    var cosY = Math.cos(angleY);
+    var sinY = Math.sin(angleY);
+    var x1 = cx * cosY - cz * sinY;
+    var z1 = cx * sinY + cz * cosY;
+    
+    // Rotate X
+    var cosX = Math.cos(angleX);
+    var sinX = Math.sin(angleX);
+    var y2 = cy * cosX - z1 * sinX;
+    var z2 = cy * sinX + z1 * cosX;
+    
+    var scale = focalLength / (focalLength + z2);
+    return {
+      x: centerX + x1 * scale * zoom,
+      y: centerY + y2 * scale * zoom,
+      depth: z2
+    };
+  }
+  
+  // Draw 3D Axes
+  var axes = [
+    { pt: { x: 30, y: 0, z: 25 }, label: 'X_axis', color: themeIsDark ? 'rgba(0, 240, 255, 0.4)' : 'rgba(37, 99, 235, 0.3)' },
+    { pt: { x: 0, y: 30, z: 25 }, label: 'Y_axis', color: themeIsDark ? 'rgba(255, 0, 127, 0.4)' : 'rgba(239, 68, 68, 0.3)' },
+    { pt: { x: 0, y: 0, z: 55 }, label: 'Z_axis', color: themeIsDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.3)' }
+  ];
+  
+  var originProj = project({ x: 0, y: 0, z: 25 });
+  ctx.lineWidth = 1.2;
+  axes.forEach(function(axis) {
+    var ptProj = project(axis.pt);
+    ctx.strokeStyle = axis.color;
+    ctx.beginPath();
+    ctx.moveTo(originProj.x, originProj.y);
+    ctx.lineTo(ptProj.x, ptProj.y);
+    ctx.stroke();
+    
+    ctx.fillStyle = axis.color;
+    ctx.font = '9px monospace';
+    ctx.fillText(axis.label, ptProj.x + 4, ptProj.y + 4);
+  });
+  
+  // Draw Lorenz Attractor Path
+  ctx.beginPath();
+  var start = project(points[0]);
+  ctx.moveTo(start.x, start.y);
+  
+  for (var i = 1; i < points.length; i++) {
+    var pt = project(points[i]);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  
+  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
+  
+  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.35)' : 'rgba(37, 99, 235, 0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  // Draw flowing sparks along the attractor path
+  var timeIndex = Math.floor((Date.now() / 15) % points.length);
+  var sparkCount = 3;
+  ctx.fillStyle = themeIsDark ? '#ffffff' : accentColor;
+  for (var j = 0; j < sparkCount; j++) {
+    var idx = (timeIndex + Math.floor(j * points.length / sparkCount)) % points.length;
+    var sparkProj = project(points[idx]);
+    ctx.beginPath();
+    ctx.arc(sparkProj.x, sparkProj.y, 4, 0, Math.PI * 2);
+    ctx.shadowBlur = themeIsDark ? 10 : 0;
+    ctx.shadowColor = accentColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  
+  requestAnimationFrame(draw);
+}
+
+resize();
+draw();
 </script>
 </body>
 </html>
