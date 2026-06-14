@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.0">
+<link rel="stylesheet" href="vinhmath.css?v=2.1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -258,7 +258,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.0"></script>
+<script src="vinhmath.js?v=2.1"></script>
 <script src="analytics.js"></script>
 <script>
 var lessonId = null;
@@ -541,12 +541,73 @@ async function hienTaiLieuTex() {
   dangBienDichTex = false;
 }
 
+function renderPDFWithJS(pdfUrl, container) {
+  container.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang chuẩn bị tài liệu...</h3></div>';
+  
+  if (!window.pdfjsLib) {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+    script.id = 'pdfjs-script';
+    script.onload = function() {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      startRendering();
+    };
+    script.onerror = function() {
+      fallbackToIframe();
+    };
+    document.head.appendChild(script);
+  } else {
+    startRendering();
+  }
+  
+  function fallbackToIframe() {
+    container.innerHTML = '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
+  }
+  
+  function startRendering() {
+    container.innerHTML = '<div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
+    var canvasContainer = document.getElementById('pdfCanvasContainer');
+    
+    var loadingTask = pdfjsLib.getDocument(pdfUrl);
+    loadingTask.promise.then(function(pdf) {
+      for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        (function(num) {
+          var canvas = document.createElement('canvas');
+          canvas.style.width = '100%';
+          canvas.style.maxWidth = '800px';
+          canvas.style.borderRadius = '8px';
+          canvas.style.border = '1px solid var(--line)';
+          canvas.style.boxShadow = 'var(--shadow)';
+          canvas.style.background = '#fff';
+          canvasContainer.appendChild(canvas);
+          
+          pdf.getPage(num).then(function(page) {
+            var viewport = page.getViewport({ scale: 1.5 });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            var renderContext = {
+              canvasContext: canvas.getContext('2d'),
+              viewport: viewport
+            };
+            page.render(renderContext);
+          });
+        })(pageNum);
+      }
+    }).catch(function(err) {
+      console.error("PDF.js render error:", err);
+      fallbackToIframe();
+    });
+  }
+}
+
 function veTaiLieuTex() {
   var u = URL.createObjectURL(pdfTaiLieuTex);
   var than = $('thanNoiDung');
   than.innerHTML = thanhCongCu('📄 Tài liệu bài học (PDF)', null) +
     '<div style="padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--line)"><a class="btn btn-primary btn-sm" style="padding:4px 12px" download="tai-lieu-bai-hoc.pdf" href="' + u + '">💾 Tải PDF về máy</a></div>' +
-    '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
+    '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
+  renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
 }
 
 async function chonNoiDung(loai) {
@@ -572,7 +633,8 @@ async function chonNoiDung(loai) {
     } else {
       var u = buildPdfUrl(details.documents.file_path);
       than.innerHTML = thanhCongCu('📄 ' + details.documents.title, u) +
-        '<iframe class="pdf-frame" src="' + u + '#toolbar=1&navpanes=0"></iframe>';
+        '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
+      renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
     }
   } else if (loai === 'bang') {
     $('swBang').classList.add('active');
@@ -590,7 +652,8 @@ async function chonNoiDung(loai) {
     } else {
       var ut = buildPdfUrl(details.bai_test.file_path);
       than.innerHTML = thanhCongCu('📝 ' + details.bai_test.title, ut) +
-        '<iframe class="pdf-frame" src="' + ut + '#toolbar=1&navpanes=0"></iframe>';
+        '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
+      renderPDFWithJS(ut, document.getElementById('pdfViewerArea'));
     }
   }
   // Trên di động: chuyển sang tab nội dung
