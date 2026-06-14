@@ -18,11 +18,44 @@
 
 /* Avatar & Rank */
 .avatar-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; position: relative; }
-.avatar-wrapper { position: relative; width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 3px solid var(--line); background: var(--surface-2); transition: all 0.3s ease; }
+.avatar-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--line);
+  background: var(--surface-2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.avatar-wrapper:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 0 15px var(--accent-soft);
+}
 .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-.avatar-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.avatar-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
 .avatar-card h3 { font-size: 1.25rem; font-weight: 700; margin-top: 8px; }
 .avatar-card p { font-size: .88rem; color: var(--ink-2); }
+.profile-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 3.5rem;
+  color: #fff;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: inset 0 4px 15px rgba(255,255,255,0.4);
+  border-radius: 50%;
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: inset 0 4px 15px rgba(255,255,255,0.4), 0 0 5px rgba(255,255,255,0); }
+  50% { box-shadow: inset 0 4px 15px rgba(255,255,255,0.5), 0 0 20px var(--accent-soft); }
+}
 
 /* Rank Badges */
 .rank-badge {
@@ -204,6 +237,7 @@
           <span class="rank-badge rank-bronze" id="profileRankBadge">🥉 Khởi đầu</span>
         </div>
         <div class="avatar-wrapper">
+          <div id="profileAvatarPlaceholder" class="profile-avatar-placeholder" style="display:none;"></div>
           <img id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="Avatar">
           <input type="file" class="avatar-input" id="avatarUpload" accept="image/*" onchange="uploadAvatar()">
         </div>
@@ -466,6 +500,49 @@ var charts = {
   bar: null
 };
 
+// Bảng màu gradient hiện đại cho avatar mặc định dạng chữ cái
+var GRADIENTS = [
+  'linear-gradient(135deg, #FF5E62 0%, #FF9966 100%)', // Coral Sunset
+  'linear-gradient(135deg, #10B981 0%, #34D399 100%)', // Emerald Mint
+  'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)', // Royal Blue
+  'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)', // Dreamy Violet
+  'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)', // Warm Amber
+  'linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%)', // Ocean Cyan
+  'linear-gradient(135deg, #EC4899 0%, #F472B6 100%)', // Pink Cotton
+  'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)'  // Modern Teal
+];
+
+function chuCai(ten) {
+  var p = (ten || '?').trim().split(/\s+/);
+  return (p[p.length - 1] || '?').charAt(0).toUpperCase();
+}
+
+function hienThiProfileAvatar(avatarUrl, fullName) {
+  var img = $('profileAvatar');
+  var placeholder = $('profileAvatarPlaceholder');
+  if (avatarUrl) {
+    img.src = avatarUrl;
+    img.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    if (placeholder) {
+      placeholder.style.display = 'grid';
+      var initials = chuCai(fullName || 'Học sinh');
+      placeholder.textContent = initials;
+      
+      // Tính toán gradient ổn định dựa trên chuỗi tên
+      var nameStr = fullName || '';
+      var hash = 0;
+      for (var i = 0; i < nameStr.length; i++) {
+        hash = nameStr.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      var gIdx = Math.abs(hash) % GRADIENTS.length;
+      placeholder.style.background = GRADIENTS[gIdx];
+    }
+  }
+}
+
 (async function () {
   if (!daKetNoi()) {
     mockUpDataOffline();
@@ -528,9 +605,7 @@ var charts = {
   $('profileName').textContent = profileData.full_name;
   $('profileClass').textContent = profileData.classes ? 'Lớp: ' + profileData.classes.name : 'Chưa xếp lớp';
   
-  if (profileData.avatar_url) {
-    $('profileAvatar').src = profileData.avatar_url;
-  }
+  hienThiProfileAvatar(profileData.avatar_url, profileData.full_name);
   
   // Lời chào ở tiêu đề
   $('titleChao').textContent = chao() + ', ' + (profileData.full_name.split(' ').pop()) + '!';
@@ -904,6 +979,27 @@ function getRankInfo(score) {
   }
 }
 
+// Hàm tiện ích lấy giá trị biến CSS từ :root
+function getCSSVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// Hàm tiện ích chuyển đổi mã màu Hex/RGB sang dạng RGBA để vẽ mờ
+function getRGBA(colorStr, opacity) {
+  if (!colorStr) return 'rgba(0,0,0,0)';
+  var color = colorStr.trim();
+  if (color.startsWith('#')) {
+    var r = parseInt(color.slice(1, 3), 16);
+    var g = parseInt(color.slice(3, 5), 16);
+    var b = parseInt(color.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + opacity + ')';
+  }
+  if (color.startsWith('rgb')) {
+    return color.replace('rgb', 'rgba').replace(')', ', ' + opacity + ')');
+  }
+  return color;
+}
+
 // Vẽ Đồ thị Cơ cấu điểm Doughnut
 function renderDoughnutChart() {
   if (charts.doughnut) charts.doughnut.destroy();
@@ -919,8 +1015,25 @@ function renderDoughnutChart() {
     calculatedScores.timeliness || 0
   ];
   
-  var colors = ['#5E7B5E', '#A8842C', '#4A6FA5', '#7B5EA7', '#C26B4E', '#3E8E7E'];
   var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var accentColor = getCSSVar('--accent');
+  
+  // Bảng màu mờ trong suốt (translucent) kết hợp với màu chủ đề làm điểm nhấn
+  var colors = themeIsDark ? [
+    'rgba(16, 185, 129, 0.7)',  // Chuyên cần (Emerald)
+    'rgba(245, 158, 11, 0.7)',   // Giờ tự học (Amber)
+    getRGBA(accentColor, 0.8),   // Kiểm tra (Active Accent)
+    'rgba(192, 132, 252, 0.7)',  // Luyện đề (Violet)
+    'rgba(255, 94, 98, 0.7)',    // Thái độ (Coral)
+    'rgba(6, 182, 212, 0.7)'     // Đúng hạn (Cyan)
+  ] : [
+    'rgba(16, 185, 129, 0.65)',
+    'rgba(245, 158, 11, 0.65)',
+    accentColor,
+    'rgba(124, 58, 237, 0.65)',
+    'rgba(255, 94, 98, 0.65)',
+    'rgba(8, 145, 178, 0.65)'
+  ];
   
   charts.doughnut = new Chart(ctx, {
     type: 'doughnut',
@@ -929,8 +1042,8 @@ function renderDoughnutChart() {
       datasets: [{
         data: data,
         backgroundColor: colors,
-        borderWidth: themeIsDark ? 2 : 1,
-        borderColor: themeIsDark ? '#201E1B' : '#FFFFFF'
+        borderWidth: themeIsDark ? 2 : 1.5,
+        borderColor: themeIsDark ? '#0d1426' : '#ffffff'
       }]
     },
     options: {
@@ -939,7 +1052,7 @@ function renderDoughnutChart() {
       plugins: {
         legend: { display: false }
       },
-      cutout: '72%'
+      cutout: '75%'
     }
   });
 }
@@ -991,6 +1104,17 @@ async function renderLineChartHours() {
   data = data.map(function(val) { return Math.round(val * 10) / 10; });
   
   var ctx = $('chartLineHours').getContext('2d');
+  
+  var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var accentColor = getCSSVar('--accent');
+  var ink2 = getCSSVar('--ink-2');
+  var gridColor = themeIsDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)';
+  
+  // Tạo gradient mượt dưới đường cong của đồ thị tuyến tính
+  var gradient = ctx.createLinearGradient(0, 0, 0, 180);
+  gradient.addColorStop(0, getRGBA(accentColor, themeIsDark ? 0.35 : 0.22));
+  gradient.addColorStop(1, getRGBA(accentColor, 0));
+  
   charts.line = new Chart(ctx, {
     type: 'line',
     data: {
@@ -998,13 +1122,19 @@ async function renderLineChartHours() {
       datasets: [{
         label: 'Giờ học trực tuyến',
         data: data,
-        borderColor: '#B5483A',
-        backgroundColor: 'rgba(181, 72, 58, 0.08)',
+        borderColor: accentColor,
+        backgroundColor: gradient,
         fill: true,
-        tension: 0.35,
+        tension: 0.4,
         borderWidth: 3,
-        pointRadius: 4,
-        pointBackgroundColor: '#B5483A'
+        pointRadius: 4.5,
+        pointBackgroundColor: accentColor,
+        pointBorderColor: themeIsDark ? '#0d1426' : '#ffffff',
+        pointBorderWidth: 1.5,
+        pointHoverRadius: 6.5,
+        pointHoverBackgroundColor: '#ffffff',
+        pointHoverBorderColor: accentColor,
+        pointHoverBorderWidth: 3
       }]
     },
     options: {
@@ -1014,9 +1144,19 @@ async function renderLineChartHours() {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(0,0,0,0.05)' }
+          grid: { color: gridColor },
+          ticks: {
+            color: ink2,
+            font: { family: 'Outfit, sans-serif', size: 11, weight: '500' }
+          }
         },
-        x: { grid: { display: false } }
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: ink2,
+            font: { family: 'Outfit, sans-serif', size: 11, weight: '500' }
+          }
+        }
       }
     }
   });
@@ -1035,6 +1175,17 @@ async function renderBarChartScores() {
   }
   
   var ctx = $('chartBarScores').getContext('2d');
+  
+  var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var accentColor = getCSSVar('--accent');
+  var ink2 = getCSSVar('--ink-2');
+  var gridColor = themeIsDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)';
+  
+  // Màu bổ sung cho luyện đề thi thử (tím/coral rực rỡ)
+  var secondaryColor = themeIsDark ? 'rgba(192, 132, 252, 0.8)' : 'rgba(124, 58, 237, 0.8)';
+  var barColors = [getRGBA(accentColor, 0.85), secondaryColor];
+  var borderColors = [accentColor, themeIsDark ? '#c084fc' : '#7c3aed'];
+  
   charts.bar = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1042,11 +1193,12 @@ async function renderBarChartScores() {
       datasets: [{
         label: 'Điểm trung bình',
         data: [quizAvg, examAvg],
-        backgroundColor: ['rgba(74, 111, 165, 0.85)', 'rgba(123, 94, 167, 0.85)'],
-        borderColor: ['#4A6FA5', '#7B5EA7'],
+        backgroundColor: barColors,
+        borderColor: borderColors,
         borderWidth: 1.5,
-        borderRadius: 6,
-        barThickness: 50
+        borderRadius: 8,
+        barThickness: 40,
+        hoverBackgroundColor: [getRGBA(accentColor, 0.95), themeIsDark ? 'rgba(192, 132, 252, 0.95)' : 'rgba(124, 58, 237, 0.95)']
       }]
     },
     options: {
@@ -1057,9 +1209,19 @@ async function renderBarChartScores() {
         y: {
           min: 0,
           max: 10,
-          grid: { color: 'rgba(0,0,0,0.05)' }
+          grid: { color: gridColor },
+          ticks: {
+            color: ink2,
+            font: { family: 'Outfit, sans-serif', size: 11, weight: '500' }
+          }
         },
-        x: { grid: { display: false } }
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: ink2,
+            font: { family: 'Outfit, sans-serif', size: 11, weight: '500' }
+          }
+        }
       }
     }
   });
@@ -1201,9 +1363,18 @@ function renderLeaderboardItems(items) {
     var rankInfo = getRankInfo(s.score);
     var rankTag = ' <span class="badge" style="font-size:0.68rem; font-weight:800; padding:1px 6px; border-radius:3px; background:var(--surface-2); border:1px solid var(--line); margin-left:6px;">' + rankInfo.badge + '</span>';
     
-    var avatarHtml = s.avatar
-      ? '<img class="leaderboard-avatar" src="' + s.avatar + '" alt="">'
-      : '<span class="leaderboard-avatar-text" style="background:' + MAU[index % MAU.length] + '">' + s.name.trim().split(/\s+/).pop().charAt(0).toUpperCase() + '</span>';
+    var avatarHtml = '';
+    if (s.avatar) {
+      avatarHtml = '<img class="leaderboard-avatar" src="' + s.avatar + '" alt="">';
+    } else {
+      var nameStr = s.name || '';
+      var hash = 0;
+      for (var i = 0; i < nameStr.length; i++) {
+        hash = nameStr.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      var gIdx = Math.abs(hash) % GRADIENTS.length;
+      avatarHtml = '<span class="leaderboard-avatar-text" style="background:' + GRADIENTS[gIdx] + '; box-shadow: inset 0 2px 4px rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.2); text-shadow: 0 1px 1px rgba(0,0,0,0.15);">' + s.name.trim().split(/\s+/).pop().charAt(0).toUpperCase() + '</span>';
+    }
       
     // Đánh dấu chính mình
     var highlightStyle = s.id === profileData.id ? ' font-weight:800; border-left: 3px solid var(--accent);' : '';
@@ -1572,6 +1743,10 @@ async function uploadAvatar() {
   if (!file) return;
   
   var oldSrc = $('profileAvatar').src;
+  var oldShowPlaceholder = $('profileAvatarPlaceholder') && $('profileAvatarPlaceholder').style.display !== 'none';
+  
+  if ($('profileAvatarPlaceholder')) $('profileAvatarPlaceholder').style.display = 'none';
+  $('profileAvatar').style.display = 'block';
   $('profileAvatar').src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999" class="spinner"%3E%3Cpath d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-6.8 5.2L3.74 7.74C2.96 8.97 2.5 10.43 2.5 12c0 4.42 3.58 8 8 8v-3l4 4-4 4v-3c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8z"/%3E%3C/style%3E';
   
   try {
@@ -1588,14 +1763,25 @@ async function uploadAvatar() {
     var r = await sb.from('profiles').update({ avatar_url: url }).eq('id', profileData.id);
     if (r.error) throw new Error(r.error.message);
     
-    $('profileAvatar').src = url;
     profileData.avatar_url = url;
+    hienThiProfileAvatar(url, profileData.full_name);
     alert('✓ Cập nhật ảnh đại diện thành công!');
   } catch (err) {
     alert('Lỗi tải ảnh lên: ' + err.message);
-    $('profileAvatar').src = oldSrc;
+    if (oldShowPlaceholder) {
+      hienThiProfileAvatar(null, profileData.full_name);
+    } else {
+      $('profileAvatar').src = oldSrc;
+    }
   }
 }
+
+// Lắng nghe sự kiện đổi theme/màu accent để vẽ lại biểu đồ
+window.addEventListener('theme-change', function() {
+  if (typeof calculateAndRenderCharts === 'function') {
+    calculateAndRenderCharts();
+  }
+});
 </script>
 </body>
 </html>

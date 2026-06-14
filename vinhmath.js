@@ -32,6 +32,7 @@ function toggleTheme() {
   apdungMauAccent(h, activeColor, newTheme === 'dark');
   
   try { localStorage.setItem('vm-theme', newTheme); } catch (e) {}
+  try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
 }
 
 function apdungMauAccent(el, color, isDark) {
@@ -527,6 +528,7 @@ function khoiTaoControlCenter() {
     // Cập nhật màu accent theo theme
     var activeColor = localStorage.getItem('vm-accent') || 'blue';
     apdungMauAccent(document.documentElement, activeColor, theme === 'dark');
+    try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
   }
   
   btnLight.addEventListener('click', function() { setCCTheme('light'); });
@@ -564,6 +566,7 @@ function khoiTaoControlCenter() {
       
       var isD = document.documentElement.getAttribute('data-theme') === 'dark';
       apdungMauAccent(document.documentElement, color, isD);
+      try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
     });
   });
 }
