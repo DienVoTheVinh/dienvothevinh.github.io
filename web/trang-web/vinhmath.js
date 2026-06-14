@@ -472,13 +472,17 @@ function khoiTaoControlCenter() {
     
   ccWrapper.appendChild(panel);
   
-  // Chèn vào đầu trang bên cạnh nút đăng xuất hoặc cuối navlinks
-  var navLinks = nav.querySelector('.navlinks') || nav;
-  if (navLinks === nav) {
-    nav.appendChild(ccWrapper);
+  // Chèn vào đầu trang bên cạnh themeBtn để tránh bị đè hoặc ghi đè innerHTML
+  var themeBtn = nav.querySelector('#themeBtn');
+  if (themeBtn && themeBtn.parentNode) {
+    themeBtn.parentNode.insertBefore(ccWrapper, themeBtn);
   } else {
-    // Chèn trước con đầu tiên của navlinks để hiển thị đẹp đẽ cạnh các nút khác
-    navLinks.insertBefore(ccWrapper, navLinks.firstChild);
+    var navLinks = nav.querySelector('.navlinks') || nav;
+    if (navLinks === nav) {
+      nav.appendChild(ccWrapper);
+    } else {
+      navLinks.insertBefore(ccWrapper, navLinks.firstChild);
+    }
   }
   
   // 4. Đăng ký các sự kiện tương tác
