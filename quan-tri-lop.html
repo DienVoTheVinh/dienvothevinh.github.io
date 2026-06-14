@@ -126,6 +126,7 @@
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <a class="btn btn-primary btn-sm" id="nutMeetLop" href="#" target="_blank" style="display:none">🎥 Vào phòng Meet</a>
           <a class="btn btn-ghost btn-sm" id="nutChuaMeet" href="quan-tri-lich.html" style="display:none" title="Lớp chưa có link Meet — bấm để cài trong trang Lịch & QR">＋ Gắn link Meet</a>
+          <button class="btn btn-secondary btn-sm chi-gv" onclick="moNhacNho('class')">🔔 Nhắc cả lớp</button>
           <button class="btn btn-secondary btn-sm chi-gv" onclick="doiTenLopCurrent()">✏️ Đổi tên lớp</button>
           <button class="btn btn-secondary btn-sm chi-gv" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
         </div>
@@ -271,6 +272,15 @@
         <div class="field">
           <label>Ghi chú / Dặn dò học sinh</label>
           <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh làm bài tập..." style="resize:vertical"></textarea>
+        </div>
+
+        <div class="field">
+          <label>📌 Việc cần làm sau bài học <small style="color:var(--ink-3);font-weight:400">(hiện ở mục "Việc cần làm hôm nay" trên trang chủ học sinh)</small></label>
+          <textarea class="input" id="bhViecCanLam" rows="2" placeholder="Ví dụ: Làm bài tập về nhà phần Tích phân (trang 25), xem lại ví dụ 3…" style="resize:vertical"></textarea>
+          <div style="margin-top:8px; max-width:220px">
+            <label style="font-size:.82rem">Hạn cần làm</label>
+            <input type="date" class="input" id="bhViecNgay">
+          </div>
         </div>
 
         <div class="switch-container" style="margin-bottom: 16px; display:flex; align-items:center; gap:8px">
@@ -448,6 +458,35 @@
     </div>
     <h3 style="font-size:.95rem; margin:18px 0 8px; border-top:1px solid var(--line); padding-top:14px">Các nhận xét gần đây của em này</h3>
     <div id="nxLichSu" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Modal Thêm lời nhắc -->
+<div class="modal" id="modalNhacNho" style="z-index:120">
+  <div class="modal-content" style="max-width:560px">
+    <button class="modal-close" onclick="dongNhacNho()">×</button>
+    <h2 style="font-size:1.25rem">🔔 Thêm lời nhắc · Việc cần làm</h2>
+    <p id="nnTarget" style="margin:4px 0 16px; color:var(--ink-2); font-size:.92rem"></p>
+    <div class="field">
+      <label>Nội dung nhắc nhở</label>
+      <textarea class="input" id="nnNoiDung" rows="3" placeholder="Ví dụ: Ôn lại công thức tích phân, làm bài tập 3–7 trang 25, chuẩn bị kiểm tra 15 phút chương 1…" style="resize:vertical; height:90px"></textarea>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+      <div class="field" style="margin-bottom:0"><label>Ngày cần làm</label><input type="date" class="input" id="nnNgay"></div>
+      <div class="field" style="margin-bottom:0"><label>Loại</label>
+        <select class="input" id="nnLoai">
+          <option value="bai_tap">✍️ Làm bài tập</option>
+          <option value="on_bai">📖 Ôn bài</option>
+          <option value="kiem_tra">📝 Chuẩn bị kiểm tra</option>
+          <option value="khac" selected>📌 Khác</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px">
+      <button class="btn btn-primary btn-sm" id="nnNutLuu" onclick="luuNhacNho()">💾 Gửi nhắc nhở</button>
+    </div>
+    <h3 style="font-size:.95rem; margin:18px 0 8px; border-top:1px solid var(--line); padding-top:14px">Lời nhắc gần đây</h3>
+    <div id="nnLichSu" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto"></div>
   </div>
 </div>
 
@@ -1006,6 +1045,7 @@ async function taiStudentsLop() {
       '<td>' + progressCell + '</td>' +
       '<td style="text-align:right">' +
       '  <button class="btn btn-primary btn-sm" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">💬 Nhận xét</button> ' +
+      '  <button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">🔔 Nhắc</button> ' +
       '  <button class="btn btn-ghost btn-sm chi-gv" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
       '</td>' +
       '</tr>';
@@ -1122,6 +1162,76 @@ async function luuNhanXet() {
   await taiLichSuNhanXet();
   nut.textContent = '✓ Đã lưu!';
   setTimeout(function () { nut.textContent = '💾 Lưu nhận xét & Đánh giá'; }, 1500);
+}
+
+/* ===== NHẮC NHỞ · VIỆC CẦN LÀM ===== */
+var nnTargetType = 'class';
+var nnStudentId = null;
+
+function moNhacNho(type, studentId, name) {
+  if (!classDangChon) { alert('Hãy chọn lớp trước.'); return; }
+  nnTargetType = type;
+  nnStudentId = (type === 'student') ? studentId : null;
+  $('nnTarget').textContent = (type === 'student')
+    ? ('Nhắc riêng cho: ' + name + ' · Lớp ' + classDangChon.name)
+    : ('Nhắc cả lớp: ' + classDangChon.name);
+  $('nnNoiDung').value = '';
+  $('nnNgay').value = homNayISO();
+  $('nnLoai').value = 'khac';
+  $('modalNhacNho').style.display = 'flex';
+  taiLichSuNhacNho();
+}
+
+function dongNhacNho() { $('modalNhacNho').style.display = 'none'; }
+
+async function taiLichSuNhacNho() {
+  var khung = $('nnLichSu');
+  khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Đang tải…</p>';
+  var q = sb.from('reminders').select('id, content, due_date, kind, student_id, created_at')
+    .eq('class_id', classDangChon.id).order('created_at', { ascending: false }).limit(10);
+  if (nnTargetType === 'student') q = q.eq('student_id', nnStudentId);
+  else q = q.is('student_id', null).is('lesson_id', null);
+  var r = await q;
+  var ds = r.data || [];
+  if (!ds.length) { khung.innerHTML = '<p style="color:var(--ink-3); font-size:.85rem">Chưa có lời nhắc nào.</p>'; return; }
+  var KI = { on_bai: '📖', kiem_tra: '📝', bai_tap: '✍️', khac: '📌' };
+  khung.innerHTML = ds.map(function (n) {
+    return '<div style="border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; font-size:.85rem; display:flex; justify-content:space-between; gap:8px; align-items:flex-start">' +
+      '<div><b>' + (KI[n.kind] || '📌') + ' ' + new Date(n.due_date + "T00:00:00").toLocaleDateString("vi-VN") + '</b>' +
+      '<div style="margin-top:2px; white-space:pre-wrap; color:var(--ink-2)">' + (n.content || '') + '</div></div>' +
+      '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:2px 8px" onclick="xoaNhacNho(\'' + n.id + '\')">Xoá</button>' +
+      '</div>';
+  }).join('');
+}
+
+async function xoaNhacNho(id) {
+  if (!confirm('Xoá lời nhắc này?')) return;
+  var r = await sb.from('reminders').delete().eq('id', id);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  taiLichSuNhacNho();
+}
+
+async function luuNhacNho() {
+  var noiDung = $('nnNoiDung').value.trim();
+  var ngay = $('nnNgay').value;
+  if (!noiDung) { alert('Nhập nội dung nhắc nhở trước nhé.'); return; }
+  if (!ngay) { alert('Chọn ngày cần làm.'); return; }
+  var nut = $('nnNutLuu'); nut.disabled = true; nut.textContent = '⏳ Đang gửi…';
+  var u = await sb.auth.getUser();
+  var hs = await sb.from('profiles').select('full_name, role').eq('id', u.data.user.id).single();
+  var ten = (hs.data ? hs.data.full_name : '') + (hs.data && hs.data.role === 'assistant' ? ' (Trợ giảng)' : '');
+  var rec = {
+    content: noiDung, due_date: ngay, kind: $('nnLoai').value,
+    class_id: classDangChon.id,
+    student_id: nnTargetType === 'student' ? nnStudentId : null,
+    author_id: u.data.user.id, author_name: ten
+  };
+  var r = await sb.from('reminders').insert(rec);
+  nut.disabled = false; nut.textContent = '💾 Gửi nhắc nhở';
+  if (r.error) { alert('Lỗi gửi nhắc nhở: ' + r.error.message); return; }
+  $('nnNoiDung').value = '';
+  nut.textContent = '✓ Đã gửi!'; setTimeout(function () { nut.textContent = '💾 Gửi nhắc nhở'; }, 1500);
+  taiLichSuNhacNho();
 }
 
 async function xoaHocSinhKhoiLop(studentId, name) {
@@ -1439,7 +1549,15 @@ async function moFormSua(id) {
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort || 0;
   $('bhXuatBan').checked = !!bh.published;
-  
+
+  // Nạp "việc cần làm sau bài học" gắn với bài giảng (nếu có)
+  if ($('bhViecCanLam')) {
+    $('bhViecCanLam').value = '';
+    if ($('bhViecNgay')) $('bhViecNgay').value = '';
+    var rv = await sb.from('reminders').select('content, due_date').eq('lesson_id', bh.id).limit(1).maybeSingle();
+    if (rv.data) { $('bhViecCanLam').value = rv.data.content || ''; if ($('bhViecNgay')) $('bhViecNgay').value = rv.data.due_date || ''; }
+  }
+
   theorySections = Array.isArray(bh.theory_sections) ? JSON.parse(JSON.stringify(bh.theory_sections)) : [];
   renderTheorySections();
   doiTabForm('chung');
@@ -1542,19 +1660,33 @@ async function luuBaiHoc(e) {
   }
   data.images = anhDaCo;
 
-  var r;
+  var r, lessonId = id;
   if (id) {
     r = await sb.from('lessons').update(data).eq('id', id);
   } else {
-    r = await sb.from('lessons').insert(data);
+    r = await sb.from('lessons').insert(data).select('id').single();
+    if (!r.error && r.data) lessonId = r.data.id;
   }
 
   if (r.error) {
     alert('Lỗi: ' + r.error.message);
-  } else {
-    dongForm();
-    await taiLessonsLop();
+    nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+    return;
   }
+
+  // Việc cần làm sau bài học (nhắc nhở gắn với bài giảng)
+  if (lessonId) {
+    var vcl = $('bhViecCanLam') ? $('bhViecCanLam').value.trim() : '';
+    await sb.from('reminders').delete().eq('lesson_id', lessonId);
+    if (vcl) {
+      var uVcl = await sb.auth.getUser();
+      var ngayVcl = ($('bhViecNgay') && $('bhViecNgay').value) ? $('bhViecNgay').value : homNayISO();
+      await sb.from('reminders').insert({ content: vcl, due_date: ngayVcl, kind: 'bai_tap', class_id: classDangChon.id, lesson_id: lessonId, author_id: uVcl.data.user.id });
+    }
+  }
+
+  dongForm();
+  await taiLessonsLop();
 }
 
 async function xoaBaiHoc() {

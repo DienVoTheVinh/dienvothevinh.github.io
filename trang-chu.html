@@ -605,6 +605,85 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   khoiDongCountdown();
 })();
 
+// ===== VIỆC CẦN LÀM HÔM NAY (học sinh) =====
+var vclMyId = null;
+var VCL_KIND_ICON = { on_bai: '📖', kiem_tra: '📝', bai_tap: '✍️', khac: '📌' };
+
+function vclEsc(s) { return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function vclParseDiff(s) {
+  var p = String(s).split('-');
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  var t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+}
+
+async function taiViecCanLam() {
+  var box = $('khungViecCanLam'); if (!box) return;
+  box.style.display = 'block';
+  box.innerHTML = '<div class="vcl-head"><h2>📌 Việc cần làm hôm nay</h2><span class="vcl-count" id="vclCount"></span></div><div id="vclList"><p style="color:var(--ink-3);font-size:.9rem">Đang tải…</p></div>';
+  try { var u = await sb.auth.getUser(); vclMyId = (u && u.data && u.data.user) ? u.data.user.id : null; } catch (e) {}
+  var r = await sb.rpc('get_my_reminders');
+  if (r.error) { $('vclList').innerHTML = '<div class="vcl-empty">Không tải được danh sách việc cần làm.</div>'; return; }
+  var ds = r.data || [];
+  var items = ds.filter(function (x) {
+    var d = vclParseDiff(x.due_date);
+    if (x.done) return d === 0;     // việc đã xong: chỉ hiện nếu hạn hôm nay (để em thấy thành quả)
+    if (d < 0) return true;         // quá hạn chưa xong
+    return d <= 14;                 // hôm nay + 14 ngày tới
+  });
+  vclRenderList(items);
+}
+
+function vclRenderList(items) {
+  var list = $('vclList'); var cnt = $('vclCount');
+  var chuaXong = items.filter(function (x) { return !x.done; }).length;
+  if (cnt) cnt.textContent = chuaXong > 0 ? chuaXong + ' việc' : 'Đã xong hết ✓';
+  if (!items.length) {
+    list.innerHTML = '<div class="vcl-empty">🎉 Tuyệt vời! Hiện em không có việc nào cần làm. Cứ giữ phong độ nhé!</div>';
+    return;
+  }
+  var groups = { overdue: [], today: [], upcoming: [] };
+  items.forEach(function (x) {
+    var d = vclParseDiff(x.due_date);
+    if (d < 0) groups.overdue.push(x); else if (d === 0) groups.today.push(x); else groups.upcoming.push(x);
+  });
+  function dueLabel(x) {
+    var d = vclParseDiff(x.due_date);
+    if (d < 0) return { cls: 'overdue', t: 'Quá hạn ' + (-d) + ' ngày' };
+    if (d === 0) return { cls: 'today', t: 'Hôm nay' };
+    if (d === 1) return { cls: 'upcoming', t: 'Ngày mai' };
+    return { cls: 'upcoming', t: 'Còn ' + d + ' ngày' };
+  }
+  function rowHtml(x) {
+    var dl = dueLabel(x);
+    var icon = VCL_KIND_ICON[x.kind] || '📌';
+    var cls = 'vcl-item ' + (x.done ? 'done' : dl.cls);
+    var scope = vclEsc(x.scope) + (x.lesson_title ? ': ' + vclEsc(x.lesson_title) : '');
+    return '<div class="' + cls + '" data-id="' + x.id + '">' +
+      '<div class="vcl-check' + (x.done ? ' checked' : '') + '" onclick="toggleViec(this, \'' + x.id + '\', ' + (x.done ? 'true' : 'false') + ')">' + (x.done ? '✓' : '') + '</div>' +
+      '<div class="vcl-body"><div class="vcl-text">' + icon + ' ' + vclEsc(x.content) + '</div>' +
+        '<div class="vcl-meta"><span class="vcl-chip">' + scope + '</span><span class="vcl-due ' + dl.cls + '">' + dl.t + '</span></div>' +
+      '</div></div>';
+  }
+  var html = '';
+  if (groups.overdue.length) html += '<div class="vcl-group-label" style="color:#e74c3c">⚠️ Quá hạn</div>' + groups.overdue.map(rowHtml).join('');
+  if (groups.today.length) html += '<div class="vcl-group-label">🔥 Hôm nay</div>' + groups.today.map(rowHtml).join('');
+  if (groups.upcoming.length) html += '<div class="vcl-group-label">📅 Sắp tới</div>' + groups.upcoming.map(rowHtml).join('');
+  list.innerHTML = html;
+}
+
+async function toggleViec(el, id, dangXong) {
+  if (!vclMyId) { try { var u = await sb.auth.getUser(); vclMyId = (u && u.data && u.data.user) ? u.data.user.id : null; } catch (e) {} }
+  if (!vclMyId) return;
+  el.style.pointerEvents = 'none';
+  if (dangXong) {
+    await sb.from('reminder_done').delete().eq('reminder_id', id).eq('student_id', vclMyId);
+  } else {
+    await sb.from('reminder_done').insert({ reminder_id: id, student_id: vclMyId });
+  }
+  await taiViecCanLam();
+}
+
 // ----- TẢI DỮ LIỆU STAFF -----
 async function taiSchedulesVaExamsStaff() {
   // 1. Tải toàn bộ lớp để mapping
