@@ -38,12 +38,13 @@ body {
   height: 100%;
   z-index: -1;
   pointer-events: none;
+  opacity: var(--canvas-opacity, 0.25);
+  transition: opacity 0.2s ease;
 }
 
 /* --- SIDE PANEL (LEFT) --- */
 .side {
-  background: color-mix(in srgb, var(--surface) 20%, transparent);
-  border-right: 1px solid var(--line);
+  background: linear-gradient(to right, var(--bg) 35%, color-mix(in srgb, var(--bg) 35%, transparent) 75%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -51,87 +52,6 @@ body {
   position: relative;
   overflow: hidden;
   z-index: 1;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Hologram Photo Scanner */
-.photo-stack {
-  position: relative;
-  width: 100%;
-  height: 240px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 24px 0;
-  z-index: 2;
-}
-.photo-card {
-  position: absolute;
-  width: 150px;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  border: 1px solid var(--line-2);
-  padding: 8px 8px 16px;
-  box-shadow: var(--shadow);
-  border-radius: var(--r-md);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  overflow: hidden;
-}
-.photo-card img {
-  width: 100%;
-  aspect-ratio: 1/1;
-  object-fit: cover;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line-2);
-}
-.photo-card .photo-label {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--ink-2);
-  text-align: center;
-  margin-top: 8px;
-}
-.card-avatar {
-  transform: rotate(-6deg) translateX(-42px);
-  z-index: 2;
-}
-.card-grad {
-  transform: rotate(6deg) translateX(42px);
-  z-index: 1;
-}
-.photo-stack:hover .card-avatar {
-  transform: rotate(-3deg) translateX(-50px) translateY(-5px);
-  z-index: 3;
-}
-.photo-stack:hover .card-grad {
-  transform: rotate(3deg) translateX(50px) translateY(-5px);
-  z-index: 3;
-}
-
-/* Photo scanning light line */
-.photo-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  animation: hologram-scan 3s linear infinite;
-  z-index: 5;
-}
-.photo-card.card-grad::before {
-  background: linear-gradient(90deg, transparent, var(--warn), transparent);
-  animation-delay: 1.5s;
-}
-@keyframes hologram-scan {
-  0% { top: 0%; opacity: 0; }
-  5% { opacity: 1; }
-  95% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
 }
 
 .side .quote {
@@ -398,17 +318,7 @@ body {
 <div class="side">
   <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
   
-  <!-- Polaroid Photo Stack with Hologram lines -->
-  <div class="photo-stack">
-    <div class="photo-card card-avatar">
-      <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.style.display='none'">
-      <div class="photo-label">Thầy Thế Vinh</div>
-    </div>
-    <div class="photo-card card-grad">
-      <img src="anh-cu-nhan.jpg" alt="Cử nhân Sư phạm Toán" onerror="this.style.display='none'">
-      <div class="photo-label">Cử nhân Sư phạm</div>
-    </div>
-  </div>
+
 
   <div>
     <p class="quote">"Toán không phải là nhớ công thức. Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
@@ -573,13 +483,13 @@ function draw() {
     var col = columns[i];
     var sym = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
     
-    // Faint trails
-    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.16)' : 'rgba(37, 99, 235, 0.13)';
+    // Faint trails (much softer to avoid eye strain)
+    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.05)' : 'rgba(37, 99, 235, 0.04)';
     ctx.fillText(sym, col.x, col.y);
     
-    // Glowing active head of the rain column
+    // Glowing active head of the rain column (softer)
     if (Math.random() > 0.35) {
-      ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(37, 99, 235, 0.65)';
+      ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(37, 99, 235, 0.20)';
       ctx.fillText(sym, col.x, col.y);
     }
     
@@ -597,16 +507,16 @@ function draw() {
   angleX += (targetAngleX - angleX) * 0.05;
   angleY += (targetAngleY - angleY) * 0.05;
   
-  // Dynamic centering: Position it perfectly behind the .photo-stack container
-  var photoStackEl = document.querySelector('.photo-stack');
+  // Dynamic centering: Position it perfectly in the center of the .side panel
+  var sideEl = document.querySelector('.side');
   var centerX = canvas.width * 0.28;
   var centerY = canvas.height / 2;
-  if (photoStackEl) {
-    var rect = photoStackEl.getBoundingClientRect();
+  if (sideEl) {
+    var rect = sideEl.getBoundingClientRect();
     centerX = rect.left + rect.width / 2;
     centerY = rect.top + rect.height / 2;
   }
-  var zoom = Math.min(canvas.width, canvas.height) * 0.012;
+  var zoom = Math.min(canvas.width, canvas.height) * 0.016; // 33% larger zoom to make it prominent
   var focalLength = 300;
   
   // Project function
@@ -664,7 +574,7 @@ function draw() {
   
   var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
   
-  // Draw Lorenz Attractor Path 1 (Cyan/Blue)
+  // Draw Lorenz Attractor Path 1 (Cyan/Blue - Brighter)
   ctx.beginPath();
   var start = project(points1[0]);
   ctx.moveTo(start.x, start.y);
@@ -672,13 +582,13 @@ function draw() {
     var pt = project(points1[i]);
     ctx.lineTo(pt.x, pt.y);
   }
-  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.65)' : 'rgba(37, 99, 235, 0.5)';
-  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.85)' : 'rgba(37, 99, 235, 0.7)';
+  ctx.lineWidth = 1.8;
   ctx.shadowBlur = themeIsDark ? 8 : 2;
   ctx.shadowColor = themeIsDark ? '#00f2fe' : accentColor;
   ctx.stroke();
   
-  // Draw Lorenz Attractor Path 2 (Divergent Path - Yellow/Violet)
+  // Draw Lorenz Attractor Path 2 (Divergent Path - Yellow/Violet - Brighter)
   ctx.beginPath();
   var start2 = project(points2[0]);
   ctx.moveTo(start2.x, start2.y);
@@ -686,8 +596,8 @@ function draw() {
     var pt = project(points2[i]);
     ctx.lineTo(pt.x, pt.y);
   }
-  ctx.strokeStyle = themeIsDark ? 'rgba(245, 158, 11, 0.45)' : 'rgba(139, 92, 246, 0.38)';
-  ctx.lineWidth = 1.3;
+  ctx.strokeStyle = themeIsDark ? 'rgba(245, 158, 11, 0.65)' : 'rgba(139, 92, 246, 0.55)';
+  ctx.lineWidth = 1.4;
   ctx.shadowColor = themeIsDark ? '#fbbf24' : '#8b5cf6';
   ctx.stroke();
   

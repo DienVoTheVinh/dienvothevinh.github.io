@@ -396,6 +396,37 @@
   .vcl-due.today { color:var(--accent); }
   .vcl-due.upcoming { color:#4A6FA5; }
   .vcl-empty { text-align:center; padding:24px; color:var(--ink-3); font-size:.95rem; }
+
+  /* ===== LỊCH TUẦN KIỂU GOOGLE CALENDAR ===== */
+  .gcal { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); overflow:hidden; }
+  .gcal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .gcal-title { font-size:1.05rem; font-weight:800; color:var(--ink); }
+  .gcal-nav { display:flex; gap:6px; align-items:center; }
+  .gcal-nav button { height:34px; min-width:34px; border-radius:99px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-size:1rem; color:var(--ink); display:grid; place-items:center; transition:all .15s; }
+  .gcal-nav button:hover { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  .gcal-nav .gcal-today { padding:0 14px; font-weight:700; font-size:.85rem; }
+  .gcal-scroll { max-height:600px; overflow:auto; }
+  .gcal-days { display:grid; grid-template-columns:54px repeat(7,minmax(82px,1fr)); border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface); z-index:6; }
+  .gcal-dh { text-align:center; padding:8px 2px; border-left:1px solid var(--line); }
+  .gcal-dh:first-child { border-left:none; }
+  .gcal-dh .dn { font-size:.68rem; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px; }
+  .gcal-dh .dd { font-size:1.05rem; font-weight:800; margin-top:3px; color:var(--ink); }
+  .gcal-dh.today .dd { background:var(--accent); color:#fff; width:30px; height:30px; line-height:30px; border-radius:50%; margin:3px auto 0; }
+  .gcal-grid { display:grid; grid-template-columns:54px repeat(7,minmax(82px,1fr)); }
+  .gcal-hours { display:flex; flex-direction:column; }
+  .gcal-hour-label { height:48px; font-size:.66rem; color:var(--ink-3); text-align:right; padding-right:6px; box-sizing:border-box; }
+  .gcal-col { position:relative; border-left:1px solid var(--line); }
+  .gcal-col.today-col { background:var(--accent-soft); }
+  .gcal-hcell { height:48px; border-bottom:1px solid var(--line-2,#eef0f3); box-sizing:border-box; }
+  .gcal-ev { position:absolute; left:3px; right:3px; border-radius:7px; padding:4px 7px; font-size:.72rem; line-height:1.2; overflow:hidden; color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.18); }
+  .gcal-ev b { font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gcal-ev .evt { opacity:.92; font-size:.66rem; }
+  .gcal-ev.online { background:linear-gradient(135deg,#4A6FA5,#3E6090); }
+  .gcal-ev.offline { background:linear-gradient(135deg,#3E8E7E,#2f6f62); }
+  .gcal-ev.exam { background:linear-gradient(135deg,#B5483A,#8f3327); }
+  .gcal-now { position:absolute; left:0; right:0; height:2px; background:#e74c3c; z-index:5; }
+  .gcal-now::before { content:''; position:absolute; left:-3px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e74c3c; }
+  .gcal-empty { padding:30px; text-align:center; color:var(--ink-3); font-size:.9rem; }
   </style>
 
   <!-- VIỆC CẦN LÀM HÔM NAY (học sinh) -->
@@ -440,30 +471,9 @@
       </div>
     </div>
     
-    <!-- CỘT PHẢI: LỊCH THÁNG & DANH SÁCH SỰ KIỆN TRONG NGÀY -->
+    <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
     <div class="right-panel">
-      <!-- Calendar Container -->
-      <div class="calendar-card">
-        <div class="calendar-header">
-          <h3 id="lblCalMonthYear">Tháng 06, 2026</h3>
-          <div class="calendar-nav">
-            <button onclick="prevMonth()" aria-label="Tháng trước">‹</button>
-            <button onclick="nextMonth()" aria-label="Tháng sau">›</button>
-          </div>
-        </div>
-        
-        <div class="calendar-grid" id="calGrid">
-          <!-- Render động -->
-        </div>
-      </div>
-      
-      <!-- Selected Day Events List -->
-      <div class="day-events-card">
-        <div class="day-events-title">⚡ Sự kiện trong ngày <span style="font-weight:normal; font-size:0.85rem; color:var(--ink-3); margin-left:6px;" id="lblSelectedDateDetail">14/06/2026</span></div>
-        <div class="event-list-box" id="dsSuKienNgay">
-          <!-- Render động -->
-        </div>
-      </div>
+      <div id="weekCal" class="gcal"></div>
     </div>
   </div>
 </div>
@@ -598,10 +608,8 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     await taiViecCanLam();
   }
 
-  // Khởi dựng Lịch tháng & Đếm ngược
-  capNhatSuKienThang();
-  veLichThangGrid();
-  chonNgayLich(selectedYear, selectedMonth, selectedDay);
+  // Khởi dựng Lịch tuần & Đếm ngược
+  veLichTuan();
   khoiDongCountdown();
 })();
 
@@ -1053,6 +1061,101 @@ function chonNgayLich(nam, thang, ngay) {
   }).join('');
 }
 
+// ===== LỊCH TUẦN KIỂU GOOGLE CALENDAR =====
+var tuanOffset = 0;
+var GCAL_GIO_DAU = 6, GCAL_GIO_CUOI = 22, GCAL_HH = 48;
+
+function gcalThu2(offset) {
+  var d = new Date(); d.setHours(0, 0, 0, 0);
+  var js = d.getDay();
+  var toMon = (js === 0 ? -6 : 1 - js);
+  d.setDate(d.getDate() + toMon + offset * 7);
+  return d;
+}
+function gcalKey(dt) {
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+function gcalToMin(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
+
+function gcalEventsForDay(dt) {
+  var jsDay = dt.getDay(); var wd = jsDay === 0 ? 7 : jsDay; var key = gcalKey(dt); var arr = [];
+  (tatCaSchedules || []).forEach(function (s) {
+    var match = s.recurrence === 'once' ? (s.date === key) : (s.weekday === wd);
+    if (!match || !s.start_time || !s.end_time) return;
+    arr.push({
+      start: s.start_time, end: s.end_time,
+      title: (s.classes ? s.classes.name : 'Lớp học'),
+      cls: (s.mode === 'online' ? 'online' : 'offline')
+    });
+  });
+  (tatCaExams || []).forEach(function (e) {
+    if (!e.opens_at) return; var od = new Date(e.opens_at);
+    if (gcalKey(od) !== key) return;
+    var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
+    var endD = e.closes_at ? new Date(e.closes_at) : new Date(od.getTime() + (e.duration_minutes || 45) * 60000);
+    var et = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0') + ':00';
+    arr.push({ start: st, end: et, title: '📝 ' + e.title, cls: 'exam' });
+  });
+  return arr;
+}
+
+function veLichTuan() {
+  var host = $('weekCal'); if (!host) return;
+  var TEN = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  var mon = gcalThu2(tuanOffset);
+  var days = []; for (var i = 0; i < 7; i++) { var dd = new Date(mon); dd.setDate(mon.getDate() + i); days.push(dd); }
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var d0 = days[0], d6 = days[6];
+  var title = d0.getDate() + '/' + (d0.getMonth() + 1) + ' – ' + d6.getDate() + '/' + (d6.getMonth() + 1) + ', ' + d6.getFullYear();
+
+  var head = '<div class="gcal-head"><div class="gcal-title">📅 Tuần ' + title + '</div>' +
+    '<div class="gcal-nav"><button onclick="prevTuan()" aria-label="Tuần trước">‹</button>' +
+    '<button class="gcal-today" onclick="tuanNay()">Hôm nay</button>' +
+    '<button onclick="nextTuan()" aria-label="Tuần sau">›</button></div></div>';
+
+  var dh = '<div class="gcal-days"><div class="gcal-dh"></div>';
+  days.forEach(function (dt, i) {
+    var isToday = dt.getTime() === today.getTime();
+    dh += '<div class="gcal-dh' + (isToday ? ' today' : '') + '"><div class="dn">' + TEN[i] + '</div><div class="dd">' + dt.getDate() + '</div></div>';
+  });
+  dh += '</div>';
+
+  var hours = '<div class="gcal-hours">';
+  for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) hours += '<div class="gcal-hour-label">' + (h < 10 ? '0' + h : h) + ':00</div>';
+  hours += '</div>';
+
+  var now = new Date();
+  var nowMin = now.getHours() * 60 + now.getMinutes();
+  var cols = '';
+  days.forEach(function (dt) {
+    var isToday = dt.getTime() === today.getTime();
+    var cells = '';
+    for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
+    var evHtml = '';
+    gcalEventsForDay(dt).forEach(function (ev) {
+      var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
+      if (eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60) return;
+      var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
+      var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
+      evHtml += '<div class="gcal-ev ' + ev.cls + '" style="top:' + top + 'px;height:' + height + 'px">' +
+        '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
+    });
+    var nowHtml = '';
+    if (isToday && nowMin >= GCAL_GIO_DAU * 60 && nowMin <= GCAL_GIO_CUOI * 60) {
+      nowHtml = '<div class="gcal-now" style="top:' + (((nowMin - GCAL_GIO_DAU * 60) / 60) * GCAL_HH) + 'px"></div>';
+    }
+    cols += '<div class="gcal-col' + (isToday ? ' today-col' : '') + '">' + cells + evHtml + nowHtml + '</div>';
+  });
+
+  host.innerHTML = head + '<div class="gcal-scroll">' + dh.replace('gcal-days', 'gcal-days') + '<div class="gcal-grid">' + hours + cols + '</div></div>';
+  // cuộn tới ~7h hoặc giờ hiện tại
+  var sc = host.querySelector('.gcal-scroll');
+  if (sc) sc.scrollTop = Math.max(0, (Math.max(GCAL_GIO_DAU, 7) - GCAL_GIO_DAU) * GCAL_HH - 8);
+}
+function prevTuan() { tuanOffset--; veLichTuan(); }
+function nextTuan() { tuanOffset++; veLichTuan(); }
+function tuanNay() { tuanOffset = 0; veLichTuan(); }
+
 // ----- KHỞI DỰNG VÀ CHẠY ĐỒNG HỒ ĐẾM NGƯỢC -----
 function khoiDongCountdown() {
   timSuKienGanNhat();
@@ -1165,9 +1268,7 @@ function napLichDemo() {
     { title: 'Kiểm tra Giữa kỳ Toán hình học', opens_at: opensAtStr, duration_minutes: 45 }
   ];
   
-  capNhatSuKienThang();
-  veLichThangGrid();
-  chonNgayLich(selectedYear, selectedMonth, selectedDay);
+  veLichTuan();
   khoiDongCountdown();
 }
 

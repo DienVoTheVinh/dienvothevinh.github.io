@@ -85,6 +85,10 @@ function apdungMauAccent(el, color, isDark) {
       root.style.setProperty('--glass-blur-radius', savedBlur + 'px');
     }
     
+    // Canvas Opacity (Background dynamic effects)
+    var savedCanvasOpacity = localStorage.getItem('vm-canvas-opacity') || '0.25';
+    root.style.setProperty('--canvas-opacity', savedCanvasOpacity);
+    
     // 3. Accent Color
     var savedColor = localStorage.getItem('vm-accent') || 'blue';
     apdungMauAccent(root, savedColor, savedTheme === 'dark');
@@ -418,6 +422,7 @@ function khoiTaoControlCenter() {
   var isDark = currentTheme === 'dark';
   var currentTrans = localStorage.getItem('vm-transparency') || (isDark ? '0.6' : '0.45');
   var currentBlur = localStorage.getItem('vm-blur') || '20';
+  var currentCanvasOpacity = localStorage.getItem('vm-canvas-opacity') || '0.25';
   var currentAccent = localStorage.getItem('vm-accent') || 'blue';
   
   panel.innerHTML = 
@@ -455,7 +460,7 @@ function khoiTaoControlCenter() {
       '</button>' +
     '</div>' +
     
-    '<!-- Transparency (Opacity) slider -->' +
+    // Transparency (Opacity) slider
     '<div class="cc-control-row">' +
       '<div class="cc-control-label">' +
         '<span>Trong suốt (Liquid Glass)</span>' +
@@ -466,7 +471,18 @@ function khoiTaoControlCenter() {
       '</div>' +
     '</div>' +
     
-    '<!-- Blur slider -->' +
+    // Canvas Background Effect Opacity slider
+    '<div class="cc-control-row">' +
+      '<div class="cc-control-label">' +
+        '<span>Độ rõ hiệu ứng nền (Effect)</span>' +
+        '<span id="lblCanvasOpacity">' + Math.round(currentCanvasOpacity * 100) + '%</span>' +
+      '</div>' +
+      '<div class="cc-slider-wrap">' +
+        '<input type="range" min="0.05" max="0.8" step="0.05" value="' + currentCanvasOpacity + '" class="cc-slider" id="sldCanvasOpacity">' +
+      '</div>' +
+    '</div>' +
+    
+    // Blur slider
     '<div class="cc-control-row">' +
       '<div class="cc-control-label">' +
         '<span>Độ mờ gương (Blur)</span>' +
@@ -559,6 +575,16 @@ function khoiTaoControlCenter() {
     lblOpacity.textContent = Math.round(val * 100) + '%';
     document.documentElement.style.setProperty('--glass-opacity', val);
     localStorage.setItem('vm-transparency', val);
+  });
+  
+  // Slider Canvas Opacity
+  var sldCanvasOpacity = $('sldCanvasOpacity');
+  var lblCanvasOpacity = $('lblCanvasOpacity');
+  sldCanvasOpacity.addEventListener('input', function() {
+    var val = sldCanvasOpacity.value;
+    lblCanvasOpacity.textContent = Math.round(val * 100) + '%';
+    document.documentElement.style.setProperty('--canvas-opacity', val);
+    localStorage.setItem('vm-canvas-opacity', val);
   });
   
   // Slider Blur
