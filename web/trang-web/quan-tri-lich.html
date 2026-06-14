@@ -90,7 +90,7 @@
           <option value="weekly">🔄 Hàng tuần</option><option value="biweekly">🔄 2 tuần/lần</option>
         </select></div>
         <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
-        <button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button>
+        <div id="schBtnContainer"><button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button></div>
       </div>
     </div>
 
@@ -152,6 +152,8 @@
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
 var dsLop = [];
 var hennDem = null;
+var dsLich = [];
+var lichDangSuaId = null;
 
 (async function () {
   if (!daKetNoi()) return;
@@ -219,9 +221,10 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, classes(name)')
+    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, class_id, classes(name)')
     .order('weekday').order('start_time');
-  var ds = r.data || [];
+  dsLich = r.data || [];
+  var ds = dsLich;
   $('bangLich').innerHTML = ds.length ? ds.map(function (s) {
     var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
     return '<tr>' +
@@ -231,7 +234,10 @@ async function taiLich() {
       '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
       '<td style="color:var(--ink-2)">' + (s.note || '') + '</td>' +
       '<td><button class="btn btn-ghost btn-sm" onclick="doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + (s.visible ? '👁 Hiện' : '🚫 Ẩn') + '</button></td>' +
-      '<td><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaLich(\'' + s.id + '\')">Xoá</button></td>' +
+      '<td>' +
+        '<button class="btn btn-ghost btn-sm" style="color:var(--accent); margin-right:8px" onclick="suaLich(\'' + s.id + '\')">Sửa</button>' +
+        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaLich(\'' + s.id + '\')">Xoá</button>' +
+      '</td>' +
       '</tr>';
   }).join('') : '<tr><td colspan="7" style="color:var(--ink-3)">Chưa có lịch nào.</td></tr>';
 }
@@ -292,6 +298,90 @@ async function themLich() {
     }
   });
 
+  taiLich();
+}
+
+function suaLich(id) {
+  var s = dsLich.find(function (item) { return item.id === id; });
+  if (!s) return;
+  lichDangSuaId = s.id;
+
+  $('schLop').value = s.class_id;
+  $('schMode').value = s.mode;
+  $('schRecurrence').value = s.recurrence || 'weekly';
+  $('schNote').value = s.note || '';
+  $('schTu').value = s.start_time.slice(0, 5);
+  $('schDen').value = s.end_time.slice(0, 5);
+
+  // Set active weekday button (single day for editing)
+  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+    if (parseInt(btn.getAttribute('data-val')) === s.weekday) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Switch button to Update mode
+  $('schBtnContainer').innerHTML = 
+    '<button class="btn btn-primary" onclick="luuSuaLich()">💾 Lưu thay đổi</button>' +
+    '<button class="btn btn-secondary" style="margin-left:8px" onclick="huySuaLich()">Hủy</button>';
+}
+
+function huySuaLich() {
+  lichDangSuaId = null;
+  $('schBtnContainer').innerHTML = '<button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button>';
+  
+  // Reset form inputs
+  $('schNote').value = '';
+  $('schTu').value = '19:30';
+  $('schDen').value = '21:30';
+  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+    if (btn.getAttribute('data-val') === '1') {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+async function luuSuaLich() {
+  if (!lichDangSuaId) return;
+  var classId = $('schLop').value;
+  var mode = $('schMode').value;
+  var rec = $('schRecurrence').value;
+  
+  var locationValue = null;
+  if (mode === 'online') {
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+    var meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
+    if (!meetLink) {
+      var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+      meetLink = lk.data ? lk.data.value : '';
+    }
+    locationValue = meetLink || 'Google Meet';
+  }
+
+  var activeBtn = document.querySelector('.thu-btn.active');
+  var weekday = activeBtn ? parseInt(activeBtn.getAttribute('data-val')) : 1;
+
+  var r = await sb.from('schedules').update({
+    class_id: classId,
+    weekday: weekday,
+    start_time: $('schTu').value,
+    end_time: $('schDen').value,
+    mode: mode,
+    location: locationValue,
+    recurrence: rec,
+    note: $('schNote').value.trim() || null
+  }).eq('id', lichDangSuaId);
+
+  if (r.error) {
+    alert('Lỗi cập nhật: ' + r.error.message);
+    return;
+  }
+
+  huySuaLich();
   taiLich();
 }
 
