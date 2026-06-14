@@ -674,72 +674,31 @@ function taiHtml2Canvas(callback) {
   document.head.appendChild(script);
 }
 
-// Tự động quét màn hình sử dụng API chia sẻ màn hình trình duyệt (getDisplayMedia) hoặc html2canvas làm fallback
+// Tự động quét màn hình sử dụng html2canvas (tự động ẩn ô chat khi chụp và phục hồi lại)
 async function layAnhChupManHinh() {
-  if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-    try {
-      var stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false
-      });
-      
-      var video = document.createElement('video');
-      video.srcObject = stream;
-      video.autoplay = true;
-      video.playsInline = true;
-      
-      return new Promise(function(resolve, reject) {
-        video.onloadedmetadata = function() {
-          setTimeout(function() {
-            var canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Tắt biểu tượng đang quay chụp của trình duyệt
-            stream.getTracks().forEach(function(t) { t.stop(); });
-            
-            try {
-              var imgData = canvas.toDataURL('image/jpeg', 0.75);
-              resolve(imgData);
-            } catch(e) {
-              reject(e);
-            }
-          }, 300);
-        };
-        video.onerror = function(e) {
-          stream.getTracks().forEach(function(t) { t.stop(); });
-          reject(e);
-        };
-      });
-    } catch(err) {
-      if (err.name === 'NotAllowedError') {
-        throw err;
-      }
-      console.warn("getDisplayMedia không thành công, chuyển sang html2canvas:", err);
-    }
-  }
-  
-  // html2canvas fallback
   return new Promise(function(resolve, reject) {
     taiHtml2Canvas(function() {
       var bubbleEl = document.getElementById('aiChatBubble');
       var boxEl = document.getElementById('aiChatBox');
       var ccEl = document.getElementById('controlCenterWrapper');
+      
+      // Lưu lại trạng thái hiển thị
       var oldBubbleDisplay = bubbleEl ? bubbleEl.style.display : '';
       var oldBoxDisplay = boxEl ? boxEl.style.display : '';
       
+      // Ẩn lập tức các thành phần giao diện của chat để tránh lọt vào ảnh chụp
       if (bubbleEl) bubbleEl.style.setProperty('display', 'none', 'important');
       if (boxEl) boxEl.style.setProperty('display', 'none', 'important');
       if (ccEl) ccEl.style.setProperty('display', 'none', 'important');
       
+      // Chờ một chút để trình duyệt cập nhật lại giao diện trước khi chụp
       setTimeout(function() {
         html2canvas(document.body, {
           scale: 0.8,
           logging: false,
           useCORS: true
         }).then(function(canvas) {
+          // Phục hồi lại hiển thị ngay sau khi chụp xong
           if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
           if (boxEl) boxEl.style.display = oldBoxDisplay;
           if (ccEl) ccEl.style.display = '';
@@ -750,13 +709,14 @@ async function layAnhChupManHinh() {
           } catch(e) {
             reject(e);
           }
-        }).catch(function(e) {
+        }).catch(function(err) {
+          // Phục hồi lại hiển thị kể cả khi lỗi
           if (bubbleEl) bubbleEl.style.display = oldBubbleDisplay;
           if (boxEl) boxEl.style.display = oldBoxDisplay;
           if (ccEl) ccEl.style.display = '';
-          reject(e);
+          reject(err);
         });
-      }, 150);
+      }, 100);
     });
   });
 }
