@@ -6,8 +6,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.0">
-<link rel="stylesheet" href="vinhmath.css?v=3.0">
+<link rel="stylesheet" href="tokens.css?v=3.1">
+<link rel="stylesheet" href="vinhmath.css?v=3.1">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -20,6 +20,7 @@
   grid-template-columns: 360px 1fr;
   gap: 24px;
   margin-top: 12px;
+  min-width: 0;
 }
 @media (max-width: 960px) {
   .dashboard-grid {
@@ -134,6 +135,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 .calendar-card {
   background: var(--surface);
@@ -398,14 +400,14 @@
   .vcl-empty { text-align:center; padding:24px; color:var(--ink-3); font-size:.95rem; }
 
   /* ===== LỊCH TUẦN KIỂU GOOGLE CALENDAR ===== */
-  .gcal { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); overflow:hidden; }
+  .gcal { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); overflow:hidden; width:100%; max-width:100%; box-sizing:border-box; }
   .gcal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   .gcal-title { font-size:1.05rem; font-weight:800; color:var(--ink); }
   .gcal-nav { display:flex; gap:6px; align-items:center; }
   .gcal-nav button { height:34px; min-width:34px; border-radius:99px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-size:1rem; color:var(--ink); display:grid; place-items:center; transition:all .15s; }
   .gcal-nav button:hover { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
   .gcal-nav .gcal-today { padding:0 14px; font-weight:700; font-size:.85rem; }
-  .gcal-scroll { max-height:600px; overflow:auto; }
+  .gcal-scroll { max-height:600px; overflow:auto; width:100%; }
   .gcal-days { display:grid; grid-template-columns:54px repeat(7,minmax(82px,1fr)); border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface); z-index:6; }
   .gcal-dh { text-align:center; padding:8px 2px; border-left:1px solid var(--line); }
   .gcal-dh:first-child { border-left:none; }
@@ -587,7 +589,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=3.0"></script>
+<script src="vinhmath.js?v=3.1"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
