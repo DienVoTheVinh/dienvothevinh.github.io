@@ -6,8 +6,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=2.6">
-<link rel="stylesheet" href="vinhmath.css?v=2.6">
+<link rel="stylesheet" href="tokens.css?v=2.8">
+<link rel="stylesheet" href="vinhmath.css?v=2.8">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -540,17 +540,6 @@
   }
   </style>
 
-  <section class="blog-sec" id="blogTrangChuSec" style="display:none">
-    <div class="blog-sec-head">
-      <h2>📝 Blog & Chia sẻ từ Thầy Vinh</h2>
-      <a class="btn btn-secondary btn-sm" id="btnVietBlogTrangChu" href="viet-blog.html" style="display:none">✍️ Viết blog</a>
-    </div>
-    <div class="blog-slider-container">
-      <div id="blogTrangChu" class="blog-slider">
-        <div class="blog-empty2">Đang tải blog...</div>
-      </div>
-    </div>
-  </section>
 
   <!-- DASHBOARD CHÍNH: SMART CALENDAR -->
   <div class="dashboard-grid">
@@ -581,11 +570,23 @@
       <div id="weekCal" class="gcal"></div>
     </div>
   </div>
+
+  <section class="blog-sec" id="blogTrangChuSec" style="display:none; margin-top: 24px;">
+    <div class="blog-sec-head">
+      <h2>📝 Blog & Chia sẻ từ Thầy Vinh</h2>
+      <a class="btn btn-secondary btn-sm" id="btnVietBlogTrangChu" href="viet-blog.html" style="display:none">✍️ Viết blog</a>
+    </div>
+    <div class="blog-slider-container">
+      <div id="blogTrangChu" class="blog-slider">
+        <div class="blog-empty2">Đang tải blog...</div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.6"></script>
+<script src="vinhmath.js?v=2.8"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>

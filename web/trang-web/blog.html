@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=2.6">
+<link rel="stylesheet" href="vinhmath.css?v=2.8">
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
@@ -34,6 +34,9 @@
 .article blockquote { border-left:4px solid var(--accent); background:var(--surface-2); margin:0 0 1.15em; padding:10px 18px; border-radius:0 var(--r-md,10px) var(--r-md,10px) 0; color:var(--ink-2); }
 .article hr { border:none; border-top:1px solid var(--line); margin:1.8em 0; }
 .article img { max-width:100%; border-radius:var(--r-md,10px); }
+.article figure { margin:1.6em 0; text-align:center; }
+.article figure img { margin:0 auto; }
+.article figcaption { font-size:.85rem; color:var(--ink-3); margin-top:8px; font-style:italic; }
 .article mjx-container { overflow-x:auto; overflow-y:hidden; max-width:100%; }
 
 /* Like + comments */
@@ -56,6 +59,61 @@
 .cmt-del:hover { color:var(--err,#e74c3c); }
 .blog-empty { text-align:center; padding:80px 24px; color:var(--ink-3); }
 .btn-login-top { padding:8px 16px; border-radius:99px; background:var(--accent); color:#fff; font-weight:700; font-size:.88rem; text-decoration:none; }
+
+/* Blog Listing styles */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+.blog-list-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md, 12px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  color: var(--ink);
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+.blog-list-card:hover {
+  transform: translateY(-4px);
+  background: var(--surface-2);
+  box-shadow: 0 12px 28px rgba(31,38,135,0.08), 0 0 12px var(--accent-soft);
+  border-color: var(--line-2);
+}
+.blog-list-card .bl-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.blog-list-card .bl-excerpt {
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  flex-grow: 1;
+}
+.blog-list-card .bl-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+.blog-list-card .bl-auth {
+  font-weight: 700;
+  color: var(--ink-2);
+}
 </style>
 </head>
 <body>
@@ -80,7 +138,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.6"></script>
+<script src="vinhmath.js?v=2.8"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -96,6 +154,7 @@ function renderBlog(src){
 
   function inline(t){
     t = blogEsc(t);
+    t = t.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
     t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
     t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -108,6 +167,8 @@ function renderBlog(src){
   lines.forEach(function(ln){
     var t = ln.trim();
     if(t === ''){ flushPara(); closeLists(); return; }
+    var img = t.match(/^!\[([^\]]*)\]\((https?:[^)\s]+)\)$/);
+    if(img){ flushPara(); closeLists(); html += '<figure><img src="' + img[2] + '" alt="' + blogEsc(img[1]) + '" loading="lazy">' + (img[1] ? '<figcaption>' + blogEsc(img[1]) + '</figcaption>' : '') + '</figure>'; return; }
     var hm = t.match(/^(#{1,4})\s+(.*)$/);
     if(hm){ flushPara(); closeLists(); var lvl = hm[1].length; html += '<h' + lvl + '>' + inline(hm[2]) + '</h' + lvl + '>'; return; }
     if(/^(---|\*\*\*|___)$/.test(t)){ flushPara(); closeLists(); html += '<hr>'; return; }
@@ -159,7 +220,12 @@ var bUser = null, bProfile = null, bPostId = null, bPost = null;
     }
   }
 
-  if (!bPostId){ document.getElementById('blogContainer').innerHTML = '<div class="blog-empty">Không tìm thấy bài viết.</div>'; return; }
+  if (!bPostId) {
+    var btnBack = document.getElementById('btnBack');
+    if (btnBack) btnBack.style.display = 'none';
+    await taiDanhSachBlog();
+    return;
+  }
   await taiBaiViet();
 })();
 
@@ -267,6 +333,125 @@ async function xoaBinhLuan(id){
   var r = await sb.from('blog_comments').delete().eq('id', id);
   if (r.error){ alert('Lỗi: ' + r.error.message); return; }
   await taiBinhLuan();
+}
+
+/* --- CHỨC NĂNG DANH SÁCH BLOG --- */
+var viewAsStudent = localStorage.getItem('vm-blog-student-view') === 'true';
+
+async function taiDanhSachBlog() {
+  var box = document.getElementById('blogContainer');
+  if (!daKetNoi()) { box.innerHTML = '<div class="blog-empty">Web đang ở chế độ xem thử.</div>'; return; }
+  
+  box.innerHTML = '<div class="blog-empty">Đang tải danh sách bài viết…</div>';
+  
+  try {
+    var query = sb.from('blog_posts').select('id, title, excerpt, author_name, created_at, published');
+    
+    var laAdmin = bProfile && bProfile.role === 'admin';
+    if (!laAdmin || viewAsStudent) {
+      query = query.eq('published', true);
+    }
+    
+    var r = await query.order('created_at', { ascending: false });
+    var ds = r.data || [];
+    
+    var ids = ds.map(function(p) { return p.id; });
+    var likeMap = {}, cmtMap = {};
+    if (ids.length > 0) {
+      try {
+        var rl = await sb.from('blog_likes').select('post_id').in('post_id', ids);
+        (rl.data || []).forEach(function(x) {
+          likeMap[x.post_id] = (likeMap[x.post_id] || 0) + 1;
+        });
+      } catch(e) {}
+      try {
+        var rc = await sb.from('blog_comments').select('post_id').in('post_id', ids);
+        (rc.data || []).forEach(function(x) {
+          cmtMap[x.post_id] = (cmtMap[x.post_id] || 0) + 1;
+        });
+      } catch(e) {}
+    }
+    
+    var html = '';
+    if (laAdmin) {
+      if (viewAsStudent) {
+        html += '<div style="background:var(--warn-soft); border:1px dashed var(--warn); padding:12px 18px; border-radius:var(--r-md, 12px); display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; flex-wrap:wrap">' +
+          '<div style="font-size:0.92rem; color:var(--ink)">👁️ <b>Đang xem với tư cách Học sinh</b>: Ẩn bản nháp và các chức năng quản trị.</div>' +
+          '<button class="btn btn-secondary btn-sm" onclick="toggleStudentView()">🔙 Trở lại chế độ Thầy Vinh</button>' +
+        '</div>';
+      } else {
+        html += '<div style="background:var(--accent-soft); border:1px solid var(--accent); padding:12px 18px; border-radius:var(--r-md, 12px); display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; flex-wrap:wrap">' +
+          '<div style="font-size:0.92rem; color:var(--ink)">👑 <b>Chế độ quản trị viên</b>: Bạn có quyền viết và quản lý tất cả bài viết.</div>' +
+          '<div style="display:flex; gap:10px; align-items:center">' +
+            '<button class="btn btn-secondary btn-sm" onclick="toggleStudentView()">👁️ Xem với tư cách Học sinh</button>' +
+            '<a href="viet-blog.html" class="btn btn-primary btn-sm">✍️ Viết bài mới</a>' +
+          '</div>' +
+        '</div>';
+      }
+    }
+
+    html += '<h1 style="font-size:1.8rem; font-weight:800; margin-bottom:6px; color:var(--ink)">📚 Blog Toán học — VinhMath</h1>' +
+      '<p style="color:var(--ink-2); margin-bottom:28px; font-size:0.95rem">Nơi chia sẻ phương pháp học Toán tư duy, các chuyên đề nâng cao và sơ đồ học tập tối ưu.</p>';
+
+    if (!ds.length) {
+      html += '<div class="blog-empty">Chưa có bài viết nào được đăng tải.</div>';
+      box.innerHTML = html;
+      return;
+    }
+
+    html += '<div class="blog-grid">';
+    html += ds.map(function(p) {
+      var d = new Date(p.created_at).toLocaleDateString('vi-VN');
+      var isDraft = !p.published;
+      
+      var adminActionsHtml = '';
+      if (laAdmin && !viewAsStudent) {
+        adminActionsHtml = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
+          '<a href="viet-blog.html?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
+          '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + p.id + '\')">🗑️ Xoá</button>' +
+        '</div>';
+      }
+
+      return '<div class="blog-list-card" onclick="window.location.href=\'blog.html?id=' + p.id + '\'" style="cursor:pointer">' +
+        '<div>' +
+          (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
+          '<div class="bl-title">' + blogEsc(p.title) + '</div>' +
+          '<div class="bl-excerpt">' + blogEsc(p.excerpt || '') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="bl-meta">' +
+            '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Vinh') + '</span>' +
+            '<span>' + d + '</span>' +
+            '<span style="margin-left:auto">❤️ ' + (likeMap[p.id] || 0) + '</span>' +
+            '<span style="margin-left:8px">💬 ' + (cmtMap[p.id] || 0) + '</span>' +
+          '</div>' +
+          adminActionsHtml +
+        '</div>' +
+      '</div>';
+    }).join('');
+    html += '</div>';
+    box.innerHTML = html;
+  } catch (err) {
+    console.error("Lỗi tải danh sách blog:", err);
+    box.innerHTML = '<div class="blog-empty">Có lỗi xảy ra khi tải danh sách bài viết.</div>';
+  }
+}
+
+function toggleStudentView() {
+  viewAsStudent = !viewAsStudent;
+  localStorage.setItem('vm-blog-student-view', viewAsStudent ? 'true' : 'false');
+  taiDanhSachBlog();
+}
+
+async function xoaPost(event, id) {
+  event.stopPropagation();
+  if (!confirm('Bạn có chắc chắn muốn xoá bài viết này không?')) return;
+  var r = await sb.from('blog_posts').delete().eq('id', id);
+  if (r.error) {
+    alert('Lỗi khi xoá bài viết: ' + r.error.message);
+  } else {
+    taiDanhSachBlog();
+  }
 }
 </script>
 </body>

@@ -36,7 +36,7 @@ function toggleTheme() {
     }
   }
 
-  var activeColor = localStorage.getItem('vm-accent') || 'blue';
+  var activeColor = localStorage.getItem('vm-accent') || 'amber';
   apdungMauAccent(h, activeColor, newTheme === 'dark');
   
   try { localStorage.setItem('vm-theme', newTheme); } catch (e) {}
@@ -50,18 +50,18 @@ function apdungMauAccent(el, color, isDark) {
       violet: { accent: '#8b5cf6', grad: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', soft: 'rgba(139, 92, 246, 0.08)' },
       coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.08)' },
       green:  { accent: '#10b981', grad: 'linear-gradient(135deg, #34d399 0%, #059669 100%)', soft: 'rgba(16, 185, 129, 0.08)' },
-      amber:  { accent: '#f59e0b', grad: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', soft: 'rgba(245, 158, 11, 0.08)' }
+      amber:  { accent: '#b45309', grad: 'linear-gradient(135deg, #fbbf24 0%, #78350f 100%)', soft: 'rgba(180, 83, 9, 0.08)' }
     },
     dark: {
       blue:   { accent: '#2563eb', grad: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)', soft: 'rgba(37, 99, 235, 0.15)' },
       violet: { accent: '#c084fc', grad: 'linear-gradient(135deg, #e9d5ff 0%, #a855f7 100%)', soft: 'rgba(192, 132, 252, 0.12)' },
       coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.12)' },
       green:  { accent: '#34d399', grad: 'linear-gradient(135deg, #6ee7b7 0%, #10b981 100%)', soft: 'rgba(52, 211, 153, 0.12)' },
-      amber:  { accent: '#fbbf24', grad: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)', soft: 'rgba(251, 191, 36, 0.12)' }
+      amber:  { accent: '#d97706', grad: 'linear-gradient(135deg, #b45309 0%, #fbbf24 100%)', soft: 'rgba(217, 119, 6, 0.15)' }
     }
   };
   var themeSet = isDark ? map.dark : map.light;
-  var target = themeSet[color] || themeSet.blue;
+  var target = themeSet[color] || themeSet.amber;
   el.style.setProperty('--accent', target.accent);
   el.style.setProperty('--accent-gradient', target.grad);
   el.style.setProperty('--accent-soft', target.soft);
@@ -79,10 +79,14 @@ function apdungMauAccent(el, color, isDark) {
     var savedTrans = localStorage.getItem('vm-transparency');
     if (savedTrans !== null) {
       root.style.setProperty('--glass-opacity', savedTrans);
+    } else {
+      root.style.setProperty('--glass-opacity', savedTheme === 'dark' ? '0.3' : '0.2');
     }
     var savedBlur = localStorage.getItem('vm-blur');
     if (savedBlur !== null) {
       root.style.setProperty('--glass-blur-radius', savedBlur + 'px');
+    } else {
+      root.style.setProperty('--glass-blur-radius', '20px');
     }
     
     // Canvas Opacity (Background dynamic effects)
@@ -90,7 +94,7 @@ function apdungMauAccent(el, color, isDark) {
     root.style.setProperty('--canvas-opacity', savedCanvasOpacity);
     
     // 3. Accent Color
-    var savedColor = localStorage.getItem('vm-accent') || 'blue';
+    var savedColor = localStorage.getItem('vm-accent') || 'amber';
     apdungMauAccent(root, savedColor, savedTheme === 'dark');
   } catch (e) {}
 })();
@@ -420,10 +424,10 @@ function khoiTaoControlCenter() {
   
   var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
   var isDark = currentTheme === 'dark';
-  var currentTrans = localStorage.getItem('vm-transparency') || (isDark ? '0.6' : '0.45');
+  var currentTrans = localStorage.getItem('vm-transparency') || (isDark ? '0.3' : '0.2');
   var currentBlur = localStorage.getItem('vm-blur') || '20';
   var currentCanvasOpacity = localStorage.getItem('vm-canvas-opacity') || '0.25';
-  var currentAccent = localStorage.getItem('vm-accent') || 'blue';
+  var currentAccent = localStorage.getItem('vm-accent') || 'amber';
   
   panel.innerHTML = 
     '<!-- Widgets Grid -->' +
@@ -448,60 +452,68 @@ function khoiTaoControlCenter() {
       '</div>' +
     '</div>' +
     
-    '<!-- Theme switcher -->' +
-    '<div class="cc-theme-switcher">' +
-      '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">' +
-        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' +
-        'Sáng' +
-      '</button>' +
-      '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">' +
-        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>' +
-        'Tối' +
-      '</button>' +
+    '<!-- Locked settings message for non-admins -->' +
+    '<div id="ccLockedMsg" style="text-align:center; padding:12px; font-size:0.85rem; color:var(--ink-3); border-top:1px dashed var(--line); margin-top:6px">' +
+      '🎨 <i>Giao diện do Quản trị viên thiết lập hệ thống.</i>' +
     '</div>' +
     
-    // Transparency (Opacity) slider
-    '<div class="cc-control-row">' +
-      '<div class="cc-control-label">' +
-        '<span>Trong suốt (Liquid Glass)</span>' +
-        '<span id="lblOpacity">' + Math.round(currentTrans * 100) + '%</span>' +
+    '<!-- Admin theme customizations -->' +
+    '<div id="ccThemeControls" style="display:none; flex-direction:column; gap:14px; border-top:1px dashed var(--line); padding-top:12px; margin-top:6px">' +
+      '<!-- Theme switcher -->' +
+      '<div class="cc-theme-switcher">' +
+        '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' +
+          'Sáng' +
+        '</button>' +
+        '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>' +
+          'Tối' +
+        '</button>' +
       '</div>' +
-      '<div class="cc-slider-wrap">' +
-        '<input type="range" min="0.1" max="0.9" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
+      
+      // Opacity
+      '<div class="cc-control-row">' +
+        '<div class="cc-control-label">' +
+          '<span>Trong suốt (Liquid Glass)</span>' +
+          '<span id="lblOpacity">' + Math.round(currentTrans * 100) + '%</span>' +
+        '</div>' +
+        '<div class="cc-slider-wrap">' +
+          '<input type="range" min="0.1" max="0.9" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
+        '</div>' +
       '</div>' +
-    '</div>' +
-    
-    // Canvas Background Effect Opacity slider
-    '<div class="cc-control-row">' +
-      '<div class="cc-control-label">' +
-        '<span>Độ rõ hiệu ứng nền (Effect)</span>' +
-        '<span id="lblCanvasOpacity">' + Math.round(currentCanvasOpacity * 100) + '%</span>' +
+      
+      // Canvas
+      '<div class="cc-control-row">' +
+        '<div class="cc-control-label">' +
+          '<span>Độ rõ hiệu ứng nền (Effect)</span>' +
+          '<span id="lblCanvasOpacity">' + Math.round(currentCanvasOpacity * 100) + '%</span>' +
+        '</div>' +
+        '<div class="cc-slider-wrap">' +
+          '<input type="range" min="0.05" max="0.8" step="0.05" value="' + currentCanvasOpacity + '" class="cc-slider" id="sldCanvasOpacity">' +
+        '</div>' +
       '</div>' +
-      '<div class="cc-slider-wrap">' +
-        '<input type="range" min="0.05" max="0.8" step="0.05" value="' + currentCanvasOpacity + '" class="cc-slider" id="sldCanvasOpacity">' +
+      
+      // Blur
+      '<div class="cc-control-row">' +
+        '<div class="cc-control-label">' +
+          '<span>Độ mờ gương (Blur)</span>' +
+          '<span id="lblBlur">' + currentBlur + 'px</span>' +
+        '</div>' +
+        '<div class="cc-slider-wrap">' +
+          '<input type="range" min="0" max="40" step="1" value="' + currentBlur + '" class="cc-slider" id="sldBlur">' +
+        '</div>' +
       '</div>' +
-    '</div>' +
-    
-    // Blur slider
-    '<div class="cc-control-row">' +
-      '<div class="cc-control-label">' +
-        '<span>Độ mờ gương (Blur)</span>' +
-        '<span id="lblBlur">' + currentBlur + 'px</span>' +
-      '</div>' +
-      '<div class="cc-slider-wrap">' +
-        '<input type="range" min="0" max="40" step="1" value="' + currentBlur + '" class="cc-slider" id="sldBlur">' +
-      '</div>' +
-    '</div>' +
-    
-    '<!-- Accent Color picker -->' +
-    '<div class="cc-color-picker">' +
-      '<div class="cc-color-label">Màu chủ đề</div>' +
-      '<div class="cc-color-dots">' +
-        '<div class="cc-color-dot ' + (currentAccent === 'blue' ? 'active' : '') + '" style="background:#2563eb;" data-color="blue" title="Xanh dương"></div>' +
-        '<div class="cc-color-dot ' + (currentAccent === 'violet' ? 'active' : '') + '" style="background:#8b5cf6;" data-color="violet" title="Tím"></div>' +
-        '<div class="cc-color-dot ' + (currentAccent === 'coral' ? 'active' : '') + '" style="background:#ff5e62;" data-color="coral" title="Đỏ son"></div>' +
-        '<div class="cc-color-dot ' + (currentAccent === 'green' ? 'active' : '') + '" style="background:#10b981;" data-color="green" title="Xanh lá"></div>' +
-        '<div class="cc-color-dot ' + (currentAccent === 'amber' ? 'active' : '') + '" style="background:#f59e0b;" data-color="amber" title="Hổ phách"></div>' +
+      
+      // Accent Color
+      '<div class="cc-color-picker">' +
+        '<div class="cc-color-label">Màu chủ đề</div>' +
+        '<div class="cc-color-dots">' +
+          '<div class="cc-color-dot ' + (currentAccent === 'blue' ? 'active' : '') + '" data-color="blue" style="background:#2563eb;" title="Xanh dương"></div>' +
+          '<div class="cc-color-dot ' + (currentAccent === 'violet' ? 'active' : '') + '" data-color="violet" style="background:#8b5cf6;" title="Tím"></div>' +
+          '<div class="cc-color-dot ' + (currentAccent === 'coral' ? 'active' : '') + '" data-color="coral" style="background:#ff5e62;" title="Đỏ son"></div>' +
+          '<div class="cc-color-dot ' + (currentAccent === 'green' ? 'active' : '') + '" data-color="green" style="background:#10b981;" title="Xanh lá"></div>' +
+          '<div class="cc-color-dot ' + (currentAccent === 'amber' ? 'active' : '') + '" data-color="amber" style="background:#d97706;" title="Vàng đất"></div>' +
+        '</div>' +
       '</div>' +
     '</div>';
     
@@ -559,9 +571,14 @@ function khoiTaoControlCenter() {
     capNhatNutTheme();
     
     // Cập nhật màu accent theo theme
-    var activeColor = localStorage.getItem('vm-accent') || 'blue';
+    var activeColor = localStorage.getItem('vm-accent') || 'amber';
     apdungMauAccent(document.documentElement, activeColor, theme === 'dark');
     try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+    
+    // Chỉ lưu lên database nếu tài khoản là admin
+    if (window.VM_USER_ROLE === 'admin') {
+      luuCaiDatHeThong('theme_theme', theme);
+    }
   }
   
   btnLight.addEventListener('click', function() { setCCTheme('light'); });
@@ -576,6 +593,11 @@ function khoiTaoControlCenter() {
     document.documentElement.style.setProperty('--glass-opacity', val);
     localStorage.setItem('vm-transparency', val);
   });
+  sldOpacity.addEventListener('change', function() {
+    if (window.VM_USER_ROLE === 'admin') {
+      luuCaiDatHeThong('theme_transparency', sldOpacity.value);
+    }
+  });
   
   // Slider Canvas Opacity
   var sldCanvasOpacity = $('sldCanvasOpacity');
@@ -586,6 +608,11 @@ function khoiTaoControlCenter() {
     document.documentElement.style.setProperty('--canvas-opacity', val);
     localStorage.setItem('vm-canvas-opacity', val);
   });
+  sldCanvasOpacity.addEventListener('change', function() {
+    if (window.VM_USER_ROLE === 'admin') {
+      luuCaiDatHeThong('theme_canvas_opacity', sldCanvasOpacity.value);
+    }
+  });
   
   // Slider Blur
   var sldBlur = $('sldBlur');
@@ -595,6 +622,11 @@ function khoiTaoControlCenter() {
     lblBlur.textContent = val + 'px';
     document.documentElement.style.setProperty('--glass-blur-radius', val + 'px');
     localStorage.setItem('vm-blur', val);
+  });
+  sldBlur.addEventListener('change', function() {
+    if (window.VM_USER_ROLE === 'admin') {
+      luuCaiDatHeThong('theme_blur', sldBlur.value);
+    }
   });
   
   // Color dots selection
@@ -610,6 +642,10 @@ function khoiTaoControlCenter() {
       var isD = document.documentElement.getAttribute('data-theme') === 'dark';
       apdungMauAccent(document.documentElement, color, isD);
       try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+      
+      if (window.VM_USER_ROLE === 'admin') {
+        luuCaiDatHeThong('theme_accent', color);
+      }
     });
   });
 }
@@ -1161,46 +1197,251 @@ function themAdminControlsVaoCC() {
 }
 
 // Khởi chạy các dịch vụ khi DOM sẵn sàng
-if (document.readyState !== 'loading') {
+// ---------- 8. QUẢN LÝ GIAO DIỆN HỆ THỐNG TOÀN CỤC ----------
+async function luuCaiDatHeThong(key, value) {
+  if (!daKetNoi()) return;
+  try {
+    var r = await sb.from('app_settings').upsert({ key: key, value: String(value) });
+    if (r.error) throw r.error;
+  } catch (err) {
+    console.error("Lỗi lưu cài đặt hệ thống:", err);
+  }
+}
+
+async function taiCaiDatHeThongGlobal() {
+  if (!daKetNoi()) return;
+  try {
+    var r = await sb.from('app_settings').select('key, value');
+    if (r.data) {
+      var dbTheme = r.data.find(function(x) { return x.key === 'theme_theme'; });
+      var dbTrans = r.data.find(function(x) { return x.key === 'theme_transparency'; });
+      var dbBlur = r.data.find(function(x) { return x.key === 'theme_blur'; });
+      var dbCanvas = r.data.find(function(x) { return x.key === 'theme_canvas_opacity'; });
+      var dbAccent = r.data.find(function(x) { return x.key === 'theme_accent'; });
+      
+      var root = document.documentElement;
+      
+      var theme = dbTheme ? dbTheme.value : 'dark';
+      var transparency = dbTrans ? dbTrans.value : (theme === 'dark' ? '0.3' : '0.2');
+      var blur = dbBlur ? dbBlur.value : '20';
+      var canvasOpacity = dbCanvas ? dbCanvas.value : '0.25';
+      var accent = dbAccent ? dbAccent.value : 'amber';
+      
+      // Áp dụng styles hệ thống
+      root.setAttribute('data-theme', theme);
+      root.style.setProperty('--glass-opacity', transparency);
+      root.style.setProperty('--glass-blur-radius', blur + 'px');
+      root.style.setProperty('--canvas-opacity', canvasOpacity);
+      apdungMauAccent(root, accent, theme === 'dark');
+      
+      // Đồng bộ vào localStorage để load nhanh cho lần sau
+      localStorage.setItem('vm-theme', theme);
+      localStorage.setItem('vm-transparency', transparency);
+      localStorage.setItem('vm-blur', blur);
+      localStorage.setItem('vm-canvas-opacity', canvasOpacity);
+      localStorage.setItem('vm-accent', accent);
+      
+      // Đồng bộ các controls UI ở CC
+      capNhatCCUI(theme, transparency, blur, canvasOpacity, accent);
+    }
+  } catch (e) {
+    console.error("Lỗi taiCaiDatHeThongGlobal:", e);
+  }
+}
+
+function capNhatCCUI(theme, transparency, blur, canvasOpacity, accent) {
+  var ccLight = document.getElementById('ccBtnLight');
+  var ccDark = document.getElementById('ccBtnDark');
+  if (ccLight && ccDark) {
+    if (theme === 'dark') {
+      ccDark.classList.add('active');
+      ccLight.classList.remove('active');
+    } else {
+      ccLight.classList.add('active');
+      ccDark.classList.remove('active');
+    }
+  }
+  
+  var sldOpacity = document.getElementById('sldOpacity');
+  var lblOpacity = document.getElementById('lblOpacity');
+  if (sldOpacity) {
+    sldOpacity.value = transparency;
+    if (lblOpacity) lblOpacity.textContent = Math.round(transparency * 100) + '%';
+  }
+  
+  var sldCanvasOpacity = document.getElementById('sldCanvasOpacity');
+  var lblCanvasOpacity = document.getElementById('lblCanvasOpacity');
+  if (sldCanvasOpacity) {
+    sldCanvasOpacity.value = canvasOpacity;
+    if (lblCanvasOpacity) lblCanvasOpacity.textContent = Math.round(canvasOpacity * 100) + '%';
+  }
+  
+  var sldBlur = document.getElementById('sldBlur');
+  var lblBlur = document.getElementById('lblBlur');
+  if (sldBlur) {
+    sldBlur.value = blur;
+    if (lblBlur) lblBlur.textContent = blur + 'px';
+  }
+  
+  var ccPanel = document.getElementById('ccPanel');
+  if (ccPanel) {
+    var dots = ccPanel.querySelectorAll('.cc-color-dot');
+    dots.forEach(function(dot) {
+      if (dot.getAttribute('data-color') === accent) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+  
+  capNhatNutTheme();
+}
+
+function dangKyRealtimeCaiDatHeThong() {
+  if (!daKetNoi()) return;
+  try {
+    sb.channel('realtime-system-theme-settings')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings' }, function(payload) {
+        var row = payload.new;
+        var root = document.documentElement;
+        var theme = root.getAttribute('data-theme') || 'dark';
+        
+        if (row.key === 'theme_theme') {
+          theme = row.value;
+          root.setAttribute('data-theme', theme);
+          localStorage.setItem('vm-theme', theme);
+          
+          var activeColor = localStorage.getItem('vm-accent') || 'amber';
+          apdungMauAccent(root, activeColor, theme === 'dark');
+          
+          var ccLight = document.getElementById('ccBtnLight');
+          var ccDark = document.getElementById('ccBtnDark');
+          if (ccLight && ccDark) {
+            if (theme === 'dark') {
+              ccDark.classList.add('active');
+              ccLight.classList.remove('active');
+            } else {
+              ccLight.classList.add('active');
+              ccDark.classList.remove('active');
+            }
+          }
+          capNhatNutTheme();
+          try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+        } else if (row.key === 'theme_transparency') {
+          var val = row.value;
+          root.style.setProperty('--glass-opacity', val);
+          localStorage.setItem('vm-transparency', val);
+          
+          var sldOpacity = document.getElementById('sldOpacity');
+          var lblOpacity = document.getElementById('lblOpacity');
+          if (sldOpacity) {
+            sldOpacity.value = val;
+            if (lblOpacity) lblOpacity.textContent = Math.round(val * 100) + '%';
+          }
+        } else if (row.key === 'theme_canvas_opacity') {
+          var val = row.value;
+          root.style.setProperty('--canvas-opacity', val);
+          localStorage.setItem('vm-canvas-opacity', val);
+          
+          var sldCanvasOpacity = document.getElementById('sldCanvasOpacity');
+          var lblCanvasOpacity = document.getElementById('lblCanvasOpacity');
+          if (sldCanvasOpacity) {
+            sldCanvasOpacity.value = val;
+            if (lblCanvasOpacity) lblCanvasOpacity.textContent = Math.round(val * 100) + '%';
+          }
+        } else if (row.key === 'theme_blur') {
+          var val = row.value;
+          root.style.setProperty('--glass-blur-radius', val + 'px');
+          localStorage.setItem('vm-blur', val);
+          
+          var sldBlur = document.getElementById('sldBlur');
+          var lblBlur = document.getElementById('lblBlur');
+          if (sldBlur) {
+            sldBlur.value = val;
+            if (lblBlur) lblBlur.textContent = val + 'px';
+          }
+        } else if (row.key === 'theme_accent') {
+          var val = row.value;
+          localStorage.setItem('vm-accent', val);
+          apdungMauAccent(root, val, theme === 'dark');
+          
+          var ccPanel = document.getElementById('ccPanel');
+          if (ccPanel) {
+            var dots = ccPanel.querySelectorAll('.cc-color-dot');
+            dots.forEach(function(dot) {
+              if (dot.getAttribute('data-color') === val) {
+                dot.classList.add('active');
+              } else {
+                dot.classList.remove('active');
+              }
+            });
+          }
+          try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+        }
+      })
+      .subscribe();
+  } catch(e) { console.error("Lỗi dangKyRealtimeCaiDatHeThong:", e); }
+}
+
+function apDungQuyenThemeControlCenter(role) {
+  var ccThemeControls = document.getElementById('ccThemeControls');
+  var ccLockedMsg = document.getElementById('ccLockedMsg');
+  if (role === 'admin') {
+    if (ccThemeControls) ccThemeControls.style.display = 'flex';
+    if (ccLockedMsg) ccLockedMsg.style.display = 'none';
+  } else {
+    if (ccThemeControls) ccThemeControls.style.display = 'none';
+    if (ccLockedMsg) ccLockedMsg.style.display = 'block';
+  }
+}
+
+async function khoiDongTrang() {
+  // 1. Khởi tạo Control Center cơ bản
   khoiTaoControlCenter();
   capNhatNutTheme();
-  tailaiCaiDatAI().then(dangKyRealtimeAI);
   
-  // Tự động kiểm tra vai trò admin để vẽ thêm cài đặt AI
-  (async function() {
-    if (!daKetNoi()) return;
+  // 2. Tải cài đặt AI
+  await tailaiCaiDatAI();
+  dangKyRealtimeAI();
+  
+  // 3. Tải cài đặt giao diện hệ thống toàn cục và đăng ký realtime
+  await taiCaiDatHeThongGlobal();
+  dangKyRealtimeCaiDatHeThong();
+  
+  // 4. Kiểm tra vai trò để phân quyền điều khiển giao diện hệ thống và cài đặt AI
+  if (daKetNoi()) {
     try {
       var s = await sb.auth.getSession();
-      if (!s.data.session) return;
-      var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-      if (rp.data) {
-        window.VM_USER_ROLE = rp.data.role;
-        if (window.VM_USER_ROLE === 'admin') {
-          themAdminControlsVaoCC();
-        }
-      }
-    } catch (e) { console.error("Lỗi CC Admin check:", e); }
-  })();
-} else {
-  document.addEventListener('DOMContentLoaded', function () {
-    khoiTaoControlCenter();
-    capNhatNutTheme();
-    tailaiCaiDatAI().then(dangKyRealtimeAI);
-    
-    (async function() {
-      if (!daKetNoi()) return;
-      try {
-        var s = await sb.auth.getSession();
-        if (!s.data.session) return;
+      if (s.data.session) {
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
         if (rp.data) {
           window.VM_USER_ROLE = rp.data.role;
+          apDungQuyenThemeControlCenter(window.VM_USER_ROLE);
           if (window.VM_USER_ROLE === 'admin') {
             themAdminControlsVaoCC();
           }
+        } else {
+          apDungQuyenThemeControlCenter('student');
         }
-      } catch (e) { console.error("Lỗi CC Admin check:", e); }
-    })();
+      } else {
+        apDungQuyenThemeControlCenter('guest');
+      }
+    } catch (e) {
+      console.error("Lỗi check role:", e);
+      apDungQuyenThemeControlCenter('guest');
+    }
+  } else {
+    apDungQuyenThemeControlCenter('guest');
+  }
+}
+
+// Khởi chạy
+if (document.readyState !== 'loading') {
+  khoiDongTrang();
+} else {
+  document.addEventListener('DOMContentLoaded', function () {
+    khoiDongTrang();
   });
 }
 

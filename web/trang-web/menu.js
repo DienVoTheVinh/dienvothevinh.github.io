@@ -15,6 +15,7 @@ function apDungMenu(role) {
     // ----- MENU CỦA THẦY / TRỢ GIẢNG (Gom nhóm Quản trị) -----
     muc = [
       { type: 'link', path: 'trang-chu.html', label: 'Trang chủ' },
+      { type: 'link', path: 'blog.html', label: 'Blog' },
       {
         type: 'dropdown',
         label: 'Quản trị ▾',
@@ -29,7 +30,6 @@ function apDungMenu(role) {
           (role === 'admin' ? { path: 'quan-tri-truy-cap.html', label: 'Giám sát' } : null)
         ].filter(Boolean)
       },
-      (role === 'admin' ? { type: 'link', path: 'viet-blog.html', label: '✍️ Viết blog' } : null),
       { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
       { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
     ].filter(Boolean);
@@ -41,6 +41,7 @@ function apDungMenu(role) {
       { type: 'link', path: 'tai-lieu.html', label: 'Tài liệu' },
       { type: 'link', path: 'lich-hoc.html', label: 'Lịch học' },
       { type: 'link', path: 'luyen-de.html', label: 'Luyện đề' },
+      { type: 'link', path: 'blog.html', label: 'Blog' },
       { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
       { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
     ];
