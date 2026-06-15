@@ -97,7 +97,7 @@
       // 5. Ghi nhận chi tiết lượt xem trang (page view)
       if (sessionDbId) {
         var path = window.location.pathname;
-        var pageName = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+        var pageName = path.substring(path.lastIndexOf('/') + 1) || 'index';
         
         await sb.from('analytics_page_views').insert({
           session_id: sessionDbId,

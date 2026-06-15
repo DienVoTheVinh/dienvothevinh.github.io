@@ -8,8 +8,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.6">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -337,7 +337,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small id="lblLogoSub">· Học tập</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small id="lblLogoSub">· Học tập</small></a>
     <nav class="navlinks">
       <!-- Tự động vẽ qua menu.js -->
     </nav>
@@ -579,7 +579,7 @@
   <section class="blog-sec" id="blogTrangChuSec" style="display:none; margin-top: 24px;">
     <div class="blog-sec-head">
       <h2>📝 Blog & Chia sẻ từ Thầy Vinh</h2>
-      <a class="btn btn-secondary btn-sm" id="btnVietBlogTrangChu" href="viet-blog.html" style="display:none">✍️ Viết blog</a>
+      <a class="btn btn-secondary btn-sm" id="btnVietBlogTrangChu" href="viet-blog" style="display:none">✍️ Viết blog</a>
     </div>
     <div class="blog-slider-container">
       <div id="blogTrangChu" class="blog-slider">
@@ -590,10 +590,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----
 var hoSoNguoiDung = null;
@@ -844,7 +844,7 @@ async function taiBlogTrangChu() {
     box.innerHTML = ds.map(function(p) {
       var d = new Date(p.created_at).toLocaleDateString('vi-VN');
       var cover = p.cover_url ? '<img class="bc-cover" src="' + esc(p.cover_url) + '" alt="" loading="lazy">' : '';
-      return '<a class="blog-card" href="blog.html?id=' + p.id + '">' +
+      return '<a class="blog-card" href="blog?id=' + p.id + '">' +
         cover +
         '<div class="bc-title">' + esc(p.title) + '</div>' +
         '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
@@ -943,7 +943,7 @@ function formatNgayDep(dStr) {
 async function veLichDayStaff() {
   var container = $('dsLichDay');
   if (!tatCaSchedules.length) {
-    container.innerHTML = '<div class="empty card">Chưa có lịch dạy nào được thiết lập. Vào mục <a href="quan-tri-lich.html">Lịch học</a> để thiết lập lịch.</div>';
+    container.innerHTML = '<div class="empty card">Chưa có lịch dạy nào được thiết lập. Vào mục <a href="quan-tri-lich">Lịch học</a> để thiết lập lịch.</div>';
     return;
   }
   

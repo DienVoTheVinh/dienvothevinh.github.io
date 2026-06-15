@@ -8,8 +8,8 @@
 <title>Đăng nhập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 body {
   min-height: 100vh;
@@ -318,7 +318,7 @@ body {
 <canvas id="cyberCanvas"></canvas>
 
 <div class="side">
-  <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+  <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
   
 
 
@@ -332,7 +332,7 @@ body {
 <div class="main">
   <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Đổi chế độ sáng/tối">🌙</button>
   <div class="box">
-    <a class="logo" href="index.html" style="display:inline-flex"><span class="dot">V</span>VinhMath</a>
+    <a class="logo" href="index" style="display:inline-flex"><span class="dot">V</span>VinhMath</a>
     <h1>SYSTEM_ACCESS<span class="cyber-cursor">_</span></h1>
     <p class="sub">Đăng nhập cổng bảo mật để vào hệ thống học tập.</p>
 
@@ -359,9 +359,9 @@ body {
 
 <!-- Thư viện Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/analytics.js"></script>
 <script>
 // --- INTERACTIVE MATH LAB CANVAS ---
 var canvas = document.getElementById('cyberCanvas');
@@ -721,7 +721,7 @@ if (!daKetNoi()) {
 // Đã đăng nhập từ trước → vào thẳng trang chủ
 if (daKetNoi()) {
   sb.auth.getSession().then(function (s) {
-    if (s.data.session) window.location.href = 'trang-chu.html';
+    if (s.data.session) window.location.href = 'trang-chu';
   });
 }
 
@@ -735,7 +735,7 @@ $('formDangNhap').addEventListener('submit', async function (e) {
     baoLoi(r.error);
     nut.disabled = false; nut.textContent = 'AUTH_SIGN_IN';
   } else {
-    window.location.href = 'trang-chu.html';
+    window.location.href = 'trang-chu';
   }
 });
 </script>

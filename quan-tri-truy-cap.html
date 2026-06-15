@@ -8,8 +8,8 @@
 <title>Giám sát truy cập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -129,7 +129,7 @@ tr:last-child td{border-bottom:none}
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Giám sát</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Giám sát</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -213,10 +213,10 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 // Biến lưu dữ liệu cache toàn cục
 var cachedAnalyticsData = [];
@@ -261,7 +261,7 @@ function getRGBA(colorStr, opacity) {
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (hoSo.role !== 'admin') {
-    window.location.href = 'lop-hoc.html';
+    window.location.href = 'lop-hoc';
     return;
   }
 

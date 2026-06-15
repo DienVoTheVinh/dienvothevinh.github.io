@@ -174,7 +174,7 @@ function formatAuthorName(name) {
 
 async function dangXuat() {
   if (daKetNoi()) await sb.auth.signOut();
-  window.location.href = 'dang-nhap.html';
+  window.location.href = 'dang-nhap';
 }
 
 // Lấy hồ sơ (họ tên, vai trò, lớp) của người đang đăng nhập
@@ -209,11 +209,11 @@ async function layHoSo() {
 }
 
 /* ---------- 4. CHẶN TRANG CẦN ĐĂNG NHẬP ---------- */
-// Gọi ở đầu các trang như lop-hoc.html. Chưa đăng nhập → đưa về trang đăng nhập.
+// Gọi ở đầu các trang như lop-hoc. Chưa đăng nhập → đưa về trang đăng nhập.
 async function yeuCauDangNhap() {
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
   var s = await sb.auth.getSession();
-  if (!s.data.session) { window.location.href = 'dang-nhap.html'; return null; }
+  if (!s.data.session) { window.location.href = 'dang-nhap'; return null; }
   return layHoSo();
 }
 
@@ -1034,7 +1034,7 @@ async function guiTinNhanAI() {
   
   var systemPrompt = '';
   var pathname = window.location.pathname;
-  if (pathname.indexOf('bai-hoc.html') !== -1) {
+  if (pathname.indexOf('bai-hoc') !== -1) {
     systemPrompt = "Bạn là trợ lý AI hướng dẫn học tập tại Lớp Toán Thầy Vinh (VinhMath). Bạn đang hỗ trợ học sinh học trực tuyến chuyên đề: '" + lessonTitle + "'. Hãy trả lời ngắn gọn, có tính sư phạm cao, định hướng cách giải thay vì giải hộ hoàn toàn. Các công thức toán hãy viết theo định dạng LaTeX kẹp trong dấu $...$ (nếu cùng dòng) hoặc $$...$$ (nếu xuống dòng) để hiển thị chuyên nghiệp.";
   } else {
     systemPrompt = "Bạn là trợ lý AI hướng dẫn học tập tại Lớp Toán Thầy Vinh (VinhMath). Bạn đang ở trang chủ/trang giới thiệu để hỗ trợ học sinh sử dụng website vinhmath.com hiệu quả. Các mục chính của web gồm: Lớp học (học video bài giảng, lý thuyết), Luyện đề (làm đề tự chấm), Tài liệu (tải tài liệu học tập), Bảng vàng (xem thành tích của bạn học sinh). Hãy trả lời ngắn gọn, thân thiện, và định hướng học sinh.";

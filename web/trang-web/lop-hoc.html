@@ -8,8 +8,8 @@
 <title>Lớp học của em — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.6">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
 .greet{padding:48px 0 8px}
@@ -52,7 +52,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -80,7 +80,7 @@
     <p style="font-size:.95rem; color:var(--ink-2); margin:12px auto 24px; max-width:480px;">
       Tài khoản của em chưa được xếp vào lớp học nào trên hệ thống. Em vui lòng liên hệ thầy Vinh để được kích hoạt và phân lớp học nhé!
     </p>
-    <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
+    <a href="ca-nhan" class="btn btn-secondary">Xem trang cá nhân</a>
   </div>
 
   <!-- Màn hình dành cho Trợ giảng / Giáo viên / Admin (danh sách lớp theo lịch) -->
@@ -125,10 +125,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 // Lấy mã video từ link YouTube để hiện ảnh bìa
 function youtubeId(url) {
@@ -142,7 +142,7 @@ function theBaiHoc(bh) {
   var vid = youtubeId(bh.youtube_url);
   var thumb = vid
     ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
-  var href = bh.id ? 'bai-hoc.html?id=' + bh.id : '#';
+  var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   return '<div class="card lesson">' +
     '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
     '<div class="body">' +
@@ -428,12 +428,12 @@ async function renderStaffHome(hoSo) {
     return da - db || a.start_time.localeCompare(b.start_time);
   });
 
-  var btnQuanTri = '<a class="btn btn-secondary btn-sm" href="quan-tri-lop.html">⚙️ Quản trị lớp học</a>';
+  var btnQuanTri = '<a class="btn btn-secondary btn-sm" href="quan-tri-lop">⚙️ Quản trị lớp học</a>';
   var header = '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px">' +
     '<h2 style="margin:0">📅 Lớp học theo lịch</h2>' + btnQuanTri + '</div>';
 
   if (!scheds.length) {
-    box.innerHTML = header + '<div class="empty card">Chưa có lịch lớp nào. Vào trang <a href="quan-tri-lich.html">Lịch &amp; QR</a> để thêm lịch học.</div>';
+    box.innerHTML = header + '<div class="empty card">Chưa có lịch lớp nào. Vào trang <a href="quan-tri-lich">Lịch &amp; QR</a> để thêm lịch học.</div>';
     return;
   }
 

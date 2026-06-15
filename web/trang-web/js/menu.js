@@ -8,43 +8,42 @@
 function apDungMenu(role) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
-  var trang = (location.pathname.split('/').pop() || 'index.html').split('?')[0];
+  var trang = (location.pathname.split('/').pop() || 'index').split('?')[0];
 
   var muc;
   if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
     // ----- MENU CỦA THẦY / TRỢ GIẢNG (Gom nhóm Quản trị) -----
     muc = [
-      { type: 'link', path: 'trang-chu.html', label: 'Trang chủ' },
-      { type: 'link', path: 'blog.html', label: 'Blog' },
+      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
+      { type: 'link', path: 'blog', label: 'Blog' },
       {
         type: 'dropdown',
         label: 'Quản trị ▾',
         items: [
-          { path: 'quan-tri-lop.html', label: 'Lớp học' },
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu.html', label: 'Soạn tài liệu' } : null),
-          (role === 'admin' ? { path: 'viet-blog.html', label: '✍️ Viết blog' } : null),
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc.html', label: 'Khóa bài giảng' } : null),
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh.html', label: 'Học sinh' } : null),
-          { path: 'quan-tri-lich.html', label: 'Lịch học' },
-          { path: 'quan-tri-de.html', label: 'Luyện đề' },
-          { path: 'quan-tri-cham-bai.html', label: 'Chấm bài' },
-          (role === 'admin' ? { path: 'quan-tri-truy-cap.html', label: 'Giám sát' } : null)
+          { path: 'quan-tri-lop', label: 'Lớp học' },
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu', label: 'Soạn tài liệu' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc', label: 'Khóa bài giảng' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh', label: 'Học sinh' } : null),
+          { path: 'quan-tri-lich', label: 'Lịch học' },
+          { path: 'quan-tri-de', label: 'Luyện đề' },
+          { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+          (role === 'admin' ? { path: 'quan-tri-truy-cap', label: 'Giám sát' } : null)
         ].filter(Boolean)
       },
-      { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
-      { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
+      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ].filter(Boolean);
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
-      { type: 'link', path: 'trang-chu.html', label: 'Trang chủ' },
-      { type: 'link', path: 'lop-hoc.html', label: 'Lớp học' },
-      { type: 'link', path: 'tai-lieu.html', label: 'Tài liệu' },
-      { type: 'link', path: 'lich-hoc.html', label: 'Lịch học' },
-      { type: 'link', path: 'luyen-de.html', label: 'Luyện đề' },
-      { type: 'link', path: 'blog.html', label: 'Blog' },
-      { type: 'link', path: 'bang-vang.html', label: 'Bảng vàng' },
-      { type: 'link', path: 'ca-nhan.html', label: 'Cá nhân' }
+      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
+      { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
+      { type: 'link', path: 'tai-lieu', label: 'Tài liệu' },
+      { type: 'link', path: 'lich-hoc', label: 'Lịch học' },
+      { type: 'link', path: 'luyen-de', label: 'Luyện đề' },
+      { type: 'link', path: 'blog', label: 'Blog' },
+      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
 
@@ -53,11 +52,11 @@ function apDungMenu(role) {
       var activeClass = '';
       if (m.path === trang) {
         activeClass = ' class="active"';
-      } else if (m.path === 'lop-hoc.html' && trang === 'bai-hoc.html') {
+      } else if (m.path === 'lop-hoc' && trang === 'bai-hoc') {
         activeClass = ' class="active"';
-      } else if (m.path === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
+      } else if (m.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
         activeClass = ' class="active"';
-      } else if (m.path === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
+      } else if (m.path === 'quan-tri-tai-lieu' && trang === 'tai-lieu') {
         activeClass = ' class="active"';
       }
       return '<a href="' + m.path + '"' + activeClass + '>' + m.label + '</a>';
@@ -67,9 +66,9 @@ function apDungMenu(role) {
         var isSubActive = false;
         if (sub.path === trang) {
           isSubActive = true;
-        } else if (sub.path === 'quan-tri-lop.html' && trang === 'quan-tri-bai-hoc.html') {
+        } else if (sub.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
           isSubActive = true;
-        } else if (sub.path === 'quan-tri-tai-lieu.html' && trang === 'tai-lieu.html') {
+        } else if (sub.path === 'quan-tri-tai-lieu' && trang === 'tai-lieu') {
           isSubActive = true;
         }
         

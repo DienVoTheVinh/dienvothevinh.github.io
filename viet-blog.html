@@ -8,8 +8,8 @@
 <title>Viết Blog — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.6">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <script>
   window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
 </script>
@@ -82,7 +82,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks"></nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -165,10 +165,10 @@ Mẹo: bôi đen chữ rồi bấm nút định dạng, hoặc bấm 🖼️ đ�
 <input type="file" id="fileBia" accept="image/*" style="display:none">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 function blogEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function renderBlog(src){
@@ -325,7 +325,7 @@ async function suaBai(id){
   document.getElementById('postBody').value = p.content || '';
   coverUrl = p.cover_url || ''; veAnhBia();
   document.getElementById('btnXoa').style.display = 'inline-flex';
-  var xem = document.getElementById('btnXem'); xem.style.display = 'inline-flex'; xem.href = 'blog.html?id=' + p.id;
+  var xem = document.getElementById('btnXem'); xem.style.display = 'inline-flex'; xem.href = 'blog?id=' + p.id;
   document.getElementById('lblTrangThai').textContent = p.published ? 'Đang sửa · đã xuất bản' : 'Đang sửa · nháp';
   capNhatXemTruoc();
   if (window.innerWidth <= 900) doiTabMobile('edit');
@@ -351,7 +351,7 @@ async function luuBai(publish){
   else { r = await sb.from('blog_posts').insert(rec).select('id').single(); }
   btn.disabled = false; btn.textContent = oldTxt;
   if (r.error){ alert('Lỗi lưu bài: ' + r.error.message); return; }
-  if (!id && r.data){ document.getElementById('postId').value = r.data.id; document.getElementById('btnXoa').style.display='inline-flex'; var xem=document.getElementById('btnXem'); xem.style.display='inline-flex'; xem.href='blog.html?id='+r.data.id; }
+  if (!id && r.data){ document.getElementById('postId').value = r.data.id; document.getElementById('btnXoa').style.display='inline-flex'; var xem=document.getElementById('btnXem'); xem.style.display='inline-flex'; xem.href='blog?id='+r.data.id; }
   document.getElementById('lblTrangThai').textContent = publish ? '✓ Đã xuất bản' : '✓ Đã lưu nháp';
   await taiDsBai();
   alert(publish ? '🚀 Đã xuất bản! Bài hiện trên trang cá nhân của mọi người và trang giới thiệu (khách cũng đọc được).' : '💾 Đã lưu nháp (chỉ thầy/trợ giảng thấy).');

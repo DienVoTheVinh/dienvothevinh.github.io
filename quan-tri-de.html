@@ -8,8 +8,8 @@
 <title>Soạn đề thi LaTeX — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -32,7 +32,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -127,11 +127,11 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="latex-view.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/latex-view.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var listExams = [];
 var listClasses = [];
@@ -143,7 +143,7 @@ var editingExamId = null;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (!['admin', 'teacher'].includes(hoSo.role)) {
-    window.location.href = 'luyen-de.html';
+    window.location.href = 'luyen-de';
     return;
   }
   

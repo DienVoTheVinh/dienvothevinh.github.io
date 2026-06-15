@@ -8,8 +8,8 @@
 <title>Chấm bài — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <!-- KaTeX for math rendering in quiz viewer -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -34,7 +34,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -83,10 +83,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
 var dsTestAttempts = [];
@@ -100,7 +100,7 @@ var dangLoc = 'submitted';
   if (!daKetNoi()) { $('dsBaiNop').innerHTML = '<div class="empty card">Chưa kết nối Supabase.</div>'; return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   
   try {
     var rLop = await sb.from('classes').select('id, name').order('grade').order('name');

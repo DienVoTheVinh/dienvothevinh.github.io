@@ -8,8 +8,8 @@
 <title>Quản lý học sinh — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
@@ -61,7 +61,7 @@ td, th { font-size: .88rem; }
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks"><!-- menu.js tự vẽ --></nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -122,10 +122,10 @@ td, th { font-size: .88rem; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var dsHS = [];            // hồ sơ học sinh kèm số liệu đã tính
 var phienTheoHS = {};     // student_id -> [phiên truy cập]
@@ -144,7 +144,7 @@ var MAU = [
   if (!daKetNoi()) { $('bangHS').innerHTML = '<tr><td colspan="8" class="empty">Chưa kết nối Supabase.</td></tr>'; return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   await taiTatCa();
 })();
 
@@ -313,7 +313,7 @@ function veBang() {
       '<td class="num2">' + diem + '</td>' +
       '<td style="text-align:right; white-space:nowrap;">' +
         '<div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:8px;">' +
-          '<a class="btn btn-primary btn-sm" href="ca-nhan.html?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
+          '<a class="btn btn-primary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
           '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>' +
         '</div>' +
       '</td>' +

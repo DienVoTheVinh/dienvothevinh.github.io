@@ -46,10 +46,10 @@
   --ink-2: #475569; /* Slate 600 */
   --ink-3: #94a3b8; /* Slate 400 */
   
-  --accent: #b45309; /* Vàng đất đậm đà */
-  --accent-hover: #92400e;
-  --accent-soft: rgba(180, 83, 9, 0.08);
-  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #78350f 100%);
+  --accent: #a8732c; /* Vàng đất trầm ấm sang trọng */
+  --accent-hover: #8a591e;
+  --accent-soft: rgba(168, 115, 44, 0.08);
+  --accent-gradient: linear-gradient(135deg, #b8863f 0%, #7e521b 100%);
   
   --ok: #10b981;
   --ok-soft: rgba(16, 185, 129, 0.1);
@@ -86,10 +86,10 @@
   --ink-2: #cbd5e1; /* Slate 300 */
   --ink-3: #64748b; /* Slate 500 */
   
-  --accent: #d97706; /* Vàng đất tối */
-  --accent-hover: #fbbf24;
-  --accent-soft: rgba(217, 119, 6, 0.15);
-  --accent-gradient: linear-gradient(135deg, #b45309 0%, #fbbf24 100%);
+  --accent: #caa26a; /* Vàng đất tối sang trọng */
+  --accent-hover: #e2be8a;
+  --accent-soft: rgba(202, 162, 106, 0.15);
+  --accent-gradient: linear-gradient(135deg, #7e521b 0%, #b8863f 100%);
   
   --ok: #10b981;
   --ok-soft: rgba(16, 185, 129, 0.15);

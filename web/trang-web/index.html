@@ -9,8 +9,8 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.6">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
@@ -785,17 +785,17 @@ body.math-grid {
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="index.html" class="active">Trang chủ</a>
+      <a href="index" class="active">Trang chủ</a>
       <a href="#blog-cong-khai">Blog</a>
-      <a href="lop-hoc.html">Lớp học</a>
-      <a href="luyen-de.html">Luyện đề</a>
-      <a href="tai-lieu.html">Tài liệu</a>
+      <a href="lop-hoc">Lớp học</a>
+      <a href="luyen-de">Luyện đề</a>
+      <a href="tai-lieu">Tài liệu</a>
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
-      <a class="btn btn-primary btn-sm" href="dang-nhap.html">Đăng nhập</a>
+      <a class="btn btn-primary btn-sm" href="dang-nhap">Đăng nhập</a>
     </div>
   </div>
 </div>
@@ -865,7 +865,7 @@ body.math-grid {
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
       
       <div style="margin-top:32px; display:flex; gap:16px; flex-wrap:wrap">
-        <a class="btn btn-primary btn-lg" href="dang-nhap.html" style="box-shadow: 0 4px 14px var(--accent-soft)">Vào hệ thống học tập</a>
+        <a class="btn btn-primary btn-lg" href="dang-nhap" style="box-shadow: 0 4px 14px var(--accent-soft)">Vào hệ thống học tập</a>
         <a class="btn btn-secondary btn-lg" href="#blog-cong-khai" style="display:inline-flex; align-items:center; gap:8px; border:2px solid var(--accent); color:var(--accent); background:transparent; font-weight:700">
           📰 Đọc Blog Toán Học
         </a>
@@ -899,11 +899,11 @@ body.math-grid {
       <div class="vertical-text">HIỂU BẢN CHẤT</div>
       <div class="portrait-grid">
         <div class="ph-portrait">
-          <img src="anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.parentElement.innerHTML='📷 Thả ảnh thầy chân dung tên <b>anh-thay.jpg</b> vào thư mục trang-web'">
+          <img src="assets/anh-thay.jpg" alt="Thầy Thế Vinh" onerror="this.parentElement.innerHTML='📷 Thả ảnh thầy chân dung tên <b>anh-thay.jpg</b> vào thư mục trang-web'">
           <div class="photo-caption">Thầy Thế Vinh</div>
         </div>
         <div class="ph-landscape">
-          <img src="anh-cu-nhan.jpg" alt="Thầy Thế Vinh tốt nghiệp cử nhân" onerror="this.parentElement.innerHTML='📷 Thả ảnh tốt nghiệp tên <b>anh-cu-nhan.jpg</b> vào thư mục trang-web'">
+          <img src="assets/anh-cu-nhan.jpg" alt="Thầy Thế Vinh tốt nghiệp cử nhân" onerror="this.parentElement.innerHTML='📷 Thả ảnh tốt nghiệp tên <b>anh-cu-nhan.jpg</b> vào thư mục trang-web'">
           <div class="photo-caption">Cử nhân Sư phạm Toán</div>
         </div>
       </div>
@@ -923,15 +923,15 @@ body.math-grid {
   <section class="story reveal">
     <div class="story-grid">
       <div class="ph" style="position:relative">
-        <img src="anh-lop.jpg" alt="Lớp học VinhMath 1" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 1 tên <b>anh-lop.jpg</b> vào thư mục trang-web'">
+        <img src="assets/anh-lop.jpg" alt="Lớp học VinhMath 1" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 1 tên <b>anh-lop.jpg</b> vào thư mục trang-web'">
         <div class="photo-caption">Lớp học VinhMath</div>
       </div>
       <div class="ph" style="position:relative">
-        <img src="anh-lop-2.jpg" alt="Lớp học VinhMath 2" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 2 tên <b>anh-lop-2.jpg</b> vào thư mục trang-web'">
+        <img src="assets/anh-lop-2.jpg" alt="Lớp học VinhMath 2" onerror="this.parentElement.innerHTML='📷 Thả ảnh lớp học 2 tên <b>anh-lop-2.jpg</b> vào thư mục trang-web'">
         <div class="photo-caption">Không khí ấm áp tại lớp</div>
       </div>
       <div class="ph" style="position:relative">
-        <img src="anh-lam-viec.jpg" alt="Góc soạn bài giảng hình học" onerror="this.parentElement.innerHTML='📷 Thả ảnh góc làm việc tên <b>anh-lam-viec.jpg</b> vào thư mục trang-web'">
+        <img src="assets/anh-lam-viec.jpg" alt="Góc soạn bài giảng hình học" onerror="this.parentElement.innerHTML='📷 Thả ảnh góc làm việc tên <b>anh-lam-viec.jpg</b> vào thư mục trang-web'">
         <div class="photo-caption">Chuẩn bị bài giảng hình học</div>
       </div>
     </div>
@@ -947,7 +947,7 @@ body.math-grid {
 
       <div class="facilities-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 24px;">
         <div class="facility-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform 0.3s ease;">
-          <img src="ttdm.jpg" alt="CS1: Trung tâm Duy Minh" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-bottom: 1px solid var(--line);">
+          <img src="assets/ttdm.jpg" alt="CS1: Trung tâm Duy Minh" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-bottom: 1px solid var(--line);">
           <div style="padding: 16px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
             <div>
               <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 700; color: var(--accent);">📍 CS1: Trung tâm Duy Minh</h4>
@@ -960,7 +960,7 @@ body.math-grid {
         </div>
 
         <div class="facility-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform 0.3s ease;">
-          <img src="ttq5.jpg" alt="CS2: Lớp toán VinhMath" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-bottom: 1px solid var(--line);">
+          <img src="assets/ttq5.jpg" alt="CS2: Lớp toán VinhMath" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-bottom: 1px solid var(--line);">
           <div style="padding: 16px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
             <div>
               <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 700; color: var(--accent);">📍 CS2: Lớp toán VinhMath</h4>
@@ -985,73 +985,73 @@ body.math-grid {
       <button class="timeline-nav-btn prev-btn" onclick="scrollTimeline(-1)" title="Xem trước">←</button>
       <div class="timeline-track" id="journeyTrack">
         <div class="timeline-card">
-          <img src="lop12.jpeg" alt="Thời học sinh cấp 3" onerror="this.src='anh-lop.jpg'">
+          <img src="assets/lop12.jpeg" alt="Thời học sinh cấp 3" onerror="this.src='assets/anh-lop.jpg'">
           <h4>Thời học sinh cấp 3</h4>
           <p>Những năm học cấp 3 đầy nỗ lực dưới mái trường THPT, đặt nền móng và nuôi dưỡng đam mê dành cho môn Toán.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="svnangdong.jpg" alt="Sinh viên năng động" onerror="this.src='anh-thay.jpg'">
+          <img src="assets/svnangdong.jpg" alt="Sinh viên năng động" onerror="this.src='assets/anh-thay.jpg'">
           <h4>Sinh viên năng động</h4>
           <p>Trở thành sinh viên ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, năng nổ tham gia các hoạt động tập thể.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="hoctapcangthang.jpg" alt="Những giờ học căng thẳng" onerror="this.src='anh-lop.jpg'">
+          <img src="assets/hoctapcangthang.jpg" alt="Những giờ học căng thẳng" onerror="this.src='assets/anh-lop.jpg'">
           <h4>Những giờ học căng thẳng</h4>
           <p>Những kỳ thi áp lực, những giờ thảo luận bài tập lớn cùng bạn bè để hiểu sâu kiến thức chuyên ngành Toán.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="vuahocvualam.jpg" alt="Vừa học vừa làm" onerror="this.src='anh-thay.jpg'">
+          <img src="assets/vuahocvualam.jpg" alt="Vừa học vừa làm" onerror="this.src='assets/anh-thay.jpg'">
           <h4>Vừa học vừa làm</h4>
           <p>Tranh thủ đi dạy thêm từ thời sinh viên để tích lũy trải nghiệm thực tế, rèn luyện kỹ năng truyền đạt kiến thức.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="tthongchuyen.jpg" alt="Tổ trưởng Tổ Toán Hồng Chuyên" onerror="this.src='anh-lop.jpg'">
+          <img src="assets/tthongchuyen.jpg" alt="Tổ trưởng Tổ Toán Hồng Chuyên" onerror="this.src='assets/anh-lop.jpg'">
           <h4>Tổ trưởng Tổ Toán Hồng Chuyên</h4>
           <p>Được tin tưởng giao trọng trách Tổ trưởng Tổ Toán tại trung tâm Hồng Chuyên, có cơ hội làm quen việc quản lý giáo dục.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="ttdm.jpg" alt="Giảng viên tại Duy Minh" onerror="this.src='anh-lam-viec.jpg'">
+          <img src="assets/ttdm.jpg" alt="Giảng viên tại Duy Minh" onerror="this.src='assets/anh-lam-viec.jpg'">
           <h4>Giảng viên tại Duy Minh</h4>
           <p>Trở thành giảng viên chính thức tại trung tâm Duy Minh, đồng hành cùng nhiều thế hệ học sinh ôn thi chuyên và thi điểm.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="khoaluan.jpg" alt="Đủ điều kiện làm Khóa luận tốt nghiệp" onerror="this.src='anh-cu-nhan.jpg'">
+          <img src="assets/khoaluan.jpg" alt="Đủ điều kiện làm Khóa luận tốt nghiệp" onerror="this.src='assets/anh-cu-nhan.jpg'">
           <h4>Khóa luận tốt nghiệp năm 3</h4>
           <p>Nỗ lực đạt kết quả tốt giúp mình đủ điều kiện thực hiện khóa luận tốt nghiệp chuyên ngành Toán từ năm thứ 3 Đại học.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="totnghiep.jpg" alt="Tốt nghiệp loại Giỏi" onerror="this.src='anh-cu-nhan.jpg'">
+          <img src="assets/totnghiep.jpg" alt="Tốt nghiệp loại Giỏi" onerror="this.src='assets/anh-cu-nhan.jpg'">
           <h4>Tốt nghiệp cử nhân loại Giỏi</h4>
           <p>Nhận tấm bằng tốt nghiệp cử nhân loại Giỏi ngành Sư phạm Toán tại ĐH Sư phạm TPHCM, chính thức bước vào nghề dạy học.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="GPA.jpg" alt="Điểm chuyên ngành xuất sắc" onerror="this.src='anh-cu-nhan.jpg'">
+          <img src="assets/GPA.jpg" alt="Điểm chuyên ngành xuất sắc" onerror="this.src='assets/anh-cu-nhan.jpg'">
           <h4>Điểm chuyên ngành xuất sắc</h4>
           <p>Bảng điểm GPA các học phần Phương pháp dạy học Toán đạt kết quả rất cao, minh chứng cho sự chuẩn bị kỹ lưỡng với chuyên môn.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="hoinghisach.jpg" alt="Bắt nhịp xu hướng giáo dục" onerror="this.src='anh-lam-viec.jpg'">
+          <img src="assets/hoinghisach.jpg" alt="Bắt nhịp xu hướng giáo dục" onerror="this.src='assets/anh-lam-viec.jpg'">
           <h4>Bắt nhịp xu hướng giáo dục</h4>
           <p>Tích cực tham gia các buổi tập huấn nâng cao chuyên môn và hội nghị sách để cập nhật các xu hướng dạy học của thời đại.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="ths.jpg" alt="Nghiên cứu bậc Thạc sĩ" onerror="this.src='anh-cu-nhan.jpg'">
+          <img src="assets/ths.jpg" alt="Nghiên cứu bậc Thạc sĩ" onerror="this.src='assets/anh-cu-nhan.jpg'">
           <h4>Nghiên cứu bậc Thạc sĩ</h4>
           <p>Theo học Cao học chuyên ngành Lí luận và phương pháp dạy học bộ môn Toán (định hướng nghiên cứu) với điểm số từ B+ trở lên.</p>
         </div>
         
         <div class="timeline-card">
-          <img src="vinhmath.jpg" alt="Sáng lập lớp học VinhMath" onerror="this.src='anh-lop.jpg'">
+          <img src="assets/vinhmath.jpg" alt="Sáng lập lớp học VinhMath" onerror="this.src='assets/anh-lop.jpg'">
           <h4>Sáng lập lớp học VinhMath</h4>
           <p>Vào năm 2025, lớp toán VinhMath chính thức ra đời tại Quận 5, mở đầu một chương mới đầy nhiệt huyết giảng dạy độc lập.</p>
         </div>
@@ -1134,9 +1134,9 @@ body.math-grid {
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/analytics.js"></script>
 <script>
 // Blog công khai (quảng bá, đọc tự do — không cần đăng nhập)
 (async function () {
@@ -1150,7 +1150,7 @@ body.math-grid {
     function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     box.innerHTML = ds.map(function (p) {
       var d = new Date(p.created_at).toLocaleDateString('vi-VN');
-      return '<a href="blog.html?id=' + p.id + '" style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);padding:18px;text-decoration:none;color:var(--ink)">' +
+      return '<a href="blog?id=' + p.id + '" style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);padding:18px;text-decoration:none;color:var(--ink)">' +
         '<div style="font-size:1.05rem;font-weight:800;line-height:1.35;margin-bottom:6px">' + esc(p.title) + '</div>' +
         '<div style="font-size:.86rem;color:var(--ink-2);line-height:1.5;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + esc(p.excerpt || '') + '</div>' +
         '<div style="margin-top:12px;font-size:.78rem;color:var(--ink-3)"><b style="color:var(--ink-2)">' + esc(p.author_name || 'Thầy Vinh') + '</b> · ' + d + '</div>' +
@@ -1193,14 +1193,14 @@ body.math-grid {
           var btn = document.querySelector('.topbar .btn-primary');
           if (btn) {
             btn.textContent = isStaff ? 'Trang chủ Quản trị' : 'Vào Trang chủ';
-            btn.href = 'trang-chu.html';
+            btn.href = 'trang-chu';
           }
           // Cập nhật navlinks
           var nav = document.querySelector('.navlinks');
           if (nav) {
             nav.innerHTML = isStaff
-              ? '<a href="index.html" class="active">Giới thiệu</a><a href="trang-chu.html">Trang chủ</a><a href="quan-tri-lop.html">Lớp học</a>'
-              : '<a href="index.html" class="active">Giới thiệu</a><a href="trang-chu.html">Trang chủ</a><a href="lop-hoc.html">Lớp học</a><a href="luyen-de.html">Luyện đề</a>';
+              ? '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="quan-tri-lop">Lớp học</a>'
+              : '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="lop-hoc">Lớp học</a><a href="luyen-de">Luyện đề</a>';
           }
         }
       }

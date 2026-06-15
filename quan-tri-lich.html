@@ -8,8 +8,8 @@
 <title>Lịch & Điểm danh — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 16px; }
@@ -29,11 +29,11 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Quản trị</small></a>
     <nav class="navlinks">
-      <a href="quan-tri-bai-hoc.html">Bài giảng</a>
-      <a href="quan-tri-cham-bai.html">Chấm bài</a>
-      <a href="quan-tri-lich.html" class="active">Lịch & QR</a>
+      <a href="quan-tri-bai-hoc">Bài giảng</a>
+      <a href="quan-tri-cham-bai">Chấm bài</a>
+      <a href="quan-tri-lich" class="active">Lịch & QR</a>
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -160,10 +160,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
 var dsLop = [];
@@ -175,7 +175,7 @@ var lichDangSuaId = null;
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc.html'; return; }
+  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
 
   // Lớp
   var r = await sb.from('classes').select('id, name').order('name');
@@ -558,7 +558,7 @@ async function xoayQR() {
   $('qrToken').textContent = token;
   $('qrCodeSo').textContent = code;
   $('khungQR').innerHTML = '';
-  var url = new URL('diem-danh.html?token=' + token, window.location.href).href;
+  var url = new URL('diem-danh?token=' + token, window.location.href).href;
   new QRCode($('khungQR'), { text: url, width: 220, height: 220 });
 }
 

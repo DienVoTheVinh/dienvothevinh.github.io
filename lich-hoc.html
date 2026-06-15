@@ -8,8 +8,8 @@
 <title>Lịch học của em — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 44px 0 20px; }
@@ -189,7 +189,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -214,7 +214,7 @@
     <p style="font-size:.95rem; color:var(--ink-2); margin:12px auto 24px; max-width:480px;">
       Tài khoản của em chưa được xếp vào lớp học nào trên hệ thống. Em vui lòng liên hệ thầy Vinh để được kích hoạt và phân lớp học nhé!
     </p>
-    <a href="ca-nhan.html" class="btn btn-secondary">Xem trang cá nhân</a>
+    <a href="ca-nhan" class="btn btn-secondary">Xem trang cá nhân</a>
   </div>
 
   <!-- Container khi đã có lớp -->
@@ -297,10 +297,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
 var TEN_THU_NGAN = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
@@ -652,7 +652,7 @@ function diemDanhBangMa() {
   var ma = $('maDiemDanh').value.trim();
   if (!ma) { alert('Em dán mã điểm danh thầy đưa vào ô trước nhé.'); return; }
   var m = ma.match(/token=([^\s&]+)/i);
-  window.location.href = 'diem-danh.html?token=' + (m ? m[1] : ma);
+  window.location.href = 'diem-danh?token=' + (m ? m[1] : ma);
 }
 </script>
 </body>

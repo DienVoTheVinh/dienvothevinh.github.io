@@ -8,8 +8,8 @@
 <title>Trang cá nhân & Học lực — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -202,7 +202,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
       <!-- Sẽ được điền tự động bằng menu.js -->
     </nav>
@@ -220,7 +220,7 @@
       <span>🔍 <b>Chế độ Giáo viên:</b> Bạn đang xem báo cáo của học sinh </span>
       <span id="adminStudentName" style="color:var(--accent); font-weight:800;"></span>
     </div>
-    <a href="quan-tri-hoc-sinh.html" class="btn btn-secondary btn-sm" style="padding:4px 12px; text-decoration:none;">Quay lại danh sách</a>
+    <a href="quan-tri-hoc-sinh" class="btn btn-secondary btn-sm" style="padding:4px 12px; text-decoration:none;">Quay lại danh sách</a>
   </div>
 
   <div class="head">
@@ -330,7 +330,7 @@
         </div>
       </div>
 
-      <!-- Khối chi tiết (Bảng Vàng đã tách sang trang riêng: bang-vang.html) -->
+      <!-- Khối chi tiết (Bảng Vàng đã tách sang trang riêng: bang-vang) -->
       <div id="studentDetailGrid">
         <!-- Bảng điểm & Nhận xét -->
         <div style="display:flex; flex-direction:column; gap:20px;">
@@ -404,7 +404,7 @@
       .blog-empty2 { color:var(--ink-3); font-size:.92rem; padding:8px 0; }
       </style>
       <section class="blog-sec" id="blogCaNhanSec" style="display:none">
-        <div class="blog-sec-head"><h2>📝 Blog VinhMath</h2><a class="btn btn-ghost btn-sm" id="btnVietBlog" href="viet-blog.html" style="display:none">✍️ Viết blog</a></div>
+        <div class="blog-sec-head"><h2>📝 Blog VinhMath</h2><a class="btn btn-ghost btn-sm" id="btnVietBlog" href="viet-blog" style="display:none">✍️ Viết blog</a></div>
         <div id="blogCaNhan" class="blog-grid"></div>
       </section>
 
@@ -489,10 +489,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 var profileData = null;
 var myHoSo = null; // hồ sơ của người đăng nhập
@@ -587,7 +587,7 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
       
     if (rTarget.error) {
       alert('Không tìm thấy học sinh này hoặc có lỗi: ' + rTarget.error.message);
-      window.location.href = 'quan-tri-hoc-sinh.html';
+      window.location.href = 'quan-tri-hoc-sinh';
       return;
     }
     
@@ -631,7 +631,7 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   // Lời chào ở tiêu đề
   $('titleChao').textContent = chao() + ', ' + (profileData.full_name.split(' ').pop()) + '!';
 
-  // Blog VinhMath — Đã chuyển sang Trang chủ (trang-chu.html) theo yêu cầu của Sếp
+  // Blog VinhMath — Đã chuyển sang Trang chủ (trang-chu) theo yêu cầu của Sếp
   // await taiBlogCaNhan();
 
   // Trợ giảng / Giáo viên / Admin xem trang của CHÍNH MÌNH → hiện dashboard giảng dạy, bỏ chỉ số học sinh
@@ -643,7 +643,7 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   // Thực hiện tính toán toàn bộ số liệu & render dashboard
   await runLearningAnalytics();
 
-  // (Bảng Vàng đã tách sang trang riêng bang-vang.html)
+  // (Bảng Vàng đã tách sang trang riêng bang-vang)
 
   // Tải lịch học chuyên cần tháng
   await taiDuLieuTheoDoi();
@@ -1734,7 +1734,7 @@ async function taiBlogCaNhan(){
   function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   box.innerHTML = ds.map(function(p){
     var d = new Date(p.created_at).toLocaleDateString('vi-VN');
-    return '<a class="blog-card" href="blog.html?id=' + p.id + '">' +
+    return '<a class="blog-card" href="blog?id=' + p.id + '">' +
       '<div class="bc-title">' + esc(p.title) + '</div>' +
       '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
       '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Vinh') + '</span><span>' + d + '</span>' +

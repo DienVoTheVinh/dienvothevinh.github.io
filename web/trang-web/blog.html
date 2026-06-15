@@ -8,8 +8,8 @@
 <title>Blog — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <script>
   window.MathJax = {
     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
@@ -124,7 +124,7 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks"><!-- menu.js (nếu đã đăng nhập) --></nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -134,17 +134,17 @@
 </div>
 
 <div class="wrap">
-  <a class="blog-back" href="ca-nhan.html" id="btnBack">← Quay lại</a>
+  <a class="blog-back" href="ca-nhan" id="btnBack">← Quay lại</a>
   <div id="blogContainer">
     <div class="blog-empty">Đang tải bài viết…</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 /* ====== RENDER MARKDOWN-LITE + MATHJAX (theme-aware) ====== */
 function blogEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -210,16 +210,16 @@ var bUser = null, bProfile = null, bPostId = null, bPost = null;
         bProfile = rp.data || null;
         authBox.innerHTML = '<button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>';
       } else {
-        authBox.innerHTML = '<a class="btn-login-top" href="dang-nhap.html">Đăng nhập</a>';
+        authBox.innerHTML = '<a class="btn-login-top" href="dang-nhap">Đăng nhập</a>';
       }
-    } catch(e){ authBox.innerHTML = '<a class="btn-login-top" href="dang-nhap.html">Đăng nhập</a>'; }
+    } catch(e){ authBox.innerHTML = '<a class="btn-login-top" href="dang-nhap">Đăng nhập</a>'; }
   }
 
   // Adjust back button for guests
   if (!bUser) {
     var btnBack = document.getElementById('btnBack');
     if (btnBack) {
-      btnBack.href = 'index.html#blog-cong-khai';
+      btnBack.href = 'index#blog-cong-khai';
       btnBack.textContent = '← Quay lại Trang chủ';
     }
   }
@@ -296,7 +296,7 @@ async function toggleLike(){
 function taiFormBinhLuan(){
   var box = document.getElementById('cmtFormBox');
   if (!bUser){
-    box.innerHTML = '<div class="cmt-login">Hãy <a href="dang-nhap.html" style="color:var(--accent);font-weight:700">đăng nhập</a> để để lại bình luận.</div>';
+    box.innerHTML = '<div class="cmt-login">Hãy <a href="dang-nhap" style="color:var(--accent);font-weight:700">đăng nhập</a> để để lại bình luận.</div>';
     return;
   }
   box.innerHTML = '<div class="cmt-form"><textarea id="cmtInput" placeholder="Viết bình luận của bạn…"></textarea>' +
@@ -388,7 +388,7 @@ async function taiDanhSachBlog() {
           '<div style="font-size:0.92rem; color:var(--ink)">👑 <b>Chế độ quản trị viên</b>: Bạn có quyền viết và quản lý tất cả bài viết.</div>' +
           '<div style="display:flex; gap:10px; align-items:center">' +
             '<button class="btn btn-secondary btn-sm" onclick="toggleStudentView()">👁️ Xem với tư cách Học sinh</button>' +
-            '<a href="viet-blog.html" class="btn btn-primary btn-sm">✍️ Viết bài mới</a>' +
+            '<a href="viet-blog" class="btn btn-primary btn-sm">✍️ Viết bài mới</a>' +
           '</div>' +
         '</div>';
       }
@@ -411,13 +411,13 @@ async function taiDanhSachBlog() {
       var adminActionsHtml = '';
       if (laAdmin && !viewAsStudent) {
         adminActionsHtml = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
-          '<a href="viet-blog.html?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
+          '<a href="viet-blog?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
           '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + p.id + '\')">🗑️ Xoá</button>' +
         '</div>';
       }
 
       var cover = p.cover_url ? '<img class="bl-cover" src="' + blogEsc(p.cover_url) + '" alt="" loading="lazy">' : '';
-      return '<div class="blog-list-card' + (cover ? ' has-cover' : '') + '" onclick="window.location.href=\'blog.html?id=' + p.id + '\'" style="cursor:pointer">' +
+      return '<div class="blog-list-card' + (cover ? ' has-cover' : '') + '" onclick="window.location.href=\'blog?id=' + p.id + '\'" style="cursor:pointer">' +
         cover +
         '<div>' +
           (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +

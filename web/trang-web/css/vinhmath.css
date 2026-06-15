@@ -299,7 +299,7 @@ img{max-width:100%;display:block}
 .btn-primary{
   background: var(--accent-gradient);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--accent);
   position: relative;
   overflow: hidden;
 }

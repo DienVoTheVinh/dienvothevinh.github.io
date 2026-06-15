@@ -8,8 +8,8 @@
 <title>Tài liệu — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap{max-width:880px;margin:0 auto;padding:0 24px 96px}
 .head{padding:48px 0 24px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
@@ -26,11 +26,11 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="lop-hoc.html">Học tập</a>
-      <a href="luyen-de.html">Luyện đề</a>
-      <a href="tai-lieu.html" class="active">Tài liệu</a>
+      <a href="lop-hoc">Học tập</a>
+      <a href="luyen-de">Luyện đề</a>
+      <a href="tai-lieu" class="active">Tài liệu</a>
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -46,19 +46,21 @@
       <h1>Tài liệu của lớp</h1>
       <p style="margin-top:6px">Tài liệu thầy biên soạn — xem online hoặc tải về in.</p>
     </div>
-    <a class="btn btn-primary btn-sm" id="nutSoan" href="quan-tri-tai-lieu.html" style="display:none">+ Soạn tài liệu</a>
+    <a class="btn btn-primary btn-sm" id="nutSoan" href="quan-tri-tai-lieu" style="display:none">+ Soạn tài liệu</a>
   </div>
 
   <div id="dsTaiLieu"><div class="empty card">Đang tải…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 function urlPdf(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + path;
 }
 

@@ -8,8 +8,8 @@
 <title>Học tập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="vinhmath.css?v=3.6">
+<link rel="stylesheet" href="css/tokens.css?v=3.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
 <style>
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
 .greet{padding:48px 0 8px}
@@ -32,11 +32,11 @@
 
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index.html"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
     <nav class="navlinks">
-      <a href="hoc-tap.html" class="active">Học tập</a>
-      <a href="lop-online.html">Lớp Online</a>
-      <a href="tai-lieu.html">Tài liệu</a>
+      <a href="hoc-tap" class="active">Học tập</a>
+      <a href="lop-online">Lớp Online</a>
+      <a href="tai-lieu">Tài liệu</a>
       <a href="#">Kết quả</a>
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
@@ -72,10 +72,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="vinhmath.js?v=3.6"></script>
-<script src="menu.js"></script>
-<script src="analytics.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
 <script>
 // Lấy mã video từ link YouTube để hiện ảnh bìa
 function youtubeId(url) {
@@ -89,7 +89,7 @@ function theBaiHoc(bh) {
   var vid = youtubeId(bh.youtube_url);
   var thumb = vid
     ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
-  var href = bh.id ? 'bai-hoc.html?id=' + bh.id : '#';
+  var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   return '<div class="card lesson">' +
     '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
     '<div class="body">' +
