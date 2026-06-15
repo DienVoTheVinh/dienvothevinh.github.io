@@ -323,7 +323,12 @@
 
         <div class="field">
           <label>Ảnh chụp bảng buổi học (phiếu bài, ghi chép...) — chọn nhiều ảnh được</label>
-          <input type="file" class="input" id="bhAnhFile" accept="image/*" multiple style="padding:8px">
+          <div id="bhAnhDropZone" tabindex="0" style="border:2px dashed var(--line-2);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--surface-2);transition:border-color .15s,background .15s;color:var(--ink-2)">
+            <div style="font-size:1.6rem;line-height:1">🖼️</div>
+            <div style="font-weight:700;margin-top:6px;color:var(--ink)">Dán ảnh chụp màn hình tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
+            <div style="font-size:.8rem;margin-top:3px">hoặc bấm để chọn tệp · kéo-thả ảnh vào đây · chọn nhiều ảnh được</div>
+          </div>
+          <input type="file" id="bhAnhFile" accept="image/*" multiple style="display:none">
           <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
         </div>
       </div>
@@ -1549,6 +1554,25 @@ if ($('bhAnhFile')) {
     veAnhHienCo();
   });
 }
+
+// Khung dán/kéo-thả ảnh: bấm để chọn tệp, kéo-thả, hoặc dán Cmd/Ctrl+V
+(function () {
+  var dz = $('bhAnhDropZone');
+  if (!dz) return;
+  function reset() { dz.style.borderColor = 'var(--line-2)'; dz.style.background = 'var(--surface-2)'; }
+  function active() { dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-soft)'; }
+  dz.addEventListener('click', function () { if ($('bhAnhFile')) $('bhAnhFile').click(); });
+  dz.addEventListener('dragover', function (e) { e.preventDefault(); active(); });
+  dz.addEventListener('dragleave', reset);
+  dz.addEventListener('drop', function (e) {
+    e.preventDefault(); reset();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files) for (var i = 0; i < files.length; i++) {
+      if (files[i].type.indexOf('image') !== -1) selectedImageFiles.push(files[i]);
+    }
+    veAnhHienCo();
+  });
+})();
 
 window.addEventListener('paste', function(e) {
   var modal = $('modalForm');
