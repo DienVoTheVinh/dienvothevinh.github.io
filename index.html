@@ -7,8 +7,8 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=2.9">
-<link rel="stylesheet" href="vinhmath.css?v=2.9">
+<link rel="stylesheet" href="tokens.css?v=3.0">
+<link rel="stylesheet" href="vinhmath.css?v=3.0">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
@@ -1133,7 +1133,7 @@ body.math-grid {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.9"></script>
+<script src="vinhmath.js?v=3.0"></script>
 <script src="analytics.js"></script>
 <script>
 // Blog công khai (quảng bá, đọc tự do — không cần đăng nhập)
@@ -1479,65 +1479,63 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <script>
-// --- INTERACTIVE CYBERMATH CANVAS ---
+// --- INTERACTIVE MATH LAB CANVAS ---
 var canvas = document.getElementById('cyberCanvas');
 var ctx = canvas.getContext('2d');
-
 var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
 // Resizing
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  initMatrix();
 }
 window.addEventListener('resize', resize);
+resize();
 
-// Matrix rain variables
-var mathSymbols = ['∫', '∑', '∞', 'π', 'θ', 'λ', '√', 'Δ', '∇', '∂', 'f(x)', 'e^{iπ}+1=0', 'lim', 'dx', 'dy', 'log', 'matrix', 'sin(x)', 'cos(x)', 'x²', 'y³', 'λ', 'θ', 'δ', 'dx/dy', 'G(x)', 'P(A|B)'];
-var columns = [];
-
-function initMatrix() {
-  var cols = Math.floor(canvas.width / 24);
-  columns = [];
-  for (var i = 0; i < cols; i++) {
-    columns.push({
-      x: i * 24,
-      y: Math.random() * -canvas.height,
-      speed: 0.5 + Math.random() * 1.5
-    });
+// 1. Tesseract (4D Hypercube) Setup
+var tesseractVertices = [];
+for (var x = -1; x <= 1; x += 2) {
+  for (var y = -1; y <= 1; y += 2) {
+    for (var z = -1; z <= 1; z += 2) {
+      for (var w = -1; w <= 1; w += 2) {
+        tesseractVertices.push([x, y, z, w]);
+      }
+    }
+  }
+}
+var tesseractEdges = [];
+for (var i = 0; i < 16; i++) {
+  for (var j = i + 1; j < 16; j++) {
+    var diff = 0;
+    for (var k = 0; k < 4; k++) {
+      if (tesseractVertices[i][k] !== tesseractVertices[j][k]) diff++;
+    }
+    if (diff === 1) tesseractEdges.push([i, j]);
   }
 }
 
-// Lorenz Attractor simulation (Butterfly Effect: two paths with slight variation)
-var points1 = [];
-var points2 = [];
-var lx1 = 0.1, ly1 = 0, lz1 = 0;
-var lx2 = 0.101, ly2 = 0, lz2 = 0; // slight difference in initial conditions
+// 2. Lorenz Attractor Setup (Real-time integration)
+var lorenzParticles = [
+  { x: 0.1, y: 0.0, z: 0.0, history: [], color: 'rgba(0, 242, 254, 0.85)', glow: '#00f2fe' },
+  { x: 0.1001, y: 0.0, z: 0.0, history: [], color: 'rgba(139, 92, 246, 0.8)', glow: '#8b5cf6' },
+  { x: 0.1002, y: 0.0, z: 0.0, history: [], color: 'rgba(245, 158, 11, 0.75)', glow: '#f59e0b' }
+];
 var sigma = 10, rho = 28, beta = 8/3;
-var dt = 0.005;
+var dt = 0.007;
 
-// Generate Lorenz points for Path 1
-for (var i = 0; i < 900; i++) {
-  var dx = sigma * (ly1 - lx1) * dt;
-  var dy = (lx1 * (rho - lz1) - ly1) * dt;
-  var dz = (lx1 * ly1 - beta * lz1) * dt;
-  lx1 += dx;
-  ly1 += dy;
-  lz1 += dz;
-  points1.push({ x: lx1, y: ly1, z: lz1 });
-}
+// 3. Floating Math Formulas Setup
+var formulas = [
+  { text: "e^{iπ} + 1 = 0", x: 100, y: 150, vx: 0.1, vy: -0.05, alpha: 0.1, targetAlpha: 0.3, size: 14 },
+  { text: "∫_{-∞}^{∞} e^{-x²} dx = √π", x: 300, y: 400, vx: -0.08, vy: 0.05, alpha: 0.15, targetAlpha: 0.35, size: 15 },
+  { text: "iℏ ∂/∂t Ψ = Ĥ Ψ", x: 700, y: 200, vx: 0.05, vy: -0.07, alpha: 0.08, targetAlpha: 0.28, size: 14 },
+  { text: "f̂(ξ) = ∫_{-∞}^{∞} f(x) e^{-2πixξ} dx", x: 500, y: 600, vx: -0.06, vy: -0.04, alpha: 0.12, targetAlpha: 0.32, size: 15 },
+  { text: "∇ × E = -∂B/∂t", x: 800, y: 500, vx: 0.07, vy: 0.06, alpha: 0.1, targetAlpha: 0.3, size: 14 },
+  { text: "P(A|B) = P(B|A)P(A) / P(B)", x: 200, y: 700, vx: 0.08, vy: -0.08, alpha: 0.09, targetAlpha: 0.29, size: 13 }
+];
 
-// Generate Lorenz points for Path 2 (diverges slightly)
-for (var i = 0; i < 900; i++) {
-  var dx = sigma * (ly2 - lx2) * dt;
-  var dy = (lx2 * (rho - lz2) - ly2) * dt;
-  var dz = (lx2 * ly2 - beta * lz2) * dt;
-  lx2 += dx;
-  ly2 += dy;
-  lz2 += dz;
-  points2.push({ x: lx2, y: ly2, z: lz2 });
-}
+// 4. Fourier Epicycles Setup
+var fourierAngle = 0;
+var fourierPath = [];
 
 // 3D rotation angles
 var angleX = -0.3;
@@ -1550,205 +1548,269 @@ window.addEventListener('mousemove', function(e) {
   mouseY = e.clientY;
 });
 
-// Helper function to draw concentric 3D orbit grids
-function drawMathRings(origin, radius, color, projectFn) {
-  ctx.lineWidth = 0.8;
-  ctx.strokeStyle = color;
-  ctx.setLineDash([4, 4]); // tech dashed lines
-  
-  // Equator circle (Horizontal)
-  ctx.beginPath();
-  for (var theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.1) {
-    var pt = {
-      x: origin.x + radius * Math.cos(theta),
-      y: origin.y + radius * Math.sin(theta),
-      z: origin.z
-    };
-    var proj = projectFn(pt);
-    if (theta === 0) ctx.moveTo(proj.x, proj.y);
-    else ctx.lineTo(proj.x, proj.y);
-  }
-  ctx.stroke();
-  
-  // Prime Meridian circle (Vertical)
-  ctx.beginPath();
-  for (var theta = 0; theta <= Math.PI * 2 + 0.1; theta += 0.1) {
-    var pt = {
-      x: origin.x + radius * Math.cos(theta),
-      y: origin.y,
-      z: origin.z + radius * Math.sin(theta)
-    };
-    var proj = projectFn(pt);
-    if (theta === 0) ctx.moveTo(proj.x, proj.y);
-    else ctx.lineTo(proj.x, proj.y);
-  }
-  ctx.stroke();
-  
-  ctx.setLineDash([]); // reset dash style
-}
-
-// Animation loop
 function draw() {
   themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  
-  // Matrix rain fade background (smaller opacity for longer/clearer trails)
-  ctx.fillStyle = themeIsDark ? 'rgba(5, 8, 17, 0.12)' : 'rgba(245, 248, 255, 0.12)';
+  ctx.fillStyle = themeIsDark ? '#050811' : '#f5f8ff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Draw Matrix Rain (increased contrast and size)
-  ctx.font = '12px monospace';
-  for (var i = 0; i < columns.length; i++) {
-    var col = columns[i];
-    var sym = mathSymbols[Math.floor(Math.random() * mathSymbols.length)];
+  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
+  var w = canvas.width;
+  var h = canvas.height;
+  
+  // 1. Draw Floating Math Formulas (Gently floating & fading)
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  formulas.forEach(function(f) {
+    f.x += f.vx;
+    f.y += f.vy;
     
-    // Faint trails (much softer to avoid eye strain)
-    ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.05)' : 'rgba(37, 99, 235, 0.04)';
-    ctx.fillText(sym, col.x, col.y);
+    if (f.x < 50 || f.x > w - 50) f.vx *= -1;
+    if (f.y < 50 || f.y > h - 50) f.vy *= -1;
     
-    // Glowing active head of the rain column (softer)
-    if (Math.random() > 0.35) {
-      ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(37, 99, 235, 0.20)';
-      ctx.fillText(sym, col.x, col.y);
-    }
+    if (Math.random() > 0.99) f.targetAlpha = 0.1 + Math.random() * 0.3;
+    f.alpha += (f.targetAlpha - f.alpha) * 0.02;
     
-    col.y += col.speed * 3.5;
-    if (col.y > canvas.height) {
-      col.y = Math.random() * -100;
-    }
-  }
+    ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, ' + f.alpha * 0.4 + ')' : 'rgba(37, 99, 235, ' + f.alpha * 0.3 + ')';
+    ctx.font = 'bold ' + f.size + 'px "Be Vietnam Pro", sans-serif';
+    ctx.fillText(f.text, f.x, f.y);
+  });
   
   // Smooth automatic continuous Y rotation + subtle mouse offset tilt
-  var autoRotateY = Date.now() * 0.0003;
-  var autoRotateX = Math.sin(Date.now() * 0.0001) * 0.15;
-  var targetAngleX = autoRotateX + (mouseY - canvas.height / 2) * 0.0005;
-  var targetAngleY = autoRotateY + (mouseX - canvas.width / 2) * 0.0005;
+  var autoRotateY = Date.now() * 0.00015;
+  var autoRotateX = Math.sin(Date.now() * 0.00005) * 0.1;
+  var targetAngleX = autoRotateX + (mouseY - h / 2) * 0.0002;
+  var targetAngleY = autoRotateY + (mouseX - w / 2) * 0.0002;
   angleX += (targetAngleX - angleX) * 0.05;
   angleY += (targetAngleY - angleY) * 0.05;
   
-  // Dynamic centering: Position it perfectly behind the .portrait container
-  var portraitEl = document.querySelector('.portrait');
-  var centerX = canvas.width * 0.76;
-  var centerY = canvas.height * 0.55;
-  if (portraitEl) {
-    var rect = portraitEl.getBoundingClientRect();
-    centerX = rect.left + rect.width / 2;
-    centerY = rect.top + rect.height / 2;
+  // --- A. DRAW 4D TESSERACT (LEFT SIDE) ---
+  var tessCenterX = w * 0.22;
+  var tessCenterY = h * 0.55;
+  var loginSide = document.querySelector('.side');
+  if (loginSide) {
+    var rect = loginSide.getBoundingClientRect();
+    tessCenterX = rect.left + rect.width * 0.25;
+    tessCenterY = rect.top + rect.height * 0.5;
   }
-  var zoom = Math.min(canvas.width, canvas.height) * 0.012;
-  var focalLength = 300;
   
-  // Project function
-  function project(pt) {
-    var cx = pt.x;
-    var cy = pt.y;
-    var cz = pt.z - 25; // center the attractor
+  var tRotXW = Date.now() * 0.0002;
+  var tRotYW = Date.now() * 0.00015;
+  var tRotYZ = Date.now() * 0.0001;
+  
+  var projectedVertices = [];
+  tesseractVertices.forEach(function(v) {
+    var r1 = rotateXW(v, tRotXW);
+    var r2 = rotateYW(r1, tRotYW);
+    var r3 = rotateYZ(r2, tRotYZ);
     
-    // Rotate Y
+    var dist4D = 2.0;
+    var scale4D = dist4D / (dist4D - r3[3]);
+    var x3D = r3[0] * scale4D;
+    var y3D = r3[1] * scale4D;
+    var z3D = r3[2] * scale4D;
+    
     var cosY = Math.cos(angleY);
     var sinY = Math.sin(angleY);
+    var x3_1 = x3D * cosY - z3D * sinY;
+    var z3_1 = x3D * sinY + z3D * cosY;
+    
+    var cosX = Math.cos(angleX);
+    var sinX = Math.sin(angleX);
+    var y3_2 = y3D * cosX - z3_1 * sinX;
+    var z3_2 = y3D * sinX + z3_1 * cosX;
+    
+    var zoom = Math.min(w, h) * 0.12;
+    var dist3D = 3.0;
+    var scale3D = dist3D / (dist3D + z3_2);
+    projectedVertices.push({
+      x: tessCenterX + x3_1 * scale3D * zoom,
+      y: tessCenterY + y3_2 * scale3D * zoom
+    });
+  });
+  
+  // Draw Tesseract Edges
+  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.2)' : 'rgba(37, 99, 235, 0.16)';
+  ctx.lineWidth = 1.0;
+  tesseractEdges.forEach(function(edge) {
+    var p1 = projectedVertices[edge[0]];
+    var p2 = projectedVertices[edge[1]];
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+  });
+  // Draw vertices
+  ctx.fillStyle = themeIsDark ? '#00f2fe' : '#2563eb';
+  projectedVertices.forEach(function(p) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  // Label Tesseract
+  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
+  ctx.font = '10px monospace';
+  ctx.fillText("4D Hypercube (Tesseract)", tessCenterX, tessCenterY - Math.min(w, h) * 0.18);
+  
+  // --- B. DRAW LORENZ ATTRACTOR (RIGHT SIDE - REALTIME) ---
+  var lorenzCenterX = w * 0.7;
+  var lorenzCenterY = h * 0.5;
+  if (loginSide) {
+    var rect = loginSide.getBoundingClientRect();
+    lorenzCenterX = rect.left + rect.width * 0.72;
+    lorenzCenterY = rect.top + rect.height * 0.5;
+  }
+  
+  var lorenzZoom = Math.min(w, h) * 0.011;
+  var lorenzScaleFocal = 300;
+  
+  // Integrate Lorenz
+  for (var step = 0; step < 2; step++) {
+    lorenzParticles.forEach(function(p) {
+      var dx = sigma * (p.y - p.x) * dt;
+      var dy = (p.x * (rho - p.z) - p.y) * dt;
+      var dz = (p.x * p.y - beta * p.z) * dt;
+      p.x += dx;
+      p.y += dy;
+      p.z += dz;
+      
+      p.history.push({ x: p.x, y: p.y, z: p.z });
+      if (p.history.length > 150) p.history.shift();
+    });
+  }
+  
+  function projectLorenz(pt) {
+    var cx = pt.x;
+    var cy = pt.y;
+    var cz = pt.z - 25;
+    
+    var cosY = Math.cos(angleY * 0.7);
+    var sinY = Math.sin(angleY * 0.7);
     var x1 = cx * cosY - cz * sinY;
     var z1 = cx * sinY + cz * cosY;
     
-    // Rotate X
-    var cosX = Math.cos(angleX);
-    var sinX = Math.sin(angleX);
+    var cosX = Math.cos(angleX * 0.7);
+    var sinX = Math.sin(angleX * 0.7);
     var y2 = cy * cosX - z1 * sinX;
     var z2 = cy * sinX + z1 * cosX;
     
-    var scale = focalLength / (focalLength + z2);
+    var scale = lorenzScaleFocal / (lorenzScaleFocal + z2);
     return {
-      x: centerX + x1 * scale * zoom,
-      y: centerY + y2 * scale * zoom,
-      depth: z2
+      x: lorenzCenterX + x1 * scale * lorenzZoom,
+      y: lorenzCenterY + y2 * scale * lorenzZoom
     };
   }
   
-  // Draw 3D Axes (subtle)
-  var axes = [
-    { pt: { x: 30, y: 0, z: 25 }, label: 'X_axis', color: themeIsDark ? 'rgba(0, 240, 255, 0.4)' : 'rgba(37, 99, 235, 0.3)' },
-    { pt: { x: 0, y: 30, z: 25 }, label: 'Y_axis', color: themeIsDark ? 'rgba(255, 0, 127, 0.4)' : 'rgba(239, 68, 68, 0.3)' },
-    { pt: { x: 0, y: 0, z: 55 }, label: 'Z_axis', color: themeIsDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.3)' }
-  ];
+  ctx.strokeStyle = themeIsDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  var ox = projectLorenz({ x: -30, y: 0, z: 25 });
+  var oy = projectLorenz({ x: 30, y: 0, z: 25 });
+  ctx.moveTo(ox.x, ox.y); ctx.lineTo(oy.x, oy.y);
+  ctx.stroke();
   
-  var originProj = project({ x: 0, y: 0, z: 25 });
-  ctx.lineWidth = 1.2;
-  axes.forEach(function(axis) {
-    var ptProj = project(axis.pt);
-    ctx.strokeStyle = axis.color;
+  lorenzParticles.forEach(function(p) {
+    if (p.history.length < 2) return;
+    
     ctx.beginPath();
-    ctx.moveTo(originProj.x, originProj.y);
-    ctx.lineTo(ptProj.x, ptProj.y);
+    var pStart = projectLorenz(p.history[0]);
+    ctx.moveTo(pStart.x, pStart.y);
+    for (var j = 1; j < p.history.length; j++) {
+      var pProj = projectLorenz(p.history[j]);
+      ctx.lineTo(pProj.x, pProj.y);
+    }
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 1.6;
     ctx.stroke();
     
-    ctx.fillStyle = axis.color;
-    ctx.font = '9px monospace';
-    ctx.fillText(axis.label, ptProj.x + 4, ptProj.y + 4);
+    var tip = projectLorenz(p);
+    ctx.fillStyle = p.glow;
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, 4, 0, Math.PI * 2);
+    ctx.shadowBlur = themeIsDark ? 10 : 3;
+    ctx.shadowColor = p.glow;
+    ctx.fill();
+    ctx.shadowBlur = 0;
   });
   
-  // Draw concentric math coordinate grid rings (New Decor)
-  var ringColor = themeIsDark ? 'rgba(0, 242, 254, 0.12)' : 'rgba(37, 99, 235, 0.1)';
-  drawMathRings({ x: 0, y: 0, z: 25 }, 24, ringColor, project);
-  drawMathRings({ x: 0, y: 0, z: 25 }, 36, ringColor, project);
+  // Label Lorenz
+  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
+  ctx.font = '10px monospace';
+  ctx.fillText("Lorenz Chaos Attractor (σ=10, ρ=28, β=8/3)", lorenzCenterX, lorenzCenterY - Math.min(w, h) * 0.18);
   
-  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
-  
-  // Draw Lorenz Attractor Path 1 (Cyan/Blue - Brighter)
-  ctx.beginPath();
-  var start = project(points1[0]);
-  ctx.moveTo(start.x, start.y);
-  for (var i = 1; i < points1.length; i++) {
-    var pt = project(points1[i]);
-    ctx.lineTo(pt.x, pt.y);
+  // --- C. DRAW FOURIER SERIES EPICYCLES (CENTER BOTTOM) ---
+  var fourierCenterX = w * 0.48;
+  var fourierCenterY = h * 0.75;
+  if (loginSide) {
+    fourierCenterX = rect.left + rect.width * 0.5;
+    fourierCenterY = rect.top + rect.height * 0.78;
   }
-  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.85)' : 'rgba(37, 99, 235, 0.7)';
-  ctx.lineWidth = 1.8;
-  ctx.shadowBlur = themeIsDark ? 8 : 2;
-  ctx.shadowColor = themeIsDark ? '#00f2fe' : accentColor;
-  ctx.stroke();
   
-  // Draw Lorenz Attractor Path 2 (Divergent Path - Yellow/Violet - Brighter)
-  ctx.beginPath();
-  var start2 = project(points2[0]);
-  ctx.moveTo(start2.x, start2.y);
-  for (var i = 1; i < points2.length; i++) {
-    var pt = project(points2[i]);
-    ctx.lineTo(pt.x, pt.y);
-  }
-  ctx.strokeStyle = themeIsDark ? 'rgba(245, 158, 11, 0.65)' : 'rgba(139, 92, 246, 0.55)';
-  ctx.lineWidth = 1.4;
-  ctx.shadowColor = themeIsDark ? '#fbbf24' : '#8b5cf6';
-  ctx.stroke();
+  fourierAngle += 0.008;
+  var fX = 0, fY = 0;
+  var radii = [45, 18, 6];
+  var speeds = [1, 3, -7];
   
-  ctx.shadowBlur = 0; // reset blur
+  ctx.strokeStyle = themeIsDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  ctx.lineWidth = 0.8;
   
-  // Draw flowing sparks along Path 1
-  var timeIndex = Math.floor((Date.now() / 15) % points1.length);
-  var sparkCount = 3;
-  ctx.fillStyle = themeIsDark ? '#ffffff' : accentColor;
-  for (var j = 0; j < sparkCount; j++) {
-    var idx = (timeIndex + Math.floor(j * points1.length / sparkCount)) % points1.length;
-    var sparkProj = project(points1[idx]);
+  for (var k = 0; k < radii.length; k++) {
+    var prevX = fX;
+    var prevY = fY;
+    var r = radii[k];
+    var sp = speeds[k];
+    
+    fX += r * Math.cos(sp * fourierAngle);
+    fY += r * Math.sin(sp * fourierAngle);
+    
     ctx.beginPath();
-    ctx.arc(sparkProj.x, sparkProj.y, 4.5, 0, Math.PI * 2);
-    ctx.shadowBlur = themeIsDark ? 12 : 3;
-    ctx.shadowColor = themeIsDark ? '#00f2fe' : accentColor;
-    ctx.fill();
+    ctx.arc(fourierCenterX + prevX, fourierCenterY + prevY, r, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(fourierCenterX + prevX, fourierCenterY + prevY);
+    ctx.lineTo(fourierCenterX + fX, fourierCenterY + fY);
+    ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.2)' : 'rgba(37, 99, 235, 0.15)';
+    ctx.stroke();
   }
   
-  // Draw divergent sparks along Path 2
-  ctx.fillStyle = themeIsDark ? '#ffeeb5' : '#8b5cf6';
-  for (var j = 0; j < sparkCount; j++) {
-    var idx = (timeIndex + Math.floor(j * points2.length / sparkCount) + 120) % points2.length;
-    var sparkProj = project(points2[idx]);
+  fourierPath.push({ x: fX, y: fY });
+  if (fourierPath.length > 500) fourierPath.shift();
+  
+  if (fourierPath.length > 1) {
     ctx.beginPath();
-    ctx.arc(sparkProj.x, sparkProj.y, 3.5, 0, Math.PI * 2);
-    ctx.shadowBlur = themeIsDark ? 8 : 2;
-    ctx.shadowColor = themeIsDark ? '#fbbf24' : '#8b5cf6';
-    ctx.fill();
+    ctx.moveTo(fourierCenterX + fourierPath[0].x, fourierCenterY + fourierPath[0].y);
+    for (var m = 1; m < fourierPath.length; m++) {
+      ctx.lineTo(fourierCenterX + fourierPath[m].x, fourierCenterY + fourierPath[m].y);
+    }
+    ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.7)' : 'rgba(37, 99, 235, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
-  ctx.shadowBlur = 0;
+  
+  // Label Fourier
+  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
+  ctx.font = '10px monospace';
+  ctx.fillText("Fourier Approximation", fourierCenterX, fourierCenterY - 65);
   
   requestAnimationFrame(draw);
+}
+
+// 4D Rotation Helpers
+function rotateXW(pt, theta) {
+  var x = pt[0], w = pt[3];
+  var cos = Math.cos(theta), sin = Math.sin(theta);
+  return [x * cos - w * sin, pt[1], pt[2], x * sin + w * cos];
+}
+function rotateYW(pt, theta) {
+  var y = pt[1], w = pt[3];
+  var cos = Math.cos(theta), sin = Math.sin(theta);
+  return [pt[0], y * cos - w * sin, pt[2], y * sin + w * cos];
+}
+function rotateYZ(pt, theta) {
+  var y = pt[1], z = pt[2];
+  var cos = Math.cos(theta), sin = Math.sin(theta);
+  return [pt[0], y * cos - z * sin, y * sin + z * cos, pt[3]];
 }
 
 resize();
