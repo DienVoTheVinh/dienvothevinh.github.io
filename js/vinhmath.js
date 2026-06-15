@@ -69,7 +69,7 @@ function apdungMauAccent(el, color, isDark) {
       violet: { accent: '#8b5cf6', grad: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', soft: 'rgba(139, 92, 246, 0.08)' },
       coral:  { accent: '#ff5e62', grad: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', soft: 'rgba(255, 94, 98, 0.08)' },
       green:  { accent: '#10b981', grad: 'linear-gradient(135deg, #34d399 0%, #059669 100%)', soft: 'rgba(16, 185, 129, 0.08)' },
-      amber:  { accent: '#b45309', grad: 'linear-gradient(135deg, #fbbf24 0%, #78350f 100%)', soft: 'rgba(180, 83, 9, 0.08)' }
+      amber:  { accent: '#C5870A', grad: 'linear-gradient(135deg, #FFCC3E 0%, #F0A819 50%, #C9870B 100%)', soft: 'rgba(197, 135, 10, 0.10)' }
     },
     dark: {
       blue:   { accent: '#2563eb', grad: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)', soft: 'rgba(37, 99, 235, 0.15)' },
@@ -531,7 +531,7 @@ function khoiTaoControlCenter() {
           '<div class="cc-color-dot ' + (currentAccent === 'violet' ? 'active' : '') + '" data-color="violet" style="background:#8b5cf6;" title="Tím"></div>' +
           '<div class="cc-color-dot ' + (currentAccent === 'coral' ? 'active' : '') + '" data-color="coral" style="background:#ff5e62;" title="Đỏ son"></div>' +
           '<div class="cc-color-dot ' + (currentAccent === 'green' ? 'active' : '') + '" data-color="green" style="background:#10b981;" title="Xanh lá"></div>' +
-          '<div class="cc-color-dot ' + (currentAccent === 'amber' ? 'active' : '') + '" data-color="amber" style="background:#d97706;" title="Vàng đất"></div>' +
+          '<div class="cc-color-dot ' + (currentAccent === 'amber' ? 'active' : '') + '" data-color="amber" style="background:#E0A416;" title="Vàng kim"></div>' +
         '</div>' +
       '</div>' +
     '</div>';
