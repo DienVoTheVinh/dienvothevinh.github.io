@@ -1041,58 +1041,34 @@ async function guiTinNhanAI() {
   }
   
   try {
-    var apiKey = window.VM_AI_SETTINGS.key ? window.VM_AI_SETTINGS.key.trim() : '';
-    var isPlaceholder = (apiKey === 'NHAP_GEMINI_KEY_TAI_DAY' || apiKey === '');
-    
     var tEl = document.getElementById('aiChatTyping');
-    
     var isAdminUser = (window.VM_USER_ROLE === 'admin') || !!document.getElementById('ccAdminControls');
-    
-    if (isPlaceholder) {
-      if (tEl) tEl.remove();
-      var aiMsg = document.createElement('div');
-      aiMsg.className = 'acb-msg ai';
-      if (isAdminUser) {
-        aiMsg.innerHTML = '<strong>Sếp ơi!</strong> Gemini API Key hiện tại chưa được cấu hình (vẫn là placeholder <code>NHAP_GEMINI_KEY_TAI_DAY</code>). Sếp vui lòng mở <strong>Trung tâm điều khiển (Control Center)</strong> ở góc trên thanh menu (biểu tượng thanh gạt 🎛️), nhập API Key thực tế và nhấn <strong>Lưu</strong> nhé!';
-      } else {
-        aiMsg.textContent = 'Hệ thống Trợ lý AI đang được bảo trì để nâng cấp. Em vui lòng quay lại hỏi đáp sau nhé!';
-      }
-      body.appendChild(aiMsg);
-      cuonXuongChat();
-      return;
-    }
 
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + apiKey;
-    
-    var response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: aiChatHistory,
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
-        }
-      })
-    });
-    
-    var data = await response.json();
     var reply = '';
     var isHtml = false;
-    
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-      reply = data.candidates[0].content.parts[0].text;
-    } else {
-      console.error("Gemini API error response:", data);
-      if (data.error) {
-        if (isAdminUser) {
-          reply = '<strong>Lỗi Gemini API (Chỉ hiển thị với Admin):</strong> ' + (data.error.message || JSON.stringify(data.error)) + '<br><br>Sếp vui lòng kiểm tra lại tính chính xác của Gemini API Key trong Trung tâm điều khiển (Control Center) nhé!';
-          isHtml = true;
-        } else {
-          reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
-        }
+    var ok = false;
+
+    // Gọi Gemini QUA Edge Function (key nằm phía máy chủ, không lộ ra trình duyệt)
+    var resp = await sb.functions.invoke('gemini-chat', {
+      body: { contents: aiChatHistory, systemPrompt: systemPrompt }
+    });
+
+    if (resp.error) {
+      console.error("Edge function error:", resp.error);
+      if (isAdminUser) {
+        reply = '<strong>Lỗi gọi trợ lý AI (chỉ admin thấy):</strong> ' + (resp.error.message || String(resp.error)) + '<br><br>Sếp kiểm tra lại secret <code>GEMINI_API_KEY</code> và trạng thái bật AI nhé.';
+        isHtml = true;
       } else {
-        reply = 'Xin lỗi em, có lỗi xảy ra khi kết nối với máy chủ AI. Em vui lòng thử lại sau nhé.';
+        reply = 'Xin lỗi em, hiện chưa kết nối được trợ lý AI. Em thử lại sau nhé.';
       }
+    } else if (resp.data && resp.data.reply) {
+      reply = resp.data.reply;
+      ok = true;
+    } else if (resp.data && resp.data.error) {
+      if (isAdminUser) { reply = '<strong>Trợ lý AI:</strong> ' + resp.data.error; isHtml = true; }
+      else { reply = 'Trợ lý AI hiện chưa sẵn sàng. Em thử lại sau nhé.'; }
+    } else {
+      reply = 'Xin lỗi em, hiện chưa trả lời được. Em thử lại sau nhé.';
     }
     
     if (tEl) tEl.remove();
@@ -1116,7 +1092,7 @@ async function guiTinNhanAI() {
     body.appendChild(aiMsg);
     cuonXuongChat();
     
-    if (data.candidates && data.candidates[0]) {
+    if (ok) {
       // Lưu lại hội thoại (chỉ lưu phần text để tránh phình to lịch sử chat turn sau)
       aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
     }
@@ -1172,10 +1148,7 @@ function themAdminControlsVaoCC() {
     
     '<div class="cc-input-row">' +
       '<div class="cc-input-label">Gemini API Key</div>' +
-      '<div class="cc-input-group">' +
-        '<input type="password" id="ccInputGeminiKey" value="' + key + '" placeholder="Nhập API Key...">' +
-        '<button class="btn btn-primary btn-sm" id="ccBtnSaveAIKey">Lưu</button>' +
-      '</div>' +
+      '<div style="font-size:.8rem;color:var(--ink-3);line-height:1.5">🔒 Key được lưu an toàn phía máy chủ (Supabase Edge Function secret <code>GEMINI_API_KEY</code>). Không nhập key tại đây nữa để tránh lộ ra trình duyệt.</div>' +
     '</div>';
     
   ccPanel.appendChild(adminDiv);
@@ -1192,25 +1165,6 @@ function themAdminControlsVaoCC() {
       sw.checked = !isChecked;
     } finally {
       sw.disabled = false;
-    }
-  });
-  
-  var btnSave = document.getElementById('ccBtnSaveAIKey');
-  btnSave.addEventListener('click', async function() {
-    var inp = document.getElementById('ccInputGeminiKey');
-    var val = inp.value.trim();
-    btnSave.disabled = true;
-    var oldText = btnSave.textContent;
-    btnSave.textContent = '⏳';
-    try {
-      var r = await sb.from('app_settings').upsert({ key: 'gemini_api_key', value: val });
-      if (r.error) throw r.error;
-      alert("Đã lưu Gemini API Key thành công!");
-    } catch (err) {
-      alert("Lỗi lưu API Key: " + err.message);
-    } finally {
-      btnSave.disabled = false;
-      btnSave.textContent = oldText;
     }
   });
 }
