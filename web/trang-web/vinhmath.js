@@ -1456,29 +1456,33 @@ function chupManHinhToanBo() {
   loadHtml2Canvas(function() {
     // Đảm bảo tất cả web fonts (Google Fonts, KaTeX fonts) đã tải xong
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(function() {
-      // Tạm thời ẩn các hiệu ứng động khi chụp để tránh nhòe hình
-      var style = document.createElement('style');
-      style.id = 'screenshot-temp-style';
-      style.innerHTML = '* { animation: none !important; transition: none !important; }';
-      document.head.appendChild(style);
+      // Đợi thêm 250ms để trình duyệt thực sự kết xuất phông chữ và tính toán lại layout
+      setTimeout(function() {
+        // Tạm thời ẩn các hiệu ứng động khi chụp để tránh nhòe hình
+        var style = document.createElement('style');
+        style.id = 'screenshot-temp-style';
+        style.innerHTML = '* { animation: none !important; transition: none !important; }';
+        document.head.appendChild(style);
 
-      html2canvas(document.body, {
-        useCORS: true,
-        scale: 2, // Bắt buộc lưu ở độ phân giải 2x cho sắc nét
-        scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0,
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
-        ignoreElements: function(element) {
-          return element.id === 'screenshotBtn' || element === loading;
-        }
-      }).then(function(canvas) {
-        // Gỡ bỏ style tạm thời
-        var tempSty = document.getElementById('screenshot-temp-style');
-        if (tempSty) tempSty.parentNode.removeChild(tempSty);
+        html2canvas(document.body, {
+          useCORS: true,
+          scale: 2, // Bắt buộc lưu ở độ phân giải 2x cho sắc nét
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight,
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
+          logging: false,
+          imageTimeout: 0,
+          ignoreElements: function(element) {
+            return element.id === 'screenshotBtn' || element === loading;
+          }
+        }).then(function(canvas) {
+          // Gỡ bỏ style tạm thời
+          var tempSty = document.getElementById('screenshot-temp-style');
+          if (tempSty) tempSty.parentNode.removeChild(tempSty);
 
         try {
           var link = document.createElement('a');
@@ -1500,6 +1504,7 @@ function chupManHinhToanBo() {
         if (btn) btn.style.visibility = 'visible';
         if (loading.parentNode) loading.parentNode.removeChild(loading);
       });
+      }, 250);
     });
   });
 }
