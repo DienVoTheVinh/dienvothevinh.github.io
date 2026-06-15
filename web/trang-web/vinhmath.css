@@ -1254,3 +1254,101 @@ tr:last-child td{border-bottom:none}
   border-radius: 6px;
 }
 
+/* ===== TỐI ƯU GIAO DIỆN MOBILE TOÀN HỆ THỐNG ===== */
+@media (max-width: 760px) {
+  /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
+  .topbar .nav {
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  .logo {
+    font-size: 1rem !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  .logo .dot {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.85rem !important;
+  }
+  .logo small {
+    display: none !important; /* Ẩn chữ phụ trên mobile */
+  }
+  
+  /* Giảm khoảng cách trong div tiện ích bên phải */
+  .topbar .nav > div[style*="display:flex"],
+  .topbar .nav > div {
+    gap: 6px !important;
+  }
+  
+  /* Biến nút Đăng xuất thành biểu tượng để siêu tiết kiệm diện tích */
+  .topbar button[onclick="dangXuat()"] {
+    font-size: 0 !important;
+    padding: 8px 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    border-radius: var(--r-sm, 8px) !important;
+  }
+  .topbar button[onclick="dangXuat()"]::before {
+    content: "🚪";
+    font-size: 1.05rem !important;
+  }
+  
+  /* 2. Tối ưu mục Blog trên trang chủ */
+  .blog-sec-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .blog-sec-head h2 {
+    font-size: 1.15rem !important;
+  }
+  #btnVietBlogTrangChu {
+    width: auto !important;
+    padding: 6px 12px !important;
+  }
+  .blog-slider-container {
+    padding: 12px !important;
+  }
+  .blog-slider {
+    gap: 12px !important;
+  }
+  .blog-card {
+    flex: 0 0 250px !important; /* Giảm chiều rộng card trên mobile */
+    padding: 14px !important;
+  }
+  .blog-card .bc-title {
+    font-size: 0.98rem !important;
+  }
+  .blog-card .bc-ex {
+    font-size: 0.82rem !important;
+  }
+  
+  /* 3. Tối ưu bảng Lịch tuần và Đếm ngược để vừa vặn hơn */
+  .date-display-card {
+    padding: 20px 14px !important;
+  }
+  .date-day-num {
+    font-size: 3.5rem !important;
+  }
+  .countdown-timer-grid {
+    gap: 6px !important;
+  }
+  .timer-box {
+    padding: 8px 4px !important;
+  }
+  .timer-box b {
+    font-size: 1.1rem !important;
+  }
+  .timer-box span {
+    font-size: 0.65rem !important;
+  }
+}
+
