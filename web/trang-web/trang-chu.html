@@ -8,8 +8,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=3.9">
-<link rel="stylesheet" href="css/vinhmath.css?v=3.9">
+<link rel="stylesheet" href="css/tokens.css?v=4.0">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.0">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -591,7 +591,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=3.9"></script>
+<script src="js/vinhmath.js?v=4.0"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1243,6 +1243,26 @@ function gcalKey(dt) {
 }
 function gcalToMin(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
 
+var MAU_LOP_PALETTE = [
+  'linear-gradient(135deg, #4A6FA5, #35527d)', // Blue
+  'linear-gradient(135deg, #3E8E7E, #2d6b5e)', // Teal
+  'linear-gradient(135deg, #B5483A, #8f3126)', // Red/Coral
+  'linear-gradient(135deg, #7B5EA7, #5c4481)', // Purple
+  'linear-gradient(135deg, #C26B4E, #9e5138)', // Terracotta
+  'linear-gradient(135deg, #2b708c, #1d4e62)', // Ocean Blue
+  'linear-gradient(135deg, #6c8c3e, #516a2d)', // Olive
+  'linear-gradient(135deg, #8c3e7b, #6b2d5d)'  // Magenta
+];
+function layMauLop(tenLop) {
+  if (!tenLop) return 'linear-gradient(135deg, #94a3b8, #64748b)';
+  var hash = 0;
+  for (var i = 0; i < tenLop.length; i++) {
+    hash = tenLop.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  var index = Math.abs(hash) % MAU_LOP_PALETTE.length;
+  return MAU_LOP_PALETTE[index];
+}
+
 function gcalEventsForDay(dt) {
   var jsDay = dt.getDay(); var wd = jsDay === 0 ? 7 : jsDay; var key = gcalKey(dt); var arr = [];
   (tatCaSchedules || []).forEach(function (s) {
@@ -1251,7 +1271,7 @@ function gcalEventsForDay(dt) {
     arr.push({
       start: s.start_time, end: s.end_time,
       title: (s.classes ? s.classes.name : 'Lớp học'),
-      cls: (s.mode === 'online' ? 'online' : 'offline')
+      bg: layMauLop(s.classes ? s.classes.name : 'Lớp học')
     });
   });
   (tatCaExams || []).forEach(function (e) {
@@ -1260,7 +1280,7 @@ function gcalEventsForDay(dt) {
     var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
     var endD = e.closes_at ? new Date(e.closes_at) : new Date(od.getTime() + (e.duration_minutes || 45) * 60000);
     var et = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0') + ':00';
-    arr.push({ start: st, end: et, title: '📝 ' + e.title, cls: 'exam' });
+    arr.push({ start: st, end: et, title: '📝 ' + e.title, bg: 'linear-gradient(135deg, #B5483A, #8f3126)' });
   });
   return arr;
 }
@@ -1303,7 +1323,7 @@ function veLichTuan() {
       if (eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60) return;
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
       var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
-      evHtml += '<div class="gcal-ev ' + ev.cls + '" style="top:' + top + 'px;height:' + height + 'px">' +
+      evHtml += '<div class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + '">' +
         '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
     });
     var nowHtml = '';
