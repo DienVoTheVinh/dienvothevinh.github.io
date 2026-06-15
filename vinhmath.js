@@ -1373,6 +1373,7 @@ async function khoiDongTrang() {
   // 1. Khởi tạo Control Center cơ bản
   khoiTaoControlCenter();
   capNhatNutTheme();
+  themNutChupManHinh();
   
   // 2. Tải cài đặt AI
   await tailaiCaiDatAI();
@@ -1416,5 +1417,89 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', function () {
     khoiDongTrang();
   });
+}
+
+/* ---------- HỆ THỐNG CHỤP ẢNH MÀN HÌNH TỰ ĐỘNG ---------- */
+function loadHtml2Canvas(callback) {
+  if (window.html2canvas) {
+    callback();
+    return;
+  }
+  var script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  script.onload = function() {
+    callback();
+  };
+  document.head.appendChild(script);
+}
+
+function chupManHinhToanBo() {
+  var btn = document.getElementById('screenshotBtn');
+  if (btn) btn.style.visibility = 'hidden';
+
+  var loading = document.createElement('div');
+  loading.style.position = 'fixed';
+  loading.style.top = '20px';
+  loading.style.left = '50%';
+  loading.style.transform = 'translateX(-50%)';
+  loading.style.background = 'var(--accent)';
+  loading.style.color = '#fff';
+  loading.style.padding = '8px 16px';
+  loading.style.borderRadius = '20px';
+  loading.style.fontSize = '0.85rem';
+  loading.style.fontWeight = '700';
+  loading.style.zIndex = '99999';
+  loading.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  loading.textContent = '📸 Đang chụp màn hình...';
+  document.body.appendChild(loading);
+
+  loadHtml2Canvas(function() {
+    html2canvas(document.body, {
+      useCORS: true,
+      scale: window.devicePixelRatio || 2,
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
+      ignoreElements: function(element) {
+        return element.id === 'screenshotBtn' || element === loading;
+      }
+    }).then(function(canvas) {
+      try {
+        var link = document.createElement('a');
+        var pageName = location.pathname.split('/').pop().split('.')[0] || 'trang-chu';
+        link.download = 'vinhmath-' + pageName + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (e) {
+        alert('Không thể lưu ảnh do lỗi bảo mật CORS. Hãy thử trên trình duyệt Safari hoặc Chrome!');
+      } finally {
+        if (btn) btn.style.visibility = 'visible';
+        if (loading.parentNode) loading.parentNode.removeChild(loading);
+      }
+    }).catch(function(err) {
+      alert('Lỗi chụp màn hình: ' + err);
+      if (btn) btn.style.visibility = 'visible';
+      if (loading.parentNode) loading.parentNode.removeChild(loading);
+    });
+  });
+}
+
+function themNutChupManHinh() {
+  var themeBtn = document.getElementById('themeBtn');
+  if (!themeBtn || document.getElementById('screenshotBtn')) return;
+
+  var parent = themeBtn.parentNode;
+  var btn = document.createElement('button');
+  btn.id = 'screenshotBtn';
+  btn.className = 'btn btn-ghost btn-sm';
+  btn.title = 'Chụp ảnh màn hình';
+  btn.style.display = 'inline-flex';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
+
+  btn.onclick = function() {
+    chupManHinhToanBo();
+  };
+
+  parent.insertBefore(btn, themeBtn);
 }
 
