@@ -9,8 +9,8 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.3">
-<link rel="stylesheet" href="vinhmath.css?v=3.3">
+<link rel="stylesheet" href="tokens.css?v=3.4">
+<link rel="stylesheet" href="vinhmath.css?v=3.4">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
@@ -159,7 +159,7 @@
   align-items: center;
   width: 100%;
   margin-bottom: 48px;
-  background: rgba(13, 20, 38, 0.6);
+  background: rgba(var(--surface-rgb), 0.6);
   border: 1px solid var(--line-2);
   border-radius: var(--r-lg);
   padding: 16px 32px;
@@ -170,7 +170,7 @@
   overflow: visible;
 }
 [data-theme="dark"] .hero-brand-banner {
-  background: rgba(13, 20, 38, 0.4);
+  background: rgba(var(--surface-rgb), 0.4);
 }
 .brand-title {
   font-family: var(--font-sans);
@@ -418,7 +418,7 @@
 /* Floating Glassmorphic Labels */
 .float {
   position: absolute;
-  background: rgba(13, 20, 38, 0.8);
+  background: rgba(var(--surface-rgb), 0.8);
   border: 1px solid var(--line-2);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -507,7 +507,7 @@
   padding: 24px 0 64px;
 }
 .stats .grid-4 {
-  background: rgba(13, 20, 38, 0.5);
+  background: rgba(var(--surface-rgb), 0.5);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: 32px;
@@ -629,7 +629,7 @@
 .features .feature {
   transition: all 0.3s ease;
   border: 1px solid var(--line);
-  background: rgba(13, 20, 38, 0.9);
+  background: rgba(var(--surface-rgb), 0.9);
 }
 .features .feature:hover {
   transform: translateY(-4px);
@@ -723,12 +723,12 @@ body.math-grid {
 
 /* Translucent panels for high contrast */
 .topbar {
-  background: rgba(13, 20, 38, 0.6) !important;
+  background: rgba(var(--surface-rgb), 0.6) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
 }
 .hero-brand-banner {
-  background: rgba(13, 20, 38, 0.75) !important;
+  background: rgba(var(--surface-rgb), 0.75) !important;
 }
 .hero-brand-banner::before, .hero-brand-banner::after {
   content: "";
@@ -1135,7 +1135,7 @@ body.math-grid {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=3.3"></script>
+<script src="vinhmath.js?v=3.4"></script>
 <script src="analytics.js"></script>
 <script>
 // Blog công khai (quảng bá, đọc tự do — không cần đăng nhập)

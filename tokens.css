@@ -30,6 +30,9 @@
   /* --- CHẾ ĐỘ SÁNG (LIQUID GLASS / GLASSMORPHISM) --- */
   --bg: #f5f8ff; /* Nền xanh pastel nhạt cực sang */
   --bg-gradient: linear-gradient(135deg, #f5f8ff 0%, #eef2f7 50%, #e0e7ff 100%);
+  --bg-rgb: 245, 248, 255;
+  --surface-rgb: 255, 255, 255;
+  --surface-2-rgb: 255, 255, 255;
   
   --surface: rgba(255, 255, 255, var(--glass-opacity)); /* Kính mờ tráng gương */
   --surface-2: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.15)); /* Hover kính rõ hơn */
@@ -67,6 +70,9 @@
 
   --bg: #050811; /* Xanh đen sâu thẳm */
   --bg-gradient: radial-gradient(circle at top, #0b1124 0%, #050811 100%);
+  --bg-rgb: 5, 8, 17;
+  --surface-rgb: 13, 20, 38;
+  --surface-2-rgb: 20, 30, 58;
   
   --surface: rgba(13, 20, 38, var(--glass-opacity)); /* Kính mờ đen tối */
   --surface-2: rgba(20, 30, 58, calc(var(--glass-opacity) + 0.15)); /* Hover kính tối */
