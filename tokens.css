@@ -8,7 +8,7 @@
 
 :root {
   /* --- PHÔNG CHỮ --- */
-  --font-sans: "Outfit", "Be Vietnam Pro", -apple-system, sans-serif;
+  --font-sans: "Be Vietnam Pro", "Outfit", -apple-system, sans-serif;
   --font-mono: "Fira Code", monospace;
 
   --fs-h1: 2.25rem;
