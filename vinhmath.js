@@ -822,7 +822,7 @@ let aiChatWidgetCreated = false;
 let aiChatHistory = [];
 
 function capNhatChatbotUI() {
-  var enabled = window.VM_AI_SETTINGS.enabled && window.VM_AI_SETTINGS.key;
+  var enabled = window.VM_AI_SETTINGS.enabled; // key giờ nằm phía máy chủ (Edge Function)
   var bubble = document.getElementById('aiChatBubble');
   var box = document.getElementById('aiChatBox');
   
