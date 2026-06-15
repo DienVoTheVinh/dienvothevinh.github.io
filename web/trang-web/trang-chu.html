@@ -6,8 +6,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=2.8">
-<link rel="stylesheet" href="vinhmath.css?v=2.8">
+<link rel="stylesheet" href="tokens.css?v=2.9">
+<link rel="stylesheet" href="vinhmath.css?v=2.9">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -500,6 +500,7 @@
     border-color: var(--accent);
     box-shadow: 0 10px 24px rgba(0,0,0,0.08);
   }
+  .blog-card .bc-cover { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
   .blog-card .bc-title {
     font-size: 1.05rem;
     font-weight: 800;
@@ -586,7 +587,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=2.8"></script>
+<script src="vinhmath.js?v=2.9"></script>
 <script src="menu.js"></script>
 <script src="analytics.js"></script>
 <script>
@@ -812,7 +813,7 @@ async function taiBlogTrangChu() {
   
   box.innerHTML = '<div class="blog-empty2">Đang tải blog…</div>';
   try {
-    var r = await sb.from('blog_posts').select('id,title,excerpt,author_name,created_at').eq('published', true).order('created_at', { ascending: false }).limit(12);
+    var r = await sb.from('blog_posts').select('id,title,excerpt,author_name,created_at,cover_url').eq('published', true).order('created_at', { ascending: false }).limit(12);
     var ds = (r && r.data) ? r.data : [];
     if (!ds.length) {
       box.innerHTML = '<div class="blog-empty2">Chưa có bài blog nào được xuất bản.</div>';
@@ -838,7 +839,9 @@ async function taiBlogTrangChu() {
     
     box.innerHTML = ds.map(function(p) {
       var d = new Date(p.created_at).toLocaleDateString('vi-VN');
+      var cover = p.cover_url ? '<img class="bc-cover" src="' + esc(p.cover_url) + '" alt="" loading="lazy">' : '';
       return '<a class="blog-card" href="blog.html?id=' + p.id + '">' +
+        cover +
         '<div class="bc-title">' + esc(p.title) + '</div>' +
         '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
         '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Vinh') + '</span><span>' + d + '</span>' +

@@ -41,6 +41,25 @@ function toggleTheme() {
   
   try { localStorage.setItem('vm-theme', newTheme); } catch (e) {}
   try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+  
+  // Lưu lên database nếu là admin
+  if (window.VM_USER_ROLE === 'admin') {
+    luuCaiDatHeThong('theme_theme', newTheme);
+  } else if (daKetNoi()) {
+    // Trường hợp vai trò chưa được tải xong khi bấm nút
+    (async function() {
+      try {
+        var s = await sb.auth.getSession();
+        if (s.data.session) {
+          var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+          if (rp.data && rp.data.role === 'admin') {
+            window.VM_USER_ROLE = 'admin';
+            luuCaiDatHeThong('theme_theme', newTheme);
+          }
+        }
+      } catch (e) {}
+    })();
+  }
 }
 
 function apdungMauAccent(el, color, isDark) {
