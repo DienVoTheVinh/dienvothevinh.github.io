@@ -251,7 +251,7 @@ img{max-width:100%;display:block}
 .bell-item.unread{background:var(--accent-soft)}
 
 .nav-burger{display:none;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-size:1.1rem;width:38px;height:38px;border-radius:var(--r-sm);cursor:pointer;flex:none}
-@media(max-width:760px){
+@media(max-width:960px){
   .topbar .nav{position:relative;flex-wrap:wrap}
   .nav-burger{display:grid;place-items:center}
   .navlinks{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;padding:8px 16px 14px;gap:2px;z-index:99}
@@ -1255,14 +1255,22 @@ tr:last-child td{border-bottom:none}
 }
 
 /* ===== TỐI ƯU GIAO DIỆN MOBILE TOÀN HỆ THỐNG ===== */
-@media (max-width: 760px) {
-  /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
+@media (max-width: 960px) {
+  /* Cho phép thanh đầu trang chứa menu burger thu gọn */
   .topbar .nav {
     flex-wrap: nowrap !important;
-    gap: 8px !important;
-    padding: 8px 12px !important;
+    gap: 10px !important;
+    padding: 10px 16px !important;
     justify-content: space-between !important;
     align-items: center !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
+  .topbar .nav {
+    padding: 8px 12px !important;
+    gap: 8px !important;
   }
   .logo {
     font-size: 1rem !important;
@@ -1285,7 +1293,7 @@ tr:last-child td{border-bottom:none}
   }
   
   /* Biến nút Đăng xuất thành biểu tượng để siêu tiết kiệm diện tích */
-  .topbar button[onclick="dangXuat()"] {
+  .topbar button[onclick*="dangXuat"] {
     font-size: 0 !important;
     padding: 8px 10px !important;
     display: inline-flex !important;
@@ -1295,12 +1303,46 @@ tr:last-child td{border-bottom:none}
     height: 36px !important;
     border-radius: var(--r-sm, 8px) !important;
   }
-  .topbar button[onclick="dangXuat()"]::before {
+  .topbar button[onclick*="dangXuat"]::before {
     content: "🚪";
     font-size: 1.05rem !important;
   }
+
+  /* 2. Tối ưu kiểu chữ, nút bấm & thẻ trên mobile */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.12rem !important; }
+
+  .wrap {
+    padding: 0 16px 64px !important; /* Thu hẹp lề hai bên lề để tăng diện tích hiển thị */
+  }
   
-  /* 2. Tối ưu mục Blog trên trang chủ */
+  .card, [class*="-card"] {
+    padding: 16px !important; /* Giảm padding thẻ */
+  }
+  
+  .btn {
+    padding: 8px 14px !important;
+    font-size: 0.88rem !important;
+  }
+  .btn-sm {
+    padding: 6px 10px !important;
+    font-size: 0.8rem !important;
+  }
+  .input {
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Đảm bảo bảng biểu tự cuộn ngang khi tràn */
+  .card:has(table) {
+    overflow-x: auto !important;
+  }
+  th, td {
+    padding: 8px 10px !important; /* Thu nhỏ cell padding */
+  }
+
+  /* 3. Tối ưu mục Blog trên trang chủ */
   .blog-sec-head {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -1331,7 +1373,7 @@ tr:last-child td{border-bottom:none}
     font-size: 0.82rem !important;
   }
   
-  /* 3. Tối ưu bảng Lịch tuần và Đếm ngược để vừa vặn hơn */
+  /* 4. Tối ưu bảng Lịch tuần và Đếm ngược để vừa vặn hơn */
   .date-display-card {
     padding: 20px 14px !important;
   }
@@ -1349,6 +1391,38 @@ tr:last-child td{border-bottom:none}
   }
   .timer-box span {
     font-size: 0.65rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Lề cực nhỏ cho màn hình siêu hẹp như iPhone SE */
+  .wrap {
+    padding: 0 12px 48px !important;
+  }
+  
+  /* Đăng nhập di động */
+  .main {
+    padding: 24px 12px !important;
+  }
+  .box {
+    padding: 24px 16px !important;
+    border-radius: var(--r-sm) !important;
+  }
+
+  /* Khung thống kê nhanh 3 cột nằm ngang cực sang xịn mịn */
+  .stats .grid-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .stats .stat {
+    padding: 8px 4px !important;
+  }
+  .stats .stat b {
+    font-size: 1.1rem !important;
+  }
+  .stats .stat span {
+    font-size: 0.62rem !important;
+    line-height: 1.25 !important;
   }
 }
 
