@@ -1450,34 +1450,56 @@ function chupManHinhToanBo() {
   loading.style.fontWeight = '700';
   loading.style.zIndex = '99999';
   loading.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-  loading.textContent = '📸 Đang chụp màn hình...';
+  loading.textContent = '📸 Đang chuẩn bị phông chữ & chụp...';
   document.body.appendChild(loading);
 
   loadHtml2Canvas(function() {
-    html2canvas(document.body, {
-      useCORS: true,
-      scale: window.devicePixelRatio || 2,
-      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
-      ignoreElements: function(element) {
-        return element.id === 'screenshotBtn' || element === loading;
-      }
-    }).then(function(canvas) {
-      try {
-        var link = document.createElement('a');
-        var pageName = location.pathname.split('/').pop().split('.')[0] || 'trang-chu';
-        link.download = 'vinhmath-' + pageName + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (e) {
-        alert('Không thể lưu ảnh do lỗi bảo mật CORS. Hãy thử trên trình duyệt Safari hoặc Chrome!');
-      } finally {
+    // Đảm bảo tất cả web fonts (Google Fonts, KaTeX fonts) đã tải xong
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(function() {
+      // Tạm thời ẩn các hiệu ứng động khi chụp để tránh nhòe hình
+      var style = document.createElement('style');
+      style.id = 'screenshot-temp-style';
+      style.innerHTML = '* { animation: none !important; transition: none !important; }';
+      document.head.appendChild(style);
+
+      html2canvas(document.body, {
+        useCORS: true,
+        scale: 2, // Bắt buộc lưu ở độ phân giải 2x cho sắc nét
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
+        ignoreElements: function(element) {
+          return element.id === 'screenshotBtn' || element === loading;
+        }
+      }).then(function(canvas) {
+        // Gỡ bỏ style tạm thời
+        var tempSty = document.getElementById('screenshot-temp-style');
+        if (tempSty) tempSty.parentNode.removeChild(tempSty);
+
+        try {
+          var link = document.createElement('a');
+          var pageName = location.pathname.split('/').pop().split('.')[0] || 'trang-chu';
+          link.download = 'vinhmath-' + pageName + '.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } catch (e) {
+          alert('Không thể lưu ảnh do lỗi bảo mật CORS. Hãy thử trên trình duyệt Safari hoặc Chrome!');
+        } finally {
+          if (btn) btn.style.visibility = 'visible';
+          if (loading.parentNode) loading.parentNode.removeChild(loading);
+        }
+      }).catch(function(err) {
+        var tempSty = document.getElementById('screenshot-temp-style');
+        if (tempSty) tempSty.parentNode.removeChild(tempSty);
+
+        alert('Lỗi chụp màn hình: ' + err);
         if (btn) btn.style.visibility = 'visible';
         if (loading.parentNode) loading.parentNode.removeChild(loading);
-      }
-    }).catch(function(err) {
-      alert('Lỗi chụp màn hình: ' + err);
-      if (btn) btn.style.visibility = 'visible';
-      if (loading.parentNode) loading.parentNode.removeChild(loading);
+      });
     });
   });
 }
