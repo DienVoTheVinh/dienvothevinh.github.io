@@ -6,45 +6,74 @@
 <title>Viết Blog — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens.css?v=2.6">
 <link rel="stylesheet" href="vinhmath.css?v=2.6">
 <script>
   window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
 <style>
-.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 96px; }
-.vb-head { padding: 28px 0 18px; }
-.vb-head h1 { font-size:1.7rem; font-weight:900; }
-.vb-head p { color:var(--ink-2); margin-top:4px; font-size:.92rem; }
-.vb-posts { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
-.vb-post { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--line); border-radius:var(--r-md,10px); background:var(--surface); }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 20px 96px; }
+.vb-head { padding: 26px 0 16px; }
+.vb-head h1 { font-size: 1.7rem; font-weight: 900; display:flex; align-items:center; gap:10px; }
+.vb-head p { color: var(--ink-2); margin-top: 4px; font-size: .92rem; max-width: 70ch; }
+.vb-posts { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom: 24px; }
+.vb-post { display:flex; gap:12px; padding:12px; border:1px solid var(--line); border-radius:var(--r-md,12px); background:var(--surface); align-items:center; cursor:pointer; transition:all .15s; }
+.vb-post:hover { border-color:var(--accent); transform:translateY(-2px); }
+.vb-post .thumb { width:52px; height:52px; border-radius:10px; background:var(--surface-2); flex-shrink:0; object-fit:cover; display:grid; place-items:center; font-size:1.3rem; color:var(--ink-3); }
 .vb-post .t { flex:1; min-width:0; }
-.vb-post .t b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.vb-badge { font-size:.7rem; font-weight:800; padding:2px 9px; border-radius:99px; }
-.vb-badge.pub { background:var(--ok-soft, #d6f5e3); color:var(--ok,#1a9e5c); }
+.vb-post .t b { display:block; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vb-post .t small { color:var(--ink-3); font-size:.74rem; }
+.vb-badge { font-size:.66rem; font-weight:800; padding:2px 8px; border-radius:99px; display:inline-block; margin-top:3px; }
+.vb-badge.pub { background:var(--accent-soft); color:var(--accent); }
 .vb-badge.draft { background:var(--surface-2); color:var(--ink-3); border:1px solid var(--line); }
-.vb-editor { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
-@media(max-width: 900px){ .vb-editor { grid-template-columns: 1fr; } }
-.vb-pane { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,14px); padding:18px; box-shadow:var(--shadow); }
-.vb-pane h3 { font-size:1rem; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-.vb-pane input.title { width:100%; font-size:1.15rem; font-weight:800; border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink); padding:8px 2px; margin-bottom:12px; font-family:inherit; }
-.vb-pane input.title:focus { outline:none; border-color:var(--accent); }
-.vb-pane textarea.body { width:100%; min-height:460px; border:1px solid var(--line); border-radius:var(--r-md,10px); padding:12px 14px; background:var(--surface); color:var(--ink); font-family:Menlo,Consolas,monospace; font-size:.9rem; line-height:1.6; resize:vertical; }
-.vb-toolbar { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
-.vb-hint { font-size:.78rem; color:var(--ink-3); margin-top:8px; line-height:1.5; }
-/* preview = giống trang đọc */
-.article { font-size:1rem; line-height:1.8; color:var(--ink); overflow-wrap:break-word; }
+.vb-editor { display:grid; grid-template-columns: 1fr 1fr; gap:20px; align-items:start; }
+.vb-pane { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); overflow:hidden; }
+.vb-pane-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 18px; border-bottom:1px solid var(--line); font-weight:800; font-size:.98rem; }
+.vb-pane-head .st { font-size:.72rem; font-weight:700; color:var(--ink-3); }
+.vb-pane-body { padding:18px; }
+.vb-cover { position:relative; border:1.5px dashed var(--line); border-radius:var(--r-md,12px); padding:18px; text-align:center; color:var(--ink-3); font-size:.86rem; cursor:pointer; margin-bottom:14px; transition:all .15s; }
+.vb-cover:hover { border-color:var(--accent); color:var(--accent); }
+.vb-cover.has { padding:0; border-style:solid; overflow:hidden; }
+.vb-cover img { width:100%; max-height:200px; object-fit:cover; display:block; }
+.vb-cover .rm { position:absolute; top:8px; right:8px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:8px; padding:4px 10px; font-size:.78rem; cursor:pointer; }
+.title-in { width:100%; font-size:1.3rem; font-weight:800; border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink); padding:8px 2px; margin-bottom:14px; font-family:inherit; }
+.title-in:focus { outline:none; border-color:var(--accent); }
+.vb-tools { display:flex; flex-wrap:wrap; gap:4px; padding:6px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px 10px 0 0; border-bottom:none; }
+.vb-tools button { background:transparent; border:none; border-radius:7px; padding:7px 9px; font-size:.9rem; font-weight:700; color:var(--ink-2); cursor:pointer; min-width:34px; transition:all .12s; }
+.vb-tools button:hover { background:var(--surface); color:var(--accent); }
+.vb-tools .sep { width:1px; background:var(--line); margin:4px 2px; }
+.body-in { width:100%; min-height:440px; border:1px solid var(--line); border-radius:0 0 10px 10px; padding:14px; background:var(--surface); color:var(--ink); font-family:Menlo,Consolas,monospace; font-size:.9rem; line-height:1.65; resize:vertical; }
+.body-in:focus { outline:none; border-color:var(--accent); }
+.vb-stats { display:flex; gap:16px; margin-top:10px; font-size:.78rem; color:var(--ink-3); }
+.vb-actions { display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.vb-hint { font-size:.76rem; color:var(--ink-3); margin-top:12px; line-height:1.6; background:var(--surface-2); padding:10px 12px; border-radius:8px; }
+.preview-scroll { max-height: 640px; overflow:auto; }
+.article { font-size:1.02rem; line-height:1.8; color:var(--ink); overflow-wrap:break-word; }
 .article h1,.article h2,.article h3,.article h4 { font-weight:800; line-height:1.3; margin:1.4em 0 .5em; }
-.article h1{font-size:1.5rem;} .article h2{font-size:1.3rem;} .article h3{font-size:1.12rem;}
+.article h1{font-size:1.55rem;} .article h2{font-size:1.3rem;} .article h3{font-size:1.12rem;}
 .article p { margin:0 0 1em; }
-.article ul,.article ol { margin:0 0 1em; padding-left:1.5em; }
+.article ul,.article ol { margin:0 0 1em; padding-left:1.5em; } .article li { margin:.3em 0; }
 .article a { color:var(--accent); text-decoration:underline; }
 .article code { background:var(--surface-2); padding:1px 6px; border-radius:5px; font-family:Menlo,monospace; font-size:.92em; }
 .article blockquote { border-left:4px solid var(--accent); background:var(--surface-2); margin:0 0 1em; padding:8px 16px; border-radius:0 8px 8px 0; color:var(--ink-2); }
 .article hr { border:none; border-top:1px solid var(--line); margin:1.6em 0; }
+.article img { max-width:100%; border-radius:var(--r-md,10px); }
+.article figure { margin:1.4em 0; text-align:center; }
+.article figure img { margin:0 auto; }
+.article figcaption { font-size:.84rem; color:var(--ink-3); margin-top:6px; font-style:italic; }
 .article mjx-container { overflow-x:auto; max-width:100%; }
+.vb-mtabs { display:none; gap:6px; margin-bottom:14px; }
+.vb-mtabs button { flex:1; padding:10px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); font-weight:700; font-size:.9rem; cursor:pointer; }
+.vb-mtabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+@media(max-width: 900px){
+  .vb-editor { grid-template-columns: 1fr; }
+  .vb-mtabs { display:flex; }
+  .vb-editor.show-edit .pane-preview { display:none; }
+  .vb-editor.show-preview .pane-edit { display:none; }
+}
 .vb-deny { text-align:center; padding:80px 24px; color:var(--ink-3); }
+.up-status { font-size:.8rem; color:var(--accent); margin-top:6px; min-height:1em; }
 </style>
 </head>
 <body>
@@ -62,45 +91,76 @@
 
 <div class="wrap" id="vbWrap" style="display:none">
   <div class="vb-head">
-    <h1>✍️ Viết Blog</h1>
-    <p>Soạn bài bằng văn bản thô + công thức LaTeX ($...$). Không cần khai báo gì. Bấm <b>Xuất bản</b> để mọi người đọc được.</p>
+    <h1>✍️ Trình viết Blog</h1>
+    <p>Soạn bài như một trang blog thực thụ: định dạng bằng thanh công cụ, chèn ảnh, đặt ảnh bìa, công thức Toán $...$. Xem trước trực tiếp đúng như độc giả sẽ thấy. Bấm <b>Xuất bản</b> để mọi người (kể cả khách chưa đăng nhập) đọc được.</p>
   </div>
 
   <div class="vb-posts" id="dsBaiViet"></div>
 
-  <div class="vb-editor">
-    <div class="vb-pane">
-      <h3>📝 Soạn thảo <span id="lblTrangThai" style="font-size:.72rem;font-weight:700;color:var(--ink-3)"></span></h3>
-      <input type="hidden" id="postId">
-      <input class="title" id="postTitle" placeholder="Tiêu đề bài viết…">
-      <textarea class="body" id="postBody" placeholder="Viết nội dung ở đây…
+  <div class="vb-mtabs">
+    <button id="mtabEdit" class="active" onclick="doiTabMobile('edit')">✏️ Soạn thảo</button>
+    <button id="mtabPreview" onclick="doiTabMobile('preview')">👁️ Xem trước</button>
+  </div>
 
-Ví dụ:
-# Tiêu đề lớn
-Đoạn văn bình thường, có công thức $a^2+b^2=c^2$ ngay trong dòng.
+  <div class="vb-editor show-edit" id="vbEditor">
+    <div class="vb-pane pane-edit">
+      <div class="vb-pane-head"><span>📝 Soạn thảo</span><span class="st" id="lblTrangThai">Bài mới</span></div>
+      <div class="vb-pane-body">
+        <input type="hidden" id="postId">
+        <div class="vb-cover" id="coverBox" onclick="chonAnhBia()">
+          <div id="coverPlaceholder">🖼️ Bấm để thêm <b>ảnh bìa</b> (không bắt buộc)</div>
+          <img id="coverImg" style="display:none" alt="Ảnh bìa">
+          <button class="rm" id="coverRm" style="display:none" onclick="xoaAnhBia(event)">✕ Xoá bìa</button>
+        </div>
+        <input class="title-in" id="postTitle" placeholder="Tiêu đề bài viết…">
+        <div class="vb-tools">
+          <button title="Tiêu đề mục" onclick="chen('\n## ','','Tiêu đề mục')">H</button>
+          <button title="Tiêu đề nhỏ" onclick="chen('\n### ','','Tiêu đề nhỏ')" style="font-size:.78rem">H₂</button>
+          <span class="sep"></span>
+          <button title="In đậm" onclick="chen('**','**','chữ đậm')"><b>B</b></button>
+          <button title="In nghiêng" onclick="chen('*','*','chữ nghiêng')"><i>I</i></button>
+          <button title="Mã" onclick="chen('`','`','mã')" style="font-family:monospace">&lt;/&gt;</button>
+          <span class="sep"></span>
+          <button title="Danh sách" onclick="chen('\n- ','','mục')">☰</button>
+          <button title="Trích dẫn" onclick="chen('\n> ','','trích dẫn')">❝</button>
+          <button title="Đường kẻ ngang" onclick="chen('\n\n---\n\n','','')">―</button>
+          <span class="sep"></span>
+          <button title="Liên kết" onclick="chen('[','](https://)','văn bản')">🔗</button>
+          <button title="Chèn ảnh" onclick="chonAnhChen()">🖼️</button>
+          <span class="sep"></span>
+          <button title="Công thức cùng dòng" onclick="chen('$','$','a^2+b^2=c^2')">∑</button>
+          <button title="Công thức riêng dòng" onclick="chen('\n$$\n','\n$$\n','\\int_0^1 x^2\\,dx')" style="font-size:.8rem">∬</button>
+        </div>
+        <textarea class="body-in" id="postBody" placeholder="Viết nội dung ở đây…
 
-$$\int_0^1 x^2\,dx = \frac{1}{3}$$
-
-- Gạch đầu dòng
-**in đậm**, *in nghiêng*, `mã`"></textarea>
-      <div class="vb-toolbar">
-        <button class="btn btn-secondary btn-sm" onclick="moBaiMoi()">＋ Bài mới</button>
-        <button class="btn btn-secondary btn-sm" id="btnLuuNhap" onclick="luuBai(false)">💾 Lưu nháp</button>
-        <button class="btn btn-primary btn-sm" id="btnXuatBan" onclick="luuBai(true)">🚀 Xuất bản</button>
-        <button class="btn btn-ghost btn-sm" id="btnXoa" style="color:var(--err,#e74c3c); display:none" onclick="xoaBai()">Xoá bài</button>
-        <a class="btn btn-ghost btn-sm" id="btnXem" style="display:none" target="_blank">↗ Xem trang đọc</a>
+Mẹo: bôi đen chữ rồi bấm nút định dạng, hoặc bấm 🖼️ để tải ảnh chèn thẳng vào bài."></textarea>
+        <div id="upStatus" class="up-status"></div>
+        <div class="vb-stats"><span id="stWords">0 từ</span><span id="stRead">~1 phút đọc</span></div>
+        <div class="vb-actions">
+          <button class="btn btn-secondary btn-sm" onclick="moBaiMoi()">＋ Bài mới</button>
+          <button class="btn btn-secondary btn-sm" id="btnLuuNhap" onclick="luuBai(false)">💾 Lưu nháp</button>
+          <button class="btn btn-primary btn-sm" id="btnXuatBan" onclick="luuBai(true)">🚀 Xuất bản</button>
+          <button class="btn btn-ghost btn-sm" id="btnXoa" style="color:var(--err,#e74c3c); display:none" onclick="xoaBai()">🗑 Xoá</button>
+          <a class="btn btn-ghost btn-sm" id="btnXem" style="display:none" target="_blank">↗ Xem trang đọc</a>
+        </div>
+        <div class="vb-hint">Cú pháp: <b># ## ###</b> tiêu đề · <b>**đậm**</b> · <b>*nghiêng*</b> · <b>- danh sách</b> · <b>&gt; trích dẫn</b> · <b>![](link ảnh)</b> ảnh · công thức <b>$...$</b> (cùng dòng), <b>$$...$$</b> (riêng dòng).</div>
       </div>
-      <div class="vb-hint">Hỗ trợ: <b># / ## / ###</b> tiêu đề · <b>**đậm**</b> · <b>*nghiêng*</b> · <b>- danh sách</b> · <b>&gt; trích dẫn</b> · công thức <b>$...$</b> (cùng dòng) và <b>$$...$$</b> (riêng dòng).</div>
     </div>
-
-    <div class="vb-pane">
-      <h3>👁️ Xem trước (đúng như học sinh thấy)</h3>
-      <div class="article" id="preview"><p style="color:var(--ink-3)">Bản xem trước hiện ở đây…</p></div>
+    <div class="vb-pane pane-preview">
+      <div class="vb-pane-head"><span>👁️ Xem trước</span><span class="st">đúng như độc giả thấy</span></div>
+      <div class="vb-pane-body preview-scroll">
+        <div id="previewCover"></div>
+        <h1 id="previewTitle" style="font-size:1.7rem;font-weight:900;line-height:1.25;margin-bottom:16px;display:none"></h1>
+        <div class="article" id="preview"><p style="color:var(--ink-3)">Bản xem trước hiện ở đây…</p></div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="wrap"><div class="vb-deny" id="vbDeny" style="display:none">⛔ Trang này chỉ dành cho tài khoản Quản trị.</div></div>
+
+<input type="file" id="fileChen" accept="image/*" style="display:none">
+<input type="file" id="fileBia" accept="image/*" style="display:none">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -118,6 +178,7 @@ function renderBlog(src){
   src = src.replace(/\\\(([\s\S]+?)\\\)/g, function(m){ math.push(m); return '___MATH_' + (math.length-1) + '___'; });
   function inline(t){
     t = blogEsc(t);
+    t = t.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
     t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
     t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -130,6 +191,8 @@ function renderBlog(src){
   lines.forEach(function(ln){
     var t = ln.trim();
     if(t === ''){ flushPara(); closeLists(); return; }
+    var img = t.match(/^!\[([^\]]*)\]\((https?:[^)\s]+)\)$/);
+    if(img){ flushPara(); closeLists(); html += '<figure><img src="' + img[2] + '" alt="' + blogEsc(img[1]) + '" loading="lazy">' + (img[1] ? '<figcaption>' + blogEsc(img[1]) + '</figcaption>' : '') + '</figure>'; return; }
     var hm = t.match(/^(#{1,4})\s+(.*)$/);
     if(hm){ flushPara(); closeLists(); var lvl = hm[1].length; html += '<h' + lvl + '>' + inline(hm[2]) + '</h' + lvl + '>'; return; }
     if(/^(---|\*\*\*|___)$/.test(t)){ flushPara(); closeLists(); html += '<hr>'; return; }
@@ -146,60 +209,111 @@ function renderBlog(src){
 }
 function trichDoan(src){
   var t = String(src||'').replace(/\$\$[\s\S]+?\$\$/g,' ').replace(/\$[^\$\n]+?\$/g,' ')
-    .replace(/[#>*`_\-]/g,' ').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\s+/g,' ').trim();
+    .replace(/!\[[^\]]*\]\([^)]*\)/g,' ').replace(/[#>*`_]/g,' ').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
+    .replace(/\s+/g,' ').trim();
   return t.slice(0, 180);
 }
 
-var vbProfile = null;
-var previewTimer = null;
+var vbProfile = null, previewTimer = null, coverUrl = '';
 
 (async function(){
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   vbProfile = hoSo;
-  if (hoSo.role !== 'admin'){
-    document.getElementById('vbDeny').style.display = 'block';
-    return;
-  }
+  if (hoSo.role !== 'admin'){ document.getElementById('vbDeny').style.display = 'block'; return; }
   document.getElementById('vbWrap').style.display = 'block';
-  document.getElementById('postBody').addEventListener('input', function(){
-    clearTimeout(previewTimer); previewTimer = setTimeout(capNhatXemTruoc, 250);
-  });
+  document.getElementById('postBody').addEventListener('input', function(){ clearTimeout(previewTimer); previewTimer = setTimeout(capNhatXemTruoc, 220); });
+  document.getElementById('postTitle').addEventListener('input', capNhatTieuDePreview);
+  document.getElementById('fileChen').addEventListener('change', function(e){ if(e.target.files[0]) chenAnh(e.target.files[0]); e.target.value=''; });
+  document.getElementById('fileBia').addEventListener('change', function(e){ if(e.target.files[0]) taiAnhBia(e.target.files[0]); e.target.value=''; });
   capNhatXemTruoc();
   await taiDsBai();
 })();
 
+function doiTabMobile(tab){
+  var ed = document.getElementById('vbEditor');
+  ed.classList.toggle('show-edit', tab === 'edit');
+  ed.classList.toggle('show-preview', tab === 'preview');
+  document.getElementById('mtabEdit').classList.toggle('active', tab === 'edit');
+  document.getElementById('mtabPreview').classList.toggle('active', tab === 'preview');
+  if (tab === 'preview') capNhatXemTruoc();
+}
+function capNhatTieuDePreview(){
+  var t = document.getElementById('postTitle').value.trim();
+  var el = document.getElementById('previewTitle');
+  el.textContent = t; el.style.display = t ? 'block' : 'none';
+}
 function capNhatXemTruoc(){
   var el = document.getElementById('preview');
   var content = document.getElementById('postBody').value;
   el.innerHTML = content.trim() ? renderBlog(content) : '<p style="color:var(--ink-3)">Bản xem trước hiện ở đây…</p>';
+  capNhatTieuDePreview();
+  var pc = document.getElementById('previewCover');
+  pc.innerHTML = coverUrl ? '<img src="' + coverUrl + '" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin-bottom:18px" alt="bìa">' : '';
+  var words = (content.trim().match(/\S+/g) || []).length;
+  document.getElementById('stWords').textContent = words + ' từ';
+  document.getElementById('stRead').textContent = '~' + Math.max(1, Math.round(words/200)) + ' phút đọc';
   if (window.MathJax && window.MathJax.typesetPromise){ window.MathJax.typesetPromise([el]); }
 }
-
+function chen(before, after, ph){
+  var ta = document.getElementById('postBody');
+  var s = ta.selectionStart, e = ta.selectionEnd;
+  var sel = ta.value.substring(s, e) || (ph || '');
+  ta.value = ta.value.substring(0, s) + before + sel + after + ta.value.substring(e);
+  ta.focus();
+  ta.selectionStart = s + before.length;
+  ta.selectionEnd = s + before.length + sel.length;
+  capNhatXemTruoc();
+}
+function chonAnhChen(){ document.getElementById('fileChen').click(); }
+function chonAnhBia(){ document.getElementById('fileBia').click(); }
+function tenFileAn(name){ return Date.now() + '-' + String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9.\-]+/g,'-').toLowerCase(); }
+async function uploadAnh(file){
+  var path = 'blog/' + tenFileAn(file.name);
+  var up = await sb.storage.from('hinh-anh').upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+  if (up.error) throw new Error(up.error.message);
+  return sb.storage.from('hinh-anh').getPublicUrl(path).data.publicUrl;
+}
+async function chenAnh(file){
+  var st = document.getElementById('upStatus'); st.textContent = '⏳ Đang tải ảnh lên…';
+  try { var url = await uploadAnh(file); chen('\n![](' + url + ')\n', '', ''); st.textContent = '✓ Đã chèn ảnh.'; setTimeout(function(){ st.textContent=''; }, 2000); }
+  catch(e){ st.textContent = '❌ Lỗi tải ảnh: ' + e.message; }
+}
+async function taiAnhBia(file){
+  var st = document.getElementById('upStatus'); st.textContent = '⏳ Đang tải ảnh bìa…';
+  try { var url = await uploadAnh(file); coverUrl = url; veAnhBia(); capNhatXemTruoc(); st.textContent = '✓ Đã đặt ảnh bìa.'; setTimeout(function(){ st.textContent=''; }, 2000); }
+  catch(e){ st.textContent = '❌ Lỗi tải bìa: ' + e.message; }
+}
+function veAnhBia(){
+  var box = document.getElementById('coverBox');
+  if (coverUrl){ box.classList.add('has'); document.getElementById('coverPlaceholder').style.display='none'; var im=document.getElementById('coverImg'); im.src=coverUrl; im.style.display='block'; document.getElementById('coverRm').style.display='block'; }
+  else { box.classList.remove('has'); document.getElementById('coverPlaceholder').style.display='block'; document.getElementById('coverImg').style.display='none'; document.getElementById('coverRm').style.display='none'; }
+}
+function xoaAnhBia(ev){ ev.stopPropagation(); coverUrl=''; veAnhBia(); capNhatXemTruoc(); }
 async function taiDsBai(){
   var box = document.getElementById('dsBaiViet');
-  var r = await sb.from('blog_posts').select('id, title, published, updated_at').order('updated_at', { ascending: false });
+  var r = await sb.from('blog_posts').select('id, title, published, updated_at, cover_url').order('updated_at', { ascending: false });
   var ds = r.data || [];
-  if (!ds.length){ box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có bài viết nào. Soạn bài đầu tiên bên dưới!</div>'; return; }
+  if (!ds.length){ box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem;grid-column:1/-1">Chưa có bài viết nào. Soạn bài đầu tiên bên dưới!</div>'; return; }
   box.innerHTML = ds.map(function(p){
-    return '<div class="vb-post"><div class="t"><b>' + blogEsc(p.title) + '</b>' +
-      '<span style="font-size:.76rem;color:var(--ink-3)">Cập nhật: ' + new Date(p.updated_at).toLocaleDateString('vi-VN') + '</span></div>' +
-      '<span class="vb-badge ' + (p.published ? 'pub">● Đã xuất bản' : 'draft">○ Nháp') + '</span>' +
-      '<button class="btn btn-secondary btn-sm" onclick="suaBai(\'' + p.id + '\')">Sửa</button></div>';
+    var thumb = p.cover_url ? '<img class="thumb" src="' + p.cover_url + '" alt="">' : '<div class="thumb">📝</div>';
+    return '<div class="vb-post" onclick="suaBai(\'' + p.id + '\')">' + thumb +
+      '<div class="t"><b>' + blogEsc(p.title) + '</b><small>' + new Date(p.updated_at).toLocaleDateString('vi-VN') + '</small>' +
+      '<span class="vb-badge ' + (p.published ? 'pub">● Đã xuất bản' : 'draft">○ Nháp') + '</span></div></div>';
   }).join('');
 }
-
 function moBaiMoi(){
   document.getElementById('postId').value = '';
   document.getElementById('postTitle').value = '';
   document.getElementById('postBody').value = '';
+  coverUrl = ''; veAnhBia();
   document.getElementById('btnXoa').style.display = 'none';
   document.getElementById('btnXem').style.display = 'none';
-  document.getElementById('lblTrangThai').textContent = '· Bài mới';
+  document.getElementById('lblTrangThai').textContent = 'Bài mới';
   capNhatXemTruoc();
-  window.scrollTo({ top: document.querySelector('.vb-editor').offsetTop - 80, behavior: 'smooth' });
+  if (window.innerWidth <= 900) doiTabMobile('edit');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 async function suaBai(id){
   var r = await sb.from('blog_posts').select('*').eq('id', id).single();
   if (r.error || !r.data){ alert('Không tải được bài viết.'); return; }
@@ -207,13 +321,14 @@ async function suaBai(id){
   document.getElementById('postId').value = p.id;
   document.getElementById('postTitle').value = p.title || '';
   document.getElementById('postBody').value = p.content || '';
+  coverUrl = p.cover_url || ''; veAnhBia();
   document.getElementById('btnXoa').style.display = 'inline-flex';
   var xem = document.getElementById('btnXem'); xem.style.display = 'inline-flex'; xem.href = 'blog.html?id=' + p.id;
-  document.getElementById('lblTrangThai').textContent = p.published ? '· Đang sửa (đã xuất bản)' : '· Đang sửa (nháp)';
+  document.getElementById('lblTrangThai').textContent = p.published ? 'Đang sửa · đã xuất bản' : 'Đang sửa · nháp';
   capNhatXemTruoc();
-  window.scrollTo({ top: document.querySelector('.vb-editor').offsetTop - 80, behavior: 'smooth' });
+  if (window.innerWidth <= 900) doiTabMobile('edit');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 async function luuBai(publish){
   var id = document.getElementById('postId').value;
   var title = document.getElementById('postTitle').value.trim();
@@ -224,7 +339,7 @@ async function luuBai(publish){
   var oldTxt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Đang lưu…';
   var u = await sb.auth.getUser();
   var rec = {
-    title: title, content: content, excerpt: trichDoan(content),
+    title: title, content: content, excerpt: trichDoan(content), cover_url: coverUrl || null,
     published: publish, author_id: u.data.user.id,
     author_name: (vbProfile && vbProfile.full_name) ? vbProfile.full_name : 'Thầy Vinh',
     updated_at: new Date().toISOString()
@@ -235,19 +350,17 @@ async function luuBai(publish){
   btn.disabled = false; btn.textContent = oldTxt;
   if (r.error){ alert('Lỗi lưu bài: ' + r.error.message); return; }
   if (!id && r.data){ document.getElementById('postId').value = r.data.id; document.getElementById('btnXoa').style.display='inline-flex'; var xem=document.getElementById('btnXem'); xem.style.display='inline-flex'; xem.href='blog.html?id='+r.data.id; }
-  document.getElementById('lblTrangThai').textContent = publish ? '· ✓ Đã xuất bản' : '· ✓ Đã lưu nháp';
+  document.getElementById('lblTrangThai').textContent = publish ? '✓ Đã xuất bản' : '✓ Đã lưu nháp';
   await taiDsBai();
-  alert(publish ? '🚀 Đã xuất bản! Bài viết hiện trên trang cá nhân của mọi người và trang giới thiệu.' : '💾 Đã lưu nháp (chỉ thầy/trợ giảng thấy).');
+  alert(publish ? '🚀 Đã xuất bản! Bài hiện trên trang cá nhân của mọi người và trang giới thiệu (khách cũng đọc được).' : '💾 Đã lưu nháp (chỉ thầy/trợ giảng thấy).');
 }
-
 async function xoaBai(){
   var id = document.getElementById('postId').value;
   if (!id) return;
   if (!confirm('Xoá hẳn bài viết này? Không thể hoàn tác.')) return;
   var r = await sb.from('blog_posts').delete().eq('id', id);
   if (r.error){ alert('Lỗi xoá: ' + r.error.message); return; }
-  moBaiMoi();
-  await taiDsBai();
+  moBaiMoi(); await taiDsBai();
 }
 </script>
 </body>
