@@ -9,14 +9,14 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css?v=3.2">
-<link rel="stylesheet" href="vinhmath.css?v=3.2">
+<link rel="stylesheet" href="tokens.css?v=3.3">
+<link rel="stylesheet" href="vinhmath.css?v=3.3">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
   background-image: 
-    linear-gradient(to right, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 30px 30px;
 }
 
@@ -60,7 +60,7 @@
   left: 0;
   width: 100%;
   height: 12px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--accent-soft);
   z-index: -1;
   border-radius: 6px;
 }
@@ -159,7 +159,7 @@
   align-items: center;
   width: 100%;
   margin-bottom: 48px;
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  background: rgba(13, 20, 38, 0.6);
   border: 1px solid var(--line-2);
   border-radius: var(--r-lg);
   padding: 16px 32px;
@@ -170,7 +170,7 @@
   overflow: visible;
 }
 [data-theme="dark"] .hero-brand-banner {
-  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  background: rgba(13, 20, 38, 0.4);
 }
 .brand-title {
   font-family: var(--font-sans);
@@ -182,7 +182,7 @@
   text-align: center;
   flex: 1;
   padding: 0 24px;
-  text-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 8%, transparent);
+  text-shadow: 0 2px 12px var(--accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -259,8 +259,8 @@
   width: 50px;
   height: 50px;
   border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 5px var(--accent-soft);
 }
 .hero-f-front  { transform: translateZ(25px); }
 .hero-f-back   { transform: rotateY(180deg) translateZ(25px); }
@@ -309,11 +309,11 @@
   color: var(--accent);
   text-transform: uppercase;
   margin-bottom: 24px;
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  background: var(--accent-soft);
   padding: 6px 16px;
   border-radius: 50px;
-  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 4%, transparent);
+  border: 1px solid var(--accent-soft);
+  box-shadow: 0 2px 10px var(--accent-soft);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -418,7 +418,7 @@
 /* Floating Glassmorphic Labels */
 .float {
   position: absolute;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  background: rgba(13, 20, 38, 0.8);
   border: 1px solid var(--line-2);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -488,7 +488,7 @@
   color: var(--accent);
   border-color: var(--accent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 4px 10px var(--accent-soft);
 }
 .contact-link .icon-box {
   width: 30px;
@@ -507,7 +507,7 @@
   padding: 24px 0 64px;
 }
 .stats .grid-4 {
-  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  background: rgba(13, 20, 38, 0.5);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: 32px;
@@ -629,7 +629,7 @@
 .features .feature {
   transition: all 0.3s ease;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background: rgba(13, 20, 38, 0.9);
 }
 .features .feature:hover {
   transform: translateY(-4px);
@@ -723,12 +723,12 @@ body.math-grid {
 
 /* Translucent panels for high contrast */
 .topbar {
-  background: color-mix(in srgb, var(--surface) 60%, transparent) !important;
+  background: rgba(13, 20, 38, 0.6) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
 }
 .hero-brand-banner {
-  background: color-mix(in srgb, var(--surface) 75%, transparent) !important;
+  background: rgba(13, 20, 38, 0.75) !important;
 }
 .hero-brand-banner::before, .hero-brand-banner::after {
   content: "";
@@ -1135,7 +1135,7 @@ body.math-grid {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="vinhmath.js?v=3.2"></script>
+<script src="vinhmath.js?v=3.3"></script>
 <script src="analytics.js"></script>
 <script>
 // Blog công khai (quảng bá, đọc tự do — không cần đăng nhập)

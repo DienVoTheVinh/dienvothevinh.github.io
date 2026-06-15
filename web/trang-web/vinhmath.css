@@ -487,7 +487,7 @@ tr:last-child td{border-bottom:none}
 .timeline-card.active-card {
   transform: scale(1.05);
   border-color: var(--accent);
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 16px 36px var(--accent-soft);
   opacity: 1;
   z-index: 2;
 }
@@ -544,7 +544,7 @@ tr:last-child td{border-bottom:none}
   color: #ffffff;
   border-color: var(--accent);
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 8px 20px var(--accent-soft);
 }
 .prev-btn {
   left: -4px;
@@ -569,7 +569,7 @@ tr:last-child td{border-bottom:none}
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  background: var(--line-2);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

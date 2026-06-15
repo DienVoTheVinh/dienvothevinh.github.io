@@ -37,6 +37,7 @@
   
   --line: rgba(255, 255, 255, 0.4); /* Đường viền kính mờ */
   --line-2: rgba(181, 192, 219, 0.4); /* Đường viền kính đậm hơn */
+  --grid-line: rgba(15, 23, 42, 0.04); /* Đường kẻ ô toán học sáng */
   
   --ink: #0f172a; /* Slate 900 */
   --ink-2: #475569; /* Slate 600 */
@@ -73,6 +74,7 @@
   
   --line: rgba(255, 255, 255, 0.08); /* Viền kính tối */
   --line-2: rgba(37, 99, 235, 0.15); /* Viền kính phát sáng navy */
+  --grid-line: rgba(248, 250, 252, 0.03); /* Đường kẻ ô toán học tối */
   
   --ink: #f8fafc; /* Slate 50 */
   --ink-2: #cbd5e1; /* Slate 300 */
