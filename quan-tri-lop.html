@@ -8,8 +8,8 @@
 <title>Quản lý Lớp học — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=4.0">
-<link rel="stylesheet" href="css/vinhmath.css?v=4.0">
+<link rel="stylesheet" href="css/tokens.css?v=4.1">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.1">
 <style>
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -625,7 +625,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.0"></script>
+<script src="js/vinhmath.js?v=4.1"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1553,21 +1553,49 @@ if ($('bhAnhFile')) {
 window.addEventListener('paste', function(e) {
   var modal = $('modalForm');
   if (!modal || modal.style.display === 'none') return;
-  var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  
+  var clipboardData = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+  if (!clipboardData) return;
+  
   var imageFiles = [];
-  for (var i = 0; i < items.length; i++) {
-    if (items[i].type.indexOf('image') !== -1) {
-      var file = items[i].getAsFile();
-      if (file) {
-        imageFiles.push(file);
+  
+  // 1. Lấy ảnh từ items (hỗ trợ chụp màn hình trực tiếp vào clipboard)
+  if (clipboardData.items && clipboardData.items.length > 0) {
+    for (var i = 0; i < clipboardData.items.length; i++) {
+      var item = clipboardData.items[i];
+      if (item.type.indexOf('image') !== -1) {
+        var file = item.getAsFile();
+        if (file) imageFiles.push(file);
       }
     }
   }
-  if (imageFiles.length === 0) return;
-  e.preventDefault();
-  for (var j = 0; j < imageFiles.length; j++) {
-    selectedImageFiles.push(imageFiles[j]);
+  
+  // 2. Lấy ảnh từ files (hỗ trợ copy tệp ảnh từ Finder/Desktop rồi dán)
+  if (imageFiles.length === 0 && clipboardData.files && clipboardData.files.length > 0) {
+    for (var j = 0; j < clipboardData.files.length; j++) {
+      var f = clipboardData.files[j];
+      if (f.type.indexOf('image') !== -1) {
+        imageFiles.push(f);
+      }
+    }
   }
+  
+  if (imageFiles.length === 0) return;
+  
+  e.preventDefault();
+  
+  for (var k = 0; k < imageFiles.length; k++) {
+    var fileToPush = imageFiles[k];
+    // Đặt tên an toàn cho ảnh dán trực tiếp
+    if (!fileToPush.name || fileToPush.name === 'image.png' || fileToPush.name.startsWith('image')) {
+      var ext = fileToPush.type.split('/')[1] || 'png';
+      var newFile = new File([fileToPush], 'pasted-image-' + Date.now() + '-' + k + '.' + ext, { type: fileToPush.type });
+      selectedImageFiles.push(newFile);
+    } else {
+      selectedImageFiles.push(fileToPush);
+    }
+  }
+  
   veAnhHienCo();
 });
 
