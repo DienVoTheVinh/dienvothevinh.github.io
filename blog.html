@@ -81,6 +81,8 @@
   box-shadow: var(--shadow);
   box-sizing: border-box;
 }
+.blog-list-card.has-cover { padding-top: 0; overflow: hidden; }
+.blog-list-card .bl-cover { width: calc(100% + 40px); height: 170px; object-fit: cover; margin: 0 -20px 16px; display: block; }
 .blog-list-card:hover {
   transform: translateY(-4px);
   background: var(--surface-2);
@@ -345,7 +347,7 @@ async function taiDanhSachBlog() {
   box.innerHTML = '<div class="blog-empty">Đang tải danh sách bài viết…</div>';
   
   try {
-    var query = sb.from('blog_posts').select('id, title, excerpt, author_name, created_at, published');
+    var query = sb.from('blog_posts').select('id, title, excerpt, author_name, created_at, published, cover_url');
     
     var laAdmin = bProfile && bProfile.role === 'admin';
     if (!laAdmin || viewAsStudent) {
@@ -412,7 +414,9 @@ async function taiDanhSachBlog() {
         '</div>';
       }
 
-      return '<div class="blog-list-card" onclick="window.location.href=\'blog.html?id=' + p.id + '\'" style="cursor:pointer">' +
+      var cover = p.cover_url ? '<img class="bl-cover" src="' + blogEsc(p.cover_url) + '" alt="" loading="lazy">' : '';
+      return '<div class="blog-list-card' + (cover ? ' has-cover' : '') + '" onclick="window.location.href=\'blog.html?id=' + p.id + '\'" style="cursor:pointer">' +
+        cover +
         '<div>' +
           (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
           '<div class="bl-title">' + blogEsc(p.title) + '</div>' +
