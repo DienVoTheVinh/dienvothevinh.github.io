@@ -135,6 +135,12 @@ async function dangNhap(username, password) {
   if (!daKetNoi()) return { error: 'Web đang ở chế độ xem thử — chưa kết nối Supabase.' };
   
   var u = username.trim().toLowerCase();
+  
+  // Tự động cắt bỏ đuôi .com nếu trình duyệt tự điền hoặc người dùng nhập theo thói quen cũ
+  if (u.endsWith('.com')) {
+    u = u.replace(/\.com$/, '');
+  }
+  
   var email = "";
   if (!u.includes('@')) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
