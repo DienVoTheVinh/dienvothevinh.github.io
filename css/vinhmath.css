@@ -1282,11 +1282,14 @@ tr:last-child td{border-bottom:none}
 
   /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
   .topbar .nav {
-    padding: 8px 12px !important;
-    gap: 8px !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
     max-width: 100% !important;
-    overflow: hidden !important;
   }
+  /* Luôn giữ nút menu ☰ và chuông hiển thị, không bị cắt */
+  .nav-burger, .bell-wrap { flex: 0 0 auto !important; }
+  /* Ẩn nhãn vai trò (QUẢN TRỊ) trên mobile để chừa chỗ cho nút ☰ */
+  .role-badge { display: none !important; }
   .logo {
     font-size: 1rem !important;
     gap: 6px !important;
