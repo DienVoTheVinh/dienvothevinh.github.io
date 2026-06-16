@@ -332,7 +332,7 @@ function demoParseLaTeX() {
   parsedQuestions = parseLatexQuestions(raw);
   
   if (!parsedQuestions.length) {
-    alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
+    if (!window.__liveParse) alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
     $('vungPreview').style.display = 'none';
     $('btnSave').disabled = true;
     return;
@@ -382,6 +382,21 @@ function demoParseLaTeX() {
   }).join('');
   renderToanTrong($('dsPreview')); // vẽ công thức toán bằng KaTeX
 }
+
+// ===== BIÊN DỊCH TRỰC TIẾP: gõ tới đâu hiện xem trước tới đó =====
+(function () {
+  var ta = document.getElementById('exLatex');
+  if (!ta) return;
+  var hen;
+  ta.addEventListener('input', function () {
+    clearTimeout(hen);
+    hen = setTimeout(function () {
+      window.__liveParse = true;
+      try { demoParseLaTeX(); } catch (e) {}
+      window.__liveParse = false;
+    }, 350);
+  });
+})();
 
 function escapeHTML(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

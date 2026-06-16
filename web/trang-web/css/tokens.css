@@ -46,10 +46,10 @@
   --ink-2: #475569; /* Slate 600 */
   --ink-3: #94a3b8; /* Slate 400 */
   
-  --accent: #C5870A; /* Vàng kim sạch, ấm, đọc tốt trên nền sáng */
-  --accent-hover: #A06D06;
-  --accent-soft: rgba(197, 135, 10, 0.10);
-  --accent-gradient: linear-gradient(135deg, #FFCC3E 0%, #F0A819 50%, #C9870B 100%);
+  --accent: #ca8a04; /* Vàng kim tươi tắn, sang trọng, nổi bật trên nền sáng */
+  --accent-hover: #a16207;
+  --accent-soft: rgba(202, 138, 4, 0.08);
+  --accent-gradient: linear-gradient(135deg, #facc15 0%, #ca8a04 50%, #854d0e 100%);
   
   --ok: #10b981;
   --ok-soft: rgba(16, 185, 129, 0.1);
