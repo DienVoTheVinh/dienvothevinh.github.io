@@ -425,9 +425,9 @@
   .gcal-ev { position:absolute; left:3px; right:3px; border-radius:7px; padding:4px 7px; font-size:.72rem; line-height:1.2; overflow:hidden; color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.18); }
   .gcal-ev b { font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gcal-ev .evt { opacity:.92; font-size:.66rem; }
-  .gcal-ev.online { background:linear-gradient(135deg,#4A6FA5,#3E6090); }
-  .gcal-ev.offline { background:linear-gradient(135deg,#3E8E7E,#2f6f62); }
-  .gcal-ev.exam { background:linear-gradient(135deg,#B5483A,#8f3327); }
+  .gcal-ev.online { background:linear-gradient(135deg,#42587A,#2F415C); }
+  .gcal-ev.offline { background:linear-gradient(135deg,#446C65,#2F4F4A); }
+  .gcal-ev.exam { background:linear-gradient(135deg,#B5483A,#853124); }
   .gcal-now { position:absolute; left:0; right:0; height:2px; background:#e74c3c; z-index:5; }
   .gcal-now::before { content:''; position:absolute; left:-3px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e74c3c; }
   .gcal-empty { padding:30px; text-align:center; color:var(--ink-3); font-size:.9rem; }
@@ -1248,14 +1248,14 @@ function gcalKey(dt) {
 function gcalToMin(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
 
 var MAU_LOP_PALETTE = [
-  'linear-gradient(135deg, #4A6FA5, #35527d)', // Blue
-  'linear-gradient(135deg, #3E8E7E, #2d6b5e)', // Teal
-  'linear-gradient(135deg, #B5483A, #8f3126)', // Red/Coral
-  'linear-gradient(135deg, #7B5EA7, #5c4481)', // Purple
-  'linear-gradient(135deg, #C26B4E, #9e5138)', // Terracotta
-  'linear-gradient(135deg, #2b708c, #1d4e62)', // Ocean Blue
-  'linear-gradient(135deg, #6c8c3e, #516a2d)', // Olive
-  'linear-gradient(135deg, #8c3e7b, #6b2d5d)'  // Magenta
+  'linear-gradient(135deg, #42587A, #2F415C)', // Muted Indigo
+  'linear-gradient(135deg, #446C65, #2F4F4A)', // Sage Teal
+  'linear-gradient(135deg, #B5483A, #853124)', // Hanko Red
+  'linear-gradient(135deg, #7C4F67, #593547)', // Warm Plum
+  'linear-gradient(135deg, #A7654E, #7B4734)', // Rust Terracotta
+  'linear-gradient(135deg, #395F70, #25424F)', // Slate Blue
+  'linear-gradient(135deg, #5E7B5E, #435b43)', // Matcha Green
+  'linear-gradient(135deg, #A8842C, #7E611D)'  // Amber Yellow
 ];
 function layMauLop(tenLop) {
   if (!tenLop) return 'linear-gradient(135deg, #94a3b8, #64748b)';
