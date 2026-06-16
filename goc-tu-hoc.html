@@ -105,6 +105,8 @@
     </div>
   </div>
 
+  <div id="xemTruocCay" style="display:none; margin-top:24px"></div>
+
   <div class="stats">
     <div class="stat"><b id="stHomNay">0</b><span>Phút hôm nay</span></div>
     <div class="stat"><b id="stPhien">0</b><span>Phiên hoàn thành</span></div>
@@ -125,16 +127,41 @@
 <script src="js/study-timer.js?v=1"></script>
 <script src="js/analytics.js"></script>
 <script>
-var meId = null;
+var meId = null, meRole = null;
 
 (async function () {
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   meId = hoSo.id;
+  meRole = hoSo.role;
+  if (meRole === 'admin') veXemTruocCay();
   capNhatBanner();
   await taiDuLieu();
 })();
+
+// CHẾ ĐỘ QUẢN TRỊ: xem trước các mức lớn của cây theo thời gian
+function veXemTruocCay() {
+  var box = document.getElementById('xemTruocCay');
+  if (!box) return;
+  var stages = [
+    { e: '🌱', t: 'Hạt mầm', r: '0 – 4 phút' },
+    { e: '🌿', t: 'Nảy mầm', r: '4 – 12 phút' },
+    { e: '🪴', t: 'Cây non', r: '12 – 20 phút' },
+    { e: '🌳', t: 'Cây lớn', r: '20 – 25 phút' },
+    { e: '🌸', t: 'Đơm hoa (hoàn thành)', r: '≥ 25 phút' },
+    { e: '🥀', t: 'Cây héo (bỏ dở / rời trang)', r: '—' }
+  ];
+  box.style.display = 'block';
+  box.innerHTML = '<h3 style="font-size:1.05rem;font-weight:800;margin-bottom:12px">👀 Xem trước các mức cây <span style="font-size:.8rem;font-weight:600;color:var(--ink-3)">(chế độ quản trị)</span></h3>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px">' +
+    stages.map(function (s) {
+      return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;text-align:center;box-shadow:var(--shadow)">' +
+        '<div style="font-size:2.8rem;line-height:1">' + s.e + '</div>' +
+        '<div style="font-weight:700;margin-top:8px">' + s.t + '</div>' +
+        '<div style="font-size:.8rem;color:var(--ink-3);margin-top:2px">' + s.r + '</div></div>';
+    }).join('') + '</div>';
+}
 
 function batDau(mode, phut) {
   if (window.VMStudy && window.VMStudy.isActive()) {
@@ -160,6 +187,7 @@ function capNhatBanner() {
 window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
 
 async function taiDuLieu() {
+  if (!meId) return; // chỉ tải dữ liệu của ĐÚNG cá nhân đang đăng nhập
   var r = await sb.from('study_sessions')
     .select('id, mode, started_at, focus_seconds, completed, points, tab_switches')
     .eq('student_id', meId)
