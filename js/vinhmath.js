@@ -450,47 +450,8 @@ function khoiTaoControlCenter() {
   var currentAccent = localStorage.getItem('vm-accent') || 'amber';
   
   panel.innerHTML = 
-    '<!-- Widgets Grid -->' +
-    '<div class="cc-widgets-grid">' +
-      '<div class="cc-widget">' +
-        '<div class="cc-widget-icon" style="background:#3b82f6; display:grid; place-items:center;">' +
-          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20" stroke-width="3"></line></svg>' +
-        '</div>' +
-        '<div class="cc-widget-info">' +
-          '<b>Mạng Wifi</b>' +
-          '<span>VinhMath 5G</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="cc-widget">' +
-        '<div class="cc-widget-icon" style="background:#10b981; display:grid; place-items:center;">' +
-          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"></polygon></svg>' +
-        '</div>' +
-        '<div class="cc-widget-info">' +
-          '<b>Máy chủ</b>' +
-          '<span>Đang chạy</span>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    
-    '<!-- Locked settings message for non-admins -->' +
-    '<div id="ccLockedMsg" style="text-align:center; padding:12px; font-size:0.85rem; color:var(--ink-3); border-top:1px dashed var(--line); margin-top:6px">' +
-      '🎨 <i>Giao diện do Quản trị viên thiết lập hệ thống.</i>' +
-    '</div>' +
-    
-    '<!-- Admin theme customizations -->' +
-    '<div id="ccThemeControls" style="display:none; flex-direction:column; gap:14px; border-top:1px dashed var(--line); padding-top:12px; margin-top:6px">' +
-      '<!-- Theme switcher -->' +
-      '<div class="cc-theme-switcher">' +
-        '<button class="cc-theme-btn ' + (!isDark ? 'active' : '') + '" id="ccBtnLight">' +
-          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' +
-          'Sáng' +
-        '</button>' +
-        '<button class="cc-theme-btn ' + (isDark ? 'active' : '') + '" id="ccBtnDark">' +
-          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>' +
-          'Tối' +
-        '</button>' +
-      '</div>' +
-      
+    '<!-- Shared theme customizations (Sliders for Opacity, Effect, Blur) -->' +
+    '<div id="ccSharedControls" style="display:flex; flex-direction:column; gap:14px; padding-top:4px">' +
       // Opacity
       '<div class="cc-control-row">' +
         '<div class="cc-control-label">' +
@@ -523,7 +484,15 @@ function khoiTaoControlCenter() {
           '<input type="range" min="0" max="40" step="1" value="' + currentBlur + '" class="cc-slider" id="sldBlur">' +
         '</div>' +
       '</div>' +
-      
+    '</div>' +
+
+    '<!-- Locked settings message for non-admins -->' +
+    '<div id="ccLockedMsg" style="text-align:center; padding:12px; font-size:0.85rem; color:var(--ink-3); border-top:1px dashed var(--line); margin-top:12px; display:block">' +
+      '🎨 <i>Màu chủ đề & AI do Quản trị viên thiết lập.</i>' +
+    '</div>' +
+    
+    '<!-- Admin theme color customizations -->' +
+    '<div id="ccThemeColorControls" style="display:none; flex-direction:column; gap:14px; border-top:1px dashed var(--line); padding-top:12px; margin-top:12px">' +
       // Accent Color
       '<div class="cc-color-picker">' +
         '<div class="cc-color-label">Màu chủ đề</div>' +
@@ -570,7 +539,7 @@ function khoiTaoControlCenter() {
     e.stopPropagation(); // chặn không đóng khi tương tác bên trong panel
   });
   
-  // Thay đổi Theme
+  // Thay đổi Theme (nếu phần tử tồn tại)
   var btnLight = $('ccBtnLight');
   var btnDark = $('ccBtnDark');
   
@@ -580,11 +549,11 @@ function khoiTaoControlCenter() {
     
     // Cập nhật nút trong CC
     if (theme === 'dark') {
-      btnDark.classList.add('active');
-      btnLight.classList.remove('active');
+      if (btnDark) btnDark.classList.add('active');
+      if (btnLight) btnLight.classList.remove('active');
     } else {
-      btnLight.classList.add('active');
-      btnDark.classList.remove('active');
+      if (btnLight) btnLight.classList.add('active');
+      if (btnDark) btnDark.classList.remove('active');
     }
     
     // Cập nhật nút cũ (nếu có trên trang)
@@ -601,8 +570,8 @@ function khoiTaoControlCenter() {
     }
   }
   
-  btnLight.addEventListener('click', function() { setCCTheme('light'); });
-  btnDark.addEventListener('click', function() { setCCTheme('dark'); });
+  if (btnLight) btnLight.addEventListener('click', function() { setCCTheme('light'); });
+  if (btnDark) btnDark.addEventListener('click', function() { setCCTheme('dark'); });
   
   // Slider Opacity
   var sldOpacity = $('sldOpacity');
@@ -1359,13 +1328,13 @@ function dangKyRealtimeCaiDatHeThong() {
 }
 
 function apDungQuyenThemeControlCenter(role) {
-  var ccThemeControls = document.getElementById('ccThemeControls');
+  var ccThemeColorControls = document.getElementById('ccThemeColorControls');
   var ccLockedMsg = document.getElementById('ccLockedMsg');
   if (role === 'admin') {
-    if (ccThemeControls) ccThemeControls.style.display = 'flex';
+    if (ccThemeColorControls) ccThemeColorControls.style.display = 'flex';
     if (ccLockedMsg) ccLockedMsg.style.display = 'none';
   } else {
-    if (ccThemeControls) ccThemeControls.style.display = 'none';
+    if (ccThemeColorControls) ccThemeColorControls.style.display = 'none';
     if (ccLockedMsg) ccLockedMsg.style.display = 'block';
   }
 }
