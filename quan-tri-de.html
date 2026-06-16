@@ -374,7 +374,12 @@ async function loadExamForEdit(examId) {
     });
     
     $('exLatex').value = latexArr.join('\n\n');
-    demoParseLaTeX();
+    if (exam.de_type !== 'essay') {
+      demoParseLaTeX();
+    } else {
+      $('vungPreview').style.display = 'none';
+      if (typeof capNhatNutLuu === 'function') capNhatNutLuu();
+    }
   } catch (err) {
     alert('Lỗi tải đề thi: ' + err.message);
     cancelEditExam();
