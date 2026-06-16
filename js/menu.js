@@ -34,6 +34,15 @@ function apDungMenu(role) {
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ].filter(Boolean);
+  } else if (role === 'parent') {
+    // ----- MENU CỦA PHỤ HUYNH -----
+    muc = [
+      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
+      { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
+      { type: 'link', path: 'blog', label: 'Blog' },
+      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+    ];
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [

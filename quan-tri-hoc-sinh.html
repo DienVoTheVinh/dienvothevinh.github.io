@@ -8,8 +8,8 @@
 <title>Quản lý học sinh — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=4.1">
-<link rel="stylesheet" href="css/vinhmath.css?v=4.1">
+<link rel="stylesheet" href="css/tokens.css?v=4.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.2">
 <style>
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
@@ -121,13 +121,44 @@ td, th { font-size: .88rem; }
   </div>
 </div>
 
+<!-- Modal Nhận xét & Liên kết Phụ huynh -->
+<div class="modal" id="modalNhanXetPH">
+  <div class="modal-content" style="max-width: 500px;">
+    <button class="modal-close" onclick="$('modalNhanXetPH').style.display='none'">×</button>
+    <h2 style="font-size:1.2rem">💬 Nhận xét & Liên kết Phụ huynh</h2>
+    <p id="nxphTenHocSinh" style="font-weight:700; margin-top:8px; color:var(--accent);"></p>
+    
+    <div style="margin-top:20px; display:flex; flex-direction:column; gap:16px;">
+      <div class="field">
+        <label style="font-weight:600; font-size:0.9rem; margin-bottom:6px; display:block;">1. Liên kết tài khoản Phụ huynh</label>
+        <select class="input" id="nxphChonPH" style="width:100%;">
+          <option value="">-- Chưa liên kết phụ huynh --</option>
+        </select>
+        <small style="color:var(--ink-3); margin-top:4px; display:block;">Chọn tài khoản phụ huynh để liên kết theo dõi con em này.</small>
+      </div>
+      
+      <div class="field">
+        <label style="font-weight:600; font-size:0.9rem; margin-bottom:6px; display:block;">2. Nhận xét tổng quát của thầy Vinh</label>
+        <textarea class="input" id="nxphGhiNX" rows="5" placeholder="Ví dụ: Con học tập rất chăm chỉ, hoàn thành xuất sắc các chuyên đề. Cần phát huy hơn ở phần hình học..." style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+        <small style="color:var(--ink-3); margin-top:4px; display:block;">Nhận xét này sẽ hiển thị trực tiếp trên trang Cổng Phụ huynh.</small>
+      </div>
+      
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button class="btn btn-secondary" onclick="$('modalNhanXetPH').style.display='none'">Hủy</button>
+        <button class="btn btn-primary" id="nxphNutLuu" onclick="luuNhanXetPH()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.1"></script>
+<script src="js/vinhmath.js?v=4.2"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
 var dsHS = [];            // hồ sơ học sinh kèm số liệu đã tính
+var dsPhuHuynh = [];      // danh sách phụ huynh để hiển thị trong dropdown
 var phienTheoHS = {};     // student_id -> [phiên truy cập]
 var MAU = [
   'linear-gradient(135deg, #ff5e62 0%, #ff9966 100%)', // Coral
@@ -167,14 +198,15 @@ function phutDep(giay) {
 }
 
 async function taiTatCa() {
-  // Tải song song 6 nguồn dữ liệu
+  // Tải song song 7 nguồn dữ liệu
   var ketQua = await Promise.all([
-    sb.from('profiles').select('id, full_name, username, avatar_url, school, class_students(class_id, classes(name))').eq('role', 'student'),
+    sb.from('profiles').select('id, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name))').eq('role', 'student'),
     sb.from('classes').select('id, name').order('name'),
     sb.from('analytics_sessions').select('profile_id, started_at, last_active_at, duration_seconds, device_type').not('profile_id', 'is', null).order('last_active_at', { ascending: false }).limit(2000),
     sb.from('class_sessions').select('id, class_id'),
     sb.from('attendance').select('student_id, status').in('status', ['present', 'late']),
-    sb.from('attempts').select('student_id, score').not('submitted_at', 'is', null)
+    sb.from('attempts').select('student_id, score').not('submitted_at', 'is', null),
+    sb.from('profiles').select('id, full_name, username').eq('role', 'parent').order('full_name')
   ]);
   var hs = ketQua[0].data || [];
   var lop = ketQua[1].data || [];
@@ -182,6 +214,7 @@ async function taiTatCa() {
   var buoi = ketQua[3].data || [];
   var diemDanh = ketQua[4].data || [];
   var luot = ketQua[5].data || [];
+  dsPhuHuynh = ketQua[6].data || [];
 
   // Bộ lọc lớp
   $('locLop').innerHTML = '<option value="">Tất cả các lớp</option>' +
@@ -222,6 +255,7 @@ async function taiTatCa() {
     var d = diemTheoHS[s.id];
     return {
       id: s.id, ten: s.full_name || '?', username: s.username || '', avatar: s.avatar_url,
+      parent_id: s.parent_id, teacher_comment: s.teacher_comment,
       lopIds: lopIds, tenLop: tenLop || '—',
       lanCuoi: moiNhat ? moiNhat.last_active_at : null,
       dangOnline: moiNhat && (bayGio - new Date(moiNhat.last_active_at).getTime()) < 2 * 60000,
@@ -314,6 +348,7 @@ function veBang() {
       '<td style="text-align:right; white-space:nowrap;">' +
         '<div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:8px;">' +
           '<a class="btn btn-primary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
+          '<button class="btn btn-secondary btn-sm" onclick="moNhanXetPH(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">💬 Nhận xét & PH</button>' +
           '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>' +
         '</div>' +
       '</td>' +
@@ -340,6 +375,60 @@ function moChiTiet(id) {
     }).join('');
   }
   $('modalPhien').style.display = 'flex';
+}
+
+var selectedStudentIdNXPH = null;
+
+function moNhanXetPH(id) {
+  var s = dsHS.find(function (x) { return x.id === id; });
+  if (!s) return;
+  selectedStudentIdNXPH = id;
+  $('nxphTenHocSinh').textContent = s.ten + ' (' + s.username + ')';
+  
+  // Build dropdown options for parent selection
+  var select = $('nxphChonPH');
+  select.innerHTML = '<option value="">-- Chưa liên kết phụ huynh --</option>' +
+    dsPhuHuynh.map(function (p) {
+      return '<option value="' + p.id + '">' + p.full_name + ' (' + p.username + ')</option>';
+    }).join('');
+    
+  select.value = s.parent_id || '';
+  $('nxphGhiNX').value = s.teacher_comment || '';
+  
+  $('modalNhanXetPH').style.display = 'flex';
+}
+
+async function luuNhanXetPH() {
+  if (!selectedStudentIdNXPH) return;
+  var btn = $('nxphNutLuu');
+  btn.disabled = true;
+  btn.textContent = 'Đang lưu…';
+  
+  var parentId = $('nxphChonPH').value || null;
+  var comment = $('nxphGhiNX').value.trim();
+  
+  var r = await sb.from('profiles').update({
+    parent_id: parentId,
+    teacher_comment: comment
+  }).eq('id', selectedStudentIdNXPH);
+  
+  if (r.error) {
+    alert('Lỗi khi lưu nhận xét & phụ huynh: ' + r.error.message);
+    btn.disabled = false;
+    btn.textContent = 'Lưu thay đổi';
+  } else {
+    // Cập nhật lại trong dsHS cục bộ
+    var s = dsHS.find(function (x) { return x.id === selectedStudentIdNXPH; });
+    if (s) {
+      s.parent_id = parentId;
+      s.teacher_comment = comment;
+    }
+    $('modalNhanXetPH').style.display = 'none';
+    alert('Đã lưu nhận xét và liên kết phụ huynh thành công!');
+    btn.disabled = false;
+    btn.textContent = 'Lưu thay đổi';
+    veBang();
+  }
 }
 </script>
 </body>

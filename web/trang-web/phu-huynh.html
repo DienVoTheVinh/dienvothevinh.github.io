@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theo dõi học tập — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=4.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.2">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 20px; }
+
+/* Student switching tabs */
+.student-tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.student-tab {
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink-2);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.student-tab:hover { border-color: var(--accent); color: var(--ink-1); }
+.student-tab.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-soft);
+}
+
+/* Report View tabs */
+.view-tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 24px; gap: 16px; }
+.view-tab {
+  padding: 12px 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink-2);
+  position: relative;
+  transition: all 0.2s ease;
+}
+.view-tab:hover { color: var(--ink-1); }
+.view-tab.active {
+  color: var(--accent);
+}
+.view-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 99px;
+}
+
+.report-section { display: none; }
+.report-section.active { display: block; }
+
+/* Layout grids */
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.dash-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; text-align: center; box-shadow: var(--shadow); transition: all 0.3s ease; }
+.dash-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.dash-card .label { font-size: 0.75rem; color: var(--ink-2); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.dash-card .val { font-size: 1.85rem; font-weight: 800; color: var(--ink); line-height: 1.2; }
+.dash-card .sub { font-size: 0.8rem; color: var(--ink-3); margin-top: 4px; }
+
+/* Online status banner */
+.status-banner {
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.status-banner.online {
+  background: rgba(46, 204, 113, 0.08);
+  border-color: #2ecc71;
+  color: #27ae60;
+}
+.status-banner.offline {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2ecc71;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.3);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0px rgba(46, 204, 113, 0); }
+}
+
+.layout-cols { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .layout-cols { grid-template-columns: 1fr; } }
+
+/* Calendar grid */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.cal-header { font-size: 0.78rem; font-weight: 700; color: var(--ink-2); padding: 6px 0; }
+.cal-cell {
+  aspect-ratio: 1.1;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--surface);
+  position: relative;
+  transition: all 0.2s ease;
+}
+.cal-cell.empty { border: none; background: none; }
+.cal-cell .day-num { font-size: 0.82rem; }
+.cal-cell .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+.status-present { background: var(--ok); color: var(--ok); }
+.status-late { background: var(--warn); color: var(--warn); }
+.status-absent { background: var(--err); color: var(--err); }
+.status-leave { background: var(--accent); color: var(--accent); }
+
+/* Rank badge style */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff !important;
+}
+.rank-bronze { background: linear-gradient(135deg, #8D5B4C, #CD7F32, #E6A15C); }
+.rank-silver { background: linear-gradient(135deg, #7F8C8D, #BDC3C7, #A5B1B2); }
+.rank-gold { background: linear-gradient(135deg, #F39C12, #F1C40F, #D68910); box-shadow: 0 0 10px rgba(241, 196, 15, 0.4); }
+.rank-platinum { background: linear-gradient(135deg, #00C9FF, #92FE9D); color: #1F1D1A !important; box-shadow: 0 0 12px rgba(0, 201, 255, 0.4); }
+.rank-diamond { background: linear-gradient(135deg, #fbc2eb, #a6c1ee, #fbc2eb); color: #4A148C !important; box-shadow: 0 0 15px rgba(166, 193, 238, 0.7); animation: shine 2.5s infinite linear; }
+@keyframes shine {
+  0% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(180deg) brightness(1.2) saturate(1.2); }
+  100% { filter: hue-rotate(360deg) brightness(1); }
+}
+
+.comment-card {
+  padding: 20px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: rgba(var(--surface-rgb), 0.7);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+.comment-card h4 { font-size: 0.98rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.comment-card p { font-size: 0.92rem; color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; }
+
+/* Timeline list */
+.timeline { display: flex; flex-direction: column; gap: 14px; }
+.timeline-item {
+  border-left: 2px solid var(--line-2);
+  padding-left: 16px;
+  position: relative;
+}
+.timeline-item::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: absolute;
+  left: -6px;
+  top: 5px;
+}
+.timeline-item .time-meta { font-size: 0.78rem; color: var(--ink-3); font-weight: 600; margin-bottom: 4px; }
+.timeline-item .title { font-size: 0.9rem; font-weight: 700; color: var(--ink-1); }
+.timeline-item .desc { font-size: 0.85rem; color: var(--ink-2); margin-top: 4px; }
+
+/* Chart.js Card spacing */
+.chart-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; box-shadow: var(--shadow); height: 260px; position: relative; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Phụ huynh</small></a>
+    <nav class="navlinks"><!-- menu.js tự vẽ --></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Cổng thông tin phụ huynh</div>
+    <h1>Theo dõi Tình hình Học tập</h1>
+    <p id="subTieuDe" style="margin-top:6px">Xem điểm số, lịch chuyên cần, và các nhận xét trực tiếp của thầy cô đối với con em.</p>
+  </div>
+
+  <!-- Tabs con em (nếu phụ huynh có nhiều hơn 1 con) -->
+  <div class="student-tabs" id="dsConEmTabs" style="display:none;"></div>
+
+  <!-- Giao diện khi chưa có con hoặc đang tải -->
+  <div id="loadingBox" class="card" style="padding: 48px; text-align: center;">
+    <p style="color:var(--ink-3); font-size:1.05rem;" id="loadingTxt">Đang tải dữ liệu học tập của con em...</p>
+  </div>
+
+  <!-- Khung nội dung chính sau khi đã tải xong dữ liệu con -->
+  <div id="chinhContainer" style="display:none;">
+    
+    <!-- Trạng thái trực tuyến của con -->
+    <div id="conStatusBanner" class="status-banner offline">
+      <span class="pulse-dot" style="display:none;" id="statusOnlineDot"></span>
+      <span id="conStatusTxt">Đang kiểm tra trạng thái hoạt động của con...</span>
+    </div>
+
+    <!-- Chọn chế độ xem báo cáo -->
+    <div class="view-tabs">
+      <div class="view-tab active" onclick="chuyenCheDoBaoCao('realtime', this)">Ngay bây giờ</div>
+      <div class="view-tab" onclick="chuyenCheDoBaoCao('weekly', this)">Theo tuần</div>
+      <div class="view-tab" onclick="chuyenCheDoBaoCao('monthly', this)">Theo tháng</div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PHÂN KHÚC BÁO CÁO 1: REAL-TIME (NGAY BÂY GIỜ) -->
+    <!-- ============================================ -->
+    <div class="report-section active" id="secRealtime">
+      <div class="dash-grid">
+        <div class="dash-card" style="border-left: 4px solid var(--accent);">
+          <div class="label">Điểm tổng hợp</div>
+          <div class="val" id="rtDiemTB">—</div>
+          <div class="sub" id="rtRankBadgeContainer"><span class="rank-badge rank-gold" id="rtRankBadge">—</span></div>
+        </div>
+        <div class="dash-card" style="border-left: 4px solid var(--ok);">
+          <div class="label">Chuyên cần lớp</div>
+          <div class="val" id="rtChuyenCan">—</div>
+          <div class="sub" id="rtChuyenCanSub">—</div>
+        </div>
+        <div class="dash-card" style="border-left: 4px solid #8B5CF6;">
+          <div class="label">Tự học tuần này</div>
+          <div class="val" id="rtGioHoc">—</div>
+          <div class="sub" id="rtGioHocSub">Mục tiêu: 5h/tuần</div>
+        </div>
+        <div class="dash-card" style="border-left: 4px solid #ff5e62;">
+          <div class="label">Điểm thái độ</div>
+          <div class="val" id="rtThaiDo">—</div>
+          <div class="sub" id="rtThaiDoSub">—</div>
+        </div>
+      </div>
+
+      <div class="layout-cols">
+        <!-- Nhận xét của giáo viên & nhận xét tự động -->
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          
+          <!-- Nhận xét của giáo viên & nhận xét tự động -->
+          <div class="comment-card" style="border-left: 4px solid var(--accent); background: var(--surface);">
+            <h4>👨‍🏫 Nhận xét trực tiếp của thầy Vinh</h4>
+            <p id="nhanXetCuaThay">Chưa có nhận xét tổng quát từ thầy cô.</p>
+          </div>
+
+          <div class="comment-card" style="border-left: 4px solid var(--ok); background: var(--surface);">
+            <h4>🤖 Đánh giá & Khuyến nghị tự động của hệ thống</h4>
+            <p id="nhanXetTuDong">Đang phân tích các chỉ số học lực của con...</p>
+          </div>
+
+        </div>
+
+        <!-- Biểu đồ Radar học lực -->
+        <div class="chart-card" style="height: auto; min-height:340px; display:flex; align-items:center; justify-content:center;">
+          <div style="width:100%; height:100%; position:relative;">
+            <canvas id="chartRadar"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PHÂN KHÚC BÁO CÁO 2: THEO TUẦN (WEEKLY) -->
+    <!-- ============================================ -->
+    <div class="report-section" id="secWeekly">
+      <div class="layout-cols" style="grid-template-columns: 1.2fr 1fr;">
+        <!-- Biểu đồ thời lượng tự học qua các tuần -->
+        <div class="chart-card" style="height: 380px;">
+          <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:12px;">📈 Lưu lượng giờ tự học qua các tuần gần đây</h3>
+          <div style="position:relative; height: 320px; width:100%;">
+            <canvas id="chartWeekHours"></canvas>
+          </div>
+        </div>
+
+        <!-- Tóm tắt số liệu tuần này -->
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div class="card" style="padding:24px;">
+            <h3 style="margin-bottom:14px; font-size:1.05rem; display:flex; align-items:center; gap:8px;">📊 Kết quả học tập tuần này</h3>
+            <ul style="padding-left:20px; font-size:0.9rem; line-height:1.7; display:flex; flex-direction:column; gap:8px;">
+              <li>Tổng thời gian học bài trên web tuần này: <b id="wkSumHours" style="color:var(--accent);">0.0 giờ</b>.</li>
+              <li>Chuyên cần tuần này: <b id="wkAttendStatus" style="color:var(--ok);">Chưa có tiết học</b>.</li>
+              <li>Bài trắc nghiệm đã làm: <b id="wkQuizzesCount">0 bài</b>.</li>
+              <li>Điểm trung bình các bài kiểm tra tuần này: <b id="wkQuizAvgScore">—</b>.</li>
+            </ul>
+          </div>
+          
+          <div class="card" style="padding:24px;">
+            <h3 style="margin-bottom:12px; font-size:1.05rem; display:flex; align-items:center; gap:8px;">📖 Nội dung con đang học trong tuần</h3>
+            <div class="timeline" id="wkTimelineLessons">
+              <p style="color:var(--ink-3); font-size:0.88rem;">Đang tải danh sách bài học tuần này...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PHÂN KHÚC BÁO CÁO 3: THEO THÁNG (MONTHLY) -->
+    <!-- ============================================ -->
+    <div class="report-section" id="secMonthly">
+      <div class="layout-cols" style="grid-template-columns: 1fr 1.2fr;">
+        <!-- Lịch chuyên cần tháng -->
+        <div class="card" style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0; font-size:1.02rem;">📅 Lịch học chuyên cần</h3>
+            <div style="display:flex; gap:6px; align-items:center">
+              <button class="btn btn-secondary btn-sm" onclick="thangTruoc()" style="padding:2px 6px; font-size:0.75rem;"><</button>
+              <span id="labelThangNam" style="font-weight:700; font-size:0.85rem; min-width:80px; text-align:center;">Tháng --/----</span>
+              <button class="btn btn-secondary btn-sm" onclick="thangSau()" style="padding:2px 6px; font-size:0.75rem;">></button>
+            </div>
+          </div>
+          
+          <div class="cal-grid">
+            <div class="cal-header">T2</div>
+            <div class="cal-header">T3</div>
+            <div class="cal-header">T4</div>
+            <div class="cal-header">T5</div>
+            <div class="cal-header">T6</div>
+            <div class="cal-header">T7</div>
+            <div class="cal-header">CN</div>
+          </div>
+          <div class="cal-grid" id="khungLichThang">
+            <div style="grid-column: span 7; color:var(--ink-3); padding:16px 0; font-size:0.9rem;">Đang tải lịch tháng...</div>
+          </div>
+          
+          <!-- Chú thích lịch -->
+          <div style="display:flex; gap:12px; font-size:0.75rem; flex-wrap:wrap; color:var(--ink-2); justify-content:center; border-top:1px solid var(--line); padding-top:10px;">
+            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok);"></span> Đi học</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--warn);"></span> Đi trễ</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--err);"></span> Vắng mặt</span>
+            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent);"></span> Nghỉ phép</span>
+          </div>
+        </div>
+
+        <!-- Danh sách điểm và nhận xét buổi học -->
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <!-- Nhật ký làm bài chi tiết -->
+          <div class="card" style="padding:20px;">
+            <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px; font-size:1.02rem;">📝 Điểm số các bài làm trong tháng</h3>
+            <div style="overflow-x:auto; max-height:220px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tên bài làm</th>
+                    <th>Thời gian</th>
+                    <th style="text-align:right;">Kết quả</th>
+                  </tr>
+                </thead>
+                <tbody id="bangDiemThang">
+                  <tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:12px 0;">Không có điểm số nào ghi nhận trong tháng này.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Nhận xét chi tiết từng buổi học -->
+          <div class="card" style="padding:20px;">
+            <h3 style="margin-bottom:12px; border-bottom:1px solid var(--line); padding-bottom:8px; font-size:1.02rem;">💬 Nhận xét chi tiết của từng buổi học</h3>
+            <div id="dsNhanXetBuoiHoc" style="display:flex; flex-direction:column; gap:10px; max-height: 250px; overflow-y:auto; padding-right:4px;">
+              <p style="color:var(--ink-3); font-size:0.88rem;">Con chưa có nhận xét buổi học nào.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=4.2"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
+<script>
+var myParentProfile = null;
+var myChildren = [];
+var selectedChild = null;
+var calculatedScores = { attendance: null, studyHours: null, quizzes: null, exams: null, attitude: null, timeliness: null, total: 0 };
+
+var currentYear = new Date().getFullYear();
+var currentMonth = new Date().getMonth();
+var childSessions = [];
+var childAttendance = {};
+var childAttempts = [];
+var childRemarks = [];
+
+var chartRadarInstance = null;
+var chartWeekHoursInstance = null;
+
+(async function () {
+  if (!daKetNoi()) {
+    mockUpParentDemo();
+    return;
+  }
+  
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role !== 'parent') {
+    window.location.href = 'trang-chu';
+    return;
+  }
+  myParentProfile = hoSo;
+  
+  // Tải danh sách con em liên kết
+  var rTarget = await sb.from('profiles')
+    .select('id, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name, mode))')
+    .eq('parent_id', myParentProfile.id);
+    
+  if (rTarget.error) {
+    $('loadingTxt').textContent = 'Lỗi tải danh sách con em: ' + rTarget.error.message;
+    return;
+  }
+  
+  myChildren = rTarget.data || [];
+  if (!myChildren.length) {
+    $('loadingTxt').innerHTML = 'Tài khoản Phụ huynh chưa được liên kết với bất kỳ học sinh nào.<br><span style="font-size:0.85rem;color:var(--ink-3);">Vui lòng liên hệ với thầy Vinh để được thiết lập kết nối tài khoản.</span>';
+    return;
+  }
+  
+  // Vẽ các tab con em
+  if (myChildren.length > 1) {
+    var tabsHtml = myChildren.map(function(child, idx) {
+      return '<div class="student-tab' + (idx === 0 ? ' active' : '') + '" onclick="chonConEm(\'' + child.id + '\', this)">👶 ' + child.full_name + '</div>';
+    }).join('');
+    $('dsConEmTabs').innerHTML = tabsHtml;
+    $('dsConEmTabs').style.display = 'flex';
+  }
+  
+  $('loadingBox').style.display = 'none';
+  $('chinhContainer').style.display = 'block';
+  
+  // Mặc định chọn học sinh đầu tiên
+  await taiBaoCaoCuaCon(myChildren[0].id);
+})();
+
+function chonConEm(id, el) {
+  var activeTab = document.querySelector('.student-tab.active');
+  if (activeTab) activeTab.classList.remove('active');
+  el.classList.add('active');
+  taiBaoCaoCuaCon(id);
+}
+
+async function taiBaoCaoCuaCon(childId) {
+  var child = myChildren.find(function(c) { return c.id === childId; });
+  if (!child) return;
+  selectedChild = child;
+  
+  // Tải tên lớp
+  var cacLop = (selectedChild.class_students || []);
+  var classIds = cacLop.map(function (c) { return c.class_id; });
+  var classNames = cacLop.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  
+  $('subTieuDe').textContent = 'Xem báo cáo học tập của con ' + selectedChild.full_name + ' · Lớp: ' + (classNames || 'Chưa xếp lớp');
+  $('nhanXetCuaThay').textContent = selectedChild.teacher_comment || 'Chưa có nhận xét tổng quát nào từ thầy cô trong thời gian gần đây.';
+  
+  // Gọi phân tích số liệu
+  await chayPhanTichCon(classIds);
+}
+
+async function chayPhanTichCon(classIds) {
+  try {
+    // 1. Kiểm tra trạng thái Online của con
+    var rPhien = await sb.from('analytics_sessions')
+      .select('started_at, last_active_at, duration_seconds')
+      .eq('profile_id', selectedChild.id)
+      .order('started_at', { ascending: false })
+      .limit(100);
+    childSessions = rPhien.data || [];
+    
+    var bayGio = Date.now();
+    var phienCuoi = childSessions[0] || null;
+    var dangOnline = phienCuoi && (bayGio - new Date(phienCuoi.last_active_at).getTime()) < 2 * 60000;
+    
+    if (dangOnline) {
+      $('conStatusBanner').className = 'status-banner online';
+      $('statusOnlineDot').style.display = 'block';
+      $('conStatusTxt').textContent = 'Con đang hoạt động tự học trên website VinhMath! 📚';
+    } else {
+      $('conStatusBanner').className = 'status-banner offline';
+      $('statusOnlineDot').style.display = 'none';
+      if (phienCuoi) {
+        $('conStatusTxt').textContent = 'Lần truy cập cuối của con: ' + thoiGianDep(phienCuoi.last_active_at);
+      } else {
+        $('conStatusTxt').textContent = 'Con chưa từng đăng nhập trên hệ thống web.';
+      }
+    }
+    
+    // 2. Chuyên cần lớp học
+    var attendedSess = 0;
+    var totalSess = 0;
+    var streak = 0;
+    
+    if (classIds.length > 0) {
+      var rClassSess = await sb.from('class_sessions')
+        .select('id, held_on')
+        .in('class_id', classIds)
+        .order('held_on', { ascending: false });
+      var buoiHoc = rClassSess.data || [];
+      totalSess = buoiHoc.length;
+      
+      var rAttend = await sb.from('attendance')
+        .select('session_id, checked_at, status')
+        .eq('student_id', selectedChild.id);
+      var attends = rAttend.data || [];
+      
+      childAttendance = {};
+      attends.forEach(function (a) { childAttendance[a.session_id] = a; });
+      
+      var hasStreak = true;
+      buoiHoc.forEach(function (b) {
+        var att = childAttendance[b.id];
+        if (att && ['present', 'late'].includes(att.status)) {
+          attendedSess++;
+          if (hasStreak) streak++;
+        } else {
+          hasStreak = false;
+        }
+      });
+    }
+    
+    var attRate = totalSess > 0 ? (attendedSess / totalSess) : 1.0;
+    calculatedScores.attendance = attRate * 10;
+    
+    $('rtChuyenCan').textContent = Math.round(attRate * 100) + '%';
+    $('rtChuyenCanSub').textContent = attendedSess + '/' + totalSess + ' buổi học · 🔥 Chuỗi: ' + streak;
+    
+    // 3. Tự học trong tuần
+    var now = new Date();
+    var day = now.getDay();
+    var diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    var startOfWeek = new Date(now.setDate(diff));
+    startOfWeek.setHours(0,0,0,0);
+    
+    var secondsThisWeek = 0;
+    childSessions.forEach(function(s) {
+      if (new Date(s.started_at) >= startOfWeek) {
+        secondsThisWeek += (s.duration_seconds || 0);
+      }
+    });
+    var hoursThisWeek = secondsThisWeek / 3600;
+    calculatedScores.studyHours = Math.min(10, hoursThisWeek * 2.0); // 5 giờ học = 10 điểm
+    
+    $('rtGioHoc').textContent = hoursThisWeek.toFixed(1) + 'h';
+    $('rtGioHocSub').textContent = 'Tuần này (Quy đổi: ' + calculatedScores.studyHours.toFixed(1) + 'đ)';
+    $('wkSumHours').textContent = hoursThisWeek.toFixed(1) + ' giờ';
+    
+    // 4. Nhận xét buổi học & Thái độ
+    var rRemarks = await sb.from('session_remarks')
+      .select('id, ngay, remark, attitude_score, author_name')
+      .eq('student_id', selectedChild.id)
+      .order('ngay', { ascending: false });
+    childRemarks = rRemarks.data || [];
+    
+    var attScores = childRemarks.filter(function(x) { return x.attitude_score !== null; });
+    if (attScores.length > 0) {
+      var sumAtt = attScores.reduce(function(acc, item) { return acc + parseFloat(item.attitude_score || 0); }, 0);
+      calculatedScores.attitude = sumAtt / attScores.length;
+      $('rtThaiDo').textContent = calculatedScores.attitude.toFixed(1);
+      $('rtThaiDoSub').textContent = 'Thái độ TB trên lớp';
+    } else {
+      calculatedScores.attitude = null;
+      $('rtThaiDo').textContent = '—';
+      $('rtThaiDoSub').textContent = 'Chưa có nhận xét thái độ';
+    }
+    
+    // Vẽ danh sách nhận xét tháng
+    veDanhSachRemarks();
+
+    // 5. Điểm số trắc nghiệm & thi thử
+    var rAttempts = await sb.from('attempts')
+      .select('id, score, lesson_id, exam_id, submitted_at, correct_n, total_n, lessons(title), exams(title)')
+      .eq('student_id', selectedChild.id)
+      .not('submitted_at', 'is', null)
+      .order('submitted_at', { ascending: false });
+    childAttempts = rAttempts.data || [];
+    
+    var quizScores = childAttempts.filter(function(x) { return x.lesson_id !== null && x.exam_id === null; });
+    if (quizScores.length > 0) {
+      var sumQuiz = quizScores.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
+      calculatedScores.quizzes = sumQuiz / quizScores.length;
+    } else {
+      calculatedScores.quizzes = null;
+    }
+    
+    var examScores = childAttempts.filter(function(x) { return x.exam_id !== null; });
+    if (examScores.length > 0) {
+      var sumExam = examScores.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
+      calculatedScores.exams = sumExam / examScores.length;
+    } else {
+      calculatedScores.exams = null;
+    }
+    
+    // Tải bài tập tự luận đúng hạn (mặc định cho điểm đúng hạn 8.5 nếu chưa có nộp bài)
+    calculatedScores.timeliness = 8.5; 
+    
+    // Tính điểm tổng học lực
+    var weights = { attendance: 0.15, studyHours: 0.15, quizzes: 0.20, exams: 0.20, attitude: 0.15, timeliness: 0.15 };
+    var activeWeightedScore = 0;
+    var activeWeightSum = 0;
+    for (var key in weights) {
+      var val = calculatedScores[key];
+      if (val !== null) {
+        activeWeightedScore += val * weights[key];
+        activeWeightSum += weights[key];
+      }
+    }
+    var finalScore = activeWeightSum > 0 ? (activeWeightedScore / activeWeightSum) : 0;
+    calculatedScores.total = finalScore;
+    
+    $('rtDiemTB').textContent = finalScore.toFixed(1);
+    
+    var rank = getRankInfo(finalScore);
+    $('rtRankBadge').textContent = rank.badge;
+    $('rtRankBadge').className = 'rank-badge ' + rank.class;
+    
+    // Tạo nhận xét tự động
+    $('nhanXetTuDong').textContent = generateAutoComment(attRate, hoursThisWeek, calculatedScores.quizzes, finalScore);
+    
+    // Cập nhật biểu đồ Radar
+    renderRadarChart();
+    
+    // Cập nhật báo cáo tuần
+    await renderBaoCaoTuan(startOfWeek, quizScores);
+    
+    // Cập nhật lịch học tháng
+    renderLichHocThang();
+    
+    // Danh sách điểm tháng
+    renderDiemTrongThang();
+    
+  } catch(e) {
+    console.error('Lỗi tính toán dữ liệu con:', e);
+  }
+}
+
+function generateAutoComment(attRate, hoursThisWeek, quizScore, finalScore) {
+  var comments = [];
+  
+  if (attRate >= 0.9 && hoursThisWeek >= 4) {
+    comments.push("Con có ý thức học tập rất cao, đi học đầy đủ và tự học tích cực trên website của thầy.");
+  } else if (attRate >= 0.8 && hoursThisWeek >= 2) {
+    comments.push("Con duy trì chuyên cần khá ổn định, thời gian tự học trên hệ thống ở mức trung bình.");
+  } else {
+    comments.push("Mức chuyên cần hoặc thời lượng tự học tuần này của con còn thấp. Gia đình cần nhắc con chăm học bài đều đặn hơn.");
+  }
+  
+  if (quizScore !== null) {
+    if (quizScore >= 8.5) {
+      comments.push("Kết quả các bài kiểm tra trắc nghiệm vô cùng xuất sắc, chứng tỏ con tiếp thu kiến thức rất tốt.");
+    } else if (quizScore >= 6.5) {
+      comments.push("Học lực của con ở mức Khá. Đôi lúc con làm bài còn ẩu, cần rèn luyện thêm tính cẩn thận và kiểm tra lại đáp án.");
+    } else {
+      comments.push("Kết quả làm bài kiểm tra trắc nghiệm chưa đạt kỳ vọng. Con nên dành thời gian xem lại lý thuyết trước khi làm bài.");
+    }
+  } else {
+    comments.push("Con chưa hoàn thành bài kiểm tra nào trên hệ thống.");
+  }
+  
+  if (finalScore >= 8.0) {
+    comments.push("Tổng điểm học tập rất tốt! Thầy chúc mừng con và mong con giữ vững phong độ.");
+  } else if (finalScore >= 6.0) {
+    comments.push("Học lực tổng hợp ở mức khá, con hoàn toàn có thể đạt điểm số cao hơn nếu tập trung làm thêm các đề thi thử.");
+  } else {
+    comments.push("Điểm tổng hợp của con đang ở mức thấp. Con cần cải thiện sớm để không bị hổng kiến thức căn bản.");
+  }
+  
+  return comments.join(" ");
+}
+
+function getRankInfo(score) {
+  if (score >= 9.0) {
+    return { title: "Học thần VinhMath 👑", badge: "👑 Kim cương", class: "rank-diamond" };
+  } else if (score >= 8.0) {
+    return { title: "Đại sư Toán học 💎", badge: "💎 Bạch kim", class: "rank-platinum" };
+  } else if (score >= 6.5) {
+    return { title: "Bứt phá 🥇", badge: "🥇 Vàng", class: "rank-gold" };
+  } else if (score >= 5.0) {
+    return { title: "Kiên trì 🥈", badge: "🥈 Bạc", class: "rank-silver" };
+  } else {
+    return { title: "Khởi đầu 🥉", badge: "🥉 Đồng", class: "rank-bronze" };
+  }
+}
+
+function renderRadarChart() {
+  if (chartRadarInstance) chartRadarInstance.destroy();
+  
+  var ctx = document.getElementById('chartRadar').getContext('2d');
+  
+  var labels = ['Chuyên cần', 'Giờ tự học', 'Kiểm tra', 'Thi thử', 'Thái độ', 'Đúng hạn'];
+  var data = [
+    calculatedScores.attendance !== null ? calculatedScores.attendance : 10,
+    calculatedScores.studyHours !== null ? calculatedScores.studyHours : 0,
+    calculatedScores.quizzes !== null ? calculatedScores.quizzes : 0,
+    calculatedScores.exams !== null ? calculatedScores.exams : 0,
+    calculatedScores.attitude !== null ? calculatedScores.attitude : 10,
+    calculatedScores.timeliness !== null ? calculatedScores.timeliness : 10
+  ];
+  
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#b45309';
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+  var labelColor = isDark ? '#f8fafc' : '#0f172a';
+  
+  chartRadarInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Điểm số cốt lõi',
+        data: data,
+        backgroundColor: getRGBA(accent, 0.2),
+        borderColor: accent,
+        borderWidth: 2,
+        pointBackgroundColor: accent,
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0,
+          max: 10,
+          ticks: { stepSize: 2, color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)' },
+          grid: { color: gridColor },
+          angleLines: { color: gridColor },
+          pointLabels: { color: labelColor, font: { family: 'Outfit, sans-serif', weight: '700', size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+function getRGBA(colorStr, opacity) {
+  if (!colorStr) return 'rgba(0,0,0,0)';
+  var color = colorStr.trim();
+  if (color.startsWith('#')) {
+    var r = parseInt(color.slice(1, 3), 16);
+    var g = parseInt(color.slice(3, 5), 16);
+    var b = parseInt(color.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + opacity + ')';
+  }
+  return colorStr;
+}
+
+// Báo cáo tuần
+async function renderBaoCaoTuan(startOfWeek, quizScores) {
+  var quizThisWeek = quizScores.filter(function(q) {
+    return new Date(q.submitted_at) >= startOfWeek;
+  });
+  
+  $('wkQuizzesCount').textContent = quizThisWeek.length + ' bài';
+  if (quizThisWeek.length > 0) {
+    var avg = quizThisWeek.reduce(function(acc, x) { return acc + parseFloat(x.score || 0); }, 0) / quizThisWeek.length;
+    $('wkQuizAvgScore').textContent = avg.toFixed(1) + ' / 10';
+  } else {
+    $('wkQuizAvgScore').textContent = '—';
+  }
+  
+  // Tải nội dung bài học con đang học tuần này
+  var classIds = (selectedChild.class_students || []).map(function(c) { return c.class_id; });
+  if (classIds.length > 0) {
+    var rLessons = await sb.from('lessons')
+      .select('id, title, created_at')
+      .in('class_id', classIds)
+      .gte('created_at', startOfWeek.toISOString())
+      .order('created_at', { ascending: false });
+    var lessons = rLessons.data || [];
+    
+    if (lessons.length > 0) {
+      $('wkTimelineLessons').innerHTML = lessons.map(function(l) {
+        var d = new Date(l.created_at).toLocaleDateString('vi-VN');
+        return '<div class="timeline-item">' +
+          '<div class="time-meta">Được giao ngày ' + d + '</div>' +
+          '<div class="title">' + l.title + '</div>' +
+          '</div>';
+      }).join('');
+    } else {
+      $('wkTimelineLessons').innerHTML = '<p style="color:var(--ink-3); font-size:0.88rem;">Tuần này thầy không giao thêm bài học mới.</p>';
+    }
+  } else {
+    $('wkTimelineLessons').innerHTML = '<p style="color:var(--ink-3); font-size:0.88rem;">Học sinh chưa được phân lớp.</p>';
+  }
+  
+  // Lịch chuyên cần tuần này
+  var attThisWeek = Object.values(childAttendance).filter(function(att) {
+    return new Date(att.checked_at) >= startOfWeek;
+  });
+  if (attThisWeek.length > 0) {
+    var statusMap = { present: 'Có mặt', late: 'Đi trễ', absent: 'Vắng', leave: 'Phép' };
+    var st = attThisWeek.map(function(x) {
+      return statusMap[x.status] || 'Không xác định';
+    }).join(', ');
+    $('wkAttendStatus').textContent = st;
+  } else {
+    $('wkAttendStatus').textContent = 'Không có buổi học nào diễn ra trong tuần này';
+  }
+
+  // Khởi dựng đồ thị thanh thời lượng tuần
+  renderWeekHoursChart();
+}
+
+function renderWeekHoursChart() {
+  if (chartWeekHoursInstance) chartWeekHoursInstance.destroy();
+  
+  var ctx = document.getElementById('chartWeekHours').getContext('2d');
+  var weeksMap = {};
+  var weeksList = [];
+  
+  // Tổng hợp giờ học tự học 4 tuần qua
+  for (var i = 3; i >= 0; i--) {
+    var d = new Date();
+    d.setDate(d.getDate() - i * 7);
+    var day = d.getDay();
+    var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    var wkStart = new Date(d.setDate(diff));
+    wkStart.setHours(0,0,0,0);
+    
+    var key = 'Tuần từ ' + wkStart.getDate().toString().padStart(2, '0') + '/' + (wkStart.getMonth()+1).toString().padStart(2, '0');
+    weeksMap[wkStart.getTime()] = { key: key, hours: 0 };
+    weeksList.push(wkStart.getTime());
+  }
+  
+  childSessions.forEach(function(s) {
+    var time = new Date(s.started_at).getTime();
+    for (var j = 0; j < weeksList.length; j++) {
+      var wStart = weeksList[j];
+      var wEnd = wStart + 7 * 24 * 3600 * 1000;
+      if (time >= wStart && time < wEnd) {
+        weeksMap[wStart].hours += (s.duration_seconds || 0) / 3600;
+        break;
+      }
+    }
+  });
+  
+  var labels = weeksList.map(function(t) { return weeksMap[t].key; });
+  var hoursData = weeksList.map(function(t) { return Math.round(weeksMap[t].hours * 10) / 10; });
+  
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#b45309';
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  
+  chartWeekHoursInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Thời gian tự học trên web (giờ)',
+        data: hoursData,
+        backgroundColor: getRGBA(accent, 0.4),
+        hoverBackgroundColor: getRGBA(accent, 0.8),
+        borderColor: accent,
+        borderWidth: 1.5,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' },
+          ticks: { color: isDark ? '#cbd5e1' : '#475569' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: isDark ? '#cbd5e1' : '#475569' }
+        }
+      }
+    }
+  });
+}
+
+// Chuyên cần và Điểm số theo tháng
+function renderLichHocThang() {
+  $('labelThangNam').textContent = 'Tháng ' + (currentMonth + 1).toString().padStart(2, '0') + '/' + currentYear;
+  
+  // Tính ngày bắt đầu, ngày kết thúc tháng
+  var firstDayIdx = new Date(currentYear, currentMonth, 1).getDay(); // Chủ nhật = 0, Thứ hai = 1...
+  var firstDayOfGrid = firstDayIdx === 0 ? 6 : firstDayIdx - 1; // Quy đổi Thứ hai = 0
+  var totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  
+  var html = '';
+  // Ô trống đầu tháng
+  for (var i = 0; i < firstDayOfGrid; i++) {
+    html += '<div class="cal-cell empty"></div>';
+  }
+  
+  // Các ngày trong tháng
+  for (var day = 1; day <= totalDays; day++) {
+    var dateStr = currentYear + '-' + (currentMonth + 1).toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0');
+    
+    // Tìm chuyên cần trong ngày này
+    var matchAtt = null;
+    for (var sessId in childAttendance) {
+      var a = childAttendance[sessId];
+      if (a.checked_at && new Date(a.checked_at).toLocaleDateString('en-CA') === dateStr) {
+        matchAtt = a;
+        break;
+      }
+    }
+    
+    var dotHtml = '';
+    var statusClass = '';
+    if (matchAtt) {
+      var colors = { present: 'status-present', late: 'status-late', absent: 'status-absent', leave: 'status-leave' };
+      statusClass = ' ' + (colors[matchAtt.status] || '');
+      dotHtml = '<span class="status-dot ' + (colors[matchAtt.status] || '') + '"></span>';
+    }
+    
+    html += '<div class="cal-cell' + statusClass + '">' +
+      '<span class="day-num">' + day + '</span>' +
+      dotHtml +
+      '</div>';
+  }
+  
+  $('khungLichThang').innerHTML = html;
+}
+
+function thangTruoc() {
+  if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+  else { currentMonth--; }
+  renderLichHocThang();
+  renderDiemTrongThang();
+}
+
+function thangSau() {
+  if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+  else { currentMonth++; }
+  renderLichHocThang();
+  renderDiemTrongThang();
+}
+
+function renderDiemTrongThang() {
+  var targetMonthStr = (currentMonth + 1).toString().padStart(2, '0') + '/' + currentYear;
+  
+  var thisMonthAttempts = childAttempts.filter(function(x) {
+    if (!x.submitted_at) return false;
+    var d = new Date(x.submitted_at);
+    var dateStr = (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear();
+    return dateStr === targetMonthStr;
+  });
+  
+  if (thisMonthAttempts.length === 0) {
+    $('bangDiemThang').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:16px 0; font-size:0.9rem;">Không có dữ liệu bài làm nào trong tháng này.</td></tr>';
+    return;
+  }
+  
+  $('bangDiemThang').innerHTML = thisMonthAttempts.map(function(x) {
+    var title = x.lessons ? x.lessons.title : (x.exams ? x.exams.title : 'Bài làm');
+    var d = new Date(x.submitted_at).toLocaleDateString('vi-VN');
+    var scoreClass = x.score >= 8.5 ? 'color:var(--ok)' : (x.score >= 5.0 ? 'color:var(--accent)' : 'color:var(--err)');
+    return '<tr>' +
+      '<td><b>' + title + '</b></td>' +
+      '<td>' + d + '</td>' +
+      '<td style="text-align:right;"><span style="font-weight:800;' + scoreClass + '">' + x.score.toFixed(1) + ' / 10</span></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function veDanhSachRemarks() {
+  if (childRemarks.length === 0) {
+    $('dsNhanXetBuoiHoc').innerHTML = '<p style="color:var(--ink-3); font-size:0.88rem;">Con chưa có nhận xét buổi học nào từ thầy cô.</p>';
+    return;
+  }
+  
+  $('dsNhanXetBuoiHoc').innerHTML = childRemarks.map(function(x) {
+    var d = x.ngay ? x.ngay.split('-').reverse().join('/') : '';
+    var attBadge = x.attitude_score !== null 
+      ? '<span style="font-size:0.72rem; font-weight:800; background:var(--accent-soft); color:var(--accent); padding:1px 6px; border-radius:4px; margin-left:8px;">Thái độ: ' + x.attitude_score + '/10</span>'
+      : '';
+    var author = formatAuthorName(x.author_name);
+    return '<div style="border:1px solid var(--line); border-radius:var(--r-md); padding:12px 14px; background:var(--surface-2);">' +
+      '<div style="display:flex; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:8px;">' +
+        '<div style="font-size:0.82rem; font-weight:700; color:var(--ink-2);">' + author + ' ' + attBadge + '</div>' +
+        '<div style="font-size:0.78rem; color:var(--ink-3);">' + d + '</div>' +
+      '</div>' +
+      '<div style="font-size:0.88rem; color:var(--ink-1); white-space:pre-wrap;">' + x.remark + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// Chuyển tab báo cáo
+function chuyenCheDoBaoCao(type, el) {
+  var activeTab = document.querySelector('.view-tab.active');
+  if (activeTab) activeTab.classList.remove('active');
+  el.classList.add('active');
+  
+  var sections = ['realtime', 'weekly', 'monthly'];
+  sections.forEach(function(s) {
+    var sectionEl = $('sec' + s.charAt(0).toUpperCase() + s.slice(1));
+    if (s === type) {
+      sectionEl.classList.add('active');
+    } else {
+      sectionEl.classList.remove('active');
+    }
+  });
+  
+  // Re-render charts on tab switch to avoid dimensions glitch
+  if (type === 'realtime') {
+    renderRadarChart();
+  } else if (type === 'weekly') {
+    renderWeekHoursChart();
+  }
+}
+
+function thoiGianDep(ts) {
+  if (!ts) return '—';
+  var d = new Date(ts), nay = new Date();
+  var gio = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === nay.toDateString()) return 'Hôm nay lúc ' + gio;
+  var homQua = new Date(nay.getTime() - 86400000);
+  if (d.toDateString() === homQua.toDateString()) return 'Hôm qua lúc ' + gio;
+  return d.toLocaleDateString('vi-VN') + ' ' + gio;
+}
+
+// ============================================
+// CHẾ ĐỘ XEM THỬ / DEMO CHO PHỤ HUYNH
+// ============================================
+function mockUpParentDemo() {
+  $('loadingBox').style.display = 'none';
+  $('chinhContainer').style.display = 'block';
+  
+  $('subTieuDe').textContent = 'Xem báo cáo học tập của con Học sinh Demo · Lớp: Lớp 12A1';
+  $('nhanXetCuaThay').textContent = 'Con học rất thông minh, tư duy toán hình tốt. Cần tập trung làm đề ôn thi thử nhiều hơn để rèn phản xạ phòng thi.';
+  
+  $('conStatusBanner').className = 'status-banner online';
+  $('statusOnlineDot').style.display = 'block';
+  $('conStatusTxt').textContent = 'Con đang hoạt động tự học trên website VinhMath! 📚';
+  
+  calculatedScores = { attendance: 9.2, studyHours: 8.0, quizzes: 8.4, exams: 7.8, attitude: 9.0, timeliness: 8.5, total: 8.4 };
+  
+  $('rtDiemTB').textContent = '8.4';
+  $('rtChuyenCan').textContent = '92%';
+  $('rtChuyenCanSub').textContent = '12/13 buổi học · 🔥 Chuỗi: 5';
+  $('rtGioHoc').textContent = '4.2h';
+  $('rtGioHocSub').textContent = 'Tuần này (Quy đổi: 8.4đ)';
+  $('rtThaiDo').textContent = '9.0';
+  $('rtThaiDoSub').textContent = 'Thái độ TB trên lớp';
+  
+  var rank = getRankInfo(8.4);
+  $('rtRankBadge').textContent = rank.badge;
+  $('rtRankBadge').className = 'rank-badge ' + rank.class;
+  
+  $('nhanXetTuDong').textContent = generateAutoComment(0.92, 4.2, 8.4, 8.4);
+  
+  renderRadarChart();
+  
+  // Weekly mock
+  $('wkSumHours').textContent = '4.2 giờ';
+  $('wkAttendStatus').textContent = 'Có mặt';
+  $('wkQuizzesCount').textContent = '2 bài';
+  $('wkQuizAvgScore').textContent = '8.5 / 10';
+  $('wkTimelineLessons').innerHTML = '<div class="timeline-item"><div class="time-meta">Được giao ngày 15/06/2026</div><div class="title">Chuyên đề 5: Khảo sát sự biến thiên của Hàm phân thức</div></div>';
+  
+  // Charts
+  renderWeekHoursChart();
+  
+  // Monthly mock
+  renderLichHocThang();
+  
+  $('bangDiemThang').innerHTML = '<tr><td><b>Bài tập Khảo sát Hàm số</b></td><td>12/06/2026</td><td><span style="font-weight:800;color:var(--ok)">8.5 / 10</span></td></tr>';
+  $('dsNhanXetBuoiHoc').innerHTML = '<div style="border:1px solid var(--line); border-radius:var(--r-md); padding:12px 14px; background:var(--surface-2);"><div style="display:flex; justify-content:space-between; margin-bottom:6px;"><div style="font-size:0.82rem; font-weight:700; color:var(--ink-2);"><span class="name-owner">Thầy Điền Võ Thế Vinh <span class="badge-owner">Sáng lập 👑</span></span> <span style="font-size:0.72rem; font-weight:800; background:var(--accent-soft); color:var(--accent); padding:1px 6px; border-radius:4px; margin-left:8px;">Thái độ: 9/10</span></div><div style="font-size:0.78rem; color:var(--ink-3);">12/06/2026</div></div><div style="font-size:0.88rem; color:var(--ink-1);">Hôm nay con làm bài tập rất nhanh và chính xác.</div></div>';
+}
+</script>
+</body>
+</html>

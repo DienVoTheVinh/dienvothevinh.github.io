@@ -145,6 +145,7 @@ async function dangNhap(username, password) {
     else if (u.endsWith('@tg.vinhmath')) email = u + '.com';
     else if (u.endsWith('@gv.vinhmath')) email = u + '.com';
     else if (u.endsWith('@ad.vinhmath')) email = u + '.com';
+    else if (u.endsWith('@ph.vinhmath')) email = u + '.com';
     else email = u;
   }
   

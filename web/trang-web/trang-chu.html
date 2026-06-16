@@ -8,8 +8,8 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=4.1">
-<link rel="stylesheet" href="css/vinhmath.css?v=4.1">
+<link rel="stylesheet" href="css/tokens.css?v=4.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.2">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -591,7 +591,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.1"></script>
+<script src="js/vinhmath.js?v=4.2"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -653,6 +653,10 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   // Chế độ Thật
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
+  if (hoSo.role === 'parent') {
+    window.location.href = 'phu-huynh';
+    return;
+  }
   hoSoNguoiDung = hoSo;
   
   var roleLabel = 'Học sinh';

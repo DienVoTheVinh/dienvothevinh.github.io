@@ -8,8 +8,8 @@
 <title>Đăng nhập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=4.1">
-<link rel="stylesheet" href="css/vinhmath.css?v=4.1">
+<link rel="stylesheet" href="css/tokens.css?v=4.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.2">
 <style>
 body {
   min-height: 100vh;
@@ -360,7 +360,7 @@ body {
 <!-- Thư viện Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.1"></script>
+<script src="js/vinhmath.js?v=4.2"></script>
 <script src="js/analytics.js"></script>
 <script>
 // --- INTERACTIVE MATH LAB CANVAS ---
@@ -718,10 +718,20 @@ if (!daKetNoi()) {
   baoLoi('Chế độ xem thử: web chưa kết nối Supabase nên chưa đăng nhập được thật.', 'warn');
 }
 
-// Đã đăng nhập từ trước → vào thẳng trang chủ
+// Đã đăng nhập từ trước → vào thẳng trang tương ứng
 if (daKetNoi()) {
   sb.auth.getSession().then(function (s) {
-    if (s.data.session) window.location.href = 'trang-chu';
+    if (s.data.session) {
+      sb.from('profiles').select('role').eq('id', s.data.session.user.id).single().then(function(rp) {
+        if (rp.data && rp.data.role === 'parent') {
+          window.location.href = 'phu-huynh';
+        } else {
+          window.location.href = 'trang-chu';
+        }
+      }).catch(function() {
+        window.location.href = 'trang-chu';
+      });
+    }
   });
 }
 
@@ -735,6 +745,16 @@ $('formDangNhap').addEventListener('submit', async function (e) {
     baoLoi(r.error);
     nut.disabled = false; nut.textContent = 'AUTH_SIGN_IN';
   } else {
+    try {
+      var s = await sb.auth.getSession();
+      if (s.data.session) {
+        var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+        if (rp.data && rp.data.role === 'parent') {
+          window.location.href = 'phu-huynh';
+          return;
+        }
+      }
+    } catch (err) {}
     window.location.href = 'trang-chu';
   }
 });
