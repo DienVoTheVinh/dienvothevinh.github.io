@@ -36,7 +36,112 @@ function tabularSangBangHTML(s) {
 function latexRaHTML(src) {
   var s = lamSachLatex(src || '');
   s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Bảo vệ các khối công thức toán học tránh bị biên dịch sai ký tự (như \\ thành <br>)
+  var mathBlocks = [];
+  
+  // 1. Bảo vệ $$...$$ và \[...\]
+  s = s.replace(/\$\$([\s\S]*?)\$\$/g, function (match, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('$$' + math + '$$');
+    return placeholder;
+  });
+  s = s.replace(/\\\[([\s\S]*?)\\\]/g, function (match, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('\\[' + math + '\\]');
+    return placeholder;
+  });
+  
+  // 2. Bảo vệ $...$ và \(...\) (tránh ký tự \$ bị escape)
+  s = s.replace(/(^|[^\\])\$([\s\S]*?)\$/g, function (match, prefix, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('$' + math + '$');
+    return prefix + placeholder;
+  });
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, function (match, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('\\(' + math + '\\)');
+    return placeholder;
+  });
+  
+  // 3. Biên dịch các môi trường định dạng LaTeX sang HTML
   s = tabularSangBangHTML(s);
+  
+  // Bold & Italic
+  s = s.replace(/\\textbf\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<b>$1</b>');
+  s = s.replace(/\\textit\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<i>$1</i>');
+  
+  // Đệ quy xử lý danh sách lồng nhau (enumerate, itemize)
+  s = dichMoiTruongDanhSach(s);
+  
+  // Khối tiêu đề \boxde và xuống trang \newpage
+  s = s.replace(/\\boxde\{([^{}]+)\}/g, '<div class="part-header" style="margin-top:24px;text-align:center;font-size:1.1rem;background:var(--accent-soft);color:var(--accent);padding:8px 16px;border-radius:var(--r-sm)">$1</div>');
+  s = s.replace(/\\newpage/g, '<hr style="border-top:1px dashed var(--line-2);margin:24px 0;clear:both">');
+  
+  // \hfill và xuống dòng \\
+  s = s.replace(/\\hfill\s*(\([^\n]*\))/g, '<span style="float:right; color:var(--ink-2); font-weight:600; font-size:0.85rem">$1</span>');
+  s = s.replace(/\\hfill/g, '<span style="float:right"></span>');
+  s = s.replace(/\\\\/g, '<br>');
+  
+  // Phục hồi các khối công thức toán học (Dùng split-join thay thế replace để tránh lỗi mất ký tự $)
+  for (var i = 0; i < mathBlocks.length; i++) {
+    s = s.split('___MATHBLOCK_' + i + '___').join(mathBlocks[i]);
+  }
+  
+  return s;
+}
+
+function parseItems(text) {
+  var parts = text.split(/\\item\s*/);
+  var first = parts.shift().trim();
+  var html = parts.map(function (p) {
+    return '<li style="margin-bottom:6px; line-height:1.6">' + p.trim() + '</li>';
+  }).join('');
+  return (first ? '<p style="margin-bottom:6px">' + first + '</p>' : '') + html;
+}
+
+// Xử lý các môi trường danh sách lồng nhau từ trong ra ngoài (innermost first)
+function dichMoiTruongDanhSach(s) {
+  var regexEnumerate = /\\begin\{enumerate\}(?:\[([^\]]*)\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{enumerate\}/g;
+  var regexItemize = /\\begin\{itemize\}((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{itemize\}/g;
+
+  var changed = true;
+  var limit = 10;
+  while (changed && limit > 0) {
+    changed = false;
+    limit--;
+
+    // Thay thế enumerate ở cấp trong cùng trước
+    var nextS = s.replace(regexEnumerate, function(match, opt, body) {
+      changed = true;
+      var listStyle = 'decimal';
+      if (opt) {
+        if (opt.includes('a')) listStyle = 'lower-alpha';
+        else if (opt.includes('A')) listStyle = 'upper-alpha';
+        else if (opt.includes('i')) listStyle = 'lower-roman';
+        else if (opt.includes('I')) listStyle = 'upper-roman';
+      }
+      var items = parseItems(body);
+      return '<ol style="list-style-type:' + listStyle + '; padding-left:20px; margin: 10px 0">' + items + '</ol>';
+    });
+
+    if (nextS !== s) {
+      s = nextS;
+      continue;
+    }
+
+    // Thay thế itemize ở cấp trong cùng trước
+    nextS = s.replace(regexItemize, function(match, body) {
+      changed = true;
+      var items = parseItems(body);
+      return '<ul style="list-style-type:disc; padding-left:20px; margin: 10px 0">' + items + '</ul>';
+    });
+
+    if (nextS !== s) {
+      s = nextS;
+      continue;
+    }
+  }
   return s;
 }
 
