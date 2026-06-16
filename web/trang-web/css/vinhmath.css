@@ -1317,6 +1317,29 @@ tr:last-child td{border-bottom:none}
     font-size: 1.05rem !important;
   }
 
+  /* Bảng Control Center: thành tấm phủ gần full màn hình, cuộn được, không bị khuất/lệch */
+  .control-center-panel {
+    position: fixed !important;
+    top: 58px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - 72px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Khung chat Trợ lý AI cũng vừa màn hình, không tràn ra ngoài */
+  #aiChatBox {
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: 80px !important;
+    max-height: calc(100vh - 150px) !important;
+  }
+
   /* 2. Tối ưu kiểu chữ, nút bấm & thẻ trên mobile */
   h1 { font-size: 1.6rem !important; }
   h2 { font-size: 1.3rem !important; }

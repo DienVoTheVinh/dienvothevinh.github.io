@@ -456,11 +456,11 @@ function khoiTaoControlCenter() {
       // Opacity
       '<div class="cc-control-row">' +
         '<div class="cc-control-label">' +
-          '<span>Trong suốt (Liquid Glass)</span>' +
+          '<span>Độ đặc kính (Opacity)</span>' +
           '<span id="lblOpacity">' + Math.round(currentTrans * 100) + '%</span>' +
         '</div>' +
         '<div class="cc-slider-wrap">' +
-          '<input type="range" min="0.1" max="0.9" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
+          '<input type="range" min="0.1" max="1.0" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
         '</div>' +
       '</div>' +
       
@@ -1419,7 +1419,32 @@ function loadHtml2Canvas(callback) {
   document.head.appendChild(script);
 }
 
-function chupManHinhToanBo() {
+async function chupManHinhToanBo() {
+  // CÁCH 1 (ưu tiên): API chụp gốc của trình duyệt -> ảnh ĐÚNG 100% như đang thấy, không lệch chữ/icon
+  if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && window.isSecureContext) {
+    try {
+      var stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'browser' }, audio: false,
+        preferCurrentTab: true, selfBrowserSurface: 'include'
+      });
+      var video = document.createElement('video');
+      video.srcObject = stream; video.muted = true;
+      await video.play();
+      await new Promise(function (r) { setTimeout(r, 300); });
+      var cap = document.createElement('canvas');
+      cap.width = video.videoWidth; cap.height = video.videoHeight;
+      cap.getContext('2d').drawImage(video, 0, 0);
+      stream.getTracks().forEach(function (t) { t.stop(); });
+      var a = document.createElement('a');
+      a.download = 'vinhmath-' + (location.pathname.split('/').pop().split('.')[0] || 'trang') + '.png';
+      a.href = cap.toDataURL('image/png'); a.click();
+      return;
+    } catch (e) { /* người dùng từ chối hoặc không hỗ trợ -> dùng cách dự phòng */ }
+  }
+  chupBangHtml2Canvas();
+}
+
+function chupBangHtml2Canvas() {
   var btn = document.getElementById('screenshotBtn');
   if (btn) btn.style.visibility = 'hidden';
 
@@ -1450,22 +1475,30 @@ function chupManHinhToanBo() {
         style.innerHTML = '* { animation: none !important; transition: none !important; }';
         document.head.appendChild(style);
 
+        window.__prevSX = window.scrollX; window.__prevSY = window.scrollY;
+        window.scrollTo(0, 0); // chụp từ đầu trang để tránh lệch toạ độ
         html2canvas(document.body, {
           useCORS: true,
-          scale: 2, // Bắt buộc lưu ở độ phân giải 2x cho sắc nét
+          scale: Math.max(2, window.devicePixelRatio || 1),
           scrollX: 0,
           scrollY: 0,
           x: 0,
           y: 0,
+          windowWidth: document.documentElement.scrollWidth,   // bố cục đúng toàn trang -> hết lệch chữ/icon
+          windowHeight: document.documentElement.scrollHeight,
           width: document.documentElement.scrollWidth,
           height: document.documentElement.scrollHeight,
           backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0b0f19',
           logging: false,
           imageTimeout: 0,
           ignoreElements: function(element) {
-            return element.id === 'screenshotBtn' || element === loading;
+            var id = element.id || '';
+            return id === 'screenshotBtn' || element === loading ||
+              id === 'vmStudyWidget' || id === 'aiChatBubble' || id === 'aiChatBox' || id === 'navBurger' ||
+              (element.classList && element.classList.contains('vms-toast'));
           }
         }).then(function(canvas) {
+          window.scrollTo(window.__prevSX || 0, window.__prevSY || 0);
           // Gỡ bỏ style tạm thời
           var tempSty = document.getElementById('screenshot-temp-style');
           if (tempSty) tempSty.parentNode.removeChild(tempSty);
@@ -1483,6 +1516,7 @@ function chupManHinhToanBo() {
           if (loading.parentNode) loading.parentNode.removeChild(loading);
         }
       }).catch(function(err) {
+        window.scrollTo(window.__prevSX || 0, window.__prevSY || 0);
         var tempSty = document.getElementById('screenshot-temp-style');
         if (tempSty) tempSty.parentNode.removeChild(tempSty);
 

@@ -456,11 +456,11 @@ function khoiTaoControlCenter() {
       // Opacity
       '<div class="cc-control-row">' +
         '<div class="cc-control-label">' +
-          '<span>Trong suốt (Liquid Glass)</span>' +
+          '<span>Độ đặc kính (Opacity)</span>' +
           '<span id="lblOpacity">' + Math.round(currentTrans * 100) + '%</span>' +
         '</div>' +
         '<div class="cc-slider-wrap">' +
-          '<input type="range" min="0.1" max="0.9" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
+          '<input type="range" min="0.1" max="1.0" step="0.05" value="' + currentTrans + '" class="cc-slider" id="sldOpacity">' +
         '</div>' +
       '</div>' +
       
