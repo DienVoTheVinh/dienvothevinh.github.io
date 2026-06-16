@@ -37,11 +37,8 @@ function apDungMenu(role) {
   } else if (role === 'parent') {
     // ----- MENU CỦA PHỤ HUYNH -----
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
       { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
-      { type: 'link', path: 'blog', label: 'Blog' },
-      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' }
     ];
   } else {
     // ----- MENU CỦA HỌC SINH -----

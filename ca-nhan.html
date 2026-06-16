@@ -572,6 +572,10 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
+  if (hoSo.role === 'parent') {
+    window.location.href = 'phu-huynh';
+    return;
+  }
   myHoSo = hoSo;
   
   // Kiểm tra tham số URL để chuyển chế độ xem của Admin
