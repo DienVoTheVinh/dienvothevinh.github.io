@@ -48,6 +48,7 @@ function apDungMenu(role) {
       { type: 'link', path: 'tai-lieu', label: 'Tài liệu' },
       { type: 'link', path: 'lich-hoc', label: 'Lịch học' },
       { type: 'link', path: 'luyen-de', label: 'Luyện đề' },
+      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
       { type: 'link', path: 'blog', label: 'Blog' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
@@ -156,8 +157,18 @@ function apDungLogoBadge(role) {
       apDungLogoBadge(r.data.role);
     }
     khoiDongChuong(s.data.session.user.id);
+    napDongHoTuHoc();
   } catch (e) { /* giữ menu tĩnh sẵn có nếu lỗi */ }
 })();
+
+// Nạp engine đồng hồ tự học (ô trôi nổi sống sót qua mọi trang)
+function napDongHoTuHoc() {
+  if (window.__vmStudyLoaded || document.getElementById('vmStudyScript')) return;
+  var sc = document.createElement('script');
+  sc.id = 'vmStudyScript';
+  sc.src = 'js/study-timer.js?v=1';
+  document.body.appendChild(sc);
+}
 
 
 // ============================================================

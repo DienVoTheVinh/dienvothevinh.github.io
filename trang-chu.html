@@ -716,34 +716,22 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
       return;
     }
     
-    var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
-    $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
-    $('loiChaoSub').textContent = 'Hôm nay lớp mình học gì tiếp nào?';
-    
-    // Meet Link Online
-    var coLopOnline = hoSo.class_students.some(function (c) { return c.classes && c.classes.mode === 'online'; });
-    if (coLopOnline) {
-      var meetLink = '';
-      var onlineClassIds = hoSo.class_students
-        .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
-        .map(function (c) { return c.class_id; });
-        
-      var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
-      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
-      if (firstLink) meetLink = firstLink.meet_link;
-      
-      if (!meetLink) {
-        var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
-        meetLink = lk.data ? lk.data.value : '';
-      }
-      
-      if (meetLink) {
-        $('linkMeetHoc').href = meetLink;
-        $('khungMeetHoc').style.display = 'block';
-      }
+    // Khởi tạo active class trong localStorage
+    var savedClassId = localStorage.getItem('vm-active-class-id');
+    var exists = hoSo.class_students.some(function(c) { return c.class_id === savedClassId; }) || savedClassId === 'all';
+    if (!savedClassId || !exists) {
+      // Chọn lớp đầu tiên nếu chưa có
+      savedClassId = hoSo.class_students[0].class_id;
+      localStorage.setItem('vm-active-class-id', savedClassId);
     }
     
-    // Thống kê nhanh học sinh (tổng hợp qua tất cả các lớp của học sinh)
+    // Vẽ select box chọn lớp
+    veSelectorLopHocSinh();
+    
+    // Tải meet link theo lớp hoạt động
+    await capNhatMeetLinkTheoLop(savedClassId);
+    
+    // Thống kê nhanh học sinh (tổng hợp theo lớp đang xem)
     $('khungThongKeHocSinh').style.display = 'block';
     await taiThongKeTongHopHS();
     
@@ -780,7 +768,21 @@ async function taiViecCanLam() {
   var r = await sb.rpc('get_my_reminders');
   if (r.error) { $('vclList').innerHTML = '<div class="vcl-empty">Không tải được danh sách việc cần làm.</div>'; return; }
   var ds = r.data || [];
+  
+  var activeClassId = localStorage.getItem('vm-active-class-id');
+  var activeClassName = '';
+  if (activeClassId && activeClassId !== 'all' && hoSoNguoiDung && hoSoNguoiDung.class_students) {
+    var clsObj = hoSoNguoiDung.class_students.find(function(c) { return c.class_id === activeClassId; });
+    if (clsObj && clsObj.classes) activeClassName = clsObj.classes.name;
+  }
+
   var items = ds.filter(function (x) {
+    // Lọc theo lớp hoạt động (nếu có chọn và không chọn "Tất cả")
+    if (activeClassId && activeClassId !== 'all') {
+      if (x.class_id && x.class_id !== activeClassId) return false;
+      if (!x.class_id && x.scope && x.scope !== activeClassName) return false;
+    }
+    
     var d = vclParseDiff(x.due_date);
     if (x.done) return d === 0;     // việc đã xong: chỉ hiện nếu hạn hôm nay (để em thấy thành quả)
     if (d < 0) return true;         // quá hạn chưa xong
@@ -913,8 +915,92 @@ async function taiSchedulesVaExamsStaff() {
 }
 
 // ----- TẢI DỮ LIỆU HỌC SINH -----
+function veSelectorLopHocSinh() {
+  var hoSo = hoSoNguoiDung;
+  if (!hoSo || hoSo.role !== 'student' || !hoSo.class_students || hoSo.class_students.length === 0) {
+    $('tenLop').textContent = 'VinhMath';
+    return;
+  }
+  
+  if (hoSo.class_students.length === 1) {
+    var name = hoSo.class_students[0].classes ? hoSo.class_students[0].classes.name : '';
+    $('tenLop').textContent = (name ? 'Lớp ' + name + ' · ' : '') + 'VinhMath';
+    return;
+  }
+  
+  var activeClassId = localStorage.getItem('vm-active-class-id') || hoSo.class_students[0].class_id;
+  
+  var optionsHtml = '';
+  optionsHtml += '<option value="all" ' + (activeClassId === 'all' ? 'selected' : '') + '>Tất cả các lớp học</option>';
+  hoSo.class_students.forEach(function(c) {
+    var name = c.classes ? c.classes.name : 'Chưa rõ';
+    var selected = c.class_id === activeClassId ? 'selected' : '';
+    optionsHtml += '<option value="' + c.class_id + '" ' + selected + '>Lớp ' + name + '</option>';
+  });
+  
+  $('tenLop').innerHTML = 
+    '<div style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom: 6px;">' +
+      '<span style="font-weight:700; color:var(--ink-2); font-size:0.85rem">Lớp đang xem:</span>' +
+      '<select id="selActiveLop" onchange="doiLopHocSinhHoatDong(this.value)" style="font-weight:700; color:var(--accent); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-sm); padding:4px 24px 4px 8px; font-size:0.85rem; cursor:pointer; outline:none; font-family:inherit; min-width:140px; box-shadow:var(--shadow-sm);">' +
+        optionsHtml +
+      '</select>' +
+      '<span style="font-weight:700; color:var(--ink-3); font-size:0.85rem">· VinhMath</span>' +
+    '</div>';
+}
+
+async function capNhatMeetLinkTheoLop(classId) {
+  var hoSo = hoSoNguoiDung;
+  var meetLink = '';
+  
+  if (classId === 'all') {
+    var onlineClassIds = hoSo.class_students
+      .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
+      .map(function (c) { return c.class_id; });
+      
+    if (onlineClassIds.length > 0) {
+      var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
+      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+      if (firstLink) meetLink = firstLink.meet_link;
+    }
+  } else {
+    var selClass = hoSo.class_students.find(function(c) { return c.class_id === classId; });
+    if (selClass && selClass.classes && selClass.classes.mode === 'online') {
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId);
+      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
+      if (firstLink) meetLink = firstLink.meet_link;
+    }
+  }
+  
+  if (!meetLink && hoSo.class_students.some(function(c) { return c.classes && c.classes.mode === 'online'; })) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meetLink = lk.data ? lk.data.value : '';
+  }
+  
+  if (meetLink) {
+    $('linkMeetHoc').href = meetLink;
+    $('khungMeetHoc').style.display = 'block';
+  } else {
+    $('khungMeetHoc').style.display = 'none';
+  }
+}
+
+async function doiLopHocSinhHoatDong(classId) {
+  localStorage.setItem('vm-active-class-id', classId);
+  await capNhatMeetLinkTheoLop(classId);
+  await taiThongKeTongHopHS();
+  await taiSchedulesVaExamsStudent();
+  await taiViecCanLam();
+  veLichTuan();
+}
+
 async function taiSchedulesVaExamsStudent() {
-  var classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  var activeClassId = localStorage.getItem('vm-active-class-id');
+  var classIds = [];
+  if (activeClassId && activeClassId !== 'all') {
+    classIds = [activeClassId];
+  } else {
+    classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  }
   
   // 1. Tải lịch học lớp học sinh tham gia
   var rSched = await sb.from('schedules')
@@ -932,7 +1018,13 @@ async function taiSchedulesVaExamsStudent() {
 
 // ----- THỐNG KÊ TỔNG HỢP HỌC SINH -----
 async function taiThongKeTongHopHS() {
-  var classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  var activeClassId = localStorage.getItem('vm-active-class-id');
+  var classIds = [];
+  if (activeClassId && activeClassId !== 'all') {
+    classIds = [activeClassId];
+  } else {
+    classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+  }
   var rLessons = await sb.from('lessons').select('id').in('class_id', classIds);
   var lessonIds = (rLessons.data || []).map(function (l) { return l.id; });
   

@@ -49,6 +49,7 @@
     <a class="btn btn-primary btn-sm" id="nutSoan" href="quan-tri-tai-lieu" style="display:none">+ Soạn tài liệu</a>
   </div>
 
+  <div class="tab-box" id="tabLopHocSinh" style="display:none; margin-bottom: 24px;"></div>
   <div id="dsTaiLieu"><div class="empty card">Đang tải…</div></div>
 </div>
 
@@ -58,26 +59,30 @@
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
+var dsHocSinhLop = [];
+var selectedClassId = null;
+var isStaff = false;
+
 function urlPdf(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + path;
 }
 
-(async function () {
-  if (!daKetNoi()) {
-    $('dsTaiLieu').innerHTML = '<div class="empty card">Chế độ xem thử — kết nối Supabase để thấy tài liệu thật.</div>';
-    return;
+async function taiTaiLieuHocSinh() {
+  $('dsTaiLieu').innerHTML = '<div class="empty card">Đang tải…</div>';
+  var query = sb.from('documents')
+    .select('id, title, file_path, created_at, class_id, classes(name), topics(name)');
+  
+  if (!isStaff) {
+    if (selectedClassId) {
+      query = query.or('class_id.is.null,class_id.eq.' + selectedClassId);
+    } else {
+      query = query.is('class_id', null);
+    }
   }
-  var hoSo = await yeuCauDangNhap();
-  if (!hoSo) return;
-  if (hoSo.role === 'teacher' || hoSo.role === 'admin') $('nutSoan').style.display = '';
-
-  // Menu quản trị động được tự động vẽ bởi menu.js
-
-  var r = await sb.from('documents')
-    .select('id, title, file_path, created_at, classes(name), topics(name)')
-    .order('created_at', { ascending: false });
+  
+  var r = await query.order('created_at', { ascending: false });
   var ds = r.data || [];
 
   if (!ds.length) {
@@ -95,6 +100,55 @@ function urlPdf(path) {
       '<a class="btn btn-secondary btn-sm" download href="' + urlPdf(d.file_path) + '">Tải về</a>' +
       '</div>';
   }).join('');
+}
+
+async function chonLopHocSinh(classId) {
+  selectedClassId = classId;
+  localStorage.setItem('vm-active-class-id', classId);
+  
+  // Cập nhật tab active
+  document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+  var actTab = $('tab-class-' + classId);
+  if (actTab) actTab.classList.add('active');
+  
+  await taiTaiLieuHocSinh();
+}
+
+(async function () {
+  if (!daKetNoi()) {
+    $('dsTaiLieu').innerHTML = '<div class="empty card">Chế độ xem thử — kết nối Supabase để thấy tài liệu thật.</div>';
+    return;
+  }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  isStaff = hoSo.role === 'teacher' || hoSo.role === 'admin';
+  if (isStaff) $('nutSoan').style.display = '';
+
+  // Menu quản trị động được tự động vẽ bởi menu.js
+
+  dsHocSinhLop = hoSo.class_students || [];
+  
+  // Xác định class_id hoạt động
+  if (dsHocSinhLop.length > 0) {
+    var savedClassId = localStorage.getItem('vm-active-class-id');
+    var exists = dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
+    selectedClassId = (savedClassId && exists) ? savedClassId : dsHocSinhLop[0].class_id;
+  }
+
+  // Vẽ các tab chuyển lớp nếu có lớp và không phải quản trị viên
+  if (dsHocSinhLop.length > 0 && !isStaff) {
+    var tabsBox = $('tabLopHocSinh');
+    tabsBox.style.display = 'flex';
+    tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
+      var name = cs.classes ? cs.classes.name : 'Khác';
+      var active = cs.class_id === selectedClassId ? ' active' : '';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+    }).join('');
+  }
+
+  await taiTaiLieuHocSinh();
 })();
 </script>
 </body>

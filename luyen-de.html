@@ -153,6 +153,7 @@
     </div>
 
     <div id="coLopContainer">
+      <div class="tab-box" id="tabLopHocSinh" style="display:none; margin-bottom: 24px;"></div>
       <div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div>
     </div>
   </div>
@@ -417,8 +418,9 @@ function dinhDangThoiGian(d) {
   if (!studentInfo) return;
   
   var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
-  var classIds = (studentInfo.class_students || []).map(function (c) { return c.class_id; });
-  if (classIds.length === 0 && !isStaff) {
+  var dsHocSinhLop = studentInfo.class_students || [];
+  
+  if (dsHocSinhLop.length === 0 && !isStaff) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('labelKhuVuc').textContent = 'Luyện đề & Thi thử';
@@ -426,7 +428,30 @@ function dinhDangThoiGian(d) {
     return;
   }
   
-  await taiDanhSachDe(classIds);
+  // Xác định class_id hoạt động
+  var selectedClassId = null;
+  if (dsHocSinhLop.length > 0) {
+    var savedClassId = localStorage.getItem('vm-active-class-id');
+    var exists = dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
+    selectedClassId = (savedClassId && exists) ? savedClassId : dsHocSinhLop[0].class_id;
+  }
+
+  // Vẽ các tab chuyển lớp nếu có lớp và không phải quản trị viên
+  if (dsHocSinhLop.length > 0 && !isStaff) {
+    var tabsBox = $('tabLopHocSinh');
+    tabsBox.style.display = 'flex';
+    tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
+      var name = cs.classes ? cs.classes.name : 'Khác';
+      var active = cs.class_id === selectedClassId ? ' active' : '';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+    }).join('');
+  }
+  
+  if (isStaff) {
+    await taiDanhSachDe(null);
+  } else {
+    await taiDanhSachDe(selectedClassId ? [selectedClassId] : []);
+  }
   
   // Tự động mở đề thi từ tham số URL nếu có (dành cho Giáo viên/Admin xem thử kiểu học sinh)
   var params = new URLSearchParams(window.location.search);
@@ -448,6 +473,19 @@ function dinhDangThoiGian(d) {
     }
   }
 })();
+
+async function chonLopHocSinh(classId) {
+  localStorage.setItem('vm-active-class-id', classId);
+  
+  // Cập nhật tab active
+  document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+  var actTab = $('tab-class-' + classId);
+  if (actTab) actTab.classList.add('active');
+  
+  await taiDanhSachDe([classId]);
+}
 
 async function taiDanhSachDe(classIds) {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';

@@ -219,6 +219,9 @@
 
   <!-- Container khi đã có lớp -->
   <div id="coLopContainer">
+    <!-- Tab chuyển lớp cho học sinh có nhiều lớp -->
+    <div class="tab-box" id="tabLopHocSinh" style="display:none; margin-bottom: 24px;"></div>
+
     <!-- Lịch tuần trực quan dạng slider -->
     <div id="timelineSlider" class="week-slider">
       <!-- Sẽ render bằng JavaScript -->
@@ -309,8 +312,18 @@ var listSchedules = [];
 var classInfo = null;
 var selectedDayFilter = null;
 var meetLinkGlobal = '';
+var dsHocSinhLop = [];
+var selectedClassId = null;
 
 function gioDep(t) { return t ? t.slice(0, 5) : ''; }
+
+function getTenLopHienTai() {
+  if (selectedClassId && dsHocSinhLop.length > 0) {
+    var c = dsHocSinhLop.find(function(x) { return x.class_id === selectedClassId; });
+    if (c && c.classes) return c.classes.name;
+  }
+  return 'VinhMath';
+}
 
 function layCacNgayTrongTuan() {
   var now = new Date();
@@ -466,30 +479,18 @@ function locTheoThu(weekday) {
   veDanhSachBuoiHoc(listSchedules, meetLinkGlobal);
 }
 
-(async function () {
-  if (!daKetNoi()) {
-    $('danhSachBuoiHoc').innerHTML = '<div style="color:var(--ink-3); text-align:center;">Chế độ xem thử — chưa kết nối Supabase.</div>';
-    $('thongBaoHomNay').innerHTML = 'Chế độ xem thử: Hôm nay không có buổi học.';
-    return;
+async function taiLichVaMeetLinkHocSinh() {
+  if (!selectedClassId) return;
+
+  var activeClassName = '';
+  var activeClassStudent = dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; });
+  if (activeClassStudent && activeClassStudent.classes) {
+    activeClassName = activeClassStudent.classes.name;
   }
+  $('tenLop').textContent = (activeClassName ? 'Lớp ' + activeClassName + ' · ' : '') + 'Thời khóa biểu';
 
-  var hoSo = await yeuCauDangNhap();
-  if (!hoSo) return;
-
-  // Kiểm tra trạng thái xếp lớp
-  if (!hoSo.class_students || hoSo.class_students.length === 0) {
-    $('coLopContainer').style.display = 'none';
-    $('chuaCoLopContainer').style.display = 'block';
-    $('tenLop').textContent = 'Thời khóa biểu';
-    $('subHeadTieuDe').textContent = 'Vui lòng liên hệ thầy Vinh để phân lớp trước khi xem lịch học.';
-    return;
-  }
-
-  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
-  $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'Thời khóa biểu';
-
-  // 1. Tải thời khóa biểu tất cả các lớp của học sinh
-  var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
+  // 1. Tải thời khóa biểu lớp được chọn
+  var classIds = [selectedClassId];
   var r = await sb.from('schedules')
     .select('id, weekday, start_time, end_time, mode, location, note, recurrence')
     .in('class_id', classIds)
@@ -497,8 +498,8 @@ function locTheoThu(weekday) {
   
   listSchedules = r.data || [];
   
-  // 2. Tải link Google Meet phòng học riêng (ưu tiên lấy link đầu tiên tìm thấy)
-  var meetLinkGlobal = '';
+  // 2. Tải link Google Meet phòng học riêng
+  meetLinkGlobal = '';
   var lr = await sb.from('class_links').select('meet_link').in('class_id', classIds);
   var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
   if (firstLink) meetLinkGlobal = firstLink.meet_link;
@@ -508,6 +509,9 @@ function locTheoThu(weekday) {
     meetLinkGlobal = lk.data ? lk.data.value : '';
   }
 
+  // Reset hiển thị Meet link
+  $('nutVaoMeet').style.display = 'none';
+  $('chuaCoLink').style.display = 'none';
   if (meetLinkGlobal) {
     $('nutVaoMeet').href = meetLinkGlobal;
     $('nutVaoMeet').style.display = 'inline-flex';
@@ -521,6 +525,9 @@ function locTheoThu(weekday) {
   
   if (!listSchedules.length) {
     $('thongBaoHomNay').innerHTML = 'Lớp chưa được thầy cấu hình thời khóa biểu.';
+    $('thongBaoHomNay').style.background = 'var(--surface-2)';
+    $('thongBaoHomNay').style.color = 'var(--ink-2)';
+    $('thongBaoHomNay').style.borderLeft = '4px solid var(--line-2)';
     return;
   }
 
@@ -546,6 +553,62 @@ function locTheoThu(weekday) {
     $('thongBaoHomNay').style.color = 'var(--ink-2)';
     $('thongBaoHomNay').style.borderLeft = '4px solid var(--line-2)';
   }
+}
+
+async function chonLopHocSinh(classId) {
+  selectedClassId = classId;
+  localStorage.setItem('vm-active-class-id', classId);
+  
+  // Cập nhật tab active
+  document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+  var actTab = $('tab-class-' + classId);
+  if (actTab) actTab.classList.add('active');
+  
+  await taiLichVaMeetLinkHocSinh();
+}
+
+(async function () {
+  if (!daKetNoi()) {
+    $('danhSachBuoiHoc').innerHTML = '<div style="color:var(--ink-3); text-align:center;">Chế độ xem thử — chưa kết nối Supabase.</div>';
+    $('thongBaoHomNay').innerHTML = 'Chế độ xem thử: Hôm nay không có buổi học.';
+    return;
+  }
+
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+
+  // Kiểm tra trạng thái xếp lớp
+  if (!hoSo.class_students || hoSo.class_students.length === 0) {
+    $('coLopContainer').style.display = 'none';
+    $('chuaCoLopContainer').style.display = 'block';
+    $('tenLop').textContent = 'Thời khóa biểu';
+    $('subHeadTieuDe').textContent = 'Vui lòng liên hệ thầy Vinh để phân lớp trước khi xem lịch học.';
+    return;
+  }
+
+  dsHocSinhLop = hoSo.class_students || [];
+  
+  // Xác định class_id hoạt động
+  var savedClassId = localStorage.getItem('vm-active-class-id');
+  var exists = dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
+  selectedClassId = (savedClassId && exists) ? savedClassId : dsHocSinhLop[0].class_id;
+
+  // Vẽ các tab chuyển lớp nếu có lớp
+  if (dsHocSinhLop.length > 0) {
+    var tabsBox = $('tabLopHocSinh');
+    if (tabsBox) {
+      tabsBox.style.display = 'flex';
+      tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
+        var name = cs.classes ? cs.classes.name : 'Khác';
+        var active = cs.class_id === selectedClassId ? ' active' : '';
+        return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      }).join('');
+    }
+  }
+
+  await taiLichVaMeetLinkHocSinh();
 })();
 
 // Tìm ngày tiếp theo khớp với thứ được chọn

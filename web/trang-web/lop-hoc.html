@@ -259,16 +259,18 @@ var selectedClassId = null;
   // Nạp danh sách lớp của học sinh
   dsHocSinhLop = hoSo.class_students || [];
   if (dsHocSinhLop.length > 0) {
-    selectedClassId = dsHocSinhLop[0].class_id;
+    var savedClassId = localStorage.getItem('vm-active-class-id');
+    var exists = dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
+    selectedClassId = (savedClassId && exists) ? savedClassId : dsHocSinhLop[0].class_id;
   }
 
   // Vẽ các tab chuyển lớp (luôn vẽ nếu có ít nhất 1 lớp)
   if (dsHocSinhLop.length > 0) {
     var tabsBox = $('tabLopHocSinh');
     tabsBox.style.display = 'flex';
-    tabsBox.innerHTML = dsHocSinhLop.map(function (cs, idx) {
+    tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
-      var active = idx === 0 ? ' active' : '';
+      var active = cs.class_id === selectedClassId ? ' active' : '';
       return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
     }).join('');
   }
@@ -279,6 +281,7 @@ var selectedClassId = null;
 
 async function chonLopHocSinh(classId) {
   selectedClassId = classId;
+  localStorage.setItem('vm-active-class-id', classId);
   
   // Cập nhật tab active
   document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
