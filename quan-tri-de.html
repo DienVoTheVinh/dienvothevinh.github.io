@@ -95,8 +95,22 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
         </div>
         
         <div class="field">
+          <label>Hình thức đề <b style="color:var(--accent)">*</b></label>
+          <select class="input" id="exType" onchange="capNhatHinhThucDe()">
+            <option value="mc">Chỉ trắc nghiệm (tự động chấm)</option>
+            <option value="essay">Chỉ tự luận (học sinh chụp ảnh nộp)</option>
+            <option value="combo">Kết hợp (trắc nghiệm + tự luận)</option>
+          </select>
+        </div>
+
+        <div class="field" id="wrapEssayPrompt" style="display:none">
+          <label>Đề bài / yêu cầu phần tự luận</label>
+          <textarea class="code" id="exEssayPrompt" style="min-height:140px" placeholder="Nhập đề bài tự luận (có thể dùng LaTeX $...$). Học sinh đọc đề rồi chụp ảnh bài làm nộp lên cho thầy chấm tay."></textarea>
+        </div>
+
+        <div class="field" id="wrapLatex">
           <label>Nội dung đề LaTeX (ex_test format) <b style="color:var(--accent)">*</b></label>
-          <textarea class="code" id="exLatex" required placeholder="\begin{ex}&#10;Đề bài toán...&#10;\choice&#10;{A. Lựa chọn 1}&#10;{\True B. Lựa chọn đúng}&#10;{C. Lựa chọn 3}&#10;{D. Lựa chọn 4}&#10;\loigiai{&#10;Lời giải chi tiết...&#10;}&#10;\end{ex}"></textarea>
+          <textarea class="code" id="exLatex" placeholder="\begin{ex}&#10;Đề bài toán...&#10;\choice&#10;{A. Lựa chọn 1}&#10;{\True B. Lựa chọn đúng}&#10;{C. Lựa chọn 3}&#10;{D. Lựa chọn 4}&#10;\loigiai{&#10;Lời giải chi tiết...&#10;}&#10;\end{ex}"></textarea>
         </div>
 
         <div style="display:flex; gap:12px; margin-top:20px">
@@ -334,13 +348,13 @@ function demoParseLaTeX() {
   if (!parsedQuestions.length) {
     if (!window.__liveParse) alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
     $('vungPreview').style.display = 'none';
-    $('btnSave').disabled = true;
+    capNhatNutLuu();
     return;
   }
   
   $('previewCount').textContent = parsedQuestions.length;
   $('vungPreview').style.display = 'block';
-  $('btnSave').disabled = false;
+  capNhatNutLuu();
   
   $('dsPreview').innerHTML = parsedQuestions.map(function (q, idx) {
     var typeText = "";
@@ -396,7 +410,28 @@ function demoParseLaTeX() {
       window.__liveParse = false;
     }, 350);
   });
+  var ep = document.getElementById('exEssayPrompt');
+  if (ep) ep.addEventListener('input', capNhatNutLuu);
 })();
+
+// Hình thức đề: ẩn/hiện ô tự luận và ô LaTeX
+function capNhatHinhThucDe() {
+  var type = ($('exType') && $('exType').value) || 'mc';
+  if ($('wrapEssayPrompt')) $('wrapEssayPrompt').style.display = (type === 'essay' || type === 'combo') ? 'block' : 'none';
+  if ($('wrapLatex')) $('wrapLatex').style.display = (type === 'mc' || type === 'combo') ? 'block' : 'none';
+  capNhatNutLuu();
+}
+
+// Bật/tắt nút Lưu theo hình thức: tự luận cần đề bài; (kết hợp/trắc nghiệm) cần >=1 câu
+function capNhatNutLuu() {
+  if (!$('btnSave')) return;
+  var type = ($('exType') && $('exType').value) || 'mc';
+  var coTuLuan = $('exEssayPrompt') && $('exEssayPrompt').value.trim().length > 0;
+  var ok;
+  if (type === 'essay') ok = coTuLuan;
+  else ok = parsedQuestions.length > 0; // mc & combo cần phần trắc nghiệm
+  $('btnSave').disabled = !ok;
+}
 
 function escapeHTML(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -430,7 +465,10 @@ async function loadExamForEdit(examId) {
     
     $('exShuffle').checked = !!exam.shuffle;
     $('exPublished').checked = !!exam.published;
-    
+    if ($('exType')) $('exType').value = exam.de_type || 'mc';
+    if ($('exEssayPrompt')) $('exEssayPrompt').value = exam.essay_prompt || '';
+    capNhatHinhThucDe();
+
     var rQ = await sb.from('exam_questions')
       .select('sort, questions(id, content_latex, choices, solution_latex)')
       .eq('exam_id', examId)
@@ -485,6 +523,9 @@ function cancelEditExam() {
   $('exShuffle').checked = true;
   $('exPublished').checked = true;
   $('exLatex').value = '';
+  if ($('exType')) $('exType').value = 'mc';
+  if ($('exEssayPrompt')) $('exEssayPrompt').value = '';
+  if (typeof capNhatHinhThucDe === 'function') capNhatHinhThucDe();
   $('vungPreview').style.display = 'none';
   parsedQuestions = [];
   $('btnSave').disabled = true;
@@ -492,11 +533,17 @@ function cancelEditExam() {
 
 async function parseAndSaveExam(e) {
   e.preventDefault();
-  if (!parsedQuestions.length) {
-    alert('Vui lòng bấm "Phân tích đề" và kiểm tra trước khi lưu.');
+  var deType = ($('exType') && $('exType').value) || 'mc';
+  var essayPrompt = $('exEssayPrompt') ? $('exEssayPrompt').value.trim() : '';
+  if (deType !== 'essay' && !parsedQuestions.length) {
+    alert('Vui lòng bấm "Phân tích đề" và kiểm tra phần trắc nghiệm trước khi lưu.');
     return;
   }
-  
+  if (deType === 'essay' && !essayPrompt) {
+    alert('Vui lòng nhập đề bài phần tự luận trước khi lưu.');
+    return;
+  }
+
   var title = $('exTitle').value.trim();
   var duration = parseInt($('exDuration').value) || 90;
   var classId = $('exLop').value || null;
@@ -520,7 +567,9 @@ async function parseAndSaveExam(e) {
         opens_at: opens,
         closes_at: closes,
         shuffle: shuffle,
-        published: published
+        published: published,
+        de_type: deType,
+        essay_prompt: essayPrompt || null
       }).eq('id', editingExamId);
       
       if (rExam.error) throw new Error(rExam.error.message);
@@ -537,7 +586,9 @@ async function parseAndSaveExam(e) {
         opens_at: opens,
         closes_at: closes,
         shuffle: shuffle,
-        published: published
+        published: published,
+        de_type: deType,
+        essay_prompt: essayPrompt || null
       }).select('id').single();
       
       if (rExam.error) throw new Error(rExam.error.message);
