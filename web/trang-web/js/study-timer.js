@@ -13,6 +13,7 @@
 
   var KEY = 'vm_study_session';
   var tickInt = null;
+  var ME = null; // id tài khoản đang đăng nhập (chủ sở hữu phiên)
 
   function now() { return Date.now(); }
   function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
@@ -46,7 +47,7 @@
     var st = document.createElement('style');
     st.id = 'vmStudyStyle';
     st.textContent =
-      '#vmStudyWidget{position:fixed;right:18px;bottom:18px;z-index:9999;background:var(--surface-solid,#fff);border:1px solid var(--line-2,#ddd);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:inherit;min-width:180px;animation:vmsPop .25s ease}' +
+      '#vmStudyWidget{position:fixed;left:18px;bottom:18px;z-index:9999;background:var(--surface-solid,#fff);border:1px solid var(--line-2,#ddd);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:inherit;min-width:180px;animation:vmsPop .25s ease}' +
       '@keyframes vmsPop{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}' +
       '#vmStudyWidget .vms-tree{font-size:2rem;line-height:1}' +
       '#vmStudyWidget .vms-time{font-weight:800;font-size:1.15rem;color:var(--ink,#111);font-variant-numeric:tabular-nums}' +
@@ -145,6 +146,7 @@
   document.addEventListener('visibilitychange', function () {
     var s = load();
     if (!s || !s.active) return;
+    if (s.ownerId && s.ownerId !== ME) return; // không phải phiên của mình
     if (document.visibilityState === 'hidden') {
       s.tabSwitches = (s.tabSwitches || 0) + 1; save(s);
     } else {
@@ -157,7 +159,8 @@
       var s = {
         active: true, mode: mode, startedAt: now(),
         targetSeconds: (minutes || 25) * 60, focusSeconds: 0,
-        tabSwitches: 0, lastSeen: now(), completed: false
+        tabSwitches: 0, lastSeen: now(), completed: false,
+        ownerId: ME // gắn phiên với đúng tài khoản đang đăng nhập
       };
       save(s); startTick(); renderUpdate(s);
       toast(mode === 'pomodoro' ? '🍅 Bắt đầu phiên Pomodoro ' + (minutes || 25) + ' phút. Cố lên!' : '⏱️ Bắt đầu học. Cây của em đang lớn dần…', 'ok');
@@ -167,10 +170,13 @@
     state: load
   };
 
-  // Khởi động khi nạp trang: tiếp tục phiên đang chạy hoặc chốt phiên cũ
-  (function init() {
+  // Khởi động: xác định tài khoản đang đăng nhập, chỉ tiếp tục phiên CỦA ĐÚNG người đó
+  (async function init() {
+    try { ME = await uid(); } catch (e) {}
     var s = load();
     if (!s || !s.active) return;
+    // Phiên do tài khoản khác tạo (đăng nhập chung máy) -> không hiển thị
+    if (s.ownerId && s.ownerId !== ME) { removeWidget(); return; }
     if (now() - (s.lastSeen || 0) > 25000) {
       // Rời web khá lâu -> chốt phiên cũ với thời gian đã học
       finalize(s.mode === 'pomodoro' ? false : true);

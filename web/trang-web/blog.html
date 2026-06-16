@@ -65,31 +65,43 @@
 /* Blog Listing styles */
 .blog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 28px;
   margin-top: 24px;
 }
 .blog-list-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-md, 12px);
-  padding: 20px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   text-decoration: none;
   color: var(--ink);
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   box-sizing: border-box;
+  overflow: hidden;
 }
-.blog-list-card.has-cover { padding-top: 0; overflow: hidden; }
-.blog-list-card .bl-cover { width: calc(100% + 40px); height: 170px; object-fit: cover; margin: 0 -20px 16px; display: block; }
 .blog-list-card:hover {
-  transform: translateY(-4px);
-  background: var(--surface-2);
-  box-shadow: 0 12px 28px rgba(31,38,135,0.08), 0 0 12px var(--accent-soft);
-  border-color: var(--line-2);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(181, 72, 58, 0.08), 0 0 0 1px var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+.bl-cover-wrap {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  position: relative;
+}
+.bl-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.blog-list-card:hover .bl-cover {
+  transform: scale(1.05);
 }
 .blog-list-card .bl-title {
   font-size: 1.15rem;
@@ -117,6 +129,104 @@
 .blog-list-card .bl-auth {
   font-weight: 700;
   color: var(--ink-2);
+}
+
+/* Featured Post styles */
+.featured-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  margin-bottom: 40px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+.featured-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(181, 72, 58, 0.1), 0 0 0 1px var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+.featured-cover {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  display: block;
+}
+.featured-card:hover .featured-cover {
+  transform: scale(1.03);
+}
+.featured-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.featured-tag {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.featured-title {
+  font-size: 1.6rem;
+  font-weight: 850;
+  line-height: 1.3;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.featured-excerpt {
+  font-size: 0.96rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.featured-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+/* Article detail view cover */
+.art-cover-wrap {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  border: 1px solid var(--line);
+}
+.art-cover {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .featured-card {
+    grid-template-columns: 1fr;
+  }
+  .featured-cover {
+    height: 200px;
+  }
+  .featured-content {
+    padding: 24px;
+  }
 }
 </style>
 </head>
@@ -245,6 +355,7 @@ async function taiBaiViet(){
   document.title = bPost.title + ' — Blog VinhMath';
 
   var ava = '<div class="art-ava" style="background:' + mauTen(bPost.author_name) + '">' + chuCai(bPost.author_name) + '</div>';
+  var coverHtml = bPost.cover_url ? '<div class="art-cover-wrap"><img class="art-cover" src="' + blogEsc(bPost.cover_url) + '" alt=""></div>' : '';
   box.innerHTML =
     '<article>' +
       '<div class="art-head">' +
@@ -252,6 +363,7 @@ async function taiBaiViet(){
         '<h1>' + blogEsc(bPost.title) + '</h1>' +
         '<div class="art-meta">' + ava + '<div><b>' + blogEsc(bPost.author_name || 'Thầy Vinh') + '</b><div style="font-size:.78rem;color:var(--ink-3)">' + khiNao(bPost.created_at) + '</div></div></div>' +
       '</div>' +
+      coverHtml +
       '<div class="article" id="artBody"></div>' +
     '</article>' +
     '<div class="blog-actions">' +
@@ -403,39 +515,84 @@ async function taiDanhSachBlog() {
       return;
     }
 
-    html += '<div class="blog-grid">';
-    html += ds.map(function(p) {
-      var d = new Date(p.created_at).toLocaleDateString('vi-VN');
-      var isDraft = !p.published;
-      
-      var adminActionsHtml = '';
-      if (laAdmin && !viewAsStudent) {
-        adminActionsHtml = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
-          '<a href="viet-blog?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
-          '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + p.id + '\')">🗑️ Xoá</button>' +
-        '</div>';
-      }
+    // Tách bài viết đầu tiên làm Bài viết nổi bật (Featured Post)
+    var featuredPost = ds[0];
+    var gridPosts = ds.slice(1);
 
-      var cover = p.cover_url ? '<img class="bl-cover" src="' + blogEsc(p.cover_url) + '" alt="" loading="lazy">' : '';
-      return '<div class="blog-list-card' + (cover ? ' has-cover' : '') + '" onclick="window.location.href=\'blog?id=' + p.id + '\'" style="cursor:pointer">' +
-        cover +
-        '<div>' +
-          (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
-          '<div class="bl-title">' + blogEsc(p.title) + '</div>' +
-          '<div class="bl-excerpt">' + blogEsc(p.excerpt || '') + '</div>' +
-        '</div>' +
-        '<div>' +
-          '<div class="bl-meta">' +
-            '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Vinh') + '</span>' +
-            '<span>' + d + '</span>' +
-            '<span style="margin-left:auto">❤️ ' + (likeMap[p.id] || 0) + '</span>' +
-            '<span style="margin-left:8px">💬 ' + (cmtMap[p.id] || 0) + '</span>' +
-          '</div>' +
-          adminActionsHtml +
-        '</div>' +
+    // Render bài viết nổi bật
+    var featDate = new Date(featuredPost.created_at).toLocaleDateString('vi-VN');
+    var featDraft = !featuredPost.published;
+    var featAdminActions = '';
+    if (laAdmin && !viewAsStudent) {
+      featAdminActions = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
+        '<a href="viet-blog?id=' + featuredPost.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + featuredPost.id + '\')">🗑️ Xoá</button>' +
       '</div>';
-    }).join('');
-    html += '</div>';
+    }
+
+    var featCover = featuredPost.cover_url 
+      ? '<div style="overflow:hidden"><img class="featured-cover" src="' + blogEsc(featuredPost.cover_url) + '" alt="" loading="lazy"></div>'
+      : '';
+
+    html += '<div class="featured-card" onclick="window.location.href=\'blog?id=' + featuredPost.id + '\'">' +
+      featCover +
+      '<div class="featured-content">' +
+        '<span class="featured-tag">🔥 Nổi bật</span>' +
+        (featDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
+        '<h2 class="featured-title">' + blogEsc(featuredPost.title) + '</h2>' +
+        '<p class="featured-excerpt">' + blogEsc(featuredPost.excerpt || '') + '</p>' +
+        '<div>' +
+          '<div class="featured-meta">' +
+            '<span class="bl-auth">' + blogEsc(featuredPost.author_name || 'Thầy Vinh') + '</span>' +
+            '<span>' + featDate + '</span>' +
+            '<span style="margin-left:auto">❤️ ' + (likeMap[featuredPost.id] || 0) + '</span>' +
+            '<span style="margin-left:8px">💬 ' + (cmtMap[featuredPost.id] || 0) + '</span>' +
+          '</div>' +
+          featAdminActions +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    // Render danh sách còn lại dưới dạng Grid
+    if (gridPosts.length > 0) {
+      html += '<div class="blog-grid">';
+      html += gridPosts.map(function(p) {
+        var d = new Date(p.created_at).toLocaleDateString('vi-VN');
+        var isDraft = !p.published;
+        
+        var adminActionsHtml = '';
+        if (laAdmin && !viewAsStudent) {
+          adminActionsHtml = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
+            '<a href="viet-blog?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
+            '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + p.id + '\')">🗑️ Xoá</button>' +
+          '</div>';
+        }
+
+        var cover = p.cover_url 
+          ? '<div class="bl-cover-wrap"><img class="bl-cover" src="' + blogEsc(p.cover_url) + '" alt="" loading="lazy"></div>'
+          : '';
+        return '<div class="blog-list-card' + (p.cover_url ? ' has-cover' : '') + '" onclick="window.location.href=\'blog?id=' + p.id + '\'" style="cursor:pointer">' +
+          cover +
+          '<div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">' +
+            '<div>' +
+              (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
+              '<div class="bl-title">' + blogEsc(p.title) + '</div>' +
+              '<div class="bl-excerpt">' + blogEsc(p.excerpt || '') + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="bl-meta">' +
+                '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Vinh') + '</span>' +
+                '<span>' + d + '</span>' +
+                '<span style="margin-left:auto">❤️ ' + (likeMap[p.id] || 0) + '</span>' +
+                '<span style="margin-left:8px">💬 ' + (cmtMap[p.id] || 0) + '</span>' +
+              '</div>' +
+              adminActionsHtml +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      html += '</div>';
+    }
     box.innerHTML = html;
   } catch (err) {
     console.error("Lỗi tải danh sách blog:", err);
