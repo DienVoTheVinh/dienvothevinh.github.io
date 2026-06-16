@@ -1170,22 +1170,32 @@ async function taiCaiDatHeThongGlobal() {
       var canvasOpacity = dbCanvas ? dbCanvas.value : '0.25';
       var accent = dbAccent ? dbAccent.value : 'amber';
       
+      var isAdmin = (window.VM_USER_ROLE === 'admin');
+      
+      // Nếu là admin, đồng bộ giá trị từ DB. 
+      // Nếu không phải admin, ưu tiên giá trị từ localStorage (nếu có).
+      var finalTheme = (isAdmin || localStorage.getItem('vm-theme') === null) ? theme : localStorage.getItem('vm-theme');
+      var finalTrans = (isAdmin || localStorage.getItem('vm-transparency') === null) ? transparency : localStorage.getItem('vm-transparency');
+      var finalBlur = (isAdmin || localStorage.getItem('vm-blur') === null) ? blur : localStorage.getItem('vm-blur');
+      var finalCanvasOpacity = (isAdmin || localStorage.getItem('vm-canvas-opacity') === null) ? canvasOpacity : localStorage.getItem('vm-canvas-opacity');
+      var finalAccent = accent; // Màu accent luôn đồng bộ từ DB cho tất cả tài khoản
+      
       // Áp dụng styles hệ thống
-      root.setAttribute('data-theme', theme);
-      root.style.setProperty('--glass-opacity', transparency);
-      root.style.setProperty('--glass-blur-radius', blur + 'px');
-      root.style.setProperty('--canvas-opacity', canvasOpacity);
-      apdungMauAccent(root, accent, theme === 'dark');
+      root.setAttribute('data-theme', finalTheme);
+      root.style.setProperty('--glass-opacity', finalTrans);
+      root.style.setProperty('--glass-blur-radius', finalBlur + 'px');
+      root.style.setProperty('--canvas-opacity', finalCanvasOpacity);
+      apdungMauAccent(root, finalAccent, finalTheme === 'dark');
       
       // Đồng bộ vào localStorage để load nhanh cho lần sau
-      localStorage.setItem('vm-theme', theme);
-      localStorage.setItem('vm-transparency', transparency);
-      localStorage.setItem('vm-blur', blur);
-      localStorage.setItem('vm-canvas-opacity', canvasOpacity);
-      localStorage.setItem('vm-accent', accent);
+      localStorage.setItem('vm-theme', finalTheme);
+      localStorage.setItem('vm-transparency', finalTrans);
+      localStorage.setItem('vm-blur', finalBlur);
+      localStorage.setItem('vm-canvas-opacity', finalCanvasOpacity);
+      localStorage.setItem('vm-accent', finalAccent);
       
       // Đồng bộ các controls UI ở CC
-      capNhatCCUI(theme, transparency, blur, canvasOpacity, accent);
+      capNhatCCUI(finalTheme, finalTrans, finalBlur, finalCanvasOpacity, finalAccent);
     }
   } catch (e) {
     console.error("Lỗi taiCaiDatHeThongGlobal:", e);
@@ -1249,60 +1259,69 @@ function dangKyRealtimeCaiDatHeThong() {
         var row = payload.new;
         var root = document.documentElement;
         var theme = root.getAttribute('data-theme') || 'dark';
+        var isAdmin = (window.VM_USER_ROLE === 'admin');
         
         if (row.key === 'theme_theme') {
-          theme = row.value;
-          root.setAttribute('data-theme', theme);
-          localStorage.setItem('vm-theme', theme);
-          
-          var activeColor = localStorage.getItem('vm-accent') || 'amber';
-          apdungMauAccent(root, activeColor, theme === 'dark');
-          
-          var ccLight = document.getElementById('ccBtnLight');
-          var ccDark = document.getElementById('ccBtnDark');
-          if (ccLight && ccDark) {
-            if (theme === 'dark') {
-              ccDark.classList.add('active');
-              ccLight.classList.remove('active');
-            } else {
-              ccLight.classList.add('active');
-              ccDark.classList.remove('active');
+          if (isAdmin || localStorage.getItem('vm-theme') === null) {
+            theme = row.value;
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('vm-theme', theme);
+            
+            var activeColor = localStorage.getItem('vm-accent') || 'amber';
+            apdungMauAccent(root, activeColor, theme === 'dark');
+            
+            var ccLight = document.getElementById('ccBtnLight');
+            var ccDark = document.getElementById('ccBtnDark');
+            if (ccLight && ccDark) {
+              if (theme === 'dark') {
+                ccDark.classList.add('active');
+                ccLight.classList.remove('active');
+              } else {
+                ccLight.classList.add('active');
+                ccDark.classList.remove('active');
+              }
+            }
+            capNhatNutTheme();
+            try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
+          }
+        } else if (row.key === 'theme_transparency') {
+          if (isAdmin || localStorage.getItem('vm-transparency') === null) {
+            var val = row.value;
+            root.style.setProperty('--glass-opacity', val);
+            localStorage.setItem('vm-transparency', val);
+            
+            var sldOpacity = document.getElementById('sldOpacity');
+            var lblOpacity = document.getElementById('lblOpacity');
+            if (sldOpacity) {
+              sldOpacity.value = val;
+              if (lblOpacity) lblOpacity.textContent = Math.round(val * 100) + '%';
             }
           }
-          capNhatNutTheme();
-          try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
-        } else if (row.key === 'theme_transparency') {
-          var val = row.value;
-          root.style.setProperty('--glass-opacity', val);
-          localStorage.setItem('vm-transparency', val);
-          
-          var sldOpacity = document.getElementById('sldOpacity');
-          var lblOpacity = document.getElementById('lblOpacity');
-          if (sldOpacity) {
-            sldOpacity.value = val;
-            if (lblOpacity) lblOpacity.textContent = Math.round(val * 100) + '%';
-          }
         } else if (row.key === 'theme_canvas_opacity') {
-          var val = row.value;
-          root.style.setProperty('--canvas-opacity', val);
-          localStorage.setItem('vm-canvas-opacity', val);
-          
-          var sldCanvasOpacity = document.getElementById('sldCanvasOpacity');
-          var lblCanvasOpacity = document.getElementById('lblCanvasOpacity');
-          if (sldCanvasOpacity) {
-            sldCanvasOpacity.value = val;
-            if (lblCanvasOpacity) lblCanvasOpacity.textContent = Math.round(val * 100) + '%';
+          if (isAdmin || localStorage.getItem('vm-canvas-opacity') === null) {
+            var val = row.value;
+            root.style.setProperty('--canvas-opacity', val);
+            localStorage.setItem('vm-canvas-opacity', val);
+            
+            var sldCanvasOpacity = document.getElementById('sldCanvasOpacity');
+            var lblCanvasOpacity = document.getElementById('lblCanvasOpacity');
+            if (sldCanvasOpacity) {
+              sldCanvasOpacity.value = val;
+              if (lblCanvasOpacity) lblCanvasOpacity.textContent = Math.round(val * 100) + '%';
+            }
           }
         } else if (row.key === 'theme_blur') {
-          var val = row.value;
-          root.style.setProperty('--glass-blur-radius', val + 'px');
-          localStorage.setItem('vm-blur', val);
-          
-          var sldBlur = document.getElementById('sldBlur');
-          var lblBlur = document.getElementById('lblBlur');
-          if (sldBlur) {
-            sldBlur.value = val;
-            if (lblBlur) lblBlur.textContent = val + 'px';
+          if (isAdmin || localStorage.getItem('vm-blur') === null) {
+            var val = row.value;
+            root.style.setProperty('--glass-blur-radius', val + 'px');
+            localStorage.setItem('vm-blur', val);
+            
+            var sldBlur = document.getElementById('sldBlur');
+            var lblBlur = document.getElementById('lblBlur');
+            if (sldBlur) {
+              sldBlur.value = val;
+              if (lblBlur) lblBlur.textContent = val + 'px';
+            }
           }
         } else if (row.key === 'theme_accent') {
           var val = row.value;
@@ -1340,20 +1359,8 @@ function apDungQuyenThemeControlCenter(role) {
 }
 
 async function khoiDongTrang() {
-  // 1. Khởi tạo Control Center cơ bản
-  khoiTaoControlCenter();
-  capNhatNutTheme();
-  themNutChupManHinh();
-  
-  // 2. Tải cài đặt AI
-  await tailaiCaiDatAI();
-  dangKyRealtimeAI();
-  
-  // 3. Tải cài đặt giao diện hệ thống toàn cục và đăng ký realtime
-  await taiCaiDatHeThongGlobal();
-  dangKyRealtimeCaiDatHeThong();
-  
-  // 4. Kiểm tra vai trò để phân quyền điều khiển giao diện hệ thống và cài đặt AI
+  // 1. Xác định vai trò người dùng trước tiên để phục vụ phân quyền và đồng bộ theme
+  window.VM_USER_ROLE = 'guest';
   if (daKetNoi()) {
     try {
       var s = await sb.auth.getSession();
@@ -1361,22 +1368,30 @@ async function khoiDongTrang() {
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
         if (rp.data) {
           window.VM_USER_ROLE = rp.data.role;
-          apDungQuyenThemeControlCenter(window.VM_USER_ROLE);
-          if (window.VM_USER_ROLE === 'admin') {
-            themAdminControlsVaoCC();
-          }
-        } else {
-          apDungQuyenThemeControlCenter('student');
         }
-      } else {
-        apDungQuyenThemeControlCenter('guest');
       }
     } catch (e) {
-      console.error("Lỗi check role:", e);
-      apDungQuyenThemeControlCenter('guest');
+      console.error("Lỗi check role ban đầu:", e);
     }
-  } else {
-    apDungQuyenThemeControlCenter('guest');
+  }
+
+  // 2. Khởi tạo Control Center cơ bản
+  khoiTaoControlCenter();
+  capNhatNutTheme();
+  themNutChupManHinh();
+  
+  // 3. Tải cài đặt AI
+  await tailaiCaiDatAI();
+  dangKyRealtimeAI();
+  
+  // 4. Tải cài đặt giao diện hệ thống toàn cục và đăng ký realtime
+  await taiCaiDatHeThongGlobal();
+  dangKyRealtimeCaiDatHeThong();
+  
+  // 5. Áp dụng phân quyền UI
+  apDungQuyenThemeControlCenter(window.VM_USER_ROLE);
+  if (window.VM_USER_ROLE === 'admin') {
+    themAdminControlsVaoCC();
   }
 }
 
