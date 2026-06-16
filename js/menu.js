@@ -44,13 +44,19 @@ function apDungMenu(role) {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
       { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
-      { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
-      { type: 'link', path: 'tai-lieu', label: 'Tài liệu' },
-      { type: 'link', path: 'lich-hoc', label: 'Lịch học' },
-      { type: 'link', path: 'luyen-de', label: 'Luyện đề' },
-      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
-      { type: 'link', path: 'blog', label: 'Blog' },
+      {
+        type: 'dropdown',
+        label: 'Học tập ▾',
+        items: [
+          { path: 'lop-hoc', label: 'Lớp học' },
+          { path: 'luyen-de', label: 'Luyện đề' },
+          { path: 'tai-lieu', label: 'Tài liệu' },
+          { path: 'lich-hoc', label: 'Lịch học' },
+          { path: 'goc-tu-hoc', label: '🌳 Góc tự học' }
+        ]
+      },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
+      { type: 'link', path: 'blog', label: 'Blog' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
@@ -77,6 +83,8 @@ function apDungMenu(role) {
         } else if (sub.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
           isSubActive = true;
         } else if (sub.path === 'quan-tri-tai-lieu' && trang === 'tai-lieu') {
+          isSubActive = true;
+        } else if (sub.path === 'lop-hoc' && trang === 'bai-hoc') {
           isSubActive = true;
         }
         
