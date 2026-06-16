@@ -32,12 +32,14 @@ function apDungMenu(role) {
         ].filter(Boolean)
       },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
+      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ].filter(Boolean);
   } else if (role === 'parent') {
     // ----- MENU CỦA PHỤ HUYNH -----
     muc = [
       { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
+      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' }
     ];
   } else {
