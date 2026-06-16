@@ -416,8 +416,9 @@ function dinhDangThoiGian(d) {
   studentInfo = await yeuCauDangNhap();
   if (!studentInfo) return;
   
+  var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
   var classIds = (studentInfo.class_students || []).map(function (c) { return c.class_id; });
-  if (classIds.length === 0) {
+  if (classIds.length === 0 && !isStaff) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('labelKhuVuc').textContent = 'Luyện đề & Thi thử';
@@ -426,20 +427,44 @@ function dinhDangThoiGian(d) {
   }
   
   await taiDanhSachDe(classIds);
+  
+  // Tự động mở đề thi từ tham số URL nếu có (dành cho Giáo viên/Admin xem thử kiểu học sinh)
+  var params = new URLSearchParams(window.location.search);
+  var autoExamId = params.get('exam_id');
+  if (autoExamId) {
+    var exExists = listExams.some(function (e) { return e.id === autoExamId; });
+    if (!exExists) {
+      try {
+        var rSingle = await sb.from('exams').select('*').eq('id', autoExamId).single();
+        if (rSingle.data) {
+          listExams.push(rSingle.data);
+          startExam(autoExamId);
+        }
+      } catch (e) {
+        console.error('Lỗi tải đề tự động:', e);
+      }
+    } else {
+      startExam(autoExamId);
+    }
+  }
 })();
 
 async function taiDanhSachDe(classIds) {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
+  
+  var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
   
   // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
   var query = sb.from('exams')
     .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, exam_questions(count)')
     .eq('published', true);
     
-  if (classIds && classIds.length > 0) {
-    query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
-  } else {
-    query = query.is('class_id', null);
+  if (!isStaff) {
+    if (classIds && classIds.length > 0) {
+      query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
+    } else {
+      query = query.is('class_id', null);
+    }
   }
   
   var r = await query.order('created_at', { ascending: false });
@@ -473,6 +498,9 @@ async function taiDanhSachDe(classIds) {
     
     // Kiểm tra thời gian mở/đóng đề
     var tg = kiemTraThoiGianDe(e);
+    if (isStaff) {
+      tg = { status: 'open', msg: 'Đang mở' };
+    }
     
     var badgeHTML = '<span class="badge badge-mute">Chưa làm</span>';
     var actionBtnText = 'Làm bài';
@@ -535,6 +563,10 @@ async function startExam(examId) {
   
   // Kiểm tra thời khóa biểu đề thi
   var tg = kiemTraThoiGianDe(ex);
+  var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
+  if (isStaff) {
+    tg = { status: 'open', msg: 'Đang mở' };
+  }
   if (tg.status === 'coming') {
     alert('Đề thi này chưa đến giờ mở: ' + dinhDangThoiGian(tg.time));
     return;

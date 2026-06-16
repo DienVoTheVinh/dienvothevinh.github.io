@@ -26,6 +26,8 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 .q-preview-choice.correct { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 600; }
 .q-preview-sol { margin-top: 10px; padding: 10px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .85rem; }
 .empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
+#vungPreview { position: sticky; top: 80px; max-height: calc(100vh - 120px); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 18px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
+#dsPreview { flex: 1; overflow-y: auto; padding-right: 6px; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -125,8 +127,11 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
     <div style="display:flex; flex-direction:column; gap:24px">
       <!-- Xem thử câu hỏi bóc tách -->
       <div id="vungPreview" style="display:none">
-        <h3 style="margin-bottom:12px">👁️ Xem trước câu hỏi bóc tách (<span id="previewCount">0</span> câu)</h3>
-        <div id="dsPreview" style="max-height: 480px; overflow-y: auto; padding-right: 6px"></div>
+        <h3 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line-2); padding-bottom:10px; margin-bottom:0; font-size:1.05rem">
+          <span>👁️ Xem trước hiển thị</span>
+          <small style="font-size:0.8rem; font-weight:500; color:var(--ink-2)" id="previewCountLabel"></small>
+        </h3>
+        <div id="dsPreview"></div>
       </div>
 
       <!-- Danh sách đề đã tạo -->
@@ -197,7 +202,8 @@ async function taiDanhSachDe() {
           'Lớp: ' + classLabel + ' · Thời gian: ' + e.duration_minutes + ' phút · Số câu: ' + countQ +
         '</div>' +
       '</div>' +
-      '<div>' +
+      '<div style="display:flex; gap:8px; align-items:center">' +
+        '<a href="luyen-de?exam_id=' + e.id + '" target="_blank" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">👁️ Xem kiểu HS</a>' +
         '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="event.stopPropagation(); xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
       '</div>' +
       '</div>';
@@ -214,76 +220,120 @@ async function xoaDeThi(id) {
 
 
 function demoParseLaTeX() {
-  var raw = $('exLatex').value;
-  parsedQuestions = parseLatexQuestions(raw);
+  var type = ($('exType') && $('exType').value) || 'mc';
+  var essayPrompt = $('exEssayPrompt') ? $('exEssayPrompt').value.trim() : '';
+  var rawMc = $('exLatex') ? $('exLatex').value.trim() : '';
   
-  if (!parsedQuestions.length) {
-    if (!window.__liveParse) alert('Không tìm thấy câu hỏi nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
-    $('vungPreview').style.display = 'none';
-    capNhatNutLuu();
-    return;
-  }
+  var html = '';
+  var totalCountQ = 0;
   
-  $('previewCount').textContent = parsedQuestions.length;
-  $('vungPreview').style.display = 'block';
-  capNhatNutLuu();
-  
-  $('dsPreview').innerHTML = parsedQuestions.map(function (q, idx) {
-    var typeText = "";
-    var choicesHTML = "";
-    
-    var isTF = q.choices.length === 4 && q.choices[0].key === 'a';
-    var isShort = q.choices.length === 1 && q.choices[0].key === 'short';
-    
-    if (isShort) {
-      typeText = " (Phần III - Trả lời ngắn)";
-      choicesHTML = '<div class="q-preview-choice correct"><b>Đáp số đúng:</b> ' + latexRaHTML(q.choices[0].latex) + '</div>';
-    } else if (isTF) {
-      typeText = " (Phần II - Đúng / Sai)";
-      choicesHTML = q.choices.map(function (c) {
-        var marker = c.correct ? '<span style="color:var(--ok);font-weight:bold">ĐÚNG</span>' : '<span style="color:var(--err);font-weight:bold">SAI</span>';
-        return '<div class="q-preview-choice">' +
-          '<b>' + c.key + ')</b> ' + latexRaHTML(c.latex) + ' &rarr; ' + marker +
+  // 1. Render tự luận
+  if ((type === 'essay' || type === 'combo') && essayPrompt) {
+    var qs = parseLatexQuestions(essayPrompt);
+    html += '<div style="margin-bottom: 20px; border: 2px solid var(--accent); border-radius: var(--r-md); padding: 16px; background: var(--surface);">';
+    html += '<div style="font-size:0.95rem; font-weight:700; color:var(--accent); border-bottom:1px solid var(--line-2); padding-bottom:6px; margin-bottom:12px">📝 XEM TRƯỚC TỰ LUẬN</div>';
+    if (qs && qs.length > 0) {
+      html += qs.map(function (q, idx) {
+        return '<div style="margin-bottom:12px; border-bottom:1px dashed var(--line-2); padding-bottom:12px">' +
+          '<b>Câu ' + (idx + 1) + ':</b> ' + latexRaHTML(q.content_latex) +
+          (q.solution_latex ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>' : '') +
           '</div>';
       }).join('');
     } else {
-      typeText = " (Phần I - Trắc nghiệm)";
-      choicesHTML = q.choices.map(function (c) {
-        var correctClass = c.correct ? ' correct' : '';
-        return '<div class="q-preview-choice' + correctClass + '">' +
-          '<b>' + c.key + '.</b> ' + latexRaHTML(c.latex) +
+      html += '<div style="line-height:1.6; font-size:.95rem">' + latexRaHTML(essayPrompt) + '</div>';
+    }
+    html += '</div>';
+  }
+  
+  // 2. Render trắc nghiệm
+  parsedQuestions = [];
+  if (type === 'mc' || type === 'combo') {
+    parsedQuestions = parseLatexQuestions(rawMc);
+    totalCountQ = parsedQuestions.length;
+    if (parsedQuestions.length > 0) {
+      html += '<div style="border: 2px solid var(--ok); border-radius: var(--r-md); padding: 16px; background: var(--surface);">';
+      html += '<div style="font-size:0.95rem; font-weight:700; color:var(--ok); border-bottom:1px solid var(--line-2); padding-bottom:6px; margin-bottom:12px">📋 XEM TRƯỚC TRẮC NGHIỆM (' + parsedQuestions.length + ' câu)</div>';
+      html += parsedQuestions.map(function (q, idx) {
+        var typeText = "";
+        var choicesHTML = "";
+        
+        var isTF = q.choices.length === 4 && q.choices[0].key === 'a';
+        var isShort = q.choices.length === 1 && q.choices[0].key === 'short';
+        
+        if (isShort) {
+          typeText = " (Trả lời ngắn)";
+          choicesHTML = '<div class="q-preview-choice correct"><b>Đáp số đúng:</b> ' + latexRaHTML(q.choices[0].latex) + '</div>';
+        } else if (isTF) {
+          typeText = " (Đúng / Sai)";
+          choicesHTML = q.choices.map(function (c) {
+            var marker = c.correct ? '<span style="color:var(--ok);font-weight:bold">ĐÚNG</span>' : '<span style="color:var(--err);font-weight:bold">SAI</span>';
+            return '<div class="q-preview-choice">' +
+              '<b>' + c.key + ')</b> ' + latexRaHTML(c.latex) + ' &rarr; ' + marker +
+              '</div>';
+          }).join('');
+        } else {
+          typeText = " (Trắc nghiệm)";
+          choicesHTML = q.choices.map(function (c) {
+            var correctClass = c.correct ? ' correct' : '';
+            return '<div class="q-preview-choice' + correctClass + '">' +
+              '<b>' + c.key + '.</b> ' + latexRaHTML(c.latex) +
+              '</div>';
+          }).join('');
+        }
+
+        var solHTML = q.solution_latex
+          ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>'
+          : '';
+
+        return '<div class="q-preview-card">' +
+          '<div class="q-preview-title">Câu ' + (idx + 1) + typeText + '</div>' +
+          '<div style="margin-bottom:10px">' + latexRaHTML(q.content_latex) + '</div>' +
+          choicesHTML + solHTML +
           '</div>';
       }).join('');
+      html += '</div>';
+    } else {
+      if (rawMc && !window.__liveParse) {
+        alert('Không tìm thấy câu hỏi trắc nghiệm nào dạng \\begin{ex}...\\end{ex} hoặc \\begin{bt}...\\end{bt} trong đoạn code dán vào.');
+      }
     }
-
-    var solHTML = q.solution_latex
-      ? '<div class="q-preview-sol"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>'
-      : '';
-
-    return '<div class="q-preview-card">' +
-      '<div class="q-preview-title">Câu ' + (idx + 1) + typeText + '</div>' +
-      '<div style="margin-bottom:10px">' + latexRaHTML(q.content_latex) + '</div>' +
-      choicesHTML + solHTML +
-      '</div>';
-  }).join('');
+  }
+  
+  if (html) {
+    $('dsPreview').innerHTML = html;
+    $('vungPreview').style.display = 'flex';
+  } else {
+    $('vungPreview').style.display = 'none';
+  }
+  
+  // Cập nhật nhãn số lượng câu
+  var textLabel = "";
+  if (type === 'essay') textLabel = "Tự luận";
+  else if (type === 'combo') textLabel = "Tự luận + " + totalCountQ + " câu TN";
+  else textLabel = totalCountQ + " câu trắc nghiệm";
+  $('previewCountLabel').textContent = textLabel;
+  
+  capNhatNutLuu();
   renderToanTrong($('dsPreview')); // vẽ công thức toán bằng KaTeX
 }
 
 // ===== BIÊN DỊCH TRỰC TIẾP: gõ tới đâu hiện xem trước tới đó =====
 (function () {
   var ta = document.getElementById('exLatex');
-  if (!ta) return;
+  var ep = document.getElementById('exEssayPrompt');
   var hen;
-  ta.addEventListener('input', function () {
+  
+  function chayLive() {
     clearTimeout(hen);
     hen = setTimeout(function () {
       window.__liveParse = true;
       try { demoParseLaTeX(); } catch (e) {}
       window.__liveParse = false;
     }, 350);
-  });
-  var ep = document.getElementById('exEssayPrompt');
-  if (ep) ep.addEventListener('input', capNhatNutLuu);
+  }
+  
+  if (ta) ta.addEventListener('input', chayLive);
+  if (ep) ep.addEventListener('input', chayLive);
 })();
 
 // Hình thức đề: ẩn/hiện ô tự luận và ô LaTeX
@@ -291,7 +341,7 @@ function capNhatHinhThucDe() {
   var type = ($('exType') && $('exType').value) || 'mc';
   if ($('wrapEssayPrompt')) $('wrapEssayPrompt').style.display = (type === 'essay' || type === 'combo') ? 'block' : 'none';
   if ($('wrapLatex')) $('wrapLatex').style.display = (type === 'mc' || type === 'combo') ? 'block' : 'none';
-  capNhatNutLuu();
+  demoParseLaTeX();
 }
 
 // Bật/tắt nút Lưu theo hình thức: tự luận cần đề bài; (kết hợp/trắc nghiệm) cần >=1 câu
@@ -374,12 +424,7 @@ async function loadExamForEdit(examId) {
     });
     
     $('exLatex').value = latexArr.join('\n\n');
-    if (exam.de_type !== 'essay') {
-      demoParseLaTeX();
-    } else {
-      $('vungPreview').style.display = 'none';
-      if (typeof capNhatNutLuu === 'function') capNhatNutLuu();
-    }
+    demoParseLaTeX();
   } catch (err) {
     alert('Lỗi tải đề thi: ' + err.message);
     cancelEditExam();
