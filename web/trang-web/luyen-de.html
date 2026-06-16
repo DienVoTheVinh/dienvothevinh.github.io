@@ -563,10 +563,25 @@ function runTimer() {
 
 /* ===== PHẦN TỰ LUẬN: học sinh chụp ảnh nộp lên (qua trạm nop-bai, theo exam_id) ===== */
 function veKhuTuLuan(ex) {
+  var promptHTML = '';
+  if (ex.essay_prompt) {
+    var qs = parseLatexQuestions(ex.essay_prompt);
+    if (qs && qs.length > 0) {
+      promptHTML = qs.map(function (q, idx) {
+        var qNum = 'Câu ' + (idx + 1);
+        return '<div style="margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px">' +
+          '<div class="q-title" style="font-weight:700;margin-bottom:8px">' + qNum + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+          '</div>';
+      }).join('');
+    } else {
+      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(ex.essay_prompt) + '</div>';
+    }
+  }
+
   return '<div class="q-box" id="khuTuLuan" style="border:2px solid var(--accent)">' +
       '<div class="part-header">📝 Phần tự luận — Nộp ảnh bài làm cho thầy chấm</div>' +
-      (ex.essay_prompt ? '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(ex.essay_prompt) + '</div>' : '') +
-      '<div style="margin-top:10px">' +
+      '<div id="khuTuLuanPrompt" style="margin-bottom:15px">' + promptHTML + '</div>' +
+      '<div style="margin-top:10px;padding-top:15px;border-top:1px solid var(--line-2)">' +
         '<label style="display:block;font-size:.875rem;font-weight:600;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>' +
         '<input type="file" id="tlFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">' +
         '<button class="btn btn-primary" id="tlGui" onclick="guiTuLuan()" style="margin-top:10px">📤 Nộp ảnh bài làm</button>' +
@@ -587,7 +602,7 @@ function moPhongTuLuan(ex) {
   if ($('wkExitBtn')) $('wkExitBtn').style.display = 'inline-flex';
   if ($('wkNavQuestions')) $('wkNavQuestions').innerHTML = '';
   $('wkQuestions').innerHTML = veKhuTuLuan(ex);
-  renderMathInElement($('wkQuestions'), { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}], throwOnError: false });
+  renderToanTrong($('wkQuestions'));
   taiTuLuanDaNop();
 }
 
@@ -595,7 +610,7 @@ function themKhuTuLuan(ex) {
   var c = $('wkQuestions');
   if (!c) return;
   c.insertAdjacentHTML('beforeend', veKhuTuLuan(ex));
-  renderMathInElement(c, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}], throwOnError: false });
+  renderToanTrong(c);
   taiTuLuanDaNop();
 }
 
@@ -627,6 +642,31 @@ async function taiTuLuanDaNop() {
     .eq('exam_id', currentExam.id).eq('student_id', studentInfo.id)
     .order('submitted_at', { ascending: false });
   var ds = r.data || [];
+  
+  if (ds.length > 0) {
+    var promptContainer = $('khuTuLuanPrompt');
+    if (promptContainer) {
+      var qs = parseLatexQuestions(currentExam.essay_prompt);
+      if (qs && qs.length > 0) {
+        promptContainer.innerHTML = qs.map(function (q, idx) {
+          var qNum = 'Câu ' + (idx + 1);
+          var solHTML = '';
+          if (q.solution_latex) {
+            solHTML = '<div class="sol-panel" style="margin-top:10px;padding:12px;background:rgba(var(--surface-rgb), 0.5);border:1px dashed var(--accent);border-radius:var(--r-sm)">' +
+              '<div style="font-weight: 700; color: var(--accent); margin-bottom: 6px;">📖 Hướng dẫn giải chi tiết:</div>' +
+              '<div>' + latexRaHTML(q.solution_latex) + '</div>' +
+              '</div>';
+          }
+          return '<div style="margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px">' +
+            '<div class="q-title" style="font-weight:700;margin-bottom:8px">' + qNum + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+            solHTML +
+            '</div>';
+        }).join('');
+        renderToanTrong(promptContainer);
+      }
+    }
+  }
+
   if (!ds.length) { box.innerHTML = ''; return; }
   box.innerHTML = '<div style="font-size:.85rem;font-weight:600;margin:10px 0 6px">Bài em đã nộp:</div>' +
     ds.map(function (s) {
@@ -787,15 +827,7 @@ function renderExamQuestions(isSubmitted) {
     }
   }).join('');
   
-  renderMathInElement(container, {
-    delimiters: [
-      {left: '$$', right: '$$', display: true},
-      {left: '$', right: '$', display: false},
-      {left: '\\(', right: '\\)', display: false},
-      {left: '\\[', right: '\\]', display: true}
-    ],
-    throwOnError: false
-  });
+  renderToanTrong(container);
 }
 
 function renderExamNav(isSubmitted) {

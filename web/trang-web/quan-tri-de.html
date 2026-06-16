@@ -211,135 +211,7 @@ async function xoaDeThi(id) {
   else await taiDanhSachDe();
 }
 
-/* ----- Trình biên dịch LaTeX Parser ----- */
-function parseLatexQuestions(latexText) {
-  // Bỏ các dòng chú thích %... trước khi bóc tách (giữ \%)
-  latexText = lamSachLatex(latexText);
-  function parseBraces(text, count) {
-    var blocks = [];
-    var index = 0;
-    for (var b = 0; b < count; b++) {
-      var start = text.indexOf('{', index);
-      if (start === -1) break;
-      var braceCount = 1;
-      var i = start + 1;
-      while (i < text.length && braceCount > 0) {
-        if (text[i] === '{') braceCount++;
-        else if (text[i] === '}') braceCount--;
-        i++;
-      }
-      blocks.push(text.substring(start + 1, i - 1));
-      index = i;
-    }
-    return blocks;
-  }
 
-  // Tìm tất cả khối \begin{ex} ... \end{ex} hoặc \begin{bt} ... \end{bt}
-  var regexEx = /\\begin\{(ex|bt)\}([\s\S]*?)\\end\{\1\}/g;
-  var match;
-  var questions = [];
-  
-  while ((match = regexEx.exec(latexText)) !== null) {
-    var envType = match[1];
-    var content = match[2];
-    
-    // 1. Tách lời giải \loigiai{...}
-    var solution = "";
-    var solIndex = content.indexOf('\\loigiai');
-    if (solIndex !== -1) {
-      var braceStart = content.indexOf('{', solIndex);
-      if (braceStart !== -1) {
-        var braceCount = 1;
-        var i = braceStart + 1;
-        while (i < content.length && braceCount > 0) {
-          if (content[i] === '{') braceCount++;
-          else if (content[i] === '}') braceCount--;
-          i++;
-        }
-        solution = content.substring(braceStart + 1, i - 1);
-        content = content.substring(0, solIndex) + content.substring(i);
-      }
-    }
-    
-    // 2. Tách các phương án trắc nghiệm
-    var choices = [];
-    var choiceTFIndex = content.indexOf('\\choiceTF');
-    var choiceIndex = content.indexOf('\\choice');
-    var questionBody = content;
-    
-    if (envType === 'bt') {
-      // Tự luận / Trả lời ngắn: Tìm đáp án trong lời giải
-      var ansMatch = solution.match(/\\textbf\{(Câu trả lời|Đáp số|Kết quả|Đáp án):?\}\s*([^\n}]+)/i);
-      if (ansMatch) {
-        var ansText = ansMatch[2].replace(/\.$/, '').trim();
-        choices.push({
-          key: 'short',
-          latex: ansText,
-          correct: true
-        });
-      }
-    } else {
-      // Môi trường ex: có thể là Trắc nghiệm hoặc Đúng/Sai
-      if (choiceTFIndex !== -1) {
-        questionBody = content.substring(0, choiceTFIndex).trim();
-        var remaining = content.substring(choiceTFIndex + 9);
-        var blocks = parseBraces(remaining, 4);
-        var keys = ['a', 'b', 'c', 'd'];
-        blocks.forEach(function (block, idx) {
-          var isCorrect = false;
-          var cleaned = block.trim();
-          if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
-            isCorrect = true;
-            cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
-          }
-          cleaned = cleaned.replace(/^[a-d][\.\)]\s*/i, ''); // xóa nhãn
-          choices.push({
-            key: keys[idx],
-            latex: cleaned,
-            correct: isCorrect
-          });
-        });
-      } else if (choiceIndex !== -1) {
-        questionBody = content.substring(0, choiceIndex).trim();
-        var remaining = content.substring(choiceIndex + 7);
-        var blocks = parseBraces(remaining, 4);
-        var keys = ['A', 'B', 'C', 'D'];
-        blocks.forEach(function (block, idx) {
-          var isCorrect = false;
-          var cleaned = block.trim();
-          if (cleaned.includes('\\True') || cleaned.includes('\\true')) {
-            isCorrect = true;
-            cleaned = cleaned.replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
-          }
-          cleaned = cleaned.replace(/^[A-D][\.\)]\s*/i, '');
-          choices.push({
-            key: keys[idx],
-            latex: cleaned,
-            correct: isCorrect
-          });
-        });
-      } else {
-        // Fallback: Nếu ex không có choice thì tìm câu trả lời ngắn trong lời giải
-        var ansMatch = solution.match(/\\textbf\{(Câu trả lời|Đáp số|Kết quả|Đáp án):?\}\s*([^\n}]+)/i);
-        if (ansMatch) {
-          var ansText = ansMatch[2].replace(/\.$/, '').trim();
-          choices.push({
-            key: 'short',
-            latex: ansText,
-            correct: true
-          });
-        }
-      }
-    }
-    
-    questions.push({
-      content_latex: questionBody.trim(),
-      choices: choices,
-      solution_latex: solution.trim()
-    });
-  }
-  return questions;
-}
 
 function demoParseLaTeX() {
   var raw = $('exLatex').value;
@@ -531,6 +403,41 @@ function cancelEditExam() {
   $('btnSave').disabled = true;
 }
 
+function parseDateTime(str) {
+  if (!str) return null;
+  str = str.trim();
+  var d = new Date(str);
+  if (!isNaN(d.getTime())) return d.toISOString();
+
+  var parts = str.split(/[\sT]+/);
+  var datePart = '';
+  var timePart = '00:00';
+  
+  parts.forEach(function (p) {
+    if (p.includes('/')) datePart = p;
+    else if (p.includes(':')) timePart = p;
+  });
+
+  if (datePart) {
+    var dateSegments = datePart.split('/');
+    if (dateSegments.length === 3) {
+      var day = parseInt(dateSegments[0], 10);
+      var month = parseInt(dateSegments[1], 10) - 1;
+      var year = parseInt(dateSegments[2], 10);
+      
+      var timeSegments = timePart.split(':');
+      var hours = parseInt(timeSegments[0], 10) || 0;
+      var minutes = parseInt(timeSegments[1], 10) || 0;
+      
+      var parsedDate = new Date(year, month, day, hours, minutes, 0);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString();
+      }
+    }
+  }
+  return null;
+}
+
 async function parseAndSaveExam(e) {
   e.preventDefault();
   var deType = ($('exType') && $('exType').value) || 'mc';
@@ -547,8 +454,8 @@ async function parseAndSaveExam(e) {
   var title = $('exTitle').value.trim();
   var duration = parseInt($('exDuration').value) || 90;
   var classId = $('exLop').value || null;
-  var opens = $('exOpens').value ? new Date($('exOpens').value).toISOString() : null;
-  var closes = $('exCloses').value ? new Date($('exCloses').value).toISOString() : null;
+  var opens = $('exOpens').value ? parseDateTime($('exOpens').value) : null;
+  var closes = $('exCloses').value ? parseDateTime($('exCloses').value) : null;
   var shuffle = $('exShuffle').checked;
   var published = $('exPublished').checked;
   
