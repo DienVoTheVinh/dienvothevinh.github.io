@@ -601,12 +601,15 @@ function renderPDFWithJS(pdfUrl, container) {
           canvasContainer.appendChild(canvas);
           
           pdf.getPage(num).then(function(page) {
-            var viewport = page.getViewport({ scale: 1.5 });
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
+            // Vẽ theo mật độ điểm ảnh màn hình (Retina) để PDF sắc nét như xem trực tiếp
+            var dpr = window.devicePixelRatio || 1;
+            var scale = Math.min(4, Math.max(2.5, 2 * dpr));
+            var viewport = page.getViewport({ scale: scale });
+            canvas.height = Math.floor(viewport.height);
+            canvas.width = Math.floor(viewport.width);
+
             var renderContext = {
-              canvasContext: canvas.getContext('2d'),
+              canvasContext: canvas.getContext('2d', { alpha: false }),
               viewport: viewport
             };
             page.render(renderContext);
