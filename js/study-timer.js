@@ -80,7 +80,26 @@
   }
   function removeWidget() { var w = document.getElementById('vmStudyWidget'); if (w) w.remove(); }
 
+  // Nếu trang có khung trung tâm (#vmStudyInline, vd trang Góc tự học) -> hiện bảng lớn ở đó,
+  // và KHÔNG hiện ô trôi nổi. Các trang khác mới dùng ô trôi nổi.
+  function inlineHost() { return document.getElementById('vmStudyInline'); }
+
+  function renderInline(host, s) {
+    var shown = s.mode === 'pomodoro' ? (s.targetSeconds - s.focusSeconds) : s.focusSeconds;
+    var tr = tree(s.focusSeconds, false);
+    host.style.display = 'block';
+    host.innerHTML =
+      '<div style="text-align:center;padding:34px 20px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--r-lg,16px);box-shadow:var(--shadow)">' +
+        '<div style="font-size:5.2rem;line-height:1">' + tr.e + '</div>' +
+        '<div style="font-size:3.6rem;font-weight:800;color:var(--ink,#111);font-variant-numeric:tabular-nums;margin-top:6px;letter-spacing:.02em">' + fmt(shown) + '</div>' +
+        '<div style="color:var(--ink-2,#555);font-weight:600;margin-top:6px">' + (s.mode === 'pomodoro' ? '🍅 Pomodoro' : '⏱️ Đếm lên') + ' · ' + tr.t + (s.tabSwitches ? ' · ⚠️ rời trang ' + s.tabSwitches + ' lần' : '') + '</div>' +
+        '<button onclick="window.VMStudy.stop()" style="margin-top:22px;border:none;background:var(--err-soft,#fee);color:var(--err,#e23);font-weight:700;border-radius:12px;padding:13px 32px;cursor:pointer;font-size:1.02rem">⏹️ Dừng phiên</button>' +
+      '</div>';
+  }
+
   function renderUpdate(s) {
+    var host = inlineHost();
+    if (host) { removeWidget(); renderInline(host, s); return; }
     var w = ensureWidget();
     var shown = s.mode === 'pomodoro' ? (s.targetSeconds - s.focusSeconds) : s.focusSeconds;
     var tr = tree(s.focusSeconds, false);
@@ -125,6 +144,8 @@
     else pts = Math.floor(focus / 1500); // mỗi 25 phút = 1 điểm cho chế độ đếm lên
     clearS();
     removeWidget();
+    var host = document.getElementById('vmStudyInline');
+    if (host) { host.innerHTML = ''; host.style.display = 'none'; }
     var id = await uid();
     if (id && focus >= 60) {
       try {
@@ -167,6 +188,7 @@
     },
     stop: function () { var s = load(); if (s) { s.active = false; save(s); } finalize(false); },
     isActive: function () { var s = load(); return !!(s && s.active); },
+    isMineActive: function () { var s = load(); return !!(s && s.active && (!s.ownerId || s.ownerId === ME)); },
     state: load
   };
 

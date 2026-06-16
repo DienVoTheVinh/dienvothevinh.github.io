@@ -176,7 +176,7 @@ function napDongHoTuHoc() {
   if (window.__vmStudyLoaded || document.getElementById('vmStudyScript')) return;
   var sc = document.createElement('script');
   sc.id = 'vmStudyScript';
-  sc.src = 'js/study-timer.js?v=2';
+  sc.src = 'js/study-timer.js?v=3';
   document.body.appendChild(sc);
 }
 
