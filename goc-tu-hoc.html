@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Góc tự học — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=4.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=4.2">
+<style>
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 24px 96px; }
+.gh-head { padding: 36px 0 18px; }
+.gh-head h1 { font-size: 1.9rem; font-weight: 900; }
+.gh-head p { color: var(--ink-2); margin-top: 6px; }
+
+/* Vườn cây */
+.garden {
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
+  background: linear-gradient(180deg, #bfe3ff 0%, #e8f7ff 55%, #d8f3d0 55%, #bfe9b0 100%);
+  min-height: 240px; border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 8px;
+}
+[data-theme="dark"] .garden { background: linear-gradient(180deg, #0b1a33 0%, #102544 55%, #14331f 55%, #16401f 100%); }
+.garden-sun { position: absolute; top: 18px; right: 28px; font-size: 2.4rem; filter: drop-shadow(0 0 12px rgba(255,210,80,.6)); }
+.garden-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 45%; display: flex; align-items: flex-end; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 0 18px 14px; }
+.garden-tree { font-size: 2.2rem; line-height: 1; animation: vmsGrow .4s ease; }
+@keyframes vmsGrow { from { transform: translateY(10px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.garden-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink-2); text-align: center; gap: 6px; }
+
+/* Bộ chọn chế độ */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+@media (max-width: 720px) { .modes { grid-template-columns: 1fr; } }
+.mode-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; box-shadow: var(--shadow); }
+.mode-card h3 { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.mode-card p { font-size: .88rem; color: var(--ink-2); margin: 6px 0 16px; line-height: 1.5; }
+.mode-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.mode-btns button { border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: .92rem; }
+.btn-pomo { background: var(--accent-gradient); color: #fff; }
+.btn-watch { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-2) !important; }
+
+/* Thống kê */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 24px; }
+@media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+.stat b { display: block; font-size: 1.7rem; font-weight: 800; color: var(--accent); line-height: 1; }
+.stat span { font-size: .76rem; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+.active-banner { margin-top: 18px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-md); padding: 14px 18px; font-weight: 600; color: var(--ink); display: none; }
+
+.hist { margin-top: 28px; }
+.hist h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; }
+.hist-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+.hist-item .hi-tree { font-size: 1.3rem; }
+.hist-item .hi-when { margin-left: auto; color: var(--ink-3); font-size: .8rem; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index"><span class="dot">V</span>VinhMath <small>· Lớp Toán Thầy Vinh</small></a>
+    <nav class="navlinks"></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="gh-head">
+    <h1>🌳 Góc tự học</h1>
+    <p>Mỗi phiên học là một mầm cây. Học càng đều, vườn của em càng xanh tốt — và điểm tự học càng cao!</p>
+  </div>
+
+  <div class="garden">
+    <div class="garden-sun">☀️</div>
+    <div class="garden-ground" id="vuonCay"></div>
+    <div class="garden-empty" id="vuonTrong">
+      <div style="font-size:2.6rem">🌱</div>
+      <div>Hôm nay vườn chưa có cây nào. Bắt đầu một phiên học để gieo mầm nhé!</div>
+    </div>
+  </div>
+
+  <div class="active-banner" id="bangDangHoc"></div>
+
+  <div class="modes">
+    <div class="mode-card">
+      <h3>🍅 Pomodoro (đếm ngược)</h3>
+      <p>Học tập trung theo phiên. Hoàn thành trọn phiên = 1 cây nở hoa + điểm tự học. Bỏ giữa chừng cây sẽ héo.</p>
+      <div class="mode-btns">
+        <button class="btn-pomo" onclick="batDau('pomodoro',25)">25 phút</button>
+        <button class="btn-pomo" onclick="batDau('pomodoro',50)">50 phút</button>
+        <button class="btn-pomo" onclick="batDau('pomodoro',15)">15 phút</button>
+      </div>
+    </div>
+    <div class="mode-card">
+      <h3>⏱️ Học tự do (đếm lên)</h3>
+      <p>Bấm bắt đầu và học bao lâu tuỳ em, đồng hồ đếm lên cho đến khi em dừng. Mỗi 25 phút tích luỹ được 1 điểm.</p>
+      <div class="mode-btns">
+        <button class="btn-watch" onclick="batDau('stopwatch',0)">▶️ Bắt đầu học</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="stHomNay">0</b><span>Phút hôm nay</span></div>
+    <div class="stat"><b id="stPhien">0</b><span>Phiên hoàn thành</span></div>
+    <div class="stat"><b id="stDiem">0</b><span>Điểm tự học</span></div>
+    <div class="stat"><b id="stChuoi">0</b><span>Chuỗi ngày 🔥</span></div>
+  </div>
+
+  <div class="hist">
+    <h3>🕓 Phiên học gần đây</h3>
+    <div id="dsLichSu"><div style="color:var(--ink-3);font-size:.9rem">Đang tải…</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=4.2"></script>
+<script src="js/menu.js"></script>
+<script src="js/study-timer.js?v=1"></script>
+<script src="js/analytics.js"></script>
+<script>
+var meId = null;
+
+(async function () {
+  if (!daKetNoi()) return;
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  meId = hoSo.id;
+  capNhatBanner();
+  await taiDuLieu();
+})();
+
+function batDau(mode, phut) {
+  if (window.VMStudy && window.VMStudy.isActive()) {
+    alert('Em đang có một phiên học đang chạy rồi nhé! Hãy hoàn thành hoặc dừng phiên đó trước.');
+    return;
+  }
+  window.VMStudy.start(mode, phut);
+  capNhatBanner();
+}
+
+function capNhatBanner() {
+  var b = document.getElementById('bangDangHoc');
+  if (window.VMStudy && window.VMStudy.isActive()) {
+    var s = window.VMStudy.state();
+    b.style.display = 'block';
+    b.innerHTML = '🌿 Em đang trong một phiên học (' + (s.mode === 'pomodoro' ? 'Pomodoro' : 'Đếm lên') + '). Đồng hồ trôi nổi ở góc màn hình sẽ theo em qua các trang. Đừng chuyển sang tab khác nhé!';
+  } else {
+    b.style.display = 'none';
+  }
+}
+
+// Khi một phiên kết thúc -> tải lại số liệu + vườn cây
+window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
+
+async function taiDuLieu() {
+  var r = await sb.from('study_sessions')
+    .select('id, mode, started_at, focus_seconds, completed, points, tab_switches')
+    .eq('student_id', meId)
+    .order('started_at', { ascending: false })
+    .limit(120);
+  var ds = (r && r.data) ? r.data : [];
+
+  var now = new Date();
+  var dauNgay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  var phutHomNay = 0, phienHomNay = 0, tongDiem = 0;
+  var cayHomNay = [];
+  var ngayCoHoc = {};
+
+  ds.forEach(function (s) {
+    var t = new Date(s.started_at).getTime();
+    tongDiem += (s.points || 0);
+    if (t >= dauNgay) {
+      phutHomNay += Math.round((s.focus_seconds || 0) / 60);
+      if (s.completed) { phienHomNay++; cayHomNay.push(s); }
+    }
+    if (s.completed || (s.focus_seconds || 0) >= 1500) {
+      var d = new Date(s.started_at);
+      ngayCoHoc[new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()] = true;
+    }
+  });
+
+  document.getElementById('stHomNay').textContent = phutHomNay;
+  document.getElementById('stPhien').textContent = phienHomNay;
+  document.getElementById('stDiem').textContent = tongDiem;
+
+  // Chuỗi ngày liên tiếp tính đến hôm nay
+  var chuoi = 0, mocNgay = dauNgay;
+  while (ngayCoHoc[mocNgay]) { chuoi++; mocNgay -= 86400000; }
+  document.getElementById('stChuoi').textContent = chuoi;
+
+  // Vườn cây hôm nay
+  var vuon = document.getElementById('vuonCay'), trong = document.getElementById('vuonTrong');
+  if (cayHomNay.length) {
+    trong.style.display = 'none';
+    vuon.innerHTML = cayHomNay.map(function (s) {
+      var icon = (s.focus_seconds >= 3000) ? '🌳' : '🌸';
+      return '<span class="garden-tree" title="' + Math.round(s.focus_seconds / 60) + ' phút">' + icon + '</span>';
+    }).join('');
+  } else {
+    trong.style.display = 'flex';
+    vuon.innerHTML = '';
+  }
+
+  // Lịch sử
+  var box = document.getElementById('dsLichSu');
+  if (!ds.length) { box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có phiên học nào. Bắt đầu ngay để gieo cây đầu tiên! 🌱</div>'; return; }
+  box.innerHTML = ds.slice(0, 15).map(function (s) {
+    var phut = Math.round((s.focus_seconds || 0) / 60);
+    var icon = s.completed ? '🌸' : (phut >= 25 ? '🌳' : '🥀');
+    var modeLbl = s.mode === 'pomodoro' ? 'Pomodoro' : 'Đếm lên';
+    var when = new Date(s.started_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    var ghi = s.tab_switches ? ' · ⚠️ rời trang ' + s.tab_switches + ' lần' : '';
+    return '<div class="hist-item"><span class="hi-tree">' + icon + '</span>' +
+      '<span><b>' + phut + ' phút</b> · ' + modeLbl + (s.completed ? ' · ✅ hoàn thành (+' + (s.points || 0) + 'đ)' : '') + ghi + '</span>' +
+      '<span class="hi-when">' + when + '</span></div>';
+  }).join('');
+}
+</script>
+</body>
+</html>

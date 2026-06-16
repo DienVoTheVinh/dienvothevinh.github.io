@@ -1328,6 +1328,12 @@ async function taiLeaderboard() {
     recentSessions.forEach(function(s) {
       studySecondsMap[s.profile_id] = (studySecondsMap[s.profile_id] || 0) + (s.duration_seconds || 0);
     });
+
+    // + Giờ tự học có chủ đích từ "Góc tự học" (Forest) trong 7 ngày -> cộng vào điểm tự học
+    var resStudyHL = await sb.from('study_sessions').select('student_id, focus_seconds').gte('started_at', sevenDaysAgo);
+    (resStudyHL.data || []).forEach(function (s) {
+      studySecondsMap[s.student_id] = (studySecondsMap[s.student_id] || 0) + (s.focus_seconds || 0);
+    });
     
     // Ghép dữ liệu & tính điểm tổng hợp cho từng học sinh
     var leaderboardData = students.map(function(s) {
