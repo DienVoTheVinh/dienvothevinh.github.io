@@ -1276,10 +1276,16 @@ tr:last-child td{border-bottom:none}
 }
 
 @media (max-width: 768px) {
+  /* Chặn cuộn ngang toàn trang -> hết tình trạng trượt sang phải bị dư một khúc.
+     (Lịch tuần/bảng rộng vẫn cuộn được bên trong khung của nó) */
+  html, body { overflow-x: hidden !important; max-width: 100% !important; }
+
   /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
   .topbar .nav {
     padding: 8px 12px !important;
     gap: 8px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
   .logo {
     font-size: 1rem !important;
