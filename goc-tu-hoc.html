@@ -75,6 +75,8 @@
     <p>Mỗi phiên học là một mầm cây. Học càng đều, vườn của em càng xanh tốt — và điểm tự học càng cao!</p>
   </div>
 
+  <div id="vmStudyInline" style="display:none; margin-bottom:18px"></div>
+
   <div class="garden">
     <div class="garden-sun">☀️</div>
     <div class="garden-ground" id="vuonCay"></div>
@@ -124,7 +126,7 @@
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.2"></script>
 <script src="js/menu.js"></script>
-<script src="js/study-timer.js?v=2"></script>
+<script src="js/study-timer.js?v=3"></script>
 <script src="js/analytics.js"></script>
 <script>
 var meId = null, meRole = null;
@@ -174,12 +176,17 @@ function batDau(mode, phut) {
 
 function capNhatBanner() {
   var b = document.getElementById('bangDangHoc');
-  if (window.VMStudy && window.VMStudy.isActive()) {
-    var s = window.VMStudy.state();
-    b.style.display = 'block';
-    b.innerHTML = '🌿 Em đang trong một phiên học (' + (s.mode === 'pomodoro' ? 'Pomodoro' : 'Đếm lên') + '). Đồng hồ trôi nổi ở góc màn hình sẽ theo em qua các trang. Đừng chuyển sang tab khác nhé!';
+  var modes = document.querySelector('.modes');
+  var inline = document.getElementById('vmStudyInline');
+  var active = window.VMStudy && window.VMStudy.isMineActive && window.VMStudy.isMineActive();
+  if (active) {
+    // Đang học: ẩn thẻ chọn chế độ, hiện bảng điều khiển lớn (engine vẽ vào #vmStudyInline)
+    if (modes) modes.style.display = 'none';
+    if (b) { b.style.display = 'block'; b.innerHTML = '🌿 Em đang trong một phiên học. Khi chuyển sang trang khác trong web, đồng hồ sẽ thu nhỏ về góc màn hình theo em. Đừng chuyển sang tab khác nhé!'; }
   } else {
-    b.style.display = 'none';
+    if (modes) modes.style.display = 'grid';
+    if (b) b.style.display = 'none';
+    if (inline) { inline.style.display = 'none'; inline.innerHTML = ''; }
   }
 }
 
