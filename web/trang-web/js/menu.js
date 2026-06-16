@@ -117,6 +117,28 @@ function damBaoNutMenuMobile() {
   });
 }
 
+function apDungLogoBadge(role) {
+  var logoEl = document.querySelector('.logo');
+  if (!logoEl) return;
+  var oldSmall = logoEl.querySelector('small');
+  if (oldSmall) oldSmall.remove();
+  var oldBadge = logoEl.querySelector('.role-badge');
+  if (oldBadge) oldBadge.remove();
+  
+  var roleLabel = 'Học sinh';
+  var badgeClass = 'badge-student';
+  if (role === 'admin') { roleLabel = 'Quản trị'; badgeClass = 'badge-admin'; }
+  else if (role === 'teacher') { roleLabel = 'Giáo viên'; badgeClass = 'badge-teacher'; }
+  else if (role === 'assistant') { roleLabel = 'Trợ giảng'; badgeClass = 'badge-assistant'; }
+  else if (role === 'parent') { roleLabel = 'Phụ huynh'; badgeClass = 'badge-parent'; }
+  
+  var span = document.createElement('span');
+  span.id = 'lblLogoSub';
+  span.className = 'role-badge ' + badgeClass;
+  span.textContent = roleLabel;
+  logoEl.appendChild(span);
+}
+
 // Tự chạy: lấy vai trò người đang đăng nhập rồi vẽ menu
 (async function () {
   if (document.readyState === 'loading') {
@@ -129,7 +151,10 @@ function damBaoNutMenuMobile() {
     var s = await sb.auth.getSession();
     if (!s.data.session) return;
     var r = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-    if (r.data) apDungMenu(r.data.role);
+    if (r.data) {
+      apDungMenu(r.data.role);
+      apDungLogoBadge(r.data.role);
+    }
     khoiDongChuong(s.data.session.user.id);
   } catch (e) { /* giữ menu tĩnh sẵn có nếu lỗi */ }
 })();

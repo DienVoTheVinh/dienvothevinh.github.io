@@ -633,7 +633,31 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   hienThiProfileAvatar(profileData.avatar_url, profileData.full_name);
   
   // Lời chào ở tiêu đề
-  $('titleChao').textContent = chao() + ', ' + (profileData.full_name.split(' ').pop()) + '!';
+  var tenChao = profileData.full_name ? profileData.full_name.split(' ').pop() : '';
+  if (profileData.role === 'admin' || profileData.role === 'teacher') {
+    var prefix = 'Thầy';
+    if (profileData.gender === 'Nữ') {
+      prefix = 'Cô';
+    } else if (profileData.gender !== 'Nam') {
+      var nameUpper = (profileData.full_name || '').toUpperCase();
+      if (nameUpper.includes(' THỊ ') || nameUpper.includes(' THI ')) {
+        prefix = 'Cô';
+      } else {
+        var commonFemaleNames = ['ANH', 'CHI', 'DIỆP', 'DUNG', 'GIANG', 'HÀ', 'HẰNG', 'HOA', 'HỒNG', 'HUYỀN', 'HƯƠNG', 'KHÁNH', 'LAN', 'LIÊN', 'LINH', 'MAI', 'MINH', 'MY', 'NGA', 'NGỌC', 'NGUYỆT', 'NHUNG', 'OANH', 'PHƯƠNG', 'QUỲNH', 'THẢO', 'TRANG', 'TRINH', 'VÂN', 'VY', 'YÊN', 'AN'];
+        if (commonFemaleNames.includes(tenChao.toUpperCase())) {
+          var maleMiddleNames = [' VĂN ', ' HỮU ', ' ĐỨC ', ' QUỐC ', ' ĐÌNH ', ' HUY ', ' HOÀNG ', ' DUY ', ' MINH ', ' THANH ', ' TUẤN ', ' XUÂN '];
+          var isMaleMiddle = maleMiddleNames.some(function(mid) { return nameUpper.includes(mid); });
+          if (!isMaleMiddle) prefix = 'Cô';
+        }
+      }
+    }
+    tenChao = prefix + ' ' + tenChao;
+  } else if (profileData.role === 'assistant') {
+    tenChao = (profileData.gender === 'Nữ' ? 'Cô' : (profileData.gender === 'Nam' ? 'Thầy' : 'Thầy/Cô')) + ' ' + tenChao;
+  } else if (profileData.role === 'parent') {
+    tenChao = 'Anh/Chị ' + tenChao;
+  }
+  $('titleChao').textContent = chao() + ', ' + tenChao + '!';
 
   // Blog VinhMath — Đã chuyển sang Trang chủ (trang-chu) theo yêu cầu của Sếp
   // await taiBlogCaNhan();

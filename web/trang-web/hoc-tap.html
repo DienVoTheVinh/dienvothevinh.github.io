@@ -125,7 +125,31 @@ var BAI_HOC_MAU = [
   // ----- CHẾ ĐỘ THẬT -----
   var hoSo = await yeuCauDangNhap();          // chưa đăng nhập → tự chuyển trang
   if (!hoSo) return;
-  $('loiChao').textContent = chao() + ', ' + hoSo.full_name.split(' ').pop() + ' 👋';
+  var tenChao = hoSo.full_name ? hoSo.full_name.split(' ').pop() : '';
+  if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
+    var prefix = 'Thầy';
+    if (hoSo.gender === 'Nữ') {
+      prefix = 'Cô';
+    } else if (hoSo.gender !== 'Nam') {
+      var nameUpper = (hoSo.full_name || '').toUpperCase();
+      if (nameUpper.includes(' THỊ ') || nameUpper.includes(' THI ')) {
+        prefix = 'Cô';
+      } else {
+        var commonFemaleNames = ['ANH', 'CHI', 'DIỆP', 'DUNG', 'GIANG', 'HÀ', 'HẰNG', 'HOA', 'HỒNG', 'HUYỀN', 'HƯƠNG', 'KHÁNH', 'LAN', 'LIÊN', 'LINH', 'MAI', 'MINH', 'MY', 'NGA', 'NGỌC', 'NGUYỆT', 'NHUNG', 'OANH', 'PHƯƠNG', 'QUỲNH', 'THẢO', 'TRANG', 'TRINH', 'VÂN', 'VY', 'YÊN', 'AN'];
+        if (commonFemaleNames.includes(tenChao.toUpperCase())) {
+          var maleMiddleNames = [' VĂN ', ' HỮU ', ' ĐỨC ', ' QUỐC ', ' ĐÌNH ', ' HUY ', ' HOÀNG ', ' DUY ', ' MINH ', ' THANH ', ' TUẤN ', ' XUÂN '];
+          var isMaleMiddle = maleMiddleNames.some(function(mid) { return nameUpper.includes(mid); });
+          if (!isMaleMiddle) prefix = 'Cô';
+        }
+      }
+    }
+    tenChao = prefix + ' ' + tenChao;
+  } else if (hoSo.role === 'assistant') {
+    tenChao = (hoSo.gender === 'Nữ' ? 'Cô' : (hoSo.gender === 'Nam' ? 'Thầy' : 'Thầy/Cô')) + ' ' + tenChao;
+  } else if (hoSo.role === 'parent') {
+    tenChao = 'Anh/Chị ' + tenChao;
+  }
+  $('loiChao').textContent = chao() + ', ' + tenChao + ' 👋';
 
   var classIds = (hoSo.class_students || []).map(function (c) { return c.class_id; });
   if (classIds.length === 0) {
