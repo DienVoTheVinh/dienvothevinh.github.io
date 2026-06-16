@@ -376,7 +376,7 @@ async function taiDanhSachDe(classIds) {
   
   // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
   var query = sb.from('exams')
-    .select('id, title, duration_minutes, opens_at, closes_at, exam_questions(count)')
+    .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, exam_questions(count)')
     .eq('published', true);
     
   if (classIds && classIds.length > 0) {
@@ -458,6 +458,11 @@ async function startExam(examId) {
     .order('sort');
     
   examQuestions = (rQ.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+  if (ex.de_type === 'essay') {
+    // Đề chỉ tự luận: mở phòng nộp ảnh, bỏ qua trắc nghiệm/đồng hồ/lượt làm
+    moPhongTuLuan(ex);
+    return;
+  }
   if (!examQuestions.length) {
     alert('Đề thi này chưa có câu hỏi nào. Liên hệ thầy Vinh nhé.');
     return;
@@ -523,7 +528,8 @@ async function startExam(examId) {
   
   renderExamQuestions(false);
   renderExamNav(false);
-  
+  if (ex.de_type === 'combo') themKhuTuLuan(ex);
+
   // Khởi chạy đồng hồ
   runTimer();
 }
@@ -553,6 +559,84 @@ function runTimer() {
   
   updateDisplay();
   timerInterval = setInterval(updateDisplay, 1000);
+}
+
+/* ===== PHẦN TỰ LUẬN: học sinh chụp ảnh nộp lên (qua trạm nop-bai, theo exam_id) ===== */
+function veKhuTuLuan(ex) {
+  return '<div class="q-box" id="khuTuLuan" style="border:2px solid var(--accent)">' +
+      '<div class="part-header">📝 Phần tự luận — Nộp ảnh bài làm cho thầy chấm</div>' +
+      (ex.essay_prompt ? '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(ex.essay_prompt) + '</div>' : '') +
+      '<div style="margin-top:10px">' +
+        '<label style="display:block;font-size:.875rem;font-weight:600;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>' +
+        '<input type="file" id="tlFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">' +
+        '<button class="btn btn-primary" id="tlGui" onclick="guiTuLuan()" style="margin-top:10px">📤 Nộp ảnh bài làm</button>' +
+        '<div id="tlTrangThai" style="font-size:.85rem;margin-top:8px"></div>' +
+        '<div id="tlDaNop" style="margin-top:10px"></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function moPhongTuLuan(ex) {
+  currentExam = ex;
+  $('viewMain').style.display = 'none';
+  $('viewWorkspace').style.display = 'flex';
+  $('wkTitle').textContent = ex.title;
+  if ($('wkTimer')) $('wkTimer').style.display = 'none';
+  if ($('wkSubmitBtn')) $('wkSubmitBtn').style.display = 'none';
+  if ($('wkRetryBtn')) $('wkRetryBtn').style.display = 'none';
+  if ($('wkExitBtn')) $('wkExitBtn').style.display = 'inline-flex';
+  if ($('wkNavQuestions')) $('wkNavQuestions').innerHTML = '';
+  $('wkQuestions').innerHTML = veKhuTuLuan(ex);
+  renderMathInElement($('wkQuestions'), { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}], throwOnError: false });
+  taiTuLuanDaNop();
+}
+
+function themKhuTuLuan(ex) {
+  var c = $('wkQuestions');
+  if (!c) return;
+  c.insertAdjacentHTML('beforeend', veKhuTuLuan(ex));
+  renderMathInElement(c, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}], throwOnError: false });
+  taiTuLuanDaNop();
+}
+
+async function guiTuLuan() {
+  var inp = $('tlFiles');
+  var tt = $('tlTrangThai');
+  if (!inp || !inp.files.length) { if (tt) { tt.textContent = 'Em chưa chọn file nào.'; tt.style.color = 'var(--warn)'; } return; }
+  var nut = $('tlGui'); nut.disabled = true; var cu = nut.textContent; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
+  try {
+    var fd = new FormData();
+    fd.append('kind', 'nop');
+    fd.append('exam_id', currentExam.id);
+    for (var i = 0; i < inp.files.length; i++) fd.append('files', inp.files[i]);
+    var r = await sb.functions.invoke('nop-bai', { body: fd });
+    if (r.error) throw new Error(r.error.message || 'Lỗi gửi bài');
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    if (tt) { tt.textContent = '✓ Đã nộp bài! Thầy sẽ chấm và trả điểm.'; tt.style.color = 'var(--ok)'; }
+    inp.value = '';
+    taiTuLuanDaNop();
+  } catch (e) { if (tt) { tt.textContent = 'Lỗi: ' + e.message; tt.style.color = 'var(--err)'; } }
+  nut.disabled = false; nut.textContent = cu;
+}
+
+async function taiTuLuanDaNop() {
+  var box = $('tlDaNop');
+  if (!box || !currentExam) return;
+  var r = await sb.from('submissions')
+    .select('id, submitted_at, files, status, score, feedback, graded_files')
+    .eq('exam_id', currentExam.id).eq('student_id', studentInfo.id)
+    .order('submitted_at', { ascending: false });
+  var ds = r.data || [];
+  if (!ds.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div style="font-size:.85rem;font-weight:600;margin:10px 0 6px">Bài em đã nộp:</div>' +
+    ds.map(function (s) {
+      var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ');
+      var cham = (s.graded_files || []).length ? '<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: ' + s.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ') + '</div>' : '';
+      var diem = (s.score !== null && s.score !== undefined) ? '<div style="font-size:.9rem;font-weight:700;color:var(--accent);margin-top:4px">Điểm: ' + s.score + '</div>' : '';
+      var phe = s.feedback ? '<div style="font-size:.85rem;margin-top:4px;font-style:italic">Lời phê: ' + s.feedback + '</div>' : '';
+      return '<div style="border:1px solid var(--line-2);border-radius:var(--r-sm);padding:10px;margin-bottom:8px">' +
+        '<div style="font-size:.85rem">' + links + '</div>' + diem + phe + cham + '</div>';
+    }).join('');
 }
 
 // Thang điểm 2025: So sánh đáp án ngắn bỏ qua dấu phẩy, khoảng trắng

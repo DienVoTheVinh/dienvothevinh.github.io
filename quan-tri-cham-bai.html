@@ -168,7 +168,7 @@ async function taiAttemptsLuyenDe() {
 
 async function taiDanhSach() {
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, lesson_id, lessons(title), profiles(full_name, username, class_students(class_id, classes(name)))')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, lesson_id, lessons(title), exam_id, exams(title), profiles(full_name, username, class_students(class_id, classes(name)))')
     .order('submitted_at', { ascending: false });
   if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
   tatCa = r.data || [];
@@ -238,7 +238,7 @@ function veDanhSach() {
           '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
           '<span class="badge badge-ok">' + s.score.toFixed(1) + 'đ (' + s.correct_n + '/' + s.total_n + ' câu)</span>' +
         '</div>' +
-        '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : 'Bài giảng đã xoá') + ' · ' + ngay + '</div>' +
+        '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : (s.exams ? '📝 Đề (tự luận): ' + s.exams.title : 'Bài đã xoá')) + ' · ' + ngay + '</div>' +
         '<div style="display:flex;justify-content:flex-end;margin-top:10px">' +
           '<button class="btn btn-secondary btn-sm" onclick="xemChiTietTest(\'' + s.id + '\', \'' + (hs.full_name || '?').replace(/'/g, "\\'") + '\', \'' + (s.lessons ? s.lessons.title : '').replace(/'/g, "\\'") + '\')">👁 Xem chi tiết bài làm</button>' +
         '</div>' +
@@ -301,7 +301,7 @@ function veDanhSach() {
         '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
         badge +
       '</div>' +
-      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : 'Bài giảng đã xoá') + ' · ' + ngay + '</div>' +
+      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : (s.exams ? '📝 Đề (tự luận): ' + s.exams.title : 'Bài đã xoá')) + ' · ' + ngay + '</div>' +
       '<div class="sub-files" style="margin-top:8px">' + links + '</div>' +
       (linksCham ? '<div class="sub-files" style="margin-top:4px">' + linksCham + '</div>' : '') +
       '<div class="grade-row">' +
