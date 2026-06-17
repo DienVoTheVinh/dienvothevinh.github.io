@@ -1175,10 +1175,10 @@ async function taiCaiDatHeThongGlobal() {
       
       // Nếu là admin, đồng bộ giá trị từ DB. 
       // Nếu không phải admin, ưu tiên giá trị từ localStorage (nếu có).
-      var finalTheme = (isAdmin || localStorage.getItem('vm-theme') === null) ? theme : localStorage.getItem('vm-theme');
-      var finalTrans = (isAdmin || localStorage.getItem('vm-transparency') === null) ? transparency : localStorage.getItem('vm-transparency');
-      var finalBlur = (isAdmin || localStorage.getItem('vm-blur') === null) ? blur : localStorage.getItem('vm-blur');
-      var finalCanvasOpacity = (isAdmin || localStorage.getItem('vm-canvas-opacity') === null) ? canvasOpacity : localStorage.getItem('vm-canvas-opacity');
+      var finalTheme = localStorage.getItem('vm-theme') !== null ? localStorage.getItem('vm-theme') : theme;
+      var finalTrans = localStorage.getItem('vm-transparency') !== null ? localStorage.getItem('vm-transparency') : transparency;
+      var finalBlur = localStorage.getItem('vm-blur') !== null ? localStorage.getItem('vm-blur') : blur;
+      var finalCanvasOpacity = localStorage.getItem('vm-canvas-opacity') !== null ? localStorage.getItem('vm-canvas-opacity') : canvasOpacity;
       var finalAccent = accent; // Màu accent luôn đồng bộ từ DB cho tất cả tài khoản
       
       // Áp dụng styles hệ thống

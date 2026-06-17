@@ -1276,11 +1276,20 @@ tr:last-child td{border-bottom:none}
 }
 
 @media (max-width: 768px) {
+  /* Chặn cuộn ngang toàn trang -> hết tình trạng trượt sang phải bị dư một khúc.
+     (Lịch tuần/bảng rộng vẫn cuộn được bên trong khung của nó) */
+  html, body { overflow-x: hidden !important; max-width: 100% !important; }
+
   /* 1. Tối ưu Topbar (Thanh đầu trang) không bị vỡ/xuống dòng */
   .topbar .nav {
-    padding: 8px 12px !important;
-    gap: 8px !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+    max-width: 100% !important;
   }
+  /* Luôn giữ nút menu ☰ và chuông hiển thị, không bị cắt */
+  .nav-burger, .bell-wrap { flex: 0 0 auto !important; }
+  /* Ẩn nhãn vai trò (QUẢN TRỊ) trên mobile để chừa chỗ cho nút ☰ */
+  .role-badge { display: none !important; }
   .logo {
     font-size: 1rem !important;
     gap: 6px !important;
