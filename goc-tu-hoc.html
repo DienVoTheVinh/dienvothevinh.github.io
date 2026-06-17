@@ -19,15 +19,43 @@
 /* Vườn cây */
 .garden {
   position: relative; border-radius: var(--r-lg); overflow: hidden;
-  background: linear-gradient(180deg, #bfe3ff 0%, #e8f7ff 55%, #d8f3d0 55%, #bfe9b0 100%);
-  min-height: 240px; border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 8px;
+  background: linear-gradient(180deg, #bfe3ff 0%, #e8f7ff 50%, #cdeeb6 50%, #a6dd86 100%);
+  min-height: 300px; border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 8px;
 }
-[data-theme="dark"] .garden { background: linear-gradient(180deg, #0b1a33 0%, #102544 55%, #14331f 55%, #16401f 100%); }
-.garden-sun { position: absolute; top: 18px; right: 28px; font-size: 2.4rem; filter: drop-shadow(0 0 12px rgba(255,210,80,.6)); }
-.garden-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 45%; display: flex; align-items: flex-end; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 0 18px 14px; }
-.garden-tree { font-size: 2.2rem; line-height: 1; animation: vmsGrow .4s ease; }
-@keyframes vmsGrow { from { transform: translateY(10px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
-.garden-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink-2); text-align: center; gap: 6px; }
+[data-theme="dark"] .garden { background: linear-gradient(180deg, #0a1730 0%, #0f2342 50%, #143a22 50%, #195026 100%); }
+.garden-sun { position: absolute; top: 16px; right: 30px; font-size: 2.6rem; filter: drop-shadow(0 0 16px rgba(255,210,80,.7)); animation: vmsSun 6s ease-in-out infinite; }
+@keyframes vmsSun { 0%,100%{ transform: scale(1) rotate(0); } 50%{ transform: scale(1.1) rotate(10deg); } }
+.cloud { position: absolute; pointer-events: none; opacity: .9; }
+.cloud.c1 { top: 24px; font-size: 1.8rem; animation: vmsDrift 28s linear infinite; }
+.cloud.c2 { top: 74px; font-size: 1.3rem; opacity: .7; animation: vmsDrift 40s linear infinite; animation-delay: -12s; }
+@keyframes vmsDrift { from { left: -70px; } to { left: 110%; } }
+
+/* Mô đất nhô lên cho cây đứng */
+.garden-mound {
+  position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
+  width: 72%; max-width: 480px; height: 104px;
+  background: radial-gradient(ellipse at 50% 130%, #8a5a31 0%, #6e4524 58%, #543517 100%);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow: inset 0 10px 16px rgba(255,255,255,.07);
+}
+.garden-mound::before { /* viền cỏ trên mô đất */
+  content: ""; position: absolute; left: 8%; right: 8%; top: -7px; height: 14px;
+  background: radial-gradient(circle at 7px 11px, #4caf50 6px, transparent 7px) repeat-x; background-size: 17px 16px;
+}
+
+/* Hàng cây của vườn (đứng trên mô đất) */
+.garden-ground { position: absolute; left: 0; right: 0; bottom: 28px; display: flex; align-items: flex-end; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 0 22px; z-index: 2; }
+.garden-tree { font-size: 2.5rem; line-height: 1; transform-origin: bottom center; animation: vmsGrow .55s cubic-bezier(.34,1.56,.64,1); filter: drop-shadow(0 4px 4px rgba(0,0,0,.18)); }
+@keyframes vmsGrow { from { transform: translateY(14px) scale(.35); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Cây demo lớn dần (khi vườn trống) */
+.demo-tree { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); font-size: 4.4rem; line-height: 1; z-index: 2; filter: drop-shadow(0 5px 5px rgba(0,0,0,.2)); }
+.demo-tree.pop { animation: vmsPopGrow .6s cubic-bezier(.34,1.56,.64,1); }
+@keyframes vmsPopGrow { 0%{ transform: translateX(-50%) scale(.55); } 60%{ transform: translateX(-50%) scale(1.2); } 100%{ transform: translateX(-50%) scale(1); } }
+.demo-caption { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: .92rem; font-weight: 700; color: #15502a; z-index: 3; }
+[data-theme="dark"] .demo-caption { color: #d6ffe0; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.garden-empty { position: absolute; top: 16px; left: 0; right: 0; text-align: center; color: #2b5470; font-size: .92rem; padding: 0 18px; z-index: 3; }
+[data-theme="dark"] .garden-empty { color: #cfe6ff; }
 
 /* Bộ chọn chế độ */
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
@@ -79,11 +107,13 @@
 
   <div class="garden">
     <div class="garden-sun">☀️</div>
+    <div class="cloud c1">☁️</div>
+    <div class="cloud c2">🌥️</div>
+    <div class="garden-mound"></div>
     <div class="garden-ground" id="vuonCay"></div>
-    <div class="garden-empty" id="vuonTrong">
-      <div style="font-size:2.6rem">🌱</div>
-      <div>Hôm nay vườn chưa có cây nào. Bắt đầu một phiên học để gieo mầm nhé!</div>
-    </div>
+    <div class="demo-tree" id="cayDemo" style="display:none">🌱</div>
+    <div class="garden-empty" id="vuonTrong">Hôm nay vườn chưa có cây nào — bắt đầu một phiên học để gieo mầm nhé!</div>
+    <div class="demo-caption" id="demoCaption" style="display:none"></div>
   </div>
 
   <div class="active-banner" id="bangDangHoc"></div>
@@ -193,6 +223,38 @@ function capNhatBanner() {
 // Khi một phiên kết thúc -> tải lại số liệu + vườn cây
 window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
 
+// Animation minh hoạ: cây lớn dần qua các mức để khích lệ học sinh học chăm
+var demoInt = null;
+var demoStages = [
+  { e: '🌱', t: 'Hạt mầm — bắt đầu một phiên học…' },
+  { e: '🌿', t: 'Học chăm, cây đang nảy mầm…' },
+  { e: '🪴', t: 'Càng học cây non càng lớn…' },
+  { e: '🌳', t: 'Tuyệt! Cây đã lớn cao!' },
+  { e: '🌸', t: 'Hoàn thành phiên — cây nở hoa, vườn thêm tươi tốt! 🌸' }
+];
+function chayDemoVuon() {
+  var cay = document.getElementById('cayDemo'), cap = document.getElementById('demoCaption');
+  if (!cay || !cap) return;
+  cay.style.display = 'block'; cap.style.display = 'block';
+  var i = 0;
+  function buoc() {
+    var st = demoStages[i % demoStages.length];
+    cay.textContent = st.e;
+    cay.classList.remove('pop'); void cay.offsetWidth; cay.classList.add('pop');
+    cap.textContent = st.t;
+    i++;
+  }
+  buoc();
+  if (demoInt) clearInterval(demoInt);
+  demoInt = setInterval(buoc, 1600);
+}
+function dungDemoVuon() {
+  if (demoInt) { clearInterval(demoInt); demoInt = null; }
+  var cay = document.getElementById('cayDemo'), cap = document.getElementById('demoCaption');
+  if (cay) cay.style.display = 'none';
+  if (cap) cap.style.display = 'none';
+}
+
 async function taiDuLieu() {
   if (!meId) return; // chỉ tải dữ liệu của ĐÚNG cá nhân đang đăng nhập
   var r = await sb.from('study_sessions')
@@ -234,13 +296,15 @@ async function taiDuLieu() {
   var vuon = document.getElementById('vuonCay'), trong = document.getElementById('vuonTrong');
   if (cayHomNay.length) {
     trong.style.display = 'none';
+    dungDemoVuon();
     vuon.innerHTML = cayHomNay.map(function (s) {
       var icon = (s.focus_seconds >= 3000) ? '🌳' : '🌸';
       return '<span class="garden-tree" title="' + Math.round(s.focus_seconds / 60) + ' phút">' + icon + '</span>';
     }).join('');
   } else {
-    trong.style.display = 'flex';
+    trong.style.display = 'block';
     vuon.innerHTML = '';
+    chayDemoVuon(); // chạy animation cây lớn dần để khích lệ
   }
 
   // Lịch sử
