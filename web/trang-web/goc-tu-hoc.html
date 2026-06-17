@@ -107,11 +107,13 @@
 
   <div class="garden">
     <div class="garden-sun">☀️</div>
+    <div class="cloud c1">☁️</div>
+    <div class="cloud c2">🌥️</div>
+    <div class="garden-mound"></div>
     <div class="garden-ground" id="vuonCay"></div>
-    <div class="garden-empty" id="vuonTrong">
-      <div style="font-size:2.6rem">🌱</div>
-      <div>Hôm nay vườn chưa có cây nào. Bắt đầu một phiên học để gieo mầm nhé!</div>
-    </div>
+    <div class="demo-tree" id="cayDemo" style="display:none">🌱</div>
+    <div class="garden-empty" id="vuonTrong">Hôm nay vườn chưa có cây nào — bắt đầu một phiên học để gieo mầm nhé!</div>
+    <div class="demo-caption" id="demoCaption" style="display:none"></div>
   </div>
 
   <div class="active-banner" id="bangDangHoc"></div>
@@ -221,6 +223,38 @@ function capNhatBanner() {
 // Khi một phiên kết thúc -> tải lại số liệu + vườn cây
 window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
 
+// Animation minh hoạ: cây lớn dần qua các mức để khích lệ học sinh học chăm
+var demoInt = null;
+var demoStages = [
+  { e: '🌱', t: 'Hạt mầm — bắt đầu một phiên học…' },
+  { e: '🌿', t: 'Học chăm, cây đang nảy mầm…' },
+  { e: '🪴', t: 'Càng học cây non càng lớn…' },
+  { e: '🌳', t: 'Tuyệt! Cây đã lớn cao!' },
+  { e: '🌸', t: 'Hoàn thành phiên — cây nở hoa, vườn thêm tươi tốt! 🌸' }
+];
+function chayDemoVuon() {
+  var cay = document.getElementById('cayDemo'), cap = document.getElementById('demoCaption');
+  if (!cay || !cap) return;
+  cay.style.display = 'block'; cap.style.display = 'block';
+  var i = 0;
+  function buoc() {
+    var st = demoStages[i % demoStages.length];
+    cay.textContent = st.e;
+    cay.classList.remove('pop'); void cay.offsetWidth; cay.classList.add('pop');
+    cap.textContent = st.t;
+    i++;
+  }
+  buoc();
+  if (demoInt) clearInterval(demoInt);
+  demoInt = setInterval(buoc, 1600);
+}
+function dungDemoVuon() {
+  if (demoInt) { clearInterval(demoInt); demoInt = null; }
+  var cay = document.getElementById('cayDemo'), cap = document.getElementById('demoCaption');
+  if (cay) cay.style.display = 'none';
+  if (cap) cap.style.display = 'none';
+}
+
 async function taiDuLieu() {
   if (!meId) return; // chỉ tải dữ liệu của ĐÚNG cá nhân đang đăng nhập
   var r = await sb.from('study_sessions')
@@ -262,13 +296,15 @@ async function taiDuLieu() {
   var vuon = document.getElementById('vuonCay'), trong = document.getElementById('vuonTrong');
   if (cayHomNay.length) {
     trong.style.display = 'none';
+    dungDemoVuon();
     vuon.innerHTML = cayHomNay.map(function (s) {
       var icon = (s.focus_seconds >= 3000) ? '🌳' : '🌸';
       return '<span class="garden-tree" title="' + Math.round(s.focus_seconds / 60) + ' phút">' + icon + '</span>';
     }).join('');
   } else {
-    trong.style.display = 'flex';
+    trong.style.display = 'block';
     vuon.innerHTML = '';
+    chayDemoVuon(); // chạy animation cây lớn dần để khích lệ
   }
 
   // Lịch sử
