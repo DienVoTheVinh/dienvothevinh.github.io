@@ -201,23 +201,23 @@
    \end{tikzpicture}\enspace#1}[\vspace{3pt}\noindent\textcolor{vmLine}{\rule{3.5cm}{1.5pt}}]
 \titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
 
-% Subsection — Thẻ số hiệu xanh Matcha
+% Subsection — Thẻ số hiệu Vàng đặc, tiêu đề xanh Navy
 \titleformat{\subsection}
-  {\normalfont\large\sffamily\bfseries\color{vmOk}}
+  {\normalfont\large\sffamily\bfseries\color{vmAccent}}
   {}
   {0pt}
   {\begin{tikzpicture}[baseline=0pt]
-     \node[anchor=base, fill=vmOkSoft, draw=vmOk, line width=0.5pt, inner sep=2.5pt, rounded corners=1.5pt] (B) {\color{vmOk}\sffamily\bfseries\large\strut\thesubsection};
+     \node[anchor=base, fill=vmOk, inner sep=2.5pt, rounded corners=1.5pt] (B) {\color{white}\sffamily\bfseries\large\strut\thesubsection};
    \end{tikzpicture}\enspace#1}
 \titlespacing*{\subsection}{0pt}{2.8ex}{1.5ex}
 
-% Subsubsection — Thẻ số hiệu vàng Hổ phách
+% Subsubsection — Thẻ số hiệu Đỏ đặc, tiêu đề Charcoal/Đen
 \titleformat{\subsubsection}
-  {\normalfont\normalsize\sffamily\bfseries\color{vmWarn}}
+  {\normalfont\normalsize\sffamily\bfseries\color{vmInk}}
   {}
   {0pt}
   {\begin{tikzpicture}[baseline=0pt]
-     \node[anchor=base, fill=vmWarnSoft, draw=vmWarn, line width=0.5pt, inner sep=2.5pt, rounded corners=1.5pt] (C) {\color{vmWarn}\sffamily\bfseries\normalsize\strut\thesubsubsection};
+     \node[anchor=base, fill=vmWarn, inner sep=2.2pt, rounded corners=1.2pt] (C) {\color{white}\sffamily\bfseries\normalsize\strut\thesubsubsection};
    \end{tikzpicture}\enspace#1}
 
 %--------------------------
@@ -307,14 +307,14 @@
 %=====================================
 % Môi trường Định nghĩa, Định lý — Thẻ kẹp tối giản sang trọng
 %=====================================
-% Định lí: Vạch trái Matcha + nền Washi ấm
+% Định lí: Vạch trái Navy + nền Washi ấm
 \newenvironment{boxdl}
 {\begin{tcolorbox}[
     enhanced jigsaw, breakable,
     colback=white,
     coltext=vmInk,
     frame hidden, boxrule=0pt,
-    borderline west={1.8pt}{0pt}{vmOk},
+    borderline west={1.8pt}{0pt}{vmAccent},
     sharp corners,
     left=4mm, right=2mm, bottom=2.5mm, top=2.5mm,
     before skip=3mm, after skip=3mm
