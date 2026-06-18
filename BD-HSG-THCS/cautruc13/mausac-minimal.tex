@@ -1,0 +1,120 @@
+%============== Bảng màu VinhMath đồng bộ với nhận diện thương hiệu Website
+% Load xcolor package trước khi định nghĩa màu
+\usepackage[dvipsnames,table]{xcolor}
+
+% --- MÀU SẮC THƯƠNG HIỆU VINHMATH ---
+\definecolor{vmAccent}{HTML}{1E40AF}     % Xanh Navy tươi sáng - Điểm nhấn chính
+\definecolor{vmAccentSoft}{HTML}{F0F6FF} % Nền xanh Navy nhạt
+\definecolor{vmOk}{HTML}{C27D00}         % Vàng đậm - Cho bài tập & dạng toán
+\definecolor{vmOkSoft}{HTML}{FFFDF0}     % Nền vàng nhạt
+\definecolor{vmWarn}{HTML}{B5483A}       % Đỏ son Hanko - Điểm nhấn phụ / bài tập tự luyện
+\definecolor{vmWarnSoft}{HTML}{FDF2F0}   % Nền đỏ nhạt
+\definecolor{vmInk}{HTML}{1F1D1A}        % Mực Charcoal đen dịu (trên nền trắng)
+\definecolor{vmBg}{HTML}{FFFFFF}         % Nền giấy trắng tinh khiết
+\definecolor{vmLine}{HTML}{E2E8F0}       % Màu đường kẻ phân cách
+\definecolor{warmgray}{HTML}{64748B}     % Xám Slate trung tính
+
+% --- Đè màu chuẩn trong TikZ/LaTeX để đồng bộ thương hiệu VinhMath ---
+\colorlet{blue}{vmAccent}
+\colorlet{green}{vmOk}
+\colorlet{magenta}{vmWarn}
+\colorlet{orange}{vmOk}
+\colorlet{violet}{vmAccent}
+\colorlet{cyan}{vmAccent}
+\colorlet{teal}{vmAccent}
+
+% --- Mapping tương thích ngược với phong cách cũ ---
+\definecolor{acadbg}{HTML}{FFFFFF}       % Nền trắng tinh cho giấy in
+\definecolor{acadfg}{HTML}{1F1D1A}       % Chữ đen Charcoal
+\definecolor{acadgray}{HTML}{64748B}     % Xám chú thích
+\definecolor{acadlightgray}{HTML}{F8FAFC}% Xám rất nhạt
+\definecolor{acadrule}{HTML}{E2E8F0}     % Đường kẻ mảnh
+\definecolor{acadnavy}{HTML}{0F2942}     % Accent Xanh dương đen chính
+\definecolor{acadnavylight}{HTML}{C27D00}% Accent Vàng đậm phụ
+
+% Mapping cho code cũ (Dracula & Minimal cũ)
+\definecolor{dracbg}{HTML}{FFFFFF}
+\definecolor{dracline}{HTML}{E2E8F0}
+\definecolor{dracfg}{HTML}{1F1D1A}
+\definecolor{draccomment}{HTML}{64748B}
+\definecolor{draccyan}{HTML}{0F2942}
+\definecolor{dracgreen}{HTML}{C27D00}
+\definecolor{dracorange}{HTML}{B5483A}
+\definecolor{dracpink}{HTML}{0F2942}
+\definecolor{dracpurple}{HTML}{0F2942}
+\definecolor{dracred}{HTML}{B5483A}
+\definecolor{dracyellow}{HTML}{C27D00}
+
+\definecolor{acateal}{HTML}{0F2942}
+\definecolor{acadarkteal}{HTML}{0F2942}
+\definecolor{acalightteal}{HTML}{EFF6FF}
+\definecolor{acalightcyan}{HTML}{FFFDF0}
+\definecolor{acagray}{HTML}{1F1D1A}
+\definecolor{acadarkgray}{HTML}{0F2942}
+\definecolor{acalightgray}{HTML}{FFFFFF}
+\definecolor{acaborderblue}{HTML}{0F2942}
+\definecolor{acadeepblue}{HTML}{0F2942}
+\definecolor{acarust}{HTML}{64748B}
+
+% Màu trang bìa (giữ tương thích và đổi sang tông VinhMath)
+\definecolor{ivory}{HTML}{FFFFFF}
+\definecolor{lapislazuli}{HTML}{0F2942}
+\definecolor{terracotta}{HTML}{C27D00}
+\definecolor{darkslate}{HTML}{1F1D1A}
+\definecolor{oldgold}{HTML}{B5483A}
+\definecolor{marblegray}{HTML}{E2E8F0}
+
+% --- Cấu hình màu cho môi trường toán học ---
+\def\mauVD{vmAccent}                      % Ví dụ dùng Đỏ son Hanko
+\def\mauEX{vmOk}                          % Bài tập ví dụ dùng Xanh Matcha
+\def\mauBT{vmWarn}                        % Bài tập tự luyện dùng Vàng hổ phách
+\def\mauLG{warmgray}                      % Lời giải & đường chấm dùng Xám ấm
+\def\mauDA{\mauEX}
+\def\mauTrue{vmAccent}
+
+%%%%%% Màu mục lục
+\def\mauPART{vmAccent}
+\def\mauCHAP{vmAccent}
+\def\mauSEC{vmOk}
+\def\mauSUBSEC{vmWarn}
+\def\mauSUBSUBSEC{vmInk}
+
+%%%%%% Màu các tiêu đề
+\def\mauphan{vmAccent}
+\def\mauchuphan{vmAccent}
+\def\mauchuong{vmAccent}
+\def\maunenmucluc{white}
+\def\maumlmot{vmAccent}
+\def\maumlhai{vmOk}
+\def\maumlba{vmWarn}
+\def\maubai{vmOk}
+\def\mausubsec{vmWarn}
+\def\mausubsecphu{vmAccent}
+\def\mausubsubsec{vmInk}
+\def\maupara{vmInk}
+
+%%%%%% Footer/Header
+\def\maufoot{warmgray}
+\def\mauchufoot{warmgray}
+\def\maufootmot{warmgray}
+\def\maufoothai{warmgray}
+\def\maufootba{warmgray}
+
+%%%%%% Dạng toán
+\def\maudang{vmAccent}
+\def\maunendang{white}
+
+%%%%%% Định nghĩa, định lý (dùng tcolorbox)
+\def\maudl{vmInk}
+\def\nendl{vmBg}
+\def\maudn{vmAccent}
+\def\nendn{vmAccentSoft}
+
+\def\maucy{vmAccent}
+\def\maupt{vmInk}
+
+%%%%%% Dấu tích đầu câu
+\def\mauitemCI{vmAccent}
+\def\mauitemKN{vmOk}
+\def\itemKN{\color{\mauitemKN}\faCheckSquareO}
+\def\itemCI{\color{\mauitemCI}\faCheckCircleO}

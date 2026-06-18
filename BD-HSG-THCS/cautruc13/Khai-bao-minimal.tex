@@ -1,0 +1,414 @@
+%=====================================
+% Khai báo nhóm Tex — PHONG CÁCH TOÁN HỌC HÀN LÂM
+% Tối giản, tập trung vào typography, ít khung
+%=====================================
+%===========Bảng
+\usepackage{longtable,multirow,makecell}
+\usepackage{diagbox}
+% xcolor đã được load trong mausac-minimal.tex
+%---
+\usepackage{extarrows,amsmath,mathrsfs,maybemath,xlop,polynom,slashbox}
+% amssymb đã được load qua newpxmath, không cần load riêng
+%\usepackage{yhmath} % Bỏ để tránh xung đột \widering với fouriernc
+\usepackage{enumerate}
+\usepackage{tikz} 
+\usepackage{tkz-euclide}
+\usepackage{tikz-3dplot}
+\usepackage{tkz-tab}
+\usepackage{pifont}
+\usepackage{bbding}
+\usepackage{stackengine}
+\usepackage{scalerel}
+\usepackage{array}
+\usepackage{xcolor,colortbl,tasks}
+%==========
+\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
+\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
+\usetikzlibrary{shadings,fadings}
+\usepackage{pgfplots}
+\usepackage{pgfornament}
+\usepgfplotslibrary{fillbetween}
+\pgfplotsset{compat=1.9}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{pdfpages} % Cho phép chèn file PDF với \includepdf
+\usepackage{currfile}
+\usepackage[outline]{contour}
+\usepackage{pdfrender}
+\usepackage{fontawesome}
+\usepackage{lipsum}
+\usepackage{everypage}
+\usepackage{microtype} % Cải thiện khoảng cách giữa các từ/ký tự
+\setlength{\emergencystretch}{3em} % Giúp giãn dòng đều hơn, tránh lỗi underfull
+
+\arrayrulecolor{acadrule}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\usepackage[top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=27pt] {geometry}
+\usepackage{varwidth}
+
+% Thiết lập cho layout 2 cột
+\setlength{\columnsep}{8mm} % Khoảng cách giữa 2 cột
+\setlength{\columnseprule}{0.4pt} % Đường kẻ mảnh giữa 2 cột
+\def\columnseprulecolor{\color{acadrule}} % Màu đường kẻ
+%--------------Gói trắc nghiệm EX-TEST
+\usepackage[loigiai]{ex_test} 
+
+% Fallback definitions for version toggle and profile info (keeps compilation safe)
+\ifdefined\phienban\else\def\phienban{1}\fi
+\ifdefined\SDT\else\def\SDT{0866197857}\fi
+\ifdefined\DC\else\def\DC{637 phường Chợ Quán, TPHCM}\fi
+\ifdefined\watermarktext\else\def\watermarktext{Thầy Điền Võ Thế Vinh}\fi
+
+\newcommand{\bfseriesextra}{%
+  \bfseries
+  \pdfrender{TextRenderingMode=FillStroke,LineWidth=0.35pt,StrokeColor=.}%
+}
+\let\oldtextbf\textbf
+\renewcommand{\textbf}[1]{\oldtextbf{\pdfrender{TextRenderingMode=FillStroke,LineWidth=0.35pt,StrokeColor=.}#1}}
+
+\font\damEX=ugqb8v at 11.5pt
+\def\loigiaiEX{\bfseries\itshape\pdfrender{TextRenderingMode=FillStroke,LineWidth=0.35pt,StrokeColor=.}\color{vmAccent} Lời giải.%
+}
+\renewcommand{\nameex}{\bfseriesextra\color{\mauEX} \iconVD Câu}
+\def\qedEX{\color{\mauDC}\ensuremath{\square}}
+\newcommand{\hoac}[1]{\left[\begin{aligned}#1\end{aligned}\right.}
+\newcommand{\heva}[1]{\left\{\begin{aligned}#1\end{aligned}\right.}
+
+%----------
+\usepackage{esvect}
+\def\vec{\vv}
+\def\overrightarrow{\vv}
+\DeclareSymbolFont{symbolsC}{U}{txsyc}{m}{n}
+\DeclareMathSymbol{\varparallel}{\mathrel}{symbolsC}{9}
+\DeclareMathSymbol{\parallel}{\mathrel}{symbolsC}{9}
+
+%=====================================
+% WATERMARK & DECORATION — Phong cách tối giản Nhật Bản
+%=====================================
+% Định nghĩa con dấu Hanko đỏ thương hiệu VinhMath
+\newcommand{\hanko}{%
+  \begin{tikzpicture}[baseline=(char.base)]
+    \node(char) [
+      draw=vmAccent,
+      line width=1.2pt,
+      rectangle,
+      rounded corners=2pt,
+      inner sep=3pt,
+      fill=vmAccentSoft!60,
+      font=\sffamily\fontsize{6.5pt}{7pt}\selectfont\bfseries\color{vmAccent},
+      align=center
+    ] {Vinh\\Math};
+  \end{tikzpicture}%
+}
+
+\AddEverypageHook{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \coordinate (margin) at ([xshift=-5mm]current page.east);
+    \node[rotate=90, anchor=center, font=\sffamily\fontsize{7.5pt}{9pt}\selectfont\bfseries, text=warmgray] at (margin) {\watermarktext};
+    \draw[vmLine, line width=0.6pt] ([yshift=3.5cm]margin) -- ([yshift=7.5cm]margin);
+    \fill[vmAccent] ([yshift=7.7cm]margin) circle (1.5pt);
+    \draw[vmLine, line width=0.6pt] ([yshift=-3.5cm]margin) -- ([yshift=-7.5cm]margin);
+    \fill[vmAccent] ([yshift=-7.7cm]margin) circle (1.5pt);
+  \end{tikzpicture}%
+}
+
+%--------------------------
+% HEADER AND FOOTER — Helvetica Sans-Serif tinh tế
+%--------------------------
+\usepackage{fancyhdr,lastpage}
+\usepackage[scaled]{helvet} % Helvetica làm sans-serif font
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{vmLine}\leaders\hrule height \headrulewidth\hfill}}
+
+% Thiết lập nội dung Header và Footer
+\fancyhead[LE]{\small\sffamily\bfseries\color{vmInk}\thepage}
+\fancyhead[RO]{\small\sffamily\bfseries\color{vmInk}\thepage}
+\fancyhead[CE]{\small\sffamily\color{warmgray}\leftmark}
+\fancyhead[CO]{\small\sffamily\color{warmgray}\rightmark}
+
+\renewcommand{\chaptermark}[1]{\markboth{\sffamily Chuyên đề \thechapter\enspace\textperiodcentered\enspace#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\sffamily\thesection\enspace#1}}
+
+% Footer: tên sách/thông tin liên lạc
+\fancyfoot[C]{%
+    \fontsize{7.5pt}{9pt}\selectfont\sffamily
+    \ifnum\phienban=1
+        \textit{\textnormal{\color{vmAccent}\faPhone}\ \SDT \hspace{2.5cm} \textnormal{\color{vmAccent}\faMapMarker}\ \DC}%
+    \else
+        \textit{Một số chuyên đề bồi dưỡng HSG bậc THCS}%
+    \fi
+}
+
+% Plain style cho trang đầu chuyên đề
+\fancypagestyle{plain}{%
+    \fancyhf{}%
+    \renewcommand{\headrulewidth}{0pt}%
+    \renewcommand{\footrulewidth}{0pt}%
+    \fancyfoot[C]{%
+        \fontsize{7.5pt}{9pt}\selectfont\sffamily
+        \ifnum\phienban=1
+            \textit{\textnormal{\color{vmAccent}\faPhone}\ \SDT \hspace{2.5cm} \textnormal{\color{vmAccent}\faMapMarker}\ \DC}%
+        \else
+            \textit{Một số chuyên đề bồi dưỡng HSG bậc THCS}%
+        \fi
+    }%
+    \fancyfoot[RO,LE]{\small\sffamily\bfseries\thepage}%
+}
+
+% Logo commands (giữ tương thích)
+\def\hienLOGO{} 
+\def\anLOGO{}
+
+%--------------------------
+% SECTION STYLING — Hiện đại, tối giản kiểu Nhật
+%--------------------------
+\usepackage[explicit]{titlesec}
+\usepackage{titledot}
+
+\setcounter{secnumdepth}{4}
+\renewcommand{\chaptername}{Chuyên đề}
+\renewcommand{\thechapter}{\arabic{chapter}}
+\renewcommand{\thesection}{\thechapter.\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+
+% Chapter — Thiết kế bất đối xứng hiện đại kiểu Nhật: Số hiệu lớn làm mờ nền + Hanko stamp
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily}
+  {\vspace{-1.5cm}%
+   \begin{flushright}
+     \begin{tikzpicture}
+       \node[anchor=east, font=\sffamily\fontsize{72pt}{72pt}\selectfont\bfseries\color{vmAccent!25}] at (0,0) {\ifnum\value{chapter}<10 0\fi\arabic{chapter}};
+       \node[anchor=east, font=\sffamily\fontsize{11pt}{12pt}\selectfont\bfseries\color{vmAccent}] at (-0.2,-0.9) {CHUYÊN ĐỀ};
+     \end{tikzpicture}
+   \end{flushright}}
+  {-1.2cm}
+  {\begin{flushleft}
+     \hanko\enspace{\Huge\bfseries\color{vmAccent}#1}\\[15pt]
+     \noindent{\color{vmAccent}\hrule height 2.5pt}\vskip 2.5pt{\color{vmOk}\hrule height 1.8pt width 4.5cm}
+   \end{flushleft}}
+
+% Section — Thẻ số hiệu màu đỏ son nổi bật + chữ đỏ son đồng bộ, gạch chân ngắn tinh tế
+\titleformat{\section}
+  {\normalfont\Large\sffamily\bfseries\color{vmAccent}}
+  {}
+  {0pt}
+  {\begin{tikzpicture}[baseline=0pt]
+     \node[anchor=base, fill=vmAccent, inner sep=3.5pt, rounded corners=2pt] (A) {\color{white}\sffamily\bfseries\Large\strut\thesection};
+   \end{tikzpicture}\enspace#1}[\vspace{3pt}\noindent\textcolor{vmLine}{\rule{3.5cm}{1.5pt}}]
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
+
+% Subsection — Thẻ số hiệu xanh Matcha
+\titleformat{\subsection}
+  {\normalfont\large\sffamily\bfseries\color{vmOk}}
+  {}
+  {0pt}
+  {\begin{tikzpicture}[baseline=0pt]
+     \node[anchor=base, fill=vmOkSoft, draw=vmOk, line width=0.5pt, inner sep=2.5pt, rounded corners=1.5pt] (B) {\color{vmOk}\sffamily\bfseries\large\strut\thesubsection};
+   \end{tikzpicture}\enspace#1}
+\titlespacing*{\subsection}{0pt}{2.8ex}{1.5ex}
+
+% Subsubsection — Thẻ số hiệu vàng Hổ phách
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\sffamily\bfseries\color{vmWarn}}
+  {}
+  {0pt}
+  {\begin{tikzpicture}[baseline=0pt]
+     \node[anchor=base, fill=vmWarnSoft, draw=vmWarn, line width=0.5pt, inner sep=2.5pt, rounded corners=1.5pt] (C) {\color{vmWarn}\sffamily\bfseries\normalsize\strut\thesubsubsection};
+   \end{tikzpicture}\enspace#1}
+
+%--------------------------
+% BOXES & ENVIRONMENTS — Dạng thẻ note Nhật Bản cao cấp
+%--------------------------
+\usepackage[most]{tcolorbox}
+
+% VD box (Ví dụ) — Viền mỏng, góc bo nhẹ, vạch accent bên trái
+\def\beginboxVD{%
+\par\addvspace{3mm}%
+\begin{tcolorbox}[
+    enhanced, breakable,
+    colback=white,
+    colframe=vmLine,
+    boxrule=0.5pt,
+    borderline west={2.5pt}{0pt}{vmAccent},
+    arc=4pt,
+    left=3.5mm, right=3.5mm, top=2.5mm, bottom=2.5mm,
+    before skip=2.5mm, after skip=2.5mm,
+    parbox=false
+]%
+}
+
+% EX box (Bài tập áp dụng) — Viền mỏng, vạch accent bên trái
+\def\beginboxEX{%
+\par\addvspace{3mm}%
+\begin{tcolorbox}[
+    enhanced, breakable,
+    colback=white,
+    colframe=vmLine,
+    boxrule=0.5pt,
+    borderline west={2.5pt}{0pt}{vmOk},
+    arc=4pt,
+    left=3.5mm, right=3.5mm, top=2.5mm, bottom=2.5mm,
+    before skip=2.5mm, after skip=2.5mm,
+    parbox=false
+]%
+}
+
+% BT box (Bài tập tự luyện) — Viền mỏng, vạch accent bên trái
+\def\beginboxBT{%
+\par\addvspace{3mm}%
+\begin{tcolorbox}[
+    enhanced, breakable,
+    colback=white,
+    colframe=vmLine,
+    boxrule=0.5pt,
+    borderline west={2.5pt}{0pt}{vmWarn},
+    arc=4pt,
+    left=3.5mm, right=3.5mm, top=2.5mm, bottom=2.5mm,
+    before skip=2.5mm, after skip=2.5mm,
+    parbox=false
+]%
+}
+
+\def\endbox{\end{tcolorbox}}
+
+%=====================================
+% Dạng toán (Problem Type) — Dạng tag badge tinh tế
+%=====================================
+\newcounter{dang}[subsection]
+\renewcommand{\thedang}{\arabic{dang}}
+
+\newenvironment{dangg}[1]{%
+    \par\addvspace{6mm}%
+    \noindent
+    \begin{tikzpicture}[baseline=0pt]
+      \node(char) [
+        anchor=base,
+        fill=vmAccentSoft,
+        draw=vmAccent,
+        line width=0.6pt,
+        rounded corners=3pt,
+        inner sep=4.5pt,
+        font=\sffamily\large\bfseries\color{vmAccent}
+      ] {\strut Dạng \stepcounter{dang}\thedang};
+    \end{tikzpicture}\enspace
+    {\large\sffamily\bfseries\color{vmInk}#1}%
+    \par\vspace{3mm}%
+    \noindent\textcolor{vmLine}{\rule{\linewidth}{0.5pt}}%
+    \par\vspace{2.2mm}%
+}{%
+    \par\addvspace{4mm}%
+}
+\newenvironment{dang}[1]{\begin{dangg}{#1}}{\end{dangg}}
+
+%=====================================
+% Môi trường Định nghĩa, Định lý — Thẻ kẹp tối giản sang trọng
+%=====================================
+% Định lí: Vạch trái Matcha + nền Washi ấm
+\newenvironment{boxdl}
+{\begin{tcolorbox}[
+    enhanced jigsaw, breakable,
+    colback=white,
+    coltext=vmInk,
+    frame hidden, boxrule=0pt,
+    borderline west={1.8pt}{0pt}{vmOk},
+    sharp corners,
+    left=4mm, right=2mm, bottom=2.5mm, top=2.5mm,
+    before skip=3mm, after skip=3mm
+]}
+{\end{tcolorbox}}
+
+% Định nghĩa: Vạch trái Đỏ son + nền Washi ấm
+\newenvironment{boxdn}
+{\begin{tcolorbox}[
+    enhanced jigsaw, breakable,
+    colback=white,
+    coltext=vmInk,
+    frame hidden, boxrule=0pt,
+    borderline west={1.8pt}{0pt}{vmAccent},
+    sharp corners,
+    left=4mm, right=2mm, bottom=2.5mm, top=2.5mm,
+    before skip=3mm, after skip=3mm
+]}
+{\end{tcolorbox}}
+
+\newenvironment{dn}{\begin{boxdn} \vspace{-2mm}\begin{mydn}}{\end{mydn}\end{boxdn}}
+\newenvironment{dl}{\begin{boxdl} \vspace{-2mm}\begin{mydl}}{\end{mydl}\end{boxdl}}
+
+%=====================================
+% Môi trường Tóm tắt
+%=====================================
+\newenvironment{tomtat}{}{}
+
+%=====================================
+% Môi trường Chú ý và Lưu ý — Typography chữ nghiêng
+%=====================================
+\newenvironment{note}
+{\par\addvspace{3.5mm}\noindent%
+\textcolor{vmAccent}{\sffamily\bfseries Chú ý.\enspace}\itshape\ignorespaces}
+{\par\addvspace{3.5mm}}
+
+\newenvironment{luuy}
+{\par\addvspace{3.5mm}\noindent%
+\textcolor{vmAccent}{\sffamily\bfseries Lưu ý.\enspace}\itshape\ignorespaces}
+{\par\addvspace{3.5mm}}
+
+% Boxvidu environment
+\newenvironment{boxvidu}
+{\begin{tcolorbox}[
+    enhanced jigsaw, breakable,
+    colback=white,
+    coltext=vmInk,
+    frame hidden, boxrule=0pt,
+    borderline west={1.5pt}{0pt}{vmAccent!85},
+    sharp corners,
+    left=4mm, right=2mm, top=2.5mm, bottom=2.5mm,
+    before skip=2.5mm, after skip=2.5mm
+]}
+{\end{tcolorbox}}
+
+% Phuongphap environment
+\newenvironment{phuongphap}
+{\par\addvspace{2.5mm}\noindent
+\textcolor{vmAccent}{$\triangleright$}\ {\sffamily\bfseries Phương pháp:}\ignorespaces
+}
+{\par\addvspace{2.5mm}}
+
+% Other environments — Font serif, phong cách sách toán chuẩn
+\newtheorem{mydn}{\color{\maudn}\bfseriesextra Định nghĩa}[section]
+\newtheorem{vd}{\color{\mauVD}\bfseriesextra Ví dụ}
+\newtheorem{bt}{\color{\mauBT}\bfseriesextra Bài}
+\newtheorem{ap}{\color{\mauBT}\bfseriesextra Áp dụng}
+\newtheorem{myvidu}{\color{\mauVD}\sffamily\bfseries Ví dụ}
+\newtheorem{mydl}{\color{\maudl}\sffamily\bfseries Định lí}
+\newtheorem{nx}{\color{\maucy}\sffamily\bfseries Nhận xét}
+\newtheorem{phantich}{\color{\maupt}\sffamily\bfseries Phân tích}
+\newtheorem{tc}{\color{\maudl}\sffamily\bfseries Tính chất}
+
+% Helper macros
+\def\khoanhtrondapan{}
+\def\khongkhoanhtrondapan{}
+\def\FULLWIDTH{\newgeometry{top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=28pt}}
+\def\NOTE{\newgeometry{top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=28pt}}
+\def\indapan#1#2{}
+% Các biến này được định nghĩa trong file main, không định nghĩa lại ở đây
+% \def\chamngon{}
+% \def\trenphai{}
+% \def\duoiphai{}
+% \def\hoten{}
+% \def\SDT{}
+% \def\DC{}
+
+% TOC - Classic style
+\def\muclucchinh{
+    \tableofcontents
+    \pagenumbering{roman}
+}
+
+% Fix for ex_test compatibility
+\def\dotlineEX#1{\par\noindent\dotfill\par}
+\def\mauDC{\mauLG!50}
+\setlength{\parindent}{0pt} % Tắt tự động thụt đầu dòng
