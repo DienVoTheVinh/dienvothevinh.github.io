@@ -190,6 +190,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <button class="btn btn-ghost btn-sm" onclick="batTatMucLuc()" title="Mục lục">☰</button>
       <a href="lop-hoc" class="back-btn" id="nutBackLopHoc"><span>←</span><span class="sw-text">Lớp học</span></a>
       <div class="lesson-title" id="tieuDeBaiHoc">Đang tải bài giảng…</div>
+      <div id="badgeGiaoVien" style="margin-left: 8px; flex-shrink: 0;"></div>
     </div>
     <div class="switcher" id="boChuyen" style="display:none">
       <button class="sw-btn" id="swLyThuyet" onclick="chonNoiDung('lythuyet')">📖 <span class="sw-text">Đọc lý thuyết</span></button>
@@ -202,6 +203,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </header>
+  <div id="coTeachBanner" style="display:none; background:rgba(217,119,6,0.08); border-bottom:1px solid rgba(217,119,6,0.2); color:var(--ink); padding:10px 16px; font-size:0.88rem; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap"></div>
 
   <!-- Hộp nộp bài -->
   <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
@@ -271,6 +273,9 @@ var noiDungDangChon = null;   // 'tailieu' | 'bang' | 'test'
 var interactiveQuestions = [];
 var selectedAnswers = {};
 var testAttempt = null;
+var mapGiaoVien = {};
+var classInfo = null;
+var coTeachLesson = null;
 
 (async function () {
   var params = new URLSearchParams(window.location.search);
@@ -395,7 +400,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, test_document_id, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -405,6 +410,34 @@ async function taiChiTietBaiHoc() {
     return;
   }
   details = r.data;
+
+  // Tải danh sách giáo viên
+  try {
+    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin']);
+    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+  } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
+
+  // Tải thông tin lớp để kiểm tra đồng giảng dạy
+  try {
+    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id').eq('id', details.class_id).single();
+    classInfo = rClass.data;
+  } catch(e) { console.error("Lỗi tải thông tin lớp:", e); }
+
+  // Tải bài học tương ứng của giáo viên kia (nếu có)
+  if (classInfo && classInfo.co_teacher_id && details.topic_id) {
+    try {
+      var otherTeacherId = (details.teacher_id === classInfo.co_teacher_id) ? classInfo.teacher_id : classInfo.co_teacher_id;
+      var rOther = await sb.from('lessons')
+        .select('id, title, teacher_id')
+        .eq('class_id', details.class_id)
+        .eq('topic_id', details.topic_id)
+        .eq('teacher_id', otherTeacherId)
+        .eq('published', true)
+        .limit(1)
+        .maybeSingle();
+      coTeachLesson = rOther.data;
+    } catch(e) { console.error("Lỗi tải bài học song song:", e); }
+  }
 
   // Thiết lập link nút quay lại theo vai trò
   if (nguoiDung && ['admin', 'teacher', 'assistant'].includes(nguoiDung.role)) {
@@ -466,6 +499,26 @@ function urlAnh(p) { return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-an
 function renderBaiHoc() {
   $('tieuDeBaiHoc').textContent = details.title;
   document.title = details.title + ' — VinhMath';
+
+  // Hiển thị tên giáo viên giảng dạy cạnh tiêu đề
+  var badgeGv = $('badgeGiaoVien');
+  if (badgeGv) {
+    var gvName = mapGiaoVien[details.teacher_id] || 'Thầy Vinh';
+    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;">👤 ' + gvName + '</span>';
+  }
+
+  // Hiển thị banner chuyển đổi bài giảng tương ứng của giáo viên kia (nếu có)
+  var banner = $('coTeachBanner');
+  if (banner) {
+    if (coTeachLesson) {
+      var otherTeacherName = mapGiaoVien[coTeachLesson.teacher_id] || 'Giáo viên khác';
+      banner.style.display = 'flex';
+      banner.innerHTML = '<span>💡 Bài học này có bài giảng song song giảng dạy bởi <b>' + otherTeacherName + '</b>.</span>' +
+        '<a href="bai-hoc?id=' + coTeachLesson.id + '" style="font-weight:600; color:var(--accent); text-decoration:underline;">Xem bài giảng tương ứng của ' + otherTeacherName + ' &rarr;</a>';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
 
   // ---- Video ----
   var ytId = extractYoutubeId(details.youtube_url);

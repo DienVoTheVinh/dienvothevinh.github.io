@@ -227,6 +227,12 @@
     <div class="sec-label">Trang cá nhân & Học lực</div>
     <h1 id="titleChao">Báo cáo Học tập VinhMath</h1>
     <p style="margin-top:4px">Theo dõi kết quả học tập định kỳ, điểm rèn luyện thái độ, tự học và vinh danh bảng vàng.</p>
+    <div style="margin-top: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 0.88rem; font-weight: 500; color: var(--ink-2);">Lọc theo giáo viên:</span>
+      <select class="input" id="locGiaoVienBaoCao" onchange="locDuLieuBaoCao()" style="width: auto; padding: 4px 12px; font-size: 0.85rem; border-radius:var(--r-sm); background:var(--surface); border:1px solid var(--line-2); color:var(--ink);">
+        <option value="">Tất cả giáo viên</option>
+      </select>
+    </div>
   </div>
 
   <!-- Thiết kế hàng ngang điểm trạng thái (Rank) nổi bật -->
@@ -521,6 +527,24 @@ var charts = {
   bar: null
 };
 
+// Biến thô để lọc theo giáo viên giảng dạy
+var rawClassSessions = [];
+var rawAttendanceList = [];
+var rawAnalyticsSessions = [];
+var rawAttemptsList = [];
+var rawRemarksList = [];
+var rawSubmissionsList = [];
+var rawLessonsList = [];
+
+// Biến thô lịch học
+var rawCalendarSessions = [];
+var rawCalendarAttendance = [];
+var rawCalendarExams = [];
+
+// Biến thô bảng điểm
+var rawGradebookAttempts = [];
+var rawGradebookSubmissions = [];
+
 // Bảng màu gradient hiện đại cho avatar mặc định dạng chữ cái
 var GRADIENTS = [
   'linear-gradient(135deg, #FF5E62 0%, #FF9966 100%)', // Coral Sunset
@@ -668,6 +692,16 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
     return;
   }
 
+  // Tải danh sách giáo viên giảng dạy để hiện bộ lọc
+  try {
+    var rT = await sb.from('profiles').select('id, full_name').in('role', ['teacher', 'admin']).order('full_name');
+    var dsGiaoVien = rT.data || [];
+    var optHtml = '<option value="">Tất cả giáo viên</option>' +
+      dsGiaoVien.map(function (g) { return '<option value="' + g.id + '">' + g.full_name + '</option>'; }).join('');
+    var selGv = $('locGiaoVienBaoCao');
+    if (selGv) selGv.innerHTML = optHtml;
+  } catch(e) { console.error('Lỗi tải giáo viên:', e); }
+
   // Thực hiện tính toán toàn bộ số liệu & render dashboard
   await runLearningAnalytics();
 
@@ -784,190 +818,256 @@ async function runLearningAnalytics() {
     calculateAndRenderCharts();
     return;
   }
-  
-  try {
-    // 1. Tải dữ liệu chuyên cần
-    var rTotalSessions = await sb.from('class_sessions').select('id').in('class_id', classIds);
-    var totalSess = rTotalSessions.data ? rTotalSessions.data.length : 0;
-    
-    var rAttended = await sb.from('attendance')
-      .select('status')
-      .eq('student_id', profileData.id)
-      .in('status', ['present', 'late']);
-    var attendedSess = rAttended.data ? rAttended.data.length : 0;
-    
-    var attRate = totalSess > 0 ? (attendedSess / totalSess) : 1.0;
-    calculatedScores.attendance = attRate * 10;
-    
-    // Tải chuỗi streak
-    var streak = 0;
+
+  // Tải dữ liệu thô nếu là lần đầu tiên
+  if (rawClassSessions.length === 0 && rawAttendanceList.length === 0 && rawAttemptsList.length === 0) {
     try {
-      var rAllSess = await sb.from('class_sessions')
-        .select('id, held_on')
-        .in('class_id', classIds)
-        .order('held_on', { ascending: false });
-      var listAllSess = rAllSess.data || [];
+      var r1 = await sb.from('class_sessions').select('id, class_id, teacher_id').in('class_id', classIds);
+      rawClassSessions = r1.data || [];
       
-      var rMyAtt = await sb.from('attendance')
-        .select('session_id, status')
+      var r2 = await sb.from('attendance')
+        .select('session_id, status, checked_at, class_sessions(teacher_id)')
         .eq('student_id', profileData.id);
-      var myAttMap = {};
-      (rMyAtt.data || []).forEach(function(a) { myAttMap[a.session_id] = a.status; });
+      rawAttendanceList = r2.data || [];
       
-      var todayStr = new Date().toISOString().split('T')[0];
-      for (var i = 0; i < listAllSess.length; i++) {
-        var s = listAllSess[i];
-        if (s.held_on > todayStr) continue; // bỏ các buổi tương lai
-        var status = myAttMap[s.id];
-        if (status === 'present' || status === 'late') {
-          streak++;
-        } else {
-          if (s.held_on === todayStr) continue; // buổi hôm nay chưa qua, bỏ qua không cắt đứt chuỗi
-          break;
-        }
-      }
-    } catch(se) {}
-    
-    $('scoreAttendance').textContent = Math.round(attRate * 100) + '%';
-    $('subAttendance').textContent = attendedSess + '/' + totalSess + ' buổi · 🔥 ' + streak;
-    
-    // 2. Tải thời lượng tự học theo tuần
-    var rAnal = await sb.from('analytics_sessions')
-      .select('started_at, duration_seconds')
-      .eq('profile_id', profileData.id)
-      .order('started_at', { ascending: false });
-    var analyticsList = rAnal.data || [];
-    
-    // Tính số giờ trong tuần này (tính từ thứ 2 lúc 0h00)
-    var now = new Date();
-    var day = now.getDay();
-    var diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    var startOfWeek = new Date(now.setDate(diff));
-    startOfWeek.setHours(0,0,0,0);
-    
-    var secondsThisWeek = 0;
-    analyticsList.forEach(function(s) {
-      if (new Date(s.started_at) >= startOfWeek) {
-        secondsThisWeek += (s.duration_seconds || 0);
-      }
-    });
-    
-    var hoursThisWeek = secondsThisWeek / 3600;
-    // Mỗi 1 giờ học = 2 điểm, tối đa 10 điểm khi học đủ 5 giờ tự học/tuần
-    calculatedScores.studyHours = Math.min(10, hoursThisWeek * 2.0);
-    
-    $('scoreHours').textContent = hoursThisWeek.toFixed(1) + 'h';
-    $('subHours').textContent = 'Quy đổi: ' + calculatedScores.studyHours.toFixed(1) + ' điểm';
-    
-    // 3. Tải điểm kiểm tra trắc nghiệm
-    var rQuiz = await sb.from('attempts')
-      .select('score')
-      .eq('student_id', profileData.id)
-      .not('lesson_id', 'is', null)
-      .is('exam_id', null)
-      .not('submitted_at', 'is', null);
-    
-    var quizScores = rQuiz.data || [];
-    if (quizScores.length > 0) {
-      var sumQuiz = quizScores.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
-      calculatedScores.quizzes = sumQuiz / quizScores.length;
-      $('scoreQuizzes').textContent = calculatedScores.quizzes.toFixed(1);
-      $('subQuizzes').textContent = quizScores.length + ' bài kiểm tra';
-    } else {
-      calculatedScores.quizzes = null;
-      $('scoreQuizzes').textContent = '—';
-      $('subQuizzes').textContent = 'Chưa làm bài nào';
-    }
-    
-    // 4. Tải điểm thi thử luyện đề
-    var rExams = await sb.from('attempts')
-      .select('score')
-      .eq('student_id', profileData.id)
-      .not('exam_id', 'is', null)
-      .not('submitted_at', 'is', null);
+      var r3 = await sb.from('analytics_sessions')
+        .select('started_at, duration_seconds')
+        .eq('profile_id', profileData.id)
+        .order('started_at', { ascending: false });
+      rawAnalyticsSessions = r3.data || [];
       
-    var examScores = rExams.data || [];
-    if (examScores.length > 0) {
-      var sumExam = examScores.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
-      calculatedScores.exams = sumExam / examScores.length;
-      $('scoreExams').textContent = calculatedScores.exams.toFixed(1);
-      $('subExams').textContent = examScores.length + ' đề đã làm';
-    } else {
-      calculatedScores.exams = null;
-      $('scoreExams').textContent = '—';
-      $('subExams').textContent = 'Chưa thi thử';
-    }
-    
-    // 5. Tải điểm thái độ học tập
-    var rRemarks = await sb.from('session_remarks')
-      .select('attitude_score')
-      .eq('student_id', profileData.id)
-      .not('attitude_score', 'is', null);
+      var r4 = await sb.from('attempts')
+        .select('lesson_id, exam_id, score, submitted_at, lessons(teacher_id)')
+        .eq('student_id', profileData.id)
+        .not('submitted_at', 'is', null);
+      rawAttemptsList = r4.data || [];
       
-    var attScores = rRemarks.data || [];
-    if (attScores.length > 0) {
-      var sumAtt = attScores.reduce(function(acc, item) { return acc + parseFloat(item.attitude_score || 0); }, 0);
-      calculatedScores.attitude = sumAtt / attScores.length;
-      $('scoreAttitude').textContent = calculatedScores.attitude.toFixed(1);
-      $('subAttitude').textContent = attScores.length + ' buổi nhận xét';
-    } else {
-      calculatedScores.attitude = null;
-      $('scoreAttitude').textContent = '—';
-      $('subAttitude').textContent = 'Thầy chưa đánh giá';
-    }
-    
-    // 6. Tải bài tự luận nộp đúng hạn
-    var rSub = await sb.from('submissions')
-      .select('submitted_at, lesson_id, lessons(created_at)')
-      .eq('student_id', profileData.id);
-    var subs = rSub.data || [];
-    
-    var rLessons = await sb.from('lessons')
-      .select('id, created_at')
-      .in('class_id', classIds);
-    var homeworkLessons = rLessons.data || [];
-    
-    var timelinessTotal = 0;
-    var timelinessCount = 0;
-    
-    homeworkLessons.forEach(function(l) {
-      var matchSub = subs.find(function(sbItem) { return sbItem.lesson_id === l.id; });
-      var daysAge = (new Date() - new Date(l.created_at)) / (24 * 3600 * 1000);
+      var r5 = await sb.from('session_remarks')
+        .select('attitude_score, session_id, class_sessions(teacher_id)')
+        .eq('student_id', profileData.id);
+      rawRemarksList = r5.data || [];
       
-      if (matchSub) {
-        var hrsDiff = (new Date(matchSub.submitted_at) - new Date(l.created_at)) / (3600 * 1000);
-        // Nộp trong vòng 7 ngày (168 giờ) được coi là Đúng hạn = 10 điểm, trễ = 5 điểm
-        var pts = hrsDiff <= 168 ? 10 : 5;
-        timelinessTotal += pts;
-        timelinessCount++;
-      } else {
-        // Bài tập đã giao quá 7 ngày mà chưa nộp = 0 điểm
-        if (daysAge > 7) {
-          timelinessTotal += 0;
-          timelinessCount++;
-        }
-        // Còn nếu bài tập mới giao dưới 7 ngày thì không bị trừ điểm vội (không tính vào mẫu số)
-      }
-    });
-    
-    if (timelinessCount > 0) {
-      calculatedScores.timeliness = timelinessTotal / timelinessCount;
-      var onTimePercent = Math.round((timelinessTotal / (timelinessCount * 10)) * 100);
-      $('scoreTimeliness').textContent = calculatedScores.timeliness.toFixed(1);
-      $('subTimeliness').textContent = onTimePercent + '% bài đúng hạn';
-    } else {
-      calculatedScores.timeliness = null;
-      $('scoreTimeliness').textContent = '—';
-      $('subTimeliness').textContent = 'Không có bài tập';
+      var r6 = await sb.from('submissions')
+        .select('submitted_at, lesson_id, lessons(created_at, teacher_id)')
+        .eq('student_id', profileData.id);
+      rawSubmissionsList = r6.data || [];
+      
+      var r7 = await sb.from('lessons')
+        .select('id, created_at, teacher_id')
+        .in('class_id', classIds);
+      rawLessonsList = r7.data || [];
+    } catch(e) {
+      console.error("Lỗi tải dữ liệu thô báo cáo:", e);
     }
-    
-    // Vẽ biểu đồ
-    calculateAndRenderCharts();
-    
-  } catch (err) {
-    console.error('Lỗi tính toán đo lường:', err);
-    calculateAndRenderCharts();
   }
+
+  tinhToanVaRenderBaoCao();
+}
+
+function tinhToanVaRenderBaoCao() {
+  var gvChon = $('locGiaoVienBaoCao') ? $('locGiaoVienBaoCao').value : '';
+
+  // 1. Chuyên cần
+  var buoiLoc = rawClassSessions;
+  if (gvChon) {
+    buoiLoc = rawClassSessions.filter(function(b) { return b.teacher_id === gvChon; });
+  }
+  var totalSess = buoiLoc.length;
+  
+  var ddLoc = rawAttendanceList.filter(function(a) { return a.status === 'present' || a.status === 'late'; });
+  if (gvChon) {
+    ddLoc = ddLoc.filter(function(a) { return a.class_sessions && a.class_sessions.teacher_id === gvChon; });
+  }
+  var attendedSess = ddLoc.length;
+  
+  var attRate = totalSess > 0 ? (attendedSess / totalSess) : 1.0;
+  calculatedScores.attendance = attRate * 10;
+
+  // Tính Streak
+  var streak = 0;
+  var buoiSorted = [...buoiLoc].sort(function(a, b) { return new Date(b.held_on || 0) - new Date(a.held_on || 0); });
+  var myAttMap = {};
+  rawAttendanceList.forEach(function(a) { myAttMap[a.session_id] = a.status; });
+  var todayStr = new Date().toISOString().split('T')[0];
+  for (var i = 0; i < buoiSorted.length; i++) {
+    var s = buoiSorted[i];
+    if (s.held_on > todayStr) continue;
+    var status = myAttMap[s.id];
+    if (status === 'present' || status === 'late') {
+      streak++;
+    } else {
+      if (s.held_on === todayStr) continue;
+      break;
+    }
+  }
+
+  $('scoreAttendance').textContent = Math.round(attRate * 100) + '%';
+  $('subAttendance').textContent = attendedSess + '/' + totalSess + ' buổi · 🔥 ' + streak;
+
+  // 2. Thời lượng tự học (analytics) - Không đổi theo giáo viên vì là tự học
+  var secondsThisWeek = 0;
+  var now = new Date();
+  var day = now.getDay();
+  var diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  var startOfWeek = new Date(now.setDate(diff));
+  startOfWeek.setHours(0,0,0,0);
+  rawAnalyticsSessions.forEach(function(s) {
+    if (new Date(s.started_at) >= startOfWeek) {
+      secondsThisWeek += (s.duration_seconds || 0);
+    }
+  });
+  var hoursThisWeek = secondsThisWeek / 3600;
+  calculatedScores.studyHours = Math.min(10, hoursThisWeek * 2.0);
+  $('scoreHours').textContent = hoursThisWeek.toFixed(1) + 'h';
+  $('subHours').textContent = 'Quy đổi: ' + calculatedScores.studyHours.toFixed(1) + ' điểm';
+
+  // 3. Điểm kiểm tra trắc nghiệm
+  var quizLoc = rawAttemptsList.filter(function(a) { return a.lesson_id != null && a.exam_id == null; });
+  if (gvChon) {
+    quizLoc = quizLoc.filter(function(a) { return a.lessons && a.lessons.teacher_id === gvChon; });
+  }
+  if (quizLoc.length > 0) {
+    var sumQuiz = quizLoc.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
+    calculatedScores.quizzes = sumQuiz / quizLoc.length;
+    $('scoreQuizzes').textContent = calculatedScores.quizzes.toFixed(1);
+    $('subQuizzes').textContent = quizLoc.length + ' bài kiểm tra';
+  } else {
+    calculatedScores.quizzes = null;
+    $('scoreQuizzes').textContent = '—';
+    $('subQuizzes').textContent = 'Chưa làm bài nào';
+  }
+
+  // 4. Điểm thi thử luyện đề (exams)
+  var examLoc = rawAttemptsList.filter(function(a) { return a.exam_id != null; });
+  if (examLoc.length > 0) {
+    var sumExam = examLoc.reduce(function(acc, item) { return acc + parseFloat(item.score || 0); }, 0);
+    calculatedScores.exams = sumExam / examLoc.length;
+    $('scoreExams').textContent = calculatedScores.exams.toFixed(1);
+    $('subExams').textContent = examLoc.length + ' đề đã làm';
+  } else {
+    calculatedScores.exams = null;
+    $('scoreExams').textContent = '—';
+    $('subExams').textContent = 'Chưa thi thử';
+  }
+
+  // 5. Điểm thái độ học tập
+  var remarkLoc = rawRemarksList;
+  if (gvChon) {
+    remarkLoc = rawRemarksList.filter(function(r) { return r.class_sessions && r.class_sessions.teacher_id === gvChon; });
+  }
+  if (remarkLoc.length > 0) {
+    var sumAtt = remarkLoc.reduce(function(acc, item) { return acc + parseFloat(item.attitude_score || 0); }, 0);
+    calculatedScores.attitude = sumAtt / remarkLoc.length;
+    $('scoreAttitude').textContent = calculatedScores.attitude.toFixed(1);
+    $('subAttitude').textContent = remarkLoc.length + ' buổi nhận xét';
+  } else {
+    calculatedScores.attitude = null;
+    $('scoreAttitude').textContent = '—';
+    $('subAttitude').textContent = 'Thầy chưa đánh giá';
+  }
+
+  // 6. Bài tự luận nộp đúng hạn
+  var lessonsLoc = rawLessonsList;
+  if (gvChon) {
+    lessonsLoc = rawLessonsList.filter(function(l) { return l.teacher_id === gvChon; });
+  }
+  var timelinessTotal = 0;
+  var timelinessCount = 0;
+  lessonsLoc.forEach(function(l) {
+    var matchSub = rawSubmissionsList.find(function(sbItem) { return sbItem.lesson_id === l.id; });
+    var daysAge = (new Date() - new Date(l.created_at)) / (24 * 3600 * 1000);
+    
+    if (matchSub) {
+      var hrsDiff = (new Date(matchSub.submitted_at) - new Date(l.created_at)) / (3600 * 1000);
+      var pts = hrsDiff <= 168 ? 10 : 5;
+      timelinessTotal += pts;
+      timelinessCount++;
+    } else {
+      if (daysAge > 7) {
+        timelinessTotal += 0;
+        timelinessCount++;
+      }
+    }
+  });
+
+  if (timelinessCount > 0) {
+    calculatedScores.timeliness = timelinessTotal / timelinessCount;
+    var onTimePercent = Math.round((timelinessTotal / (timelinessCount * 10)) * 100);
+    $('scoreTimeliness').textContent = calculatedScores.timeliness.toFixed(1);
+    $('subTimeliness').textContent = onTimePercent + '% bài đúng hạn';
+  } else {
+    calculatedScores.timeliness = null;
+    $('scoreTimeliness').textContent = '—';
+    $('subTimeliness').textContent = 'Không có bài tập';
+  }
+
+  calculateAndRenderCharts();
+}
+
+function locDuLieuBaoCao() {
+  tinhToanVaRenderBaoCao();
+  
+  var gvChon = $('locGiaoVienBaoCao') ? $('locGiaoVienBaoCao').value : '';
+  
+  // Lọc lịch học
+  if (gvChon) {
+    allSessions = rawCalendarSessions.filter(function (s) { return s.teacher_id === gvChon; });
+  } else {
+    allSessions = rawCalendarSessions;
+  }
+  veLichThang(currentYear, currentMonth);
+  
+  // Lọc bảng điểm
+  var filteredAttempts = rawGradebookAttempts;
+  var filteredSubs = rawGradebookSubmissions;
+  if (gvChon) {
+    filteredAttempts = rawGradebookAttempts.filter(function (a) {
+      return a.lessons ? a.lessons.teacher_id === gvChon : true;
+    });
+    filteredSubs = rawGradebookSubmissions.filter(function (s) {
+      return s.lessons && s.lessons.teacher_id === gvChon;
+    });
+  }
+  
+  var combined = [];
+  filteredAttempts.forEach(function (a) {
+    if (a.submitted_at) {
+      combined.push({
+        title: a.lessons ? a.lessons.title : (a.exams ? a.exams.title : 'Đề luyện tập'),
+        type: a.exams ? 'Thi thử' : 'Trắc nghiệm bài học',
+        date: new Date(a.submitted_at).toLocaleDateString('vi-VN'),
+        score: a.score,
+        timestamp: new Date(a.submitted_at).getTime()
+      });
+    }
+  });
+  
+  filteredSubs.forEach(function (s) {
+    combined.push({
+      title: s.lessons ? s.lessons.title + ' (Tự luận)' : 'Bài tự luận',
+      type: 'Tự luận nộp tập',
+      date: new Date(s.submitted_at).toLocaleDateString('vi-VN'),
+      score: s.score,
+      timestamp: new Date(s.submitted_at).getTime()
+    });
+  });
+  
+  combined.sort(function (a, b) { return b.timestamp - a.timestamp; });
+  
+  if (!combined.length) {
+    $('bangDiemHocSinh').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:16px 0;">Chưa ghi nhận điểm số bài test nào.</td></tr>';
+    return;
+  }
+  
+  $('bangDiemHocSinh').innerHTML = combined.map(function (item) {
+    return '<tr>' +
+      '<td><b>' + item.title + '</b></td>' +
+      '<td>' + item.type + '</td>' +
+      '<td class="num2">' + item.date + '</td>' +
+      '<td class="num2" style="font-weight:700; color:var(--accent)">' + (item.score != null ? item.score.toFixed(1) : '—') + '</td>' +
+      '</tr>';
+  }).join('');
+}
 }
 
 // Phân bổ trọng số động khi học sinh thiếu đầu điểm (ví dụ chưa thi thử hoặc thầy chưa chấm thái độ)
@@ -1530,8 +1630,9 @@ async function taiDuLieuTheoDoi() {
   }
   
   try {
-    var rSess = await sb.from('class_sessions').select('id, held_on, title').in('class_id', classIds);
-    allSessions = rSess.data || [];
+    var rSess = await sb.from('class_sessions').select('id, held_on, title, teacher_id').in('class_id', classIds);
+    rawCalendarSessions = rSess.data || [];
+    allSessions = rawCalendarSessions;
     
     var rAtt = await sb.from('attendance').select('session_id, status, checked_at').eq('student_id', profileData.id);
     var attList = rAtt.data || [];
@@ -1546,6 +1647,12 @@ async function taiDuLieuTheoDoi() {
     }
     var rEx = await queryEx;
     allExams = rEx.data || [];
+    
+    // Áp dụng bộ lọc giáo viên hiện tại nếu có
+    var gvChon = $('locGiaoVienBaoCao') ? $('locGiaoVienBaoCao').value : '';
+    if (gvChon) {
+      allSessions = rawCalendarSessions.filter(function (s) { return s.teacher_id === gvChon; });
+    }
     
     veLichThang(currentYear, currentMonth);
   } catch (err) {
@@ -1660,57 +1767,23 @@ async function taiNhanXetCuaEm() {
 
 // Tải bảng nhật ký điểm số chi tiết
 async function taiBangDiem() {
-  var r = await sb.from('attempts')
-    .select('score, started_at, submitted_at, lessons(title), exams(title)')
-    .eq('student_id', profileData.id)
-    .order('started_at', { ascending: false });
+  try {
+    var r = await sb.from('attempts')
+      .select('score, started_at, submitted_at, lessons(title, teacher_id), exams(title)')
+      .eq('student_id', profileData.id)
+      .order('started_at', { ascending: false });
+    rawGradebookAttempts = r.data || [];
     
-  var attempts = r.data || [];
-  
-  var rSub = await sb.from('submissions')
-    .select('score, submitted_at, feedback, lessons(title)')
-    .eq('student_id', profileData.id)
-    .eq('status', 'graded');
-  var subs = rSub.data || [];
-  
-  var combined = [];
-  attempts.forEach(function (a) {
-    if (a.submitted_at) {
-      combined.push({
-        title: a.lessons ? a.lessons.title : (a.exams ? a.exams.title : 'Đề luyện tập'),
-        type: a.exams ? 'Thi thử' : 'Trắc nghiệm bài học',
-        date: new Date(a.submitted_at).toLocaleDateString('vi-VN'),
-        score: a.score,
-        timestamp: new Date(a.submitted_at).getTime()
-      });
-    }
-  });
-  
-  subs.forEach(function (s) {
-    combined.push({
-      title: s.lessons ? s.lessons.title + ' (Tự luận)' : 'Bài tự luận',
-      type: 'Tự luận nộp tập',
-      date: new Date(s.submitted_at).toLocaleDateString('vi-VN'),
-      score: s.score,
-      timestamp: new Date(s.submitted_at).getTime()
-    });
-  });
-  
-  combined.sort(function (a, b) { return b.timestamp - a.timestamp; });
-  
-  if (!combined.length) {
-    $('bangDiemHocSinh').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:16px 0;">Chưa ghi nhận điểm số bài test nào.</td></tr>';
-    return;
+    var rSub = await sb.from('submissions')
+      .select('score, submitted_at, feedback, lessons(title, teacher_id)')
+      .eq('student_id', profileData.id)
+      .eq('status', 'graded');
+    rawGradebookSubmissions = rSub.data || [];
+    
+    locDuLieuBaoCao();
+  } catch(e) {
+    console.error("Lỗi tải bảng điểm:", e);
   }
-  
-  $('bangDiemHocSinh').innerHTML = combined.map(function (item) {
-    return '<tr>' +
-      '<td><b>' + item.title + '</b></td>' +
-      '<td>' + item.type + '</td>' +
-      '<td class="num">' + item.date + '</td>' +
-      '<td class="num" style="text-align:right;"><span class="score-badge">' + item.score.toFixed(1) + '</span></td>' +
-      '</tr>';
-  }).join('');
 }
 
 // Cập nhật thông tin hồ sơ của học sinh
