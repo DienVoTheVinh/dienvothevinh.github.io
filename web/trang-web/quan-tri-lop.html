@@ -124,12 +124,13 @@
           <span class="badge badge-warn" id="detSpec" style="display:none; margin-left:6px">Chuyên</span>
           <h2 id="detTenLop" style="font-size:1.8rem; margin-top:6px">Lớp học</h2>
           <p id="detNienKhoa" style="font-size:.88rem; color:var(--ink-2); margin-top:2px">Niên khóa: 2026-2027</p>
+          <p id="detGiaoVien" style="font-size:.88rem; color:var(--ink-2); margin-top:2px"></p>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <a class="btn btn-primary btn-sm" id="nutMeetLop" href="#" target="_blank" style="display:none">🎥 Vào phòng Meet</a>
           <a class="btn btn-ghost btn-sm" id="nutChuaMeet" href="quan-tri-lich" style="display:none" title="Lớp chưa có link Meet — bấm để cài trong trang Lịch & QR">＋ Gắn link Meet</a>
           <button class="btn btn-secondary btn-sm chi-gv" onclick="moNhacNho('class')">🔔 Nhắc cả lớp</button>
-          <button class="btn btn-secondary btn-sm chi-gv" onclick="doiTenLopCurrent()">✏️ Đổi tên lớp</button>
+          <button class="btn btn-secondary btn-sm chi-gv" onclick="moFormSuaLop()">✏️ Sửa lớp</button>
           <button class="btn btn-secondary btn-sm chi-gv" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
         </div>
       </div>
@@ -223,9 +224,69 @@
         <label>Niên khóa</label>
         <input class="input" id="classYear" value="2026-2027" required>
       </div>
+      <div class="field">
+        <label>Thầy cô hợp tác (Tuỳ chọn)</label>
+        <select class="input" id="classCoTeacher">
+          <option value="">-- Không hợp tác --</option>
+        </select>
+      </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
         <button type="button" class="btn btn-secondary" onclick="dongFormLop()">Hủy bỏ</button>
         <button type="submit" class="btn btn-primary">Tạo lớp</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Sửa Lớp Học -->
+<div class="modal" id="modalSuaLop">
+  <div class="modal-content" style="max-width: 440px">
+    <button class="modal-close" onclick="dongFormSuaLop()">×</button>
+    <h2>Chỉnh sửa lớp học</h2>
+    <form onsubmit="luuSuaLopHoc(event)">
+      <div class="field">
+        <label>Khối lớp <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="classEditGrade" required>
+          <option value="6">Khối 6</option>
+          <option value="7">Khối 7</option>
+          <option value="8">Khối 8</option>
+          <option value="9">Khối 9</option>
+          <option value="10">Khối 10</option>
+          <option value="11">Khối 11</option>
+          <option value="12">Khối 12</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tên lớp học <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="classEditName" required placeholder="Ví dụ: 7 HSG Online">
+      </div>
+      <div class="field">
+        <label>Phân loại lớp <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="classEditIsSpecialized" required>
+          <option value="false">📘 Lớp thường (Đại trà)</option>
+          <option value="true">⭐ Lớp chuyên (Gifted / HSG)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hình thức học <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="classEditMode" required>
+          <option value="online">🎥 Online trực tuyến</option>
+          <option value="offline">🏫 Trực tiếp tại trung tâm</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Niên khóa</label>
+        <input class="input" id="classEditYear" required>
+      </div>
+      <div class="field">
+        <label>Thầy cô hợp tác (Tuỳ chọn)</label>
+        <select class="input" id="classEditCoTeacher">
+          <option value="">-- Không hợp tác --</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
+        <button type="button" class="btn btn-secondary" onclick="dongFormSuaLop()">Hủy bỏ</button>
+        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
       </div>
     </form>
   </div>
@@ -641,6 +702,8 @@ var tatCaChuyenDe = [];
 var tatCaTaiLieu = [];
 var anhDaCo = [];
 var selectedImageFiles = [];
+var mapGiaoVien = {};
+var dsGiaoVien = [];
 
 (async function () {
   console.log("1. Khởi tạo trang: Bắt đầu");
@@ -659,10 +722,18 @@ var selectedImageFiles = [];
     return;
   }
   
+  console.log("3.5. Đang tải danh sách giáo viên...");
+  try {
+    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin']);
+    dsGiaoVien = rT.data || [];
+    dsGiaoVien.forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+  } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
+  
   console.log("5. Đang tải sidebar...");
   await loadingSidebar();
   console.log("6. Tải sidebar xong, đang tải danh mục...");
   await taiDuLieuDanhMuc();
+  napSelectGiaoVien();
   
   // Tự động chọn lớp từ URL (nếu có)
   var params = new URLSearchParams(window.location.search);
@@ -674,10 +745,23 @@ var selectedImageFiles = [];
   console.log("7. Khởi tạo trang: Hoàn tất!");
 })();
 
+function napSelectGiaoVien() {
+  var coTeachSelect = $('classCoTeacher');
+  var editCoTeachSelect = $('classEditCoTeacher');
+  
+  var optionsHtml = '<option value="">-- Không hợp tác --</option>';
+  dsGiaoVien.forEach(function(u) {
+    optionsHtml += '<option value="' + u.id + '">' + u.full_name + ' (' + (u.role === 'admin' ? 'Admin' : 'GV') + ')</option>';
+  });
+  
+  if (coTeachSelect) coTeachSelect.innerHTML = optionsHtml;
+  if (editCoTeachSelect) editCoTeachSelect.innerHTML = optionsHtml;
+}
+
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
   console.log("loadingSidebar: Đang truy vấn bảng classes...");
-  var r = await sb.from('classes').select('id, name, grade, mode, is_specialized').order('grade').order('name');
+  var r = await sb.from('classes').select('id, name, grade, mode, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
   console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
   
@@ -724,6 +808,12 @@ function chonLopHoc(id) {
   $('vungChiTiet').style.display = 'flex';
   
   $('detTenLop').textContent = cl.name;
+  $('detNienKhoa').textContent = 'Niên khóa: ' + (cl.school_year || '2026-2027');
+  
+  var gvChinh = mapGiaoVien[cl.teacher_id] || 'Thầy Vinh';
+  var gvHopTac = mapGiaoVien[cl.co_teacher_id];
+  $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + gvChinh + '</b>' + (gvHopTac ? ' & <b>' + gvHopTac + '</b>' : '');
+
   $('detMode').textContent = cl.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
   $('detMode').className = 'badge ' + (cl.mode === 'online' ? 'badge-accent' : 'badge-ok');
   
@@ -759,25 +849,44 @@ async function napNutMeet(classId) {
   }
 }
 
-async function doiTenLopCurrent() {
+function moFormSuaLop() {
   if (!classDangChon) return;
-  var tenMoi = prompt('Nhập tên mới cho lớp "' + classDangChon.name + '":', classDangChon.name);
-  if (tenMoi === null) return;
-  tenMoi = tenMoi.trim();
-  if (!tenMoi) {
-    alert('Tên lớp không được để trống.');
-    return;
-  }
-  if (tenMoi === classDangChon.name) return;
-
-  var r = await sb.from('classes').update({ name: tenMoi }).eq('id', classDangChon.id);
+  $('classEditGrade').value = classDangChon.grade;
+  $('classEditName').value = classDangChon.name;
+  $('classEditIsSpecialized').value = classDangChon.is_specialized ? 'true' : 'false';
+  $('classEditMode').value = classDangChon.mode;
+  $('classEditYear').value = classDangChon.school_year || '2026-2027';
+  $('classEditCoTeacher').value = classDangChon.co_teacher_id || '';
+  $('modalSuaLop').style.display = 'flex';
+}
+function dongFormSuaLop() {
+  $('modalSuaLop').style.display = 'none';
+}
+async function luuSuaLopHoc(e) {
+  e.preventDefault();
+  if (!classDangChon) return;
+  var grade = parseInt($('classEditGrade').value);
+  var name = $('classEditName').value.trim();
+  var isSpecialized = $('classEditIsSpecialized').value === 'true';
+  var mode = $('classEditMode').value;
+  var year = $('classEditYear').value.trim();
+  var coTeacherId = $('classEditCoTeacher').value || null;
+  
+  var r = await sb.from('classes').update({
+    grade: grade,
+    name: name,
+    is_specialized: isSpecialized,
+    mode: mode,
+    school_year: year,
+    co_teacher_id: coTeacherId
+  }).eq('id', classDangChon.id).select().single();
+  
   if (r.error) {
-    alert('Lỗi khi đổi tên lớp: ' + r.error.message);
+    alert('Lỗi: ' + r.error.message);
   } else {
-    classDangChon.name = tenMoi;
-    $('detTenLop').textContent = tenMoi;
+    dongFormSuaLop();
     await loadingSidebar();
-    alert('Đã đổi tên lớp thành công!');
+    chonLopHoc(r.data.id);
   }
 }
 
@@ -1488,8 +1597,21 @@ async function luuLopHoc(e) {
   var mode = $('classMode').value;
   var year = $('classYear').value;
   var isSpecialized = $('classIsSpecialized').value === 'true';
+  var coTeacherId = $('classCoTeacher').value || null;
   
-  var r = await sb.from('classes').insert({ name: name, grade: grade, mode: mode, school_year: year, is_specialized: isSpecialized }).select('id').single();
+  var u = await sb.auth.getUser();
+  var teacherId = u.data.user ? u.data.user.id : null;
+  
+  var r = await sb.from('classes').insert({ 
+    name: name, 
+    grade: grade, 
+    mode: mode, 
+    school_year: year, 
+    is_specialized: isSpecialized,
+    teacher_id: teacherId,
+    co_teacher_id: coTeacherId
+  }).select('id').single();
+  
   if (r.error) {
     alert('Lỗi: ' + r.error.message);
   } else {
