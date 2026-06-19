@@ -464,7 +464,7 @@ async function renderStaffHome(hoSo) {
   box.innerHTML = '<div class="empty card">Đang tải lịch lớp…</div>';
 
   var rs = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, recurrence, class_id, classes(name, mode)')
+    .select('weekday, start_time, end_time, mode, note, recurrence, class_id, classes(name, mode, grade, is_specialized)')
     .order('weekday').order('start_time');
   var scheds = rs.data || [];
 
@@ -504,8 +504,19 @@ async function renderStaffHome(hoSo) {
       : '<span style="font-size:.85rem; color:var(--ink-2)">🏫 Tại lớp</span>';
     var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
     var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + ten.replace(/'/g, "\\'") + '\')">📝 Điểm danh</button>';
+    
+    var tagHtml = '';
+    if (s.classes) {
+      if (s.classes.grade) {
+        tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + s.classes.grade + '</span>';
+      }
+      if (s.classes.is_specialized) {
+        tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>';
+      }
+    }
+    
     return '<tr style="' + (laHomNay ? 'background:var(--accent-soft)' : '') + '">' +
-      '<td style="' + tdSty + '"><b>' + ten + '</b>' + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</td>' +
+      '<td style="' + tdSty + '"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><b>' + ten + '</b>' + tagHtml + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</div></td>' +
       '<td style="' + tdSty + '">' + TEN_THU[s.weekday] + recText + '</td>' +
       '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5) + '</td>' +
       '<td style="' + tdSty + '">' + (online ? '🎥 Online' : '🏫 Tại lớp') + '</td>' +

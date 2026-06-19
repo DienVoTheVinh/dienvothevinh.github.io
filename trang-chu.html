@@ -927,7 +927,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode)')
+    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1029,7 +1029,7 @@ async function taiSchedulesVaExamsStudent() {
   
   // 1. Tải lịch học lớp học sinh tham gia
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode)')
+    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -1423,9 +1423,19 @@ function gcalEventsForDay(dt) {
   (tatCaSchedules || []).forEach(function (s) {
     var match = s.recurrence === 'once' ? (s.date === key) : (s.weekday === wd);
     if (!match || !s.start_time || !s.end_time) return;
+    
+    var titleText = 'Lớp học';
+    if (s.classes) {
+      titleText = s.classes.name;
+      var badges = [];
+      if (s.classes.is_specialized) badges.push('Chuyên');
+      if (s.classes.grade) badges.push('K' + s.classes.grade);
+      if (badges.length) titleText += ' (' + badges.join(', ') + ')';
+    }
+    
     arr.push({
       start: s.start_time, end: s.end_time,
-      title: (s.classes ? s.classes.name : 'Lớp học'),
+      title: titleText,
       bg: layMauLop(s.classes ? s.classes.name : 'Lớp học')
     });
   });
