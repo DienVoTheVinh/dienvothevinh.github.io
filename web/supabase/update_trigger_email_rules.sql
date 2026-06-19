@@ -1,6 +1,6 @@
 -- ============================================================
--- TRIGGER TỰ ĐỘNG TẠO HỒ SƠ (PROFILES) KHI TẠO USER TRÊN SUPABASE
--- Cách dùng: vào Supabase > SQL Editor > Bấm New Query > Dán toàn bộ code này > Run
+-- VINHMATH — CẬP NHẬT TRIGGER PHÂN VAI TRÒ THEO TÊN MIỀN EMAIL
+-- Hướng dẫn: Mở Supabase > SQL Editor > Paste đoạn code này và bấm Run.
 -- ============================================================
 
 create or replace function public.handle_new_user()
@@ -54,7 +54,7 @@ begin
     );
   end if;
 
-  -- 3. Chèn vào bảng profiles
+  -- 3. Chèn hoặc cập nhật bảng profiles
   insert into public.profiles (id, role, username, full_name, class_id)
   values (new.id, v_role, v_username, v_full_name, null)
   on conflict (id) do update 
@@ -65,9 +65,3 @@ begin
   return new;
 end;
 $$ language plpgsql security definer;
-
--- Tạo trigger
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();

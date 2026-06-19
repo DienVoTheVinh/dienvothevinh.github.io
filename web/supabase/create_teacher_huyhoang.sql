@@ -20,7 +20,7 @@ INSERT INTO auth.users (
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'gv.huyhoang@hs.vinhmath.app',
+  'dauvanhuyhoang@gv.vinhmath',
   crypt('HuyHoang_VinhMath2026', gen_salt('bf')),
   now(),
   '{"provider":"email","providers":["email"]}',

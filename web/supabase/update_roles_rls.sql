@@ -91,22 +91,36 @@ begin
   -- Trích xuất phần trước dấu @ làm username
   v_username := split_part(new.email, '@', 1);
   
-  -- Xác định vai trò dựa trên tiền tố username hoặc email
-  if v_username = 'thayvinh' or new.email = 'dienvothevinh29@gmail.com' or v_username like 'admin.%' then
+  -- Xác định vai trò dựa trên tiền tố username hoặc đuôi tên miền email
+  if v_username = 'thayvinh' 
+     or new.email = 'dienvothevinh29@gmail.com' 
+     or v_username like 'admin.%' 
+     or new.email like '%@admin.vinhmath%' then
     v_role := 'admin';
     v_full_name := coalesce(new.raw_user_meta_data->>'full_name', 'Thầy Vinh (Admin)');
-  elsif v_username like 'gv.%' or v_username like 'teacher.%' then
+    
+  elsif v_username like 'gv.%' 
+        or v_username like 'teacher.%' 
+        or new.email like '%@gv.vinhmath%' 
+        or new.email like '%@teacher.vinhmath%' then
     v_role := 'teacher';
     v_full_name := coalesce(
       new.raw_user_meta_data->>'full_name',
       'Giáo viên ' || initcap(replace(replace(v_username, 'gv.', ''), 'teacher.', ''))
     );
-  elsif v_username like 'tg.%' or v_username like 'trogiang.%' or v_username like 'assistant.%' then
+    
+  elsif v_username like 'tg.%' 
+        or v_username like 'trogiang.%' 
+        or v_username like 'assistant.%' 
+        or new.email like '%@tg.vinhmath%' 
+        or new.email like '%@trogiang.vinhmath%' 
+        or new.email like '%@assistant.vinhmath%' then
     v_role := 'assistant';
     v_full_name := coalesce(
       new.raw_user_meta_data->>'full_name',
       'Trợ giảng ' || initcap(replace(replace(replace(v_username, 'tg.', ''), 'trogiang.', ''), 'assistant.', ''))
     );
+    
   else
     v_role := 'student';
     v_full_name := coalesce(
