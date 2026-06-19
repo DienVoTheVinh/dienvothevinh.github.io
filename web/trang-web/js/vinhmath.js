@@ -144,10 +144,14 @@ async function dangNhap(username, password) {
   var email = "";
   if (!u.includes('@')) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
-    email = u + '@hs.vinhmath';
+    email = u + '@hs.vinhmath.com';
   } else {
-    // Sử dụng trực tiếp email dạng name@hs.vinhmath
-    email = u;
+    // Nếu nhập có đuôi phân quyền, tự động thêm đuôi .com ngầm để hợp lệ với Supabase Auth
+    if (u.endsWith('@hs.vinhmath') || u.endsWith('@tg.vinhmath') || u.endsWith('@gv.vinhmath') || u.endsWith('@ad.vinhmath') || u.endsWith('@admin.vinhmath')) {
+      email = u + '.com';
+    } else {
+      email = u;
+    }
   }
   
   var r = await sb.auth.signInWithPassword({ email: email, password: password });
