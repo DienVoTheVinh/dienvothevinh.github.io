@@ -8,97 +8,117 @@
 
 :root {
   /* --- PHÔNG CHỮ --- */
-  --font-sans: "Be Vietnam Pro", "Outfit", -apple-system, sans-serif;
+  --font-sans: "Be Vietnam Pro", -apple-system, sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-title: "Cinzel", Georgia, serif;
   --font-mono: "Fira Code", monospace;
 
-  --fs-h1: 2.25rem;
-  --fs-h2: 1.625rem;
-  --fs-h3: 1.25rem;
+  --fs-h1: 2.5rem;
+  --fs-h2: 1.75rem;
+  --fs-h3: 1.35rem;
   --fs-body: 1rem;
   --fs-small: 0.875rem;
   --fs-tiny: 0.8rem;
 
   /* --- CẤU TRÚC: BO GÓC & BÓNG --- */
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 24px;
+  --r-sm: 6px; /* Hơi vuông hơn đậm chất học thuật phương Tây */
+  --r-md: 10px;
+  --r-lg: 16px;
   
   /* --- ĐỘ TRONG SUỐT VÀ BLUR (Liquid Glass Controls) --- */
-  --glass-opacity: 0.2;
-  --glass-blur-radius: 20px;
+  --glass-opacity: 0.15;
+  --glass-blur-radius: 16px;
   
-  /* --- CHẾ ĐỘ SÁNG (LIQUID GLASS / GLASSMORPHISM) --- */
-  --bg: #f2f6fc; /* Nền xanh dương nhạt dịu nhẹ, sang trọng */
-  --bg-gradient: linear-gradient(135deg, #f2f6fc 0%, #e6effa 50%, #d8e5f7 100%);
-  --bg-rgb: 242, 246, 252;
+  /* --- CHẾ ĐỘ SÁNG (LIGHT MODE) - CỔ ĐIỂN PHƯƠNG TÂY ĐỒNG BỘ TÀI LIỆU --- */
+  --bg: #faf8f5; /* Màu giấy da/ivory ấm áp cổ điển */
+  --bg-gradient: linear-gradient(135deg, #faf8f5 0%, #f4f6fa 100%);
+  --bg-rgb: 250, 248, 245;
   --surface-rgb: 255, 255, 255;
   --surface-2-rgb: 240, 246, 255;
   
-  --surface: rgba(255, 255, 255, var(--glass-opacity)); /* Kính mờ tráng gương */
-  --surface-2: rgba(230, 240, 255, calc(var(--glass-opacity) + 0.15)); /* Hover kính nhạt xanh */
+  --surface: rgba(255, 255, 255, 0.85); /* Kính mờ tráng gương */
+  --surface-2: rgba(31, 58, 96, 0.05); /* Hover kính nhạt xanh navy */
   --surface-solid: #ffffff;
   
-  --line: rgba(255, 255, 255, 0.5); /* Đường viền kính mờ */
-  --line-2: rgba(11, 21, 40, 0.12); /* Đường viền kính xanh dương đen nhẹ */
-  --grid-line: rgba(11, 21, 40, 0.04); /* Đường kẻ ô toán học sáng */
+  --line: rgba(30, 78, 140, 0.12); /* Viền màu brandNavy mờ */
+  --line-2: rgba(194, 125, 0, 0.3); /* Viền màu brandGold mờ */
+  --grid-line: rgba(30, 78, 140, 0.05); /* Đường kẻ ô toán học navy mờ */
   
-  --ink: #081125; /* Xanh dương đen sâu (Deep Navy Black) */
-  --ink-2: #213153; /* Xanh dương đen trung bình */
-  --ink-3: #586b90; /* Xanh dương đen nhạt */
+  --ink: #1e293b; /* brandDark - Xám tối/Đen chữ chính */
+  --ink-2: #1f3a60; /* brandBlue - Xanh dương trung tính */
+  --ink-3: #64748b; /* brandGray - Xám ghi phụ */
   
-  --accent: #d97706; /* Vàng hổ phách rực rỡ, độ tương phản cao trên nền sáng */
-  --accent-hover: #b45309;
-  --accent-soft: rgba(217, 119, 6, 0.08);
-  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  --accent: #c27d00; /* brandGold - Vàng hổ phách chính */
+  --accent-hover: #a66b00;
+  --accent-soft: rgba(194, 125, 0, 0.08);
+  --accent-gradient: linear-gradient(135deg, #e09916 0%, #a66b00 100%);
   
-  --ok: #10b981;
-  --ok-soft: rgba(16, 185, 129, 0.1);
-  --warn: #f59e0b;
-  --warn-soft: rgba(245, 158, 11, 0.1);
-  --err: #ef4444;
-  --err-soft: rgba(239, 68, 68, 0.1);
+  --ok: #1a7556;
+  --ok-soft: rgba(26, 117, 86, 0.1);
+  --warn: #b87d14;
+  --warn-soft: rgba(184, 125, 20, 0.1);
+  --err: #9e2a2b;
+  --err-soft: rgba(158, 42, 43, 0.1);
   
-  --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+  --shadow: 0 10px 30px rgba(31, 58, 96, 0.06), 0 1px 3px rgba(31, 58, 96, 0.02);
   --glass-blur: blur(var(--glass-blur-radius));
-  --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+  --glass-border: 1px solid rgba(194, 125, 0, 0.2); /* Viền vàng gold mảnh bao quanh card */
+
+  /* Thiết lập riêng biệt cho Topbar để xanh dương đen (brandBlue) chiếm chủ đạo */
+  --topbar-bg: #1f3a60;
+  --topbar-border: 1px solid rgba(194, 125, 0, 0.25);
+  --topbar-link: #f1f5f9;
+  --topbar-link-hover: #fffbeb;
+  --topbar-link-active: #dfbc5e;
+  --topbar-text: #ffffff;
+  --topbar-text-muted: #cbd5e1;
 }
 
 [data-theme="dark"] {
-  /* --- CHẾ ĐỘ TỐI (NEON TERMINAL / BLACKBOX) --- */
-  --glass-opacity: 0.3;
-  --glass-blur-radius: 20px;
+  /* --- CHẾ ĐỘ TỐI (DARK MODE) - HOÀNG GIA HUYỀN BÍ --- */
+  --glass-opacity: 0.25;
+  --glass-blur-radius: 16px;
 
-  --bg: #040712; /* Xanh dương đen sâu thẳm cực kỳ huyền bí */
-  --bg-gradient: radial-gradient(circle at top, #0c142c 0%, #040712 100%);
-  --bg-rgb: 4, 7, 18;
-  --surface-rgb: 12, 19, 39;
-  --surface-2-rgb: 19, 29, 59;
+  --bg: #040a16; /* Xanh dương đen tối thẳm */
+  --bg-gradient: radial-gradient(circle at top, #10223f 0%, #040a16 100%);
+  --bg-rgb: 4, 10, 22;
+  --surface-rgb: 16, 34, 63;
+  --surface-2-rgb: 22, 46, 84;
   
-  --surface: rgba(12, 19, 39, var(--glass-opacity)); /* Kính mờ xanh dương đen tối */
-  --surface-2: rgba(19, 29, 59, calc(var(--glass-opacity) + 0.15)); /* Hover kính tối */
-  --surface-solid: #0c1327;
+  --surface: rgba(16, 34, 63, 0.7); /* Kính mờ xanh dương đen tối */
+  --surface-2: rgba(22, 46, 84, 0.85); /* Hover kính tối */
+  --surface-solid: #060f1e;
   
-  --line: rgba(255, 255, 255, 0.06); /* Viền kính tối */
-  --line-2: rgba(251, 191, 36, 0.15); /* Viền phát sáng vàng kim quý phái */
-  --grid-line: rgba(248, 250, 252, 0.02); /* Đường kẻ ô toán học tối */
+  --line: rgba(255, 255, 255, 0.07); /* Viền kính mờ */
+  --line-2: rgba(194, 125, 0, 0.25); /* Viền vàng gold phát sáng mờ */
+  --grid-line: rgba(255, 255, 255, 0.02); /* Đường kẻ ô toán học tối */
   
-  --ink: #f8fafc; /* Slate 50 */
+  --ink: #f1f5f9; /* Slate 100 */
   --ink-2: #cbd5e1; /* Slate 300 */
   --ink-3: #64748b; /* Slate 500 */
   
-  --accent: #fbbf24; /* Vàng kim rực rỡ, cực sang trên nền tối */
-  --accent-hover: #fcd34d;
-  --accent-soft: rgba(251, 191, 36, 0.15);
-  --accent-gradient: linear-gradient(135deg, #fcd34d 0%, #d97706 100%);
+  --accent: #dfbc5e; /* Vàng gold sáng rực rỡ */
+  --accent-hover: #f3d483;
+  --accent-soft: rgba(223, 188, 94, 0.15);
+  --accent-gradient: linear-gradient(135deg, #f3d483 0%, #a66b00 100%);
   
-  --ok: #10b981;
-  --ok-soft: rgba(16, 185, 129, 0.15);
-  --warn: #f59e0b;
-  --warn-soft: rgba(245, 158, 11, 0.15);
-  --err: #ff5e62; /* Neon Coral */
-  --err-soft: rgba(255, 94, 98, 0.15);
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.15);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.15);
+  --err: #f87171;
+  --err-soft: rgba(248, 113, 113, 0.15);
   
-  --shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.6);
+  --shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
   --glass-blur: blur(var(--glass-blur-radius));
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-border: 1px solid rgba(194, 125, 0, 0.15);
+
+  /* Topbar ở chế độ Tối */
+  --topbar-bg: rgba(16, 34, 63, 0.85);
+  --topbar-border: 1px solid rgba(194, 125, 0, 0.2);
+  --topbar-link: #cbd5e1;
+  --topbar-link-hover: #dfbc5e;
+  --topbar-link-active: #dfbc5e;
+  --topbar-text: #f1f5f9;
+  --topbar-text-muted: #64748b;
 }
