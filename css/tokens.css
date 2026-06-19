@@ -10,7 +10,7 @@
   /* --- PHÔNG CHỮ --- */
   --font-sans: "Be Vietnam Pro", -apple-system, sans-serif;
   --font-serif: "Lora", Georgia, serif;
-  --font-title: "Cinzel", Georgia, serif;
+  --font-title: "Playfair Display", Georgia, serif;
   --font-mono: "Fira Code", monospace;
 
   --fs-h1: 2.5rem;
@@ -64,14 +64,18 @@
   --glass-blur: blur(var(--glass-blur-radius));
   --glass-border: 1px solid rgba(194, 125, 0, 0.2); /* Viền vàng gold mảnh bao quanh card */
 
-  /* Thiết lập riêng biệt cho Topbar để xanh dương đen (brandBlue) chiếm chủ đạo */
-  --topbar-bg: #1f3a60;
-  --topbar-border: 1px solid rgba(194, 125, 0, 0.25);
-  --topbar-link: #f1f5f9;
-  --topbar-link-hover: #fffbeb;
-  --topbar-link-active: #dfbc5e;
-  --topbar-text: #ffffff;
-  --topbar-text-muted: #cbd5e1;
+  /* Thiết lập riêng biệt cho Topbar để xanh dương đen (brandBlue) dạng Kính mờ trong suốt */
+  --topbar-bg: rgba(250, 248, 245, 0.7);
+  --topbar-border: 1px solid rgba(30, 78, 140, 0.1);
+  --topbar-link: var(--ink-2);
+  --topbar-link-hover: var(--accent);
+  --topbar-link-active: var(--accent);
+  --topbar-text: var(--ink-2);
+  --topbar-text-muted: var(--ink-3);
+  --topbar-btn-bg: rgba(30, 78, 140, 0.05);
+  --topbar-btn-border: 1px solid rgba(30, 78, 140, 0.15);
+  --topbar-btn-text: var(--ink-2);
+  --topbar-btn-hover-bg: rgba(30, 78, 140, 0.15);
 }
 
 [data-theme="dark"] {
@@ -114,11 +118,15 @@
   --glass-border: 1px solid rgba(194, 125, 0, 0.15);
 
   /* Topbar ở chế độ Tối */
-  --topbar-bg: rgba(16, 34, 63, 0.85);
-  --topbar-border: 1px solid rgba(194, 125, 0, 0.2);
+  --topbar-bg: rgba(16, 34, 63, 0.75);
+  --topbar-border: 1px solid rgba(197, 155, 39, 0.2);
   --topbar-link: #cbd5e1;
   --topbar-link-hover: #dfbc5e;
   --topbar-link-active: #dfbc5e;
   --topbar-text: #f1f5f9;
   --topbar-text-muted: #64748b;
+  --topbar-btn-bg: rgba(255, 255, 255, 0.08);
+  --topbar-btn-border: 1px solid rgba(255, 255, 255, 0.15);
+  --topbar-btn-text: #cbd5e1;
+  --topbar-btn-hover-bg: rgba(255, 255, 255, 0.15);
 }

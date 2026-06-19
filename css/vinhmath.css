@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
 /* ============================================
@@ -75,12 +75,12 @@ p{color:var(--ink)}
 a{color:inherit}
 img{max-width:100%;display:block}
 
-/* ---- Thanh đầu trang (Solid brandBlue in Light mode) ---- */
+/* ---- Thanh đầu trang (Kính mờ trong suốt thích ứng) ---- */
 .topbar{
   position:sticky;top:0;z-index:50;
   background:var(--topbar-bg);
-  backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
   border-bottom:var(--topbar-border);
   box-shadow:var(--shadow);
   transition: background 0.3s, border-color 0.3s;
@@ -89,7 +89,10 @@ img{max-width:100%;display:block}
 .logo{display:flex;align-items:center;gap:10px;font-family:var(--font-title);font-weight:700;font-size:1.15rem;letter-spacing:0.05em;text-decoration:none;color:var(--topbar-text);text-transform:uppercase}
 .logo .dot{
   width:30px;height:30px;border-radius:6px;background:var(--accent);
-  color:#09152e;display:grid;place-items:center;font-size:.95rem;font-weight:700;flex:none;
+  color:#ffffff;display:grid;place-items:center;font-size:.95rem;font-weight:700;flex:none;
+}
+[data-theme="dark"] .logo .dot{
+  color:#09152e;
 }
 .logo img{
   width:30px;height:30px;border-radius:6px;object-fit:cover;flex:none;
@@ -99,19 +102,19 @@ img{max-width:100%;display:block}
 .role-badge.badge-admin{background:var(--accent-soft);color:var(--accent);border:1px solid rgba(194, 125, 0, 0.25)}
 .role-badge.badge-teacher{background:var(--ok-soft);color:var(--ok);border:1px solid rgba(26, 117, 86, 0.25)}
 .role-badge.badge-assistant{background:var(--warn-soft);color:var(--warn);border:1px solid rgba(184, 125, 20, 0.25)}
-.role-badge.badge-student{background:rgba(255,255,255,0.08);color:var(--topbar-link);border:1px solid rgba(255,255,255,0.15)}
-.role-badge.badge-parent{background:rgba(255,255,255,0.08);color:var(--topbar-link);border:1px solid rgba(255,255,255,0.15)}
+.role-badge.badge-student{background:var(--topbar-btn-bg);color:var(--topbar-link);border:1px solid var(--topbar-btn-border)}
+.role-badge.badge-parent{background:var(--topbar-btn-bg);color:var(--topbar-link);border:1px solid var(--topbar-btn-border)}
 
 .navlinks{display:flex;gap:4px;align-items:center}
 .navlinks a{
   text-decoration:none;font-size:.92rem;font-weight:600;color:var(--topbar-link);
   padding:7px 14px;border-radius:var(--r-sm);transition:all .15s;
 }
-.navlinks a:hover{background:rgba(255,255,255,0.08);color:var(--topbar-link-hover)}
+.navlinks a:hover{background:var(--topbar-btn-bg);color:var(--topbar-link-hover)}
 .navlinks a.active {
   color: var(--topbar-link-active);
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(194, 125, 0, 0.4);
+  text-shadow: 0 0 8px rgba(194, 125, 0, 0.2);
   position: relative;
 }
 .navlinks a.active::after {
@@ -124,6 +127,30 @@ img{max-width:100%;display:block}
   background: var(--accent-gradient);
   border-radius: 99px;
   box-shadow: 0 0 8px var(--accent);
+}
+
+/* Đồng bộ toàn bộ nút bấm trong Topbar để không bị che khuất và hiển thị đẹp mắt */
+.topbar .btn-secondary,
+.topbar #themeBtn,
+.topbar #screenshotBtn {
+  background: var(--topbar-btn-bg) !important;
+  border: var(--topbar-btn-border) !important;
+  color: var(--topbar-btn-text) !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+  font-family: var(--font-sans) !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  font-size: 0.8rem !important;
+  padding: 6px 14px !important;
+}
+.topbar .btn-secondary:hover,
+.topbar #themeBtn:hover,
+.topbar #screenshotBtn:hover {
+  background: var(--topbar-btn-hover-bg) !important;
+  color: var(--topbar-link-hover) !important;
+  border-color: var(--topbar-link-hover) !important;
 }
 
 /* ---- Dropdown menu quản trị ---- */
@@ -212,27 +239,27 @@ img{max-width:100%;display:block}
 .bell-wrap{position:relative;flex:none}
 .nav-bell {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
+  border: var(--topbar-btn-border);
+  background: var(--topbar-btn-bg);
   width: 38px;
   height: 38px;
   border-radius: var(--r-sm);
   cursor: pointer;
   display: grid;
   place-items: center;
-  color: var(--topbar-link-hover);
+  color: var(--topbar-btn-text);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nav-bell:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--topbar-btn-hover-bg);
   box-shadow: 0 0 12px var(--accent-soft);
 }
 .bell-svg {
   width: 20px;
   height: 20px;
-  stroke: currentColor;
+  stroke: currentColor !important;
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -240,13 +267,13 @@ img{max-width:100%;display:block}
 }
 .bell-svg path {
   fill: none;
-  stroke: currentColor;
+  stroke: currentColor !important;
 }
 .bell-svg path:first-child {
   fill: var(--accent-soft);
 }
 .bell-svg path:last-child {
-  fill: currentColor;
+  fill: currentColor !important;
 }
 .nav-bell:hover .bell-svg {
   transform: rotate(15deg);
@@ -263,10 +290,11 @@ img{max-width:100%;display:block}
 .bell-item small{font-size:.72rem;color:var(--ink-3)}
 .bell-item.unread{background:var(--accent-soft)}
 
-.nav-burger{display:none;border:1px solid rgba(255, 255, 255, 0.15);background:rgba(255, 255, 255, 0.08);color:var(--topbar-link);font-size:1.1rem;width:38px;height:38px;border-radius:var(--r-sm);cursor:pointer;flex:none}
+.nav-burger{display:none;border:var(--topbar-btn-border);background:var(--topbar-btn-bg);color:var(--topbar-btn-text);font-size:1.1rem;width:38px;height:38px;border-radius:var(--r-sm);cursor:pointer;flex:none;transition:all 0.2s ease}
 .nav-burger:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--topbar-btn-hover-bg);
   color: var(--topbar-link-hover);
+  border-color: var(--topbar-link-hover);
 }
 @media(max-width:960px){
   .topbar .nav{position:relative;flex-wrap:wrap}
@@ -852,11 +880,9 @@ tr:last-child td{border-bottom:none}
   z-index: 999;
 }
 .control-center-btn {
-  background: var(--surface);
-  border: var(--glass-border);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  color: var(--ink);
+  background: var(--topbar-btn-bg);
+  border: var(--topbar-btn-border);
+  color: var(--topbar-btn-text);
   width: 38px;
   height: 38px;
   border-radius: var(--r-sm);
@@ -864,10 +890,11 @@ tr:last-child td{border-bottom:none}
   display: grid;
   place-items: center;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow);
 }
 .control-center-btn:hover {
-  background: var(--surface-2);
+  background: var(--topbar-btn-hover-bg);
+  color: var(--topbar-link-hover);
+  border-color: var(--topbar-link-hover);
   transform: translateY(-1px);
 }
 .control-center-btn svg {
