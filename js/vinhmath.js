@@ -189,7 +189,14 @@ async function layHoSo() {
     .eq('id', s.data.session.user.id).single();
   
   if (r.error) {
-    console.error("Lỗi layHoSo:", r.error);
+    console.warn("Lỗi layHoSo với các cột co-teaching (có thể chưa chạy SQL migration):", r.error);
+    console.log("Thử tự động tải hồ sơ phiên bản cũ (không có co-teaching)...");
+    r = await sb.from('profiles')
+      .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode))')
+      .eq('id', s.data.session.user.id).single();
+    if (r.error) {
+      console.error("Lỗi layHoSo phiên bản cũ:", r.error);
+    }
   }
   
   if (r.data) {
