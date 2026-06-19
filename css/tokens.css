@@ -28,28 +28,28 @@
   --glass-blur-radius: 20px;
   
   /* --- CHẾ ĐỘ SÁNG (LIQUID GLASS / GLASSMORPHISM) --- */
-  --bg: #f5f8ff; /* Nền xanh pastel nhạt cực sang */
-  --bg-gradient: linear-gradient(135deg, #f5f8ff 0%, #eef2f7 50%, #e0e7ff 100%);
-  --bg-rgb: 245, 248, 255;
+  --bg: #f2f6fc; /* Nền xanh dương nhạt dịu nhẹ, sang trọng */
+  --bg-gradient: linear-gradient(135deg, #f2f6fc 0%, #e6effa 50%, #d8e5f7 100%);
+  --bg-rgb: 242, 246, 252;
   --surface-rgb: 255, 255, 255;
-  --surface-2-rgb: 255, 255, 255;
+  --surface-2-rgb: 240, 246, 255;
   
   --surface: rgba(255, 255, 255, var(--glass-opacity)); /* Kính mờ tráng gương */
-  --surface-2: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.15)); /* Hover kính rõ hơn */
+  --surface-2: rgba(230, 240, 255, calc(var(--glass-opacity) + 0.15)); /* Hover kính nhạt xanh */
   --surface-solid: #ffffff;
   
-  --line: rgba(255, 255, 255, 0.4); /* Đường viền kính mờ */
-  --line-2: rgba(181, 192, 219, 0.4); /* Đường viền kính đậm hơn */
-  --grid-line: rgba(15, 23, 42, 0.04); /* Đường kẻ ô toán học sáng */
+  --line: rgba(255, 255, 255, 0.5); /* Đường viền kính mờ */
+  --line-2: rgba(11, 21, 40, 0.12); /* Đường viền kính xanh dương đen nhẹ */
+  --grid-line: rgba(11, 21, 40, 0.04); /* Đường kẻ ô toán học sáng */
   
-  --ink: #0f172a; /* Slate 900 */
-  --ink-2: #475569; /* Slate 600 */
-  --ink-3: #94a3b8; /* Slate 400 */
+  --ink: #081125; /* Xanh dương đen sâu (Deep Navy Black) */
+  --ink-2: #213153; /* Xanh dương đen trung bình */
+  --ink-3: #586b90; /* Xanh dương đen nhạt */
   
-  --accent: #DD9400; /* Vàng tươi sáng, nổi bật trên nền trắng (không nâu đất) */
-  --accent-hover: #B97B00;
-  --accent-soft: rgba(221, 148, 0, 0.10);
-  --accent-gradient: linear-gradient(135deg, #FFD21A 0%, #F7A80C 50%, #DD9400 100%);
+  --accent: #d97706; /* Vàng hổ phách rực rỡ, độ tương phản cao trên nền sáng */
+  --accent-hover: #b45309;
+  --accent-soft: rgba(217, 119, 6, 0.08);
+  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
   
   --ok: #10b981;
   --ok-soft: rgba(16, 185, 129, 0.1);
@@ -68,28 +68,28 @@
   --glass-opacity: 0.3;
   --glass-blur-radius: 20px;
 
-  --bg: #050811; /* Xanh đen sâu thẳm */
-  --bg-gradient: radial-gradient(circle at top, #0b1124 0%, #050811 100%);
-  --bg-rgb: 5, 8, 17;
-  --surface-rgb: 13, 20, 38;
-  --surface-2-rgb: 20, 30, 58;
+  --bg: #040712; /* Xanh dương đen sâu thẳm cực kỳ huyền bí */
+  --bg-gradient: radial-gradient(circle at top, #0c142c 0%, #040712 100%);
+  --bg-rgb: 4, 7, 18;
+  --surface-rgb: 12, 19, 39;
+  --surface-2-rgb: 19, 29, 59;
   
-  --surface: rgba(13, 20, 38, var(--glass-opacity)); /* Kính mờ đen tối */
-  --surface-2: rgba(20, 30, 58, calc(var(--glass-opacity) + 0.15)); /* Hover kính tối */
-  --surface-solid: #0d1426;
+  --surface: rgba(12, 19, 39, var(--glass-opacity)); /* Kính mờ xanh dương đen tối */
+  --surface-2: rgba(19, 29, 59, calc(var(--glass-opacity) + 0.15)); /* Hover kính tối */
+  --surface-solid: #0c1327;
   
-  --line: rgba(255, 255, 255, 0.08); /* Viền kính tối */
-  --line-2: rgba(37, 99, 235, 0.15); /* Viền kính phát sáng navy */
-  --grid-line: rgba(248, 250, 252, 0.03); /* Đường kẻ ô toán học tối */
+  --line: rgba(255, 255, 255, 0.06); /* Viền kính tối */
+  --line-2: rgba(251, 191, 36, 0.15); /* Viền phát sáng vàng kim quý phái */
+  --grid-line: rgba(248, 250, 252, 0.02); /* Đường kẻ ô toán học tối */
   
   --ink: #f8fafc; /* Slate 50 */
   --ink-2: #cbd5e1; /* Slate 300 */
   --ink-3: #64748b; /* Slate 500 */
   
-  --accent: #FBBF24; /* Vàng kim rực rỡ, sang trên nền tối (terminal gold) */
-  --accent-hover: #FCD34D;
+  --accent: #fbbf24; /* Vàng kim rực rỡ, cực sang trên nền tối */
+  --accent-hover: #fcd34d;
   --accent-soft: rgba(251, 191, 36, 0.15);
-  --accent-gradient: linear-gradient(135deg, #FFD24A 0%, #E0A416 45%, #9A6B0A 100%);
+  --accent-gradient: linear-gradient(135deg, #fcd34d 0%, #d97706 100%);
   
   --ok: #10b981;
   --ok-soft: rgba(16, 185, 129, 0.15);
