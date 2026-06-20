@@ -29,7 +29,7 @@ INSERT INTO auth.users (
   crypt('HuyHoang_VinhMath2026', gen_salt('bf')),
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"full_name":"Đậu Văn Huy Hoàng"}',
+  '{"full_name":"Thầy Đậu Văn Huy Hoàng"}',
   now(),
   now()
 );
