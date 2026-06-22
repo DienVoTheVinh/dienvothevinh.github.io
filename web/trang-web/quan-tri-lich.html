@@ -23,6 +23,118 @@
 .thu-btn { border-radius: 50% !important; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; user-select: none; border: 1px solid var(--line) !important; background: var(--surface) !important; color: var(--ink) !important; padding: 0 !important; }
 .thu-btn:hover { background: var(--surface-2) !important; }
 .thu-btn.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+
+/* Grouped schedule cards */
+.class-schedule-group {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.class-schedule-group:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.class-schedule-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: var(--surface);
+  user-select: none;
+  gap: 16px;
+  transition: background 0.2s ease;
+}
+.class-schedule-header:hover {
+  background: var(--surface-2);
+}
+.class-main-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.class-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.class-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.class-badge.grade {
+  background: rgba(30,78,140,0.08);
+  color: var(--ink-2);
+}
+.class-badge.specialized {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(194,125,0,0.15);
+}
+.schedule-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.schedule-count-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  line-height: 1;
+}
+.expand-icon {
+  font-size: 0.7rem;
+  color: var(--ink-3);
+  transition: transform 0.2s ease;
+}
+.class-schedule-group.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+.class-schedule-details {
+  border-top: 1px solid var(--line-2);
+  background: var(--surface-2);
+  padding: 12px;
+  display: none;
+}
+.class-schedule-group.expanded .class-schedule-details {
+  display: block;
+}
+
+/* Detail tables */
+.schedule-details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.schedule-details-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--line);
+}
+.schedule-details-table td {
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--line-2);
+  vertical-align: middle;
+}
+.schedule-details-table tr:last-child td {
+  border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -97,11 +209,8 @@
       </div>
     </div>
 
-    <div class="card" style="padding:8px 4px;overflow-x:auto">
-      <table>
-        <thead><tr><th>Lớp</th><th>Thứ</th><th>Giờ</th><th>Hình thức</th><th>Ghi chú</th><th>Công khai</th><th></th></tr></thead>
-        <tbody id="bangLich"><tr><td colspan="7" style="color:var(--ink-3)">Đang tải…</td></tr></tbody>
-      </table>
+    <div id="bangLichNhom">
+      <div style="text-align: center; padding: 24px; color: var(--ink-3);">Đang tải…</div>
     </div>
   </div>
 
@@ -170,6 +279,19 @@ var dsLop = [];
 var hennDem = null;
 var dsLich = [];
 var lichDangSuaId = null;
+var expandedClasses = new Set();
+
+function toggleNhomLich(classId) {
+  var el = document.getElementById('group-' + classId);
+  if (el) {
+    el.classList.toggle('expanded');
+    if (el.classList.contains('expanded')) {
+      expandedClasses.add(classId);
+    } else {
+      expandedClasses.delete(classId);
+    }
+  }
+}
 
 (async function () {
   if (!daKetNoi()) return;
@@ -292,36 +414,126 @@ async function taiLich() {
     .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, classes(name, grade, is_specialized)')
     .order('weekday').order('start_time');
   dsLich = r.data || [];
-  var ds = dsLich;
-  $('bangLich').innerHTML = ds.length ? ds.map(function (s) {
-    var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
-    if (s.recurrence === 'once') recText = ' <small style="color:var(--ink-2)"><i>(1 lần)</i></small>';
-    var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU[s.weekday] + ')' : TEN_THU[s.weekday];
-    
-    var tagHtml = '';
-    if (s.classes) {
-      if (s.classes.grade) {
-        tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + s.classes.grade + '</span>';
-      }
-      if (s.classes.is_specialized) {
-        tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>';
-      }
+  
+  // Nhóm theo từng lớp
+  var groups = {};
+  dsLop.forEach(function (l) {
+    groups[l.id] = {
+      info: l,
+      schedules: []
+    };
+  });
+  
+  dsLich.forEach(function (s) {
+    if (!groups[s.class_id]) {
+      groups[s.class_id] = {
+        info: s.classes || { id: s.class_id, name: 'Lớp khác' },
+        schedules: []
+      };
     }
-    var nameText = s.classes ? s.classes.name : '?';
-    
-    return '<tr>' +
-      '<td><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><b>' + nameText + '</b>' + tagHtml + '</div></td>' +
-      '<td>' + thuText + '</td>' +
-      '<td class="num">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
-      '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
-      '<td style="color:var(--ink-2)">' + (s.note || '') + '</td>' +
-      '<td><button class="btn btn-ghost btn-sm" onclick="doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + (s.visible ? '👁 Hiện' : '🚫 Ẩn') + '</button></td>' +
-      '<td>' +
-        '<button class="btn btn-ghost btn-sm" style="color:var(--accent); margin-right:8px" onclick="suaLich(\'' + s.id + '\')">Sửa</button>' +
-        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="xoaLich(\'' + s.id + '\')">Xoá</button>' +
-      '</td>' +
-      '</tr>';
-  }).join('') : '<tr><td colspan="7" style="color:var(--ink-3)">Chưa có lịch nào.</td></tr>';
+    groups[s.class_id].schedules.push(s);
+  });
+  
+  var groupList = Object.values(groups).sort(function (a, b) {
+    return a.info.name.localeCompare(b.info.name, 'vi');
+  });
+  
+  var html = '';
+  if (groupList.length === 0) {
+    html = '<div style="padding: 24px; text-align: center; color: var(--ink-3);">Chưa có lớp học nào trong hệ thống.</div>';
+  } else {
+    html = groupList.map(function (g) {
+      var classId = g.info.id;
+      var count = g.schedules.length;
+      
+      var tagHtml = '';
+      if (g.info.grade) {
+        tagHtml += '<span class="class-badge grade">Khối ' + g.info.grade + '</span>';
+      }
+      if (g.info.is_specialized) {
+        tagHtml += '<span class="class-badge specialized">Chuyên</span>';
+      }
+      
+      var summaryText = '';
+      if (count === 0) {
+        summaryText = '<span style="color: var(--err); font-size: 0.82rem; font-weight: 500;">⚠️ Chưa xếp lịch</span>';
+      } else {
+        var days = g.schedules.map(function (s) {
+          if (s.recurrence === 'once' && s.date) {
+            return formatNgayDep(s.date);
+          }
+          return TEN_THU[s.weekday];
+        });
+        var uniqueDays = Array.from(new Set(days));
+        summaryText = '<span class="schedule-count-badge">' + count + ' buổi/tuần</span> ' +
+                      '<span style="font-size: 0.82rem; color: var(--ink-2); font-weight: 500;">(' + uniqueDays.join(', ') + ')</span>';
+      }
+      
+      var isExpanded = expandedClasses.has(classId);
+      var expandedClass = isExpanded ? ' expanded' : '';
+      
+      var detailRows = '';
+      if (count === 0) {
+        detailRows = '<tr><td colspan="6" style="text-align: center; color: var(--ink-3); padding: 20px;">Lớp này chưa có lịch học. Sử dụng khung phía trên để thêm lịch.</td></tr>';
+      } else {
+        detailRows = g.schedules.map(function (s) {
+          var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
+          if (s.recurrence === 'once') recText = ' <small style="color:var(--ink-2)"><i>(1 lần)</i></small>';
+          var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU[s.weekday] + ')' : TEN_THU[s.weekday];
+          
+          return '<tr>' +
+            '<td style="font-weight: 600; color: var(--ink);">' + thuText + '</td>' +
+            '<td class="num" style="font-weight: 600;">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
+            '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
+            '<td style="color:var(--ink-2); font-size: 0.85rem;">' + (s.note || '—') + '</td>' +
+            '<td>' +
+              '<button class="btn btn-ghost btn-sm" style="padding: 4px 8px;" onclick="event.stopPropagation(); doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + 
+                (s.visible ? '👁 Hiện' : '🚫 Ẩn') + 
+              '</button>' +
+            '</td>' +
+            '<td>' +
+              '<button class="btn btn-ghost btn-sm" style="color:var(--accent); margin-right:8px; padding: 4px 8px;" onclick="event.stopPropagation(); suaLich(\'' + s.id + '\')">Sửa</button>' +
+              '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding: 4px 8px;" onclick="event.stopPropagation(); xoaLich(\'' + s.id + '\')">Xoá</button>' +
+            '</td>' +
+            '</tr>';
+        }).join('');
+      }
+      
+      return '<div class="class-schedule-group' + expandedClass + '" id="group-' + classId + '">' +
+        '  <div class="class-schedule-header" onclick="toggleNhomLich(\'' + classId + '\')">' +
+        '    <div class="class-main-info">' +
+        '      <span class="class-title">' + g.info.name + '</span>' +
+        tagHtml +
+        '    </div>' +
+        '    <div style="display:flex; align-items:center; gap:16px;">' +
+        '      <div class="schedule-summary">' + summaryText + '</div>' +
+        '      <span class="expand-icon">▼</span>' +
+        '    </div>' +
+        '  </div>' +
+        '  <div class="class-schedule-details">' +
+        '    <div style="overflow-x:auto;">' +
+        '      <table class="schedule-details-table">' +
+        '        <thead>' +
+        '          <tr>' +
+        '            <th>Thứ / Ngày</th>' +
+        '            <th>Giờ học</th>' +
+        '            <th>Hình thức</th>' +
+        '            <th>Ghi chú</th>' +
+        '            <th>Trạng thái</th>' +
+        '            <th>Thao tác</th>' +
+        '          </tr>' +
+        '        </thead>' +
+        '        <tbody>' +
+        detailRows +
+        '        </tbody>' +
+        '      </table>' +
+        '    </div>' +
+        '  </div>' +
+        '</div>';
+    }).join('');
+  }
+  
+  $('bangLichNhom').innerHTML = html;
 }
 
 async function themLich() {
@@ -400,6 +612,10 @@ function suaLich(id) {
   var s = dsLich.find(function (item) { return item.id === id; });
   if (!s) return;
   lichDangSuaId = s.id;
+  
+  expandedClasses.add(s.class_id);
+  var el = document.getElementById('group-' + s.class_id);
+  if (el) el.classList.add('expanded');
 
   $('schLop').value = s.class_id;
   $('schMode').value = s.mode;
