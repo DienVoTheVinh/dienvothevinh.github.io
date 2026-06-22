@@ -422,6 +422,22 @@
           <label>⏱ Thời gian làm bài kiểm tra mặc định (phút)</label>
           <input type="number" class="input" id="bhTestDuration" value="15" min="1">
         </div>
+
+        <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
+          <label>✍️ Hoặc soạn đề kiểm tra trực tiếp bằng LaTeX</label>
+          <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn LaTeX đề thi ở đây (sử dụng ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
+          <small style="color:var(--ink-3); margin-top:4px; display:block">
+            Nếu nhập ở đây, hệ thống sẽ tự động biên dịch đề kiểm tra và hiển thị cho học sinh.
+          </small>
+        </div>
+        
+        <div style="margin-bottom: 12px">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTest" onclick="bienDichTestLatex()">⚡ Biên dịch thử</button>
+        </div>
+
+        <div id="khungXemTest" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px; margin-bottom:16px">
+          <div id="xemTestOutput" style="width:100%; min-height:350px"></div>
+        </div>
       </div>
       
       <!-- TAB 4: LÝ THUYẾT TƯƠNG TÁC -->
@@ -1823,6 +1839,10 @@ async function moFormThemBaiGiang() {
   renderTheorySections();
   doiTabForm('chung');
   
+  if ($('bhTestLatex')) $('bhTestLatex').value = '';
+  pdfBlobTest = null;
+  if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
+  
   $('modalForm').style.display = 'flex';
 }
 
@@ -1879,6 +1899,10 @@ async function moFormSua(id) {
   $('bhGhiChu').value = bh.note || '';
   $('bhSapXep').value = bh.sort || 0;
   $('bhXuatBan').checked = !!bh.published;
+  
+  if ($('bhTestLatex')) $('bhTestLatex').value = bh.test_latex_content || '';
+  pdfBlobTest = null;
+  if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
 
   // Nạp "việc cần làm sau bài học" gắn với bài giảng (nếu có)
   if ($('bhViecCanLam')) {
@@ -1922,6 +1946,7 @@ async function luuBaiHoc(e) {
     latex_content: $('bhLatexDoc').value.trim() || null,
     test_document_id: $('bhTestTaiLieu').value || null,
     test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
+    test_latex_content: $('bhTestLatex') ? $('bhTestLatex').value.trim() || null : null,
     note: $('bhGhiChu').value.trim() || null,
     sort: parseInt($('bhSapXep').value) || 0,
     published: $('bhXuatBan').checked,
@@ -1962,7 +1987,7 @@ async function luuBaiHoc(e) {
     data.document_id = ins.data.id;
   }
 
-  // File PDF bài test tải lên trực tiếp hoặc dán URL
+  // File PDF bài test tải lên trực tiếp hoặc tự biên dịch hoặc dán URL
   var fileTest = $('bhTestFile') ? $('bhTestFile').files[0] : null;
   var urlTestCustom = $('bhTestUrl') ? $('bhTestUrl').value.trim() : '';
   if (fileTest) {
@@ -1981,6 +2006,22 @@ async function luuBaiHoc(e) {
       return;
     }
     data.test_document_id = insTest.data.id;
+  } else if (pdfBlobTest) {
+    nut.textContent = '⏳ Đang tải PDF test biên dịch...';
+    var pathTestBlob = Date.now() + '-latex-test.pdf';
+    var upTestBlob = await sb.storage.from('tai-lieu').upload(pathTestBlob, pdfBlobTest, { contentType: 'application/pdf' });
+    if (upTestBlob.error) {
+      alert('Lỗi tải PDF test tự biên dịch: ' + upTestBlob.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    var insTestBlob = await sb.from('documents').insert({ title: data.title + ' — Bài test (LaTeX)', class_id: classDangChon.id, file_path: pathTestBlob }).select('id').single();
+    if (insTestBlob.error) {
+      alert('Lỗi ghi CSDL bài test tự biên dịch: ' + insTestBlob.error.message);
+      nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+      return;
+    }
+    data.test_document_id = insTestBlob.data.id;
   } else if (urlTestCustom) {
     var insTest = await sb.from('documents').insert({ title: (data.title || 'Bài giảng') + ' — Bài test (Link)', class_id: classDangChon.id, file_path: urlTestCustom }).select('id').single();
     if (insTest.error) {
@@ -2096,6 +2137,48 @@ function dongTheoryProgress() {
 /* ==========================================
    INTERACTIVE THEORY & QUICK TOPIC / TOPIC CRUD
    ========================================== */
+
+var pdfBlobTest = null;
+
+async function bienDichTestLatex() {
+  var tex = $('bhTestLatex').value.trim();
+  if (!tex) {
+    alert('Vui lòng nhập code LaTeX đề thi trước!');
+    return;
+  }
+  
+  var nut = $('btnBienDichTest');
+  var khung = $('khungXemTest');
+  var output = $('xemTestOutput');
+  
+  nut.disabled = true;
+  nut.textContent = '⏳ Đang biên dịch…';
+  pdfBlobTest = null;
+  
+  khung.style.display = 'block';
+  output.innerHTML = '<div style="padding:20px; color:var(--ink-3)">Đang gửi lên texlive.net — có thể mất 10–30 giây…</div>';
+  
+  try {
+    var r = await sb.functions.invoke('latex', {
+      body: { tex: tex, engine: 'pdflatex' }
+    });
+    if (r.error) throw new Error(r.error.message || 'Edge Function lỗi');
+    
+    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+      pdfBlobTest = r.data;
+      output.innerHTML = '<iframe src="' + URL.createObjectURL(r.data) + '" style="width:100%; height:350px; border:none"></iframe>';
+    } else {
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
+      var dong = log.split('\n').filter(function (l) { return l.indexOf('!') === 0 || l.indexOf('Error') !== -1; }).slice(0, 8).join('\n');
+      output.innerHTML = '<div style="padding:10px; color:var(--err); font-family:monospace; font-size:0.8rem; overflow:auto; height:350px; border:1px solid var(--err-soft); border-radius:4px; background:rgba(231,76,60,0.05)">' +
+        '<b>Biên dịch LỖI:</b><br><pre style="white-space:pre-wrap; margin-top:8px">' + (dong || log.slice(-1500)) + '</pre></div>';
+    }
+  } catch (e) {
+    output.innerHTML = '<div style="padding:10px; color:var(--err)">Không biên dịch được: ' + e.message + '</div>';
+  }
+  nut.disabled = false;
+  nut.textContent = '⚡ Biên dịch thử';
+}
 
 var theorySections = [];
 var timeoutTimKiem = null;
