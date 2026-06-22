@@ -685,6 +685,110 @@ function veTaiLieuTex() {
   renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
 }
 
+/* ===== Đề thi LaTeX cuối giờ: tự biên dịch cho học sinh ===== */
+var pdfTestTex = null;
+var dangBienDichTestTex = false;
+
+async function hienTestTex() {
+  var than = $('thanNoiDung');
+  if (pdfTestTex) { veTestTex(); return; }
+  
+  var ketQuaChamHtml = await layKetQuaChamHtml();
+  than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
+    ketQuaChamHtml +
+    '<div class="no-content"><div class="ic">⏳</div><h3>Đang biên dịch đề kiểm tra…</h3><p>Khoảng 5–20 giây, em chờ chút nhé.</p></div>';
+    
+  if (dangBienDichTestTex) return;
+  dangBienDichTestTex = true;
+  try {
+    var tex = details.test_latex_content;
+    if (!/\\documentclass/.test(tex)) {
+      var sty = '';
+      try { var rs = await fetch('ex_test.sty'); if (rs.ok) sty = await rs.text(); } catch (e) {}
+      tex = (sty ? '\\begin{filecontents*}{ex_test.sty}\n' + sty + '\n\\end{filecontents*}\n' : '') +
+        '\\documentclass[12pt]{article}\\usepackage[utf8]{vietnam}\\usepackage{amsmath,amssymb}\\usepackage[margin=2cm]{geometry}' +
+        (sty ? '\\usepackage{ex_test}' : '') +
+        '\n\\begin{document}\n' + tex + '\n\\end{document}';
+    }
+    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+    if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
+    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+      pdfTestTex = r.data;
+      await veTestTex();
+    } else {
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
+      var dongLoi = log.split('\n').filter(function (l) { return l.indexOf('!') === 0; }).slice(0, 4).join('\n');
+      than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
+        ketQuaChamHtml +
+        '<div class="no-content"><div class="ic">⚠️</div><h3>Đề thi chưa biên dịch được</h3><p style="font-family:monospace;font-size:.78rem;white-space:pre-wrap;max-width:480px">' + (dongLoi || 'Em báo thầy kiểm tra lại nhé.') + '</p></div>';
+    }
+  } catch (e) {
+    than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
+      ketQuaChamHtml +
+      '<div class="no-content"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề thi</h3><p>' + e.message + '</p></div>';
+  }
+  dangBienDichTestTex = false;
+}
+
+async function veTestTex() {
+  var u = URL.createObjectURL(pdfTestTex);
+  var than = $('thanNoiDung');
+  var ketQuaChamHtml = await layKetQuaChamHtml();
+  than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ (PDF)', null) +
+    ketQuaChamHtml +
+    '<div style="padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--line)"><a class="btn btn-primary btn-sm" style="padding:4px 12px" download="de-kiem-tra.pdf" href="' + u + '">💾 Tải đề thi PDF</a></div>' +
+    '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
+  renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
+}
+
+async function layKetQuaChamHtml() {
+  try {
+    var r = await sb.from('submissions')
+      .select('id, submitted_at, files, status, score, feedback, graded_files')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    var sub = r.data;
+    if (!sub) {
+      return '<div class="card" style="margin:14px; padding:16px; border:1px dashed var(--accent); background:var(--accent-soft); text-align:center">' +
+        '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp bài kiểm tra tự luận của bài học này</h4>' +
+        '  <p style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-2)">Hãy làm bài ra giấy, chụp ảnh lại rồi nộp cho thầy chấm điểm nhé.</p>' +
+        '  <button class="btn btn-primary btn-sm" onclick="moNopBai()">📤 Nộp bài làm ngay</button>' +
+        '</div>';
+    }
+    
+    var ngay = new Date(sub.submitted_at).toLocaleDateString('vi-VN');
+    if (sub.status === 'graded') {
+      var baiThayCham = '';
+      if ((sub.graded_files || []).length > 0) {
+        baiThayCham = '<div style="margin-top:8px; font-size:0.9rem"><b>📄 Bài thầy chấm trả:</b> ' + 
+          sub.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank" style="color:var(--accent); text-decoration:underline; font-weight:700">' + f.name + '</a>'; }).join(' · ') + '</div>';
+      }
+      
+      return '<div class="card" style="margin:14px; padding:16px 20px; border:1px solid var(--ok); background:linear-gradient(135deg, var(--surface) 0%, var(--ok-soft) 100%)">' +
+        '  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">' +
+        '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài!</h4>' +
+        '    <span style="font-size:1.15rem; font-weight:800; color:var(--ok); background:var(--surface); border:2px solid var(--ok); padding:4px 12px; border-radius:8px">' + (sub.score != null ? sub.score + ' Điểm' : 'Đã chấm') + '</span>' +
+        '  </div>' +
+        '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b> ' + vclEsc(sub.feedback) + '</div>' : '') +
+        '  ' + baiThayCham +
+        '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
+        '</div>';
+    } else {
+      return '<div class="card" style="margin:14px; padding:16px; border:1px solid var(--warn); background:linear-gradient(135deg, var(--surface) 0%, var(--warn-soft) 100%)">' +
+        '  <h4 style="margin:0 0 6px; color:var(--warn)">📤 Đã nộp bài thành công!</h4>' +
+        '  <p style="margin:0; font-size:0.88rem; color:var(--ink)">Bài làm của em gửi ngày <b>' + ngay + '</b> đang chờ thầy xem và chấm điểm. Kết quả sẽ hiện ngay tại đây sau khi thầy chấm xong!</p>' +
+        '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
+        '</div>';
+    }
+  } catch (e) {
+    return '';
+  }
+}
+
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
   ['LyThuyet', 'TaiLieu', 'Bang', 'Test'].forEach(function (t) { 
@@ -724,9 +828,13 @@ async function chonNoiDung(loai) {
     $('swTest').classList.add('active');
     if (interactiveQuestions.length > 0) {
       renderInteractiveQuiz();
+    } else if (details.test_latex_content) {
+      await hienTestTex();
     } else {
       var ut = buildPdfUrl(details.bai_test.file_path);
+      var ketQuaChamHtml = await layKetQuaChamHtml();
       than.innerHTML = thanhCongCu('📝 ' + details.bai_test.title, ut) +
+        ketQuaChamHtml +
         '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
       renderPDFWithJS(ut, document.getElementById('pdfViewerArea'));
     }

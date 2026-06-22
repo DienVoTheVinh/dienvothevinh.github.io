@@ -462,7 +462,8 @@
   .gcal-col { position:relative; border-left:1px solid var(--line); }
   .gcal-col.today-col { background:var(--accent-soft); }
   .gcal-hcell { height:48px; border-bottom:1px solid var(--line-2,#eef0f3); box-sizing:border-box; }
-  .gcal-ev { position:absolute; left:3px; right:3px; border-radius:7px; padding:4px 7px; font-size:.72rem; line-height:1.2; overflow:hidden; color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.18); }
+  .gcal-ev { position:absolute; left:3px; right:3px; border-radius:7px; padding:4px 7px; font-size:.72rem; line-height:1.2; overflow:hidden; color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.18); text-decoration:none; }
+  a.gcal-ev:hover { opacity:.95; filter:brightness(1.15); transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.25); transition:all .15s ease; }
   .gcal-ev b { font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gcal-ev .evt { opacity:.92; font-size:.66rem; }
   .gcal-ev.online { background:linear-gradient(135deg,#42587A,#2F415C); }
@@ -698,6 +699,16 @@
           <div class="timer-box"><b id="timerSecs">00</b><span>Giây</span></div>
         </div>
       </div>
+
+      <!-- Lời phê & Nhận xét của Thầy -->
+      <div class="card" id="khungRemarks" style="display:none; margin-top:20px; padding: 20px;">
+        <h3 style="font-size:1.05rem; margin-bottom:12px; display:flex; align-items:center; gap:6px; color:var(--accent);">
+          💬 Lời phê & Nhận xét của Thầy
+        </h3>
+        <div id="dsRemarks" style="display:flex; flex-direction:column; gap:10px;">
+          <div style="font-size:.85rem; color:var(--ink-3)">Đang tải nhận xét...</div>
+        </div>
+      </div>
     </div>
     
     <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
@@ -884,6 +895,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     // Việc cần làm hôm nay
     await taiViecCanLam();
     await kiemTraDiemDanhHocSinh();
+    await taiRemarksHocSinh();
   }
 
   // Khởi dựng Lịch tuần & Đếm ngược
@@ -891,6 +903,60 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   veLichTuan();
   khoiDongCountdown();
 })();
+
+// ===== NHẬN XÉT CỦA GIÁO VIÊN DÀNH CHO HỌC SINH =====
+async function taiRemarksHocSinh() {
+  var container = $('dsRemarks');
+  if (!container) return;
+  var hoSo = hoSoNguoiDung;
+  if (!hoSo || hoSo.role !== 'student') return;
+  
+  $('khungRemarks').style.display = 'block';
+  
+  try {
+    var r = await sb.from('session_remarks')
+      .select('remark, attitude_score, ngay, author_name, classes(name)')
+      .eq('student_id', hoSo.id)
+      .order('ngay', { ascending: false })
+      .limit(5);
+      
+    if (r.error) {
+      console.error("Lỗi tải nhận xét:", r.error);
+      container.innerHTML = '<div style="font-size:.85rem; color:var(--err)">Không thể tải nhận xét.</div>';
+      return;
+    }
+    
+    var data = r.data || [];
+    if (data.length === 0) {
+      container.innerHTML = '<div style="font-size:.85rem; color:var(--ink-3); font-style:italic">Chưa có nhận xét nào từ thầy cô.</div>';
+      return;
+    }
+    
+    container.innerHTML = data.map(function (item) {
+      var ngayDate = new Date(item.ngay + 'T00:00:00');
+      var dateStr = ngayDate.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
+      var scoreHtml = '';
+      if (item.attitude_score !== null && item.attitude_score !== undefined) {
+        scoreHtml = '<span style="font-size:0.75rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); font-weight:600; margin-left:8px;">Thái độ: ' + item.attitude_score + '/10 ⭐</span>';
+      }
+      var remarkText = item.remark ? vclEsc(item.remark) : 'Chỉ chấm thái độ, không ghi nhận xét.';
+      var authorStr = item.author_name ? ' — ' + vclEsc(item.author_name) : '';
+      var className = item.classes ? ' · ' + item.classes.name : '';
+      
+      return '<div style="padding:12px; background:var(--surface-2); border-left:4px solid var(--accent); border-radius:8px; font-size:0.85rem; line-height:1.4; border:1px solid var(--line); border-left-width:4px;">' +
+        '<div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--ink-3); font-size:0.78rem; align-items:center;">' +
+          '<span>📅 <b>' + dateStr + className + '</b></span>' +
+          scoreHtml +
+        '</div>' +
+        '<div style="color:var(--ink); font-weight:500; white-space:pre-wrap;">' + remarkText + '</div>' +
+        (authorStr ? '<div style="text-align:right; font-size:0.75rem; color:var(--ink-3); margin-top:4px;">' + authorStr + '</div>' : '') +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    console.error("Lỗi taiRemarksHocSinh:", e);
+    container.innerHTML = '<div style="font-size:.85rem; color:var(--err)">Lỗi hệ thống khi tải nhận xét.</div>';
+  }
+}
 
 // ===== VIỆC CẦN LÀM HÔM NAY (học sinh) =====
 var vclMyId = null;
@@ -1047,7 +1113,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1145,6 +1211,7 @@ async function doiLopHocSinhHoatDong(classId) {
   await taiSchedulesVaExamsStudent();
   await taiViecCanLam();
   await kiemTraDiemDanhHocSinh();
+  await taiRemarksHocSinh();
   veLichTuan();
 }
 
@@ -1159,7 +1226,7 @@ async function taiSchedulesVaExamsStudent() {
   
   // 1. Tải lịch học lớp học sinh tham gia
   var rSched = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -1564,9 +1631,11 @@ function gcalEventsForDay(dt) {
     }
     
     arr.push({
+      id: s.id,
       start: s.start_time, end: s.end_time,
       title: titleText,
-      bg: layMauLop(s.classes ? s.classes.name : 'Lớp học')
+      bg: layMauLop(s.classes ? s.classes.name : 'Lớp học'),
+      type: 'schedule'
     });
   });
   (tatCaExams || []).forEach(function (e) {
@@ -1575,7 +1644,7 @@ function gcalEventsForDay(dt) {
     var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
     var endD = e.closes_at ? new Date(e.closes_at) : new Date(od.getTime() + (e.duration_minutes || 45) * 60000);
     var et = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0') + ':00';
-    arr.push({ start: st, end: et, title: '📝 ' + e.title, bg: 'linear-gradient(135deg, #B5483A, #8f3126)' });
+    arr.push({ id: e.id, start: st, end: et, title: '📝 ' + e.title, bg: 'linear-gradient(135deg, #B5483A, #8f3126)', type: 'exam' });
   });
   return arr;
 }
@@ -1613,13 +1682,20 @@ function veLichTuan() {
     var cells = '';
     for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
     var evHtml = '';
+    var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
     gcalEventsForDay(dt).forEach(function (ev) {
       var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
       if (eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60) return;
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
       var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
-      evHtml += '<div class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + '">' +
-        '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
+      
+      if (isStaff && ev.type === 'schedule' && ev.id) {
+        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + ';display:block;cursor:pointer;">' +
+          '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
+      } else {
+        evHtml += '<div class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + '">' +
+          '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
+      }
     });
     var nowHtml = '';
     if (isToday && nowMin >= GCAL_GIO_DAU * 60 && nowMin <= GCAL_GIO_CUOI * 60) {
