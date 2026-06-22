@@ -2140,9 +2140,214 @@ function dongTheoryProgress() {
 
 var pdfBlobTest = null;
 
+async function chuanHoaTexTestLatex(rawCode) {
+  var trimmed = (rawCode || '').trim();
+  if (/\\documentclass/.test(trimmed)) {
+    return trimmed;
+  }
+  
+  var styExTest = '';
+  var styTitleDot = '';
+  try {
+    var r1 = await fetch('ex_test.sty');
+    if (r1.ok) styExTest = await r1.text();
+    var r2 = await fetch('titledot.sty');
+    if (r2.ok) styTitleDot = await r2.text();
+  } catch (e) {
+    console.error('Lỗi fetch sty:', e);
+  }
+  
+  var virtualFiles = '';
+  if (styExTest) {
+    virtualFiles += '\\begin{filecontents*}{ex_test.sty}\n' + styExTest + '\n\\end{filecontents*}\n';
+  }
+  if (styTitleDot) {
+    virtualFiles += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
+  }
+  
+  // Virtual files for Casio
+  virtualFiles += `\\begin{filecontents*}{casiovn.sty}
+\\NeedsTeXFormat{LaTeX2e}
+\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]
+\\RequirePackage{xspace}
+\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
+\\DeclareRobustCommand{\\onk}{\\key{ON}}
+\\DeclareRobustCommand{\\ack}{\\key{AC}}
+\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
+\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
+\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
+\\DeclareRobustCommand{\\delk}{\\key{DEL}}
+\\DeclareRobustCommand{\\calck}{\\key{CALC}}
+\\DeclareRobustCommand{\\engk}{\\key{ENG}}
+\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
+\\DeclareRobustCommand{\\stok}{\\key{STO}}
+\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
+\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
+\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
+\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
+\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
+\\DeclareRobustCommand{\\vark}{\\key{x}}
+\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
+\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
+\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
+\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
+\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
+\\DeclareRobustCommand{\\logk}{\\key{log}}
+\\DeclareRobustCommand{\\lnk}{\\key{ln}}
+\\DeclareRobustCommand{\\tank}{\\key{tan}}
+\\DeclareRobustCommand{\\cosk}{\\key{cos}}
+\\DeclareRobustCommand{\\sink}{\\key{sin}}
+\\DeclareRobustCommand{\\circk}{\\key{o}}
+\\DeclareRobustCommand{\\signk}{\\key{+/-}}
+\\DeclareRobustCommand{\\openk}{\\key{(}}
+\\DeclareRobustCommand{\\closek}{\\key{)}}
+\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
+\\DeclareRobustCommand{\\dotk}{\\key{.}}
+\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
+\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
+\\DeclareRobustCommand{\\subk}{\\key{-}}
+\\DeclareRobustCommand{\\addk}{\\key{+}}
+\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
+\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
+\\DeclareRobustCommand{\\equalk}{\\key{=}}
+\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
+\\DeclareRobustCommand{\\zerok}{\\key{0}}
+\\DeclareRobustCommand{\\onek}{\\key{1}}
+\\DeclareRobustCommand{\\twok}{\\key{2}}
+\\DeclareRobustCommand{\\threek}{\\key{3}}
+\\DeclareRobustCommand{\\fourk}{\\key{4}}
+\\DeclareRobustCommand{\\fivek}{\\key{5}}
+\\DeclareRobustCommand{\\sixk}{\\key{6}}
+\\DeclareRobustCommand{\\sevenk}{\\key{7}}
+\\DeclareRobustCommand{\\eightk}{\\key{8}}
+\\DeclareRobustCommand{\\ninek}{\\key{9}}
+\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
+\\DeclareRobustCommand{\\modek}{\\key{MODE}}
+\\DeclareRobustCommand{\\log10k}{\\key{log10}}
+\\endinput
+\\end{filecontents*}\n`;
+
+  virtualFiles += `\\begin{filecontents*}{casio580x.sty}
+\\NeedsTeXFormat{LaTeX2e}
+\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]
+\\RequirePackage{xspace}
+\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
+\\DeclareRobustCommand{\\onk}{\\key{ON}}
+\\DeclareRobustCommand{\\ack}{\\key{AC}}
+\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
+\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
+\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
+\\DeclareRobustCommand{\\delk}{\\key{DEL}}
+\\DeclareRobustCommand{\\calck}{\\key{CALC}}
+\\DeclareRobustCommand{\\engk}{\\key{ENG}}
+\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
+\\DeclareRobustCommand{\\stok}{\\key{STO}}
+\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
+\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
+\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
+\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
+\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
+\\DeclareRobustCommand{\\vark}{\\key{x}}
+\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
+\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
+\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
+\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
+\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
+\\DeclareRobustCommand{\\logk}{\\key{log}}
+\\DeclareRobustCommand{\\lnk}{\\key{ln}}
+\\DeclareRobustCommand{\\tank}{\\key{tan}}
+\\DeclareRobustCommand{\\cosk}{\\key{cos}}
+\\DeclareRobustCommand{\\sink}{\\key{sin}}
+\\DeclareRobustCommand{\\circk}{\\key{o}}
+\\DeclareRobustCommand{\\signk}{\\key{+/-}}
+\\DeclareRobustCommand{\\openk}{\\key{(}}
+\\DeclareRobustCommand{\\closek}{\\key{)}}
+\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
+\\DeclareRobustCommand{\\dotk}{\\key{.}}
+\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
+\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
+\\DeclareRobustCommand{\\subk}{\\key{-}}
+\\DeclareRobustCommand{\\addk}{\\key{+}}
+\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
+\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
+\\DeclareRobustCommand{\\equalk}{\\key{=}}
+\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
+\\DeclareRobustCommand{\\zerok}{\\key{0}}
+\\DeclareRobustCommand{\\onek}{\\key{1}}
+\\DeclareRobustCommand{\\twok}{\\key{2}}
+\\DeclareRobustCommand{\\threek}{\\key{3}}
+\\DeclareRobustCommand{\\fourk}{\\key{4}}
+\\DeclareRobustCommand{\\fivek}{\\key{5}}
+\\DeclareRobustCommand{\\sixk}{\\key{6}}
+\\DeclareRobustCommand{\\sevenk}{\\key{7}}
+\\DeclareRobustCommand{\\eightk}{\\key{8}}
+\\DeclareRobustCommand{\\ninek}{\\key{9}}
+\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
+\\DeclareRobustCommand{\\modek}{\\key{MODE}}
+\\endinput
+\\end{filecontents*}\n`;
+
+  var preamble = virtualFiles + `\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{vietnam}
+\\usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
+\\usepackage{longtable,multirow,makecell,tabularx}
+\\usepackage{diagbox}
+\\usepackage[shortlabels]{enumitem}
+\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
+\\usepackage{tikz}
+\\usepackage{tkz-euclide}
+\\usepackage{tikz-3dplot}
+\\usepackage{tkz-tab}
+\\usepackage{pifont}
+\\usepackage{bbding}
+\\usepackage{stackengine}
+\\usepackage{scalerel}
+\\usepackage{array}
+\\usepackage{xcolor,colortbl,tasks}
+\\usepackage[hidelinks,unicode]{hyperref}
+
+% ex_test package
+\\usepackage[loigiai]{ex_test}
+\\font\\damEX=ugqb8v at 12pt
+\\def\\iconVD{\\faEdit}
+\\def\\mauDC{black}
+\\def\\loigiaiEX{\\damEX\\color{blue}\\faCommenting\\ Lời giải.}
+\\renewcommand{\\nameex}{\\damEX\\color{blue}\\iconVD\\ Câu}
+\\def\\qedEX{\\color{black}\\ensuremath{\\square}}
+\\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
+\\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right\\}}
+
+% custom environments from BosungK
+\\renewcommand{\\vec}[1]{\\protect\\overrightarrow{#1}}
+\\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\def\\viduminhhoa{\\subsubsection{Ví dụ minh họa}}
+\\def\\baitaptl{\\subsubsection{Bài tập áp dụng}}
+\\def\\baitapbs{\\subsubsection{Bài tập bổ sung}}
+\\def\\BTVD{\\subsubsection{Bài tập vận dụng}}
+\\newenvironment{vidu}{\\begin{ex}}{\\end{ex}}
+\\def\\baitoan{\\faHandORight\\ \\textbf{Bài toán. }}
+\\def\\phuongphap{\\faHandODown\\ \\textbf{Phương pháp: }}
+\\newcommand{\\boxde}[1]{%
+	\\begin{center}
+		\\textbf{#1}
+	\\end{center}
+}
+\\newenvironment{luyentap}{\\begin{ex}}{\\end{ex}}
+\\newenvironment{kttrongtam}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{vandung}{\\begin{bt}}{\\end{bt}}
+\\newenvironment{trithuc}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{bttuongtu}{\\begin{bt}}{\\end{bt}}
+
+\\begin{document}
+` + trimmed + `
+\\end{document}`;
+  return preamble;
+}
+
 async function bienDichTestLatex() {
-  var tex = $('bhTestLatex').value.trim();
-  if (!tex) {
+  var rawTex = $('bhTestLatex').value.trim();
+  if (!rawTex) {
     alert('Vui lòng nhập code LaTeX đề thi trước!');
     return;
   }
@@ -2159,6 +2364,7 @@ async function bienDichTestLatex() {
   output.innerHTML = '<div style="padding:20px; color:var(--ink-3)">Đang gửi lên texlive.net — có thể mất 10–30 giây…</div>';
   
   try {
+    var tex = await chuanHoaTexTestLatex(rawTex);
     var r = await sb.functions.invoke('latex', {
       body: { tex: tex, engine: 'pdflatex' }
     });

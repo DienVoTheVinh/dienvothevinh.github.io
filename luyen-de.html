@@ -1472,14 +1472,7 @@ async function chayBienDichTaiCho() {
     }
   }
   
-  var tex = '';
-  if (styExTest) {
-    tex += '\\begin{filecontents*}{ex_test.sty}\n' + styExTest + '\n\\end{filecontents*}\n';
-  }
-  if (styTitleDot) {
-    tex += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
-  }
-  tex += preamble + '\n\\begin{document}\n' + body + '\n\\end{document}';
+  var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
   
   try {
     var r = await sb.functions.invoke('latex', {
@@ -1646,6 +1639,27 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 \\DeclareMathSymbol{\\varparallel}{\\mathrel}{symbolsC}{9}
 \\DeclareMathSymbol{\\parallel}{\\mathrel}{symbolsC}{9}
 
+% custom environments from BosungK
+\\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\def\\viduminhhoa{\\subsubsection{Ví dụ minh họa}}
+\\def\\baitaptl{\\subsubsection{Bài tập áp dụng}}
+\\def\\baitapbs{\\subsubsection{Bài tập bổ sung}}
+\\def\\BTVD{\\subsubsection{Bài tập vận dụng}}
+\\newenvironment{vidu}{\\begin{ex}}{\\end{ex}}
+\\def\\baitoan{\\faHandORight\\ \\textbf{Bài toán. }}
+\\def\\phuongphap{\\faHandODown\\ \\textbf{Phương pháp: }}
+\\newcommand{\\boxde}[1]{%
+	\\begin{center}
+		\\textbf{#1}
+	\\end{center}
+}
+\\newenvironment{luyentap}{\\begin{ex}}{\\end{ex}}
+\\newenvironment{kttrongtam}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{vandung}{\\begin{bt}}{\\end{bt}}
+\\newenvironment{trithuc}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
+\\newenvironment{bttuongtu}{\\begin{bt}}{\\end{bt}}
+
 % --- WATERMARK LỀ PHẢI ---
 \\AddEverypageHook{%
 \\begin{tikzpicture}[remember picture,overlay]
@@ -1698,6 +1712,141 @@ async function taiTitleDotSty() {
     console.error('Lỗi tải file titledot.sty:', e);
   }
   return '';
+}
+
+function ghepTexCode(styExTest, styTitleDot, preamble, body) {
+  var tex = '';
+  if (styExTest) {
+    tex += '\\begin{filecontents*}{ex_test.sty}\n' + styExTest + '\n\\end{filecontents*}\n';
+  }
+  if (styTitleDot) {
+    tex += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
+  }
+  
+  // Virtual files for Casio
+  tex += `\\begin{filecontents*}{casiovn.sty}
+\\NeedsTeXFormat{LaTeX2e}
+\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]
+\\RequirePackage{xspace}
+\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
+\\DeclareRobustCommand{\\onk}{\\key{ON}}
+\\DeclareRobustCommand{\\ack}{\\key{AC}}
+\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
+\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
+\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
+\\DeclareRobustCommand{\\delk}{\\key{DEL}}
+\\DeclareRobustCommand{\\calck}{\\key{CALC}}
+\\DeclareRobustCommand{\\engk}{\\key{ENG}}
+\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
+\\DeclareRobustCommand{\\stok}{\\key{STO}}
+\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
+\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
+\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
+\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
+\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
+\\DeclareRobustCommand{\\vark}{\\key{x}}
+\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
+\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
+\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
+\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
+\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
+\\DeclareRobustCommand{\\logk}{\\key{log}}
+\\DeclareRobustCommand{\\lnk}{\\key{ln}}
+\\DeclareRobustCommand{\\tank}{\\key{tan}}
+\\DeclareRobustCommand{\\cosk}{\\key{cos}}
+\\DeclareRobustCommand{\\sink}{\\key{sin}}
+\\DeclareRobustCommand{\\circk}{\\key{o}}
+\\DeclareRobustCommand{\\signk}{\\key{+/-}}
+\\DeclareRobustCommand{\\openk}{\\key{(}}
+\\DeclareRobustCommand{\\closek}{\\key{)}}
+\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
+\\DeclareRobustCommand{\\dotk}{\\key{.}}
+\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
+\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
+\\DeclareRobustCommand{\\subk}{\\key{-}}
+\\DeclareRobustCommand{\\addk}{\\key{+}}
+\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
+\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
+\\DeclareRobustCommand{\\equalk}{\\key{=}}
+\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
+\\DeclareRobustCommand{\\zerok}{\\key{0}}
+\\DeclareRobustCommand{\\onek}{\\key{1}}
+\\DeclareRobustCommand{\\twok}{\\key{2}}
+\\DeclareRobustCommand{\\threek}{\\key{3}}
+\\DeclareRobustCommand{\\fourk}{\\key{4}}
+\\DeclareRobustCommand{\\fivek}{\\key{5}}
+\\DeclareRobustCommand{\\sixk}{\\key{6}}
+\\DeclareRobustCommand{\\sevenk}{\\key{7}}
+\\DeclareRobustCommand{\\eightk}{\\key{8}}
+\\DeclareRobustCommand{\\ninek}{\\key{9}}
+\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
+\\DeclareRobustCommand{\\modek}{\\key{MODE}}
+\\DeclareRobustCommand{\\log10k}{\\key{log10}}
+\\endinput
+\\end{filecontents*}\n`;
+
+  tex += `\\begin{filecontents*}{casio580x.sty}
+\\NeedsTeXFormat{LaTeX2e}
+\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]
+\\RequirePackage{xspace}
+\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
+\\DeclareRobustCommand{\\onk}{\\key{ON}}
+\\DeclareRobustCommand{\\ack}{\\key{AC}}
+\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
+\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
+\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
+\\DeclareRobustCommand{\\delk}{\\key{DEL}}
+\\DeclareRobustCommand{\\calck}{\\key{CALC}}
+\\DeclareRobustCommand{\\engk}{\\key{ENG}}
+\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
+\\DeclareRobustCommand{\\stok}{\\key{STO}}
+\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
+\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
+\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
+\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
+\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
+\\DeclareRobustCommand{\\vark}{\\key{x}}
+\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
+\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
+\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
+\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
+\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
+\\DeclareRobustCommand{\\logk}{\\key{log}}
+\\DeclareRobustCommand{\\lnk}{\\key{ln}}
+\\DeclareRobustCommand{\\tank}{\\key{tan}}
+\\DeclareRobustCommand{\\cosk}{\\key{cos}}
+\\DeclareRobustCommand{\\sink}{\\key{sin}}
+\\DeclareRobustCommand{\\circk}{\\key{o}}
+\\DeclareRobustCommand{\\signk}{\\key{+/-}}
+\\DeclareRobustCommand{\\openk}{\\key{(}}
+\\DeclareRobustCommand{\\closek}{\\key{)}}
+\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
+\\DeclareRobustCommand{\\dotk}{\\key{.}}
+\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
+\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
+\\DeclareRobustCommand{\\subk}{\\key{-}}
+\\DeclareRobustCommand{\\addk}{\\key{+}}
+\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
+\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
+\\DeclareRobustCommand{\\equalk}{\\key{=}}
+\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
+\\DeclareRobustCommand{\\zerok}{\\key{0}}
+\\DeclareRobustCommand{\\onek}{\\key{1}}
+\\DeclareRobustCommand{\\twok}{\\key{2}}
+\\DeclareRobustCommand{\\threek}{\\key{3}}
+\\DeclareRobustCommand{\\fourk}{\\key{4}}
+\\DeclareRobustCommand{\\fivek}{\\key{5}}
+\\DeclareRobustCommand{\\sixk}{\\key{6}}
+\\DeclareRobustCommand{\\sevenk}{\\key{7}}
+\\DeclareRobustCommand{\\eightk}{\\key{8}}
+\\DeclareRobustCommand{\\ninek}{\\key{9}}
+\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
+\\DeclareRobustCommand{\\modek}{\\key{MODE}}
+\\endinput
+\\end{filecontents*}\n`;
+
+  tex += preamble + '\n\\begin{document}\n' + body + '\n\\end{document}';
+  return tex;
 }
 
 function moConfigPDF(mode) {
@@ -1874,14 +2023,7 @@ async function generateAndCompilePDF() {
     }
   }
   
-  var tex = '';
-  if (styExTest) {
-    tex += '\\begin{filecontents*}{ex_test.sty}\n' + styExTest + '\n\\end{filecontents*}\n';
-  }
-  if (styTitleDot) {
-    tex += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
-  }
-  tex += preamble + '\n\\begin{document}\n' + body + '\n\\end{document}';
+  var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
   
   try {
     var r = await sb.functions.invoke('latex', {
