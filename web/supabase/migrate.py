@@ -13,10 +13,11 @@ def run_migration():
         sys.exit(1)
     
     connection_uri = sys.argv[1]
+    sql_file_name = sys.argv[2] if len(sys.argv) > 2 else "update_theory_progress_schema.sql"
     
     # Read the SQL migration file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    sql_file_path = os.path.join(script_dir, "update_theory_progress_schema.sql")
+    sql_file_path = os.path.join(script_dir, sql_file_name)
     
     if not os.path.exists(sql_file_path):
         print(f"SQL file not found at: {sql_file_path}")

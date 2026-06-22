@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.env.local
+*.log
+*.aux
+*.out
+*.synctex.gz
+*.thm
+*.toc
+.venv/
+__pycache__/
+node_modules/
+.supabase/
+web/supabase/supabase/
