@@ -205,6 +205,17 @@ var lichDangSuaId = null;
       this.classList.toggle('active');
     });
   });
+
+  // Tự động mở chỉnh sửa nếu có schedule_id trên URL
+  var urlParams = new URLSearchParams(window.location.search);
+  var schId = urlParams.get('schedule_id');
+  if (schId) {
+    setTimeout(function() {
+      suaLich(schId);
+      var formEl = $('schLop');
+      if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+    }, 850);
+  }
 })();
 
 /* ----- Meet theo lớp ----- */

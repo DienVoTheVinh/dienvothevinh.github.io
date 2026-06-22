@@ -114,8 +114,10 @@
     <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
     
     <!-- Tab bar -->
-    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px; flex-wrap:wrap">
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
+      <button type="button" class="tab-btn" id="btnTabTaiLieu" onclick="doiTabForm('tai-lieu')">📄 Tài liệu & Đính kèm</button>
+      <button type="button" class="tab-btn" id="btnTabTest" onclick="doiTabForm('test')">📝 Bài kiểm tra</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
 
@@ -153,6 +155,27 @@
         </div>
 
         <div class="field">
+          <label>Ghi chú bài học</label>
+          <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 24px">
+          <div class="field">
+            <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
+            <input type="number" class="input" id="bhSapXep" value="0">
+          </div>
+          <div class="field" style="display:flex; align-items:center">
+            <div class="switch-container">
+              <input type="checkbox" id="bhXuatBan" checked>
+              <label for="bhXuatBan" style="margin:0; font-weight:600">Xuất bản cho học sinh xem</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Tài liệu & Đính kèm -->
+      <div id="tabFormTaiLieu" style="display:none;">
+        <div class="field">
           <label>Tài liệu đọc & Bài tập kèm theo (PDF từ LaTeX)</label>
           <select class="input" id="bhTaiLieu">
             <option value="">-- Không đính kèm tài liệu --</option>
@@ -164,9 +187,10 @@
 
         <div class="field">
           <label>📄 Tài liệu LaTeX của bài (tự biên dịch trên màn hình học sinh)</label>
-        <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code LaTeX (ex_test)… Học sinh mở mục Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
-        <small style="color:var(--ink-3);margin-top:4px;display:block">Nếu điền ô này, nó được ưu tiên hiển thị thay cho PDF chọn từ kho bên trên.</small>
-      </div>
+          <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code LaTeX (ex_test)… Học sinh mở mục Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <small style="color:var(--ink-3);margin-top:4px;display:block">If fill this box, it takes priority over selected PDF above.</small>
+        </div>
+
         <div class="field">
           <label>Hoặc tải file PDF có sẵn từ máy (không qua LaTeX)</label>
           <input type="file" class="input" id="bhPdfFile" accept=".pdf,application/pdf" style="padding:8px">
@@ -185,35 +209,6 @@
           <input type="file" class="input" id="bhAnhFile" accept="image/*" multiple style="padding:8px">
           <div id="anhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
         </div>
-
-        <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
-          <label>📝 Bài test cuối giờ (chọn PDF từ kho tài liệu)</label>
-          <select class="input" id="bhTestTaiLieu">
-            <option value="">-- Không có bài test --</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Hoặc tải file PDF bài test từ máy</label>
-          <input type="file" class="input" id="bhTestFile" accept=".pdf,application/pdf" style="padding:8px">
-          <small style="color:var(--ink-3); margin-top:4px; display:block">
-            Soạn test bằng LaTeX? Biên dịch trong mục <a href="quan-tri-tai-lieu" target="_blank" style="color:var(--accent)">Soạn tài liệu</a> rồi chọn ở ô trên.
-          </small>
-        </div>
-
-        <div class="field">
-          <label>Hoặc dán đường dẫn (Link/URL) file PDF bài test đã có sẵn</label>
-          <input type="text" class="input" id="bhTestUrl" placeholder="Ví dụ: https://drive.google.com/file/d/... hoặc link public PDF">
-        </div>
-
-        <div class="field">
-          <label>Ghi chú bài học</label>
-          <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
-        </div>
-
-        <div class="form-row" style="margin-bottom: 24px">
-          <div class="field">
-            <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
-            <input type="number" class="input" id="bhSapXep" value="0">
           </div>
           <div class="field" style="display:flex; align-items:center">
             <div class="switch-container">
