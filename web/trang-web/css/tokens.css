@@ -83,15 +83,15 @@
   --glass-opacity: 0.25;
   --glass-blur-radius: 16px;
 
-  --bg: #040a16; /* Xanh dương đen tối thẳm */
-  --bg-gradient: radial-gradient(circle at top, #10223f 0%, #040a16 100%);
-  --bg-rgb: 4, 10, 22;
-  --surface-rgb: 16, 34, 63;
-  --surface-2-rgb: 22, 46, 84;
+  --bg: #000000; /* Đen tuyền tuyệt đối */
+  --bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #000000 100%);
+  --bg-rgb: 0, 0, 0;
+  --surface-rgb: 20, 20, 20;
+  --surface-2-rgb: 30, 30, 30;
   
-  --surface: rgba(16, 34, 63, 0.7); /* Kính mờ xanh dương đen tối */
-  --surface-2: rgba(22, 46, 84, 0.85); /* Hover kính tối */
-  --surface-solid: #060f1e;
+  --surface: rgba(20, 20, 20, 0.7); /* Kính mờ đen tối */
+  --surface-2: rgba(30, 30, 30, 0.85); /* Hover kính tối */
+  --surface-solid: #121212;
   
   --line: rgba(255, 255, 255, 0.07); /* Viền kính mờ */
   --line-2: rgba(194, 125, 0, 0.25); /* Viền vàng gold phát sáng mờ */
@@ -118,7 +118,7 @@
   --glass-border: 1px solid rgba(194, 125, 0, 0.15);
 
   /* Topbar ở chế độ Tối */
-  --topbar-bg: rgba(16, 34, 63, 0.75);
+  --topbar-bg: rgba(15, 15, 15, 0.75);
   --topbar-border: 1px solid rgba(197, 155, 39, 0.2);
   --topbar-link: #cbd5e1;
   --topbar-link-hover: #dfbc5e;
