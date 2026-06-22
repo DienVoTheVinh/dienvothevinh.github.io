@@ -196,6 +196,12 @@ var dsHocSinhLop = [];
 var selectedClassId = null;
 var mapGiaoVien = {};
 
+function layEmojiGiaoVien(fullName) {
+  if (!fullName) return '👨‍🏫';
+  if (fullName.indexOf('Cô') === 0 || fullName.indexOf('Bà') === 0) return '👩‍🏫';
+  return '👨‍🏫';
+}
+
 (async function () {
   if (!daKetNoi()) {
     // ----- CHẾ ĐỘ XEM THỬ -----
@@ -349,7 +355,7 @@ async function taiLessonsHocSinh() {
     var gv1 = mapGiaoVien[cls.teacher_id] || 'Thầy Vinh';
     var gv2 = cls.co_teacher_id ? mapGiaoVien[cls.co_teacher_id] : null;
     
-    var subText = '👨‍🏫 Giáo viên: ' + gv1;
+    var subText = layEmojiGiaoVien(gv1) + ' Giáo viên: ' + gv1;
     if (gv2) {
       subText += ' & ' + gv2;
     }
@@ -486,11 +492,11 @@ function hienThiLessonsGomNhom(ds) {
     
     var html = '';
     if (lessonsMain.length > 0) {
-      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">👨‍🏫 Bài giảng của ' + nameMain + '</h3>';
+      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">' + layEmojiGiaoVien(nameMain) + ' Bài giảng của ' + nameMain + '</h3>';
       html += veGomNhomChuyenDe(lessonsMain);
     }
     if (lessonsCo.length > 0) {
-      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px">👩‍🏫 Bài giảng của ' + nameCo + '</h3>';
+      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">' + layEmojiGiaoVien(nameCo) + ' Bài giảng của ' + nameCo + '</h3>';
       html += veGomNhomChuyenDe(lessonsCo);
     }
     $('dsBaiHocGomNhom').innerHTML = html;

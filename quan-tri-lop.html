@@ -709,6 +709,13 @@ var anhDaCo = [];
 var selectedImageFiles = [];
 var mapGiaoVien = {};
 var dsGiaoVien = [];
+var userProfile = null;
+
+function layEmojiGiaoVien(fullName) {
+  if (!fullName) return '👨‍🏫';
+  if (fullName.indexOf('Cô') === 0 || fullName.indexOf('Bà') === 0) return '👩‍🏫';
+  return '👨‍🏫';
+}
 
 (async function () {
   console.log("1. Khởi tạo trang: Bắt đầu");
@@ -718,6 +725,7 @@ var dsGiaoVien = [];
   }
   console.log("2. Đang kiểm tra đăng nhập...");
   var hoSo = await yeuCauDangNhap();
+  userProfile = hoSo;
   console.log("3. Đã đăng nhập, hồ sơ:", hoSo);
   if (!hoSo) return;
   if (hoSo.role === 'assistant') document.body.classList.add('vai-tro-tg');
@@ -1003,11 +1011,11 @@ async function taiLessonsLop() {
     
     var html = '';
     if (lessonsMain.length > 0) {
-      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">👨‍🏫 Bài giảng của ' + nameMain + '</h3>';
+      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">' + layEmojiGiaoVien(nameMain) + ' Bài giảng của ' + nameMain + '</h3>';
       html += veNhomBaiHoc(lessonsMain);
     }
     if (lessonsCo.length > 0) {
-      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px">👩‍🏫 Bài giảng của ' + nameCo + '</h3>';
+      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">' + layEmojiGiaoVien(nameCo) + ' Bài giảng của ' + nameCo + '</h3>';
       html += veNhomBaiHoc(lessonsCo);
     }
     $('dsBaiHocLop').innerHTML = html;
@@ -1842,7 +1850,7 @@ async function moFormSua(id) {
       selTeacher.appendChild(opt2);
     }
     
-    selTeacher.value = bh.teacher_id || classDangChon.teacher_id || '';
+    selTeacher.value = bh.teacher_id || (userProfile && userProfile.id === classDangChon.co_teacher_id ? classDangChon.co_teacher_id : classDangChon.teacher_id) || '';
   }
   anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : []; selectedImageFiles = []; veAnhHienCo();
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }

@@ -146,8 +146,8 @@ async function dangNhap(username, password) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
     email = u + '@hs.vinhmath.com';
   } else {
-    // Nếu nhập có đuôi phân quyền, tự động thêm đuôi .com ngầm để hợp lệ với Supabase Auth
-    if (u.endsWith('@hs.vinhmath') || u.endsWith('@tg.vinhmath') || u.endsWith('@gv.vinhmath') || u.endsWith('@ad.vinhmath') || u.endsWith('@admin.vinhmath')) {
+    // Bất kỳ đuôi phân quyền .vinhmath nào (hs, ph, gv, tg, ad, admin...) đều tự thêm .com ngầm
+    if (/@[a-z]+\.vinhmath$/.test(u)) {
       email = u + '.com';
     } else {
       email = u;
