@@ -713,7 +713,21 @@
     
     <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
     <div class="right-panel">
-      <div id="weekCal" class="gcal"></div>
+      <!-- Lịch cá nhân -->
+      <div id="personalCalContainer">
+        <h3 class="cal-section-title" id="lblPersonalCalTitle" style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; display: none; align-items: center; gap: 8px; color: var(--accent);">
+          📅 Lịch dạy cá nhân
+        </h3>
+        <div id="weekCal" class="gcal"></div>
+      </div>
+      
+      <!-- Lịch chung (chỉ cho staff) -->
+      <div id="sharedCalContainer" style="display: none;">
+        <h3 class="cal-section-title" style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--accent);">
+          👥 Lịch làm việc chung (Tất cả giáo viên)
+        </h3>
+        <div id="sharedCal" class="gcal"></div>
+      </div>
     </div>
   </div>
 
@@ -742,6 +756,7 @@ var tatCaLop = [];
 var tatCaSchedules = [];
 var tatCaExams = [];
 var suKienThang = {}; // keyed by YYYY-MM-DD
+var mapGiaoVien = {};
 
 var namDangXem = new Date().getFullYear();
 var thangDangXem = new Date().getMonth(); // 0-11
@@ -799,6 +814,12 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     return;
   }
   hoSoNguoiDung = hoSo;
+  
+  // Tải danh sách giáo viên để ánh xạ tên hiển thị trên lịch
+  try {
+    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin', 'assistant']);
+    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+  } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
   
   var roleLabel = 'Học sinh';
   var badgeClass = 'badge-student';
@@ -1108,12 +1129,12 @@ async function taiBlogTrangChu() {
 // ----- TẢI DỮ LIỆU STAFF -----
 async function taiSchedulesVaExamsStaff() {
   // 1. Tải toàn bộ lớp để mapping
-  var rClasses = await sb.from('classes').select('id, name');
+  var rClasses = await sb.from('classes').select('id, name, teacher_id, co_teacher_id');
   tatCaLop = rClasses.data || [];
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1308,8 +1329,18 @@ function formatNgayDep(dStr) {
 // ----- VỀ LỊCH DẠY CHO STAFF -----
 async function veLichDayStaff() {
   var container = $('dsLichDay');
-  if (!tatCaSchedules.length) {
-    container.innerHTML = '<div class="empty card">Chưa có lịch dạy nào được thiết lập. Vào mục <a href="quan-tri-lich">Lịch học</a> để thiết lập lịch.</div>';
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  var displaySchedules = tatCaSchedules;
+  
+  if (isStaff) {
+    displaySchedules = tatCaSchedules.filter(function (s) {
+      if (!s.classes) return false;
+      return s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
+    });
+  }
+  
+  if (!displaySchedules.length) {
+    container.innerHTML = '<div class="empty card">Chưa có lịch dạy cá nhân nào sắp tới. Vào mục <a href="quan-tri-lich">Lịch học</a> để thiết lập lịch.</div>';
     return;
   }
   
@@ -1318,7 +1349,7 @@ async function veLichDayStaff() {
   var todayStr = new Date().toISOString().split('T')[0];
   
   // Loại bỏ các lịch "Chỉ một lần" trong quá khứ
-  var validSchedules = tatCaSchedules.filter(function (s) {
+  var validSchedules = displaySchedules.filter(function (s) {
     if (s.recurrence === 'once') {
       return s.date >= todayStr;
     }
@@ -1636,11 +1667,20 @@ function layMauLop(tenLop) {
   return MAU_LOP_PALETTE[index];
 }
 
-function gcalEventsForDay(dt) {
+function gcalEventsForDay(dt, filterPersonal) {
   var jsDay = dt.getDay(); var wd = jsDay === 0 ? 7 : jsDay; var key = gcalKey(dt); var arr = [];
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  
   (tatCaSchedules || []).forEach(function (s) {
     var match = s.recurrence === 'once' ? (s.date === key) : (s.weekday === wd);
     if (!match || !s.start_time || !s.end_time) return;
+    
+    // Lọc lịch cá nhân cho giáo viên/trợ giảng
+    if (isStaff && filterPersonal) {
+      if (!s.classes) return;
+      var isTeacher = s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
+      if (!isTeacher) return;
+    }
     
     var titleText = 'Lớp học';
     if (s.classes) {
@@ -1648,6 +1688,20 @@ function gcalEventsForDay(dt) {
       var badges = [];
       if (s.classes.is_specialized) badges.push('Chuyên');
       if (s.classes.grade) badges.push('K' + s.classes.grade);
+      
+      // Thêm tên giáo viên nếu là staff
+      if (isStaff) {
+        var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Vinh';
+        var teacherLastName = teacherName.split(' ').pop();
+        var gvText = 'GV: ' + teacherLastName;
+        if (s.classes.co_teacher_id) {
+          var coTeacherName = mapGiaoVien[s.classes.co_teacher_id] || 'GV';
+          var coTeacherLastName = coTeacherName.split(' ').pop();
+          gvText += ' + ' + coTeacherLastName;
+        }
+        badges.push(gvText);
+      }
+      
       if (badges.length) titleText += ' (' + badges.join(', ') + ')';
     }
     
@@ -1659,9 +1713,19 @@ function gcalEventsForDay(dt) {
       type: 'schedule'
     });
   });
+  
   (tatCaExams || []).forEach(function (e) {
     if (!e.opens_at) return; var od = new Date(e.opens_at);
     if (gcalKey(od) !== key) return;
+    
+    // Lọc kỳ thi cá nhân cho giáo viên/trợ giảng
+    if (isStaff && filterPersonal) {
+      var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
+      if (!cls) return;
+      var isTeacher = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
+      if (!isTeacher) return;
+    }
+    
     var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
     var endD = e.closes_at ? new Date(e.closes_at) : new Date(od.getTime() + (e.duration_minutes || 45) * 60000);
     var et = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0') + ':00';
@@ -1670,8 +1734,8 @@ function gcalEventsForDay(dt) {
   return arr;
 }
 
-function veLichTuan() {
-  var host = $('weekCal'); if (!host) return;
+function renderCalendarGrid(targetId, filterPersonal) {
+  var host = $(targetId); if (!host) return;
   var TEN = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
   var mon = gcalThu2(tuanOffset);
   var days = []; for (var i = 0; i < 7; i++) { var dd = new Date(mon); dd.setDate(mon.getDate() + i); days.push(dd); }
@@ -1679,7 +1743,13 @@ function veLichTuan() {
   var d0 = days[0], d6 = days[6];
   var title = d0.getDate() + '/' + (d0.getMonth() + 1) + ' – ' + d6.getDate() + '/' + (d6.getMonth() + 1) + ', ' + d6.getFullYear();
 
-  var head = '<div class="gcal-head"><div class="gcal-title">📅 Tuần ' + title + '</div>' +
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  var calendarTitle = filterPersonal ? '📅 Lịch dạy cá nhân · Tuần ' + title : '👥 Lịch làm việc chung · Tuần ' + title;
+  if (!isStaff) {
+    calendarTitle = '📅 Tuần ' + title;
+  }
+
+  var head = '<div class="gcal-head"><div class="gcal-title">' + calendarTitle + '</div>' +
     '<div class="gcal-nav"><button onclick="prevTuan()" aria-label="Tuần trước">‹</button>' +
     '<button class="gcal-today" onclick="tuanNay()">Hôm nay</button>' +
     '<button onclick="nextTuan()" aria-label="Tuần sau">›</button></div></div>';
@@ -1703,8 +1773,8 @@ function veLichTuan() {
     var cells = '';
     for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
     var evHtml = '';
-    var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
-    gcalEventsForDay(dt).forEach(function (ev) {
+    
+    gcalEventsForDay(dt, filterPersonal).forEach(function (ev) {
       var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
       if (eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60) return;
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
@@ -1726,9 +1796,37 @@ function veLichTuan() {
   });
 
   host.innerHTML = head + '<div class="gcal-scroll">' + dh.replace('gcal-days', 'gcal-days') + '<div class="gcal-grid">' + hours + cols + '</div></div>';
-  // cuộn tới ~7h hoặc giờ hiện tại
   var sc = host.querySelector('.gcal-scroll');
   if (sc) sc.scrollTop = Math.max(0, (Math.max(GCAL_GIO_DAU, 7) - GCAL_GIO_DAU) * GCAL_HH - 8);
+}
+
+function veLichTuan() {
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  if (isStaff) {
+    // Hiển thị tiêu đề Lịch cá nhân
+    var lblTitle = $('lblPersonalCalTitle');
+    if (lblTitle) lblTitle.style.display = 'flex';
+    
+    // Vẽ lịch cá nhân (chỉ hiển thị các lớp được phân công hoặc hợp tác)
+    renderCalendarGrid('weekCal', true);
+    
+    // Vẽ lịch chung (hiển thị tất cả)
+    var sharedContainer = $('sharedCalContainer');
+    if (sharedContainer) {
+      sharedContainer.style.display = 'block';
+      renderCalendarGrid('sharedCal', false);
+    }
+  } else {
+    // Ẩn tiêu đề Lịch cá nhân
+    var lblTitle = $('lblPersonalCalTitle');
+    if (lblTitle) lblTitle.style.display = 'none';
+    
+    var sharedContainer = $('sharedCalContainer');
+    if (sharedContainer) sharedContainer.style.display = 'none';
+    
+    // Vẽ lịch của học sinh (đã được lọc lớp từ API)
+    renderCalendarGrid('weekCal', false);
+  }
 }
 function prevTuan() { tuanOffset--; veLichTuan(); }
 function nextTuan() { tuanOffset++; veLichTuan(); }
@@ -1761,6 +1859,8 @@ function timSuKienGanNhat() {
   var bayGio = new Date();
   var minDiff = Infinity;
   
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  
   // 1. Quét schedules trong 30 ngày tới
   for (var i = 0; i < 30; i++) {
     var scanDate = new Date();
@@ -1770,10 +1870,14 @@ function timSuKienGanNhat() {
     
     var dateKey = formatDateKey(scanDate.getFullYear(), scanDate.getMonth(), scanDate.getDate());
     var dayScheds = tatCaSchedules.filter(function(s) {
-      if (s.recurrence === 'once') {
-        return s.date === dateKey;
+      var match = s.recurrence === 'once' ? (s.date === dateKey) : (s.weekday === weekdayVal);
+      if (!match) return false;
+      
+      if (isStaff) {
+        if (!s.classes) return false;
+        return s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
       }
-      return s.weekday === weekdayVal;
+      return true;
     });
     dayScheds.forEach(function(s) {
       var timeParts = s.start_time.split(':');
@@ -1789,7 +1893,15 @@ function timSuKienGanNhat() {
   }
   
   // 2. Quét kỳ thi (exams) có lịch bắt đầu trong tương lai
-  tatCaExams.forEach(function(e) {
+  var scanExams = tatCaExams;
+  if (isStaff) {
+    scanExams = tatCaExams.filter(function(e) {
+      var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
+      if (!cls) return false;
+      return cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
+    });
+  }
+  scanExams.forEach(function(e) {
     if (!e.opens_at) return;
     var eventDate = new Date(e.opens_at);
     var diff = eventDate.getTime() - bayGio.getTime();
