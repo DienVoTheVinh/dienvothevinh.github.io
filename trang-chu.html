@@ -1683,23 +1683,23 @@ function gcalEventsForDay(dt, filterPersonal) {
     }
     
     var titleText = 'Lớp học';
+    var teacherText = '';
     if (s.classes) {
       titleText = s.classes.name;
       var badges = [];
       if (s.classes.is_specialized) badges.push('Chuyên');
       if (s.classes.grade) badges.push('K' + s.classes.grade);
       
-      // Thêm tên giáo viên nếu là staff
+      // Lấy tên giáo viên để hiển thị riêng dòng dưới
       if (isStaff) {
         var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Vinh';
         var teacherLastName = teacherName.split(' ').pop();
-        var gvText = 'GV: ' + teacherLastName;
+        teacherText = 'GV: ' + teacherLastName;
         if (s.classes.co_teacher_id) {
           var coTeacherName = mapGiaoVien[s.classes.co_teacher_id] || 'GV';
           var coTeacherLastName = coTeacherName.split(' ').pop();
-          gvText += ' + ' + coTeacherLastName;
+          teacherText += ' + ' + coTeacherLastName;
         }
-        badges.push(gvText);
       }
       
       if (badges.length) titleText += ' (' + badges.join(', ') + ')';
@@ -1709,6 +1709,7 @@ function gcalEventsForDay(dt, filterPersonal) {
       id: s.id,
       start: s.start_time, end: s.end_time,
       title: titleText,
+      teacher: teacherText,
       bg: layMauLop(s.classes ? s.classes.name : 'Lớp học'),
       type: 'schedule'
     });
@@ -1780,12 +1781,17 @@ function renderCalendarGrid(targetId, filterPersonal) {
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
       var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
       
+      var teacherHtml = '';
+      if (isStaff && ev.teacher) {
+        teacherHtml = '<div style="font-size: 0.65rem; opacity: 0.95; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; margin-bottom: 2px;">👤 ' + vclEsc(ev.teacher) + '</div>';
+      }
+      
       if (isStaff && ev.type === 'schedule' && ev.id) {
         evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + ';display:block;cursor:pointer;">' +
-          '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
+          '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
       } else {
         evHtml += '<div class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + '">' +
-          '<b>' + vclEsc(ev.title) + '</b><span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
+          '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
       }
     });
     var nowHtml = '';
