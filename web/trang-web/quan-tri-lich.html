@@ -209,8 +209,24 @@
       </div>
     </div>
 
-    <div id="bangLichNhom">
-      <div style="text-align: center; padding: 24px; color: var(--ink-3);">Đang tải…</div>
+    <!-- Lịch cá nhân -->
+    <div id="khungLichCaNhan" style="display: none; margin-bottom: 28px;">
+      <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+        📅 Lịch dạy cá nhân của tôi
+      </h3>
+      <div id="bangLichNhomCaNhan">
+        <div style="text-align: center; padding: 24px; color: var(--ink-3);">Đang tải…</div>
+      </div>
+    </div>
+
+    <!-- Lịch chung -->
+    <div id="khungLichChung">
+      <h3 id="lblLichChungTitle" style="font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; color: var(--accent); display: none; align-items: center; gap: 8px;">
+        👥 Lịch học toàn bộ giáo viên
+      </h3>
+      <div id="bangLichNhomChung">
+        <div style="text-align: center; padding: 24px; color: var(--ink-3);">Đang tải…</div>
+      </div>
     </div>
   </div>
 
@@ -276,6 +292,7 @@
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
 var dsLop = [];
+var hoSoNguoiDung = null;
 var hennDem = null;
 var dsLich = [];
 var lichDangSuaId = null;
@@ -293,17 +310,35 @@ function toggleNhomLich(classId) {
   }
 }
 
+function kiemTraQuyenLop(classId) {
+  if (!hoSoNguoiDung) return false;
+  if (hoSoNguoiDung.role === 'admin') return true;
+  var cls = dsLop.find(function(c) { return c.id === classId; });
+  if (!cls) return false;
+  return cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
+}
+
 (async function () {
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
+  hoSoNguoiDung = hoSo;
 
   // Lớp
-  var r = await sb.from('classes').select('id, name, grade, is_specialized').order('name');
+  var r = await sb.from('classes').select('id, name, grade, is_specialized, teacher_id, co_teacher_id').order('name');
   dsLop = r.data || [];
+  
+  var isTeacher = hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant';
+  var userLop = dsLop;
+  if (isTeacher) {
+    userLop = dsLop.filter(function (l) {
+      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
+    });
+  }
+
   ['schLop', 'ssLop'].forEach(function (id) {
-    $(id).innerHTML = dsLop.map(function (l) {
+    $(id).innerHTML = userLop.map(function (l) {
       var display = l.name;
       var badges = [];
       if (l.is_specialized) badges.push('Chuyên');
@@ -334,7 +369,16 @@ async function taiMeetLop() {
   var r = await sb.from('class_links').select('class_id, meet_link');
   var map = {};
   (r.data || []).forEach(function (x) { map[x.class_id] = x.meet_link; });
-  $('khungMeetLop').innerHTML = dsLop.map(function (l) {
+  
+  var isTeacher = hoSoNguoiDung && (hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant');
+  var displayLopMeet = dsLop;
+  if (isTeacher) {
+    displayLopMeet = dsLop.filter(function (l) {
+      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
+    });
+  }
+  
+  $('khungMeetLop').innerHTML = displayLopMeet.map(function (l) {
     var tagHtml = '';
     if (l.grade) {
       tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + l.grade + '</span>';
@@ -352,6 +396,10 @@ async function taiMeetLop() {
 }
 
 async function luuMeetLop(id) {
+  if (!kiemTraQuyenLop(id)) {
+    alert("Thầy không có quyền thay đổi link Meet của lớp này!");
+    return;
+  }
   var v = $('ml-' + id).value.trim();
   var r = await sb.from('class_links').upsert({ class_id: id, meet_link: v });
   var t = $('mlt-' + id);
@@ -411,38 +459,69 @@ function dongBoThuTuNgay() {
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, classes(name, grade, is_specialized)')
+    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   dsLich = r.data || [];
   
-  // Nhóm theo từng lớp
-  var groups = {};
+  // Nhóm theo từng lớp
+  var groupsCaNhan = {};
+  var groupsChung = {};
+  
+  var isTeacher = hoSoNguoiDung && (hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant');
+  var isAdmin = hoSoNguoiDung && hoSoNguoiDung.role === 'admin';
+  
   dsLop.forEach(function (l) {
-    groups[l.id] = {
+    var belongsToMe = l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
+    if (isAdmin || belongsToMe) {
+      groupsCaNhan[l.id] = {
+        info: l,
+        schedules: [],
+        isEditable: true
+      };
+    }
+    groupsChung[l.id] = {
       info: l,
-      schedules: []
+      schedules: [],
+      isEditable: isAdmin || belongsToMe
     };
   });
   
   dsLich.forEach(function (s) {
-    if (!groups[s.class_id]) {
-      groups[s.class_id] = {
+    var belongsToMe = s.classes && (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+    
+    // Thêm vào lịch cá nhân nếu thuộc sở hữu hoặc là admin
+    if (isAdmin || belongsToMe) {
+      if (!groupsCaNhan[s.class_id]) {
+        groupsCaNhan[s.class_id] = {
+          info: s.classes || { id: s.class_id, name: 'Lớp khác' },
+          schedules: [],
+          isEditable: true
+        };
+      }
+      groupsCaNhan[s.class_id].schedules.push(s);
+    }
+    
+    // Thêm vào lịch chung luôn
+    if (!groupsChung[s.class_id]) {
+      groupsChung[s.class_id] = {
         info: s.classes || { id: s.class_id, name: 'Lớp khác' },
-        schedules: []
+        schedules: [],
+        isEditable: isAdmin || belongsToMe
       };
     }
-    groups[s.class_id].schedules.push(s);
+    groupsChung[s.class_id].schedules.push(s);
   });
   
-  var groupList = Object.values(groups).sort(function (a, b) {
-    return a.info.name.localeCompare(b.info.name, 'vi');
-  });
-  
-  var html = '';
-  if (groupList.length === 0) {
-    html = '<div style="padding: 24px; text-align: center; color: var(--ink-3);">Chưa có lớp học nào trong hệ thống.</div>';
-  } else {
-    html = groupList.map(function (g) {
+  function renderGroups(groups) {
+    var groupList = Object.values(groups).sort(function (a, b) {
+      return a.info.name.localeCompare(b.info.name, 'vi');
+    });
+    
+    if (groupList.length === 0) {
+      return '<div style="padding: 24px; text-align: center; color: var(--ink-3); font-size: 0.9rem;">Chưa có lịch học nào.</div>';
+    }
+    
+    return groupList.map(function (g) {
       var classId = g.info.id;
       var count = g.schedules.length;
       
@@ -481,20 +560,28 @@ async function taiLich() {
           if (s.recurrence === 'once') recText = ' <small style="color:var(--ink-2)"><i>(1 lần)</i></small>';
           var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU[s.weekday] + ')' : TEN_THU[s.weekday];
           
+          var visibleBtn = '';
+          var actionsBtn = '';
+          
+          if (g.isEditable) {
+            visibleBtn = '<button class="btn btn-ghost btn-sm" style="padding: 4px 8px;" onclick="event.stopPropagation(); doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + 
+              (s.visible ? '👁 Hiện' : '🚫 Ẩn') + 
+            '</button>';
+            
+            actionsBtn = '<button class="btn btn-ghost btn-sm" style="color:var(--accent); margin-right:8px; padding: 4px 8px;" onclick="event.stopPropagation(); suaLich(\'' + s.id + '\')">Sửa</button>' +
+              '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding: 4px 8px;" onclick="event.stopPropagation(); xoaLich(\'' + s.id + '\')">Xoá</button>';
+          } else {
+            visibleBtn = '<span style="font-size:0.85rem; color:var(--ink-3); padding:4px 8px;">' + (s.visible ? '👁 Hiện' : '🚫 Ẩn') + '</span>';
+            actionsBtn = '<span style="font-size:0.85rem; color:var(--ink-3); font-style:italic; padding:4px 8px;">Không có quyền</span>';
+          }
+          
           return '<tr>' +
             '<td style="font-weight: 600; color: var(--ink);">' + thuText + '</td>' +
             '<td class="num" style="font-weight: 600;">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
             '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
             '<td style="color:var(--ink-2); font-size: 0.85rem;">' + (s.note || '—') + '</td>' +
-            '<td>' +
-              '<button class="btn btn-ghost btn-sm" style="padding: 4px 8px;" onclick="event.stopPropagation(); doiCongKhai(\'' + s.id + '\', ' + !s.visible + ')">' + 
-                (s.visible ? '👁 Hiện' : '🚫 Ẩn') + 
-              '</button>' +
-            '</td>' +
-            '<td>' +
-              '<button class="btn btn-ghost btn-sm" style="color:var(--accent); margin-right:8px; padding: 4px 8px;" onclick="event.stopPropagation(); suaLich(\'' + s.id + '\')">Sửa</button>' +
-              '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding: 4px 8px;" onclick="event.stopPropagation(); xoaLich(\'' + s.id + '\')">Xoá</button>' +
-            '</td>' +
+            '<td>' + visibleBtn + '</td>' +
+            '<td>' + actionsBtn + '</td>' +
             '</tr>';
         }).join('');
       }
@@ -533,11 +620,25 @@ async function taiLich() {
     }).join('');
   }
   
-  $('bangLichNhom').innerHTML = html;
+  if (isTeacher || isAdmin) {
+    $('khungLichCaNhan').style.display = 'block';
+    $('bangLichNhomCaNhan').innerHTML = renderGroups(groupsCaNhan);
+    
+    $('lblLichChungTitle').style.display = 'flex';
+    $('bangLichNhomChung').innerHTML = renderGroups(groupsChung);
+  } else {
+    $('khungLichCaNhan').style.display = 'none';
+    $('lblLichChungTitle').style.display = 'none';
+    $('bangLichNhomChung').innerHTML = renderGroups(groupsChung);
+  }
 }
 
 async function themLich() {
   var classId = $('schLop').value;
+  if (!kiemTraQuyenLop(classId)) {
+    alert("Thầy không có quyền thêm lịch cho lớp này!");
+    return;
+  }
   var mode = $('schMode').value;
   var rec = $('schRecurrence').value;
   
@@ -611,6 +712,10 @@ async function themLich() {
 function suaLich(id) {
   var s = dsLich.find(function (item) { return item.id === id; });
   if (!s) return;
+  if (!kiemTraQuyenLop(s.class_id)) {
+    alert("Thầy không có quyền chỉnh sửa lịch của lớp này!");
+    return;
+  }
   lichDangSuaId = s.id;
   
   expandedClasses.add(s.class_id);
@@ -668,6 +773,10 @@ function huySuaLich() {
 async function luuSuaLich() {
   if (!lichDangSuaId) return;
   var classId = $('schLop').value;
+  if (!kiemTraQuyenLop(classId)) {
+    alert("Thầy không có quyền lưu thay đổi lịch cho lớp này!");
+    return;
+  }
   var mode = $('schMode').value;
   var rec = $('schRecurrence').value;
   
@@ -716,11 +825,23 @@ async function luuSuaLich() {
 }
 
 async function doiCongKhai(id, hien) {
+  var s = dsLich.find(function (item) { return item.id === id; });
+  if (!s) return;
+  if (!kiemTraQuyenLop(s.class_id)) {
+    alert("Thầy không có quyền thay đổi trạng thái công khai của lớp này!");
+    return;
+  }
   await sb.from('schedules').update({ visible: hien }).eq('id', id);
   taiLich();
 }
 
 async function xoaLich(id) {
+  var s = dsLich.find(function (item) { return item.id === id; });
+  if (!s) return;
+  if (!kiemTraQuyenLop(s.class_id)) {
+    alert("Thầy không có quyền xoá lịch của lớp này!");
+    return;
+  }
   if (!confirm('Xoá dòng lịch này?')) return;
   await sb.from('schedules').delete().eq('id', id);
   taiLich();
