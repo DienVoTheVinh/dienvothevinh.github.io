@@ -1134,7 +1134,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1335,7 +1335,7 @@ async function veLichDayStaff() {
   if (isStaff) {
     displaySchedules = tatCaSchedules.filter(function (s) {
       if (!s.classes) return false;
-      return s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
+      return s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
     });
   }
   
@@ -1678,7 +1678,7 @@ function gcalEventsForDay(dt, filterPersonal) {
     // Lọc lịch cá nhân cho giáo viên/trợ giảng
     if (isStaff && filterPersonal) {
       if (!s.classes) return;
-      var isTeacher = s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
+      var isTeacher = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
       if (!isTeacher) return;
     }
     
@@ -1692,13 +1692,18 @@ function gcalEventsForDay(dt, filterPersonal) {
       
       // Lấy tên giáo viên để hiển thị riêng dòng dưới
       if (isStaff) {
-        var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Vinh';
-        var teacherLastName = teacherName.split(' ').pop();
-        teacherText = 'GV: ' + teacherLastName;
-        if (s.classes.co_teacher_id) {
-          var coTeacherName = mapGiaoVien[s.classes.co_teacher_id] || 'GV';
-          var coTeacherLastName = coTeacherName.split(' ').pop();
-          teacherText += ' + ' + coTeacherLastName;
+        if (s.teacher_id && mapGiaoVien[s.teacher_id]) {
+          var teacherLastName = mapGiaoVien[s.teacher_id].split(' ').pop();
+          teacherText = 'GV: ' + teacherLastName;
+        } else {
+          var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Vinh';
+          var teacherLastName = teacherName.split(' ').pop();
+          teacherText = 'GV: ' + teacherLastName;
+          if (s.classes.co_teacher_id) {
+            var coTeacherName = mapGiaoVien[s.classes.co_teacher_id] || 'GV';
+            var coTeacherLastName = coTeacherName.split(' ').pop();
+            teacherText += ' + ' + coTeacherLastName;
+          }
         }
       }
       
@@ -1881,7 +1886,7 @@ function timSuKienGanNhat() {
       
       if (isStaff) {
         if (!s.classes) return false;
-        return s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id;
+        return s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
       }
       return true;
     });

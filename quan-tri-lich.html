@@ -183,7 +183,8 @@
 
     <div class="card" style="margin-bottom:16px">
       <div class="form-grid">
-        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="schLop"></select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="schLop" onchange="capNhatGiaoVienSchedule()"></select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Giáo viên dạy</label><select class="input" id="schGiaoVien"></select></div>
         <div style="grid-column: span 2; min-width: 280px;"><label style="font-size:.8rem;font-weight:600">Thứ (chọn nhiều thứ)</label>
           <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap" id="schThuContainer">
             <button type="button" class="thu-btn active" data-val="1">T2</button>
@@ -365,6 +366,7 @@ function kiemTraQuyenLop(classId) {
   taiLich();
   taiBuoi();
   capNhatGiaoVienSession(); // Set initial teacher dropdown values
+  capNhatGiaoVienSchedule(); // Set initial teacher schedule dropdown values
 
   // Đăng ký sự kiện click cho các nút chọn Thứ
   document.querySelectorAll('.thu-btn').forEach(function (btn) {
@@ -373,6 +375,26 @@ function kiemTraQuyenLop(classId) {
     });
   });
 })();
+
+function capNhatGiaoVienSchedule() {
+  var classId = $('schLop').value;
+  var cls = dsLop.find(function (l) { return l.id === classId; });
+  if (!cls) {
+    $('schGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
+    return;
+  }
+  var options = [];
+  if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
+    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + ' (GV chính)</option>');
+  }
+  if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
+    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + ' (GV hợp tác)</option>');
+  }
+  if (options.length === 0) {
+    options.push('<option value="">Không có giáo viên của lớp</option>');
+  }
+  $('schGiaoVien').innerHTML = options.join('');
+}
 
 function capNhatGiaoVienSession() {
   var classId = $('ssLop').value;
@@ -489,7 +511,7 @@ function dongBoThuTuNgay() {
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, teacher_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   dsLich = r.data || [];
   
@@ -583,7 +605,7 @@ async function taiLich() {
       
       var detailRows = '';
       if (count === 0) {
-        detailRows = '<tr><td colspan="6" style="text-align: center; color: var(--ink-3); padding: 20px;">Lớp này chưa có lịch học. Sử dụng khung phía trên để thêm lịch.</td></tr>';
+        detailRows = '<tr><td colspan="7" style="text-align: center; color: var(--ink-3); padding: 20px;">Lớp này chưa có lịch học. Sử dụng khung phía trên để thêm lịch.</td></tr>';
       } else {
         detailRows = g.schedules.map(function (s) {
           var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
@@ -605,10 +627,13 @@ async function taiLich() {
             actionsBtn = '<span style="font-size:0.85rem; color:var(--ink-3); font-style:italic; padding:4px 8px;">Không có quyền</span>';
           }
           
+          var teacherName = s.teacher_id && mapGiaoVien[s.teacher_id] ? mapGiaoVien[s.teacher_id] : (g.info.teacher_id && mapGiaoVien[g.info.teacher_id] ? mapGiaoVien[g.info.teacher_id] : '—');
+          
           return '<tr>' +
             '<td style="font-weight: 600; color: var(--ink);">' + thuText + '</td>' +
             '<td class="num" style="font-weight: 600;">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
             '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
+            '<td style="font-weight: 500;">' + teacherName + '</td>' +
             '<td style="color:var(--ink-2); font-size: 0.85rem;">' + (s.note || '—') + '</td>' +
             '<td>' + visibleBtn + '</td>' +
             '<td>' + actionsBtn + '</td>' +
@@ -635,6 +660,7 @@ async function taiLich() {
         '            <th>Thứ / Ngày</th>' +
         '            <th>Giờ học</th>' +
         '            <th>Hình thức</th>' +
+        '            <th>Giáo viên</th>' +
         '            <th>Ghi chú</th>' +
         '            <th>Trạng thái</th>' +
         '            <th>Thao tác</th>' +
@@ -705,6 +731,8 @@ async function themLich() {
     return;
   }
 
+  var teacherId = $('schGiaoVien').value || null;
+
   var rows = selectedDays.map(function (thu) {
     return {
       class_id: classId,
@@ -715,6 +743,7 @@ async function themLich() {
       location: locationValue,
       recurrence: rec,
       date: schDateVal,
+      teacher_id: teacherId,
       note: $('schNote').value.trim() || null
     };
   });
@@ -753,6 +782,8 @@ function suaLich(id) {
   if (el) el.classList.add('expanded');
 
   $('schLop').value = s.class_id;
+  capNhatGiaoVienSchedule();
+  $('schGiaoVien').value = s.teacher_id || '';
   $('schMode').value = s.mode;
   $('schRecurrence').value = s.recurrence || 'weekly';
   if (s.recurrence === 'once') {
@@ -791,6 +822,7 @@ function huySuaLich() {
   doiLapLai();
   $('schTu').value = '19:30';
   $('schDen').value = '21:30';
+  capNhatGiaoVienSchedule();
   document.querySelectorAll('.thu-btn').forEach(function (btn) {
     if (btn.getAttribute('data-val') === '1') {
       btn.classList.add('active');
@@ -833,6 +865,8 @@ async function luuSuaLich() {
   var activeBtn = document.querySelector('.thu-btn.active');
   var weekday = activeBtn ? parseInt(activeBtn.getAttribute('data-val')) : 1;
 
+  var teacherId = $('schGiaoVien').value || null;
+
   var r = await sb.from('schedules').update({
     class_id: classId,
     weekday: weekday,
@@ -842,6 +876,7 @@ async function luuSuaLich() {
     location: locationValue,
     recurrence: rec,
     date: schDateVal,
+    teacher_id: teacherId,
     note: $('schNote').value.trim() || null
   }).eq('id', lichDangSuaId);
 
