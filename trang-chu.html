@@ -1779,12 +1779,80 @@ function renderCalendarGrid(targetId, filterPersonal) {
     var cells = '';
     for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
     var evHtml = '';
-    
-    gcalEventsForDay(dt, filterPersonal).forEach(function (ev) {
+    var visibleEvents = gcalEventsForDay(dt, filterPersonal).filter(function (ev) {
       var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
-      if (eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60) return;
+      return !(eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60);
+    });
+
+    // Group into clusters to resolve overlaps
+    var clusters = [];
+    visibleEvents.forEach(function (ev) {
+      var sM = gcalToMin(ev.start);
+      var eM = gcalToMin(ev.end);
+      var foundCluster = null;
+      for (var i = 0; i < clusters.length; i++) {
+        var overlap = false;
+        for (var j = 0; j < clusters[i].length; j++) {
+          var other = clusters[i][j];
+          var oStart = gcalToMin(other.start);
+          var oEnd = gcalToMin(other.end);
+          if (sM < oEnd && eM > oStart) {
+            overlap = true;
+            break;
+          }
+        }
+        if (overlap) {
+          foundCluster = clusters[i];
+          break;
+        }
+      }
+      if (foundCluster) {
+        foundCluster.push(ev);
+      } else {
+        clusters.push([ev]);
+      }
+    });
+
+    clusters.forEach(function (cluster) {
+      cluster.sort(function (a, b) {
+        return gcalToMin(a.start) - gcalToMin(b.start);
+      });
+      var colsList = [];
+      cluster.forEach(function (ev) {
+        var sM = gcalToMin(ev.start);
+        var placed = false;
+        for (var c = 0; c < colsList.length; c++) {
+          var lastEv = colsList[c][colsList[c].length - 1];
+          if (sM >= gcalToMin(lastEv.end)) {
+            colsList[c].push(ev);
+            ev.colIndex = c;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          colsList.push([ev]);
+          ev.colIndex = colsList.length - 1;
+        }
+      });
+      cluster.forEach(function (ev) {
+        ev.totalCols = colsList.length;
+      });
+    });
+
+    visibleEvents.forEach(function (ev) {
+      var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
       var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
+      
+      var styleStr = 'top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + ';';
+      if (ev.totalCols > 1) {
+        var widthPct = 100 / ev.totalCols;
+        var leftPct = widthPct * ev.colIndex;
+        styleStr += 'left:calc(' + leftPct + '% + 3px);width:calc(' + widthPct + '% - 6px);right:auto;';
+      } else {
+        styleStr += 'left:3px;right:3px;';
+      }
       
       var teacherHtml = '';
       if (isStaff && ev.teacher) {
@@ -1792,10 +1860,10 @@ function renderCalendarGrid(targetId, filterPersonal) {
       }
       
       if (isStaff && ev.type === 'schedule' && ev.id) {
-        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + ';display:block;cursor:pointer;">' +
+        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" style="' + styleStr + 'display:block;cursor:pointer;">' +
           '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
       } else {
-        evHtml += '<div class="gcal-ev" style="top:' + top + 'px;height:' + height + 'px;background:' + ev.bg + '">' +
+        evHtml += '<div class="gcal-ev" style="' + styleStr + '">' +
           '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
       }
     });
