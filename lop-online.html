@@ -107,12 +107,28 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
 
   var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
 
-  // 1. Link Meet: ưu tiên phòng riêng của lớp, không có thì dùng link chung
+  // 1. Link Meet: ưu tiên phòng riêng của lớp có lịch hôm nay, không có thì dùng link chung
   var meet = '';
   if (classIds.length > 0) {
-    var lr = await sb.from('class_links').select('meet_link').in('class_id', classIds);
-    var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
-    if (firstLink) meet = firstLink.meet_link;
+    var jsThu = new Date().getDay();
+    var homNay = jsThu === 0 ? 7 : jsThu;
+    var rToday = await sb.from('schedules')
+      .select('class_id')
+      .in('class_id', classIds)
+      .eq('weekday', homNay)
+      .limit(1);
+    
+    var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : classIds[0];
+    
+    var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+    if (lr.data && lr.data.meet_link) meet = lr.data.meet_link;
+    
+    // Nếu lớp hôm nay không có link riêng, thử tìm link riêng của các lớp khác học sinh có tham gia
+    if (!meet) {
+      var lrAll = await sb.from('class_links').select('meet_link').in('class_id', classIds);
+      var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
+      if (firstLink) meet = firstLink.meet_link;
+    }
   }
   if (!meet) {
     var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();

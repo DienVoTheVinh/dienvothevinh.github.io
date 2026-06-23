@@ -1168,19 +1168,36 @@ async function capNhatMeetLinkTheoLop(classId) {
       .map(function (c) { return c.class_id; });
       
     if (onlineClassIds.length > 0) {
-      var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
-      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
-      if (firstLink) meetLink = firstLink.meet_link;
+      // Tìm xem lớp nào có lịch hôm nay trong schedules để ưu tiên lấy link lớp đó
+      var jsThu = new Date().getDay();
+      var homNay = jsThu === 0 ? 7 : jsThu;
+      var rToday = await sb.from('schedules')
+        .select('class_id')
+        .in('class_id', onlineClassIds)
+        .eq('weekday', homNay)
+        .limit(1);
+      
+      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
+      
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      
+      // Nếu lớp hôm nay không có link riêng, thử tìm trong danh sách các lớp online còn lại
+      if (!meetLink) {
+        var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
+        var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
+        if (firstLink) meetLink = firstLink.meet_link;
+      }
     }
   } else {
     var selClass = hoSo.class_students.find(function(c) { return c.class_id === classId; });
     if (selClass && selClass.classes && selClass.classes.mode === 'online') {
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId);
-      var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
-      if (firstLink) meetLink = firstLink.meet_link;
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
     }
   }
   
+  // Nếu vẫn chưa có meet_link riêng và học sinh này có học lớp online, lấy link chung dự phòng
   if (!meetLink && hoSo.class_students.some(function(c) { return c.classes && c.classes.mode === 'online'; })) {
     var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
     meetLink = lk.data ? lk.data.value : '';
@@ -1321,6 +1338,10 @@ async function veLichDayStaff() {
   var meetMap = {};
   (rl.data || []).forEach(function (x) { if (x.meet_link) meetMap[x.class_id] = x.meet_link; });
   
+  // Lấy thêm link chung dự phòng của hệ thống
+  var lkChung = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+  var globalMeetLink = lkChung.data ? lkChung.data.value : '';
+  
   var TEN_THU_VIET = { 1: 'Thứ hai', 2: 'Thứ ba', 3: 'Thứ tư', 4: 'Thứ năm', 5: 'Thứ sáu', 6: 'Thứ bảy', 7: 'Chủ nhật' };
   var tdSty = 'padding:12px 14px; border-bottom:1px solid var(--line)';
   
@@ -1328,7 +1349,7 @@ async function veLichDayStaff() {
     var laHomNay = s.recurrence === 'once' ? (s.date === todayStr) : (s.weekday === todayWeekday);
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
-    var meet = meetMap[s.class_id];
+    var meet = meetMap[s.class_id] || globalMeetLink;
     var phongDichVu = isOnline
       ? (meet ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Dạy Meet</a>'
               : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>')

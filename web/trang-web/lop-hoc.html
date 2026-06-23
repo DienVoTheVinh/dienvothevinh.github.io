@@ -278,9 +278,26 @@ function layEmojiGiaoVien(fullName) {
       .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
       .map(function (c) { return c.class_id; });
       
-    var lr = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
-    var firstLink = (lr.data || []).find(function(x) { return x.meet_link; });
-    if (firstLink) meetLink = firstLink.meet_link;
+    if (onlineClassIds.length > 0) {
+      var jsThu = new Date().getDay();
+      var homNay = jsThu === 0 ? 7 : jsThu;
+      var rToday = await sb.from('schedules')
+        .select('class_id')
+        .in('class_id', onlineClassIds)
+        .eq('weekday', homNay)
+        .limit(1);
+      
+      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
+      
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      
+      if (!meetLink) {
+        var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
+        var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
+        if (firstLink) meetLink = firstLink.meet_link;
+      }
+    }
     
     if (!meetLink) {
       var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();

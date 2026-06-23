@@ -866,12 +866,20 @@ async function napNutMeet(classId) {
   var nutCo = $('nutMeetLop'), nutChua = $('nutChuaMeet');
   nutCo.style.display = 'none';
   nutChua.style.display = 'none';
+  
   var r = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+  var meetLink = (r.data && r.data.meet_link) ? r.data.meet_link : '';
+  
+  if (!meetLink) {
+    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
+    meetLink = lk.data ? lk.data.value : '';
+  }
+  
   // chống đua: người dùng có thể đã bấm sang lớp khác trong lúc chờ
   if (!classDangChon || classDangChon.id !== classId) return;
-  if (r.data && r.data.meet_link) {
-    nutCo.href = r.data.meet_link;
-    nutCo.onclick = function () { baoLopBatDau(classId, r.data.meet_link); };
+  if (meetLink) {
+    nutCo.href = meetLink;
+    nutCo.onclick = function () { baoLopBatDau(classId, meetLink); };
     nutCo.style.display = 'inline-flex';
   } else {
     nutChua.style.display = 'inline-flex';
