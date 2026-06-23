@@ -385,10 +385,10 @@ function capNhatGiaoVienSchedule() {
   }
   var options = [];
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
-    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + ' (GV chính)</option>');
+    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
   }
   if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
-    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + ' (GV hợp tác)</option>');
+    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
   }
   if (options.length === 0) {
     options.push('<option value="">Không có giáo viên của lớp</option>');
@@ -405,10 +405,10 @@ function capNhatGiaoVienSession() {
   }
   var options = [];
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
-    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + ' (GV chính)</option>');
+    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
   }
   if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
-    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + ' (GV hợp tác)</option>');
+    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
   }
   if (options.length === 0) {
     options.push('<option value="">Không có giáo viên của lớp</option>');

@@ -1811,13 +1811,13 @@ async function moFormThemBaiGiang() {
     selTeacher.innerHTML = '';
     var opt1 = document.createElement('option');
     opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = (mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh') + ' (Giáo viên chính)';
+    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {
       var opt2 = document.createElement('option');
       opt2.value = classDangChon.co_teacher_id;
-      opt2.textContent = (mapGiaoVien[classDangChon.co_teacher_id] || 'Giáo viên hợp tác') + ' (Hợp tác)';
+      opt2.textContent = mapGiaoVien[classDangChon.co_teacher_id] || 'Giáo viên';
       selTeacher.appendChild(opt2);
     }
     
@@ -1868,13 +1868,13 @@ async function moFormSua(id) {
     selTeacher.innerHTML = '';
     var opt1 = document.createElement('option');
     opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = (mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh') + ' (Giáo viên chính)';
+    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {
       var opt2 = document.createElement('option');
       opt2.value = classDangChon.co_teacher_id;
-      opt2.textContent = (mapGiaoVien[classDangChon.co_teacher_id] || 'Giáo viên hợp tác') + ' (Hợp tác)';
+      opt2.textContent = mapGiaoVien[classDangChon.co_teacher_id] || 'Giáo viên';
       selTeacher.appendChild(opt2);
     }
     
