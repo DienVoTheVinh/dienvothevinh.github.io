@@ -238,7 +238,8 @@
 
     <div class="card" style="margin-bottom:16px">
       <div class="form-grid">
-        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="ssLop"></select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="ssLop" onchange="capNhatGiaoVienSession()"></select></div>
+        <div><label style="font-size:.8rem;font-weight:600">Giáo viên dạy</label><select class="input" id="ssGiaoVien"></select></div>
         <div style="grid-column:span 2"><label style="font-size:.8rem;font-weight:600">Tên buổi học</label><input class="input" id="ssTen" placeholder="vd: Buổi 13 · Tích phân"></div>
         <div><label style="font-size:.8rem;font-weight:600">QR hiệu lực (phút)</label><input class="input" type="number" id="ssPhut" value="45" min="5"></div>
         <button class="btn btn-primary" onclick="taoBuoiHoc()">📍 Tạo & hiện QR</button>
@@ -293,6 +294,8 @@
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
 var dsLop = [];
 var hoSoNguoiDung = null;
+var mapGiaoVien = {};
+var dsBuoiHoc = [];
 var hennDem = null;
 var dsLich = [];
 var lichDangSuaId = null;
@@ -325,6 +328,12 @@ function kiemTraQuyenLop(classId) {
   if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   hoSoNguoiDung = hoSo;
 
+  // Tải danh sách giáo viên để ánh xạ tên
+  try {
+    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin', 'assistant']);
+    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+  } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
+
   // Lớp
   var r = await sb.from('classes').select('id, name, grade, is_specialized, teacher_id, co_teacher_id').order('name');
   dsLop = r.data || [];
@@ -355,6 +364,7 @@ function kiemTraQuyenLop(classId) {
   taiMeetLop();
   taiLich();
   taiBuoi();
+  capNhatGiaoVienSession(); // Set initial teacher dropdown values
 
   // Đăng ký sự kiện click cho các nút chọn Thứ
   document.querySelectorAll('.thu-btn').forEach(function (btn) {
@@ -363,6 +373,26 @@ function kiemTraQuyenLop(classId) {
     });
   });
 })();
+
+function capNhatGiaoVienSession() {
+  var classId = $('ssLop').value;
+  var cls = dsLop.find(function (l) { return l.id === classId; });
+  if (!cls) {
+    $('ssGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
+    return;
+  }
+  var options = [];
+  if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
+    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + ' (GV chính)</option>');
+  }
+  if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
+    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + ' (GV hợp tác)</option>');
+  }
+  if (options.length === 0) {
+    options.push('<option value="">Không có giáo viên của lớp</option>');
+  }
+  $('ssGiaoVien').innerHTML = options.join('');
+}
 
 /* ----- Meet theo lớp ----- */
 async function taiMeetLop() {
@@ -850,25 +880,41 @@ async function xoaLich(id) {
 /* ----- Buổi học + QR ----- */
 async function taiBuoi() {
   var r = await sb.from('class_sessions')
-    .select('id, title, held_on, qr_token, qr_expires, classes(name), attendance(count)')
+    .select('id, class_id, title, held_on, qr_token, qr_expires, teacher_id, classes(name), attendance(count)')
     .order('created_at', { ascending: false }).limit(15);
   var ds = r.data || [];
+  dsBuoiHoc = ds;
+  
   $('bangBuoi').innerHTML = ds.length ? ds.map(function (b) {
     var soDD = (b.attendance && b.attendance[0]) ? b.attendance[0].count : 0;
+    var canEdit = kiemTraQuyenLop(b.class_id);
+    var teacherName = b.teacher_id && mapGiaoVien[b.teacher_id] ? mapGiaoVien[b.teacher_id] : 'Chưa phân công';
+    
+    var actionButtons = '';
+    if (canEdit) {
+      actionButtons = '<button class="btn btn-secondary btn-sm" onclick="hienQR(\'' + b.id + '\', \'' + b.qr_token + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">Hiện QR</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="xoaBuoiHoc(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')" style="color:var(--err); margin-left:8px; padding:4px 8px;">Xóa</button>';
+    } else {
+      actionButtons = '<span style="font-size:0.85rem; color:var(--ink-3); font-style:italic;">Không có quyền</span>';
+    }
+    
     return '<tr>' +
-      '<td><b>' + b.title + '</b></td>' +
+      '<td><b>' + b.title + '</b><br><small style="color: var(--ink-3)">GV: ' + teacherName + '</small></td>' +
       '<td>' + (b.classes ? b.classes.name : '?') + '</td>' +
       '<td class="num">' + new Date(b.held_on).toLocaleDateString('vi-VN') + '</td>' +
       '<td class="num">' + soDD + ' HS</td>' +
-      '<td>' +
-        '<button class="btn btn-secondary btn-sm" onclick="hienQR(\'' + b.id + '\', \'' + b.qr_token + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">Hiện QR</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="xoaBuoiHoc(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')" style="color:var(--err); margin-left:8px; padding:4px 8px;">Xóa</button>' +
-      '</td>' +
+      '<td>' + actionButtons + '</td>' +
       '</tr>';
   }).join('') : '<tr><td colspan="5" style="color:var(--ink-3)">Chưa có buổi học nào.</td></tr>';
 }
 
 async function xoaBuoiHoc(id, title) {
+  var session = dsBuoiHoc.find(function (b) { return b.id === id; });
+  if (!session) return;
+  if (!kiemTraQuyenLop(session.class_id)) {
+    alert("Thầy/Cô không có quyền xóa buổi học của lớp này!");
+    return;
+  }
   if (!confirm('Thầy/Cô có chắc muốn xóa buổi học "' + title + '" không? Tất cả dữ liệu điểm danh của buổi này cũng sẽ bị xóa.')) return;
   var r = await sb.from('class_sessions').delete().eq('id', id);
   if (r.error) {
@@ -879,11 +925,19 @@ async function xoaBuoiHoc(id, title) {
 }
 
 async function taoBuoiHoc() {
+  var classId = $('ssLop').value;
+  if (!kiemTraQuyenLop(classId)) {
+    alert("Thầy/Cô không có quyền tạo buổi học cho lớp này!");
+    return;
+  }
   var ten = $('ssTen').value.trim() || ('Buổi học ' + new Date().toLocaleDateString('vi-VN'));
   var phut = parseInt($('ssPhut').value) || 45;
+  var teacherId = $('ssGiaoVien').value || null;
+  
   var r = await sb.from('class_sessions').insert({
-    class_id: $('ssLop').value,
+    class_id: classId,
     title: ten,
+    teacher_id: teacherId,
     qr_expires: new Date(Date.now() + phut * 60000).toISOString()
   }).select('id, qr_token, title').single();
   if (r.error) { alert('Lỗi: ' + r.error.message); return; }
@@ -905,6 +959,13 @@ function taoToken() {
 // Xoay QR: đổi mã trong CSDL + vẽ lại QR — mã cũ chết ngay lập tức
 async function xoayQR() {
   if (!buoiDangXem) return;
+  var session = dsBuoiHoc.find(function (b) { return b.id === buoiDangXem; });
+  if (!session) return;
+  if (!kiemTraQuyenLop(session.class_id)) {
+    alert("Thầy/Cô không có quyền thao tác trên buổi học này!");
+    dongQR();
+    return;
+  }
   var token = taoToken();
   var code = Math.floor(1000 + Math.random() * 9000).toString(); // Mã 4 chữ số
   

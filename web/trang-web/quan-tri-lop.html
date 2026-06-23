@@ -725,6 +725,7 @@ var anhDaCo = [];
 var selectedImageFiles = [];
 var mapGiaoVien = {};
 var dsGiaoVien = [];
+var hoSoNguoiDung = null;
 
 (async function () {
   console.log("1. Khởi tạo trang: Bắt đầu");
@@ -734,6 +735,7 @@ var dsGiaoVien = [];
   }
   console.log("2. Đang kiểm tra đăng nhập...");
   var hoSo = await yeuCauDangNhap();
+  hoSoNguoiDung = hoSo;
   console.log("3. Đã đăng nhập, hồ sơ:", hoSo);
   if (!hoSo) return;
   if (hoSo.role === 'assistant') document.body.classList.add('vai-tro-tg');
@@ -785,6 +787,12 @@ async function loadingSidebar() {
   var r = await sb.from('classes').select('id, name, grade, mode, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
   console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
+  
+  if (hoSoNguoiDung && hoSoNguoiDung.role !== 'admin') {
+    dsLop = dsLop.filter(function (l) {
+      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
+    });
+  }
   
   // Group theo grade
   var groups = {};
