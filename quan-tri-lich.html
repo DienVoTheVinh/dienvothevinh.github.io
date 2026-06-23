@@ -285,6 +285,77 @@
   </div>
 </div>
 
+<!-- Modal Sửa Lịch -->
+<div class="modal" id="modalSuaLich">
+  <div class="modal-inner" style="max-width: 500px; padding: 28px 24px; text-align: left; border-radius: var(--r-lg);">
+    <button onclick="dongSuaLich()" style="position:absolute;top:16px;right:20px;font-size:1.6rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+    <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--ink); margin-bottom: 20px;">✏️ Chỉnh sửa lịch học</h2>
+    
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Lớp học</label>
+        <select class="input" id="editSchLop" style="width:100%" onchange="capNhatGiaoVienEditSchedule()"></select>
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Giáo viên dạy</label>
+        <select class="input" id="editSchGiaoVien" style="width:100%"></select>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Từ giờ</label>
+          <input class="input" type="time" id="editSchTu" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Đến giờ</label>
+          <input class="input" type="time" id="editSchDen" style="width:100%">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Hình thức</label>
+          <select class="input" id="editSchMode" style="width:100%">
+            <option value="online">🎥 Online</option>
+            <option value="offline">🏫 Tại lớp</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Lặp lại</label>
+          <select class="input" id="editSchRecurrence" style="width:100%" onchange="doiLapLaiEdit()">
+            <option value="weekly">🔄 Hàng tuần</option>
+            <option value="biweekly">🔄 2 tuần/lần</option>
+            <option value="once">📅 Chỉ một lần (chọn ngày)</option>
+          </select>
+        </div>
+      </div>
+      <div id="khungEditSchNgay" style="display:none">
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Ngày diễn ra</label>
+        <input class="input" type="date" id="editSchDate" style="width:100%" onchange="dongBoThuTuNgayEdit()">
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Thứ trong tuần</label>
+        <div style="display:flex; gap:6px; flex-wrap:wrap" id="editSchThuContainer">
+          <button type="button" class="thu-btn edit-thu-btn" data-val="1">T2</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="2">T3</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="3">T4</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="4">T5</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="5">T6</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="6">T7</button>
+          <button type="button" class="thu-btn edit-thu-btn" data-val="7">CN</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Ghi chú</label>
+        <input class="input" id="editSchNote" placeholder="Còn nhận HS…" style="width:100%">
+      </div>
+      
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+        <button class="btn btn-secondary" onclick="dongSuaLich()">Hủy</button>
+        <button class="btn btn-primary" onclick="luuSuaLichModal()">💾 Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/config.js"></script>
@@ -368,10 +439,20 @@ function kiemTraQuyenLop(classId) {
   capNhatGiaoVienSession(); // Set initial teacher dropdown values
   capNhatGiaoVienSchedule(); // Set initial teacher schedule dropdown values
 
-  // Đăng ký sự kiện click cho các nút chọn Thứ
-  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+  // Đăng ký sự kiện click cho các nút chọn Thứ (khung thêm lịch - chọn nhiều thứ)
+  document.querySelectorAll('#schThuContainer .thu-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       this.classList.toggle('active');
+    });
+  });
+
+  // Đăng ký sự kiện click cho các nút chọn Thứ (khung sửa lịch - chọn 1 thứ duy nhất)
+  document.querySelectorAll('#editSchThuContainer .thu-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#editSchThuContainer .thu-btn').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      this.classList.add('active');
     });
   });
 })();
@@ -768,6 +849,57 @@ async function themLich() {
   taiLich();
 }
 
+function capNhatGiaoVienEditSchedule() {
+  var classId = $('editSchLop').value;
+  var cls = dsLop.find(function (l) { return l.id === classId; });
+  if (!cls) {
+    $('editSchGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
+    return;
+  }
+  var options = [];
+  if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
+    options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
+  }
+  if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
+    options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
+  }
+  if (options.length === 0) {
+    options.push('<option value="">Không có giáo viên của lớp</option>');
+  }
+  $('editSchGiaoVien').innerHTML = options.join('');
+}
+
+function doiLapLaiEdit() {
+  var r = $('editSchRecurrence').value;
+  var khung = $('khungEditSchNgay');
+  if (r === 'once') {
+    khung.style.display = 'block';
+    if (!$('editSchDate').value) {
+      $('editSchDate').value = new Date().toISOString().split('T')[0];
+    }
+    dongBoThuTuNgayEdit();
+  } else {
+    khung.style.display = 'none';
+  }
+}
+
+function dongBoThuTuNgayEdit() {
+  if ($('editSchRecurrence').value !== 'once') return;
+  var dVal = $('editSchDate').value;
+  if (!dVal) return;
+  var dateObj = new Date(dVal);
+  var jsDay = dateObj.getDay();
+  var weekdayVal = jsDay === 0 ? 7 : jsDay;
+  
+  document.querySelectorAll('#editSchThuContainer .thu-btn').forEach(function(btn) {
+    if (parseInt(btn.getAttribute('data-val')) === weekdayVal) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
 function suaLich(id) {
   var s = dsLich.find(function (item) { return item.id === id; });
   if (!s) return;
@@ -777,27 +909,26 @@ function suaLich(id) {
   }
   lichDangSuaId = s.id;
   
-  expandedClasses.add(s.class_id);
-  var el = document.getElementById('group-' + s.class_id);
-  if (el) el.classList.add('expanded');
-
-  $('schLop').value = s.class_id;
-  capNhatGiaoVienSchedule();
-  $('schGiaoVien').value = s.teacher_id || '';
-  $('schMode').value = s.mode;
-  $('schRecurrence').value = s.recurrence || 'weekly';
+  $('editSchLop').innerHTML = $('schLop').innerHTML;
+  $('editSchLop').value = s.class_id;
+  
+  capNhatGiaoVienEditSchedule();
+  $('editSchGiaoVien').value = s.teacher_id || '';
+  
+  $('editSchMode').value = s.mode;
+  $('editSchRecurrence').value = s.recurrence || 'weekly';
   if (s.recurrence === 'once') {
-    $('schDate').value = s.date || '';
+    $('editSchDate').value = s.date || '';
   } else {
-    $('schDate').value = '';
+    $('editSchDate').value = '';
   }
-  doiLapLai();
-  $('schNote').value = s.note || '';
-  $('schTu').value = s.start_time.slice(0, 5);
-  $('schDen').value = s.end_time.slice(0, 5);
+  doiLapLaiEdit();
+  $('editSchNote').value = s.note || '';
+  $('editSchTu').value = s.start_time.slice(0, 5);
+  $('editSchDen').value = s.end_time.slice(0, 5);
 
   // Set active weekday button (single day for editing)
-  document.querySelectorAll('.thu-btn').forEach(function (btn) {
+  document.querySelectorAll('#editSchThuContainer .thu-btn').forEach(function (btn) {
     if (parseInt(btn.getAttribute('data-val')) === s.weekday) {
       btn.classList.add('active');
     } else {
@@ -805,46 +936,27 @@ function suaLich(id) {
     }
   });
 
-  // Switch button to Update mode
-  $('schBtnContainer').innerHTML = 
-    '<button class="btn btn-primary" onclick="luuSuaLich()">💾 Lưu thay đổi</button>' +
-    '<button class="btn btn-secondary" style="margin-left:8px" onclick="huySuaLich()">Hủy</button>';
+  $('modalSuaLich').style.display = 'flex';
 }
 
-function huySuaLich() {
+function dongSuaLich() {
+  $('modalSuaLich').style.display = 'none';
   lichDangSuaId = null;
-  $('schBtnContainer').innerHTML = '<button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button>';
-  
-  // Reset form inputs
-  $('schNote').value = '';
-  $('schDate').value = '';
-  $('schRecurrence').value = 'weekly';
-  doiLapLai();
-  $('schTu').value = '19:30';
-  $('schDen').value = '21:30';
-  capNhatGiaoVienSchedule();
-  document.querySelectorAll('.thu-btn').forEach(function (btn) {
-    if (btn.getAttribute('data-val') === '1') {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
 }
 
-async function luuSuaLich() {
+async function luuSuaLichModal() {
   if (!lichDangSuaId) return;
-  var classId = $('schLop').value;
+  var classId = $('editSchLop').value;
   if (!kiemTraQuyenLop(classId)) {
     alert("Thầy không có quyền lưu thay đổi lịch cho lớp này!");
     return;
   }
-  var mode = $('schMode').value;
-  var rec = $('schRecurrence').value;
+  var mode = $('editSchMode').value;
+  var rec = $('editSchRecurrence').value;
   
   var schDateVal = null;
   if (rec === 'once') {
-    schDateVal = $('schDate').value;
+    schDateVal = $('editSchDate').value;
     if (!schDateVal) {
       alert('Vui lòng chọn ngày diễn ra cho lịch một lần.');
       return;
@@ -862,22 +974,22 @@ async function luuSuaLich() {
     locationValue = meetLink || 'Google Meet';
   }
 
-  var activeBtn = document.querySelector('.thu-btn.active');
+  var activeBtn = document.querySelector('#editSchThuContainer .thu-btn.active');
   var weekday = activeBtn ? parseInt(activeBtn.getAttribute('data-val')) : 1;
 
-  var teacherId = $('schGiaoVien').value || null;
+  var teacherId = $('editSchGiaoVien').value || null;
 
   var r = await sb.from('schedules').update({
     class_id: classId,
     weekday: weekday,
-    start_time: $('schTu').value,
-    end_time: $('schDen').value,
+    start_time: $('editSchTu').value,
+    end_time: $('editSchDen').value,
     mode: mode,
     location: locationValue,
     recurrence: rec,
     date: schDateVal,
     teacher_id: teacherId,
-    note: $('schNote').value.trim() || null
+    note: $('editSchNote').value.trim() || null
   }).eq('id', lichDangSuaId);
 
   if (r.error) {
@@ -885,7 +997,7 @@ async function luuSuaLich() {
     return;
   }
 
-  huySuaLich();
+  dongSuaLich();
   taiLich();
 }
 
