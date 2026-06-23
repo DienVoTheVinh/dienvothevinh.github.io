@@ -114,8 +114,10 @@
     <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
     
     <!-- Tab bar -->
-    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px; flex-wrap:wrap">
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
+      <button type="button" class="tab-btn" id="btnTabTaiLieu" onclick="doiTabForm('tai-lieu')">📄 Tài liệu & Đính kèm</button>
+      <button type="button" class="tab-btn" id="btnTabTest" onclick="doiTabForm('test')">📝 Bài kiểm tra</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
 
