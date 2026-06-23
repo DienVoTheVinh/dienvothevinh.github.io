@@ -114,10 +114,8 @@
     <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
     
     <!-- Tab bar -->
-    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px; flex-wrap:wrap">
+    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px;">
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
-      <button type="button" class="tab-btn" id="btnTabTaiLieu" onclick="doiTabForm('tai-lieu')">📄 Tài liệu & Đính kèm</button>
-      <button type="button" class="tab-btn" id="btnTabTest" onclick="doiTabForm('test')">📝 Bài kiểm tra</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
 
@@ -233,6 +231,19 @@
         <div class="field">
           <label>⏱ Thời gian làm bài kiểm tra mặc định (phút)</label>
           <input type="number" class="input" id="bhTestDuration" value="15" min="1">
+        </div>
+
+        <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
+          <label>📷 Hoặc dán / chọn ảnh đề kiểm tra (chụp màn hình rồi ⌘/Ctrl + V)</label>
+          <div id="testDropZone" tabindex="0"
+               style="border:2px dashed var(--line-2); border-radius:var(--r-sm); background:var(--surface-2); padding:22px 14px; text-align:center; cursor:pointer; transition:.15s">
+            <div style="font-size:1.6rem">🖼️</div>
+            <div style="font-weight:700; margin-top:6px; color:var(--ink)">Dán ảnh đề tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
+            <div style="font-size:.8rem; color:var(--ink-3); margin-top:4px">hoặc bấm để chọn ảnh · kéo-thả vào đây · nhiều ảnh được (mỗi ảnh là 1 trang đề)</div>
+          </div>
+          <input type="file" id="bhTestImgFile" accept="image/*" multiple style="display:none">
+          <div id="testImgPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+          <small style="color:var(--ink-3); margin-top:6px; display:block">Các ảnh sẽ được gộp thành một file PDF đề kiểm tra, học sinh xem như bài test bình thường.</small>
         </div>
 
         <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
@@ -362,6 +373,7 @@
 <script src="js/vinhmath.js?v=4.4"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 var tatCaBaiHoc = [];
 var tatCaLop = [];
@@ -854,9 +866,16 @@ window.addEventListener('paste', function(e) {
   }
   
   if (imageFiles.length === 0) return;
-  
+
   e.preventDefault();
-  
+
+  // Nếu đang ở tab Bài kiểm tra -> ảnh dán trở thành ĐỀ KIỂM TRA (gộp thành PDF)
+  var _tabTest = document.getElementById('tabFormTest');
+  if (_tabTest && _tabTest.style.display !== 'none') {
+    themAnhTest(imageFiles);
+    return;
+  }
+
   for (var k = 0; k < imageFiles.length; k++) {
     var fileToPush = imageFiles[k];
     // Đặt tên an toàn cho ảnh dán trực tiếp
@@ -871,6 +890,72 @@ window.addEventListener('paste', function(e) {
   
   veAnhHienCo();
 });
+
+/* ===== Dán/đính ảnh làm ĐỀ KIỂM TRA (gộp thành 1 PDF bằng jsPDF) ===== */
+var testImgFiles = [];
+function themAnhTest(files) {
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    if (!f) continue;
+    if (f.type && f.type.indexOf('image') === -1) continue;
+    if (!f.name || f.name.startsWith('image')) {
+      var ext = (f.type && f.type.split('/')[1]) || 'png';
+      f = new File([f], 'de-test-' + Date.now() + '-' + i + '.' + ext, { type: f.type || 'image/png' });
+    }
+    testImgFiles.push(f);
+  }
+  veAnhTest();
+  buildTestPdfFromImages();
+}
+function boAnhTest(i) { testImgFiles.splice(i, 1); veAnhTest(); buildTestPdfFromImages(); }
+function veAnhTest() {
+  var box = document.getElementById('testImgPreview');
+  if (!box) return;
+  box.innerHTML = testImgFiles.map(function (f, i) {
+    var u = URL.createObjectURL(f);
+    return '<div style="position:relative">' +
+      '<img src="' + u + '" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0">Trang ' + (i + 1) + '</span>' +
+      '<button type="button" onclick="boAnhTest(' + i + ')" title="Gỡ ảnh" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+}
+function _loadImgEl(src) {
+  return new Promise(function (res, rej) {
+    var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = src;
+  });
+}
+async function buildTestPdfFromImages() {
+  if (!testImgFiles.length) { pdfBlobTest = null; return; }
+  if (!window.jspdf || !window.jspdf.jsPDF) { console.error('jsPDF chưa tải'); return; }
+  var JsPDF = window.jspdf.jsPDF;
+  var doc = null;
+  for (var i = 0; i < testImgFiles.length; i++) {
+    var url = URL.createObjectURL(testImgFiles[i]);
+    var img = await _loadImgEl(url);
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var orient = w >= h ? 'l' : 'p';
+    if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [w, h] });
+    else doc.addPage([w, h], orient);
+    doc.addImage(img, 'PNG', 0, 0, w, h);
+    URL.revokeObjectURL(url);
+  }
+  pdfBlobTest = doc.output('blob');
+}
+// Gắn vùng dán/chọn/kéo-thả ảnh đề kiểm tra
+(function () {
+  var zone = document.getElementById('testDropZone');
+  var inp = document.getElementById('bhTestImgFile');
+  if (!zone || !inp) return;
+  zone.addEventListener('click', function () { inp.click(); });
+  inp.addEventListener('change', function () { themAnhTest(this.files); this.value = ''; });
+  zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+  zone.addEventListener('dragleave', function () { zone.style.borderColor = 'var(--line-2)'; });
+  zone.addEventListener('drop', function (e) {
+    e.preventDefault(); zone.style.borderColor = 'var(--line-2)';
+    if (e.dataTransfer && e.dataTransfer.files) themAnhTest(e.dataTransfer.files);
+  });
+})();
 
 // Đổi tên file thành dạng an toàn cho kho (bỏ dấu tiếng Việt)
 function tenAnToan(ten) {
@@ -1294,6 +1379,7 @@ function moFormThemMoi() {
   if ($('bhTestLatex')) $('bhTestLatex').value = '';
   pdfBlobTest = null;
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
+  testImgFiles = []; pdfBlobTest = null; if (typeof veAnhTest === 'function') veAnhTest();
   if ($('bhTestDuration')) $('bhTestDuration').value = '15';
   
   if (lopDangLoc !== 'tat-ca') {
@@ -1340,6 +1426,7 @@ function moFormSua(id) {
   if ($('bhTestLatex')) $('bhTestLatex').value = bh.test_latex_content || '';
   pdfBlobTest = null;
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
+  testImgFiles = []; pdfBlobTest = null; if (typeof veAnhTest === 'function') veAnhTest();
  
   theorySections = Array.isArray(bh.theory_sections) ? JSON.parse(JSON.stringify(bh.theory_sections)) : [];
   renderTheorySections();
