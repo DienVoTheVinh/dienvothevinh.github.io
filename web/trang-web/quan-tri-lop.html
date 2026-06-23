@@ -1035,11 +1035,11 @@ async function taiLessonsLop() {
     
     var html = '';
     if (lessonsMain.length > 0) {
-      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">👨‍🏫 Bài giảng của ' + nameMain + '</h3>';
+      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">🧑‍🏫 Bài giảng của ' + nameMain + '</h3>';
       html += veNhomBaiHoc(lessonsMain);
     }
     if (lessonsCo.length > 0) {
-      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px">👩‍🏫 Bài giảng của ' + nameCo + '</h3>';
+      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px">🧑‍🏫 Bài giảng của ' + nameCo + '</h3>';
       html += veNhomBaiHoc(lessonsCo);
     }
     $('dsBaiHocLop').innerHTML = html;
