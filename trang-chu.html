@@ -1859,11 +1859,12 @@ function renderCalendarGrid(targetId, filterPersonal) {
         teacherHtml = '<div style="font-size: 0.65rem; opacity: 0.95; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; margin-bottom: 2px;">👤 ' + vclEsc(ev.teacher) + '</div>';
       }
       
+      var tooltipText = vclEsc(ev.title) + (ev.teacher ? '\n👤 GV: ' + vclEsc(ev.teacher) : '') + '\n⏰ ' + ev.start.slice(0, 5) + ' - ' + ev.end.slice(0, 5);
       if (isStaff && ev.type === 'schedule' && ev.id) {
-        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" style="' + styleStr + 'display:block;cursor:pointer;">' +
+        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" title="' + tooltipText + '" style="' + styleStr + 'display:block;cursor:pointer;">' +
           '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
       } else {
-        evHtml += '<div class="gcal-ev" style="' + styleStr + '">' +
+        evHtml += '<div class="gcal-ev" title="' + tooltipText + '" style="' + styleStr + '">' +
           '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
       }
     });

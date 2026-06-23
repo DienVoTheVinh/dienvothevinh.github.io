@@ -372,6 +372,7 @@ var hennDem = null;
 var dsLich = [];
 var lichDangSuaId = null;
 var expandedClasses = new Set();
+var parameterChecked = false;
 
 function toggleNhomLich(classId) {
   var el = document.getElementById('group-' + classId);
@@ -767,6 +768,32 @@ async function taiLich() {
     $('khungLichCaNhan').style.display = 'none';
     $('lblLichChungTitle').style.display = 'none';
     $('bangLichNhomChung').innerHTML = renderGroups(groupsChung);
+  }
+
+  if (!parameterChecked) {
+    parameterChecked = true;
+    checkUrlParams();
+  }
+}
+
+function checkUrlParams() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var schId = urlParams.get('schedule_id');
+  if (schId) {
+    var s = dsLich.find(function (item) { return item.id === schId; });
+    if (s) {
+      expandedClasses.add(s.class_id);
+      var groups = document.querySelectorAll('[id="group-' + s.class_id + '"]');
+      groups.forEach(function (groupEl) {
+        groupEl.classList.add('expanded');
+      });
+      if (groups.length > 0) {
+        setTimeout(function () {
+          groups[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+      }
+      suaLich(schId);
+    }
   }
 }
 
