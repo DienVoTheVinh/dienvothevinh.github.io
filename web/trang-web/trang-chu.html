@@ -1345,7 +1345,9 @@ async function veLichDayStaff() {
   
   var todayJs = new Date().getDay();
   var todayWeekday = todayJs === 0 ? 7 : todayJs;
-  var todayStr = new Date().toISOString().split('T')[0];
+  var dNow = new Date();
+  var todayStr = dNow.getFullYear() + '-' + String(dNow.getMonth() + 1).padStart(2, '0') + '-' + String(dNow.getDate()).padStart(2, '0');
+  var curTime = String(dNow.getHours()).padStart(2, '0') + ':' + String(dNow.getMinutes()).padStart(2, '0');
   
   // Loại bỏ các lịch "Chỉ một lần" trong quá khứ
   var validSchedules = displaySchedules.filter(function (s) {
@@ -1355,12 +1357,28 @@ async function veLichDayStaff() {
     return true;
   });
   
-  // Sắp xếp lịch dạy theo ngày gần hôm nay nhất
-  var schedsSorted = [...validSchedules];
-  schedsSorted.sort(function (a, b) {
-    var diffA = ((a.weekday - todayWeekday) + 7) % 7;
-    var diffB = ((b.weekday - todayWeekday) + 7) % 7;
-    return diffA - diffB || a.start_time.localeCompare(b.start_time);
+  // Sắp xếp lịch dạy theo ngày gần hôm nay nhất, ưu tiên lớp chưa kết thúc hôm nay và lớp tương lai lên trên, lớp đã dạy xong hôm nay xuống dưới
+  var schedsWithInfo = validSchedules.map(function (s) {
+    var laHomNay = s.recurrence === 'once' ? (s.date === todayStr) : (s.weekday === todayWeekday);
+    var endTimeStr = s.end_time ? s.end_time.slice(0, 5) : '';
+    var hasPassed = laHomNay && endTimeStr && (endTimeStr < curTime);
+    var diff = ((s.weekday - todayWeekday) + 7) % 7;
+    return {
+      s: s,
+      laHomNay: laHomNay,
+      hasPassed: hasPassed,
+      diff: diff
+    };
+  });
+  
+  schedsWithInfo.sort(function (a, b) {
+    if (a.hasPassed !== b.hasPassed) {
+      return a.hasPassed ? 1 : -1;
+    }
+    if (a.diff !== b.diff) {
+      return a.diff - b.diff;
+    }
+    return a.s.start_time.localeCompare(b.s.start_time);
   });
   
   // Link meet
@@ -1375,8 +1393,10 @@ async function veLichDayStaff() {
   var TEN_THU_VIET = { 1: 'Thứ hai', 2: 'Thứ ba', 3: 'Thứ tư', 4: 'Thứ năm', 5: 'Thứ sáu', 6: 'Thứ bảy', 7: 'Chủ nhật' };
   var tdSty = 'padding:12px 14px; border-bottom:1px solid var(--line)';
   
-  var rowsHtml = schedsSorted.slice(0, 5).map(function (s) {
-    var laHomNay = s.recurrence === 'once' ? (s.date === todayStr) : (s.weekday === todayWeekday);
+  var rowsHtml = schedsWithInfo.slice(0, 5).map(function (info) {
+    var s = info.s;
+    var laHomNay = info.laHomNay;
+    var hasPassed = info.hasPassed;
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = meetMap[s.class_id] || globalMeetLink;
@@ -1388,8 +1408,24 @@ async function veLichDayStaff() {
     var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU_VIET[s.weekday] + ')' : TEN_THU_VIET[s.weekday];
       
     var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\')">📝 Điểm danh</button>';
-    return '<tr style="' + (laHomNay ? 'background:var(--accent-soft)' : '') + '">' +
-      '<td style="' + tdSty + '"><b>' + tenLop + '</b>' + (laHomNay ? ' <span class="badge badge-accent">Hôm nay</span>' : '') + '</td>' +
+    
+    var rowStyle = '';
+    if (laHomNay) {
+      rowStyle += 'background:var(--accent-soft);';
+    }
+    if (hasPassed) {
+      rowStyle += 'opacity:0.55;';
+    }
+    
+    var badgeHtml = '';
+    if (hasPassed) {
+      badgeHtml = ' <span class="badge badge-mute">Đã qua</span>';
+    } else if (laHomNay) {
+      badgeHtml = ' <span class="badge badge-accent">Hôm nay</span>';
+    }
+
+    return '<tr style="' + rowStyle + '">' +
+      '<td style="' + tdSty + '"><b>' + tenLop + '</b>' + badgeHtml + '</td>' +
       '<td style="' + tdSty + '">' + thuText + '</td>' +
       '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0,5) + ' – ' + s.end_time.slice(0,5) + '</td>' +
       '<td style="' + tdSty + '">' + phongDichVu + '</td>' +
