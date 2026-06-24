@@ -735,7 +735,7 @@ async function taiLich() {
             actionsBtn = '<span style="font-size:0.85rem; color:var(--ink-3); font-style:italic; padding:4px 8px;">Không có quyền</span>';
           }
           
-          var teacherName = s.teacher_id && mapGiaoVien[s.teacher_id] ? mapGiaoVien[s.teacher_id] : (g.info.teacher_id && mapGiaoVien[g.info.teacher_id] ? mapGiaoVien[g.info.teacher_id] : '—');
+          var teacherName = s.teacher_id && mapGiaoVien[s.teacher_id] ? mapGiaoVien[s.teacher_id] : (g.info.teacher_id && mapGiaoVien[g.info.teacher_id] ? mapGiaoVien[g.info.teacher_id] : 'Thầy Điền Võ Thế Vinh');
           
           return '<tr>' +
             '<td style="font-weight: 600; color: var(--ink);">' + thuText + '</td>' +
@@ -1098,7 +1098,7 @@ async function taiBuoi() {
   $('bangBuoi').innerHTML = ds.length ? ds.map(function (b) {
     var soDD = (b.attendance && b.attendance[0]) ? b.attendance[0].count : 0;
     var canEdit = kiemTraQuyenLop(b.class_id);
-    var teacherName = b.teacher_id && mapGiaoVien[b.teacher_id] ? mapGiaoVien[b.teacher_id] : 'Chưa phân công';
+    var teacherName = b.teacher_id && mapGiaoVien[b.teacher_id] ? mapGiaoVien[b.teacher_id] : 'Thầy Điền Võ Thế Vinh';
     
     var actionButtons = '';
     if (canEdit) {
