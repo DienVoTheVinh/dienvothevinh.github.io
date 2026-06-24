@@ -125,6 +125,55 @@
 .swm-lottie { width: 100%; max-width: 560px; margin: 0 auto; }
 .swm-lottie svg { display: block; width: 100%; height: auto; }
 .swm-lottie .lottie-loading { text-align: center; color: var(--ink-3); font-size: .9rem; padding: 120px 0; }
+
+/* ===== Tab lớn của Góc tự học ===== */
+.gh-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 18px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.gh-tabs .ght { border: none; background: transparent; color: var(--ink-2); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-family: inherit; cursor: pointer; font-size: .92rem; }
+.gh-tabs .ght:hover { background: var(--surface-2); }
+.gh-tabs .ght.on { background: var(--accent-soft); color: var(--accent); }
+.gh-sec .card2 { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+.gh-sec h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; }
+.gh-sec .sub { color: var(--ink-3); font-size: .85rem; margin-bottom: 14px; }
+.row-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row-form input, .row-form select, .row-form textarea { font-family: inherit; font-size: .9rem; padding: 9px 11px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
+.row-form .btn-add { background: var(--accent-gradient); color: #fff; border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.icon-x { border: none; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 1rem; }
+.icon-x:hover { color: var(--err); }
+
+/* Thời khoá biểu */
+.tkb-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+@media (max-width: 760px) { .tkb-grid { grid-template-columns: 1fr; } }
+.tkb-day { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 70px; }
+.tkb-day h4 { font-size: .82rem; font-weight: 800; text-align: center; margin-bottom: 8px; color: var(--ink-2); }
+.tkb-item { border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; font-size: .78rem; color: #fff; position: relative; }
+.tkb-item b { display: block; font-size: .82rem; }
+.tkb-item .tkb-del { position: absolute; top: 2px; right: 4px; color: rgba(255,255,255,.85); cursor: pointer; font-size: .8rem; }
+.tkb-empty { color: var(--ink-3); font-size: .72rem; text-align: center; padding: 6px 0; }
+
+/* To-do */
+.todo-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.todo-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex: 0 0 auto; }
+.todo-item.done .tdt { text-decoration: line-through; color: var(--ink-3); }
+.todo-item .tdt { flex: 1; font-size: .92rem; }
+.todo-item .tdd { font-size: .76rem; color: var(--ink-3); }
+
+/* Nhật ký */
+.diary-item { border-top: 1px solid var(--line); padding: 12px 0; }
+.diary-item .dh { font-weight: 700; font-size: .9rem; display: flex; align-items: center; gap: 8px; }
+.diary-item .db { white-space: pre-wrap; font-size: .9rem; color: var(--ink-2); margin-top: 4px; }
+
+/* Tin nhắn */
+.msg-threads { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.msg-thread { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.msg-thread.on { border-color: var(--accent); }
+.msg-thread .mt-name { font-weight: 700; font-size: .9rem; }
+.msg-thread .mt-last { font-size: .8rem; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-box { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; padding: 6px; }
+.bubble { max-width: 78%; padding: 8px 12px; border-radius: 14px; font-size: .9rem; white-space: pre-wrap; }
+.bubble.me { align-self: flex-end; background: var(--accent-gradient); color: #fff; border-bottom-right-radius: 4px; }
+.bubble.them { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.bubble .bt { font-size: .68rem; opacity: .7; margin-top: 3px; }
+.unread-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--err); margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -146,6 +195,15 @@
     <p>Mỗi phiên học là một mầm cây. Học càng đều, vườn của em càng xanh tốt — và điểm tự học càng cao!</p>
   </div>
 
+  <div class="gh-tabs">
+    <button class="ght on" onclick="moTab('secHoc',this)">🌱 Học &amp; Vườn</button>
+    <button class="ght" onclick="moTab('secTKB',this)">📅 Thời khoá biểu</button>
+    <button class="ght" onclick="moTab('secTodo',this)">✅ Việc cần làm</button>
+    <button class="ght" onclick="moTab('secDiary',this)">📔 Nhật ký</button>
+    <button class="ght" onclick="moTab('secTinNhan',this)">💬 Tin nhắn</button>
+  </div>
+
+  <div id="secHoc">
   <div class="mode-switch">
     <button id="chipVuon" class="on" onclick="datCheDo('garden')">🌳 Vườn cây</button>
     <button id="chipStudy" onclick="datCheDo('study')">☕ Study with me</button>
@@ -311,6 +369,87 @@
     <h3>🕓 Phiên học gần đây</h3>
     <div id="dsLichSu"><div style="color:var(--ink-3);font-size:.9rem">Đang tải…</div></div>
   </div>
+  </div><!-- /secHoc -->
+
+  <!-- ===== THỜI KHOÁ BIỂU ===== -->
+  <div id="secTKB" class="gh-sec" style="display:none">
+    <div class="card2">
+      <h2>📅 Thời khoá biểu cá nhân</h2>
+      <div class="sub">Tự sắp lịch học ở trường và các môn học thêm. Lịch này cũng hiện ở Lịch tuần trang chủ của em.</div>
+      <div class="row-form" id="tkbForm">
+        <select id="tkbDay"></select>
+        <input type="time" id="tkbStart" title="Bắt đầu">
+        <input type="time" id="tkbEnd" title="Kết thúc">
+        <input type="text" id="tkbSubject" placeholder="Tên môn / hoạt động" style="min-width:160px">
+        <select id="tkbKind">
+          <option value="truong">Ở trường</option>
+          <option value="hocthem">Học thêm</option>
+          <option value="khac">Khác</option>
+        </select>
+        <input type="text" id="tkbLoc" placeholder="Nơi học (tuỳ chọn)">
+        <button class="btn-add" onclick="themTKB()">+ Thêm</button>
+      </div>
+    </div>
+    <div class="card2"><div class="tkb-grid" id="tkbGrid"></div></div>
+  </div>
+
+  <!-- ===== TO-DO ===== -->
+  <div id="secTodo" class="gh-sec" style="display:none">
+    <div class="card2">
+      <h2>✅ Việc cần làm</h2>
+      <div class="sub">Ghi lại bài tập, việc cần hoàn thành. Tick vào ô khi xong.</div>
+      <div class="row-form">
+        <input type="text" id="tdContent" placeholder="Việc cần làm…" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')themTodo()">
+        <input type="date" id="tdDue" title="Hạn (tuỳ chọn)">
+        <button class="btn-add" onclick="themTodo()">+ Thêm</button>
+      </div>
+      <div id="todoList" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- ===== NHẬT KÝ ===== -->
+  <div id="secDiary" class="gh-sec" style="display:none">
+    <div class="card2">
+      <h2>📔 Nhật ký</h2>
+      <div class="sub">🔒 Riêng tư — chỉ mình em đọc được. Thầy cô và admin không xem được nhật ký của em.</div>
+      <div class="row-form" style="margin-bottom:8px">
+        <input type="date" id="drDate">
+        <select id="drMood">
+          <option value="">Tâm trạng…</option>
+          <option>😄 Vui</option><option>🙂 Ổn</option><option>😐 Bình thường</option>
+          <option>😔 Buồn</option><option>😣 Căng thẳng</option><option>💪 Quyết tâm</option>
+        </select>
+      </div>
+      <textarea id="drContent" rows="5" placeholder="Hôm nay em học được gì, cảm thấy thế nào…" style="width:100%;font-family:inherit;font-size:.92rem;padding:11px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface-2);color:var(--ink);resize:vertical"></textarea>
+      <div style="margin-top:10px"><button class="btn-add" onclick="luuDiary()">💾 Lưu nhật ký</button></div>
+    </div>
+    <div class="card2"><h2 style="font-size:1rem">Nhật ký đã viết</h2><div id="diaryList"></div></div>
+  </div>
+
+  <!-- ===== TIN NHẮN ===== -->
+  <div id="secTinNhan" class="gh-sec" style="display:none">
+    <div class="card2" id="msgComposeCard">
+      <h2>💬 Nhắn tin cho thầy cô / admin</h2>
+      <div class="sub">Gửi câu hỏi, phản hồi trực tiếp. Người nhận sẽ trả lời lại ngay trong đây.</div>
+      <div class="row-form">
+        <select id="msgTo" style="min-width:200px"></select>
+        <input type="text" id="msgBody" placeholder="Nội dung tin nhắn…" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')guiTinMoi()">
+        <button class="btn-add" onclick="guiTinMoi()">Gửi</button>
+      </div>
+    </div>
+    <div class="card2">
+      <h2 style="font-size:1rem">Hộp thư</h2>
+      <div class="sub" id="msgHint">Chọn một cuộc trò chuyện để xem và trả lời.</div>
+      <div class="msg-threads" id="msgThreads"></div>
+      <div id="msgConvo" style="display:none">
+        <div class="msg-box" id="msgBox"></div>
+        <div class="row-form" style="margin-top:10px">
+          <input type="text" id="msgReply" placeholder="Trả lời…" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter')guiTraLoi()">
+          <button class="btn-add" onclick="guiTraLoi()">Gửi</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -332,6 +471,7 @@ var meId = null, meRole = null;
   buildHero();
   chayDemoVuon();
   try { datCheDo(localStorage.getItem('vm_swm_mode') || 'garden'); } catch (e) {}
+  try { chuanBiTienIch(); } catch (e) {}
   if (meRole === 'admin') veXemTruocCay();
   capNhatBanner();
   await taiDuLieu();
@@ -387,6 +527,183 @@ function capNhatBanner() {
 
 // Khi một phiên kết thúc -> tải lại số liệu + vườn cây
 window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
+
+/* ================= TAB LỚN + 4 TIỆN ÍCH ================= */
+var THU = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+var MAU_KIND = { truong: '#5b8def', hocthem: '#e0883a', khac: '#7e8a99' };
+var daNap = {};
+function moTab(sec, btn) {
+  ['secHoc', 'secTKB', 'secTodo', 'secDiary', 'secTinNhan'].forEach(function (id) {
+    var el = document.getElementById(id); if (el) el.style.display = (id === sec) ? '' : 'none';
+  });
+  document.querySelectorAll('.gh-tabs .ght').forEach(function (b) { b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  if (sec === 'secTKB' && !daNap.tkb) { napTKB(); daNap.tkb = 1; }
+  if (sec === 'secTodo' && !daNap.todo) { napTodo(); daNap.todo = 1; }
+  if (sec === 'secDiary' && !daNap.diary) { napDiary(); daNap.diary = 1; }
+  if (sec === 'secTinNhan' && !daNap.msg) { napNguoiNhan(); napTinNhan(); daNap.msg = 1; }
+}
+function chuanBiTienIch() {
+  var sel = document.getElementById('tkbDay');
+  if (sel && !sel.options.length) THU.forEach(function (t, i) { var o = document.createElement('option'); o.value = i; o.textContent = t; sel.appendChild(o); });
+  var dd = document.getElementById('drDate'); if (dd && !dd.value) dd.value = new Date().toISOString().slice(0, 10);
+  // Thầy cô/admin: ẩn ô soạn tin mới (chỉ trả lời trong hộp thư)
+  if (meRole && meRole !== 'student' && meRole !== 'parent') {
+    var cc = document.getElementById('msgComposeCard'); if (cc) cc.style.display = 'none';
+  }
+}
+
+/* ---- Thời khoá biểu ---- */
+async function napTKB() {
+  var r = await sb.from('timetable').select('*').eq('student_id', meId).order('start_time');
+  var ds = (r && r.data) ? r.data : [];
+  var grid = document.getElementById('tkbGrid'); if (!grid) return;
+  grid.innerHTML = THU.map(function (t, i) {
+    var items = ds.filter(function (x) { return x.weekday === i; });
+    var inner = items.length ? items.map(function (x) {
+      return '<div class="tkb-item" style="background:' + (x.color || MAU_KIND[x.kind] || '#7e8a99') + '">' +
+        '<span class="tkb-del" onclick="xoaTKB(\'' + x.id + '\')">×</span>' +
+        '<b>' + (x.start_time ? x.start_time.slice(0, 5) : '') + (x.end_time ? '–' + x.end_time.slice(0, 5) : '') + '</b>' +
+        escapeHtml(x.subject) + (x.location ? '<br><span style="opacity:.85">📍' + escapeHtml(x.location) + '</span>' : '') + '</div>';
+    }).join('') : '<div class="tkb-empty">—</div>';
+    return '<div class="tkb-day"><h4>' + t + '</h4>' + inner + '</div>';
+  }).join('');
+}
+async function themTKB() {
+  var subject = document.getElementById('tkbSubject').value.trim();
+  var start = document.getElementById('tkbStart').value;
+  if (!subject || !start) { alert('Nhập tên môn và giờ bắt đầu nhé!'); return; }
+  var kind = document.getElementById('tkbKind').value;
+  var rec = {
+    student_id: meId, weekday: parseInt(document.getElementById('tkbDay').value),
+    start_time: start, end_time: document.getElementById('tkbEnd').value || null,
+    subject: subject, kind: kind, color: MAU_KIND[kind],
+    location: document.getElementById('tkbLoc').value.trim() || null
+  };
+  var r = await sb.from('timetable').insert(rec);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  document.getElementById('tkbSubject').value = ''; document.getElementById('tkbLoc').value = '';
+  napTKB();
+}
+async function xoaTKB(id) { if (!confirm('Xoá tiết này?')) return; await sb.from('timetable').delete().eq('id', id); napTKB(); }
+
+/* ---- To-do ---- */
+async function napTodo() {
+  var r = await sb.from('todos').select('*').eq('student_id', meId).order('done').order('created_at', { ascending: false });
+  var ds = (r && r.data) ? r.data : [];
+  var box = document.getElementById('todoList'); if (!box) return;
+  if (!ds.length) { box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem;padding-top:10px">Chưa có việc nào. Thêm việc đầu tiên nhé! ✍️</div>'; return; }
+  box.innerHTML = ds.map(function (x) {
+    return '<div class="todo-item' + (x.done ? ' done' : '') + '">' +
+      '<input type="checkbox" ' + (x.done ? 'checked' : '') + ' onchange="toggleTodo(\'' + x.id + '\',this.checked)">' +
+      '<span class="tdt">' + escapeHtml(x.content) + (x.due_date ? ' <span class="tdd">· hạn ' + x.due_date.split('-').reverse().join('/') + '</span>' : '') + '</span>' +
+      '<button class="icon-x" onclick="xoaTodo(\'' + x.id + '\')">🗑</button></div>';
+  }).join('');
+}
+async function themTodo() {
+  var c = document.getElementById('tdContent').value.trim(); if (!c) return;
+  var due = document.getElementById('tdDue').value || null;
+  var r = await sb.from('todos').insert({ student_id: meId, content: c, due_date: due });
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  document.getElementById('tdContent').value = ''; document.getElementById('tdDue').value = '';
+  napTodo();
+}
+async function toggleTodo(id, done) { await sb.from('todos').update({ done: done, completed_at: done ? new Date().toISOString() : null }).eq('id', id); napTodo(); }
+async function xoaTodo(id) { await sb.from('todos').delete().eq('id', id); napTodo(); }
+
+/* ---- Nhật ký ---- */
+async function napDiary() {
+  var r = await sb.from('diary').select('*').eq('student_id', meId).order('entry_date', { ascending: false }).order('created_at', { ascending: false });
+  var ds = (r && r.data) ? r.data : [];
+  var box = document.getElementById('diaryList'); if (!box) return;
+  if (!ds.length) { box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có trang nhật ký nào.</div>'; return; }
+  box.innerHTML = ds.map(function (x) {
+    var d = x.entry_date ? x.entry_date.split('-').reverse().join('/') : '';
+    return '<div class="diary-item"><div class="dh">📅 ' + d + ' ' + (x.mood ? '· ' + escapeHtml(x.mood) : '') +
+      '<button class="icon-x" style="margin-left:auto" onclick="xoaDiary(\'' + x.id + '\')">🗑</button></div>' +
+      '<div class="db">' + escapeHtml(x.content) + '</div></div>';
+  }).join('');
+}
+async function luuDiary() {
+  var content = document.getElementById('drContent').value.trim(); if (!content) { alert('Viết vài dòng đã nhé!'); return; }
+  var rec = { student_id: meId, entry_date: document.getElementById('drDate').value || new Date().toISOString().slice(0, 10), mood: document.getElementById('drMood').value || null, content: content };
+  var r = await sb.from('diary').insert(rec);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  document.getElementById('drContent').value = ''; document.getElementById('drMood').value = '';
+  napDiary();
+}
+async function xoaDiary(id) { if (!confirm('Xoá trang nhật ký này?')) return; await sb.from('diary').delete().eq('id', id); napDiary(); }
+
+/* ---- Tin nhắn ---- */
+var msgRows = [], curThread = null;
+async function napNguoiNhan() {
+  var sel = document.getElementById('msgTo'); if (!sel || sel.options.length) return;
+  var r = await sb.rpc('ds_nguoi_nhan');
+  var ds = (r && r.data) ? r.data : [];
+  var nhan = { admin: 'Admin', teacher: 'Thầy/Cô', assistant: 'Trợ giảng' };
+  sel.innerHTML = '<option value="">— Chọn người nhận —</option>' + ds.filter(function (p) { return p.id !== meId; }).map(function (p) {
+    return '<option value="' + p.id + '">' + escapeHtml(p.full_name) + ' (' + (nhan[p.role] || p.role) + ')</option>';
+  }).join('');
+}
+async function napTinNhan() {
+  var r = await sb.rpc('tin_nhan_cua_toi');
+  msgRows = (r && r.data) ? r.data : [];
+  var threads = {};
+  msgRows.forEach(function (m) {
+    var otherId = (m.sender_id === meId) ? m.recipient_id : m.sender_id;
+    var otherName = (m.sender_id === meId) ? m.recipient_name : m.sender_name;
+    if (!threads[otherId]) threads[otherId] = { id: otherId, name: otherName, last: '', time: '', unread: 0 };
+    threads[otherId].last = m.body; threads[otherId].time = m.created_at;
+    if (m.recipient_id === meId && !m.read_at) threads[otherId].unread++;
+  });
+  var arr = Object.keys(threads).map(function (k) { return threads[k]; }).sort(function (a, b) { return (b.time || '').localeCompare(a.time || ''); });
+  var box = document.getElementById('msgThreads'); if (!box) return;
+  if (!arr.length) { box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có cuộc trò chuyện nào.</div>'; return; }
+  box.innerHTML = arr.map(function (t) {
+    return '<div class="msg-thread' + (curThread === t.id ? ' on' : '') + '" onclick="moThread(\'' + t.id + '\',\'' + escapeAttr(t.name) + '\')">' +
+      '<div class="mt-name">' + escapeHtml(t.name || 'Người dùng') + (t.unread ? '<span class="unread-dot"></span>' : '') + '</div>' +
+      '<div class="mt-last">' + escapeHtml(t.last || '') + '</div></div>';
+  }).join('');
+  if (curThread) moThread(curThread);
+}
+function moThread(otherId, name) {
+  curThread = otherId;
+  var msgs = msgRows.filter(function (m) { return m.sender_id === otherId || m.recipient_id === otherId; })
+    .filter(function (m) { return m.sender_id === meId || m.recipient_id === meId; });
+  var box = document.getElementById('msgBox');
+  document.getElementById('msgConvo').style.display = 'block';
+  document.getElementById('msgHint').textContent = name ? ('Đang trò chuyện với ' + name) : '';
+  box.innerHTML = msgs.map(function (m) {
+    var me = m.sender_id === meId;
+    var when = new Date(m.created_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return '<div class="bubble ' + (me ? 'me' : 'them') + '">' + escapeHtml(m.body) + '<div class="bt">' + when + '</div></div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+  danhDauDaDoc(otherId);
+  document.querySelectorAll('.msg-thread').forEach(function (e) { e.classList.remove('on'); });
+}
+async function danhDauDaDoc(otherId) {
+  await sb.from('messages').update({ read_at: new Date().toISOString() }).eq('sender_id', otherId).eq('recipient_id', meId).is('read_at', null);
+}
+async function guiTinMoi() {
+  var to = document.getElementById('msgTo').value; var body = document.getElementById('msgBody').value.trim();
+  if (!to) { alert('Chọn người nhận nhé!'); return; }
+  if (!body) return;
+  var r = await sb.from('messages').insert({ sender_id: meId, recipient_id: to, body: body });
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  document.getElementById('msgBody').value = ''; curThread = to;
+  napTinNhan();
+}
+async function guiTraLoi() {
+  if (!curThread) return;
+  var body = document.getElementById('msgReply').value.trim(); if (!body) return;
+  var r = await sb.from('messages').insert({ sender_id: meId, recipient_id: curThread, body: body });
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  document.getElementById('msgReply').value = '';
+  napTinNhan();
+}
+function escapeHtml(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function escapeAttr(s) { return escapeHtml(s).replace(/'/g, '&#39;'); }
 
 /* ================= STUDY WITH ME: chuyển chế độ + âm thanh ================= */
 var lottieAnim = null;
