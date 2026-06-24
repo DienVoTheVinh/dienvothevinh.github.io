@@ -471,7 +471,7 @@ function capNhatGiaoVienSchedule() {
     $('schGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
     return;
   }
-  var options = [];
+  var options = ['<option value="">-- Để trống (Mặc định: Thầy Vinh) --</option>'];
   var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
@@ -501,7 +501,7 @@ function capNhatGiaoVienSession() {
     $('ssGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
     return;
   }
-  var options = [];
+  var options = ['<option value="">-- Để trống (Mặc định: Thầy Vinh) --</option>'];
   var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
@@ -909,7 +909,7 @@ function capNhatGiaoVienEditSchedule() {
     $('editSchGiaoVien').innerHTML = '<option value="">-- Chọn giáo viên --</option>';
     return;
   }
-  var options = [];
+  var options = ['<option value="">-- Để trống (Mặc định: Thầy Vinh) --</option>'];
   var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
