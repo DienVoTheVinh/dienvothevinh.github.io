@@ -361,7 +361,7 @@ async function taiBaiViet(){
       '<div class="art-head">' +
         (bPost.published ? '' : '<div style="display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:10px">● Bản nháp (chỉ thầy/trợ giảng thấy)</div>') +
         '<h1>' + blogEsc(bPost.title) + '</h1>' +
-        '<div class="art-meta">' + ava + '<div><b>' + blogEsc(bPost.author_name || 'Thầy Vinh') + '</b><div style="font-size:.78rem;color:var(--ink-3)">' + khiNao(bPost.created_at) + '</div></div></div>' +
+        '<div class="art-meta">' + ava + '<div><b>' + blogEsc(bPost.author_name || 'Thầy Điền Võ Thế Vinh') + '</b><div style="font-size:.78rem;color:var(--ink-3)">' + khiNao(bPost.created_at) + '</div></div></div>' +
       '</div>' +
       coverHtml +
       '<div class="article" id="artBody"></div>' +
@@ -543,7 +543,7 @@ async function taiDanhSachBlog() {
         '<p class="featured-excerpt">' + blogEsc(featuredPost.excerpt || '') + '</p>' +
         '<div>' +
           '<div class="featured-meta">' +
-            '<span class="bl-auth">' + blogEsc(featuredPost.author_name || 'Thầy Vinh') + '</span>' +
+            '<span class="bl-auth">' + blogEsc(featuredPost.author_name || 'Thầy Điền Võ Thế Vinh') + '</span>' +
             '<span>' + featDate + '</span>' +
             '<span style="margin-left:auto">❤️ ' + (likeMap[featuredPost.id] || 0) + '</span>' +
             '<span style="margin-left:8px">💬 ' + (cmtMap[featuredPost.id] || 0) + '</span>' +
@@ -581,7 +581,7 @@ async function taiDanhSachBlog() {
             '</div>' +
             '<div>' +
               '<div class="bl-meta">' +
-                '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Vinh') + '</span>' +
+                '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Điền Võ Thế Vinh') + '</span>' +
                 '<span>' + d + '</span>' +
                 '<span style="margin-left:auto">❤️ ' + (likeMap[p.id] || 0) + '</span>' +
                 '<span style="margin-left:8px">💬 ' + (cmtMap[p.id] || 0) + '</span>' +

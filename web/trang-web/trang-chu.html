@@ -1116,7 +1116,7 @@ async function taiBlogTrangChu() {
         cover +
         '<div class="bc-title">' + esc(p.title) + '</div>' +
         '<div class="bc-ex">' + esc(p.excerpt || '') + '</div>' +
-        '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Vinh') + '</span><span>' + d + '</span>' +
+        '<div class="bc-foot"><span class="bc-auth">' + esc(p.author_name || 'Thầy Điền Võ Thế Vinh') + '</span><span>' + d + '</span>' +
         '<span style="margin-left:auto">❤️ ' + (likeMap[p.id]||0) + '</span><span>💬 ' + (cmtMap[p.id]||0) + '</span></div>' +
       '</a>';
     }).join('');
@@ -1741,7 +1741,7 @@ function gcalEventsForDay(dt, filterPersonal) {
           var teacherLastName = mapGiaoVien[s.teacher_id].split(' ').pop();
           teacherText = 'GV: ' + teacherLastName;
         } else {
-          var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Vinh';
+          var teacherName = mapGiaoVien[s.classes.teacher_id] || 'Thầy Điền Võ Thế Vinh';
           var teacherLastName = teacherName.split(' ').pop();
           teacherText = 'GV: ' + teacherLastName;
           if (s.classes.co_teacher_id) {
@@ -2064,9 +2064,9 @@ function timSuKienGanNhat() {
       var clsName = cls ? cls.name : 'Tất cả các lớp';
       var grade = cls && cls.grade ? 'Khối ' + cls.grade : '—';
       var spec = cls && cls.is_specialized ? 'Chuyên' : 'Không chuyên';
-      var teacherName = 'Thầy Vinh';
+      var teacherName = 'Thầy Điền Võ Thế Vinh';
       if (cls) {
-        teacherName = mapGiaoVien[cls.teacher_id] || 'Thầy Vinh';
+        teacherName = mapGiaoVien[cls.teacher_id] || 'Thầy Điền Võ Thế Vinh';
       }
       
       var timeStr = eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ngày ' + eventDate.getDate() + '/' + (eventDate.getMonth() + 1);

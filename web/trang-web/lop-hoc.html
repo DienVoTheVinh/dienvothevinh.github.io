@@ -167,7 +167,7 @@ function theBaiHoc(bh) {
     ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
   var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   
-  var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Vinh';
+  var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px">👤 ' + gvName + '</span>';
 
   return '<div class="card lesson">' +
@@ -367,7 +367,7 @@ async function taiLessonsHocSinh() {
     var cls = currentClass.classes;
     $('tenLop').textContent = cls.name + ' · VinhMath';
     
-    var gv1 = mapGiaoVien[cls.teacher_id] || 'Thầy Vinh';
+    var gv1 = mapGiaoVien[cls.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var gv2 = cls.co_teacher_id ? mapGiaoVien[cls.co_teacher_id] : null;
     
     var subText = layEmojiGiaoVien(gv1) + ' Giáo viên: ' + gv1;
@@ -499,7 +499,7 @@ function hienThiLessonsGomNhom(ds) {
   var currentClass = selectedClassId ? dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; }) : null;
   if (currentClass && currentClass.classes && currentClass.classes.co_teacher_id) {
     var cls = currentClass.classes;
-    var nameMain = mapGiaoVien[cls.teacher_id] || 'Thầy Vinh';
+    var nameMain = mapGiaoVien[cls.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var nameCo = mapGiaoVien[cls.co_teacher_id] || 'Giáo viên hợp tác';
     
     var lessonsMain = ds.filter(function(b) { return b.teacher_id !== cls.co_teacher_id; });

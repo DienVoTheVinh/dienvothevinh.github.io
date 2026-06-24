@@ -853,7 +853,7 @@ function chonLopHoc(id) {
   $('detTenLop').textContent = cl.name;
   $('detNienKhoa').textContent = 'Niên khóa: ' + (cl.school_year || '2026-2027');
   
-  var gvChinh = mapGiaoVien[cl.teacher_id] || 'Thầy Vinh';
+  var gvChinh = mapGiaoVien[cl.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var gvHopTac = mapGiaoVien[cl.co_teacher_id];
   $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + gvChinh + '</b>' + (gvHopTac ? ' & <b>' + gvHopTac + '</b>' : '');
 
@@ -1044,7 +1044,7 @@ async function taiLessonsLop() {
     var lessonsMain = lessons.filter(function(b) { return b.teacher_id !== classDangChon.co_teacher_id; });
     var lessonsCo = lessons.filter(function(b) { return b.teacher_id === classDangChon.co_teacher_id; });
     
-    var nameMain = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh';
+    var nameMain = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var nameCo = mapGiaoVien[classDangChon.co_teacher_id] || 'Giáo viên hợp tác';
     
     var html = '';
@@ -1069,7 +1069,7 @@ function renderLessonRow(b) {
   var iconTest = b.test_document_id ? '<span style="color:var(--accent)">📝 Bài test</span>' : '';
   
   var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
-  var gvName = mapGiaoVien[b.teacher_id] || 'Thầy Vinh';
+  var gvName = mapGiaoVien[b.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706">👤 ' + gvName + '</span>';
   
   var testBtn = '';
@@ -1898,7 +1898,7 @@ async function moFormThemBaiGiang() {
     selTeacher.innerHTML = '';
     var opt1 = document.createElement('option');
     opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh';
+    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {
@@ -1955,7 +1955,7 @@ async function moFormSua(id) {
     selTeacher.innerHTML = '';
     var opt1 = document.createElement('option');
     opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Vinh';
+    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {

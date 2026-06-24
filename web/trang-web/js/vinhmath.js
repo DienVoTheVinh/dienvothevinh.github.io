@@ -168,7 +168,7 @@ async function dangNhap(username, password) {
 function formatAuthorName(name) {
   if (!name) return 'Thầy/Trợ giảng';
   var clean = name.trim();
-  if (clean.indexOf('Điền Võ Thế Vinh') !== -1 || clean === 'Thầy Vinh (Admin)' || clean === 'Thầy Vinh' || clean.indexOf('dienvothevinh') !== -1) {
+  if (clean.indexOf('Điền Võ Thế Vinh') !== -1 || clean === 'Thầy Vinh (Admin)' || clean === 'Thầy Điền Võ Thế Vinh' || clean.indexOf('dienvothevinh') !== -1) {
     return '<span class="name-owner">Thầy Điền Võ Thế Vinh <span class="badge-owner">Sáng lập 👑</span></span>';
   }
   if (clean.indexOf('Trợ giảng') !== -1 || clean.indexOf('(TG)') !== -1) {
