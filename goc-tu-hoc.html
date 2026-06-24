@@ -118,13 +118,15 @@
 .swm-rain line { transform-box: fill-box; animation: swmRain .8s linear infinite; }
 @keyframes swmRain { from { transform: translateY(-6px); opacity: 0; } 30% { opacity: .7; } to { transform: translateY(20px); opacity: 0; } }
 
-/* Dùng animation Lottie thay cảnh vẽ tay */
-.swm-wrap { background: linear-gradient(180deg, #fdf6ec 0%, #f4e8d6 100%) !important; }
-[data-theme="dark"] .swm-wrap { background: linear-gradient(180deg, #243039 0%, #19232b 100%) !important; }
+/* Dùng animation Lottie thay cảnh vẽ tay — khung gọn, căn giữa */
+.swm-wrap { background: #fdf3e3 !important; max-width: 500px; margin: 0 auto; border-radius: var(--r-lg) !important; border: 1px solid var(--line) !important; padding: 6px; }
+[data-theme="dark"] .swm-wrap { background: #f3ead9 !important; }
 .swm-scene { display: none !important; }
-.swm-lottie { width: 100%; max-width: 560px; margin: 0 auto; }
+.swm-lottie { width: 100%; margin: 0 auto; border-radius: calc(var(--r-lg) - 4px); overflow: hidden; }
 .swm-lottie svg { display: block; width: 100%; height: auto; }
-.swm-lottie .lottie-loading { text-align: center; color: var(--ink-3); font-size: .9rem; padding: 120px 0; }
+.swm-lottie .lottie-loading { text-align: center; color: #8a7a63; font-size: .9rem; padding: 120px 0; }
+.swm-audio { max-width: 500px; margin: 10px auto 14px; border-radius: var(--r-lg); }
+.swm-now { left: 50%; transform: translateX(-50%); white-space: nowrap; }
 
 /* ===== Tab lớn của Góc tự học ===== */
 .gh-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 18px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
@@ -750,16 +752,58 @@ function ensureAudio() {
 }
 function bufNoise(sec) { var n = AC.sampleRate * (sec || 2), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0); for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; }
 function bufBrown(sec) { var n = AC.sampleRate * (sec || 2), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0), last = 0; for (var i = 0; i < n; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } return b; }
+var _wb = null, _bb = null;
+function getWhite() { if (!_wb) _wb = bufNoise(2); return _wb; }
+function getBrown() { if (!_bb) _bb = bufBrown(2); return _bb; }
+// một tiếng "hạt" ngắn (giọt mưa / tiếng nổ tí tách)
+function _burst(dest, brown, ftype, freq, q, gain, dur) {
+  var s = AC.createBufferSource(); s.buffer = brown ? getBrown() : getWhite();
+  var f = AC.createBiquadFilter(); f.type = ftype; f.frequency.value = freq; if (q) f.Q.value = q;
+  var g = AC.createGain(); var t = AC.currentTime;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(dest); s.start(t); try { s.stop(t + dur + 0.05); } catch (e) {}
+}
+// một tiếng "leng keng" (tách cà phê)
+function _ping(dest, freq, gain) {
+  var o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+  var g = AC.createGain(); var t = AC.currentTime; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.52);
+}
 function batTieng(kind) {
-  var src = AC.createBufferSource(); src.loop = true;
-  var f = AC.createBiquadFilter(); var g = AC.createGain(); var extra = null;
-  if (kind === 'rain') { src.buffer = bufNoise(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 0.5; g.gain.value = 0.5; }
-  else if (kind === 'fire') { src.buffer = bufBrown(); f.type = 'lowpass'; f.frequency.value = 700; g.gain.value = 0.75; }
-  else if (kind === 'wind') { src.buffer = bufBrown(); f.type = 'lowpass'; f.frequency.value = 520; g.gain.value = 0.6; extra = AC.createOscillator(); var lg = AC.createGain(); extra.frequency.value = 0.09; lg.gain.value = 320; extra.connect(lg); lg.connect(f.frequency); extra.start(); }
-  else if (kind === 'stream') { src.buffer = bufNoise(); f.type = 'highpass'; f.frequency.value = 900; g.gain.value = 0.4; }
-  else if (kind === 'cafe') { src.buffer = bufBrown(); f.type = 'bandpass'; f.frequency.value = 500; f.Q.value = 0.7; g.gain.value = 0.6; }
-  src.connect(f); f.connect(g); g.connect(master); src.start();
-  return { stop: function () { try { src.stop(); } catch (e) {} try { if (extra) extra.stop(); } catch (e) {} try { g.disconnect(); } catch (e) {} } };
+  var nodes = [], timers = [];
+  var g = AC.createGain(); g.gain.value = 0.0001; g.connect(master);
+  g.gain.exponentialRampToValueAtTime(1, AC.currentTime + 0.6); // vào êm
+  function loopNoise(brown) { var s = AC.createBufferSource(); s.buffer = brown ? getBrown() : getWhite(); s.loop = true; nodes.push(s); return s; }
+
+  if (kind === 'rain') {
+    var s = loopNoise(false), f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.4;
+    var bg = AC.createGain(); bg.gain.value = 0.18; s.connect(f); f.connect(bg); bg.connect(g); s.start();
+    timers.push(setInterval(function () { var n = 1 + (Math.random() * 3 | 0); for (var i = 0; i < n; i++) _burst(g, false, 'highpass', 2400 + Math.random() * 3200, 0, 0.04 + Math.random() * 0.12, 0.035 + Math.random() * 0.05); }, 55));
+  } else if (kind === 'fire') {
+    var s = loopNoise(true), f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600;
+    var bg = AC.createGain(); bg.gain.value = 0.3; s.connect(f); f.connect(bg); bg.connect(g); s.start();
+    timers.push(setInterval(function () { if (Math.random() < 0.7) _burst(g, false, 'highpass', 1100 + Math.random() * 2600, 0.7, 0.05 + Math.random() * 0.18, 0.025 + Math.random() * 0.07); }, 115));
+  } else if (kind === 'wind') {
+    var s = loopNoise(true), f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 480;
+    var bg = AC.createGain(); bg.gain.value = 0.0; s.connect(f); f.connect(bg); bg.connect(g); s.start();
+    var lfo = AC.createOscillator(); lfo.frequency.value = 0.08; var lg = AC.createGain(); lg.gain.value = 360; lfo.connect(lg); lg.connect(f.frequency); lfo.start(); nodes.push(lfo);
+    var lfo2 = AC.createOscillator(); lfo2.frequency.value = 0.06; var lg2 = AC.createGain(); lg2.gain.value = 0.2; var off = AC.createConstantSource(); off.offset.value = 0.28; off.connect(bg.gain); lfo2.connect(lg2); lg2.connect(bg.gain); lfo2.start(); off.start(); nodes.push(lfo2); nodes.push(off);
+  } else if (kind === 'stream') {
+    var s = loopNoise(false), f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1100;
+    var bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 3;
+    var bg = AC.createGain(); bg.gain.value = 0.24; s.connect(f); f.connect(bp); bp.connect(bg); bg.connect(g); s.start();
+    var lfo = AC.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 4.5; var lg = AC.createGain(); lg.gain.value = 900; lfo.connect(lg); lg.connect(bp.frequency); lfo.start(); nodes.push(lfo);
+    var s2 = loopNoise(false), f2 = AC.createBiquadFilter(); f2.type = 'highpass'; f2.frequency.value = 700; var bg2 = AC.createGain(); bg2.gain.value = 0.1; s2.connect(f2); f2.connect(bg2); bg2.connect(g); s2.start();
+  } else if (kind === 'cafe') {
+    var s = loopNoise(true), f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 460; var bg = AC.createGain(); bg.gain.value = 0.28; s.connect(f); f.connect(bg); bg.connect(g); s.start();
+    var s2 = loopNoise(true), f2 = AC.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 300; f2.Q.value = 0.7; var bg2 = AC.createGain(); bg2.gain.value = 0.16; s2.connect(f2); f2.connect(bg2); bg2.connect(g); s2.start();
+    timers.push(setInterval(function () { if (Math.random() < 0.5) _ping(g, 1400 + Math.random() * 1500, 0.03 + Math.random() * 0.05); }, 1700));
+  }
+  return { stop: function () {
+    timers.forEach(clearInterval);
+    try { g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + 0.2); } catch (e) {}
+    setTimeout(function () { nodes.forEach(function (n) { try { n.stop && n.stop(); } catch (e) {} try { n.disconnect && n.disconnect(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 260);
+  } };
 }
 function batLofi() {
   var out = AC.createGain(); out.gain.value = 0; out.connect(master);
