@@ -53,10 +53,10 @@ function apDungMenu(role) {
           { path: 'lop-hoc', label: 'Lớp học' },
           { path: 'luyen-de', label: 'Luyện đề' },
           { path: 'tai-lieu', label: 'Tài liệu' },
-          { path: 'lich-hoc', label: 'Lịch học' },
-          { path: 'goc-tu-hoc', label: '🌳 Góc tự học' }
+          { path: 'lich-hoc', label: 'Lịch học' }
         ]
       },
+      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
       { type: 'link', path: 'blog', label: 'Blog' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
