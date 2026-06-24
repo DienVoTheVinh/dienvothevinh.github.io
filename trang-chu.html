@@ -1331,10 +1331,15 @@ async function veLichDayStaff() {
   var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
   var displaySchedules = tatCaSchedules;
   
-  if (isStaff && hoSoNguoiDung.role !== 'admin') {
+  if (isStaff) {
     displaySchedules = tatCaSchedules.filter(function (s) {
       if (!s.classes) return false;
-      return s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+      var isAssigned = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+      if (hoSoNguoiDung.role === 'admin') {
+        var isUnassigned = !s.teacher_id && !s.classes.teacher_id;
+        return isAssigned || isUnassigned;
+      }
+      return isAssigned;
     });
   }
   
@@ -1711,10 +1716,15 @@ function gcalEventsForDay(dt, filterPersonal) {
     if (!match || !s.start_time || !s.end_time) return;
     
     // Lọc lịch cá nhân cho giáo viên/trợ giảng
-    if (isStaff && filterPersonal && hoSoNguoiDung.role !== 'admin') {
+    if (isStaff && filterPersonal) {
       if (!s.classes) return;
-      var isTeacher = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
-      if (!isTeacher) return;
+      var isAssigned = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+      if (hoSoNguoiDung.role === 'admin') {
+        var isUnassigned = !s.teacher_id && !s.classes.teacher_id;
+        if (!isAssigned && !isUnassigned) return;
+      } else {
+        if (!isAssigned) return;
+      }
     }
     
     var titleText = 'Lớp học';
@@ -1760,11 +1770,16 @@ function gcalEventsForDay(dt, filterPersonal) {
     if (gcalKey(od) !== key) return;
     
     // Lọc kỳ thi cá nhân cho giáo viên/trợ giảng
-    if (isStaff && filterPersonal && hoSoNguoiDung.role !== 'admin') {
+    if (isStaff && filterPersonal) {
       var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
       if (!cls) return;
-      var isTeacher = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
-      if (!isTeacher) return;
+      var isAssigned = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
+      if (hoSoNguoiDung.role === 'admin') {
+        var isUnassigned = !cls.teacher_id;
+        if (!isAssigned && !isUnassigned) return;
+      } else {
+        if (!isAssigned) return;
+      }
     }
     
     var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
@@ -1925,15 +1940,11 @@ function veLichTuan() {
     // Vẽ lịch cá nhân (chỉ hiển thị các lớp được phân công hoặc hợp tác)
     renderCalendarGrid('weekCal', true);
     
-    // Vẽ lịch chung — ẩn với admin vì "Lịch cá nhân" đã hiển thị toàn bộ
+    // Vẽ lịch chung
     var sharedContainer = $('sharedCalContainer');
     if (sharedContainer) {
-      if (hoSoNguoiDung.role === 'admin') {
-        sharedContainer.style.display = 'none';
-      } else {
-        sharedContainer.style.display = 'block';
-        renderCalendarGrid('sharedCal', false);
-      }
+      sharedContainer.style.display = 'block';
+      renderCalendarGrid('sharedCal', false);
     }
   } else {
     // Ẩn tiêu đề Lịch cá nhân

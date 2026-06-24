@@ -367,6 +367,7 @@ var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Th�
 var dsLop = [];
 var hoSoNguoiDung = null;
 var mapGiaoVien = {};
+var danhSachAdmin = [];
 var dsBuoiHoc = [];
 var hennDem = null;
 var dsLich = [];
@@ -404,7 +405,12 @@ function kiemTraQuyenLop(classId) {
   // Tải danh sách giáo viên để ánh xạ tên
   try {
     var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin', 'assistant']);
-    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+    (rT.data || []).forEach(function(u) {
+      mapGiaoVien[u.id] = u.full_name;
+      if (u.role === 'admin') {
+        danhSachAdmin.push(u);
+      }
+    });
   } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
 
   // Lớp
@@ -466,14 +472,24 @@ function capNhatGiaoVienSchedule() {
     return;
   }
   var options = [];
+  var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
+    addedIds[cls.teacher_id] = true;
   }
   if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
     options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
+    addedIds[cls.co_teacher_id] = true;
   }
+  // Luôn cho phép chọn quản trị viên (admin)
+  danhSachAdmin.forEach(function (admin) {
+    if (!addedIds[admin.id]) {
+      options.push('<option value="' + admin.id + '">' + admin.full_name + '</option>');
+      addedIds[admin.id] = true;
+    }
+  });
   if (options.length === 0) {
-    options.push('<option value="">Không có giáo viên của lớp</option>');
+    options.push('<option value="">Không có giáo viên</option>');
   }
   $('schGiaoVien').innerHTML = options.join('');
 }
@@ -486,14 +502,24 @@ function capNhatGiaoVienSession() {
     return;
   }
   var options = [];
+  var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
+    addedIds[cls.teacher_id] = true;
   }
   if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
     options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
+    addedIds[cls.co_teacher_id] = true;
   }
+  // Luôn cho phép chọn quản trị viên (admin)
+  danhSachAdmin.forEach(function (admin) {
+    if (!addedIds[admin.id]) {
+      options.push('<option value="' + admin.id + '">' + admin.full_name + '</option>');
+      addedIds[admin.id] = true;
+    }
+  });
   if (options.length === 0) {
-    options.push('<option value="">Không có giáo viên của lớp</option>');
+    options.push('<option value="">Không có giáo viên</option>');
   }
   $('ssGiaoVien').innerHTML = options.join('');
 }
@@ -884,14 +910,24 @@ function capNhatGiaoVienEditSchedule() {
     return;
   }
   var options = [];
+  var addedIds = {};
   if (cls.teacher_id && mapGiaoVien[cls.teacher_id]) {
     options.push('<option value="' + cls.teacher_id + '">' + mapGiaoVien[cls.teacher_id] + '</option>');
+    addedIds[cls.teacher_id] = true;
   }
   if (cls.co_teacher_id && mapGiaoVien[cls.co_teacher_id]) {
     options.push('<option value="' + cls.co_teacher_id + '">' + mapGiaoVien[cls.co_teacher_id] + '</option>');
+    addedIds[cls.co_teacher_id] = true;
   }
+  // Luôn cho phép chọn quản trị viên (admin)
+  danhSachAdmin.forEach(function (admin) {
+    if (!addedIds[admin.id]) {
+      options.push('<option value="' + admin.id + '">' + admin.full_name + '</option>');
+      addedIds[admin.id] = true;
+    }
+  });
   if (options.length === 0) {
-    options.push('<option value="">Không có giáo viên của lớp</option>');
+    options.push('<option value="">Không có giáo viên</option>');
   }
   $('editSchGiaoVien').innerHTML = options.join('');
 }
