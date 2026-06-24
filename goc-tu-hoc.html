@@ -78,6 +78,45 @@
 .hist-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: .9rem; }
 .hist-item .hi-tree { font-size: 1.3rem; }
 .hist-item .hi-when { margin-left: auto; color: var(--ink-3); font-size: .8rem; }
+
+/* ===== Chuyển chế độ Vườn cây / Study with me ===== */
+.mode-switch { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.mode-switch button { flex: 0 0 auto; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-family: inherit; cursor: pointer; font-size: .9rem; display: inline-flex; align-items: center; gap: 6px; transition: .15s; }
+.mode-switch button.on { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--shadow); }
+
+/* ===== Cảnh Study with me ===== */
+.swm-wrap { position: relative; border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; border: 1px solid var(--line); border-bottom: none; box-shadow: var(--shadow); background: #b07f55; }
+.swm-scene { display: block; width: 100%; height: auto; }
+.swm-now { position: absolute; left: 14px; bottom: 12px; background: rgba(0,0,0,.45); color: #fff; font-size: .78rem; padding: 4px 12px; border-radius: 999px; backdrop-filter: blur(4px); }
+.swm-audio { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 var(--r-lg) var(--r-lg); margin-bottom: 12px; }
+.swm-snd { border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 7px 12px; font-weight: 600; font-family: inherit; cursor: pointer; font-size: .85rem; transition: .15s; }
+.swm-snd.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.swm-vol { display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: .85rem; color: var(--ink-2); }
+.swm-vol input { width: 110px; accent-color: var(--accent); }
+
+/* Animation cảnh */
+.swm-cloud1 { transform-box: fill-box; animation: swmCloud 48s linear infinite; }
+.swm-cloud2 { transform-box: fill-box; animation: swmCloud 68s linear infinite; animation-delay: -22s; }
+@keyframes swmCloud { from { transform: translateX(-70px); } to { transform: translateX(250px); } }
+.swm-girl { transform-box: fill-box; transform-origin: 50% 100%; animation: swmBreathe 4.6s ease-in-out infinite; }
+@keyframes swmBreathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+.swm-hand { transform-box: fill-box; transform-origin: center; animation: swmWrite 1.5s ease-in-out infinite; }
+@keyframes swmWrite { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-2px,1px); } 50% { transform: translate(1px,-1px); } 75% { transform: translate(2px,1px); } }
+.swm-eye { transform-box: fill-box; transform-origin: center; animation: swmBlink 5.5s infinite; }
+@keyframes swmBlink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.15); } }
+.swm-steam path { animation: swmSteam 3.4s ease-in-out infinite; }
+.swm-steam path:nth-child(2) { animation-delay: 1.3s; }
+@keyframes swmSteam { 0% { opacity: 0; transform: translateY(4px); } 45% { opacity: .65; } 100% { opacity: 0; transform: translateY(-10px); } }
+.swm-tail { transform-box: fill-box; transform-origin: 0% 100%; animation: swmTail 3.2s ease-in-out infinite; }
+@keyframes swmTail { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
+.swm-vinyl { transform-box: fill-box; transform-origin: center; animation: swmSpin 3.6s linear infinite; }
+@keyframes swmSpin { to { transform: rotate(360deg); } }
+.swm-glow { animation: swmGlow 6s ease-in-out infinite; }
+@keyframes swmGlow { 0%,100% { opacity: .5; } 50% { opacity: .82; } }
+.swm-rain { display: none; }
+.swm-rain.on { display: block; }
+.swm-rain line { transform-box: fill-box; animation: swmRain .8s linear infinite; }
+@keyframes swmRain { from { transform: translateY(-6px); opacity: 0; } 30% { opacity: .7; } to { transform: translateY(20px); opacity: 0; } }
 </style>
 </head>
 <body>
@@ -99,6 +138,11 @@
     <p>Mỗi phiên học là một mầm cây. Học càng đều, vườn của em càng xanh tốt — và điểm tự học càng cao!</p>
   </div>
 
+  <div class="mode-switch">
+    <button id="chipVuon" class="on" onclick="datCheDo('garden')">🌳 Vườn cây</button>
+    <button id="chipStudy" onclick="datCheDo('study')">☕ Study with me</button>
+  </div>
+
   <div id="vmStudyInline" style="display:none; margin-bottom:18px"></div>
 
   <div class="garden">
@@ -107,6 +151,115 @@
     <div class="cloud c2">🌥️</div>
     <div class="plant-stage" id="plantHost"></div>
     <div class="demo-caption" id="demoCaption"></div>
+  </div>
+
+  <div id="studyScene" style="display:none">
+    <div class="swm-wrap">
+      <svg class="swm-scene" viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="swmSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aed6ff"/><stop offset="1" stop-color="#ffe6c2"/></linearGradient>
+          <linearGradient id="swmWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#caa078"/><stop offset="1" stop-color="#a9774e"/></linearGradient>
+          <radialGradient id="swmLampG" cx="50%" cy="18%" r="75%"><stop offset="0" stop-color="#ffd98a" stop-opacity=".85"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+          <clipPath id="winClip"><rect x="36" y="42" width="224" height="150" rx="4"/></clipPath>
+        </defs>
+
+        <rect width="480" height="300" fill="url(#swmWall)"/>
+
+        <!-- Cửa sổ -->
+        <rect x="28" y="34" width="240" height="166" rx="8" fill="#7a5536"/>
+        <g clip-path="url(#winClip)">
+          <rect x="36" y="42" width="224" height="150" fill="url(#swmSky)"/>
+          <circle cx="222" cy="74" r="16" fill="#ffe39a"/>
+          <g fill="#d7b083" opacity=".9">
+            <rect x="40" y="120" width="26" height="76"/><rect x="70" y="100" width="22" height="96"/><rect x="96" y="136" width="20" height="60"/>
+            <rect x="120" y="108" width="26" height="88"/><rect x="150" y="128" width="22" height="68"/><rect x="176" y="96" width="24" height="100"/>
+            <rect x="206" y="124" width="22" height="72"/><rect x="232" y="112" width="26" height="84"/>
+          </g>
+          <g class="swm-cloud1" fill="#fff" opacity=".9"><ellipse cx="60" cy="70" rx="20" ry="9"/><ellipse cx="76" cy="64" rx="14" ry="8"/></g>
+          <g class="swm-cloud2" fill="#fff" opacity=".6"><ellipse cx="120" cy="100" rx="16" ry="7"/><ellipse cx="132" cy="95" rx="11" ry="6"/></g>
+          <g class="swm-rain" stroke="#cfe6ff" stroke-width="1.4" stroke-linecap="round" opacity=".75">
+            <line x1="60" y1="46" x2="56" y2="58"/><line x1="84" y1="52" x2="80" y2="64" style="animation-delay:.2s"/>
+            <line x1="108" y1="46" x2="104" y2="58" style="animation-delay:.45s"/><line x1="132" y1="54" x2="128" y2="66" style="animation-delay:.15s"/>
+            <line x1="156" y1="46" x2="152" y2="58" style="animation-delay:.6s"/><line x1="180" y1="52" x2="176" y2="64" style="animation-delay:.3s"/>
+            <line x1="204" y1="46" x2="200" y2="58" style="animation-delay:.5s"/><line x1="228" y1="54" x2="224" y2="66" style="animation-delay:.1s"/>
+            <line x1="72" y1="120" x2="68" y2="132" style="animation-delay:.35s"/><line x1="120" y1="124" x2="116" y2="136" style="animation-delay:.55s"/>
+            <line x1="168" y1="120" x2="164" y2="132" style="animation-delay:.25s"/><line x1="216" y1="124" x2="212" y2="136" style="animation-delay:.65s"/>
+          </g>
+        </g>
+        <rect x="145" y="42" width="6" height="150" fill="#7a5536"/><rect x="36" y="113" width="224" height="6" fill="#7a5536"/>
+
+        <!-- Bệ cửa + mèo + cây -->
+        <rect x="22" y="196" width="252" height="13" rx="3" fill="#8a6240"/>
+        <g transform="translate(58,170)">
+          <ellipse cx="20" cy="26" rx="27" ry="13" fill="#e08a4a"/>
+          <circle cx="-3" cy="15" r="9.5" fill="#e08a4a"/>
+          <path d="M-9 7 L-7 -3 L-1 6 Z" fill="#e08a4a"/><path d="M2 6 L7 -3 L9 7 Z" fill="#e08a4a"/>
+          <circle cx="-7" cy="14" r="1.4" fill="#3a2a22"/>
+          <path class="swm-tail" d="M46 26 q19 1 13 -18" stroke="#e08a4a" stroke-width="7" fill="none" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(240,164)">
+          <rect x="-13" y="24" width="26" height="20" rx="3" fill="#c1654b"/>
+          <path d="M0 24 C-15 7 -17 -6 -9 -15" stroke="#4e9a3a" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M0 24 C13 9 17 -2 11 -13" stroke="#4e9a3a" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M0 24 L0 -3" stroke="#4e9a3a" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </g>
+
+        <!-- Mặt bàn -->
+        <rect x="0" y="246" width="480" height="54" fill="#6e4a2c"/>
+        <rect x="0" y="246" width="480" height="8" fill="#855c38"/>
+        <ellipse class="swm-glow" cx="118" cy="250" rx="130" ry="64" fill="url(#swmLampG)"/>
+
+        <!-- Đèn bàn -->
+        <path d="M42 246 L42 150 L72 120" stroke="#3a2a1c" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M60 110 a20 13 0 0 1 32 16 Z" fill="#c9a24a"/>
+        <rect x="30" y="244" width="26" height="6" rx="2" fill="#3a2a1c"/>
+
+        <!-- Sách + ly cà phê + đĩa than -->
+        <g transform="translate(300,212)"><rect y="22" width="62" height="11" rx="2" fill="#c75d5d"/><rect y="11" x="5" width="54" height="11" rx="2" fill="#5d8fc7"/><rect y="0" x="2" width="58" height="11" rx="2" fill="#6bbf76"/></g>
+        <g transform="translate(250,224)">
+          <rect x="0" y="0" width="22" height="20" rx="4" fill="#efe7da"/>
+          <path d="M22 4 q9 0 9 8 q0 8 -9 8" stroke="#efe7da" stroke-width="3" fill="none"/>
+          <g class="swm-steam" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round">
+            <path d="M7 -3 q-4 -8 0 -16"/><path d="M15 -3 q4 -8 0 -16"/>
+          </g>
+        </g>
+        <g transform="translate(424,236)"><circle class="swm-vinyl" cx="0" cy="0" r="16" fill="#23211f"/><circle cx="0" cy="0" r="9" fill="none" stroke="#3c3a37" stroke-width="1"/><circle cx="0" cy="0" r="5" fill="#e0608f"/><circle cx="0" cy="0" r="1.6" fill="#23211f"/></g>
+
+        <!-- Cô gái -->
+        <g class="swm-girl" transform="translate(298,118)">
+          <path d="M-32 128 C-32 72 72 72 72 128 Z" fill="#2f6f63"/>
+          <path d="M-8 70 q28 18 52 4 l-2 14 q-26 12 -52 -2 Z" fill="#e8765a"/>
+          <rect x="8" y="56" width="20" height="20" fill="#f0c9a8"/>
+          <g class="swm-head">
+            <path d="M42 18 C8 12 -2 46 8 62 C14 76 38 78 48 68 C42 54 46 34 42 18 Z" fill="#f3cda9"/>
+            <path d="M42 14 C6 6 -6 44 8 64 C2 40 16 22 42 22 Z" fill="#5a3a26"/>
+            <circle cx="54" cy="15" r="13" fill="#5a3a26"/>
+            <path d="M42 16 C60 12 62 30 50 42 L42 24 Z" fill="#5a3a26"/>
+            <path class="swm-eye" d="M14 50 q5 -4 10 0" stroke="#3a2a22" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M9 60 q4 2 7 0" stroke="#c98b6a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <circle cx="16" cy="44" r="2.4" fill="#f7b3a0" opacity=".7"/>
+            <path d="M18 16 a30 30 0 0 1 44 28" stroke="#dcd5ca" stroke-width="6" fill="none"/>
+            <circle cx="60" cy="46" r="11" fill="#cf5b5b"/><circle cx="60" cy="46" r="6" fill="#9c9488"/>
+          </g>
+          <g class="swm-arm">
+            <path d="M30 98 C52 104 66 118 60 132 L40 134 C36 120 24 112 16 106 Z" fill="#2f6f63"/>
+            <circle class="swm-hand" cx="60" cy="132" r="7" fill="#f0c9a8"/>
+          </g>
+        </g>
+        <g transform="translate(326,250) rotate(-6)"><rect width="74" height="34" rx="3" fill="#fbf6ea"/><line x1="8" y1="10" x2="58" y2="10" stroke="#d8c9b2" stroke-width="1.4"/><line x1="8" y1="18" x2="58" y2="18" stroke="#d8c9b2" stroke-width="1.4"/><line x1="8" y1="26" x2="44" y2="26" stroke="#d8c9b2" stroke-width="1.4"/></g>
+      </svg>
+      <div class="swm-now">♪ <b id="swmTrack">Yên tĩnh — bật âm thanh bên dưới nhé</b></div>
+    </div>
+
+    <div class="swm-audio">
+      <button class="swm-snd" data-k="lofi" onclick="toggleSound('lofi',this)">🎵 Lofi</button>
+      <button class="swm-snd" data-k="rain" onclick="toggleSound('rain',this)">🌧️ Mưa</button>
+      <button class="swm-snd" data-k="fire" onclick="toggleSound('fire',this)">🔥 Lửa</button>
+      <button class="swm-snd" data-k="wind" onclick="toggleSound('wind',this)">🌬️ Gió</button>
+      <button class="swm-snd" data-k="stream" onclick="toggleSound('stream',this)">🏞️ Suối</button>
+      <button class="swm-snd" data-k="cafe" onclick="toggleSound('cafe',this)">☕ Quán cà phê</button>
+      <label class="swm-vol">🔊 <input type="range" min="0" max="1" step="0.05" value="0.6" oninput="datAmLuong(this.value)"></label>
+    </div>
   </div>
 
   <div class="active-banner" id="bangDangHoc"></div>
@@ -168,6 +321,7 @@ var meId = null, meRole = null;
   meRole = hoSo.role;
   buildHero();
   chayDemoVuon();
+  try { datCheDo(localStorage.getItem('vm_swm_mode') || 'garden'); } catch (e) {}
   if (meRole === 'admin') veXemTruocCay();
   capNhatBanner();
   await taiDuLieu();
@@ -223,6 +377,85 @@ function capNhatBanner() {
 
 // Khi một phiên kết thúc -> tải lại số liệu + vườn cây
 window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiDuLieu(); });
+
+/* ================= STUDY WITH ME: chuyển chế độ + âm thanh ================= */
+function datCheDo(mode) {
+  var g = document.querySelector('.garden');
+  var s = document.getElementById('studyScene');
+  var bG = document.getElementById('chipVuon');
+  var bS = document.getElementById('chipStudy');
+  if (mode === 'study') {
+    if (g) g.style.display = 'none';
+    if (s) s.style.display = 'block';
+    if (bS) bS.classList.add('on'); if (bG) bG.classList.remove('on');
+  } else {
+    mode = 'garden';
+    if (g) g.style.display = '';
+    if (s) s.style.display = 'none';
+    if (bG) bG.classList.add('on'); if (bS) bS.classList.remove('on');
+  }
+  try { localStorage.setItem('vm_swm_mode', mode); } catch (e) {}
+}
+
+// ---- Âm thanh tạo bằng Web Audio (không file, không bản quyền) ----
+var AC = null, master = null, amThanh = {};
+function ensureAudio() {
+  if (AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  master = AC.createGain();
+  var v = parseFloat(localStorage.getItem('vm_swm_vol') || '0.6');
+  master.gain.value = isNaN(v) ? 0.6 : v;
+  master.connect(AC.destination);
+}
+function bufNoise(sec) { var n = AC.sampleRate * (sec || 2), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0); for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; }
+function bufBrown(sec) { var n = AC.sampleRate * (sec || 2), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0), last = 0; for (var i = 0; i < n; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } return b; }
+function batTieng(kind) {
+  var src = AC.createBufferSource(); src.loop = true;
+  var f = AC.createBiquadFilter(); var g = AC.createGain(); var extra = null;
+  if (kind === 'rain') { src.buffer = bufNoise(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 0.5; g.gain.value = 0.5; }
+  else if (kind === 'fire') { src.buffer = bufBrown(); f.type = 'lowpass'; f.frequency.value = 700; g.gain.value = 0.75; }
+  else if (kind === 'wind') { src.buffer = bufBrown(); f.type = 'lowpass'; f.frequency.value = 520; g.gain.value = 0.6; extra = AC.createOscillator(); var lg = AC.createGain(); extra.frequency.value = 0.09; lg.gain.value = 320; extra.connect(lg); lg.connect(f.frequency); extra.start(); }
+  else if (kind === 'stream') { src.buffer = bufNoise(); f.type = 'highpass'; f.frequency.value = 900; g.gain.value = 0.4; }
+  else if (kind === 'cafe') { src.buffer = bufBrown(); f.type = 'bandpass'; f.frequency.value = 500; f.Q.value = 0.7; g.gain.value = 0.6; }
+  src.connect(f); f.connect(g); g.connect(master); src.start();
+  return { stop: function () { try { src.stop(); } catch (e) {} try { if (extra) extra.stop(); } catch (e) {} try { g.disconnect(); } catch (e) {} } };
+}
+function batLofi() {
+  var out = AC.createGain(); out.gain.value = 0; out.connect(master);
+  var lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.connect(out);
+  out.gain.linearRampToValueAtTime(0.5, AC.currentTime + 1.4);
+  var crk = AC.createBufferSource(); crk.buffer = bufNoise(); crk.loop = true;
+  var cf = AC.createBiquadFilter(); cf.type = 'highpass'; cf.frequency.value = 4200; var cg = AC.createGain(); cg.gain.value = 0.014;
+  crk.connect(cf); cf.connect(cg); cg.connect(out); crk.start();
+  var chords = [[220, 277.18, 329.63], [196, 246.94, 293.66], [174.61, 220, 261.63], [164.81, 207.65, 246.94]];
+  var idx = 0;
+  function buoc() {
+    var ch = chords[idx % chords.length]; idx++;
+    ch.forEach(function (fr) {
+      var o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = fr;
+      var og = AC.createGain(); og.gain.value = 0; o.connect(og); og.connect(lp);
+      var t = AC.currentTime; og.gain.linearRampToValueAtTime(0.11, t + 0.4); og.gain.linearRampToValueAtTime(0, t + 2.4);
+      o.start(t); o.stop(t + 2.6);
+    });
+  }
+  buoc(); var timer = setInterval(buoc, 2400);
+  return { stop: function () { clearInterval(timer); try { crk.stop(); } catch (e) {} try { out.gain.linearRampToValueAtTime(0, AC.currentTime + 0.3); } catch (e) {} setTimeout(function () { try { out.disconnect(); } catch (e) {} }, 500); } };
+}
+function toggleSound(kind, btn) {
+  ensureAudio();
+  if (AC.state === 'suspended') AC.resume();
+  if (amThanh[kind]) { amThanh[kind].stop(); delete amThanh[kind]; if (btn) btn.classList.remove('on'); }
+  else { amThanh[kind] = (kind === 'lofi') ? batLofi() : batTieng(kind); if (btn) btn.classList.add('on'); }
+  if (kind === 'rain') { var rg = document.querySelector('.swm-rain'); if (rg) rg.classList.toggle('on', !!amThanh['rain']); }
+  capNhatNowPlaying();
+}
+function datAmLuong(v) { ensureAudio(); master.gain.value = parseFloat(v); try { localStorage.setItem('vm_swm_vol', v); } catch (e) {} }
+function capNhatNowPlaying() {
+  var nhan = { lofi: 'Lofi', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
+  var ds = Object.keys(amThanh).map(function (k) { return nhan[k]; });
+  var el = document.getElementById('swmTrack');
+  if (el) el.textContent = ds.length ? ('Đang phát: ' + ds.join(' + ')) : 'Yên tĩnh — bật âm thanh bên dưới nhé';
+}
 
 /* ================= CÂY SVG LỚN DẦN LIỀN MẠCH =================
    Cùng MỘT cây phát triển: hạt -> nảy mầm -> cây con (trên mô đất)
