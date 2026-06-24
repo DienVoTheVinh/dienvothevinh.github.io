@@ -826,18 +826,45 @@ function batLofi() {
   buoc(); var timer = setInterval(buoc, 2400);
   return { stop: function () { clearInterval(timer); try { crk.stop(); } catch (e) {} try { out.gain.linearRampToValueAtTime(0, AC.currentTime + 0.3); } catch (e) {} setTimeout(function () { try { out.disconnect(); } catch (e) {} }, 500); } };
 }
+// Âm thanh thiên nhiên = bản thu THẬT, phát luồng qua CDN jsDelivr (nguồn mở Moodist, CC0/miễn phí)
+var SND_BASE = 'https://cdn.jsdelivr.net/gh/remvze/moodist@main/public/sounds/';
+var SND_URL = {
+  rain: 'rain/light-rain.mp3',
+  fire: 'nature/campfire.mp3',
+  wind: 'nature/wind.mp3',
+  stream: 'nature/river.mp3',
+  cafe: 'places/cafe.mp3'
+};
+var audioEls = {};
+var amLuong = (function () { var v = parseFloat(localStorage.getItem('vm_swm_vol') || '0.6'); return isNaN(v) ? 0.6 : v; })();
 function toggleSound(kind, btn) {
-  ensureAudio();
-  if (AC.state === 'suspended') AC.resume();
-  if (amThanh[kind]) { amThanh[kind].stop(); delete amThanh[kind]; if (btn) btn.classList.remove('on'); }
-  else { amThanh[kind] = (kind === 'lofi') ? batLofi() : batTieng(kind); if (btn) btn.classList.add('on'); }
-  if (kind === 'rain') { var rg = document.querySelector('.swm-rain'); if (rg) rg.classList.toggle('on', !!amThanh['rain']); }
+  if (kind === 'lofi') {
+    ensureAudio(); if (AC.state === 'suspended') AC.resume();
+    if (amThanh.lofi) { amThanh.lofi.stop(); delete amThanh.lofi; if (btn) btn.classList.remove('on'); }
+    else { amThanh.lofi = batLofi(); if (btn) btn.classList.add('on'); }
+  } else {
+    if (audioEls[kind]) { try { audioEls[kind].pause(); } catch (e) {} audioEls[kind] = null; if (btn) btn.classList.remove('on'); }
+    else {
+      var a = new Audio(SND_BASE + SND_URL[kind]); a.loop = true; a.volume = amLuong;
+      if (btn) { btn.classList.add('on'); btn.dataset.loading = '1'; }
+      a.addEventListener('canplay', function () { if (btn) delete btn.dataset.loading; });
+      a.play().catch(function () {});
+      audioEls[kind] = a;
+    }
+  }
   capNhatNowPlaying();
 }
-function datAmLuong(v) { ensureAudio(); master.gain.value = parseFloat(v); try { localStorage.setItem('vm_swm_vol', v); } catch (e) {} }
+function datAmLuong(v) {
+  amLuong = parseFloat(v);
+  for (var k in audioEls) { if (audioEls[k]) audioEls[k].volume = amLuong; }
+  if (master) master.gain.value = amLuong;
+  try { localStorage.setItem('vm_swm_vol', v); } catch (e) {}
+}
 function capNhatNowPlaying() {
   var nhan = { lofi: 'Lofi', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
-  var ds = Object.keys(amThanh).map(function (k) { return nhan[k]; });
+  var ds = [];
+  if (amThanh.lofi) ds.push(nhan.lofi);
+  for (var k in audioEls) { if (audioEls[k]) ds.push(nhan[k]); }
   var el = document.getElementById('swmTrack');
   if (el) el.textContent = ds.length ? ('Đang phát: ' + ds.join(' + ')) : 'Yên tĩnh — bật âm thanh bên dưới nhé';
 }
