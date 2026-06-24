@@ -1331,7 +1331,7 @@ async function veLichDayStaff() {
   var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
   var displaySchedules = tatCaSchedules;
   
-  if (isStaff) {
+  if (isStaff && hoSoNguoiDung.role !== 'admin') {
     displaySchedules = tatCaSchedules.filter(function (s) {
       if (!s.classes) return false;
       return s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
@@ -1711,7 +1711,7 @@ function gcalEventsForDay(dt, filterPersonal) {
     if (!match || !s.start_time || !s.end_time) return;
     
     // Lọc lịch cá nhân cho giáo viên/trợ giảng
-    if (isStaff && filterPersonal) {
+    if (isStaff && filterPersonal && hoSoNguoiDung.role !== 'admin') {
       if (!s.classes) return;
       var isTeacher = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
       if (!isTeacher) return;
@@ -1760,7 +1760,7 @@ function gcalEventsForDay(dt, filterPersonal) {
     if (gcalKey(od) !== key) return;
     
     // Lọc kỳ thi cá nhân cho giáo viên/trợ giảng
-    if (isStaff && filterPersonal) {
+    if (isStaff && filterPersonal && hoSoNguoiDung.role !== 'admin') {
       var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
       if (!cls) return;
       var isTeacher = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
@@ -1925,11 +1925,15 @@ function veLichTuan() {
     // Vẽ lịch cá nhân (chỉ hiển thị các lớp được phân công hoặc hợp tác)
     renderCalendarGrid('weekCal', true);
     
-    // Vẽ lịch chung (hiển thị tất cả)
+    // Vẽ lịch chung — ẩn với admin vì "Lịch cá nhân" đã hiển thị toàn bộ
     var sharedContainer = $('sharedCalContainer');
     if (sharedContainer) {
-      sharedContainer.style.display = 'block';
-      renderCalendarGrid('sharedCal', false);
+      if (hoSoNguoiDung.role === 'admin') {
+        sharedContainer.style.display = 'none';
+      } else {
+        sharedContainer.style.display = 'block';
+        renderCalendarGrid('sharedCal', false);
+      }
     }
   } else {
     // Ẩn tiêu đề Lịch cá nhân
