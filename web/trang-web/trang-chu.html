@@ -1262,9 +1262,8 @@ async function taiSchedulesVaExamsStudent() {
     classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
   }
   
-  // 1. Tải lịch học lớp học sinh tham gia
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, recurrence, date, classes(name, mode, grade, is_specialized)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -1924,7 +1923,7 @@ function khoiDongCountdown() {
   }
   
   $('khungCountdown').style.display = 'block';
-  $('lblCountdownEvent').textContent = closestEventTitle;
+  $('lblCountdownEvent').innerHTML = closestEventTitle;
   
   capNhatGiaoDienCountdown();
   countdownInterval = setInterval(function() {
@@ -1966,8 +1965,29 @@ function timSuKienGanNhat() {
       if (diff > 0 && diff < minDiff) {
         minDiff = diff;
         closestEventTime = eventDate;
-        var onceLabel = s.recurrence === 'once' ? ' (1 lần)' : '';
-        closestEventTitle = '📚 Buổi học: ' + (s.classes ? s.classes.name : 'Toán học') + onceLabel + ' (' + s.start_time.slice(0,5) + ')';
+        
+        var className = s.classes ? s.classes.name : 'Toán học';
+        var grade = s.classes && s.classes.grade ? 'Khối ' + s.classes.grade : '—';
+        var spec = s.classes && s.classes.is_specialized ? 'Chuyên' : 'Không chuyên';
+        
+        var teacherName = 'Chưa phân công';
+        if (s.teacher_id && mapGiaoVien[s.teacher_id]) {
+          teacherName = mapGiaoVien[s.teacher_id];
+        } else if (s.classes && s.classes.teacher_id && mapGiaoVien[s.classes.teacher_id]) {
+          teacherName = mapGiaoVien[s.classes.teacher_id];
+        } else if (s.classes && s.classes.co_teacher_id && mapGiaoVien[s.classes.co_teacher_id]) {
+          teacherName = mapGiaoVien[s.classes.co_teacher_id];
+        }
+        
+        var onceLabel = s.recurrence === 'once' ? ' <span style="font-size:0.75rem; background:var(--warn-soft); color:var(--warn); padding:2px 6px; border-radius:4px; font-weight:600">1 lần</span>' : '';
+        
+        closestEventTitle = 
+          '<div style="font-weight:700; font-size:1.05rem; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px">📚 ' + vclEsc(className) + onceLabel + '</div>' +
+          '<div style="font-size:0.85rem; color:var(--ink-2); display:flex; flex-direction:column; gap:6px; font-weight:500">' +
+          '  <div style="display:flex; align-items:center; gap:6px">🏫 <b>Khối lớp:</b> ' + vclEsc(grade) + ' (' + vclEsc(spec) + ')</div>' +
+          '  <div style="display:flex; align-items:center; gap:6px">👤 <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
+          '  <div style="display:flex; align-items:center; gap:6px">⏰ <b>Giờ học:</b> ' + s.start_time.slice(0,5) + ' - ' + s.end_time.slice(0,5) + '</div>' +
+          '</div>';
       }
     });
   }
@@ -1988,7 +2008,25 @@ function timSuKienGanNhat() {
     if (diff > 0 && diff < minDiff) {
       minDiff = diff;
       closestEventTime = eventDate;
-      closestEventTitle = '📝 Kỳ thi: ' + e.title + ' (' + eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ngày ' + eventDate.getDate() + '/' + (eventDate.getMonth() + 1) + ')';
+      
+      var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
+      var clsName = cls ? cls.name : 'Tất cả các lớp';
+      var grade = cls && cls.grade ? 'Khối ' + cls.grade : '—';
+      var spec = cls && cls.is_specialized ? 'Chuyên' : 'Không chuyên';
+      var teacherName = 'Thầy Vinh';
+      if (cls) {
+        teacherName = mapGiaoVien[cls.teacher_id] || 'Thầy Vinh';
+      }
+      
+      var timeStr = eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ngày ' + eventDate.getDate() + '/' + (eventDate.getMonth() + 1);
+      
+      closestEventTitle = 
+        '<div style="font-weight:700; font-size:1.05rem; color:var(--err); margin-bottom:10px; display:flex; align-items:center; gap:6px">📝 Kỳ thi: ' + vclEsc(e.title) + '</div>' +
+        '<div style="font-size:0.85rem; color:var(--ink-2); display:flex; flex-direction:column; gap:6px; font-weight:500">' +
+        '  <div style="display:flex; align-items:center; gap:6px">🏫 <b>Lớp:</b> ' + vclEsc(clsName) + ' (' + vclEsc(grade) + ' - ' + vclEsc(spec) + ')</div>' +
+        '  <div style="display:flex; align-items:center; gap:6px">👤 <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
+        '  <div style="display:flex; align-items:center; gap:6px">⏰ <b>Bắt đầu lúc:</b> ' + timeStr + '</div>' +
+        '</div>';
     }
   });
 }
@@ -2006,7 +2044,7 @@ function capNhatGiaoDienCountdown() {
       if (countdownInterval) clearInterval(countdownInterval);
       return;
     }
-    $('lblCountdownEvent').textContent = closestEventTitle;
+    $('lblCountdownEvent').innerHTML = closestEventTitle;
     diff = closestEventTime.getTime() - bayGio;
   }
   
