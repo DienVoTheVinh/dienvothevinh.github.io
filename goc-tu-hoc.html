@@ -533,6 +533,14 @@ window.addEventListener('vmstudy-finalized', function () { capNhatBanner(); taiD
 /* ================= TAB LỚN + 4 TIỆN ÍCH ================= */
 var THU = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 var MAU_KIND = { truong: '#5b8def', hocthem: '#e0883a', khac: '#7e8a99' };
+// Màu theo TÊN MÔN: cùng tên -> cùng màu, khác tên -> khác màu
+var PALETTE_MON = ['#5b8def', '#e0883a', '#3fa796', '#9b59b6', '#e25c7a', '#27ae60', '#d4a017', '#5d6d9a', '#c0563f', '#16a3a3', '#7e57c2', '#0e8a6e', '#b5651d', '#cc4b8e'];
+function mauTheoMon(subject) {
+  var s = (subject || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (!s) return '#7e8a99';
+  var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000000;
+  return PALETTE_MON[h % PALETTE_MON.length];
+}
 var daNap = {};
 function moTab(sec, btn) {
   ['secHoc', 'secTKB', 'secTodo', 'secDiary', 'secTinNhan'].forEach(function (id) {
@@ -563,7 +571,7 @@ async function napTKB() {
   grid.innerHTML = THU.map(function (t, i) {
     var items = ds.filter(function (x) { return x.weekday === i; });
     var inner = items.length ? items.map(function (x) {
-      return '<div class="tkb-item" style="background:' + (x.color || MAU_KIND[x.kind] || '#7e8a99') + '">' +
+      return '<div class="tkb-item" style="background:' + mauTheoMon(x.subject) + '">' +
         '<span class="tkb-del" onclick="xoaTKB(\'' + x.id + '\')">×</span>' +
         '<b>' + (x.start_time ? x.start_time.slice(0, 5) : '') + (x.end_time ? '–' + x.end_time.slice(0, 5) : '') + '</b>' +
         escapeHtml(x.subject) + (x.location ? '<br><span style="opacity:.85">📍' + escapeHtml(x.location) + '</span>' : '') + '</div>';
