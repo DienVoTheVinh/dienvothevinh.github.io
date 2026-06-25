@@ -533,14 +533,18 @@ async function taiDanhSachDe(classIds) {
     .eq('student_id', studentInfo.id)
     .not('exam_id', 'is', null);
   
-  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat }
+  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat (= điểm lượt nộp đầu tiên) }
   (rAttempts.data || []).forEach(function (att) {
     var th = attemptsMap[att.exam_id];
-    if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null };
+    if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null, firstSub: null };
     if (!th.latest || new Date(att.started_at) > new Date(th.latest.started_at)) th.latest = att;
     if (att.submitted_at) {
       th.soLuotNop++;
-      if (th.diemCaoNhat === null || att.score > th.diemCaoNhat) th.diemCaoNhat = att.score;
+      // Lần nộp ĐẦU TIÊN (sớm nhất) là lần được tính điểm
+      if (!th.firstSub || new Date(att.started_at) < new Date(th.firstSub.started_at)) {
+        th.firstSub = att;
+        th.diemCaoNhat = att.score;
+      }
     }
   });
 
@@ -566,23 +570,24 @@ async function taiDanhSachDe(classIds) {
     } else if (tg.status === 'closed') {
       var timeStr = dinhDangThoiGian(tg.time);
       if (tk && tk.soLuotNop > 0) {
-        badgeHTML = '<span class="badge badge-ok">Hết giờ · Điểm: ' + tk.diemCaoNhat.toFixed(1) + 'đ</span>';
-        actionBtnText = 'Xem kết quả'; // cho phép xem lại bài đã làm
+        var diemTxt = (tk.diemCaoNhat != null) ? (' · Điểm: ' + tk.diemCaoNhat.toFixed(1) + 'đ') : '';
+        badgeHTML = '<span class="badge badge-ok">Đã làm' + diemTxt + '</span>';
+        actionBtnText = 'Xem lại / Luyện tập'; // xem lại bài + luyện tập thêm
       } else {
-        badgeHTML = '<span class="badge badge-err">🚫 Đã đóng lúc: ' + timeStr + '</span>';
-        actionBtnText = 'Đã kết thúc';
-        disabledAttr = 'disabled style="opacity:0.5;cursor:not-allowed"';
+        // Đề đã đóng nhưng em chưa làm -> vẫn cho làm (lần làm này được lưu là lần đầu)
+        badgeHTML = '<span class="badge badge-err">🚫 Đã quá hạn (đóng: ' + timeStr + ')</span>';
+        actionBtnText = 'Vào làm';
       }
     } else {
       // Đang mở (open)
       if (tk) {
         if (tk.latest && !tk.latest.submitted_at) {
-          badgeHTML = '<span class="badge badge-warn">Đang làm dở (lượt ' + (tk.soLuotNop + 1) + ')</span>';
+          badgeHTML = '<span class="badge badge-warn">Đang làm dở</span>';
           actionBtnText = 'Làm tiếp';
         } else if (tk.soLuotNop > 0) {
-          badgeHTML = '<span class="badge badge-ok">Cao nhất · ' + tk.diemCaoNhat.toFixed(1) + 'đ' +
-            (tk.soLuotNop > 1 ? ' (' + tk.soLuotNop + ' lượt)' : '') + '</span>';
-          actionBtnText = 'Xem / Làm lại';
+          var diemTxt2 = (tk.diemCaoNhat != null) ? (' · ' + tk.diemCaoNhat.toFixed(1) + 'đ') : '';
+          badgeHTML = '<span class="badge badge-ok">Đã làm' + diemTxt2 + '</span>';
+          actionBtnText = 'Xem lại / Luyện tập';
         }
       }
     }
@@ -1248,7 +1253,18 @@ async function nopBaiExam(isAuto) {
   if (sumMax > 0) {
     score = (sumEarned / sumMax) * 10;
   }
-  
+
+  // Lượt LUYỆN TẬP: tính & hiển thị tại chỗ, KHÔNG lưu vào hệ thống, không tính điểm.
+  if (currentAttempt.is_practice || !currentAttempt.id) {
+    currentAttempt.score = parseFloat(score.toFixed(2));
+    currentAttempt.correct_n = correctCount;
+    currentAttempt.total_n = totalCount;
+    currentAttempt.submitted_at = new Date().toISOString();
+    currentAttempt.is_practice = true;
+    showExamResults();
+    return;
+  }
+
   var rAtt = await sb.from('attempts').update({
     score: parseFloat(score.toFixed(2)),
     correct_n: correctCount,
@@ -1279,13 +1295,23 @@ function showExamResults() {
   $('wkRetryBtn').style.display = 'inline-flex';
   $('btnPdfSolution').style.display = 'inline-flex';
   
-  $('wkTimer').textContent = currentAttempt.score.toFixed(2) + 'đ';
-  
+  var diem = (currentAttempt.score != null) ? Number(currentAttempt.score).toFixed(2) : '0.00';
+  $('wkTimer').textContent = diem + 'đ';
+
   $('viewMain').style.display = 'none';
   $('viewWorkspace').style.display = 'flex';
-  $('wkTitle').textContent = currentExam.title + ' (KẾT QUẢ)';
-  
+  var laLuyenTap = currentAttempt.is_practice || !currentAttempt.id;
+  $('wkTitle').textContent = currentExam.title + (laLuyenTap ? ' (LUYỆN TẬP)' : ' (KẾT QUẢ)');
+
   renderExamQuestions(true);
+  // Chèn nhãn cho lượt luyện tập (không tính điểm)
+  var qbox = $('wkQuestions');
+  if (laLuyenTap && qbox) {
+    var bn = document.createElement('div');
+    bn.style.cssText = 'margin-bottom:16px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);font-weight:700;text-align:center';
+    bn.textContent = '🔁 Lượt LUYỆN TẬP — kết quả này không được lưu và không tính điểm. Lần làm đầu tiên của em vẫn được giữ.';
+    qbox.insertBefore(bn, qbox.firstChild);
+  }
   renderExamNav(true);
 }
 
