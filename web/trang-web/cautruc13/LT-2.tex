@@ -1,0 +1,66 @@
+\def\endbox{\end{tcolorbox}}
+%%%%%%%%%%%%%%%%%%%%%%%
+%Đưa chấm ra ngoài box
+\renewcommand{\dotlinefull}[1]{
+	\renewcommand{\FalseEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+	\renewcommand{\TrueEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+	\def\True{\setcounter{numTrue}{\thedapan}\setcounter{numTrueSol}{\thedapan}}
+	\AtBeginEnvironment{#1}{
+		\renewcommand{\loigiai}[1]{
+			\endbox
+			\def\endbox{}
+			\setlength{\paroutindent}{\expandafter\parindent}
+			\setbox0=\vbox{
+				\hbox{
+					\noindent\begin{minipage}{\linewidth}%
+						\setlength{\parindent}{\paroutindent}##1\end{minipage}
+				}
+			}
+			\linepar=\ht0
+			\pgfmathparse{round((\linepar-\fboxsep)/(\lineheight))}
+			\par\noindent\textbf{\loigiaiEX}
+			\dotlineEX{\pgfmathresult}
+		}
+	}
+}
+%=========Đn lại ví dụ tách lời giải ra ngoài box
+\AtBeginEnvironment{vd}{
+	\beginboxVD
+	\renewcommand{\loigiai}[1]{
+		\renewcommand{\immini}[2]{
+			\setbox\imbox=\vbox{\hbox{##2}}
+			\widthimmini=\wd\imbox
+			\IMleftright{##1}{##2}
+		}
+		\endbox
+		%--
+		\begin{onlysolution}
+			#1
+		\end{onlysolution}
+		%--
+		\def\endbox{}
+	}
+}
+\AtEndEnvironment{vd}{\endbox}
+%-------------- Đóng khung câu bt
+\AtBeginEnvironment{bt}{
+	\beginboxBT
+	\renewcommand{\loigiai}[1]{
+		\renewcommand{\immini}[2]{
+			\setbox\imbox=\vbox{\hbox{##2}}
+			\widthimmini=\wd\imbox
+			\IMleftright{##1}{##2}}
+		\endbox
+		\begin{onlysolution}
+			#1
+		\end{onlysolution}
+		\def\endbox{}
+	}
+}
+\AtEndEnvironment{bt}{\endbox}
+%-------------- 
+\AtBeginEnvironment{ex}{\def\iconVD{}}
+\AtBeginEnvironment{vd}{\def\iconVD{\faGg}}
+%--------------
+%%%%%%%%%%%%% Sửa lỗi đn Dotlinefull
+\AtBeginEnvironment{ex}{\def\endbox{}}

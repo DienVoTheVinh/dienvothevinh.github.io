@@ -1,0 +1,125 @@
+%%%%%%%%%%%%%% Màu các môi trường câu hỏi - Xanh dương đen & Vàng
+% Load xcolor package trước khi định nghĩa màu
+\usepackage[dvipsnames,table]{xcolor}
+
+\definecolor{brandNavy}{HTML}{000000}      % Đen chính (Black)
+\definecolor{brandNavySoft}{HTML}{F1F5F9}  % Nền xám rất nhạt (Off-white/Light grey)
+\definecolor{brandBlue}{HTML}{1E293B}      % Xám đen/Đen than (Charcoal)
+\definecolor{brandGold}{HTML}{C27D00}      % Vàng hổ phách chính
+\definecolor{brandGoldSoft}{HTML}{FFFBEB}  % Nền vàng nhạt
+\definecolor{brandDark}{HTML}{000000}      % Đen chữ chính
+\definecolor{brandGray}{HTML}{555555}      % Xám ghi phụ / chú thích / lời giải
+\colorlet{warmgray}{brandGray}
+
+\def\mauVD{brandNavy}
+\def\mauEX{brandBlue}
+\def\mauBT{brandGold} 
+\def\mauLG{brandGray}                      % Lời giải màu xám ghi nhã nhặn
+\def\mauDA{\mauEX}
+\def\mauTrue{brandGold}                    % Đáp án đúng làm nổi bật bằng vàng gold
+
+%%%%%% Màu mục lục
+\def\mauPART{brandNavy}
+\def\mauCHAP{brandNavy}
+\def\mauSEC{brandBlue}
+\def\mauSUBSEC{brandGold}
+\def\mauSUBSUBSEC{brandDark}
+
+%%%%%% Màu các tiêu đề
+\def\mauphan{brandNavy}
+\def\mauchuphan{brandGold}
+\def\mauchuong{brandNavy}
+\def\maunenmucluc{white}
+\def\maumlmot{brandNavy}
+\def\maumlhai{brandBlue}
+\def\maumlba{brandGold}
+\def\maubai{brandBlue}
+\def\mausubsec{brandGold}
+\def\mausubsecphu{brandNavy}
+\def\mausubsubsec{brandDark}
+\def\maupara{brandDark}
+
+%%%%%% Footer/Header
+\def\maufoot{brandNavy}
+\def\mauchufoot{brandNavy}
+\def\maufootmot{brandNavy}
+\def\maufoothai{brandBlue}
+\def\maufootba{brandGold}
+
+%%%%%% Dạng toán
+\def\maudang{brandNavy}                    % Khung Dạng toán màu xanh dương đen
+\def\maunendang{brandGoldSoft}             % Nền Dạng toán màu vàng nhạt ấm áp
+
+%%%%%% Định nghĩa, định lý
+\def\maudl{brandDark}
+\def\nendl{brandNavySoft}                  % Nền định lý xanh dương nhạt
+\def\maudn{brandGold}                      % Định nghĩa có màu viền vàng gold
+\def\nendn{brandGoldSoft}                  % Nền định nghĩa vàng nhạt
+
+\def\maucy{brandGold}                      % Chú ý / Lưu ý màu vàng
+\def\maupt{brandNavy}                      % Phân tích màu xanh dương đen
+
+%%%%%%
+\def\mauitemCI{brandNavy}
+\def\mauitemKN{brandGold}
+\def\itemKN{\color{\mauitemKN}\faCheckSquareO}
+\def\itemCI{\color{\mauitemCI}\faCheckCircleO}
+
+% Redefine standard colors for TikZ and table compatibility with brand palette
+\colorlet{blue}{brandNavy}
+\colorlet{red}{brandGold}
+\colorlet{green}{brandBlue}
+\colorlet{teal}{brandNavy}
+
+% --- MAPPING TƯƠNG THÍCH NGƯỢC VỚI CÁC FILE CHUYÊN ĐỀ CŨ ---
+\definecolor{acadbg}{HTML}{FFFFFF}       % Nền trắng tinh cho giấy in
+\definecolor{acadfg}{HTML}{1F1D1A}       % Chữ đen Charcoal
+\definecolor{acadgray}{HTML}{64748B}     % Xám chú thích
+\definecolor{acadlightgray}{HTML}{F8FAFC}% Xám rất nhạt
+\definecolor{acadrule}{HTML}{E2E8F0}     % Đường kẻ mảnh
+\definecolor{acadnavy}{HTML}{0F2942}     % Accent Xanh dương đen chính
+\definecolor{acadnavylight}{HTML}{C27D00}% Accent Vàng đậm phụ
+
+% Mapping cho code cũ (Dracula & Minimal cũ)
+\definecolor{dracbg}{HTML}{FFFFFF}
+\definecolor{dracline}{HTML}{E2E8F0}
+\definecolor{dracfg}{HTML}{1F1D1A}
+\definecolor{draccomment}{HTML}{64748B}
+\definecolor{draccyan}{HTML}{0F2942}
+\definecolor{dracgreen}{HTML}{C27D00}
+\definecolor{dracorange}{HTML}{B5483A}
+\definecolor{dracpink}{HTML}{0F2942}
+\definecolor{dracpurple}{HTML}{0F2942}
+\definecolor{dracred}{HTML}{B5483A}
+\definecolor{dracyellow}{HTML}{C27D00}
+
+\definecolor{acateal}{HTML}{0F2942}
+\definecolor{acadarkteal}{HTML}{0F2942}
+\definecolor{acalightteal}{HTML}{EFF6FF}
+\definecolor{acalightcyan}{HTML}{FFFDF0}
+\definecolor{acagray}{HTML}{1F1D1A}
+\definecolor{acadarkgray}{HTML}{0F2942}
+\definecolor{acalightgray}{HTML}{FFFFFF}
+\definecolor{acaborderblue}{HTML}{0F2942}
+\definecolor{acadeepblue}{HTML}{0F2942}
+\definecolor{acarust}{HTML}{64748B}
+
+% Màu trang bìa (giữ tương thích và đổi sang tông VinhMath)
+\definecolor{ivory}{HTML}{FFFFFF}
+\definecolor{lapislazuli}{HTML}{0F2942}
+\definecolor{terracotta}{HTML}{C27D00}
+\definecolor{darkslate}{HTML}{1F1D1A}
+\definecolor{oldgold}{HTML}{B5483A}
+\definecolor{marblegray}{HTML}{E2E8F0}
+
+% --- MAPPING CHO CÁC TÀI LIỆU CŨ SỬ DỤNG BỘ MÀU VMACCENT/VMOK ---
+\colorlet{vmAccent}{brandNavy}
+\colorlet{vmAccentSoft}{brandNavySoft}
+\colorlet{vmOk}{brandBlue}
+\colorlet{vmOkSoft}{brandNavySoft}
+\colorlet{vmWarn}{brandGold}
+\colorlet{vmWarnSoft}{brandGoldSoft}
+\colorlet{vmInk}{brandDark}
+\colorlet{vmBg}{brandNavySoft}
+\colorlet{vmLine}{brandGray}
+

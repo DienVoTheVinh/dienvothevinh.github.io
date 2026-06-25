@@ -1,0 +1,102 @@
+\def\endbox{\end{tcolorbox}}
+%%%%%%%%%%%%%%%%%%%%%%%
+%Đưa chấm ra ngoài box
+\renewcommand{\dotlinefull}[1]{
+\renewcommand{\FalseEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+\renewcommand{\TrueEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+\def\True{\setcounter{numTrue}{\thedapan}\setcounter{numTrueSol}{\thedapan}}
+\AtBeginEnvironment{#1}{
+	\renewcommand{\loigiai}[1]{
+		\endbox
+		\def\endbox{}
+		\setlength{\paroutindent}{\expandafter\parindent}
+		\setbox0=\vbox{
+			\hbox{
+				\noindent\begin{minipage}{\linewidth}%
+					\setlength{\parindent}{\paroutindent}##1\end{minipage}
+			}
+		}
+		\linepar=\ht0
+		\pgfmathparse{round((\linepar-\fboxsep)/(\lineheight))}
+		\par\noindent\textbf{\loigiaiEX}
+		\dotlineEX{\pgfmathresult}
+	}
+}
+}
+		%-------------- Đóng khung câu ex
+		\AtBeginEnvironment{ex}{
+			\beginboxEX
+			\renewcommand{\loigiai}[1]{
+				\renewcommand{\immini}[2]{
+					\setbox\imbox=\vbox{\hbox{##2}}
+					\widthimmini=\wd\imbox
+					\IMleftright{##1}{##2}}
+				\endbox
+				\begin{onlysolution}
+					#1
+				\end{onlysolution}
+				\def\endbox{}
+			}
+		}
+		\AtEndEnvironment{ex}{\endbox}	
+		%-------------- Đóng khung câu bt
+		\AtBeginEnvironment{bt}{
+			\beginboxBT
+			\renewcommand{\loigiai}[1]{
+				\renewcommand{\immini}[2]{
+					\setbox\imbox=\vbox{\hbox{##2}}
+					\widthimmini=\wd\imbox
+					\IMleftright{##1}{##2}}
+				\endbox
+				\begin{onlysolution}
+					#1
+				\end{onlysolution}
+				\def\endbox{}
+			}
+		}
+		\AtEndEnvironment{bt}{\endbox}
+		%---------- Ẩn lí thuyết
+		%--Ẩn các mục con, chỉ để BÀI
+		%\foreach \moitruong in{\subsection,\subsubsection,\chapter}{\renewcommand{\moitruong}[1]{}}
+		\renewcommand{\subsection}[1]{}
+%		\renewcommand{\subsubsection}[1]{}
+		%\renewcommand{\chapter}[1]{}
+		\renewcommand{\part}[1]{}
+		%--Ẩn các môi trường
+		%\hideenviron{dn}
+		\hideenviron{note}
+		%\hideenviron{dl}
+		\hideenviron{nx}
+		\hideenviron{tomtat}
+		\hideenviron{boxkn}
+		\hideenviron{dang}
+		%--ẩn bìa và mục lục
+%		\renewcommand{\includepdf}[1]{}
+%		\def\muclucchinh{}
+		%------------
+		\renewcommand{\indapan}[2]{}
+%		\def\iconVD{}
+		%------------
+\BeforeBeginEnvironment{bt}{
+	\ifnum\the\value{bt}=0
+	\par
+	\subsubsection{\truocBT}
+	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocBT}}\vspace*{2pt}%
+	\fi
+}
+%\BeforeBeginEnvironment{dang}{
+%	\ifnum\the\value{dang}=0
+%	\par
+%	\subsubsection{\truocVD}
+%	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocVD}}\vspace*{2pt}
+%	\fi
+%}
+\BeforeBeginEnvironment{ex}{
+	\ifnum\the\value{ex}=0
+	\par
+	\subsubsection{\truocEX}
+	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocEX}}\vspace*{2pt}%
+	\fi
+}
+%============
+\hideenviron{vd}

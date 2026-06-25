@@ -1,0 +1,86 @@
+%Đưa chấm ra ngoài box
+\renewcommand{\dotlinefull}[1]{
+	\renewcommand{\FalseEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+	\renewcommand{\TrueEX}{\stepcounter{dapan}{\textbf{\Alph{dapan}}}.}
+	\def\True{\setcounter{numTrue}{\thedapan}\setcounter{numTrueSol}{\thedapan}}
+	\AtBeginEnvironment{#1}{
+		\renewcommand{\loigiai}[1]{
+			\endbox
+			\def\endbox{}
+			\setlength{\paroutindent}{\expandafter\parindent}
+			\setbox0=\vbox{
+				\hbox{
+					\noindent\begin{minipage}{\linewidth}%
+						\setlength{\parindent}{\paroutindent}##1\end{minipage}
+				}
+			}
+			\linepar=\ht0
+			\pgfmathparse{round((\linepar-\fboxsep)/(\lineheight))}
+			\par\noindent\textbf{\loigiaiEX}
+			\dotlineEX{\pgfmathresult}
+		}
+	}
+}
+%-------------- Định nghĩa lại các môi trường câu hỏi trực tiếp bằng tcolorbox để hỗ trợ tự ngắt trang (breakable)
+\renewenvironment{ex}{%
+	\stepcounter{ex}%
+	\beginboxEX
+	{\nameex\ \theex.}~%
+	\renewcommand{\loigiai}[1]{%
+		\renewcommand{\immini}[2]{%
+			\setbox\imbox=\vbox{\hbox{####2}}%
+			\widthimmini=\wd\imbox%
+			\IMleftright{####1}{####2}%
+		}%
+		\endbox%
+		\begin{onlysolution}%
+			##1%
+		\end{onlysolution}%
+		\def\endbox{}%
+	}%
+}{%
+	\endbox%
+}
+
+\renewenvironment{bt}{%
+	\stepcounter{bt}%
+	\beginboxBT
+	{\bfseries\color{\mauBT}\iconVD Bài\ \thebt.}~%
+	\renewcommand{\loigiai}[1]{%
+		\renewcommand{\immini}[2]{%
+			\setbox\imbox=\vbox{\hbox{####2}}%
+			\widthimmini=\wd\imbox%
+			\IMleftright{####1}{####2}%
+		}%
+		\endbox%
+		\begin{onlysolution}%
+			##1%
+		\end{onlysolution}%
+		\def\endbox{}%
+	}%
+}{%
+	\endbox%
+}
+
+\renewenvironment{vd}{%
+	\stepcounter{vd}%
+	\beginboxVD
+	{\bfseries\color{\mauVD}\iconVD Ví dụ\ \thevd.}~%
+	\renewcommand{\loigiai}[1]{%
+		\renewcommand{\immini}[2]{%
+			\setbox\imbox=\vbox{\hbox{####2}}%
+			\widthimmini=\wd\imbox%
+			\IMleftright{####1}{####2}%
+		}%
+		\endbox%
+		\begin{onlysolution}%
+			##1%
+		\end{onlysolution}%
+		\def\endbox{}%
+	}%
+}{%
+	\endbox%
+}
+%-------------- Ẩn đáp án
+\renewcommand{\indapan}[2]{}
+%--------------

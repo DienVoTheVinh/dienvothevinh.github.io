@@ -572,6 +572,78 @@ function renderBaiHoc() {
 var pdfTaiLieuTex = null;
 var dangBienDichTex = false;
 
+
+// Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
+async function processVirtualFiles(tex) {
+  // 1. Resolve macro \\loaitailieu if present in \\input
+  var loaiMatch = tex.match(/\\def\\loaitailieu\{([^}]+)\}/);
+  var loaitailieu = loaiMatch ? loaiMatch[1].trim() : 'LT-3';
+  tex = tex.replace(/\\input\{cautruc13\/\\loaitailieu\}/g, '\\input{cautruc13/' + loaitailieu + '}');
+
+  // 2. Regex to find \\input{...} or \\include{...}
+  var inputRegex = /\\(input|include)\{([^}]+)\}/g;
+  var match;
+  var virtualFiles = '';
+  var processedPaths = new Set();
+
+  var matches = [];
+  while ((match = inputRegex.exec(tex)) !== null) {
+    matches.push(match[2].trim());
+  }
+
+  for (var importPath of matches) {
+    if (processedPaths.has(importPath)) continue;
+    processedPaths.add(importPath);
+
+    if (importPath.startsWith('cautruc13/') || importPath.startsWith('bia13/') || importPath.endsWith('.tex') || importPath.endsWith('.sty')) {
+      var urlPath = importPath;
+      if (!urlPath.endsWith('.tex') && !urlPath.endsWith('.sty')) {
+        urlPath += '.tex';
+      }
+      
+      try {
+        var res = await fetch(urlPath);
+        if (res.ok) {
+          var content = await res.text();
+          var baseName = importPath.substring(importPath.lastIndexOf('/') + 1);
+          if (!baseName.endsWith('.tex') && !baseName.endsWith('.sty')) {
+            baseName += '.tex';
+          }
+          
+          if (baseName === 'bia-dynamic.tex') {
+            content = content.replace(/\\includegraphics\[width=6\.0cm\]\{logo\/VinhMath_logo\.png\}/g, 
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=6.0cm]{logo/VinhMath_logo.png}}{%
+\\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=0.2cm]current page.center) {
+    {\\color{brandNavy}\\fontsize{24}{28}\\selectfont\\bfseries\\sffamily VINH}\\\\[0.1cm]
+    {\\color{brandGold}\\fontsize{20}{24}\\selectfont\\bfseries\\sffamily MATH}
+};}`);
+          }
+          if (baseName === 'Khai-bao-minimal.tex') {
+            content = content.replace(/\\includegraphics\[width=10\.5cm\]\{logo\/VinhMath_logo\.png\}/g,
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=10.5cm]{logo/VinhMath_logo.png}}{}`);
+          }
+
+          virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
+          
+          var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          var replacer = new RegExp('\\input\{' + escapeReg + '\}', 'g');
+          tex = tex.replace(replacer, '\\input{' + baseName + '}');
+        } else {
+          console.warn('Không thể tải file phụ thuộc: ' + urlPath);
+        }
+      } catch (e) {
+        console.error('Lỗi khi tải file phụ thuộc ' + urlPath + ':', e);
+      }
+    }
+  }
+
+  if (virtualFiles) {
+    tex = virtualFiles + tex;
+  }
+  return tex;
+}
+
+
 async function chuanHoaTexBaiHoc(rawCode) {
   var trimmed = (rawCode || '').trim();
   if (/\\documentclass/.test(trimmed)) {
@@ -719,82 +791,61 @@ async function chuanHoaTexBaiHoc(rawCode) {
 \\endinput
 \\end{filecontents*}\n`;
 
-  var preamble = virtualFiles + `\\documentclass[12pt,a4paper]{article}
-\\usepackage[utf8]{vietnam}
-\\usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
-\\usepackage{longtable,multirow,makecell,tabularx}
-\\usepackage{diagbox}
-\\usepackage[shortlabels]{enumitem}
-\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
-\\usepackage{tikz}
-\\usepackage{tkz-euclide}
-\\usepackage{tikz-3dplot}
-\\usepackage{tkz-tab}
-\\usepackage{pifont}
-\\usepackage{bbding}
-\\usepackage{stackengine}
-\\usepackage{scalerel}
-\\usepackage{array}
-\\usepackage{xcolor,colortbl,tasks}
-\\usepackage[hidelinks,unicode]{hyperref}
+  var preamble = virtualFiles + `\\documentclass[12pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
+\\usepackage{newpxtext} % Palatino — font serif cổ điển cho sách toán
+\\usepackage{newpxmath} % Math font hài hoà với Palatino
+\\linespread{1.25} % Khoảng cách dòng thoáng, tối ưu đọc
+\\let\\widering\\relax % Tránh xung đột với yhmath package
 
-% ex_test package
-\\usepackage[loigiai]{ex_test}
-\\font\\damEX=ugqb8v at 12pt
-\\def\\iconVD{\\faEdit}
-\\def\\mauDC{black}
-\\def\\loigiaiEX{\\damEX\\color{blue}\\faCommenting\\ Lời giải.}
-\\renewcommand{\\nameex}{\\damEX\\color{blue}\\iconVD\\ Câu}
-\\def\\qedEX{\\color{black}\\ensuremath{\\square}}
-\\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
-\\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right\\}}
+\\def\\loaitailieu{LT-3} % Chọn loại tài liệu (LT-1, LT-2, LT-3, LT-4, BT-0, etc.)
+\\def\\mausac{Y} % Chọn kiểu màu (Y: Có màu, N: Đen trắng)
 
-% custom environments from BosungK
-\\definecolor{vmAccent}{HTML}{B5483A}
-\\definecolor{vmOk}{HTML}{5E7B5E}
-\\definecolor{vmWarn}{HTML}{A8842C}
-\\definecolor{vmInk}{HTML}{1F1D1A}
-\\def\\mauVD{vmAccent}
-\\def\\mauEX{vmOk}
-\\def\\mauBT{vmWarn}
-\\def\\maudl{vmInk}
-\\def\\maudn{vmAccent}
-\\def\\maucy{vmAccent}
-\\def\\maupt{vmInk}
-\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
-\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
-\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
-\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
-\\newenvironment{dl}{\\begin{mydl}}{\\end{mydl}}
-\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}
-\\newenvironment{dn}{\\begin{mydn}}{\\end{mydn}}
-\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
-\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
-\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
-\\renewcommand{\\vec}[1]{\\protect\\overrightarrow{#1}}
-\\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\def\\viduminhhoa{\\subsubsection{Ví dụ minh họa}}
-\\def\\baitaptl{\\subsubsection{Bài tập áp dụng}}
-\\def\\baitapbs{\\subsubsection{Bài tập bổ sung}}
-\\def\\BTVD{\\subsubsection{Bài tập vận dụng}}
-\\newenvironment{vidu}{\\begin{ex}}{\\end{ex}}
-\\def\\baitoan{\\faHandORight\\ \\textbf{Bài toán. }}
-\\def\\phuongphap{\\faHandODown\\ \\textbf{Phương pháp: }}
-\\newcommand{\\boxde}[1]{%
-	\\begin{center}
-		\\textbf{#1}
-	\\end{center}
-}
-\\newenvironment{luyentap}{\\begin{ex}}{\\end{ex}}
-\\newenvironment{kttrongtam}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{vandung}{\\begin{bt}}{\\end{bt}}
-\\newenvironment{trithuc}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{bttuongtu}{\\begin{bt}}{\\end{bt}}
+% Các thông số trang tài liệu đối xứng twoside
+\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1.8}\\def\\phai{1.2}
+\\def\\topset{0.5}
+\\def\\botset{0.75}
+\\def\\leftnote{4.5}
+
+\\def\\trungtam{1} % Chọn trung tâm (1: Thầy Vinh, 2: Duy Minh)
+\\def\\phienban{\\trungtam}
+
+\\ifnum\\trungtam=1
+    % Trung tâm 1: Điền Võ Thế Vinh
+    \\def\\hoten{Thầy Điền Võ Thế Vinh}
+    \\def\\SDT{0866197857}
+    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
+\\else
+    % Trung tâm 2: Duy Minh
+    \\def\\hoten{Nhóm GV Duy Minh}
+    \\def\\SDT{0937850812}
+    \\def\\DC{248A Nguyễn Hồng Đào, phường 14, quận Tân Bình}
+    \\def\\watermarktext{Trung tâm BDVH Duy Minh - Nhóm GV Duy Minh}
+\\fi
+
+\\input{cautruc13/mausac-minimal}
+\\def\\iconVD{\\faGg\\,}
+\\input{cautruc13/Khai-bao-minimal}
+\\input{cautruc13/BosungK}
+\\input{cautruc13/\\loaitailieu}
+
+\\renewcommand{\\indapan}[2]{}
+\\exitdapso
+
+\\def\\truocVD{Các ví dụ}
+\\def\\truocBT{Bài tập vận dụng}
+\\def\\truocEX{Bài tập nâng cao}
+
+\\def\\chamngon{Thà để giọt mồ hôi rơi trên trang sách còn hơn để nước mắt rơi ướt cả đề thi}
+\\def\\trenphai{}
+\\def\\duoiphai{}
+
+\\khoanhtrondapan
 
 \\begin{document}
 ` + trimmed + `
-\\end{document}`;
+\\end{document}\`;
+  preamble = await processVirtualFiles(preamble);
   return preamble;
 }
 

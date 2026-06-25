@@ -104,7 +104,10 @@
 .opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .opt-item { display: flex; flex-direction: column; gap: 4px; }
 .opt-item label { font-size: .82rem; font-weight: 600; color: var(--ink-2); }
-.opt-select, .opt-input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: .88rem; width: 100%; }
+.opt-select, .opt-input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: .88rem; width: 100%; transition: border-color .15s, box-shadow .15s; cursor: pointer; }
+.opt-select:hover, .opt-input:hover { border-color: var(--accent); }
+.opt-select:focus, .opt-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.opt-hint { margin-top: 14px; font-size: .8rem; line-height: 1.45; color: var(--ink-2); background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 6px; padding: 9px 12px; }
 
 /* Loading PDF screen */
 .loading-pdf { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; }
@@ -252,7 +255,7 @@
           <div class="preset-badge-row">
             <span class="preset-badge">1 cột</span>
             <span class="preset-badge">Thoáng</span>
-            <span class="preset-badge">Có dòng chấm</span>
+            <span class="preset-badge">4 dòng chấm</span>
           </div>
         </div>
       </div>
@@ -330,11 +333,20 @@
             <option value="frame">Có khung (\choiceTF[t])</option>
           </select>
         </div>
-        <div class="opt-item" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;">
-          <label style="font-size:0.9rem">Chừa dòng chấm sau mỗi câu (Dành cho phiếu bài làm)</label>
-          <input type="checkbox" id="pdfDotLines" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent);">
+        <div class="opt-item">
+          <label>Dòng chấm sau mỗi câu</label>
+          <select class="opt-select" id="pdfDotLines">
+            <option value="0">Không có</option>
+            <option value="2">2 dòng</option>
+            <option value="3">3 dòng</option>
+            <option value="4">4 dòng</option>
+            <option value="5">5 dòng</option>
+            <option value="6">6 dòng</option>
+            <option value="8">8 dòng</option>
+          </select>
         </div>
       </div>
+      <div class="opt-hint">💡 “Dòng chấm” là các dòng kẻ chấm chừa trống để học sinh trình bày lời giải — chỉ in ở bản đề, không in ở bản lời giải.</div>
     </div>
     
     <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px; border-top:1px solid var(--line); padding-top:16px;">
@@ -399,13 +411,39 @@ function kiemTraThoiGianDe(e) {
 
 function dinhDangThoiGian(d) {
   if (!d) return '';
-  var date = new Date(d);
-  var hh = date.getHours().toString().padStart(2, '0');
-  var mm = date.getMinutes().toString().padStart(2, '0');
-  var DD = date.getDate().toString().padStart(2, '0');
-  var MM = (date.getMonth() + 1).toString().padStart(2, '0');
-  var YYYY = date.getFullYear();
+  // Luôn hiển thị theo giờ Việt Nam (UTC+7), không phụ thuộc múi giờ thiết bị
+  var date = new Date(new Date(d).getTime() + 7 * 3600000);
+  var hh = date.getUTCHours().toString().padStart(2, '0');
+  var mm = date.getUTCMinutes().toString().padStart(2, '0');
+  var DD = date.getUTCDate().toString().padStart(2, '0');
+  var MM = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  var YYYY = date.getUTCFullYear();
   return hh + ':' + mm + ' ' + DD + '/' + MM + '/' + YYYY;
+}
+
+/* Tách đề tự luận thành phần ĐỀ (trước HƯỚNG DẪN GIẢI) và phần LỜI GIẢI
+   để khi hiển thị cho HS không bị lặp câu (đề + lời giải đều có \begin{ex}). */
+function tachDeTuLuan(prompt) {
+  var s = prompt || '';
+  var idx = -1;
+  ['\\boxde', 'HƯỚNG DẪN GIẢI', '\\newpage'].forEach(function (m) {
+    var p = s.indexOf(m);
+    if (p !== -1 && (idx === -1 || p < idx)) idx = p;
+  });
+  if (idx === -1) return { de: s, loigiai: s };
+  return { de: s.substring(0, idx), loigiai: s.substring(idx) };
+}
+
+/* Sinh n dòng chấm (\dotfill) chừa trống sau mỗi câu cho học sinh trình bày lời giải.
+   Dùng \par (kết thúc đoạn) cho mỗi dòng để LaTeX in ĐÚNG số dòng, kèm khoảng trống để viết. */
+function taoDongCham(n) {
+  n = parseInt(n, 10) || 0;
+  if (n < 1) return '';
+  var out = '\\par\\vspace{3mm}\n';
+  for (var i = 0; i < n; i++) {
+    out += '\\noindent\\dotfill\\par\\vspace{7mm}\n';
+  }
+  return out;
 }
 
 (async function () {
@@ -519,14 +557,18 @@ async function taiDanhSachDe(classIds) {
     .eq('student_id', studentInfo.id)
     .not('exam_id', 'is', null);
   
-  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat }
+  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat (= điểm lượt nộp đầu tiên) }
   (rAttempts.data || []).forEach(function (att) {
     var th = attemptsMap[att.exam_id];
-    if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null };
+    if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null, firstSub: null };
     if (!th.latest || new Date(att.started_at) > new Date(th.latest.started_at)) th.latest = att;
     if (att.submitted_at) {
       th.soLuotNop++;
-      if (th.diemCaoNhat === null || att.score > th.diemCaoNhat) th.diemCaoNhat = att.score;
+      // Lần nộp ĐẦU TIÊN (sớm nhất) là lần được tính điểm
+      if (!th.firstSub || new Date(att.started_at) < new Date(th.firstSub.started_at)) {
+        th.firstSub = att;
+        th.diemCaoNhat = att.score;
+      }
     }
   });
 
@@ -552,23 +594,24 @@ async function taiDanhSachDe(classIds) {
     } else if (tg.status === 'closed') {
       var timeStr = dinhDangThoiGian(tg.time);
       if (tk && tk.soLuotNop > 0) {
-        badgeHTML = '<span class="badge badge-ok">Hết giờ · Điểm: ' + tk.diemCaoNhat.toFixed(1) + 'đ</span>';
-        actionBtnText = 'Xem kết quả'; // cho phép xem lại bài đã làm
+        var diemTxt = (tk.diemCaoNhat != null) ? (' · Điểm: ' + tk.diemCaoNhat.toFixed(1) + 'đ') : '';
+        badgeHTML = '<span class="badge badge-ok">Đã làm' + diemTxt + '</span>';
+        actionBtnText = 'Xem lại / Luyện tập'; // xem lại bài + luyện tập thêm
       } else {
-        badgeHTML = '<span class="badge badge-err">🚫 Đã đóng lúc: ' + timeStr + '</span>';
-        actionBtnText = 'Đã kết thúc';
-        disabledAttr = 'disabled style="opacity:0.5;cursor:not-allowed"';
+        // Đề đã đóng nhưng em chưa làm -> vẫn cho làm (lần làm này được lưu là lần đầu)
+        badgeHTML = '<span class="badge badge-err">🚫 Đã quá hạn (đóng: ' + timeStr + ')</span>';
+        actionBtnText = 'Vào làm';
       }
     } else {
       // Đang mở (open)
       if (tk) {
         if (tk.latest && !tk.latest.submitted_at) {
-          badgeHTML = '<span class="badge badge-warn">Đang làm dở (lượt ' + (tk.soLuotNop + 1) + ')</span>';
+          badgeHTML = '<span class="badge badge-warn">Đang làm dở</span>';
           actionBtnText = 'Làm tiếp';
         } else if (tk.soLuotNop > 0) {
-          badgeHTML = '<span class="badge badge-ok">Cao nhất · ' + tk.diemCaoNhat.toFixed(1) + 'đ' +
-            (tk.soLuotNop > 1 ? ' (' + tk.soLuotNop + ' lượt)' : '') + '</span>';
-          actionBtnText = 'Xem / Làm lại';
+          var diemTxt2 = (tk.diemCaoNhat != null) ? (' · ' + tk.diemCaoNhat.toFixed(1) + 'đ') : '';
+          badgeHTML = '<span class="badge badge-ok">Đã làm' + diemTxt2 + '</span>';
+          actionBtnText = 'Xem lại / Luyện tập';
         }
       }
     }
@@ -626,42 +669,29 @@ async function startExam(examId) {
     .order('started_at', { ascending: false });
     
   var atts = rAtt.data || [];
+  // Lượt CHÍNH THỨC = lượt đã nộp ĐẦU TIÊN (sớm nhất) — đây là lượt được lưu & tính điểm.
+  var submittedAtts = atts.filter(function (a) { return a.submitted_at; })
+    .sort(function (a, b) { return new Date(a.started_at) - new Date(b.started_at); });
+  var officialAtt = submittedAtts[0] || null;
   var latestAtt = atts[0];
-  
-  // Nếu đề thi đã đóng, chỉ cho phép xem kết quả của lượt làm gần nhất đã nộp
-  if (tg.status === 'closed') {
-    var finished = atts.find(function(a) { return a.submitted_at; });
-    if (finished) {
-      currentAttempt = finished;
-      if (ex.de_type === 'essay') {
-        moPhongTuLuan(ex, true); // true = isSubmitted
-      } else {
-        finished.attempt_answers.forEach(function (ans) {
-          selectedAnswers[ans.question_id] = ans.chosen_key;
-        });
-        showExamResults();
-      }
-      return;
-    } else {
-      alert('Đề thi này đã đóng lúc: ' + dinhDangThoiGian(tg.time) + '. Em không thể làm bài.');
-      return;
-    }
-  }
 
-  // Nếu đề thi đang mở:
-  if (latestAtt && latestAtt.submitted_at) {
-    // Đã nộp lượt gần nhất -> Mở chế độ xem kết quả
-    currentAttempt = latestAtt;
+  // Đã có bài chính thức -> LUÔN cho xem lại (kể cả khi đề đã đóng).
+  // Trong màn xem lại có nút "Luyện tập lại" để làm thêm nhiều lần (không tính điểm).
+  if (officialAtt) {
+    currentAttempt = officialAtt;
     if (ex.de_type === 'essay') {
       moPhongTuLuan(ex, true); // true = isSubmitted
     } else {
-      latestAtt.attempt_answers.forEach(function (ans) {
+      (officialAtt.attempt_answers || []).forEach(function (ans) {
         selectedAnswers[ans.question_id] = ans.chosen_key;
       });
       showExamResults();
     }
     return;
   }
+
+  // Chưa có bài chính thức: cho làm lần đầu (kể cả khi đề đã đóng — việc khoá chỉ
+  // mang ý nghĩa lưu lần làm đầu tiên, không chặn học sinh).
   
   // Chưa làm hoặc làm dở -> Bắt đầu làm bài
   $('wkExitBtn').style.display = 'none';
@@ -743,7 +773,8 @@ function runTimer() {
 function veKhuTuLuan(ex, isSubmitted) {
   var promptHTML = '';
   if (ex.essay_prompt) {
-    var qs = parseLatexQuestions(ex.essay_prompt);
+    var deLamBai = tachDeTuLuan(ex.essay_prompt).de;
+    var qs = parseLatexQuestions(deLamBai);
     if (qs && qs.length > 0) {
       promptHTML = qs.map(function (q, idx) {
         var qNum = 'Câu ' + (idx + 1);
@@ -752,7 +783,7 @@ function veKhuTuLuan(ex, isSubmitted) {
           '</div>';
       }).join('');
     } else {
-      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(ex.essay_prompt) + '</div>';
+      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(deLamBai) + '</div>';
     }
   }
 
@@ -838,7 +869,9 @@ async function taiTuLuanDaNop() {
   if (ds.length > 0) {
     var promptContainer = $('khuTuLuanPrompt');
     if (promptContainer) {
-      var qs = parseLatexQuestions(currentExam.essay_prompt);
+      // Khi đã nộp: hiển thị phần LỜI GIẢI (có \loigiai) để HS xem lại, tránh lặp câu
+      var phanReview = tachDeTuLuan(currentExam.essay_prompt);
+      var qs = parseLatexQuestions(phanReview.loigiai);
       if (qs && qs.length > 0) {
         promptContainer.innerHTML = qs.map(function (q, idx) {
           var qNum = 'Câu ' + (idx + 1);
@@ -1124,6 +1157,15 @@ async function chonDapAnExam(qId, key) {
       }
     }
     
+    // Cập nhật đáp án trong bộ nhớ (dùng cho cả lượt chính thức lẫn luyện tập)
+    if (!currentAttempt.attempt_answers) currentAttempt.attempt_answers = [];
+    var memo = currentAttempt.attempt_answers.find(function (a) { return a.question_id === qId; });
+    if (memo) { memo.chosen_key = key; memo.is_correct = isCorrect; }
+    else currentAttempt.attempt_answers.push({ question_id: qId, chosen_key: key, is_correct: isCorrect });
+
+    // Lượt luyện tập: KHÔNG ghi vào cơ sở dữ liệu
+    if (currentAttempt.is_practice || !currentAttempt.id) return;
+
     await sb.from('attempt_answers').upsert({
       attempt_id: currentAttempt.id,
       question_id: qId,
@@ -1235,7 +1277,18 @@ async function nopBaiExam(isAuto) {
   if (sumMax > 0) {
     score = (sumEarned / sumMax) * 10;
   }
-  
+
+  // Lượt LUYỆN TẬP: tính & hiển thị tại chỗ, KHÔNG lưu vào hệ thống, không tính điểm.
+  if (currentAttempt.is_practice || !currentAttempt.id) {
+    currentAttempt.score = parseFloat(score.toFixed(2));
+    currentAttempt.correct_n = correctCount;
+    currentAttempt.total_n = totalCount;
+    currentAttempt.submitted_at = new Date().toISOString();
+    currentAttempt.is_practice = true;
+    showExamResults();
+    return;
+  }
+
   var rAtt = await sb.from('attempts').update({
     score: parseFloat(score.toFixed(2)),
     correct_n: correctCount,
@@ -1266,26 +1319,36 @@ function showExamResults() {
   $('wkRetryBtn').style.display = 'inline-flex';
   $('btnPdfSolution').style.display = 'inline-flex';
   
-  $('wkTimer').textContent = currentAttempt.score.toFixed(2) + 'đ';
-  
+  var diem = (currentAttempt.score != null) ? Number(currentAttempt.score).toFixed(2) : '0.00';
+  $('wkTimer').textContent = diem + 'đ';
+
   $('viewMain').style.display = 'none';
   $('viewWorkspace').style.display = 'flex';
-  $('wkTitle').textContent = currentExam.title + ' (KẾT QUẢ)';
-  
+  var laLuyenTap = currentAttempt.is_practice || !currentAttempt.id;
+  $('wkTitle').textContent = currentExam.title + (laLuyenTap ? ' (LUYỆN TẬP)' : ' (KẾT QUẢ)');
+
   renderExamQuestions(true);
+  // Chèn nhãn cho lượt luyện tập (không tính điểm)
+  var qbox = $('wkQuestions');
+  if (laLuyenTap && qbox) {
+    var bn = document.createElement('div');
+    bn.style.cssText = 'margin-bottom:16px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn);font-weight:700;text-align:center';
+    bn.textContent = '🔁 Lượt LUYỆN TẬP — kết quả này không được lưu và không tính điểm. Lần làm đầu tiên của em vẫn được giữ.';
+    qbox.insertBefore(bn, qbox.firstChild);
+  }
   renderExamNav(true);
 }
 
 async function lamLuotMoi() {
-  if (!confirm('Bắt đầu lượt làm mới? Kết quả các lượt trước vẫn được lưu lại.')) return;
-  var rNew = await sb.from('attempts').insert({
-    student_id: studentInfo.id,
-    exam_id: currentExam.id,
-    started_at: new Date().toISOString()
-  }).select('id, started_at').single();
-  if (rNew.error) { alert('Không tạo được lượt mới: ' + rNew.error.message); return; }
-  currentAttempt = rNew.data;
-  currentAttempt.attempt_answers = [];
+  if (currentExam.de_type === 'essay') {
+    // Tự luận: cho nộp ảnh lại (bài nộp trước vẫn giữ để thầy chấm)
+    moPhongTuLuan(currentExam, false);
+    return;
+  }
+  // Trắc nghiệm: LUYỆN TẬP cục bộ — KHÔNG lưu vào hệ thống, không tính điểm.
+  // Lần làm đầu tiên của em vẫn được giữ nguyên.
+  if (!confirm('Luyện tập lại đề này nhé? Lần làm này CHỈ để ôn tập, không được lưu và không tính điểm — kết quả lần làm đầu tiên của em vẫn được giữ.')) return;
+  currentAttempt = { id: null, is_practice: true, attempt_answers: [], started_at: new Date().toISOString() };
   selectedAnswers = {};
   timeLeftSeconds = currentExam.duration_minutes * 60;
   $('wkSubmitBtn').style.display = 'inline-flex';
@@ -1363,7 +1426,7 @@ async function chayBienDichTaiCho() {
   var fontFamily = $('pdfFontFamily') ? $('pdfFontFamily').value : 'fouriernc';
   var numStyle = $('pdfNumStyle') ? $('pdfNumStyle').value : 'continuous';
   var tfStyle = $('pdfTfStyle') ? $('pdfTfStyle').value : 'noframe';
-  var dotLines = $('pdfDotLines') ? $('pdfDotLines').checked : false;
+  var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
   // Xác định chế độ xuất bản: học sinh chưa nộp bài thì xem 'exam' ẩn giải, nộp rồi thì xem 'solution' hiện giải
   var cheDo = (currentAttempt && currentAttempt.submitted_at) ? 'solution' : 'exam';
@@ -1374,7 +1437,12 @@ async function chayBienDichTaiCho() {
   var preamble = PREAMBLE_MAC_DINH;
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
   preamble = preamble.replace(/\\documentclass\[.*\]\{book\}/, '\\documentclass[' + classOpt + ']{book}');
-  preamble = preamble.replace(/\\usepackage\{fouriernc\}/, '\\usepackage{' + fontFamily + '}');
+  if (fontFamily === 'palatino') {
+    // Keep default newpxtext & newpxmath
+  } else {
+    preamble = preamble.replace(/\\usepackage\{newpxtext\}[^\n]*/, '\\usepackage{' + fontFamily + '}');
+    preamble = preamble.replace(/\\usepackage\{newpxmath\}[^\n]*/, '');
+  }
   
   var tren = '1.65', duoi = '1.5', trai = '1', phai = '1';
   if (margins === 'loose') {
@@ -1394,18 +1462,14 @@ async function chayBienDichTaiCho() {
   var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
-    var prompt = currentExam.essay_prompt || '';
     if (cheDo === 'exam') {
-      var idx = prompt.indexOf('\\boxde');
-      if (idx === -1) idx = prompt.indexOf('HƯỚNG DẪN GIẢI');
-      if (idx === -1) idx = prompt.indexOf('\\newpage');
-      if (idx !== -1) {
-        body += prompt.substring(0, idx);
-      } else {
-        body += prompt;
+      var deExam = tachDeTuLuan(currentExam.essay_prompt || '').de;
+      if (soDongCham > 0) {
+        deExam = deExam.replace(/\\end\{(ex|bt)\}/g, '\\end{$1}\n' + taoDongCham(soDongCham));
       }
+      body += deExam;
     } else {
-      body += prompt;
+      body += (currentExam.essay_prompt || '');
     }
   } else {
     var partIQs = examQuestions.filter(function (q) {
@@ -1431,8 +1495,8 @@ async function chayBienDichTaiCho() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -1451,8 +1515,8 @@ async function chayBienDichTaiCho() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -1465,14 +1529,15 @@ async function chayBienDichTaiCho() {
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
         body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
         body += '\\end{bt}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
   }
   
   var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
+  tex = await processVirtualFiles(tex);
   
   try {
     var r = await sb.functions.invoke('latex', {
@@ -1517,183 +1582,55 @@ var cachedExTestSty = '';
 var cachedTitleDotSty = '';
 
 var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
-\\usepackage{fouriernc}
-\\let\\widering\\relax
+\\usepackage{newpxtext} % Palatino — font serif cổ điển cho sách toán
+\\usepackage{newpxmath} % Math font hài hoà với Palatino
+\\linespread{1.25} % Khoảng cách dòng thoáng, tối ưu đọc
+\\let\\widering\\relax % Tránh xung đột với yhmath package
 
-% --- BỘ NHẬN DIỆN THƯƠNG HIỆU VINHMATH BRAND COLORS ---
-\\usepackage[dvipsnames,table]{xcolor}
-\\definecolor{vmAccent}{HTML}{B5483A}     % Đỏ son (Hanko Red) - Điểm nhấn chính
-\\definecolor{vmAccentSoft}{HTML}{F6E9E6} % Nền đỏ son nhạt
-\\definecolor{vmOk}{HTML}{5E7B5E}         % Xanh Matcha - Cho bài tập & section chính
-\\definecolor{vmOkSoft}{HTML}{EAF0EA}     % Nền xanh Matcha nhạt
-\\definecolor{vmWarn}{HTML}{A8842C}       % Vàng hổ phách trầm - Cho lý thuyết/định lý
-\\definecolor{vmWarnSoft}{HTML}{F5EEDD}   % Nền hổ phách nhạt
-\\definecolor{vmInk}{HTML}{1F1D1A}        % Mực charcoal đen dịu
-\\definecolor{vmBg}{HTML}{F7F5F1}         % Nền giấy Washi ấm
-\\definecolor{vmLine}{HTML}{E4E0D8}       % Màu đường kẻ phân cách
-\\definecolor{warmgray}{HTML}{A8A29A}     % Xám ấm thương hiệu (ink-3)
+\\def\\loaitailieu{LT-3} % Chọn loại tài liệu (LT-1, LT-2, LT-3, LT-4, BT-0, etc.)
+\\def\\mausac{Y} % Chọn kiểu màu (Y: Có màu, N: Đen trắng)
 
-\\def\\mauVD{vmAccent}                      % Màu chính cho Ví dụ (Đỏ son)
-\\def\\mauEX{vmOk}                          % Màu chính cho Câu hỏi / Đề bài (Matcha)
-\\def\\mauBT{vmWarn}                        % Màu chính cho Bài tập tự luyện (Amber)
-\\def\\mauLG{vmAccent}                      % Màu cho Lời giải (Đỏ son)
-\\def\\mauDA{\\mauEX}                        % Màu đáp án đúng
-\\def\\mauTrue{vmAccent}                    % Màu của đáp án khoanh tròn đúng
-\\def\\mauPART{vmInk}                       % Màu phần
-\\def\\mauCHAP{vmAccent}                    % Màu chương
-\\def\\mauSEC{vmOk}                         % Màu Section
-\\def\\mauSUBSEC{vmWarn}                    % Màu Subsection
-\\def\\mauSUBSUBSEC{vmInk}                  % Màu Subsubsection
-\\def\\mauphan{vmInk}
-\\def\\mauchuphan{vmInk}
-\\def\\mauchuong{vmAccent}
-\\def\\maunenmucluc{white}
-\\def\\maumlmot{vmAccent}
-\\def\\maumlhai{vmOk}
-\\def\\maumlba{vmWarn}
-\\def\\maubai{vmOk}
-\\def\\mausubsec{vmWarn}
-\\def\\mausubsecphu{vmAccent}
-\\def\\mausubsubsec{vmInk}
-\\def\\maupara{vmInk}
-\\def\\maufoot{vmInk}
-\\def\\mauchufoot{vmInk}
-\\def\\maufootmot{vmAccent}
-\\def\\maufoothai{vmOk}
-\\def\\maufootba{vmWarn}
-\\def\\maudang{vmAccent}
-\\def\\maunendang{white}
-\\def\\maudl{vmInk}
-\\def\\nendl{vmBg}
-\\def\\maudn{vmAccent}
-\\def\\nendn{vmAccentSoft}
-\\def\\maucy{vmAccent}
-\\def\\maupt{vmInk}
-\\def\\mauitemCI{vmAccent}
-\\def\\mauitemKN{vmOk}
-\\def\\itemKN{\\color{\\mauitemKN}\\faCheckSquareO}
-\\def\\itemCI{\\color{\\mauitemCI}\\faCheckCircleO}
+% Các thông số trang tài liệu đối xứng twoside
+\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1.8}\\def\\phai{1.2}
+\\def\\topset{0.5}
+\\def\\botset{0.75}
+\\def\\leftnote{4.5}
 
-% --- THÔNG SỐ TRANG ---
-\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
-\\def\\watermarktext{VinhMath}
-\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
-\\def\\SDT{0866197857}
+\\def\\trungtam{1} % Chọn trung tâm (1: Thầy Vinh, 2: Duy Minh)
+\\def\\phienban{\\trungtam}
 
-% --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---
-\\usepackage{longtable,multirow,makecell,tabularx}
-\\usepackage{diagbox}
-\\usepackage[shortlabels]{enumitem}
-\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
-\\usepackage{tikz} 
-\\usepackage{tkz-euclide}
-\\usepackage{tikz-3dplot}
-\\usepackage{tkz-tab}
-\\usepackage{pifont}
-\\usepackage{bbding}
-\\usepackage{stackengine}
-\\usepackage{scalerel}
-\\usepackage{array}
-\\usepackage{xcolor,colortbl,tasks}
-\\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
-\\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
-\\usetikzlibrary{shadings,fadings}
-\\usepackage{pgfplots}
-\\usepackage{pgfornament}
-\\usepgfplotslibrary{fillbetween}
-\\pgfplotsset{compat=1.9}
-\\usepackage[hidelinks,unicode]{hyperref}
-\\usepackage{pdfpages}
-\\usepackage{currfile}
-\\usepackage[outline]{contour}
-\\usepackage{fontawesome}
-\\usepackage{lipsum}
-\\usepackage{everypage}
-\\usepackage{microtype}
-\\setlength{\\emergencystretch}{3em}
+\\ifnum\\trungtam=1
+    % Trung tâm 1: Điền Võ Thế Vinh
+    \\def\\hoten{Thầy Điền Võ Thế Vinh}
+    \\def\\SDT{0866197857}
+    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
+\\else
+    % Trung tâm 2: Duy Minh
+    \\def\\hoten{Nhóm GV Duy Minh}
+    \\def\\SDT{0937850812}
+    \\def\\DC{248A Nguyễn Hồng Đào, phường 14, quận Tân Bình}
+    \\def\\watermarktext{Trung tâm BDVH Duy Minh - Nhóm GV Duy Minh}
+\\fi
 
-\\arrayrulecolor{teal}
-\\newcolumntype{C}[1]{>{\\centering\\arraybackslash}p{#1}}
-\\newcolumntype{L}[1]{>{\\raggedright\\arraybackslash}p{#1}}
-\\usepackage[top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt] {geometry}
-\\usepackage{varwidth}
+\\input{cautruc13/mausac-minimal}
+\\def\\iconVD{\\faGg\\,}
+\\input{cautruc13/Khai-bao-minimal}
+\\input{cautruc13/BosungK}
+\\input{cautruc13/\\loaitailieu}
 
-\\setlength{\\columnsep}{8mm}
-\\setlength{\\columnseprule}{0.4pt}
-\\def\\columnseprulecolor{\\color{warmgray}}
+\\renewcommand{\\indapan}[2]{}
+\\exitdapso
 
-% --- GÓI TRẮC NGHIỆM EX_TEST ---
-\\usepackage[loigiai]{ex_test} 
-\\font\\damEX=ugqb8v at 13pt
-\\def\\iconVD{\\faEdit}                      % Icon trước chữ "Câu"
-\\def\\mauDC{vmInk}                          % Màu dấu kết thúc lời giải
-\\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Lời giải.}
-\\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} \\iconVD Câu}
-\\def\\qedEX{\\color{\\mauDC}\\ensuremath{\\square}}
-\\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
-\\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right.}
-\\usepackage{esvect}
-\\def\\vec{\\vv}
-\\def\\overrightarrow{\\vv}
-\\DeclareSymbolFont{symbolsC}{U}{txsyc}{m}{n}
-\\DeclareMathSymbol{\\varparallel}{\\mathrel}{symbolsC}{9}
-\\DeclareMathSymbol{\\parallel}{\\mathrel}{symbolsC}{9}
+\\def\\truocVD{Các ví dụ}
+\\def\\truocBT{Bài tập vận dụng}
+\\def\\truocEX{Bài tập nâng cao}
 
-% custom environments from BosungK
-\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
-\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
-\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
-\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
-\\newenvironment{dl}{\\begin{mydl}}{\\end{mydl}}
-\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}
-\\newenvironment{dn}{\\begin{mydn}}{\\end{mydn}}
-\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
-\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
-\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
-\\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\def\\viduminhhoa{\\subsubsection{Ví dụ minh họa}}
-\\def\\baitaptl{\\subsubsection{Bài tập áp dụng}}
-\\def\\baitapbs{\\subsubsection{Bài tập bổ sung}}
-\\def\\BTVD{\\subsubsection{Bài tập vận dụng}}
-\\newenvironment{vidu}{\\begin{ex}}{\\end{ex}}
-\\def\\baitoan{\\faHandORight\\ \\textbf{Bài toán. }}
-\\def\\phuongphap{\\faHandODown\\ \\textbf{Phương pháp: }}
-\\newcommand{\\boxde}[1]{%
-	\\begin{center}
-		\\textbf{#1}
-	\\end{center}
-}
-\\newenvironment{luyentap}{\\begin{ex}}{\\end{ex}}
-\\newenvironment{kttrongtam}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{vandung}{\\begin{bt}}{\\end{bt}}
-\\newenvironment{trithuc}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
-\\newenvironment{bttuongtu}{\\begin{bt}}{\\end{bt}}
+\\def\\chamngon{Thà để giọt mồ hôi rơi trên trang sách còn hơn để nước mắt rơi ướt cả đề thi}
+\\def\\trenphai{}
+\\def\\duoiphai{}
 
-% --- WATERMARK LỀ PHẢI ---
-\\AddEverypageHook{%
-\\begin{tikzpicture}[remember picture,overlay]
-\\coordinate (margin) at ([xshift=-5mm]current page.east);
-\\draw[vmAccent!40,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
-\\fill[vmAccent] ([yshift=7.2cm]margin) circle (1.5pt);
-\\node[rotate=90,anchor=center,font=\\fontfamily{qag}\\fontseries{b}\\fontsize{10}{12}\\selectfont,text=vmAccent!60] at (margin) {\\watermarktext};
-\\draw[vmAccent!40,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
-\\fill[vmAccent] ([yshift=-7.2cm]margin) circle (1.5pt);
-\\end{tikzpicture}%
-}
-
-% --- HEADER & FOOTER ---
-\\usepackage{fancyhdr,lastpage}
-\\pagestyle{fancy}
-\\fancyhf{}
-\\renewcommand{\\headrulewidth}{0.5pt}
-\\renewcommand{\\footrulewidth}{0pt}
-\\renewcommand{\\headrule}{\\hbox to\\headwidth{\\color{\\maufoot}\\leaders\\hrule height \\headrulewidth\\hfill}}
-\\fancyhead[L]{\\color{\\maufoot}\\sffamily\\bfseries Lớp Toán Thầy Vinh}
-\\fancyhead[R]{\\color{\\maufoot}\\sffamily\\bfseries VinhMath}
-\\fancyfoot[L]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faMapMarker\\ \\DC}
-\\fancyfoot[C]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faPhone\\ \\SDT}
-\\fancyfoot[R]{\\color{\\maufoot}\\fontsize{9pt}{11pt}\\selectfont\\sffamily Trang \\thepage/\\pageref{LastPage}}
+\\khoanhtrondapan`;
 `;
 
 async function taiExTestSty() {
@@ -1859,6 +1796,77 @@ function ghepTexCode(styExTest, styTitleDot, preamble, body) {
   return tex;
 }
 
+// Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
+async function processVirtualFiles(tex) {
+  // 1. Resolve macro \\loaitailieu if present in \\input
+  var loaiMatch = tex.match(/\\def\\loaitailieu\{([^}]+)\}/);
+  var loaitailieu = loaiMatch ? loaiMatch[1].trim() : 'LT-3';
+  tex = tex.replace(/\\input\{cautruc13\/\\loaitailieu\}/g, '\\input{cautruc13/' + loaitailieu + '}');
+
+  // 2. Regex to find \\input{...} or \\include{...}
+  var inputRegex = /\\(input|include)\{([^}]+)\}/g;
+  var match;
+  var virtualFiles = '';
+  var processedPaths = new Set();
+
+  var matches = [];
+  while ((match = inputRegex.exec(tex)) !== null) {
+    matches.push(match[2].trim());
+  }
+
+  for (var importPath of matches) {
+    if (processedPaths.has(importPath)) continue;
+    processedPaths.add(importPath);
+
+    if (importPath.startsWith('cautruc13/') || importPath.startsWith('bia13/') || importPath.endsWith('.tex') || importPath.endsWith('.sty')) {
+      var urlPath = importPath;
+      if (!urlPath.endsWith('.tex') && !urlPath.endsWith('.sty')) {
+        urlPath += '.tex';
+      }
+      
+      try {
+        var res = await fetch(urlPath);
+        if (res.ok) {
+          var content = await res.text();
+          var baseName = importPath.substring(importPath.lastIndexOf('/') + 1);
+          if (!baseName.endsWith('.tex') && !baseName.endsWith('.sty')) {
+            baseName += '.tex';
+          }
+          
+          if (baseName === 'bia-dynamic.tex') {
+            content = content.replace(/\\includegraphics\[width=6\.0cm\]\{logo\/VinhMath_logo\.png\}/g, 
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=6.0cm]{logo/VinhMath_logo.png}}{%
+\\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=0.2cm]current page.center) {
+    {\\color{brandNavy}\\fontsize{24}{28}\\selectfont\\bfseries\\sffamily VINH}\\\\[0.1cm]
+    {\\color{brandGold}\\fontsize{20}{24}\\selectfont\\bfseries\\sffamily MATH}
+};}`);
+          }
+          if (baseName === 'Khai-bao-minimal.tex') {
+            content = content.replace(/\\includegraphics\[width=10\.5cm\]\{logo\/VinhMath_logo\.png\}/g,
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=10.5cm]{logo/VinhMath_logo.png}}{}`);
+          }
+
+          virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
+          
+          var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
+          tex = tex.replace(replacer, '\\input{' + baseName + '}');
+        } else {
+          console.warn('Không thể tải file phụ thuộc: ' + urlPath);
+        }
+      } catch (e) {
+        console.error('Lỗi khi tải file phụ thuộc ' + urlPath + ':', e);
+      }
+    }
+  }
+
+  if (virtualFiles) {
+    tex = virtualFiles + tex;
+  }
+  return tex;
+}
+
+
 function moConfigPDF(mode) {
   pdfCompileMode = mode;
   var title = mode === 'solution' ? 'Cấu hình PDF Lời giải chi tiết' : 'Cấu hình PDF Đề thi';
@@ -1886,10 +1894,10 @@ function toggleAdvancedOptions() {
 }
 
 var pdfPresets = {
-  'de-thi': { layout: 'one', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false },
-  'phieu-bai': { layout: 'one', margins: 'loose', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: true },
-  'tiet-kiem': { layout: 'two', margins: 'tight', fontSize: '10', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false },
-  'ghi-chu': { layout: 'margin', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false }
+  'de-thi': { layout: 'one', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 },
+  'phieu-bai': { layout: 'one', margins: 'loose', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 4 },
+  'tiet-kiem': { layout: 'two', margins: 'tight', fontSize: '10', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 },
+  'ghi-chu': { layout: 'margin', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 }
 };
 
 function apDungPreset(presetName) {
@@ -1908,7 +1916,7 @@ function apDungPreset(presetName) {
   $('pdfFontFamily').value = opt.fontFamily;
   $('pdfNumStyle').value = opt.numStyle;
   $('pdfTfStyle').value = opt.tfStyle;
-  $('pdfDotLines').checked = opt.dotLines;
+  $('pdfDotLines').value = String(opt.dotCount);
 }
 
 async function generateAndCompilePDF() {
@@ -1926,7 +1934,7 @@ async function generateAndCompilePDF() {
   var fontFamily = $('pdfFontFamily').value;
   var numStyle = $('pdfNumStyle').value;
   var tfStyle = $('pdfTfStyle').value;
-  var dotLines = $('pdfDotLines').checked;
+  var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
@@ -1935,7 +1943,12 @@ async function generateAndCompilePDF() {
   
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
   preamble = preamble.replace(/\\documentclass\[.*\]\{book\}/, '\\documentclass[' + classOpt + ']{book}');
-  preamble = preamble.replace(/\\usepackage\{fouriernc\}/, '\\usepackage{' + fontFamily + '}');
+  if (fontFamily === 'palatino') {
+    // Keep default newpxtext & newpxmath
+  } else {
+    preamble = preamble.replace(/\\usepackage\{newpxtext\}[^\n]*/, '\\usepackage{' + fontFamily + '}');
+    preamble = preamble.replace(/\\usepackage\{newpxmath\}[^\n]*/, '');
+  }
   
   var tren = '1.65', duoi = '1.5', trai = '1', phai = '1';
   if (margins === 'loose') {
@@ -1955,18 +1968,14 @@ async function generateAndCompilePDF() {
   var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
-    var prompt = currentExam.essay_prompt || '';
     if (pdfCompileMode === 'exam') {
-      var idx = prompt.indexOf('\\boxde');
-      if (idx === -1) idx = prompt.indexOf('HƯỚNG DẪN GIẢI');
-      if (idx === -1) idx = prompt.indexOf('\\newpage');
-      if (idx !== -1) {
-        body += prompt.substring(0, idx);
-      } else {
-        body += prompt;
+      var deExam = tachDeTuLuan(currentExam.essay_prompt || '').de;
+      if (soDongCham > 0) {
+        deExam = deExam.replace(/\\end\{(ex|bt)\}/g, '\\end{$1}\n' + taoDongCham(soDongCham));
       }
+      body += deExam;
     } else {
-      body += prompt;
+      body += (currentExam.essay_prompt || '');
     }
   } else {
     var partIQs = examQuestions.filter(function (q) {
@@ -1992,8 +2001,8 @@ async function generateAndCompilePDF() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -2012,8 +2021,8 @@ async function generateAndCompilePDF() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -2026,14 +2035,15 @@ async function generateAndCompilePDF() {
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
         body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
         body += '\\end{bt}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
   }
   
   var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
+  tex = await processVirtualFiles(tex);
   
   try {
     var r = await sb.functions.invoke('latex', {

@@ -1,0 +1,90 @@
+\thispagestyle{empty}
+% Local color definitions for cover to ensure exact look
+\definecolor{coverwarmgray}{HTML}{E0E0E0} 
+
+\begin{tikzpicture}[remember picture, overlay]
+% Background
+\fill[white] (current page.south west) rectangle (current page.north east);
+
+% Geometric Sidebar with Gradient (5.5cm wide)
+\shade[left color=brandNavy!15, right color=white] (current page.north west) rectangle ([xshift=5.5cm]current page.south west);
+
+% Elegant vertical accent lines separating sidebar and content
+\draw[brandNavy!30, line width=1pt] ([xshift=5.3cm]current page.north west) -- ([xshift=5.3cm]current page.south west);
+\draw[brandGold, line width=2pt] ([xshift=5.5cm]current page.north west) -- ([xshift=5.5cm]current page.south west);
+
+% Top Accent
+\fill[brandNavy] (current page.north west) rectangle ([xshift=1.8cm, yshift=-8cm]current page.north west);
+\fill[brandBlue] ([xshift=1.8cm]current page.north west) rectangle ([xshift=2.2cm, yshift=-6cm]current page.north west);
+
+% Big Number '11' in the sidebar (Top Left)
+\node[anchor=north west, inner sep=0] at ([xshift=1.0cm, yshift=-2.2cm]current page.north west) {
+    \fontsize{180}{180}\selectfont\bfseries\color{brandNavy!18} \ifdefined\BigNumber\BigNumber\else 11\fi
+};
+\node[anchor=north west, inner sep=0] at ([xshift=1.8cm, yshift=-2.9cm]current page.north west) {
+    \fontsize{100}{100}\selectfont\bfseries\color{brandDark!80} \ifdefined\BigNumber\BigNumber\else 11\fi
+};
+
+% Thin border around the white area on the right
+\draw[brandNavy!12, line width=1.2pt] ([xshift=6.2cm, yshift=-1.2cm]current page.north west) rectangle ([xshift=-1.2cm, yshift=2.2cm]current page.south east);
+
+% Main Title Section (Centered horizontally relative to the white area)
+\node[anchor=center, align=center, text width=13cm] at ([xshift=2.75cm, yshift=7.6cm]current page.center) {
+    {\color{brandNavy}\fontsize{18}{22}\selectfont\bfseries\sffamily \MakeUppercase{\TopCenterName}}\\[0.6cm]
+    {\color{brandBlue}\fontsize{34}{42}\selectfont\bfseries\sffamily \CoverTopLine}\\[0.3cm]
+    {\color{brandGold}\fontsize{26}{32}\selectfont\bfseries\sffamily \CoverBottomLine}
+};
+
+% Circular badge for Logo (Making it the main highlighted feature)
+\fill[brandNavySoft, draw=brandNavy!25, line width=1pt] ([xshift=2.75cm, yshift=0.2cm]current page.center) circle (3.6cm);
+\fill[white, draw=brandGold, line width=2pt] ([xshift=2.75cm, yshift=0.2cm]current page.center) circle (3.3cm);
+\node[anchor=center] at ([xshift=2.75cm, yshift=0.2cm]current page.center) {
+    \includegraphics[width=6.0cm]{logo/VinhMath_logo.png}
+};
+
+% Slogan (Centered below the logo badge)
+\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=-4.1cm]current page.center) {
+    {\color{brandGold}\fontsize{12}{15}\selectfont\sffamily\bfseries\itshape --- VinhMath - Người Học là Trung Tâm ---}
+};
+
+% Subtitle / Content (Centered horizontally relative to the white area)
+\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=-5.8cm]current page.center) {
+    {\color{brandDark}\fontsize{16}{20}\selectfont\bfseries\sffamily\MakeUppercase{\CoverSubTitle}}\\[0.3cm]
+    {\color{brandNavy}\fontsize{14}{18}\selectfont\sffamily\MakeUppercase{\CoverNote}}
+};
+
+% Decorative Line (Centered horizontally relative to the white area)
+\draw[brandGold, line width=1.5pt] ([xshift=-2.5cm, yshift=-7.6cm]current page.center) -- ([xshift=8.0cm, yshift=-7.6cm]current page.center);
+
+% Author / Center Info (Centered horizontally relative to the white area)
+\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=-9.8cm]current page.center) {
+    {\color{brandDark}\fontsize{12}{15}\selectfont\sffamily\bfseries BIÊN SOẠN: \color{brandGold}\AuthorName}\\[0.25cm]
+    {\color{brandBlue}\fontsize{11}{14}\selectfont\sffamily \faPhoneSquare\ \PhoneNum}\\[0.15cm]
+    {\color{brandDark}\fontsize{10.5}{14}\selectfont\sffamily \faMapMarker\ \CenterAddress}
+};
+
+% Author Biography in Left Sidebar (Only for Thầy Vinh)
+\ifnum\trungtam=1
+\node[anchor=north west, text width=4.6cm, align=left] at ([xshift=0.45cm, yshift=-9.5cm]current page.north west) {
+    \sffamily
+    {\fontsize{12}{15}\selectfont\bfseries\color{brandNavy} THÔNG TIN TÁC GIẢ}\\[0.25cm]
+    {\fontsize{10.5}{14}\selectfont\color{brandDark}\bfseries \hoten}\\[0.15cm]
+    {\fontsize{9.5}{13.5}\selectfont\color{brandDark}
+    \begin{itemize}[leftmargin=*,label=\color{brandGold}\tiny$\bullet$,itemsep=5pt,parsep=0pt,topsep=0pt]
+        \item Tốt nghiệp loại \textbf{Giỏi} trường Đại học Sư phạm TP.HCM.
+        \item Đang học \textbf{Thạc sĩ} ngành Lí luận và Phương pháp dạy học Toán (định hướng nghiên cứu) tại ĐH Sư phạm TP.HCM.
+        \item \textbf{8 năm kinh nghiệm} dạy Toán (Lớp 6 -- 12), chuyên THCS, tuyển sinh lớp 10 TP.HCM, ôn thi Đại học.
+        \item Nhiều học sinh đỗ vào trường THPT Nguyễn Thượng Hiền.
+        \item Hệ thống website học tập cá nhân hóa:
+        
+        \href{https://vinhmath.com}{\color{brandNavy}\textbf{vinhmath.com}}
+    \end{itemize}}
+};
+\fi
+
+% Bottom decorative bar
+\fill[brandNavy] (current page.south west) rectangle ([yshift=1.5cm]current page.south east);
+\fill[brandBlue] (current page.south west) rectangle ([xshift=5.5cm, yshift=1.5cm]current page.south west);
+
+\end{tikzpicture}
+\clearpage

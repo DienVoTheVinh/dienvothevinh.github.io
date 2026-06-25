@@ -136,224 +136,55 @@ function bao(msg, loai) {
 
 // Preamble mặc định được cấu trúc từ tài liệu của thầy
 var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
-\\usepackage{fouriernc}
-\\let\\widering\\relax
+\\usepackage{newpxtext} % Palatino — font serif cổ điển cho sách toán
+\\usepackage{newpxmath} % Math font hài hoà với Palatino
+\\linespread{1.25} % Khoảng cách dòng thoáng, tối ưu đọc
+\\let\\widering\\relax % Tránh xung đột với yhmath package
 
-% --- BỘ NHẬN DIỆN THƯƠNG HIỆU VINHMATH BRAND COLORS ---
-\\usepackage[dvipsnames,table]{xcolor}
-\\definecolor{vmAccent}{HTML}{B5483A}     % Đỏ son (Hanko Red) - Điểm nhấn chính
-\\definecolor{vmAccentSoft}{HTML}{F6E9E6} % Nền đỏ son nhạt
-\\definecolor{vmOk}{HTML}{5E7B5E}         % Xanh Matcha - Cho bài tập & section chính
-\\definecolor{vmOkSoft}{HTML}{EAF0EA}     % Nền xanh Matcha nhạt
-\\definecolor{vmWarn}{HTML}{A8842C}       % Vàng hổ phách trầm - Cho lý thuyết/định lý
-\\definecolor{vmWarnSoft}{HTML}{F5EEDD}   % Nền hổ phách nhạt
-\\definecolor{vmInk}{HTML}{1F1D1A}        % Mực charcoal đen dịu
-\\definecolor{vmBg}{HTML}{F7F5F1}         % Nền giấy Washi ấm
-\\definecolor{vmLine}{HTML}{E4E0D8}       % Màu đường kẻ phân cách
-\\definecolor{warmgray}{HTML}{A8A29A}     % Xám ấm thương hiệu (ink-3)
+\\def\\loaitailieu{LT-3} % Chọn loại tài liệu (LT-1, LT-2, LT-3, LT-4, BT-0, etc.)
+\\def\\mausac{Y} % Chọn kiểu màu (Y: Có màu, N: Đen trắng)
 
-\\def\\mauVD{vmAccent}                      % Màu chính cho Ví dụ (Đỏ son)
-\\def\\mauEX{vmOk}                          % Màu chính cho Câu hỏi / Đề bài (Matcha)
-\\def\\mauBT{vmWarn}                        % Màu chính cho Bài tập tự luyện (Amber)
-\\def\\mauLG{vmAccent}                      % Màu cho Lời giải (Đỏ son)
-\\def\\mauDA{\\mauEX}                        % Màu đáp án đúng
-\\def\\mauTrue{vmAccent}                    % Màu của đáp án khoanh tròn đúng
-\\def\\mauPART{vmInk}                       % Màu phần
-\\def\\mauCHAP{vmAccent}                    % Màu chương
-\\def\\mauSEC{vmOk}                         % Màu Section
-\\def\\mauSUBSEC{vmWarn}                    % Màu Subsection
-\\def\\mauSUBSUBSEC{vmInk}                  % Màu Subsubsection
-\\def\\mauphan{vmInk}
-\\def\\mauchuphan{vmInk}
-\\def\\mauchuong{vmAccent}
-\\def\\maunenmucluc{white}
-\\def\\maumlmot{vmAccent}
-\\def\\maumlhai{vmOk}
-\\def\\maumlba{vmWarn}
-\\def\\maubai{vmOk}
-\\def\\mausubsec{vmWarn}
-\\def\\mausubsecphu{vmAccent}
-\\def\\mausubsubsec{vmInk}
-\\def\\maupara{vmInk}
-\\def\\maufoot{vmInk}
-\\def\\mauchufoot{vmInk}
-\\def\\maufootmot{vmAccent}
-\\def\\maufoothai{vmOk}
-\\def\\maufootba{vmWarn}
-\\def\\maudang{vmAccent}
-\\def\\maunendang{white}
-\\def\\maudl{vmInk}
-\\def\\nendl{vmBg}
-\\def\\maudn{vmAccent}
-\\def\\nendn{vmAccentSoft}
-\\def\\maucy{vmAccent}
-\\def\\maupt{vmInk}
-\\def\\mauitemCI{vmAccent}
-\\def\\mauitemKN{vmOk}
-\\def\\itemKN{\\color{\\mauitemKN}\\faCheckSquareO}
-\\def\\itemCI{\\color{\\mauitemCI}\\faCheckCircleO}
+% Các thông số trang tài liệu đối xứng twoside
+\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1.8}\\def\\phai{1.2}
+\\def\\topset{0.5}
+\\def\\botset{0.75}
+\\def\\leftnote{4.5}
 
-% --- THÔNG SỐ TRANG ---
-\\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
-\\def\\watermarktext{VinhMath}
-\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
-\\def\\SDT{0866197857}
+\\def\\trungtam{1} % Chọn trung tâm (1: Thầy Vinh, 2: Duy Minh)
+\\def\\phienban{\\trungtam}
 
-% --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---
-\\usepackage{longtable,multirow,makecell,tabularx}
-\\usepackage{diagbox}
-\\usepackage[shortlabels]{enumitem}
-\\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
-\\usepackage{tikz} 
-\\usepackage{tkz-euclide}
-\\usepackage{tikz-3dplot}
-\\usepackage{tkz-tab}
-\\usepackage{pifont}
-\\usepackage{bbding}
-\\usepackage{stackengine}
-\\usepackage{scalerel}
-\\usepackage{array}
-\\usepackage{xcolor,colortbl,tasks}
-\\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
-\\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
-\\usetikzlibrary{shadings,fadings}
-\\usepackage{pgfplots}
-\\usepackage{pgfornament}
-\\usepgfplotslibrary{fillbetween}
-\\pgfplotsset{compat=1.9}
-\\usepackage[hidelinks,unicode]{hyperref}
-\\usepackage{pdfpages}
-\\usepackage{currfile}
-\\usepackage[outline]{contour}
-\\usepackage{fontawesome}
-\\usepackage{lipsum}
-\\usepackage{everypage}
-\\usepackage{microtype}
-\\setlength{\\emergencystretch}{3em}
+\\ifnum\\trungtam=1
+    % Trung tâm 1: Điền Võ Thế Vinh
+    \\def\\hoten{Thầy Điền Võ Thế Vinh}
+    \\def\\SDT{0866197857}
+    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
+\\else
+    % Trung tâm 2: Duy Minh
+    \\def\\hoten{Nhóm GV Duy Minh}
+    \\def\\SDT{0937850812}
+    \\def\\DC{248A Nguyễn Hồng Đào, phường 14, quận Tân Bình}
+    \\def\\watermarktext{Trung tâm BDVH Duy Minh - Nhóm GV Duy Minh}
+\\fi
 
-\\arrayrulecolor{teal}
-\\newcolumntype{C}[1]{>{\\centering\\arraybackslash}p{#1}}
-\\newcolumntype{L}[1]{>{\\raggedright\\arraybackslash}p{#1}}
-\\usepackage[top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt] {geometry}
-\\usepackage{varwidth}
+\\input{cautruc13/mausac-minimal}
+\\def\\iconVD{\\faGg\\,}
+\\input{cautruc13/Khai-bao-minimal}
+\\input{cautruc13/BosungK}
+\\input{cautruc13/\\loaitailieu}
 
-\\setlength{\\columnsep}{8mm}
-\\setlength{\\columnseprule}{0.4pt}
-\\def\\columnseprulecolor{\\color{warmgray}}
+\\renewcommand{\\indapan}[2]{}
+\\exitdapso
 
-% --- GÓI TRẮC NGHIỆM EX_TEST ---
-\\usepackage[loigiai]{ex_test} 
-\\font\\damEX=ugqb8v at 13pt
-\\def\\loigiaiEX{\\damEX\\color{\\mauLG}\\faCommenting\\ Lời giải.}
-\\renewcommand{\\nameex}{\\damEX\\color{\\mauEX} \\iconVD Câu}
-\\def\\qedEX{\\color{\\mauDC}\\ensuremath{\\square}}
-\\newcommand{\\hoac}[1]{\\left[\\begin{aligned}#1\\end{aligned}\\right.}
-\\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right.}
-\\usepackage{esvect}
-\\def\\vec{\\vv}
-\\def\\overrightarrow{\\vv}
-\\DeclareSymbolFont{symbolsC}{U}{txsyc}{m}{n}
-\\DeclareMathSymbol{\\varparallel}{\\mathrel}{symbolsC}{9}
-\\DeclareMathSymbol{\\parallel}{\\mathrel}{symbolsC}{9}
+\\def\\truocVD{Các ví dụ}
+\\def\\truocBT{Bài tập vận dụng}
+\\def\\truocEX{Bài tập nâng cao}
 
-% --- WATERMARK LỀ PHẢI ---
-\\AddEverypageHook{%
-\\begin{tikzpicture}[remember picture,overlay]
-\\coordinate (margin) at ([xshift=-5mm]current page.east);
-\\draw[vmAccent!40,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
-\\fill[vmAccent] ([yshift=7.2cm]margin) circle (1.5pt);
-\\node[rotate=90,anchor=center,font=\\fontfamily{qag}\\fontseries{b}\\fontsize{10}{12}\\selectfont,text=vmAccent!60] at (margin) {\\watermarktext};
-\\draw[vmAccent!40,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
-\\fill[vmAccent] ([yshift=-7.2cm]margin) circle (1.5pt);
-\\end{tikzpicture}%
-}
+\\def\\chamngon{Thà để giọt mồ hôi rơi trên trang sách còn hơn để nước mắt rơi ướt cả đề thi}
+\\def\\trenphai{}
+\\def\\duoiphai{}
 
-% --- HEADER & FOOTER ---
-\\usepackage{fancyhdr,lastpage}
-\\pagestyle{fancy}
-\\fancyhf{}
-\\renewcommand{\\headrulewidth}{0.5pt}
-\\renewcommand{\\footrulewidth}{0pt}
-\\renewcommand{\\headrule}{\\hbox to\\headwidth{\\color{\\maufoot}\\leaders\\hrule height \\headrulewidth\\hfill}}
-\\fancyhead[L]{\\color{\\maufoot}\\sffamily\\bfseries Lớp Toán Thầy Vinh}
-\\fancyhead[R]{\\color{\\maufoot}\\sffamily\\bfseries VinhMath}
-\\fancyfoot[L]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faMapMarker\\ \\DC}
-\\fancyfoot[C]{\\color{warmgray}\\fontsize{9pt}{11pt}\\selectfont\\faPhone\\ \\SDT}
-\\fancyfoot[R]{\\color{\\maufoot}\\fontsize{9pt}{11pt}\\selectfont\\sffamily Trang \\thepage/\\pageref{LastPage}}
-
-% --- PHÂN CẤP TIÊU ĐỀ ---
-\\usepackage[explicit]{titlesec}
-\\usepackage{titledot}
-\\setcounter{secnumdepth}{4}
-\\renewcommand{\\thechapter}{\\arabic{chapter}}
-\\renewcommand{\\thesection}{\\arabic{section}}
-\\renewcommand{\\thesubsection}{\\Alph{subsection}}
-\\renewcommand{\\thesubsubsection}{\\arabic{subsubsection}}
-
-% --- MÔI TRƯỜNG DẠNG, ĐỊNH LÝ, ĐỊNH NGHĨA ---
-\\usepackage[most]{tcolorbox}
-\\def\\beginboxVD{\\begin{tcolorbox}[enhanced,breakable,colback=vmAccentSoft,colframe=\\mauVD,coltitle=\\mauVD,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
-\\def\\beginboxEX{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauEX,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
-\\def\\beginboxBT{\\begin{tcolorbox}[enhanced,breakable,colback=white,colframe=\\mauBT,boxrule=0pt,leftrule=3pt,sharp corners,left=2mm,right=2mm,top=2mm,bottom=2mm,before skip=2mm,after skip=2mm,parbox=false]}
-\\def\\endbox{\\end{tcolorbox}}
-
-\\newcounter{dang}\\setcounter{dang}{0}
-\\renewcommand{\\thedang}{\\arabic{dang}}
-\\makeatletter
-\\@addtoreset{dang}{subsection}
-\\@addtoreset{bt}{subsection}
-\\@addtoreset{ex}{subsection}
-\\@addtoreset{vd}{subsection}
-\\makeatother
-
-\\newtcolorbox{dangg}[1]{enhanced,breakable,colback=white,colframe=\\maudang,coltitle=white,colbacktitle=\\maudang,boxrule=0pt,toprule=2pt,sharp corners,fonttitle=\\bfseries\\sffamily,title={Dạng \\stepcounter{dang}\\thedang. #1},attach boxed title to top left={yshift=-2mm, xshift=0mm},boxed title style={sharp corners, boxrule=0pt},left=2mm,right=2mm,top=4mm,bottom=2mm,before upper={\\setlength{\\parskip}{0.3em}}}
-\\newenvironment{dang}[1]{\\begin{dangg}{#1}}{\\end{dangg}}
-
-\\newenvironment{boxdl}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,colback=\\nendl,boxrule=0pt,frame hidden,opacityback=0.5,left=2mm,right=0pt,bottom=1.5pt,top=1.5pt,before skip=2mm,after skip=2mm,overlay={\\draw[double,line width=1.5pt,\\maudl] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}]}{\\end{tcolorbox}}
-\\newenvironment{boxdn}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,colback=\\maudn!3,boxrule=0pt,frame hidden,opacityback=0.5,left=2mm,right=0pt,bottom=1.5pt,top=1.5pt,before skip=2mm,after skip=2mm,overlay={\\draw[double,line width=1.5pt,\\maudn] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}]}{\\end{tcolorbox}}
-
-\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}[section]
-\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
-\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
-\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
-\\newtheorem{myvidu}{\\color{\\mauVD}\\bfseries Ví dụ}
-\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
-\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
-\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
-\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
-
-\\newenvironment{dn}{\\begin{boxdn}\\begin{mydn}}{\\end{mydn}\\end{boxdn}}
-\\newenvironment{dl}{\\begin{boxdl}\\begin{mydl}}{\\end{mydl}\\end{boxdl}}
-\\newenvironment{tomtat}{}{}
-\\newenvironment{note}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,opacityback=0,boxrule=0pt,frame hidden,left=8mm,right=0pt,bottom=0pt,top=0pt,before skip=1mm,after skip=1mm,underlay unbroken and first={\\node[\\maucy,font=\\large\\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\\faExclamationTriangle};},fontupper=\\it]}{\\end{tcolorbox}}
-\\newenvironment{luuy}{\\begin{tcolorbox}[enhanced jigsaw,breakable,pad at break*=1mm,opacityback=0,boxrule=0pt,frame hidden,left=8mm,right=0pt,bottom=0pt,top=0pt,before skip=1mm,after skip=1mm,underlay unbroken and first={\\node[\\maucy,font=\\large\\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\\faExclamationTriangle};},fontupper=\\it]}{\\end{tcolorbox}}
-
-\\def\\khoanhtrondapan{}
-\\def\\khongkhoanhtrondapan{}
-\\def\\FULLWIDTH{\\newgeometry{top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt}}
-\\def\\NOTE{\\newgeometry{top=\\tren cm, bottom=\\duoi cm, left=\\trai cm, right=\\phai cm, headheight=24pt}}
-\\def\\indapan#1#2{}
-\\def\\dotlineEX#1{\\par\\noindent\\dotfill\\par}
-\\def\\mauDC{\\mauLG!50}
-\\setlength{\\parindent}{0pt}
-
-% --- CẤU HÌNH KIỂU TÀI LIỆU (LT-3) ---
-\\AtBeginEnvironment{vd}{
-	\\beginboxVD
-	\\renewcommand{\\loigiai}[1]{
-		\\endbox
-		\\begin{onlysolution}
-			##1
-		\\end{onlysolution}
-		\\def\\endbox{}
-	}
-}
-\\AtEndEnvironment{vd}{\\endbox}
-\\AtBeginEnvironment{ex}{\\def\\iconVD{}}
-\\AtBeginEnvironment{bt}{\\def\\iconVD{}}
-\\AtBeginEnvironment{vd}{\\def\\iconVD{\\faGg}}
-\\AtBeginEnvironment{ex}{\\def\\endbox{}}
-\\AtBeginEnvironment{bt}{\\def\\endbox{}}`;
+\\khoanhtrondapan`;
 
 function layPreamble() {
   try {
@@ -2879,6 +2710,76 @@ const TITLE_DOT_STY_CONTENT = `% titledot.sty nhằm mục đích chấm các s�
 \\endinput
 `;
 
+// Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
+async function processVirtualFiles(tex) {
+  // 1. Resolve macro \\loaitailieu if present in \\input
+  var loaiMatch = tex.match(/\\def\\loaitailieu\{([^}]+)\}/);
+  var loaitailieu = loaiMatch ? loaiMatch[1].trim() : 'LT-3';
+  tex = tex.replace(/\\input\{cautruc13\/\\loaitailieu\}/g, '\\input{cautruc13/' + loaitailieu + '}');
+
+  // 2. Regex to find \\input{...} or \\include{...}
+  var inputRegex = /\\(input|include)\{([^}]+)\}/g;
+  var match;
+  var virtualFiles = '';
+  var processedPaths = new Set();
+
+  var matches = [];
+  while ((match = inputRegex.exec(tex)) !== null) {
+    matches.push(match[2].trim());
+  }
+
+  for (var importPath of matches) {
+    if (processedPaths.has(importPath)) continue;
+    processedPaths.add(importPath);
+
+    if (importPath.startsWith('cautruc13/') || importPath.startsWith('bia13/') || importPath.endsWith('.tex') || importPath.endsWith('.sty')) {
+      var urlPath = importPath;
+      if (!urlPath.endsWith('.tex') && !urlPath.endsWith('.sty')) {
+        urlPath += '.tex';
+      }
+      
+      try {
+        var res = await fetch(urlPath);
+        if (res.ok) {
+          var content = await res.text();
+          var baseName = importPath.substring(importPath.lastIndexOf('/') + 1);
+          if (!baseName.endsWith('.tex') && !baseName.endsWith('.sty')) {
+            baseName += '.tex';
+          }
+          
+          if (baseName === 'bia-dynamic.tex') {
+            content = content.replace(/\\includegraphics\[width=6\.0cm\]\{logo\/VinhMath_logo\.png\}/g, 
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=6.0cm]{logo/VinhMath_logo.png}}{%
+\\node[anchor=center, align=center] at ([xshift=2.75cm, yshift=0.2cm]current page.center) {
+    {\\color{brandNavy}\\fontsize{24}{28}\\selectfont\\bfseries\\sffamily VINH}\\\\[0.1cm]
+    {\\color{brandGold}\\fontsize{20}{24}\\selectfont\\bfseries\\sffamily MATH}
+};}`);
+          }
+          if (baseName === 'Khai-bao-minimal.tex') {
+            content = content.replace(/\\includegraphics\[width=10\.5cm\]\{logo\/VinhMath_logo\.png\}/g,
+              `\\IfFileExists{logo/VinhMath_logo.png}{\\includegraphics[width=10.5cm]{logo/VinhMath_logo.png}}{}`);
+          }
+
+          virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
+          
+          var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
+          tex = tex.replace(replacer, '\\input{' + baseName + '}');
+        } else {
+          console.warn('Không thể tải file phụ thuộc: ' + urlPath);
+        }
+      } catch (e) {
+        console.error('Lỗi khi tải file phụ thuộc ' + urlPath + ':', e);
+      }
+    }
+  }
+
+  if (virtualFiles) {
+    tex = virtualFiles + tex;
+  }
+  return tex;
+}
+
 // ---- Gửi LaTeX lên texlive.net, nhận về PDF ----
 async function bienDich() {
   var tex = $('codeTex').value.trim();
@@ -2889,6 +2790,9 @@ async function bienDich() {
     var preamble = layPreamble();
     tex = preamble + '\n\\begin{document}\n' + tex + '\n\\end{document}';
   }
+
+  // Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
+  tex = await processVirtualFiles(tex);
 
   // Tự động nhúng ex_test.sty nếu tài liệu sử dụng gói này
   if (tex.includes('ex_test') && !tex.includes('begin{filecontents*}{ex_test.sty}')) {
