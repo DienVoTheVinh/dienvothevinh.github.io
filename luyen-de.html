@@ -104,7 +104,10 @@
 .opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .opt-item { display: flex; flex-direction: column; gap: 4px; }
 .opt-item label { font-size: .82rem; font-weight: 600; color: var(--ink-2); }
-.opt-select, .opt-input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: .88rem; width: 100%; }
+.opt-select, .opt-input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: .88rem; width: 100%; transition: border-color .15s, box-shadow .15s; cursor: pointer; }
+.opt-select:hover, .opt-input:hover { border-color: var(--accent); }
+.opt-select:focus, .opt-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.opt-hint { margin-top: 14px; font-size: .8rem; line-height: 1.45; color: var(--ink-2); background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 6px; padding: 9px 12px; }
 
 /* Loading PDF screen */
 .loading-pdf { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; }
@@ -252,7 +255,7 @@
           <div class="preset-badge-row">
             <span class="preset-badge">1 cột</span>
             <span class="preset-badge">Thoáng</span>
-            <span class="preset-badge">Có dòng chấm</span>
+            <span class="preset-badge">4 dòng chấm</span>
           </div>
         </div>
       </div>
@@ -330,11 +333,20 @@
             <option value="frame">Có khung (\choiceTF[t])</option>
           </select>
         </div>
-        <div class="opt-item" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;">
-          <label style="font-size:0.9rem">Chừa dòng chấm sau mỗi câu (Dành cho phiếu bài làm)</label>
-          <input type="checkbox" id="pdfDotLines" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent);">
+        <div class="opt-item">
+          <label>Dòng chấm sau mỗi câu</label>
+          <select class="opt-select" id="pdfDotLines">
+            <option value="0">Không có</option>
+            <option value="2">2 dòng</option>
+            <option value="3">3 dòng</option>
+            <option value="4">4 dòng</option>
+            <option value="5">5 dòng</option>
+            <option value="6">6 dòng</option>
+            <option value="8">8 dòng</option>
+          </select>
         </div>
       </div>
+      <div class="opt-hint">💡 “Dòng chấm” là các dòng kẻ chấm chừa trống để học sinh trình bày lời giải — chỉ in ở bản đề, không in ở bản lời giải.</div>
     </div>
     
     <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px; border-top:1px solid var(--line); padding-top:16px;">
@@ -420,6 +432,15 @@ function tachDeTuLuan(prompt) {
   });
   if (idx === -1) return { de: s, loigiai: s };
   return { de: s.substring(0, idx), loigiai: s.substring(idx) };
+}
+
+/* Sinh n dòng chấm (\dotfill) chừa trống sau mỗi câu cho học sinh trình bày lời giải */
+function taoDongCham(n) {
+  n = parseInt(n, 10) || 0;
+  if (n < 1) return '';
+  var parts = [];
+  for (var i = 0; i < n; i++) parts.push('\\noindent\\dotfill');
+  return '\\medskip ' + parts.join('\\\\') + '\n';
 }
 
 (async function () {
@@ -1402,7 +1423,7 @@ async function chayBienDichTaiCho() {
   var fontFamily = $('pdfFontFamily') ? $('pdfFontFamily').value : 'fouriernc';
   var numStyle = $('pdfNumStyle') ? $('pdfNumStyle').value : 'continuous';
   var tfStyle = $('pdfTfStyle') ? $('pdfTfStyle').value : 'noframe';
-  var dotLines = $('pdfDotLines') ? $('pdfDotLines').checked : false;
+  var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
   // Xác định chế độ xuất bản: học sinh chưa nộp bài thì xem 'exam' ẩn giải, nộp rồi thì xem 'solution' hiện giải
   var cheDo = (currentAttempt && currentAttempt.submitted_at) ? 'solution' : 'exam';
@@ -1470,8 +1491,8 @@ async function chayBienDichTaiCho() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -1490,8 +1511,8 @@ async function chayBienDichTaiCho() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -1504,8 +1525,8 @@ async function chayBienDichTaiCho() {
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
         body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
         body += '\\end{bt}\n';
-        if (cheDo === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (cheDo === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -1925,10 +1946,10 @@ function toggleAdvancedOptions() {
 }
 
 var pdfPresets = {
-  'de-thi': { layout: 'one', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false },
-  'phieu-bai': { layout: 'one', margins: 'loose', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: true },
-  'tiet-kiem': { layout: 'two', margins: 'tight', fontSize: '10', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false },
-  'ghi-chu': { layout: 'margin', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotLines: false }
+  'de-thi': { layout: 'one', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 },
+  'phieu-bai': { layout: 'one', margins: 'loose', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 4 },
+  'tiet-kiem': { layout: 'two', margins: 'tight', fontSize: '10', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 },
+  'ghi-chu': { layout: 'margin', margins: 'normal', fontSize: '12', fontFamily: 'fouriernc', numStyle: 'continuous', tfStyle: 'noframe', dotCount: 0 }
 };
 
 function apDungPreset(presetName) {
@@ -1947,7 +1968,7 @@ function apDungPreset(presetName) {
   $('pdfFontFamily').value = opt.fontFamily;
   $('pdfNumStyle').value = opt.numStyle;
   $('pdfTfStyle').value = opt.tfStyle;
-  $('pdfDotLines').checked = opt.dotLines;
+  $('pdfDotLines').value = String(opt.dotCount);
 }
 
 async function generateAndCompilePDF() {
@@ -1965,7 +1986,7 @@ async function generateAndCompilePDF() {
   var fontFamily = $('pdfFontFamily').value;
   var numStyle = $('pdfNumStyle').value;
   var tfStyle = $('pdfTfStyle').value;
-  var dotLines = $('pdfDotLines').checked;
+  var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
@@ -2031,8 +2052,8 @@ async function generateAndCompilePDF() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -2051,8 +2072,8 @@ async function generateAndCompilePDF() {
           body += '\\loigiai{' + q.solution_latex + '}\n';
         }
         body += '\\end{ex}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
@@ -2065,8 +2086,8 @@ async function generateAndCompilePDF() {
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
         body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
         body += '\\end{bt}\n';
-        if (pdfCompileMode === 'exam' && dotLines) {
-          body += '\\medskip\\noindent\\dotfill\\\\\\noindent\\dotfill\\\\\\noindent\\dotfill\n';
+        if (pdfCompileMode === 'exam' && soDongCham > 0) {
+          body += taoDongCham(soDongCham);
         }
       });
     }
