@@ -1,0 +1,402 @@
+%=====================================
+% Khai báo nhóm Tex (cơ bản) - MINIMALIST VERSION + WATERMARK + FOOTER
+%=====================================
+%===========Bảng
+\usepackage{longtable,multirow,makecell,tabularx}
+\usepackage{diagbox}
+\usepackage[shortlabels]{enumitem}
+% xcolor đã được load trong mausac-minimal.tex
+%---
+\let\Bbbk\relax
+\usepackage{extarrows,amsmath,amssymb,mathrsfs,maybemath,xlop,polynom,slashbox}
+%\usepackage{yhmath} % Bỏ để tránh xung đột \widering với fouriernc
+%\usepackage{enumerate}
+\usepackage{tikz} 
+\usepackage{tkz-euclide}
+\usepackage{tikz-3dplot}
+\usepackage{tkz-tab}
+\usepackage{pifont}
+\usepackage{bbding}
+\usepackage{stackengine}
+\usepackage{scalerel}
+\usepackage{array}
+\usepackage{xcolor,colortbl,tasks}
+%==========
+\usetikzlibrary{math,through,calc,intersections,angles,quotes,shapes,shapes.geometric,arrows,patterns,snakes,matrix,chains,arrows.meta,decorations.shapes,decorations.fractals,decorations.markings,shadows}
+\usetikzlibrary{positioning,decorations.text,decorations.pathmorphing}
+\usetikzlibrary{shadings,fadings}
+\usepackage{pgfplots}
+\usepackage{pgfornament}
+\usepgfplotslibrary{fillbetween}
+\pgfplotsset{compat=1.9}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{pdfpages} % Cho phép chèn file PDF với \includepdf
+\usepackage{currfile}
+\usepackage[outline]{contour}
+\usepackage{fontawesome}
+\usepackage{lipsum}
+\usepackage{everypage,eso-pic}
+\usepackage{microtype} % Cải thiện khoảng cách giữa các từ/ký tự
+\setlength{\emergencystretch}{3em} % Giúp giãn dòng đều hơn, tránh lỗi underfull
+
+\arrayrulecolor{brandNavy}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\usepackage[top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=24pt] {geometry}
+\usepackage{varwidth}
+
+% Thiết lập cho layout 2 cột
+\setlength{\columnsep}{8mm} % Khoảng cách giữa 2 cột
+\setlength{\columnseprule}{0.4pt} % Đường kẻ mảnh giữa 2 cột
+\def\columnseprulecolor{\color{warmgray}} % Màu đường kẻ
+%--------------Gói trắc nghiệm EX-TEST
+\usepackage[loigiai]{ex_test} 
+\ifdefined\BTRL\else\def\BTRL{}\fi 
+
+\font\damEX=ugqb8v at 13pt
+\def\loigiaiEX{\makebox[\linewidth][c]{\rule[-0.2cm]{0pt}{0.6cm}\color{brandNavy}\damEX\faPencilSquareO\ Lời giải}}
+\renewcommand{\nameex}{\damEX\color{\mauEX} \iconVD Câu}
+\def\qedEX{\color{\mauDC}\ensuremath{\square}}
+\newcommand{\hoac}[1]{\left[\begin{aligned}#1\end{aligned}\right.}
+\newcommand{\heva}[1]{\left\{\begin{aligned}#1\end{aligned}\right.}
+
+%----------
+\usepackage{esvect}
+\def\vec{\vv}
+\def\overrightarrow{\vv}
+\DeclareSymbolFont{symbolsC}{U}{txsyc}{m}{n}
+\DeclareMathSymbol{\varparallel}{\mathrel}{symbolsC}{9}
+\DeclareMathSymbol{\parallel}{\mathrel}{symbolsC}{9}
+
+%=====================================
+% TÊN DỌC BÊN LỀ PHẢI - VINHMATH WATERMARK VỚI RUY BĂNG
+%=====================================
+\AddToShipoutPictureBG{%
+\ifnum\value{page}>0
+\begin{tikzpicture}[remember picture,overlay]
+% Faded logo watermark in the center of the page
+\node[opacity=0.08] at (current page.center) {
+    \includegraphics[width=10.5cm]{logo/VinhMath_logo.png}
+};
+\coordinate (margin) at ([xshift=-5mm]current page.east);
+% Ruy băng phía trên
+\draw[brandBlue!30,line width=0.8pt] ([yshift=3.5cm]margin) -- ([yshift=7cm]margin);
+\fill[brandGold] ([yshift=7.2cm]margin) circle (1.5pt);
+% Tên ở giữa
+\node[rotate=90,anchor=center,font=\fontfamily{qag}\fontseries{b}\fontsize{10}{12}\selectfont,text=brandGold!45] at (margin) {\watermarktext};
+% Ruy băng phía dưới
+\draw[brandBlue!30,line width=0.8pt] ([yshift=-3.5cm]margin) -- ([yshift=-7cm]margin);
+\fill[brandGold] ([yshift=-7.2cm]margin) circle (1.5pt);
+\end{tikzpicture}%
+\fi
+}
+
+%--------------------------
+% HEADER AND FOOTER STYLING - MINIMALIST TWOSIDE
+%--------------------------
+\usepackage{fancyhdr,lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{\maufoot}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{\maufoot!30}\leaders\hrule height \footrulewidth\hfill}}
+
+% Header thiết kế đối xứng (Twoside)
+\fancyhead[LE]{\color{\maufoot}\sffamily\bfseries\leftmark}
+\fancyhead[RO]{\color{\maufoot}\sffamily\bfseries\rightmark}
+\fancyhead[RE,LO]{\color{\maufoot}\sffamily\fontsize{9pt}{11pt}\selectfont\itshape VinhMath - Người Học là Trung Tâm}
+
+% Footer thiết kế đối xứng (Twoside)
+\fancyfoot[LE,RO]{\color{\maufoot}\fontsize{9pt}{11pt}\selectfont\sffamily Trang \thepage/\pageref{LastPage}}
+\fancyfoot[CE,CO]{\color{warmgray}\fontsize{8.5pt}{11pt}\selectfont\faMapMarker\ \DC}
+\fancyfoot[RE,LO]{\color{warmgray}\fontsize{9pt}{11pt}\selectfont\faPhone\ \SDT}
+
+% Định nghĩa lại style plain cho trang đầu chương (đối xứng)
+\fancypagestyle{plain}{%
+    \fancyhf{}%
+    \renewcommand{\headrulewidth}{0pt}%
+    \renewcommand{\footrulewidth}{0.4pt}%
+    \renewcommand{\footrule}{\hbox to\headwidth{\color{\maufoot!30}\leaders\hrule height \footrulewidth\hfill}}%
+    \fancyfoot[LE,RO]{\color{\maufoot}\fontsize{9pt}{11pt}\selectfont\sffamily Trang \thepage/\pageref{LastPage}}%
+    \fancyfoot[CE,CO]{\color{warmgray}\fontsize{8.5pt}{11pt}\selectfont\faMapMarker\ \DC}%
+    \fancyfoot[RE,LO]{\color{\maufoot}\fontsize{8.5pt}{11pt}\selectfont\sffamily\bfseries\itshape VinhMath - Người Học là Trung Tâm}%
+}
+
+
+% Logo commands (kept for compatibility but simplified output if needed)
+\def\hienLOGO{} 
+\def\anLOGO{}
+
+%--------------------------
+% SECTION STYLING - MINIMALIST
+%--------------------------
+\usepackage[explicit]{titlesec}
+\usepackage{titledot}
+
+\setcounter{secnumdepth}{4}
+\renewcommand{\thechapter}{\arabic{chapter}}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\Alph{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{subsubsection}}
+
+% Chapter
+\titleformat{\chapter}[display]
+  {\color{\mauchuong}\fontfamily{qag}\bfseries\Huge}
+  {\flushright\fontsize{50}{60}\selectfont\thechapter}
+  {10pt}
+  {\titlerule[2pt]\vspace{1ex}\flushright\Huge\MakeUppercase{#1}}
+\titlespacing*{\chapter}{0pt}{-40pt}{20pt}
+
+% Section
+\titleformat{\section}
+  {\color{\mauSEC}\fontfamily{qag}\bfseries\Large}
+  {\thesection.}
+  {0.5em}
+  {#1}
+  [\titleline{\color{\mauSEC}\titlerule[1pt]}]
+
+% Subsection
+\titleformat{\subsection}
+  {\color{\mauSUBSEC}\fontfamily{qag}\bfseries\large}
+  {\thesubsection.}
+  {0.5em}
+  {#1}
+
+% Subsubsection
+\titleformat{\subsubsection}
+  {\color{\mauSUBSUBSEC}\fontfamily{qag}\bfseries\normalsize}
+  {\thesubsubsection.}
+  {0.5em}
+  {#1}
+
+% Boxes and Environments - MINIMALIST
+\usepackage[most]{tcolorbox}
+
+% Define simple clean boxes
+\def\beginboxVD{
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=\mauVD!5,
+    colframe=\mauVD,
+    coltitle=\mauVD,
+    boxrule=0pt,
+    leftrule=3pt,
+    sharp corners,
+    left=2mm,right=2mm,top=2mm,bottom=2mm,
+    before skip=2mm, after skip=2mm,
+    parbox=false
+]
+}
+
+\def\beginboxEX{
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=\mauEX,
+    boxrule=0pt,
+    leftrule=3pt,
+    sharp corners,
+    left=2mm,right=2mm,top=2mm,bottom=2mm,
+    before skip=2mm, after skip=2mm,
+    parbox=false
+]
+}
+
+\def\beginboxBT{
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=\mauBT,
+    boxrule=0pt,
+    leftrule=3pt,
+    sharp corners,
+    left=2mm,right=2mm,top=2mm,bottom=2mm,
+    before skip=2mm, after skip=2mm,
+    parbox=false
+]
+}
+
+\def\endbox{\end{tcolorbox}}
+
+%=====================================
+% Counter cho Dạng toán
+%=====================================
+\newcounter{dang}\setcounter{dang}{0}
+\renewcommand{\thedang}{\arabic{dang}}
+\makeatletter
+\@addtoreset{dang}{subsection}
+\@addtoreset{bt}{subsection}
+\@addtoreset{ex}{subsection}
+\@addtoreset{vd}{subsection}
+\makeatother
+
+% DANG (Type of problem) env
+\newtcolorbox{dangg}[1]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=\maudang,
+    coltitle=white,
+    colbacktitle=\maudang,
+    boxrule=0pt,
+    toprule=2pt,
+    sharp corners,
+    fonttitle=\bfseries\sffamily,
+    title={Dạng \stepcounter{dang}\thedang. #1},
+    attach boxed title to top left={yshift=-2mm, xshift=0mm},
+    boxed title style={sharp corners, boxrule=0pt},
+    left=2mm,right=2mm,top=4mm,bottom=2mm,
+    before upper={\setlength{\parskip}{0.3em}}
+}
+\newenvironment{dang}[1]{\begin{dangg}{#1}}{\end{dangg}}
+
+%=====================================
+% Môi trường Định nghĩa, Định lí
+%=====================================
+\newenvironment{boxdl}
+{\begin{tcolorbox}
+		[enhanced jigsaw,breakable,pad at break*=1mm,
+		colback=\nendl,boxrule=0pt,frame hidden, 
+		opacityback=0.5,
+		left=2mm, right=0pt, bottom=1.5pt, top=1.5pt,
+		before skip=2mm,
+		after skip=2mm,
+		overlay={\draw[double,line width=1.5pt,\maudl] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}
+		]}
+	{\end{tcolorbox}}
+
+\newenvironment{boxdn}
+{\begin{tcolorbox}
+		[enhanced jigsaw,breakable,pad at break*=1mm,
+		colback=\maudn!3,boxrule=0pt,frame hidden, 
+		opacityback=0.5,
+		left=2mm, right=0pt, bottom=1.5pt, top=1.5pt,
+		before skip=2mm,
+		after skip=2mm,
+		overlay={\draw[double,line width=1.5pt,\maudn] ([xshift=3pt]interior.north west)--([xshift=3pt]interior.south west);}
+		]}
+	{\end{tcolorbox}}
+
+\newenvironment{dn}{\begin{boxdn}\begin{mydn}}{\end{mydn}\end{boxdn}}
+\newenvironment{dl}{\begin{boxdl}\begin{mydl}}{\end{mydl}\end{boxdl}}
+
+%=====================================
+% Môi trường Tóm tắt
+%=====================================
+\newenvironment{tomtat}{}{}
+
+%=====================================
+% Môi trường Chú ý và Lưu ý
+%=====================================
+\newenvironment{note}
+{\begin{tcolorbox}
+		[enhanced jigsaw,breakable,pad at break*=1mm,
+		opacityback=0,boxrule=0pt,frame hidden,
+		left=8mm, right=0pt, bottom=0pt, top=0pt,
+		before skip=1mm,
+		after skip=1mm,
+		underlay unbroken and first={
+			\node[\maucy,font=\large\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\faExclamationTriangle};
+		},
+		fontupper=\it,
+		]}
+	{\end{tcolorbox}}
+
+\newenvironment{luuy}
+{\begin{tcolorbox}
+		[enhanced jigsaw,breakable,pad at break*=1mm,
+		opacityback=0,boxrule=0pt,frame hidden,
+		left=8mm, right=0pt, bottom=0pt, top=0pt,
+		before skip=1mm,
+		after skip=1mm,
+		underlay unbroken and first={
+			\node[\maucy,font=\large\bfseries] at ([xshift=0.3cm,yshift=-0.32cm]interior.north west) {\faExclamationTriangle};
+		},
+		fontupper=\it,
+		]}
+	{\end{tcolorbox}}
+
+% Other environments
+\newtheorem{mydn}{\color{\maudn}\damEX Định nghĩa}[section]
+\newtheorem{vd}{\color{\mauVD}\damEX\iconVD Ví dụ}
+\newtheorem{bt}{\color{\mauBT}\damEX\iconVD Bài}
+\newtheorem{ap}{\color{\mauBT}\damEX\iconVD Áp dụng}
+\newtheorem{myvidu}{\color{\mauVD}\damEX\iconVD Ví dụ}
+\newtheorem{mydl}{\color{\maudl}\damEX Định lí}
+\newtheorem{nx}{\color{\maucy}\damEX Nhận xét}
+\newtheorem{phantich}{\color{\maupt}\damEX Phân tích}
+\newtheorem{tc}{\color{\maudl}\damEX Tính chất}
+
+% Helper macros
+\def\khoanhtrondapan{}
+\def\khongkhoanhtrondapan{}
+\def\FULLWIDTH{\newgeometry{top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=24pt}}
+\def\NOTE{\newgeometry{top=\tren cm, bottom=\duoi cm, left=\trai cm, right=\phai cm, headheight=24pt}}
+\def\indapan#1#2{}
+% Các biến này được định nghĩa trong file main, không định nghĩa lại ở đây
+% \def\chamngon{}
+% \def\trenphai{}
+% \def\duoiphai{}
+% \def\hoten{}
+% \def\SDT{}
+% \def\DC{}
+
+% Canh chỉnh mục lục chính
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\contentsmargin{1.5cm}
+
+% Vẽ số tròn cho Subsection trong mục lục
+\newcommand{\tron}[1]{%
+	\begin{tikzpicture}[baseline=(A.base)]%
+		\node[circle,draw=brandGold,line width=0.5pt,fill=white,inner sep=2pt,outer sep=1.5pt] (A) {\color{brandGold} #1};
+		\node[circle,draw=white,fill=brandGold,inner sep=1pt,outer sep=1pt] (A) {\bfseries\color{white} #1};
+	\end{tikzpicture}%
+}
+
+\titlecontents{part}[0pc]
+{\addvspace{12pt}\color{brandNavy}\fontsize{16pt}{18pt}\selectfont\bfseries}
+{Phần \thecontentslabel\quad}
+{}
+{\hfill\contentspage}
+[\addvspace{4pt}{\color{brandGold}\titlerule[1.5pt]}\addvspace{8pt}]
+
+\titlecontents{chapter}[5.2pc]
+{\addvspace{8pt}\color{brandNavy}\fontsize{11pt}{13pt}\selectfont\bfseries\sffamily}
+{\contentslabel[\chaptername\ \thecontentslabel.]{5.2pc}}
+{}
+{\dotfill\contentspage}
+
+\titlecontents{section}[6.5pc]
+{\addvspace{4pt}\color{brandBlue}\fontsize{10.5pt}{12pt}\selectfont\bfseries\sffamily}
+{\contentslabel[\thecontentslabel.]{1.3pc}}
+{}
+{{\scriptsize\dotfill}\contentspage}
+
+\titlecontents{subsection}[8.0pc]
+{\addvspace{2pt}\color{brandGold}\fontsize{10pt}{11.5pt}\selectfont\sffamily\bfseries}
+{\contentslabel[\tron{\thecontentslabel}]{1.5pc}}
+{}
+{{\tiny\dotfill}\contentspage}
+
+\titlecontents{subsubsection}[9.5pc]
+{\addvspace{1pt}\color{brandDark}\fontsize{9.5pt}{11pt}\selectfont\itshape}
+{\contentslabel[\thecontentslabel]{1.5pc}}
+{}
+{{\tiny\dotfill}\contentspage}
+
+% TOC
+\def\muclucchinh{
+    \tableofcontents
+    \pagenumbering{roman}
+}
+
+% Fix for ex_test compatibility
+\def\dotlineEX#1{\par\noindent\dotfill\par}
+\def\mauDC{\mauLG!50}
+\setlength{\parindent}{0pt}

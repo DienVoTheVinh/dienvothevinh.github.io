@@ -1,0 +1,50 @@
+%\hideansEX{ex}
+%\hideansEX{vd}
+%\hideansEX{bt}
+%\hideenviron{dang}
+\renewcommand{\TF}[1]{\boxEX{}}% ẩn kết quả \TF
+%---------- Ẩn lí thuyết
+%--Ẩn các mục con, chỉ để BÀI
+%\foreach \moitruong in{\subsection,\subsubsection,\chapter}{\renewcommand{\moitruong}[1]{}}
+\renewcommand{\subsection}[1]{}
+%\renewcommand{\subsubsection}[1]{}
+%\renewcommand{\chapter}[1]{}
+\renewcommand{\part}[1]{}
+%--Ẩn các môi trường
+%\hideenviron{dn}
+\hideenviron{note}
+%\hideenviron{dl}
+\hideenviron{boxkn}
+\hideenviron{nx}
+\hideenviron{tomtat}
+%\hideenviron{vd}
+%--ẩn bìa và mục lục
+%\renewcommand{\includepdf}[1]{}
+%\def\muclucchinh{}
+%------------Chuyển bt về ex
+%\renewenvironment{bt}{\begin{ex}}{\end{ex}}
+%------------
+\def\iconVD{}
+%------------
+%------------
+\BeforeBeginEnvironment{bt}{
+	\ifnum\the\value{bt}=0
+	\par
+	\subsubsection{\truocBT}
+	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocBT}}\vspace*{2pt}%
+	\fi
+}
+\BeforeBeginEnvironment{dang}{
+	\ifnum\the\value{dang}=0
+	\par
+	\subsubsection{\truocVD}
+	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocVD}}\vspace*{2pt}
+	\fi
+}
+\BeforeBeginEnvironment{ex}{
+	\ifnum\the\value{ex}=0
+	\par
+	\subsubsection{\truocEX}
+	%\vspace*{2pt}\dnsub{\fontfamily{qag}\selectfont\bfseries\stepcounter{stt}\thestt\,\,--\,\,\MakeUppercase{\truocEX}}\vspace*{2pt}%
+	\fi
+}

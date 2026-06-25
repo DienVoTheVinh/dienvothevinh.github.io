@@ -1,0 +1,53 @@
+%\usepackage{xskak}
+\usepackage{casiovn}
+%\usepackage{etoolbox}%tính toán, công cụ
+%
+%\usepackage{graphicx}
+%\usepackage{tabvar}
+\renewcommand{\vec}[1]{\protect\overrightarrow{#1}}
+\newenvironment{boxtb}{\begin{tomtat}}{\end{tomtat}}
+\newenvironment{makerr}{\begin{noidung}{CHÚ Ý}}{\end{noidung}}
+\def\viduminhhoa{\subsubsection{Ví dụ minh họa}}
+\def\baitaptl{\subsubsection{Bài tập áp dụng}}
+\def\baitapbs{\subsubsection{Bài tập bổ sung}}
+\def\BTVD{\subsubsection{Bài tập vận dụng}}
+%-----Vidu mới
+%--------------------Ví dụ mới
+\newenvironment{vidu}{\begin{boxvidu}\begin{myvidu}}{\end{myvidu}\end{boxvidu}}
+%%%%%%%%%LVD
+\def\baitoan{\faHandORight\ \textbf{Bài toán. }}
+\def\phuongphap{\faHandODown\ \textbf{Phương pháp: }}
+
+\newcommand{\boxde}[1]{%
+	\setcounter{ex}{0} % đặt bộ đếm Câu về 1
+	\setcounter{bt}{0}
+	%	\addcontentsline{toc}{subsection}{#1~\thede} % đưa MT vào mục lục
+	\begin{center}
+		\begin{tikzpicture}[baseline=(A.base),scale=1]%
+			\node[thick,scale=1,fill=teal!80,draw=teal,minimum width=2.5cm,minimum height=0.1cm,rounded corners=2mm] (A) {\bf\fontfamily{qag}\selectfont\color{white}#1};
+		\end{tikzpicture}%
+	\end{center}
+}
+%-----Đn lại lệnh lời giải
+\AtBeginEnvironment{vidu}{
+	\def\loigiaiEX{\makebox[\linewidth][c]{\rule[-0.2cm]{0pt}{0.6cm}\color{brandNavy}\damEX\faPencilSquareO\ Lời giải}}
+}
+\foreach \moitruong in {ex,vd,bt}{
+	\AtBeginEnvironment{\moitruong}{
+		\def\loigiaiEX{\makebox[\linewidth][c]{\rule[-0.2cm]{0pt}{0.6cm}\color{brandNavy}\damEX\faPencilSquareO\ Lời giải}}
+	}
+}
+%%%%%%%%%%% cộng đa thức cột
+\newcommand{\dropsign}[1]{\smash{\llap{\raisebox{-.5\normalbaselineskip}{$#1$\hspace{2\arraycolsep}}}}}
+
+%-----------------
+\newenvironment{luyentap}{\begin{boxvidu}\begin{myvidu}}{\end{myvidu}\end{boxvidu}}
+\newenvironment{kttrongtam}{\begin{boxdn}}{\end{boxdn}}
+\newenvironment{hd}{\begin{boxdn}}{\end{boxdn}}
+\newenvironment{vandung}{\begin{bt}}{\end{bt}}
+\newenvironment{trithuc}{\begin{boxdn}}{\end{boxdn}}
+\renewenvironment{hd}{\begin{boxdl}}{\end{boxdl}}
+\newenvironment{bttuongtu}{\begin{bt}}{\end{bt}}
+\def\baitap{\subsection{BÀI TAPPPPPPPP}}
+
+\def\BTTL{}
