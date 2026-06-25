@@ -367,6 +367,7 @@ body.swm-study #vmStudyInline { display: none !important; } /* ẩn đồng hồ
 
     <div class="swm-audio">
       <button class="swm-snd" data-k="lofi" onclick="toggleSound('lofi',this)">🎵 Lofi</button>
+      <button class="swm-snd" data-k="songnao" onclick="toggleSound('songnao',this)">🧠 Sóng não</button>
       <button class="swm-snd" data-k="rain" onclick="toggleSound('rain',this)">🌧️ Mưa</button>
       <button class="swm-snd" data-k="fire" onclick="toggleSound('fire',this)">🔥 Lửa</button>
       <button class="swm-snd" data-k="wind" onclick="toggleSound('wind',this)">🌬️ Gió</button>
@@ -929,6 +930,8 @@ function batLofi() {
 // Âm thanh thiên nhiên = bản thu THẬT, phát luồng qua CDN jsDelivr (nguồn mở Moodist, CC0/miễn phí)
 var SND_BASE = 'https://cdn.jsdelivr.net/gh/remvze/moodist@main/public/sounds/';
 var SND_URL = {
+  lofi: 'https://cdn.pixabay.com/audio/2026/03/10/audio_64b4580116.mp3',
+  songnao: 'binaural/binaural-alpha.wav',
   rain: 'rain/light-rain.mp3',
   fire: 'nature/campfire.mp3',
   wind: 'nature/wind.mp3',
@@ -938,19 +941,17 @@ var SND_URL = {
 var audioEls = {};
 var amLuong = (function () { var v = parseFloat(localStorage.getItem('vm_swm_vol') || '0.6'); return isNaN(v) ? 0.6 : v; })();
 function toggleSound(kind, btn) {
-  if (kind === 'lofi') {
-    ensureAudio(); if (AC.state === 'suspended') AC.resume();
-    if (amThanh.lofi) { amThanh.lofi.stop(); delete amThanh.lofi; if (btn) btn.classList.remove('on'); }
-    else { amThanh.lofi = batLofi(); if (btn) btn.classList.add('on'); }
+  if (audioEls[kind]) {
+    try { audioEls[kind].pause(); } catch (e) {}
+    audioEls[kind] = null; if (btn) btn.classList.remove('on');
   } else {
-    if (audioEls[kind]) { try { audioEls[kind].pause(); } catch (e) {} audioEls[kind] = null; if (btn) btn.classList.remove('on'); }
-    else {
-      var a = new Audio(SND_BASE + SND_URL[kind]); a.loop = true; a.volume = amLuong;
-      if (btn) { btn.classList.add('on'); btn.dataset.loading = '1'; }
-      a.addEventListener('canplay', function () { if (btn) delete btn.dataset.loading; });
-      a.play().catch(function () {});
-      audioEls[kind] = a;
-    }
+    var u = SND_URL[kind]; if (!u) return;
+    if (u.indexOf('http') !== 0) u = SND_BASE + u;
+    var a = new Audio(u); a.loop = true; a.volume = amLuong;
+    if (btn) { btn.classList.add('on'); btn.dataset.loading = '1'; }
+    a.addEventListener('canplay', function () { if (btn) delete btn.dataset.loading; });
+    a.play().catch(function () {});
+    audioEls[kind] = a;
   }
   capNhatNowPlaying();
 }
@@ -961,10 +962,9 @@ function datAmLuong(v) {
   try { localStorage.setItem('vm_swm_vol', v); } catch (e) {}
 }
 function capNhatNowPlaying() {
-  var nhan = { lofi: 'Lofi', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
+  var nhan = { lofi: 'Lofi', songnao: 'Sóng não', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
   var ds = [];
-  if (amThanh.lofi) ds.push(nhan.lofi);
-  for (var k in audioEls) { if (audioEls[k]) ds.push(nhan[k]); }
+  for (var k in audioEls) { if (audioEls[k]) ds.push(nhan[k] || k); }
   var el = document.getElementById('swmTrack');
   if (el) el.textContent = ds.length ? ('Đang phát: ' + ds.join(' + ')) : 'Yên tĩnh — bật âm thanh bên dưới nhé';
 }
