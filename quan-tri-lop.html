@@ -163,6 +163,32 @@
               <button class="btn btn-secondary btn-sm chi-gv" onclick="taoBuoiHomNay()" style="padding:6px 10px;">➕ Tạo buổi hôm nay</button>
             </div>
           </div>
+
+          <!-- Controls for session check-in / QR / Code validity -->
+          <div id="ddSessionControls" class="chi-gv" style="display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--surface-2); padding:12px; border-radius:10px; margin-bottom:12px;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <span id="ddSessionStatus" style="font-weight:700; font-size:.85rem;">Trạng thái: 🔴 Đang đóng</span>
+              <span id="ddSessionCodeBox" style="display:none; font-size:.85rem;">Mã: <b id="ddSessionCode" style="color:var(--accent); font-family:monospace; font-size:1.1rem; background:var(--accent-soft); padding:2px 8px; border-radius:4px; border:1px dashed var(--accent)">0000</b></span>
+              <span id="ddSessionTimeRemaining" style="font-size:.85rem; color:var(--ink-2)"></span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">⏲️ Hạn:</label>
+              <input type="number" id="ddSessionDuration" value="10" min="1" max="180" style="width:60px; padding:6px 8px; border:1px solid var(--line-2); border-radius:8px; text-align:center; font-weight:700;">
+              <span style="font-size:.82rem; color:var(--ink-2)">phút</span>
+              <button class="btn btn-primary btn-sm" id="btnDDActive" onclick="kichHoatDiemDanh()" style="padding:6px 12px;">⚡ Kích hoạt / Gia hạn</button>
+              <button class="btn btn-secondary btn-sm" id="btnDDClose" onclick="dongDiemDanhSession()" style="padding:6px 12px; display:none; color:var(--err)">⏹ Đóng</button>
+              <button class="btn btn-ghost btn-sm" id="btnDDShowQR" onclick="hienQRTuLop()" style="padding:6px 10px; font-weight:600;">🖼️ Xem QR</button>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div id="ddStatsRow" style="display:none; gap:16px; align-items:center; flex-wrap:wrap; font-size:.82rem; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line-2);">
+            <span style="color:var(--ink-2)">Sĩ số: <b id="ddStatTotal">0</b></span>
+            <span style="color:var(--ok)">Có mặt: <b id="ddStatPresent">0</b></span>
+            <span style="color:var(--ink-3)">Vắng: <b id="ddStatAbsent">0</b></span>
+            <span style="color:var(--accent)">Đã nhận xét: <b id="ddStatCommented">0</b></span>
+          </div>
+
           <div style="overflow-x:auto;">
             <table style="font-size:.88rem; width:100%;">
               <thead><tr>
@@ -1278,6 +1304,7 @@ async function taiStudentsLop() {
 /* ===== Theo dõi điểm danh & nhận xét theo buổi ===== */
 var ddStudentsCache = [];
 var ddSessionsMap = {};
+var ddTimerInterval = null;
 
 function ddDinhDangNgay(d) {
   if (!d) return '';
@@ -1295,7 +1322,7 @@ async function taiBuoiTheoDoi() {
   var sel = $('ddSessionSel');
   if (!sel || !classDangChon) return;
   var r = await sb.from('class_sessions')
-    .select('id, title, held_on')
+    .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open')
     .eq('class_id', classDangChon.id)
     .order('held_on', { ascending: false })
     .order('created_at', { ascending: false })
@@ -1306,6 +1333,8 @@ async function taiBuoiTheoDoi() {
   if (!ds.length) {
     sel.innerHTML = '<option value="">— Chưa có buổi học nào —</option>';
     $('ddRoster').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chưa có buổi nào. Bấm “Tạo buổi hôm nay” để bắt đầu điểm danh.</td></tr>';
+    $('ddSessionControls').style.display = 'none';
+    $('ddStatsRow').style.display = 'none';
     return;
   }
   sel.innerHTML = ds.map(function (b) {
@@ -1326,22 +1355,176 @@ async function taoBuoiHomNay() {
   }
   var ten = 'Buổi học ngày ' + ddDinhDangNgay(hn);
   var ins = await sb.from('class_sessions').insert({ class_id: classDangChon.id, title: ten, held_on: hn })
-    .select('id, title, held_on').single();
+    .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open').single();
   if (ins.error) { alert('Không tạo được buổi: ' + ins.error.message); return; }
   await taiBuoiTheoDoi();
   $('ddSessionSel').value = ins.data.id;
   veRosterTheoDoi();
 }
 
+function updateDDControlsUI(buoi) {
+  if (ddTimerInterval) clearInterval(ddTimerInterval);
+  
+  var statusEl = $('ddSessionStatus');
+  var codeBox = $('ddSessionCodeBox');
+  var codeEl = $('ddSessionCode');
+  var timeEl = $('ddSessionTimeRemaining');
+  var btnActive = $('btnDDActive');
+  var btnClose = $('btnDDClose');
+  var btnShowQR = $('btnDDShowQR');
+  
+  if (!buoi) {
+    statusEl.innerHTML = 'Trạng thái: 🔴 Đang đóng';
+    codeBox.style.display = 'none';
+    timeEl.textContent = '';
+    btnActive.textContent = '⚡ Kích hoạt / Mở lại';
+    btnClose.style.display = 'none';
+    btnShowQR.style.display = 'none';
+    return;
+  }
+  
+  var isOpen = buoi.attendance_open;
+  var isExpired = false;
+  if (buoi.qr_expires) {
+    isExpired = new Date(buoi.qr_expires) < new Date();
+  }
+  
+  if (isOpen && !isExpired) {
+    statusEl.innerHTML = 'Trạng thái: <span style="color:var(--ok)">🟢 Đang mở</span>';
+    codeBox.style.display = 'inline-flex';
+    codeEl.textContent = buoi.checkin_code || '----';
+    btnActive.textContent = '⚡ Gia hạn / Đổi mã';
+    btnClose.style.display = 'inline-flex';
+    btnShowQR.style.display = 'inline-flex';
+    
+    function refreshTimer() {
+      var rem = new Date(buoi.qr_expires).getTime() - Date.now();
+      if (rem <= 0) {
+        clearInterval(ddTimerInterval);
+        statusEl.innerHTML = 'Trạng thái: <span style="color:var(--err)">⌛ Hết hạn</span>';
+        codeBox.style.display = 'none';
+        timeEl.textContent = '';
+        btnActive.textContent = '⚡ Kích hoạt / Mở lại';
+        btnClose.style.display = 'none';
+      } else {
+        var m = Math.floor(rem / 60000);
+        var s = Math.floor((rem % 60000) / 1000);
+        timeEl.textContent = ' (Còn ' + m + 'p ' + String(s).padStart(2, '0') + 's)';
+      }
+    }
+    refreshTimer();
+    ddTimerInterval = setInterval(refreshTimer, 1000);
+  } else {
+    statusEl.innerHTML = 'Trạng thái: 🔴 Đang đóng';
+    codeBox.style.display = 'none';
+    timeEl.textContent = '';
+    btnActive.textContent = '⚡ Kích hoạt / Mở lại';
+    btnClose.style.display = 'none';
+    btnShowQR.style.display = 'none';
+  }
+}
+
+async function kichHoatDiemDanh() {
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  if (!sid) { alert('Chưa chọn buổi học.'); return; }
+  var buoi = ddSessionsMap[sid];
+  if (!buoi) return;
+  
+  var phut = parseInt($('ddSessionDuration').value, 10);
+  if (!phut || phut < 1) phut = 10;
+  
+  var token = taoToken();
+  var code = Math.floor(1000 + Math.random() * 9000).toString();
+  var expires = new Date(Date.now() + phut * 60000).toISOString();
+  
+  var r = await sb.from('class_sessions')
+    .update({
+      qr_token: token,
+      checkin_code: code,
+      attendance_open: true,
+      qr_expires: expires
+    })
+    .eq('id', sid)
+    .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open')
+    .single();
+    
+  if (r.error) {
+    alert('Lỗi kích hoạt điểm danh: ' + r.error.message);
+    return;
+  }
+  
+  ddSessionsMap[sid] = r.data;
+  updateDDControlsUI(r.data);
+  hienQRTuLop();
+}
+
+async function dongDiemDanhSession() {
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  if (!sid) return;
+  var r = await sb.from('class_sessions')
+    .update({ attendance_open: false, checkin_code: null })
+    .eq('id', sid)
+    .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open')
+    .single();
+    
+  if (r.error) {
+    alert('Lỗi đóng điểm danh: ' + r.error.message);
+    return;
+  }
+  
+  ddSessionsMap[sid] = r.data;
+  updateDDControlsUI(r.data);
+}
+
+function hienQRTuLop() {
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  if (!sid) return;
+  var buoi = ddSessionsMap[sid];
+  if (!buoi || !buoi.qr_token) { alert('Mã QR chưa được kích hoạt.'); return; }
+  
+  $('ddQRTitle').textContent = buoi.title || 'Điểm danh buổi học';
+  $('ddQRCodeSo').textContent = buoi.checkin_code || '0000';
+  
+  var expires = buoi.qr_expires ? new Date(buoi.qr_expires) : null;
+  if (expires) {
+    $('ddQRExpiresText').textContent = 'Hạn dùng đến ' + expires.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+  } else {
+    $('ddQRExpiresText').textContent = 'Hạn dùng: không rõ';
+  }
+  
+  var origin = window.location.origin;
+  var checkinUrl = origin + '/diem-danh?token=' + buoi.qr_token;
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(checkinUrl);
+  $('ddKhungQR').innerHTML = '<img src="' + qrUrl + '" alt="QR Code" width="220" height="220" style="display:block;">';
+  
+  $('modalQRDiemDanh').style.display = 'flex';
+}
+
+function dongQRTuLop() {
+  $('modalQRDiemDanh').style.display = 'none';
+}
+
+function taoToken() {
+  return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
+}
+
 async function veRosterTheoDoi() {
   var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
   var box = $('ddRoster');
   if (!box) return;
-  if (!sid) { box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr>'; return; }
+  if (!sid) {
+    box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr>';
+    $('ddSessionControls').style.display = 'none';
+    $('ddStatsRow').style.display = 'none';
+    return;
+  }
   var buoi = ddSessionsMap[sid];
+  updateDDControlsUI(buoi);
+  $('ddSessionControls').style.display = 'flex';
+  
   var ngay = buoi ? buoi.held_on : homNayISO();
 
-  var rA = await sb.from('attendance').select('student_id, checked_at').eq('session_id', sid);
+  var rA = await sb.from('attendance').select('student_id, status, checked_at').eq('session_id', sid);
   var coMat = {};
   (rA.data || []).forEach(function (a) { coMat[a.student_id] = a; });
 
@@ -1350,14 +1533,31 @@ async function veRosterTheoDoi() {
   var nxMap = {};
   (rNx.data || []).forEach(function (n) { nxMap[n.student_id] = n; });
 
-  if (!ddStudentsCache.length) { box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Lớp chưa có học sinh.</td></tr>'; return; }
+  if (!ddStudentsCache.length) {
+    box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Lớp chưa có học sinh.</td></tr>';
+    $('ddStatsRow').style.display = 'none';
+    return;
+  }
+
+  var totalCount = ddStudentsCache.length;
+  var presentCount = 0;
+  var commentCount = 0;
 
   box.innerHTML = ddStudentsCache.map(function (s) {
-    var on = !!coMat[s.id];
+    var att = coMat[s.id];
     var nx = nxMap[s.id];
-    var ddCell = on
-      ? '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">🟢 Có mặt</button>'
-      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>';
+    var on = !!att;
+    if (on) presentCount++;
+    if (nx && (nx.remark || nx.attitude_score != null)) commentCount++;
+
+    var ddCell = '';
+    if (on) {
+      var statusLabel = att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt';
+      ddCell = '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">' + statusLabel + '</button>';
+    } else {
+      ddCell = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>';
+    }
+
     var nxCell;
     if (nx && (nx.remark || nx.attitude_score != null)) {
       var diem = (nx.attitude_score != null) ? ' <b style="color:var(--accent)">' + nx.attitude_score + 'đ</b>' : '';
@@ -1373,6 +1573,12 @@ async function veRosterTheoDoi() {
       '<td>' + nxCell + '</td>' +
       '</tr>';
   }).join('');
+
+  $('ddStatTotal').textContent = totalCount;
+  $('ddStatPresent').textContent = presentCount;
+  $('ddStatAbsent').textContent = totalCount - presentCount;
+  $('ddStatCommented').textContent = commentCount;
+  $('ddStatsRow').style.display = 'flex';
 }
 
 async function toggleDiemDanhLop(studentId, present) {
@@ -2667,7 +2873,7 @@ async function chuanHoaTexTestLatex(rawCode) {
 
 \\begin{document}
 ` + trimmed + `
-\\end{document}\`;
+\\end{document}`;
   preamble = await processVirtualFiles(preamble);
   return preamble;
 }
@@ -3043,6 +3249,25 @@ async function luuQuickTopic() {
     </p>
     <div id="tpContainer" style="display:flex; flex-direction:column; gap:12px;">
       <!-- Sẽ hiển thị động -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal QR điểm danh từ lớp học -->
+<div class="modal" id="modalQRDiemDanh" style="z-index: 110;">
+  <div class="modal-content" style="max-width: 500px; padding: 28px 24px; border-radius: var(--r-lg); position: relative;">
+    <button class="modal-close" onclick="dongQRTuLop()">×</button>
+    <h2 id="ddQRTitle" style="font-size: 1.35rem; font-weight: 800; color: var(--ink); margin-top:0;">Điểm danh buổi học</h2>
+    <p style="font-size:.88rem;color:var(--ink-2);margin-bottom:14px;margin-top:4px;">Học sinh quét mã QR hoặc nhập mã số bên dưới</p>
+    
+    <div style="display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap; margin:16px 0;">
+      <div id="ddKhungQR" style="margin:0; padding:12px; background:#fff; border:1px solid var(--line-2); border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; min-width:220px; min-height:220px;"></div>
+      
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:.78rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Mã số (nhập tay)</div>
+        <div style="display:inline-flex; align-items:center; justify-content:center; background:var(--accent-soft); color:var(--accent); font-family:monospace; font-size:2.8rem; font-weight:850; letter-spacing:6px; padding:8px 20px; border-radius:12px; border:2px dashed var(--accent); margin:8px 0; min-width:160px;" id="ddQRCodeSo">0000</div>
+        <div style="font-size:.75rem; color:var(--ink-3); font-style:italic; max-width:180px; text-align:center; line-height:1.3" id="ddQRExpiresText">Mã hiệu lực...</div>
+      </div>
     </div>
   </div>
 </div>
