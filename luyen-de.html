@@ -434,13 +434,16 @@ function tachDeTuLuan(prompt) {
   return { de: s.substring(0, idx), loigiai: s.substring(idx) };
 }
 
-/* Sinh n dòng chấm (\dotfill) chừa trống sau mỗi câu cho học sinh trình bày lời giải */
+/* Sinh n dòng chấm (\dotfill) chừa trống sau mỗi câu cho học sinh trình bày lời giải.
+   Dùng \par (kết thúc đoạn) cho mỗi dòng để LaTeX in ĐÚNG số dòng, kèm khoảng trống để viết. */
 function taoDongCham(n) {
   n = parseInt(n, 10) || 0;
   if (n < 1) return '';
-  var parts = [];
-  for (var i = 0; i < n; i++) parts.push('\\noindent\\dotfill');
-  return '\\medskip ' + parts.join('\\\\') + '\n';
+  var out = '\\par\\vspace{3mm}\n';
+  for (var i = 0; i < n; i++) {
+    out += '\\noindent\\dotfill\\par\\vspace{7mm}\n';
+  }
+  return out;
 }
 
 (async function () {
