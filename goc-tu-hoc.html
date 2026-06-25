@@ -391,7 +391,7 @@ body.swm-study #vmStudyInline { display: none !important; } /* ẩn đồng hồ
 
     <div class="swm-audio">
       <button class="swm-snd" data-k="lofi" onclick="toggleSound('lofi',this)">🎵 Lofi</button>
-      <button class="swm-snd" data-k="songnao" onclick="toggleSound('songnao',this)">🧠 Sóng não</button>
+      <button class="swm-snd" data-k="songnao" onclick="toggleSound('songnao',this)">🎹 Nhạc êm dịu</button>
       <button class="swm-snd" data-k="rain" onclick="toggleSound('rain',this)">🌧️ Mưa</button>
       <button class="swm-snd" data-k="fire" onclick="toggleSound('fire',this)">🔥 Lửa</button>
       <button class="swm-snd" data-k="wind" onclick="toggleSound('wind',this)">🌬️ Gió</button>
@@ -955,7 +955,7 @@ function batLofi() {
 var SND_BASE = 'https://cdn.jsdelivr.net/gh/remvze/moodist@main/public/sounds/';
 var SND_URL = {
   lofi: 'https://cdn.pixabay.com/audio/2026/03/10/audio_64b4580116.mp3',
-  songnao: 'binaural/binaural-alpha.wav',
+  songnao: 'https://cdn.pixabay.com/audio/2026/05/08/audio_f386318628.mp3',
   rain: 'rain/light-rain.mp3',
   fire: 'nature/campfire.mp3',
   wind: 'nature/wind.mp3',
@@ -986,7 +986,7 @@ function datAmLuong(v) {
   try { localStorage.setItem('vm_swm_vol', v); } catch (e) {}
 }
 function capNhatNowPlaying() {
-  var nhan = { lofi: 'Lofi', songnao: 'Sóng não', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
+  var nhan = { lofi: 'Lofi', songnao: 'Nhạc êm dịu', rain: 'Mưa', fire: 'Lửa', wind: 'Gió', stream: 'Suối', cafe: 'Quán cà phê' };
   var ds = [];
   for (var k in audioEls) { if (audioEls[k]) ds.push(nhan[k] || k); }
   var el = document.getElementById('swmTrack');
