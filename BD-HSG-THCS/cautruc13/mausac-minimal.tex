@@ -1,29 +1,77 @@
-%============== Bảng màu VinhMath đồng bộ với nhận diện thương hiệu Website
+%%%%%%%%%%%%%% Màu các môi trường câu hỏi - Xanh dương đen & Vàng
 % Load xcolor package trước khi định nghĩa màu
 \usepackage[dvipsnames,table]{xcolor}
 
-% --- MÀU SẮC THƯƠNG HIỆU VINHMATH (HỆ ĐƠN SẮC VÀNG) ---
-\definecolor{vmAccent}{HTML}{854D0E}     % Vàng đất đậm (thay xanh Navy) - Điểm nhấn chính
-\definecolor{vmAccentSoft}{HTML}{FEF3C7} % Nền vàng nhạt / vàng cát
-\definecolor{vmOk}{HTML}{C27D00}         % Vàng trung tính
-\definecolor{vmOkSoft}{HTML}{FFFDF0}     % Nền vàng nhạt
-\definecolor{vmWarn}{HTML}{D97706}       % Vàng tươi sáng (thay màu Đỏ)
-\definecolor{vmWarnSoft}{HTML}{FFFBEB}   % Nền vàng tươi nhạt
-\definecolor{vmInk}{HTML}{1C1917}        % Mực Charcoal đen ấm (trên nền trắng)
-\definecolor{vmBg}{HTML}{FFFFFF}         % Nền giấy trắng tinh khiết
-\definecolor{vmLine}{HTML}{E7E5E4}       % Đường kẻ xám ấm
-\definecolor{warmgray}{HTML}{78716C}     % Xám ấm chú thích
+\definecolor{brandNavy}{HTML}{000000}      % Đen chính (Black)
+\definecolor{brandNavySoft}{HTML}{F1F5F9}  % Nền xám rất nhạt (Off-white/Light grey)
+\definecolor{brandBlue}{HTML}{1E293B}      % Xám đen/Đen than (Charcoal)
+\definecolor{brandGold}{HTML}{C27D00}      % Vàng hổ phách chính
+\definecolor{brandGoldSoft}{HTML}{FFFBEB}  % Nền vàng nhạt
+\definecolor{brandDark}{HTML}{000000}      % Đen chữ chính
+\definecolor{brandGray}{HTML}{555555}      % Xám ghi phụ / chú thích / lời giải
+\colorlet{warmgray}{brandGray}
 
-% --- Đè màu chuẩn trong TikZ/LaTeX để đồng bộ thương hiệu VinhMath ---
-\colorlet{blue}{vmAccent}      % Nét vẽ chính -> Vàng đất đậm (phong cách Sepia)
-\colorlet{green}{warmgray}     % Nét vẽ phụ/chú thích -> Xám ấm
-\colorlet{magenta}{vmOk}       % Cung tròn góc thường -> Vàng trung tính
-\colorlet{orange}{vmWarn}      % Góc cần tính/điểm nhấn -> Vàng tươi sáng
-\colorlet{violet}{vmAccent}
-\colorlet{cyan}{vmAccent}
-\colorlet{teal}{vmAccent}
+\def\mauVD{brandNavy}
+\def\mauEX{brandBlue}
+\def\mauBT{brandGold} 
+\def\mauLG{brandGray}                      % Lời giải màu xám ghi nhã nhặn
+\def\mauDA{\mauEX}
+\def\mauTrue{brandGold}                    % Đáp án đúng làm nổi bật bằng vàng gold
 
-% --- Mapping tương thích ngược với phong cách cũ ---
+%%%%%% Màu mục lục
+\def\mauPART{brandNavy}
+\def\mauCHAP{brandNavy}
+\def\mauSEC{brandBlue}
+\def\mauSUBSEC{brandGold}
+\def\mauSUBSUBSEC{brandDark}
+
+%%%%%% Màu các tiêu đề
+\def\mauphan{brandNavy}
+\def\mauchuphan{brandGold}
+\def\mauchuong{brandNavy}
+\def\maunenmucluc{white}
+\def\maumlmot{brandNavy}
+\def\maumlhai{brandBlue}
+\def\maumlba{brandGold}
+\def\maubai{brandBlue}
+\def\mausubsec{brandGold}
+\def\mausubsecphu{brandNavy}
+\def\mausubsubsec{brandDark}
+\def\maupara{brandDark}
+
+%%%%%% Footer/Header
+\def\maufoot{brandNavy}
+\def\mauchufoot{brandNavy}
+\def\maufootmot{brandNavy}
+\def\maufoothai{brandBlue}
+\def\maufootba{brandGold}
+
+%%%%%% Dạng toán
+\def\maudang{brandNavy}                    % Khung Dạng toán màu xanh dương đen
+\def\maunendang{brandGoldSoft}             % Nền Dạng toán màu vàng nhạt ấm áp
+
+%%%%%% Định nghĩa, định lý
+\def\maudl{brandDark}
+\def\nendl{brandNavySoft}                  % Nền định lý xanh dương nhạt
+\def\maudn{brandGold}                      % Định nghĩa có màu viền vàng gold
+\def\nendn{brandGoldSoft}                  % Nền định nghĩa vàng nhạt
+
+\def\maucy{brandGold}                      % Chú ý / Lưu ý màu vàng
+\def\maupt{brandNavy}                      % Phân tích màu xanh dương đen
+
+%%%%%%
+\def\mauitemCI{brandNavy}
+\def\mauitemKN{brandGold}
+\def\itemKN{\color{\mauitemKN}\faCheckSquareO}
+\def\itemCI{\color{\mauitemCI}\faCheckCircleO}
+
+% Redefine standard colors for TikZ and table compatibility with brand palette
+\colorlet{blue}{brandNavy}
+\colorlet{red}{brandGold}
+\colorlet{green}{brandBlue}
+\colorlet{teal}{brandNavy}
+
+% --- MAPPING TƯƠNG THÍCH NGƯỢC VỚI CÁC FILE CHUYÊN ĐỀ CŨ ---
 \definecolor{acadbg}{HTML}{FFFFFF}       % Nền trắng tinh cho giấy in
 \definecolor{acadfg}{HTML}{1F1D1A}       % Chữ đen Charcoal
 \definecolor{acadgray}{HTML}{64748B}     % Xám chú thích
@@ -64,57 +112,3 @@
 \definecolor{oldgold}{HTML}{B5483A}
 \definecolor{marblegray}{HTML}{E2E8F0}
 
-% --- Cấu hình màu cho môi trường toán học ---
-\def\mauVD{vmAccent}                      % Ví dụ dùng Đỏ son Hanko
-\def\mauEX{vmOk}                          % Bài tập ví dụ dùng Xanh Matcha
-\def\mauBT{vmWarn}                        % Bài tập tự luyện dùng Vàng hổ phách
-\def\mauLG{warmgray}                      % Lời giải & đường chấm dùng Xám ấm
-\def\mauDA{\mauEX}
-\def\mauTrue{vmAccent}
-
-%%%%%% Màu mục lục
-\def\mauPART{vmAccent}
-\def\mauCHAP{vmAccent}
-\def\mauSEC{vmOk}
-\def\mauSUBSEC{vmWarn}
-\def\mauSUBSUBSEC{vmInk}
-
-%%%%%% Màu các tiêu đề
-\def\mauphan{vmAccent}
-\def\mauchuphan{vmAccent}
-\def\mauchuong{vmAccent}
-\def\maunenmucluc{white}
-\def\maumlmot{vmAccent}
-\def\maumlhai{vmOk}
-\def\maumlba{vmWarn}
-\def\maubai{vmOk}
-\def\mausubsec{vmWarn}
-\def\mausubsecphu{vmAccent}
-\def\mausubsubsec{vmInk}
-\def\maupara{vmInk}
-
-%%%%%% Footer/Header
-\def\maufoot{warmgray}
-\def\mauchufoot{warmgray}
-\def\maufootmot{warmgray}
-\def\maufoothai{warmgray}
-\def\maufootba{warmgray}
-
-%%%%%% Dạng toán
-\def\maudang{vmAccent}
-\def\maunendang{white}
-
-%%%%%% Định nghĩa, định lý (dùng tcolorbox)
-\def\maudl{vmInk}
-\def\nendl{vmBg}
-\def\maudn{vmAccent}
-\def\nendn{vmAccentSoft}
-
-\def\maucy{vmAccent}
-\def\maupt{vmInk}
-
-%%%%%% Dấu tích đầu câu
-\def\mauitemCI{vmAccent}
-\def\mauitemKN{vmOk}
-\def\itemKN{\color{\mauitemKN}\faCheckSquareO}
-\def\itemCI{\color{\mauitemCI}\faCheckCircleO}
