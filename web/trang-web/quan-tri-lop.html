@@ -1896,9 +1896,18 @@ async function moFormThemBaiGiang() {
   var selTeacher = $('bhTeacher');
   if (selTeacher) {
     selTeacher.innerHTML = '';
+    
+    // Tìm ID giáo viên mặc định (Thầy Vinh hoặc admin)
+    var defaultTeacherId = '116aba7c-a63f-44ff-a437-dbbd5dc7bf20';
+    if (typeof dsGiaoVien !== 'undefined' && dsGiaoVien.length > 0) {
+      var foundAdmin = dsGiaoVien.find(function(u) { return u.role === 'admin' || u.username === 'admin_vinh'; });
+      if (foundAdmin) defaultTeacherId = foundAdmin.id;
+    }
+    var mainTeacherId = classDangChon.teacher_id || defaultTeacherId;
+    
     var opt1 = document.createElement('option');
-    opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Điền Võ Thế Vinh';
+    opt1.value = mainTeacherId;
+    opt1.textContent = mapGiaoVien[mainTeacherId] || 'Thầy Điền Võ Thế Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {
@@ -1911,10 +1920,10 @@ async function moFormThemBaiGiang() {
     // Set default to current user if matches, else main teacher
     var u = await sb.auth.getUser();
     var curId = u.data.user ? u.data.user.id : null;
-    if (curId && (curId === classDangChon.teacher_id || curId === classDangChon.co_teacher_id)) {
+    if (curId && (curId === mainTeacherId || curId === classDangChon.co_teacher_id)) {
       selTeacher.value = curId;
     } else {
-      selTeacher.value = classDangChon.teacher_id || '';
+      selTeacher.value = mainTeacherId;
     }
   }
 
@@ -1953,9 +1962,18 @@ async function moFormSua(id) {
   var selTeacher = $('bhTeacher');
   if (selTeacher) {
     selTeacher.innerHTML = '';
+    
+    // Tìm ID giáo viên mặc định (Thầy Vinh hoặc admin)
+    var defaultTeacherId = '116aba7c-a63f-44ff-a437-dbbd5dc7bf20';
+    if (typeof dsGiaoVien !== 'undefined' && dsGiaoVien.length > 0) {
+      var foundAdmin = dsGiaoVien.find(function(u) { return u.role === 'admin' || u.username === 'admin_vinh'; });
+      if (foundAdmin) defaultTeacherId = foundAdmin.id;
+    }
+    var mainTeacherId = classDangChon.teacher_id || defaultTeacherId;
+    
     var opt1 = document.createElement('option');
-    opt1.value = classDangChon.teacher_id || '';
-    opt1.textContent = mapGiaoVien[classDangChon.teacher_id] || 'Thầy Điền Võ Thế Vinh';
+    opt1.value = mainTeacherId;
+    opt1.textContent = mapGiaoVien[mainTeacherId] || 'Thầy Điền Võ Thế Vinh';
     selTeacher.appendChild(opt1);
     
     if (classDangChon.co_teacher_id) {
@@ -1965,7 +1983,7 @@ async function moFormSua(id) {
       selTeacher.appendChild(opt2);
     }
     
-    selTeacher.value = bh.teacher_id || classDangChon.teacher_id || '';
+    selTeacher.value = bh.teacher_id || mainTeacherId;
   }
   anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : []; selectedImageFiles = []; veAnhHienCo();
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
