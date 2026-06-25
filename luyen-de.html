@@ -1631,7 +1631,6 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 \\def\\duoiphai{}
 
 \\khoanhtrondapan`;
-`;
 
 async function taiExTestSty() {
   if (cachedExTestSty) return cachedExTestSty;
@@ -1671,126 +1670,130 @@ function ghepTexCode(styExTest, styTitleDot, preamble, body) {
   }
   
   // Virtual files for Casio
-  tex += `\\begin{filecontents*}{casiovn.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\DeclareRobustCommand{\\log10k}{\\key{log10}}
-\\endinput
-\\end{filecontents*}\n`;
+  tex += 
+  '\\begin{filecontents*}{casiovn.sty}\n' +
+  '\n' +
+  '\\\\NeedsTeXFormat{LaTeX2e}\n' +
+  '\\\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]\n' +
+  '\\\\RequirePackage{xspace}\n' +
+  '\\\\DeclareRobustCommand{\\\\key}[1]{\\\\protect\\\\framebox{\\\\protect\\\\sffamily\\\\protect\\\\bfseries\\\\protect\\\\scriptsize#1}}\n' +
+  '\\\\DeclareRobustCommand{\\\\onk}{\\\\key{ON}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ack}{\\\\key{AC}}\n' +
+  '\\\\DeclareRobustCommand{\\\\shiftk}{\\\\key{SHIFT}}\n' +
+  '\\\\DeclareRobustCommand{\\\\alphak}{\\\\key{ALPHA}}\n' +
+  '\\\\DeclareRobustCommand{\\\\menuk}{\\\\key{MENU}}\n' +
+  '\\\\DeclareRobustCommand{\\\\delk}{\\\\key{DEL}}\n' +
+  '\\\\DeclareRobustCommand{\\\\calck}{\\\\key{CALC}}\n' +
+  '\\\\DeclareRobustCommand{\\\\engk}{\\\\key{ENG}}\n' +
+  '\\\\DeclareRobustCommand{\\\\optnk}{\\\\key{OPTN}}\n' +
+  '\\\\DeclareRobustCommand{\\\\stok}{\\\\key{STO}}\n' +
+  '\\\\DeclareRobustCommand{\\\\abovek}{\\\\key{$\\\\uparrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\belowk}{\\\\key{$\\\\downarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\leftk}{\\\\key{$\\\\leftarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\rightk}{\\\\key{$\\\\rightarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\intk}{\\\\key{$\\\\int$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\vark}{\\\\key{x}}\n' +
+  '\\\\DeclareRobustCommand{\\\\dfrack}{\\\\key{a/b}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sqrtk}{\\\\key{$\\\\sqrt{}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\exp2k}{\\\\key{$x^2$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\expk}{\\\\key{$x^{\\\\square}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\inversek}{\\\\key{$x^{-1}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\logk}{\\\\key{log}}\n' +
+  '\\\\DeclareRobustCommand{\\\\lnk}{\\\\key{ln}}\n' +
+  '\\\\DeclareRobustCommand{\\\\tank}{\\\\key{tan}}\n' +
+  '\\\\DeclareRobustCommand{\\\\cosk}{\\\\key{cos}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sink}{\\\\key{sin}}\n' +
+  '\\\\DeclareRobustCommand{\\\\circk}{\\\\key{o}}\n' +
+  '\\\\DeclareRobustCommand{\\\\signk}{\\\\key{+/-}}\n' +
+  '\\\\DeclareRobustCommand{\\\\openk}{\\\\key{(}}\n' +
+  '\\\\DeclareRobustCommand{\\\\closek}{\\\\key{)}}\n' +
+  '\\\\DeclareRobustCommand{\\\\convertk}{\\\\key{S$\\\\leftrightarrow$D}}\n' +
+  '\\\\DeclareRobustCommand{\\\\dotk}{\\\\key{.}}\n' +
+  '\\\\DeclareRobustCommand{\\\\mul10expk}{\\\\key{x10}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ansk}{\\\\key{ANS}}\n' +
+  '\\\\DeclareRobustCommand{\\\\subk}{\\\\key{-}}\n' +
+  '\\\\DeclareRobustCommand{\\\\addk}{\\\\key{+}}\n' +
+  '\\\\DeclareRobustCommand{\\\\mulk}{\\\\key{$\\\\times$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\divk}{\\\\key{$\\\\div$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\equalk}{\\\\key{=}}\n' +
+  '\\\\DeclareRobustCommand{\\\\morerememberk}{\\\\key{M+}}\n' +
+  '\\\\DeclareRobustCommand{\\\\zerok}{\\\\key{0}}\n' +
+  '\\\\DeclareRobustCommand{\\\\onek}{\\\\key{1}}\n' +
+  '\\\\DeclareRobustCommand{\\\\twok}{\\\\key{2}}\n' +
+  '\\\\DeclareRobustCommand{\\\\threek}{\\\\key{3}}\n' +
+  '\\\\DeclareRobustCommand{\\\\fourk}{\\\\key{4}}\n' +
+  '\\\\DeclareRobustCommand{\\\\fivek}{\\\\key{5}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sixk}{\\\\key{6}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sevenk}{\\\\key{7}}\n' +
+  '\\\\DeclareRobustCommand{\\\\eightk}{\\\\key{8}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ninek}{\\\\key{9}}\n' +
+  '\\\\DeclareRobustCommand{\\\\rclk}{\\\\key{RCL}}\n' +
+  '\\\\DeclareRobustCommand{\\\\modek}{\\\\key{MODE}}\n' +
+  '\\\\DeclareRobustCommand{\\\\log10k}{\\\\key{log10}}\n' +
+  '\\\\endinput\n' +
+  '\\end{filecontents*}\n';
 
-  tex += `\\begin{filecontents*}{casio580x.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\endinput
-\\end{filecontents*}\n`;
+  tex += 
+  '\\begin{filecontents*}{casio580x.sty}\n' +
+  '\n' +
+  '\\\\NeedsTeXFormat{LaTeX2e}\n' +
+  '\\\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]\n' +
+  '\\\\RequirePackage{xspace}\n' +
+  '\\\\DeclareRobustCommand{\\\\key}[1]{\\\\protect\\\\framebox{\\\\protect\\\\sffamily\\\\protect\\\\bfseries\\\\protect\\\\scriptsize#1}}\n' +
+  '\\\\DeclareRobustCommand{\\\\onk}{\\\\key{ON}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ack}{\\\\key{AC}}\n' +
+  '\\\\DeclareRobustCommand{\\\\shiftk}{\\\\key{SHIFT}}\n' +
+  '\\\\DeclareRobustCommand{\\\\alphak}{\\\\key{ALPHA}}\n' +
+  '\\\\DeclareRobustCommand{\\\\menuk}{\\\\key{MENU}}\n' +
+  '\\\\DeclareRobustCommand{\\\\delk}{\\\\key{DEL}}\n' +
+  '\\\\DeclareRobustCommand{\\\\calck}{\\\\key{CALC}}\n' +
+  '\\\\DeclareRobustCommand{\\\\engk}{\\\\key{ENG}}\n' +
+  '\\\\DeclareRobustCommand{\\\\optnk}{\\\\key{OPTN}}\n' +
+  '\\\\DeclareRobustCommand{\\\\stok}{\\\\key{STO}}\n' +
+  '\\\\DeclareRobustCommand{\\\\abovek}{\\\\key{$\\\\uparrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\belowk}{\\\\key{$\\\\downarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\leftk}{\\\\key{$\\\\leftarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\rightk}{\\\\key{$\\\\rightarrow$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\intk}{\\\\key{$\\\\int$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\vark}{\\\\key{x}}\n' +
+  '\\\\DeclareRobustCommand{\\\\dfrack}{\\\\key{a/b}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sqrtk}{\\\\key{$\\\\sqrt{}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\exp2k}{\\\\key{$x^2$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\expk}{\\\\key{$x^{\\\\square}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\inversek}{\\\\key{$x^{-1}$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\logk}{\\\\key{log}}\n' +
+  '\\\\DeclareRobustCommand{\\\\lnk}{\\\\key{ln}}\n' +
+  '\\\\DeclareRobustCommand{\\\\tank}{\\\\key{tan}}\n' +
+  '\\\\DeclareRobustCommand{\\\\cosk}{\\\\key{cos}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sink}{\\\\key{sin}}\n' +
+  '\\\\DeclareRobustCommand{\\\\circk}{\\\\key{o}}\n' +
+  '\\\\DeclareRobustCommand{\\\\signk}{\\\\key{+/-}}\n' +
+  '\\\\DeclareRobustCommand{\\\\openk}{\\\\key{(}}\n' +
+  '\\\\DeclareRobustCommand{\\\\closek}{\\\\key{)}}\n' +
+  '\\\\DeclareRobustCommand{\\\\convertk}{\\\\key{S$\\\\leftrightarrow$D}}\n' +
+  '\\\\DeclareRobustCommand{\\\\dotk}{\\\\key{.}}\n' +
+  '\\\\DeclareRobustCommand{\\\\mul10expk}{\\\\key{x10}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ansk}{\\\\key{ANS}}\n' +
+  '\\\\DeclareRobustCommand{\\\\subk}{\\\\key{-}}\n' +
+  '\\\\DeclareRobustCommand{\\\\addk}{\\\\key{+}}\n' +
+  '\\\\DeclareRobustCommand{\\\\mulk}{\\\\key{$\\\\times$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\divk}{\\\\key{$\\\\div$}}\n' +
+  '\\\\DeclareRobustCommand{\\\\equalk}{\\\\key{=}}\n' +
+  '\\\\DeclareRobustCommand{\\\\morerememberk}{\\\\key{M+}}\n' +
+  '\\\\DeclareRobustCommand{\\\\zerok}{\\\\key{0}}\n' +
+  '\\\\DeclareRobustCommand{\\\\onek}{\\\\key{1}}\n' +
+  '\\\\DeclareRobustCommand{\\\\twok}{\\\\key{2}}\n' +
+  '\\\\DeclareRobustCommand{\\\\threek}{\\\\key{3}}\n' +
+  '\\\\DeclareRobustCommand{\\\\fourk}{\\\\key{4}}\n' +
+  '\\\\DeclareRobustCommand{\\\\fivek}{\\\\key{5}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sixk}{\\\\key{6}}\n' +
+  '\\\\DeclareRobustCommand{\\\\sevenk}{\\\\key{7}}\n' +
+  '\\\\DeclareRobustCommand{\\\\eightk}{\\\\key{8}}\n' +
+  '\\\\DeclareRobustCommand{\\\\ninek}{\\\\key{9}}\n' +
+  '\\\\DeclareRobustCommand{\\\\rclk}{\\\\key{RCL}}\n' +
+  '\\\\DeclareRobustCommand{\\\\modek}{\\\\key{MODE}}\n' +
+  '\\\\endinput\n' +
+  '\\end{filecontents*}\n';
 
   tex += preamble + '\n\\begin{document}\n' + body + '\n\\end{document}';
   return tex;
