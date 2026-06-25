@@ -2141,6 +2141,7 @@ function formatDateKey(y, m, d) {
    TÍNH NĂNG ĐIỂM DANH CHO GIÁO VIÊN & HỌC SINH
    ========================================== */
 var buoiDangXem = null;
+var lopDangXem = null;
 var hennXoay = null;
 var hennDem = null;
 
@@ -2151,6 +2152,7 @@ function taoToken() {
 }
 
 async function moDiemDanhNhanh(classId, className) {
+  lopDangXem = classId;
   var nowIso = new Date().toISOString();
   var r = await sb.from('class_sessions')
     .select('id, qr_token, title')
@@ -2159,10 +2161,10 @@ async function moDiemDanhNhanh(classId, className) {
     .gt('qr_expires', nowIso)
     .order('created_at', { ascending: false })
     .limit(1);
-    
+
   if (r.data && r.data.length > 0) {
     var b = r.data[0];
-    hienQR(b.id, b.qr_token, b.title);
+    hienQR(b.id, b.qr_token, b.title, classId);
   } else {
     var ten = 'Buổi học ngày ' + new Date().toLocaleDateString('vi-VN');
     var phut = 45;
@@ -2171,26 +2173,44 @@ async function moDiemDanhNhanh(classId, className) {
       title: ten,
       qr_expires: new Date(Date.now() + phut * 60000).toISOString()
     }).select('id, qr_token, title').single();
-    
+
     if (ins.error) {
       alert('Không thể tạo buổi học điểm danh: ' + ins.error.message);
       return;
     }
-    hienQR(ins.data.id, ins.data.qr_token, ins.data.title);
+    hienQR(ins.data.id, ins.data.qr_token, ins.data.title, classId);
   }
+}
+
+function layPhutMa() {
+  var el = $('qrPhut');
+  var p = el ? parseInt(el.value, 10) : 0;
+  if (!p || p < 1) p = 10;
+  return p;
+}
+
+async function apThoiGianMa() {
+  if (!buoiDangXem) return;
+  var phut = layPhutMa();
+  await sb.from('class_sessions')
+    .update({ attendance_open: true, qr_expires: new Date(Date.now() + phut * 60000).toISOString() })
+    .eq('id', buoiDangXem);
+  var tt = $('qrPhutTrangThai');
+  if (tt) { tt.textContent = '✓ Mã có hiệu lực trong ' + phut + ' phút'; setTimeout(function(){ if(tt) tt.textContent=''; }, 2500); }
 }
 
 async function xoayQR() {
   if (!buoiDangXem) return;
   var token = taoToken();
   var code = Math.floor(1000 + Math.random() * 9000).toString();
-  
+  var phut = layPhutMa();
+
   var r = await sb.from('class_sessions')
-    .update({ 
-      qr_token: token, 
+    .update({
+      qr_token: token,
       checkin_code: code,
       attendance_open: true,
-      qr_expires: new Date(Date.now() + 120000).toISOString() 
+      qr_expires: new Date(Date.now() + phut * 60000).toISOString()
     })
     .eq('id', buoiDangXem);
   if (r.error) return;
@@ -2203,14 +2223,16 @@ async function xoayQR() {
   $('khungQR').innerHTML = '<img src="' + qrUrl + '" alt="QR Code" width="220" height="220" style="display:block;">';
 }
 
-function hienQR(id, token, ten) {
+function hienQR(id, token, ten, classId) {
   buoiDangXem = id;
+  if (classId) lopDangXem = classId;
   $('qrTen').textContent = ten;
   $('modalQR').style.display = 'flex';
   xoayQR();
   hennXoay = setInterval(xoayQR, 30000);
   demDiemDanh();
-  hennDem = setInterval(demDiemDanh, 5000);
+  taiRosterDiemDanh();
+  hennDem = setInterval(function () { demDiemDanh(); taiRosterDiemDanh(); }, 5000);
 }
 
 async function demDiemDanh() {
@@ -2226,6 +2248,50 @@ async function demDiemDanh() {
   }).join('<br>');
 }
 
+// Danh sách HS để thầy điểm danh hộ (idempotent: bấm lại = điểm danh lại)
+var rosterDiemDanhCache = null;
+async function taiRosterDiemDanh() {
+  var box = $('qrRoster');
+  if (!box || !buoiDangXem || !lopDangXem) return;
+  if (!rosterDiemDanhCache || rosterDiemDanhCache.classId !== lopDangXem) {
+    var rs = await sb.from('class_students')
+      .select('profiles(id, full_name)')
+      .eq('class_id', lopDangXem);
+    var hs = (rs.data || []).map(function (x) { return x.profiles; }).filter(Boolean);
+    hs.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
+    rosterDiemDanhCache = { classId: lopDangXem, hs: hs };
+  }
+  var ra = await sb.from('attendance').select('student_id').eq('session_id', buoiDangXem);
+  var coMat = {};
+  (ra.data || []).forEach(function (a) { coMat[a.student_id] = true; });
+  var hs = rosterDiemDanhCache.hs;
+  if (!hs.length) { box.innerHTML = '<div style="color:var(--ink-3); font-size:.82rem; padding:8px">Lớp chưa có học sinh.</div>'; return; }
+  box.innerHTML = hs.map(function (s) {
+    var on = !!coMat[s.id];
+    var btn = on
+      ? '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', false)">✓ Có mặt · Bỏ</button>'
+      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', true)">Điểm danh</button>';
+    return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
+      '<span style="font-size:.88rem; ' + (on ? 'color:var(--ok); font-weight:600' : 'color:var(--ink-2)') + '">' + (on ? '🟢 ' : '⚪ ') + s.full_name + '</span>' +
+      btn + '</div>';
+  }).join('');
+}
+
+async function diemDanhHo(studentId, present) {
+  if (!buoiDangXem) return;
+  if (present) {
+    var r = await sb.from('attendance').upsert(
+      { session_id: buoiDangXem, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { onConflict: 'session_id,student_id' });
+    if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
+  } else {
+    var r2 = await sb.from('attendance').delete().eq('session_id', buoiDangXem).eq('student_id', studentId);
+    if (r2.error) { alert('Lỗi bỏ điểm danh: ' + r2.error.message); return; }
+  }
+  await demDiemDanh();
+  await taiRosterDiemDanh();
+}
+
 async function dongQR() {
   $('modalQR').style.display = 'none';
   if (hennDem) clearInterval(hennDem);
@@ -2237,6 +2303,8 @@ async function dongQR() {
       .eq('id', buoiDangXem);
   }
   buoiDangXem = null;
+  lopDangXem = null;
+  rosterDiemDanhCache = null;
 }
 
 var activeSessionHocSinh = null;
@@ -2380,7 +2448,7 @@ function khoiTaoChecklistStaff() {
 
 <!-- Modal QR điểm danh cho giáo viên -->
 <div class="modal" id="modalQR">
-  <div class="modal-inner" style="max-width: 500px; padding: 28px 24px; border-radius: var(--r-lg);">
+  <div class="modal-inner" style="max-width: 500px; padding: 28px 24px; border-radius: var(--r-lg); max-height: 92vh; overflow-y: auto;">
     <button onclick="dongQR()" style="position:absolute;top:16px;right:20px;font-size:1.6rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
     <h2 id="qrTen" style="font-size: 1.35rem; font-weight: 800; color: var(--ink);">Buổi học</h2>
     <p style="font-size:.88rem;color:var(--ink-2);margin-bottom:14px">Học sinh quét mã QR hoặc nhập mã số bên dưới</p>
@@ -2396,13 +2464,29 @@ function khoiTaoChecklistStaff() {
     </div>
 
     <div class="token-text" id="qrToken" style="display:none"></div>
-    
-    <div style="margin-top:20px; padding:16px; background:var(--surface-2); border-radius:12px; display:flex; align-items:center; justify-content:space-around; gap:16px;">
+
+    <!-- Ô chỉnh thời gian mã có hiệu lực -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin:6px 0 2px;">
+      <label style="font-size:.84rem; color:var(--ink-2); font-weight:600;">⏲️ Mã có hiệu lực:</label>
+      <input type="number" id="qrPhut" value="10" min="1" max="180" style="width:70px; padding:6px 8px; border:1px solid var(--line-2); border-radius:8px; text-align:center; font-weight:700;" onchange="apThoiGianMa()">
+      <span style="font-size:.84rem; color:var(--ink-2)">phút</span>
+      <button class="btn btn-secondary btn-sm" style="padding:5px 12px" onclick="apThoiGianMa()">Áp dụng ngay</button>
+    </div>
+    <div id="qrPhutTrangThai" style="text-align:center; font-size:.78rem; color:var(--ok); font-weight:700; min-height:16px;"></div>
+
+    <div style="margin-top:14px; padding:16px; background:var(--surface-2); border-radius:12px; display:flex; align-items:center; justify-content:space-around; gap:16px;">
       <div style="text-align:center; flex-shrink:0;">
         <span class="dem-so" id="qrDem" style="font-size:2.4rem; font-weight:800; color:var(--ok); line-height:1.1">0</span>
         <div style="font-size:.76rem; color:var(--ink-2); font-weight:600; margin-top:2px;">Đã điểm danh</div>
       </div>
       <div id="qrDanhSach" style="font-size:.82rem; color:var(--ink-2); text-align:left; max-height:85px; overflow-y:auto; flex:1; border-left:1px solid var(--line-2); padding-left:16px; line-height:1.5; font-weight:500;"></div>
+    </div>
+
+    <!-- Điểm danh hộ học sinh (cho HS gặp trục trặc / vào trễ) -->
+    <div style="margin-top:14px; text-align:left;">
+      <div style="font-size:.86rem; font-weight:800; color:var(--ink); margin-bottom:6px;">🙋 Điểm danh hộ học sinh</div>
+      <div style="font-size:.76rem; color:var(--ink-3); margin-bottom:8px;">HS không vào được mã, hoặc vào trễ? Bấm “Điểm danh” cạnh tên em đó. Bấm lại bất cứ lúc nào để điểm danh lại — sẽ tự đồng bộ với lớp.</div>
+      <div id="qrRoster" style="max-height:220px; overflow-y:auto; border:1px solid var(--line-2); border-radius:10px;"></div>
     </div>
   </div>
 </div>

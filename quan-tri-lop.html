@@ -152,6 +152,29 @@
 
       <!-- Tab Học sinh -->
       <div id="phanHeStudents" style="display:none; flex-direction:column; gap:12px">
+
+        <!-- Theo dõi điểm danh & nhận xét hôm nay -->
+        <div class="card" style="padding:16px 18px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <h3 style="font-size:1.05rem; margin:0;">📋 Theo dõi điểm danh &amp; nhận xét</h3>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">Buổi:</label>
+              <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:210px;"></select>
+              <button class="btn btn-secondary btn-sm chi-gv" onclick="taoBuoiHomNay()" style="padding:6px 10px;">➕ Tạo buổi hôm nay</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="font-size:.88rem; width:100%;">
+              <thead><tr>
+                <th>Học sinh</th>
+                <th style="text-align:center; white-space:nowrap">Điểm danh</th>
+                <th>Nhận xét hôm nay</th>
+              </tr></thead>
+              <tbody id="ddRoster"><tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
           <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
           <button class="btn btn-primary btn-sm chi-gv" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
@@ -1247,6 +1270,124 @@ async function taiStudentsLop() {
       '</td>' +
       '</tr>';
   }).join('');
+
+  ddStudentsCache = students;
+  taiBuoiTheoDoi();
+}
+
+/* ===== Theo dõi điểm danh & nhận xét theo buổi ===== */
+var ddStudentsCache = [];
+var ddSessionsMap = {};
+
+function ddDinhDangNgay(d) {
+  if (!d) return '';
+  var p = String(d).split('-');
+  return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : d;
+}
+
+function ddEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+async function taiBuoiTheoDoi() {
+  var sel = $('ddSessionSel');
+  if (!sel || !classDangChon) return;
+  var r = await sb.from('class_sessions')
+    .select('id, title, held_on')
+    .eq('class_id', classDangChon.id)
+    .order('held_on', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(60);
+  var ds = r.data || [];
+  ddSessionsMap = {};
+  ds.forEach(function (b) { ddSessionsMap[b.id] = b; });
+  if (!ds.length) {
+    sel.innerHTML = '<option value="">— Chưa có buổi học nào —</option>';
+    $('ddRoster').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chưa có buổi nào. Bấm “Tạo buổi hôm nay” để bắt đầu điểm danh.</td></tr>';
+    return;
+  }
+  sel.innerHTML = ds.map(function (b) {
+    return '<option value="' + b.id + '">' + ddDinhDangNgay(b.held_on) + ' — ' + (b.title || 'Buổi học') + '</option>';
+  }).join('');
+  veRosterTheoDoi();
+}
+
+async function taoBuoiHomNay() {
+  if (!classDangChon) return;
+  var hn = homNayISO();
+  var existed = Object.keys(ddSessionsMap).map(function (k) { return ddSessionsMap[k]; })
+    .find(function (b) { return b.held_on === hn; });
+  if (existed) {
+    $('ddSessionSel').value = existed.id;
+    veRosterTheoDoi();
+    return;
+  }
+  var ten = 'Buổi học ngày ' + ddDinhDangNgay(hn);
+  var ins = await sb.from('class_sessions').insert({ class_id: classDangChon.id, title: ten, held_on: hn })
+    .select('id, title, held_on').single();
+  if (ins.error) { alert('Không tạo được buổi: ' + ins.error.message); return; }
+  await taiBuoiTheoDoi();
+  $('ddSessionSel').value = ins.data.id;
+  veRosterTheoDoi();
+}
+
+async function veRosterTheoDoi() {
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  var box = $('ddRoster');
+  if (!box) return;
+  if (!sid) { box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr>'; return; }
+  var buoi = ddSessionsMap[sid];
+  var ngay = buoi ? buoi.held_on : homNayISO();
+
+  var rA = await sb.from('attendance').select('student_id, checked_at').eq('session_id', sid);
+  var coMat = {};
+  (rA.data || []).forEach(function (a) { coMat[a.student_id] = a; });
+
+  var rNx = await sb.from('session_remarks').select('student_id, remark, attitude_score')
+    .eq('class_id', classDangChon.id).eq('ngay', ngay);
+  var nxMap = {};
+  (rNx.data || []).forEach(function (n) { nxMap[n.student_id] = n; });
+
+  if (!ddStudentsCache.length) { box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Lớp chưa có học sinh.</td></tr>'; return; }
+
+  box.innerHTML = ddStudentsCache.map(function (s) {
+    var on = !!coMat[s.id];
+    var nx = nxMap[s.id];
+    var ddCell = on
+      ? '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">🟢 Có mặt</button>'
+      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>';
+    var nxCell;
+    if (nx && (nx.remark || nx.attitude_score != null)) {
+      var diem = (nx.attitude_score != null) ? ' <b style="color:var(--accent)">' + nx.attitude_score + 'đ</b>' : '';
+      var noi = nx.remark ? ddEsc(nx.remark) : '<i style="color:var(--ink-3)">(chỉ chấm điểm)</i>';
+      nxCell = '<span style="color:var(--ok); font-weight:700">✓</span>' + diem + ' · ' + noi +
+        ' <a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="color:var(--accent); text-decoration:underline; font-size:.8rem">sửa</a>';
+    } else {
+      nxCell = '<a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="color:var(--ink-3); text-decoration:underline">Chưa — nhận xét ngay</a>';
+    }
+    return '<tr>' +
+      '<td><b>' + s.full_name + '</b></td>' +
+      '<td style="text-align:center">' + ddCell + '</td>' +
+      '<td>' + nxCell + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+async function toggleDiemDanhLop(studentId, present) {
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  if (!sid) { alert('Chưa chọn buổi.'); return; }
+  if (present) {
+    var r = await sb.from('attendance').upsert(
+      { session_id: sid, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { onConflict: 'session_id,student_id' });
+    if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
+  } else {
+    var r2 = await sb.from('attendance').delete().eq('session_id', sid).eq('student_id', studentId);
+    if (r2.error) { alert('Lỗi bỏ điểm danh: ' + r2.error.message); return; }
+  }
+  veRosterTheoDoi();
 }
 
 /* ----- Báo cả lớp: thầy đã vào phòng Meet ----- */
@@ -1357,6 +1498,7 @@ async function luuNhanXet() {
   nut.disabled = false; nut.textContent = '💾 Lưu nhận xét & Đánh giá';
   if (r.error) { alert('Lỗi lưu nhận xét: ' + r.error.message); return; }
   await taiLichSuNhanXet();
+  if (typeof veRosterTheoDoi === 'function') veRosterTheoDoi();
   nut.textContent = '✓ Đã lưu!';
   setTimeout(function () { nut.textContent = '💾 Lưu nhận xét & Đánh giá'; }, 1500);
 }
