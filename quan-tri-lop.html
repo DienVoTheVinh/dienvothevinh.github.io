@@ -42,7 +42,7 @@
 .lesson-meta span { display: flex; align-items: center; gap: 4px; }
 
 /* Modals */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
 .modal-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3); }
 .modal-close:hover { color: var(--ink); }
@@ -476,7 +476,7 @@
 </div>
 
 <!-- Modal Kích hoạt Test -->
-<div class="modal" id="modalKichHoatTest" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
+<div class="modal" id="modalKichHoatTest" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
   <div class="modal-content" style="max-width: 400px; padding: 24px;">
     <button onclick="$('modalKichHoatTest').style.display='none'" style="position:absolute;top:12px;right:14px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
     <h3 style="margin-top:0;margin-bottom:8px">⏱ Kích hoạt kiểm tra cuối giờ</h3>
@@ -497,7 +497,7 @@
 </div>
 
 <!-- Modal Xếp Học Sinh Vào Lớp -->
-<div class="modal" id="modalXepLop" style="z-index: 105;">
+<div class="modal" id="modalXepLop" style="z-index: 10005;">
   <div class="modal-content" style="max-width: 650px;">
     <button class="modal-close" onclick="dongFormXepLop()">×</button>
     <h2>Xếp học sinh vào lớp</h2>
@@ -534,7 +534,7 @@
 </div>
 
 <!-- Modal Nhận xét buổi học -->
-<div class="modal" id="modalNhanXet" style="z-index:120">
+<div class="modal" id="modalNhanXet" style="z-index:10020">
   <div class="modal-content" style="max-width:620px">
     <button class="modal-close" onclick="dongNhanXet()">×</button>
     <h2 style="font-size:1.25rem">💬 Nhận xét & Đánh giá buổi học</h2>
@@ -574,7 +574,7 @@
 </div>
 
 <!-- Modal Thêm lời nhắc -->
-<div class="modal" id="modalNhacNho" style="z-index:120">
+<div class="modal" id="modalNhacNho" style="z-index:10020">
   <div class="modal-content" style="max-width:560px">
     <button class="modal-close" onclick="dongNhacNho()">×</button>
     <h2 style="font-size:1.25rem">🔔 Thêm lời nhắc · Việc cần làm</h2>
@@ -603,7 +603,7 @@
 </div>
 
 <!-- Inline Modal để tạo nhanh chuyên đề -->
-<div id="quickTopicModal" class="inline-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(3px)">
+<div id="quickTopicModal" class="inline-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10050; align-items:center; justify-content:center; backdrop-filter:blur(3px)">
   <div class="modal-content" style="max-width:400px; padding:20px; border-radius:var(--r-md); background:var(--surface); box-shadow:0 10px 30px rgba(0,0,0,0.2)">
     <h3 style="margin-bottom:16px; font-size:1.1rem; font-weight:700">Tạo chuyên đề nhanh</h3>
     
@@ -633,7 +633,7 @@
 </div>
 
 <!-- Modal Quản Lý Chuyên Đề -->
-<div class="modal" id="modalChuyenDe" style="z-index:110">
+<div class="modal" id="modalChuyenDe" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
     <button class="modal-close" onclick="dongQuanLyChuyenDe()">×</button>
     <h2>Quản lý chuyên đề</h2>

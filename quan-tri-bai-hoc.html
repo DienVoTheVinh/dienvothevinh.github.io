@@ -28,7 +28,7 @@
 .lesson-card .yt-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; font-size: .82rem; }
 .lesson-card .pdf-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--ok); font-weight: 500; font-size: .82rem; }
 /* Modal Form */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
 .modal-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3); }
 .modal-close:hover { color: var(--ink); }
@@ -288,7 +288,7 @@
 </div>
 
 <!-- Modal Quản Lý Chuyên Đề -->
-<div class="modal" id="modalChuyenDe" style="z-index:110">
+<div class="modal" id="modalChuyenDe" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
     <button class="modal-close" onclick="dongQuanLyChuyenDe()">×</button>
     <h2>Quản lý chuyên đề</h2>

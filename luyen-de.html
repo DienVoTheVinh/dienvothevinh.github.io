@@ -399,13 +399,27 @@ function kiemTraThoiGianDe(e) {
 
 function dinhDangThoiGian(d) {
   if (!d) return '';
-  var date = new Date(d);
-  var hh = date.getHours().toString().padStart(2, '0');
-  var mm = date.getMinutes().toString().padStart(2, '0');
-  var DD = date.getDate().toString().padStart(2, '0');
-  var MM = (date.getMonth() + 1).toString().padStart(2, '0');
-  var YYYY = date.getFullYear();
+  // Luôn hiển thị theo giờ Việt Nam (UTC+7), không phụ thuộc múi giờ thiết bị
+  var date = new Date(new Date(d).getTime() + 7 * 3600000);
+  var hh = date.getUTCHours().toString().padStart(2, '0');
+  var mm = date.getUTCMinutes().toString().padStart(2, '0');
+  var DD = date.getUTCDate().toString().padStart(2, '0');
+  var MM = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  var YYYY = date.getUTCFullYear();
   return hh + ':' + mm + ' ' + DD + '/' + MM + '/' + YYYY;
+}
+
+/* Tách đề tự luận thành phần ĐỀ (trước HƯỚNG DẪN GIẢI) và phần LỜI GIẢI
+   để khi hiển thị cho HS không bị lặp câu (đề + lời giải đều có \begin{ex}). */
+function tachDeTuLuan(prompt) {
+  var s = prompt || '';
+  var idx = -1;
+  ['\\boxde', 'HƯỚNG DẪN GIẢI', '\\newpage'].forEach(function (m) {
+    var p = s.indexOf(m);
+    if (p !== -1 && (idx === -1 || p < idx)) idx = p;
+  });
+  if (idx === -1) return { de: s, loigiai: s };
+  return { de: s.substring(0, idx), loigiai: s.substring(idx) };
 }
 
 (async function () {
@@ -626,42 +640,29 @@ async function startExam(examId) {
     .order('started_at', { ascending: false });
     
   var atts = rAtt.data || [];
+  // Lượt CHÍNH THỨC = lượt đã nộp ĐẦU TIÊN (sớm nhất) — đây là lượt được lưu & tính điểm.
+  var submittedAtts = atts.filter(function (a) { return a.submitted_at; })
+    .sort(function (a, b) { return new Date(a.started_at) - new Date(b.started_at); });
+  var officialAtt = submittedAtts[0] || null;
   var latestAtt = atts[0];
-  
-  // Nếu đề thi đã đóng, chỉ cho phép xem kết quả của lượt làm gần nhất đã nộp
-  if (tg.status === 'closed') {
-    var finished = atts.find(function(a) { return a.submitted_at; });
-    if (finished) {
-      currentAttempt = finished;
-      if (ex.de_type === 'essay') {
-        moPhongTuLuan(ex, true); // true = isSubmitted
-      } else {
-        finished.attempt_answers.forEach(function (ans) {
-          selectedAnswers[ans.question_id] = ans.chosen_key;
-        });
-        showExamResults();
-      }
-      return;
-    } else {
-      alert('Đề thi này đã đóng lúc: ' + dinhDangThoiGian(tg.time) + '. Em không thể làm bài.');
-      return;
-    }
-  }
 
-  // Nếu đề thi đang mở:
-  if (latestAtt && latestAtt.submitted_at) {
-    // Đã nộp lượt gần nhất -> Mở chế độ xem kết quả
-    currentAttempt = latestAtt;
+  // Đã có bài chính thức -> LUÔN cho xem lại (kể cả khi đề đã đóng).
+  // Trong màn xem lại có nút "Luyện tập lại" để làm thêm nhiều lần (không tính điểm).
+  if (officialAtt) {
+    currentAttempt = officialAtt;
     if (ex.de_type === 'essay') {
       moPhongTuLuan(ex, true); // true = isSubmitted
     } else {
-      latestAtt.attempt_answers.forEach(function (ans) {
+      (officialAtt.attempt_answers || []).forEach(function (ans) {
         selectedAnswers[ans.question_id] = ans.chosen_key;
       });
       showExamResults();
     }
     return;
   }
+
+  // Chưa có bài chính thức: cho làm lần đầu (kể cả khi đề đã đóng — việc khoá chỉ
+  // mang ý nghĩa lưu lần làm đầu tiên, không chặn học sinh).
   
   // Chưa làm hoặc làm dở -> Bắt đầu làm bài
   $('wkExitBtn').style.display = 'none';
@@ -743,7 +744,8 @@ function runTimer() {
 function veKhuTuLuan(ex, isSubmitted) {
   var promptHTML = '';
   if (ex.essay_prompt) {
-    var qs = parseLatexQuestions(ex.essay_prompt);
+    var deLamBai = tachDeTuLuan(ex.essay_prompt).de;
+    var qs = parseLatexQuestions(deLamBai);
     if (qs && qs.length > 0) {
       promptHTML = qs.map(function (q, idx) {
         var qNum = 'Câu ' + (idx + 1);
@@ -752,7 +754,7 @@ function veKhuTuLuan(ex, isSubmitted) {
           '</div>';
       }).join('');
     } else {
-      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(ex.essay_prompt) + '</div>';
+      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(deLamBai) + '</div>';
     }
   }
 
@@ -838,7 +840,9 @@ async function taiTuLuanDaNop() {
   if (ds.length > 0) {
     var promptContainer = $('khuTuLuanPrompt');
     if (promptContainer) {
-      var qs = parseLatexQuestions(currentExam.essay_prompt);
+      // Khi đã nộp: hiển thị phần LỜI GIẢI (có \loigiai) để HS xem lại, tránh lặp câu
+      var phanReview = tachDeTuLuan(currentExam.essay_prompt);
+      var qs = parseLatexQuestions(phanReview.loigiai);
       if (qs && qs.length > 0) {
         promptContainer.innerHTML = qs.map(function (q, idx) {
           var qNum = 'Câu ' + (idx + 1);
@@ -1124,6 +1128,15 @@ async function chonDapAnExam(qId, key) {
       }
     }
     
+    // Cập nhật đáp án trong bộ nhớ (dùng cho cả lượt chính thức lẫn luyện tập)
+    if (!currentAttempt.attempt_answers) currentAttempt.attempt_answers = [];
+    var memo = currentAttempt.attempt_answers.find(function (a) { return a.question_id === qId; });
+    if (memo) { memo.chosen_key = key; memo.is_correct = isCorrect; }
+    else currentAttempt.attempt_answers.push({ question_id: qId, chosen_key: key, is_correct: isCorrect });
+
+    // Lượt luyện tập: KHÔNG ghi vào cơ sở dữ liệu
+    if (currentAttempt.is_practice || !currentAttempt.id) return;
+
     await sb.from('attempt_answers').upsert({
       attempt_id: currentAttempt.id,
       question_id: qId,
@@ -1277,15 +1290,15 @@ function showExamResults() {
 }
 
 async function lamLuotMoi() {
-  if (!confirm('Bắt đầu lượt làm mới? Kết quả các lượt trước vẫn được lưu lại.')) return;
-  var rNew = await sb.from('attempts').insert({
-    student_id: studentInfo.id,
-    exam_id: currentExam.id,
-    started_at: new Date().toISOString()
-  }).select('id, started_at').single();
-  if (rNew.error) { alert('Không tạo được lượt mới: ' + rNew.error.message); return; }
-  currentAttempt = rNew.data;
-  currentAttempt.attempt_answers = [];
+  if (currentExam.de_type === 'essay') {
+    // Tự luận: cho nộp ảnh lại (bài nộp trước vẫn giữ để thầy chấm)
+    moPhongTuLuan(currentExam, false);
+    return;
+  }
+  // Trắc nghiệm: LUYỆN TẬP cục bộ — KHÔNG lưu vào hệ thống, không tính điểm.
+  // Lần làm đầu tiên của em vẫn được giữ nguyên.
+  if (!confirm('Luyện tập lại đề này nhé? Lần làm này CHỈ để ôn tập, không được lưu và không tính điểm — kết quả lần làm đầu tiên của em vẫn được giữ.')) return;
+  currentAttempt = { id: null, is_practice: true, attempt_answers: [], started_at: new Date().toISOString() };
   selectedAnswers = {};
   timeLeftSeconds = currentExam.duration_minutes * 60;
   $('wkSubmitBtn').style.display = 'inline-flex';

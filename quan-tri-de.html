@@ -226,9 +226,16 @@ function demoParseLaTeX() {
   var html = '';
   var totalCountQ = 0;
   
-  // 1. Render tự luận
+  // 1. Render tự luận (chỉ phần ĐỀ, bỏ phần HƯỚNG DẪN GIẢI để không lặp câu)
   if ((type === 'essay' || type === 'combo') && essayPrompt) {
-    var qs = parseLatexQuestions(essayPrompt);
+    var deOnly = essayPrompt;
+    var cutIdx = -1;
+    ['\\boxde', 'HƯỚNG DẪN GIẢI', '\\newpage'].forEach(function (m) {
+      var p = essayPrompt.indexOf(m);
+      if (p !== -1 && (cutIdx === -1 || p < cutIdx)) cutIdx = p;
+    });
+    if (cutIdx !== -1) deOnly = essayPrompt.substring(0, cutIdx);
+    var qs = parseLatexQuestions(deOnly);
     html += '<div style="margin-bottom: 20px; border: 2px solid var(--accent); border-radius: var(--r-md); padding: 16px; background: var(--surface);">';
     html += '<div style="font-size:0.95rem; font-weight:700; color:var(--accent); border-bottom:1px solid var(--line-2); padding-bottom:6px; margin-bottom:12px">📝 XEM TRƯỚC TỰ LUẬN</div>';
     if (qs && qs.length > 0) {
@@ -381,8 +388,8 @@ async function loadExamForEdit(examId) {
     $('exLop').value = exam.class_id || '';
     $('exDuration').value = exam.duration_minutes || 90;
     
-    $('exOpens').value = exam.opens_at ? new Date(new Date(exam.opens_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
-    $('exCloses').value = exam.closes_at ? new Date(new Date(exam.closes_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
+    $('exOpens').value = exam.opens_at ? new Date(new Date(exam.opens_at).getTime() + 7*3600000).toISOString().slice(0, 16) : '';
+    $('exCloses').value = exam.closes_at ? new Date(new Date(exam.closes_at).getTime() + 7*3600000).toISOString().slice(0, 16) : '';
     
     $('exShuffle').checked = !!exam.shuffle;
     $('exPublished').checked = !!exam.published;
@@ -455,33 +462,30 @@ function cancelEditExam() {
 function parseDateTime(str) {
   if (!str) return null;
   str = str.trim();
-  var d = new Date(str);
-  if (!isNaN(d.getTime())) return d.toISOString();
-
+  // Luôn coi giờ thầy nhập là GIỜ VIỆT NAM (UTC+7), không phụ thuộc múi giờ thiết bị.
+  // Định dạng từ ô datetime-local: "YYYY-MM-DDTHH:MM"
+  var m = str.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/);
+  if (m) {
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 7 * 3600000).toISOString();
+  }
+  // Dự phòng: định dạng "dd/mm/yyyy hh:mm" cũng coi là giờ VN
   var parts = str.split(/[\sT]+/);
   var datePart = '';
   var timePart = '00:00';
-  
   parts.forEach(function (p) {
     if (p.includes('/')) datePart = p;
     else if (p.includes(':')) timePart = p;
   });
-
   if (datePart) {
     var dateSegments = datePart.split('/');
     if (dateSegments.length === 3) {
       var day = parseInt(dateSegments[0], 10);
       var month = parseInt(dateSegments[1], 10) - 1;
       var year = parseInt(dateSegments[2], 10);
-      
       var timeSegments = timePart.split(':');
       var hours = parseInt(timeSegments[0], 10) || 0;
       var minutes = parseInt(timeSegments[1], 10) || 0;
-      
-      var parsedDate = new Date(year, month, day, hours, minutes, 0);
-      if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString();
-      }
+      return new Date(Date.UTC(year, month, day, hours, minutes) - 7 * 3600000).toISOString();
     }
   }
   return null;
