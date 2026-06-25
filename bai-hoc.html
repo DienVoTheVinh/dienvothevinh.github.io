@@ -362,9 +362,15 @@ async function guiBaiNop() {
 
 /* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
 async function taiMucLuc() {
-  var r = await sb.from('lessons')
-    .select('id, title, sort, locked, topics(name, color), classes(name)')
+  // Xác định lớp của bài đang xem để mục lục chỉ hiện bài giảng của ĐÚNG lớp đó
+  var rCur = await sb.from('lessons').select('class_id').eq('id', lessonId).maybeSingle();
+  var classIdHienTai = rCur.data ? rCur.data.class_id : null;
+
+  var q = sb.from('lessons')
+    .select('id, title, sort, locked, class_id, topics(name, color), classes(name)')
     .order('sort', { ascending: false });
+  if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
+  var r = await q;
   var ds = r.data || [];
   if (!ds.length) {
     $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';

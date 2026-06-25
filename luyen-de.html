@@ -1454,18 +1454,14 @@ async function chayBienDichTaiCho() {
   var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
-    var prompt = currentExam.essay_prompt || '';
     if (cheDo === 'exam') {
-      var idx = prompt.indexOf('\\boxde');
-      if (idx === -1) idx = prompt.indexOf('HƯỚNG DẪN GIẢI');
-      if (idx === -1) idx = prompt.indexOf('\\newpage');
-      if (idx !== -1) {
-        body += prompt.substring(0, idx);
-      } else {
-        body += prompt;
+      var deExam = tachDeTuLuan(currentExam.essay_prompt || '').de;
+      if (soDongCham > 0) {
+        deExam = deExam.replace(/\\end\{(ex|bt)\}/g, '\\end{$1}\n' + taoDongCham(soDongCham));
       }
+      body += deExam;
     } else {
-      body += prompt;
+      body += (currentExam.essay_prompt || '');
     }
   } else {
     var partIQs = examQuestions.filter(function (q) {
@@ -2015,18 +2011,14 @@ async function generateAndCompilePDF() {
   var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
-    var prompt = currentExam.essay_prompt || '';
     if (pdfCompileMode === 'exam') {
-      var idx = prompt.indexOf('\\boxde');
-      if (idx === -1) idx = prompt.indexOf('HƯỚNG DẪN GIẢI');
-      if (idx === -1) idx = prompt.indexOf('\\newpage');
-      if (idx !== -1) {
-        body += prompt.substring(0, idx);
-      } else {
-        body += prompt;
+      var deExam = tachDeTuLuan(currentExam.essay_prompt || '').de;
+      if (soDongCham > 0) {
+        deExam = deExam.replace(/\\end\{(ex|bt)\}/g, '\\end{$1}\n' + taoDongCham(soDongCham));
       }
+      body += deExam;
     } else {
-      body += prompt;
+      body += (currentExam.essay_prompt || '');
     }
   } else {
     var partIQs = examQuestions.filter(function (q) {
