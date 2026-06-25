@@ -1640,6 +1640,16 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 \\DeclareMathSymbol{\\parallel}{\\mathrel}{symbolsC}{9}
 
 % custom environments from BosungK
+\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
+\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
+\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
+\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
+\\newenvironment{dl}{\\begin{mydl}}{\\end{mydl}}
+\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}
+\\newenvironment{dn}{\\begin{mydn}}{\\end{mydn}}
+\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
+\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
+\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
 \\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
 \\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
 \\def\\viduminhhoa{\\subsubsection{Ví dụ minh họa}}

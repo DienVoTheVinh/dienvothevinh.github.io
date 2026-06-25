@@ -1147,6 +1147,27 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\newcommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right\\}}
 
 % custom environments from BosungK
+\\definecolor{vmAccent}{HTML}{B5483A}
+\\definecolor{vmOk}{HTML}{5E7B5E}
+\\definecolor{vmWarn}{HTML}{A8842C}
+\\definecolor{vmInk}{HTML}{1F1D1A}
+\\def\\mauVD{vmAccent}
+\\def\\mauEX{vmOk}
+\\def\\mauBT{vmWarn}
+\\def\\maudl{vmInk}
+\\def\\maudn{vmAccent}
+\\def\\maucy{vmAccent}
+\\def\\maupt{vmInk}
+\\newtheorem{bt}{\\color{\\mauBT}\\bfseries Bài}
+\\newtheorem{vd}{\\color{\\mauVD}\\bfseries Ví dụ}
+\\newtheorem{ap}{\\color{\\mauBT}\\bfseries Áp dụng}
+\\newtheorem{mydl}{\\color{\\maudl}\\bfseries Định lí}
+\\newenvironment{dl}{\\begin{mydl}}{\\end{mydl}}
+\\newtheorem{mydn}{\\color{\\maudn}\\bfseries Định nghĩa}
+\\newenvironment{dn}{\\begin{mydn}}{\\end{mydn}}
+\\newtheorem{nx}{\\color{\\maucy}\\bfseries Nhận xét}
+\\newtheorem{tc}{\\color{\\maudl}\\bfseries Tính chất}
+\\newtheorem{phantich}{\\color{\\maupt}\\bfseries Phân tích}
 \\renewcommand{\\vec}[1]{\\protect\\overrightarrow{#1}}
 \\newenvironment{boxtb}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
 \\newenvironment{makerr}{\\begin{center}\\begin{tabular}{|l|}}{\\end{tabular}\\end{center}}
