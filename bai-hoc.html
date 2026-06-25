@@ -252,6 +252,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
         <div class="pane-control">
           <button class="ctrl-btn" onclick="phongToPane('content')" title="Phóng to nội dung" id="btnMaxContent">⛶</button>
         </div>
+        <div id="adminTestBar" style="display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:9px 14px; border-bottom:1px solid var(--line); font-size:0.85rem;"></div>
         <div class="content-body" id="thanNoiDung">
           <div class="no-content"><div class="ic">📄</div><h3>Đang tải nội dung…</h3></div>
         </div>
@@ -400,7 +401,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -1038,7 +1039,11 @@ async function chonNoiDung(loai) {
       }).join('') + '</div>';
   } else {
     $('swTest').classList.add('active');
-    if (interactiveQuestions.length > 0) {
+    capNhatAdminTestBar();
+    if (!details.test_active && !laQuanTriBaiHoc()) {
+      than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
+        '<div class="no-content"><div class="ic">🔒</div><h3>Bài kiểm tra chưa được mở</h3><p>Thầy sẽ kích hoạt bài kiểm tra khi tới giờ làm bài. Em quay lại sau nhé!</p></div>';
+    } else if (interactiveQuestions.length > 0) {
       renderInteractiveQuiz();
     } else if (details.test_latex_content) {
       await hienTestTex();
@@ -1051,6 +1056,7 @@ async function chonNoiDung(loai) {
       renderPDFWithJS(ut, document.getElementById('pdfViewerArea'));
     }
   }
+  if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
 }
@@ -1286,15 +1292,65 @@ function dangKyRealtimeTest() {
     sb.channel('lesson-test-' + lessonId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
         if (payload.new) {
+          var truocActive = details.test_active;
           details.test_started_at = payload.new.test_started_at;
           details.test_duration_minutes = payload.new.test_duration_minutes;
+          details.test_active = payload.new.test_active;
           kiemTraVaChayTestTimer();
+          // Nếu trạng thái mở/đóng thay đổi và đang xem tab Kiểm tra → vẽ lại
+          if (truocActive !== details.test_active && noiDungDangChon === 'test') {
+            pdfTestTex = null;
+            chonNoiDung('test');
+          }
+          capNhatAdminTestBar();
         }
       })
       .subscribe();
   } catch (e) {
     console.warn("Không đăng ký được realtime test:", e);
   }
+}
+
+/* ===== Cổng kích hoạt bài kiểm tra (chỉ admin/giáo viên) ===== */
+function laQuanTriBaiHoc() {
+  return nguoiDung && ['admin', 'teacher', 'assistant'].includes(nguoiDung.role);
+}
+function coTheBatTatTest() {
+  return nguoiDung && ['admin', 'teacher'].includes(nguoiDung.role);
+}
+
+function capNhatAdminTestBar() {
+  var bar = $('adminTestBar');
+  if (!bar) return;
+  if (noiDungDangChon !== 'test' || !coTheBatTatTest()) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  if (details.test_active) {
+    bar.style.background = 'var(--ok-soft)';
+    bar.style.borderBottom = '1px solid var(--ok)';
+    bar.innerHTML =
+      '<span style="color:var(--ok); font-weight:700">🔓 Đang MỞ — học sinh xem được đề kiểm tra</span>' +
+      '<button class="btn btn-secondary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(false)">🔒 Đóng lại (ẩn với HS)</button>';
+  } else {
+    bar.style.background = 'var(--warn-soft)';
+    bar.style.borderBottom = '1px solid var(--warn)';
+    bar.innerHTML =
+      '<span style="color:var(--warn); font-weight:700">🔒 Đang ẨN — học sinh chưa xem được đề kiểm tra</span>' +
+      '<button class="btn btn-primary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(true)">🔓 Kích hoạt cho HS xem</button>';
+  }
+}
+
+async function batTatKichHoatTest(batLen) {
+  if (!coTheBatTatTest()) return;
+  var bar = $('adminTestBar');
+  if (bar) bar.innerHTML = '<span style="color:var(--ink-2)">⏳ Đang cập nhật…</span>';
+  var r = await sb.from('lessons').update({ test_active: batLen }).eq('id', lessonId);
+  if (r.error) {
+    alert('Lỗi cập nhật trạng thái: ' + r.error.message);
+    capNhatAdminTestBar();
+    return;
+  }
+  details.test_active = batLen;
+  capNhatAdminTestBar();
 }
 
 function khoiTaoResizer() {
