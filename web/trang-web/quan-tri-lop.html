@@ -11,6 +11,31 @@
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
 <link rel="stylesheet" href="css/vinhmath.css?v=5.2">
 <style>
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
+  50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.9), inset 0 0 8px rgba(245, 158, 11, 0.4); border-color: rgba(245, 158, 11, 1); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
+}
+.newest-lesson-glitter {
+  border: 2px solid #F59E0B !important;
+  animation: goldPulse 2s infinite ease-in-out;
+  position: relative;
+}
+.newest-lesson-glitter::after {
+  content: '✨ BÀI MỚI NHẤT';
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .classroom-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin-top: 20px; align-items: start; }
@@ -1023,10 +1048,11 @@ function doiPhanHeLop(tab) {
 async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path)')
     .eq('class_id', classDangChon.id);
   
   var lessons = r.data || [];
+  window.newestLessonIds = xacDinhIdsBaiMoiNhat(lessons);
   if (!lessons.length) {
     $('dsBaiHocLop').innerHTML = '<div class="empty card">Lớp này chưa có bài giảng nào. Bấm "+ Thêm bài giảng" ở trên để tạo buổi đầu tiên!</div>';
     return;
@@ -1136,7 +1162,8 @@ function renderLessonRow(b) {
     testBtn = '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px;" onclick="moKichHoatTest(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">⏱ Kích hoạt test</button>';
   }
   
-  return '<div class="lesson-row" style="margin-bottom:8px">' +
+  var glitterClass = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' newest-lesson-glitter' : '';
+  return '<div class="lesson-row' + glitterClass + '" style="margin-bottom:8px">' +
     '<div class="lesson-info">' +
       '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
         '<span class="lesson-title">' + b.title + '</span>' +
@@ -1292,6 +1319,7 @@ async function taiStudentsLop() {
       '<td style="text-align:right">' +
       '  <button class="btn btn-primary btn-sm" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">💬 Nhận xét</button> ' +
       '  <button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">🔔 Nhắc</button> ' +
+      '  <button class="btn btn-ghost btn-sm" onclick="moFormNopBaiHo(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px; color:var(--accent);">📥 Nộp hộ</button> ' +
       '  <button class="btn btn-ghost btn-sm chi-gv" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
       '</td>' +
       '</tr>';
@@ -3236,6 +3264,142 @@ async function luuQuickTopic() {
     await napChuyenDeSelect(r.data.id);
   }
 }
+function xacDinhIdsBaiMoiNhat(ds) {
+  var newestIds = {};
+  if (!ds || !ds.length) return newestIds;
+  var groups = {};
+  ds.forEach(function (b) {
+    var tid = b.teacher_id || 'default';
+    if (!groups[tid]) groups[tid] = [];
+    groups[tid].push(b);
+  });
+  for (var tid in groups) {
+    var list = groups[tid];
+    if (list.length === 0) continue;
+    var newest = list[0];
+    for (var i = 1; i < list.length; i++) {
+      var timeI = list[i].created_at ? new Date(list[i].created_at).getTime() : 0;
+      var timeNewest = newest.created_at ? new Date(newest.created_at).getTime() : 0;
+      if (timeI > timeNewest) {
+        newest = list[i];
+      }
+    }
+    newestIds[newest.id] = true;
+  }
+  return newestIds;
+}
+
+async function moFormNopBaiHo(studentId, studentName) {
+  $('modalNopBaiHo').style.display = 'flex';
+  window.nbhTargetStudentId = studentId;
+  $('nbhTenHocSinh').textContent = studentName;
+  $('nbhFileInp').value = '';
+  $('nbhTrangThai').textContent = '';
+  
+  var sel = $('nbhTargetSelect');
+  sel.innerHTML = '<option value="">-- Đang tải danh sách bài học/đề thi --</option>';
+  
+  try {
+    var rL = await sb.from('lessons').select('id, title').eq('class_id', classDangChon.id).order('sort', { ascending: false });
+    var rE = await sb.from('exams').select('id, title, de_type').eq('class_id', classDangChon.id).order('created_at', { ascending: false });
+    
+    var options = ['<option value="">-- Chọn bài kiểm tra/luyện đề --</option>'];
+    if (rL.data && rL.data.length > 0) {
+      options.push('<optgroup label="📝 Bài giảng (Kiểm tra)">');
+      rL.data.forEach(function(l) {
+        options.push('<option value="lesson:' + l.id + '">' + l.title + '</option>');
+      });
+      options.push('</optgroup>');
+    }
+    
+    if (rE.data && rE.data.length > 0) {
+      options.push('<optgroup label="✍️ Luyện đề (Tự luận)">');
+      rE.data.forEach(function(e) {
+        options.push('<option value="exam:' + e.id + '">' + e.title + '</option>');
+      });
+      options.push('</optgroup>');
+    }
+    
+    sel.innerHTML = options.join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">❌ Lỗi tải danh sách</option>';
+  }
+}
+
+function dongFormNopBaiHo() {
+  $('modalNopBaiHo').style.display = 'none';
+}
+
+async function nopBaiHoChoHocSinh() {
+  var target = $('nbhTargetSelect').value;
+  if (!target) {
+    alert('Vui lòng chọn bài học hoặc đề thi.');
+    return;
+  }
+  
+  var inp = $('nbhFileInp');
+  var tt = $('nbhTrangThai');
+  if (!inp || !inp.files.length) {
+    if (tt) {
+      tt.textContent = 'Thầy chưa chọn file bài làm nào.';
+      tt.style.color = 'var(--warn)';
+    }
+    return;
+  }
+  
+  var parts = target.split(':');
+  var type = parts[0];
+  var id = parts[1];
+  
+  var nut = $('btnNopBaiHoSubmit');
+  nut.disabled = true;
+  var originalText = nut.textContent;
+  nut.textContent = '⏳ Đang nộp bài hộ...';
+  
+  if (tt) {
+    tt.textContent = 'Đang tải file lên Drive của thầy...';
+    tt.style.color = 'var(--accent)';
+  }
+  
+  try {
+    var fd = new FormData();
+    fd.append('kind', 'nop');
+    fd.append('student_id', window.nbhTargetStudentId);
+    
+    if (type === 'lesson') {
+      fd.append('lesson_id', id);
+    } else {
+      fd.append('exam_id', id);
+    }
+    
+    for (var i = 0; i < inp.files.length; i++) {
+      fd.append('files', inp.files[i]);
+    }
+    
+    var r = await sb.functions.invoke('nop-bai', { body: fd });
+    if (r.error) throw new Error(r.error.message || 'Lỗi nộp bài');
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    
+    if (tt) {
+      tt.textContent = '✓ Đã nộp bài hộ học sinh thành công!';
+      tt.style.color = 'var(--ok)';
+    }
+    
+    inp.value = '';
+    setTimeout(function() {
+      dongFormNopBaiHo();
+    }, 1500);
+    
+  } catch (e) {
+    if (tt) {
+      tt.textContent = 'Lỗi: ' + e.message;
+      tt.style.color = 'var(--err)';
+    }
+  } finally {
+    nut.disabled = false;
+    nut.textContent = originalText;
+  }
+}
 </script>
 
 <!-- Modal Chi Tiết Đọc Lý Thuyết -->
@@ -3267,6 +3431,32 @@ async function luuQuickTopic() {
         <div style="display:inline-flex; align-items:center; justify-content:center; background:var(--accent-soft); color:var(--accent); font-family:monospace; font-size:2.8rem; font-weight:850; letter-spacing:6px; padding:8px 20px; border-radius:12px; border:2px dashed var(--accent); margin:8px 0; min-width:160px;" id="ddQRCodeSo">0000</div>
         <div style="font-size:.75rem; color:var(--ink-3); font-style:italic; max-width:180px; text-align:center; line-height:1.3" id="ddQRExpiresText">Mã hiệu lực...</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nộp bài hộ học sinh -->
+<div class="modal" id="modalNopBaiHo" style="display:none; z-index: 10030;">
+  <div class="modal-content" style="max-width: 480px">
+    <button class="modal-close" onclick="dongFormNopBaiHo()">×</button>
+    <h2>Nộp bài hộ học sinh</h2>
+    <p style="margin-top: 4px; font-size: 0.9rem; color: var(--ink-2)">
+      Học sinh: <b id="nbhTenHocSinh" style="color: var(--accent)">...</b>
+    </p>
+    <div class="field" style="margin-top: 15px;">
+      <label>Chọn bài giảng hoặc đề thi tự luận <b style="color:var(--accent)">*</b></label>
+      <select class="input" id="nbhTargetSelect" style="width: 100%;">
+        <option value="">-- Đang tải danh sách bài học/đề thi --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--accent)">*</b></label>
+      <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple style="padding: 8px;">
+    </div>
+    <div id="nbhTrangThai" style="font-size: 0.85rem; margin-top: 8px; min-height: 20px;"></div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px">
+      <button class="btn btn-secondary" onclick="dongFormNopBaiHo()">Huỷ</button>
+      <button class="btn btn-primary" id="btnNopBaiHoSubmit" onclick="nopBaiHoChoHocSinh()">📤 Xác nhận nộp hộ</button>
     </div>
   </div>
 </div>

@@ -11,6 +11,31 @@
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
 <link rel="stylesheet" href="css/vinhmath.css?v=5.2">
 <style>
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
+  50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.9), inset 0 0 8px rgba(245, 158, 11, 0.4); border-color: rgba(245, 158, 11, 1); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
+}
+.newest-lesson-glitter {
+  border: 2px solid #F59E0B !important;
+  animation: goldPulse 2s infinite ease-in-out;
+  position: relative;
+}
+.newest-lesson-glitter::after {
+  content: '✨ BÀI MỚI NHẤT';
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
 .greet{padding:48px 0 8px}
 .greet h1{font-size:1.8rem}
@@ -237,7 +262,9 @@ function theBaiHoc(bh) {
   var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px">👤 ' + gvName + '</span>';
 
-  return '<div class="card lesson">' +
+  var glitterClass = (window.newestLessonIds && window.newestLessonIds[bh.id]) ? ' newest-lesson-glitter' : '';
+
+  return '<div class="card lesson' + glitterClass + '">' +
     '<div class="thumb">' + thumb + '<div class="play">▶</div></div>' +
     '<div class="body">' +
       '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px">' +
@@ -421,6 +448,31 @@ async function chonLopHocSinh(classId) {
   await kiemTraDiemDanhHocSinh();
 }
 
+function xacDinhIdsBaiMoiNhat(ds) {
+  var newestIds = {};
+  if (!ds || !ds.length) return newestIds;
+  var groups = {};
+  ds.forEach(function (b) {
+    var tid = b.teacher_id || 'default';
+    if (!groups[tid]) groups[tid] = [];
+    groups[tid].push(b);
+  });
+  for (var tid in groups) {
+    var list = groups[tid];
+    if (list.length === 0) continue;
+    var newest = list[0];
+    for (var i = 1; i < list.length; i++) {
+      var timeI = list[i].created_at ? new Date(list[i].created_at).getTime() : 0;
+      var timeNewest = newest.created_at ? new Date(newest.created_at).getTime() : 0;
+      if (timeI > timeNewest) {
+        newest = list[i];
+      }
+    }
+    newestIds[newest.id] = true;
+  }
+  return newestIds;
+}
+
 async function taiLessonsHocSinh() {
   if (!selectedClassId) {
     $('dsBaiHocGomNhom').innerHTML = '<div class="empty card">Không tìm thấy lớp học.</div>';
@@ -446,11 +498,12 @@ async function taiLessonsHocSinh() {
   
   // Tải các bài học đã xuất bản của lớp đang chọn
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, topics(id, name, color, sort)')
+    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, topics(id, name, color, sort)')
     .eq('class_id', selectedClassId)
     .eq('published', true);
     
   var ds = r.data || [];
+  window.newestLessonIds = xacDinhIdsBaiMoiNhat(ds);
   hienThiLessonsGomNhom(ds);
 }
 
