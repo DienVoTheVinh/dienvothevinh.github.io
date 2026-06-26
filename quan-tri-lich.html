@@ -530,11 +530,20 @@ function capNhatGiaoVienSession() {
 }
 
 /* ----- Meet theo lớp ----- */
+var THU_NHAN = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
+
 async function taiMeetLop() {
   var r = await sb.from('class_links').select('class_id, meet_link');
   var map = {};
   (r.data || []).forEach(function (x) { map[x.class_id] = x.meet_link; });
-  
+
+  // Tải các buổi lịch để lớp có 2 GV sổ ra link riêng từng buổi
+  var rs = await sb.from('schedules')
+    .select('id, class_id, weekday, teacher_id, meet_link, start_time')
+    .order('weekday');
+  var schByClass = {};
+  (rs.data || []).forEach(function (s) { (schByClass[s.class_id] = schByClass[s.class_id] || []).push(s); });
+
   var isTeacher = hoSoNguoiDung && (hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant');
   var displayLopMeet = dsLop;
   if (isTeacher) {
@@ -542,22 +551,69 @@ async function taiMeetLop() {
       return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
     });
   }
-  
+
+  function tagCuaLop(l) {
+    var t = '';
+    if (l.grade) t += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + l.grade + '</span>';
+    if (l.is_specialized) t += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>';
+    return t;
+  }
+
   $('khungMeetLop').innerHTML = displayLopMeet.map(function (l) {
-    var tagHtml = '';
-    if (l.grade) {
-      tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + l.grade + '</span>';
+    var tagHtml = tagCuaLop(l);
+
+    // Lớp 2 giáo viên (đồng giảng) -> sổ ra link riêng từng buổi
+    if (l.co_teacher_id) {
+      var sess = schByClass[l.id] || [];
+      var header = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.92rem;margin-bottom:6px"><b>' + l.name + '</b>' + tagHtml +
+        '<span style="font-size:.72rem;color:var(--accent);background:var(--accent-soft);padding:2px 6px;border-radius:4px;margin-left:4px">👥 2 GV — link riêng từng buổi</span></div>';
+      var rows;
+      if (!sess.length) {
+        rows = '<div style="font-size:.82rem;color:var(--ink-3);padding:2px 0 4px 14px">Lớp chưa có buổi nào. Thêm buổi (gán giáo viên + thứ) ở mục “Lịch học các lớp” bên dưới, rồi quay lại đây để đặt link cho từng buổi.</div>';
+      } else {
+        rows = sess.map(function (s) {
+          var gv = (s.teacher_id && mapGiaoVien[s.teacher_id]) ? mapGiaoVien[s.teacher_id] : '⚠️ chưa gán GV';
+          var nhan = (THU_NHAN[s.weekday] || '?') + ' · ' + gv + (s.start_time ? ' (' + s.start_time.slice(0, 5) + ')' : '');
+          return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:3px 0 3px 14px">' +
+            '<div style="width:210px;flex:none;font-size:.85rem;color:var(--ink-2)">📅 ' + nhan + '</div>' +
+            '<input class="input" style="flex:1;min-width:200px" id="mls-' + s.id + '" placeholder="Link Meet của GV buổi này…" value="' + (s.meet_link || '') + '">' +
+            '<button class="btn btn-secondary btn-sm" onclick="luuMeetBuoi(\'' + s.id + '\', \'' + l.id + '\')">Lưu</button>' +
+            '<span id="mlst-' + s.id + '" style="font-size:.85rem;width:20px"></span>' +
+            '</div>';
+        }).join('');
+      }
+      var fallback = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0 2px 14px;border-top:1px dashed var(--line);margin-top:6px">' +
+        '<div style="width:210px;flex:none;font-size:.8rem;color:var(--ink-3)">Link chung của lớp (dự phòng)</div>' +
+        '<input class="input" style="flex:1;min-width:200px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
+        '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
+        '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
+        '</div>';
+      return '<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--surface)">' + header + rows + fallback + '</div>';
     }
-    if (l.is_specialized) {
-      tagHtml += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>';
-    }
-    return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+
+    // Lớp 1 giáo viên -> một link như cũ
+    return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">' +
       '<div style="width:160px;flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.9rem"><b>' + l.name + '</b>' + tagHtml + '</div>' +
       '<input class="input" style="flex:1;min-width:220px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
       '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
       '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
       '</div>';
   }).join('');
+}
+
+async function luuMeetBuoi(sid, classId) {
+  if (classId && !kiemTraQuyenLop(classId)) {
+    alert('Thầy không có quyền thay đổi link buổi của lớp này!');
+    return;
+  }
+  var v = $('mls-' + sid).value.trim();
+  var r = await sb.from('schedules').update({ meet_link: v || null }).eq('id', sid);
+  var t = $('mlst-' + sid);
+  if (t) {
+    t.textContent = r.error ? '✗' : '✓';
+    t.title = r.error ? r.error.message : 'Đã lưu';
+    t.style.color = r.error ? 'var(--err)' : 'var(--ok)';
+  }
 }
 
 async function luuMeetLop(id) {
@@ -913,6 +969,7 @@ async function themLich() {
   });
 
   taiLich();
+  taiMeetLop();
 }
 
 function capNhatGiaoVienEditSchedule() {
@@ -1083,6 +1140,7 @@ async function luuSuaLichModal() {
 
   dongSuaLich();
   taiLich();
+  taiMeetLop();
 }
 
 async function doiCongKhai(id, hien) {
@@ -1106,6 +1164,7 @@ async function xoaLich(id) {
   if (!confirm('Xoá dòng lịch này?')) return;
   await sb.from('schedules').delete().eq('id', id);
   taiLich();
+  taiMeetLop();
 }
 
 /* ----- Buổi học + QR ----- */
