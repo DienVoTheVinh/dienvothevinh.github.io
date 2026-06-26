@@ -620,7 +620,7 @@ function dongBoThuTuNgay() {
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, visible, recurrence, date, class_id, teacher_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, location, meet_link, note, visible, recurrence, date, class_id, teacher_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   dsLich = r.data || [];
   
@@ -894,6 +894,7 @@ async function themLich() {
   if (r.error) { alert('Lỗi: ' + r.error.message); return; }
   
   $('schNote').value = '';
+  if ($('schMeet')) $('schMeet').value = '';
   $('schDate').value = '';
   $('schRecurrence').value = 'weekly';
   doiLapLai();
