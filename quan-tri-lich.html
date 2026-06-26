@@ -348,7 +348,11 @@
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Ghi chú</label>
         <input class="input" id="editSchNote" placeholder="Còn nhận HS…" style="width:100%">
       </div>
-      
+      <div>
+        <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">🎥 Link Google Meet (buổi này)</label>
+        <input class="input" id="editSchMeet" placeholder="Link Meet của GV phụ trách buổi này — để trống = dùng link chung của lớp" style="width:100%">
+      </div>
+
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
         <button class="btn btn-secondary" onclick="dongSuaLich()">Hủy</button>
         <button class="btn btn-primary" onclick="luuSuaLichModal()">💾 Lưu thay đổi</button>
@@ -996,6 +1000,7 @@ function suaLich(id) {
   }
   doiLapLaiEdit();
   $('editSchNote').value = s.note || '';
+  if ($('editSchMeet')) $('editSchMeet').value = s.meet_link || '';
   $('editSchTu').value = s.start_time.slice(0, 5);
   $('editSchDen').value = s.end_time.slice(0, 5);
 
@@ -1036,13 +1041,19 @@ async function luuSuaLichModal() {
   }
 
   var locationValue = null;
+  var meetLinkBuoi = null;
   if (mode === 'online') {
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
-    var meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
+    var meetInput = ($('editSchMeet') && $('editSchMeet').value.trim()) || '';
+    var meetLink = meetInput;
+    if (!meetLink) {
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+      meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
+    }
     if (!meetLink) {
       var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
       meetLink = lk.data ? lk.data.value : '';
     }
+    meetLinkBuoi = meetInput || null;
     locationValue = meetLink || 'Google Meet';
   }
 
@@ -1058,6 +1069,7 @@ async function luuSuaLichModal() {
     end_time: $('editSchDen').value,
     mode: mode,
     location: locationValue,
+    meet_link: meetLinkBuoi,
     recurrence: rec,
     date: schDateVal,
     teacher_id: teacherId,

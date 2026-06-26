@@ -1189,21 +1189,24 @@ async function capNhatMeetLinkTheoLop(classId) {
       .map(function (c) { return c.class_id; });
       
     if (onlineClassIds.length > 0) {
-      // Tìm xem lớp nào có lịch hôm nay trong schedules để ưu tiên lấy link lớp đó
       var jsThu = new Date().getDay();
       var homNay = jsThu === 0 ? 7 : jsThu;
+      // Lịch hôm nay của các lớp online (kèm link Meet riêng theo buổi/GV)
       var rToday = await sb.from('schedules')
-        .select('class_id')
+        .select('class_id, meet_link')
         .in('class_id', onlineClassIds)
-        .eq('weekday', homNay)
-        .limit(1);
-      
-      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
-      
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      
-      // Nếu lớp hôm nay không có link riêng, thử tìm trong danh sách các lớp online còn lại
+        .eq('weekday', homNay);
+      var todayRows = rToday.data || [];
+      // 1. Ưu tiên link Meet riêng của buổi hôm nay (đúng GV phụ trách → là chủ phòng)
+      var buoiCoLink = todayRows.find(function (s) { return s.meet_link; });
+      if (buoiCoLink) meetLink = buoiCoLink.meet_link;
+      // 2. Nếu buổi hôm nay không đặt link riêng → link chung của lớp hôm nay
+      if (!meetLink) {
+        var targetClassId = todayRows.length > 0 ? todayRows[0].class_id : onlineClassIds[0];
+        var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      }
+      // 3. Thử link riêng của các lớp online còn lại
       if (!meetLink) {
         var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
         var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
@@ -1213,8 +1216,17 @@ async function capNhatMeetLinkTheoLop(classId) {
   } else {
     var selClass = hoSo.class_students.find(function(c) { return c.class_id === classId; });
     if (selClass && selClass.classes && selClass.classes.mode === 'online') {
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      var jsThu2 = new Date().getDay();
+      var homNay2 = jsThu2 === 0 ? 7 : jsThu2;
+      // 1. Ưu tiên link Meet riêng của buổi hôm nay
+      var rTd = await sb.from('schedules').select('meet_link').eq('class_id', classId).eq('weekday', homNay2);
+      var buoiLink = (rTd.data || []).find(function (s) { return s.meet_link; });
+      if (buoiLink) meetLink = buoiLink.meet_link;
+      // 2. Fallback link chung của lớp
+      if (!meetLink) {
+        var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      }
     }
   }
   

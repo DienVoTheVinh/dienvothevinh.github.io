@@ -376,16 +376,20 @@ function layEmojiGiaoVien(fullName) {
       var jsThu = new Date().getDay();
       var homNay = jsThu === 0 ? 7 : jsThu;
       var rToday = await sb.from('schedules')
-        .select('class_id')
+        .select('class_id, meet_link')
         .in('class_id', onlineClassIds)
-        .eq('weekday', homNay)
-        .limit(1);
-      
-      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
-      
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      
+        .eq('weekday', homNay);
+      var todayRows = rToday.data || [];
+      // 1. Ưu tiên link Meet riêng của buổi hôm nay (đúng GV phụ trách → là chủ phòng)
+      var buoiCoLink = todayRows.find(function (s) { return s.meet_link; });
+      if (buoiCoLink) meetLink = buoiCoLink.meet_link;
+      // 2. Link chung của lớp hôm nay
+      if (!meetLink) {
+        var targetClassId = todayRows.length > 0 ? todayRows[0].class_id : onlineClassIds[0];
+        var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      }
+      // 3. Thử link riêng các lớp online còn lại
       if (!meetLink) {
         var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
         var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
