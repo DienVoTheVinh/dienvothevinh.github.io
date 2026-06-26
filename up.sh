@@ -16,7 +16,7 @@ echo "👉 Bước 1: Thêm các file thay đổi..."
 # Thêm các file thuộc thư mục web/trang-web, web/supabase và các file cốt lõi ở root
 git add web/trang-web/
 git add web/supabase/
-git add *.html *.sty css/ js/ img/ assets/ CNAME sitemap.xml robots.txt favicon.png 2>/dev/null || true
+git add *.html *.sty css/ js/ img/ assets/ CNAME sitemap.xml robots.txt favicon.png logo/ cautruc13/ bia13/ 2>/dev/null || true
 
 # Kiểm tra xem có file nào thay đổi không
 if git diff --cached --quiet; then
