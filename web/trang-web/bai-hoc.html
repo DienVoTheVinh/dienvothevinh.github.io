@@ -361,9 +361,15 @@ async function guiBaiNop() {
 
 /* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
 async function taiMucLuc() {
-  var r = await sb.from('lessons')
-    .select('id, title, sort, locked, topics(name, color), classes(name)')
+  // Xác định lớp của bài đang xem để mục lục chỉ hiện bài giảng của ĐÚNG lớp đó
+  var rCur = await sb.from('lessons').select('class_id').eq('id', lessonId).maybeSingle();
+  var classIdHienTai = rCur.data ? rCur.data.class_id : null;
+
+  var q = sb.from('lessons')
+    .select('id, title, sort, locked, class_id, topics(name, color), classes(name)')
     .order('sort', { ascending: false });
+  if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
+  var r = await q;
   var ds = r.data || [];
   if (!ds.length) {
     $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';
@@ -377,8 +383,14 @@ async function taiMucLuc() {
     (nhom[ten] = nhom[ten] || []).push(b);
   });
   var html = '';
+  var chuyenDeCount = 1;
   Object.keys(nhom).forEach(function (ten) {
-    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + ten + '</div>';
+    var displayTen = ten;
+    if (ten !== 'Bài giảng khác') {
+      displayTen = 'Chuyên đề ' + chuyenDeCount + ': ' + ten;
+      chuyenDeCount++;
+    }
+    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + displayTen + '</div>';
     html += nhom[ten].map(function (b) {
       var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
       return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc?id=' + b.id + '">' + b.title + khoa + '</a>';

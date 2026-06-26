@@ -206,6 +206,7 @@
         </select></div>
         <div id="khungSchNgay" style="display:none"><label style="font-size:.8rem;font-weight:600">Ngày diễn ra</label><input class="input" type="date" id="schDate" onchange="dongBoThuTuNgay()"></div>
         <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
+        <div style="grid-column: span 2; min-width:280px"><label style="font-size:.8rem;font-weight:600">🎥 Link Google Meet (buổi này)</label><input class="input" id="schMeet" placeholder="Dán link Meet của GV phụ trách buổi này — để trống sẽ dùng link chung của lớp"></div>
         <div id="schBtnContainer"><button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button></div>
       </div>
     </div>
@@ -842,16 +843,22 @@ async function themLich() {
   }
   
   var locationValue = null;
+  var meetLinkBuoi = null; // link Meet riêng cho buổi này (theo GV phụ trách)
   if (mode === 'online') {
-    // 1. Lấy link Meet riêng của lớp từ class_links
-    var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
-    var meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
-    
+    // 1. Ưu tiên link Meet do GV nhập riêng cho buổi này
+    var meetInput = ($('schMeet') && $('schMeet').value.trim()) || '';
+    var meetLink = meetInput;
+    // 2. Nếu để trống → lấy link riêng của lớp
     if (!meetLink) {
-      // 2. Lấy link chung dự phòng
+      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
+      meetLink = (lr.data && lr.data.meet_link) ? lr.data.meet_link : '';
+    }
+    // 3. Nếu vẫn trống → link chung dự phòng
+    if (!meetLink) {
       var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
       meetLink = lk.data ? lk.data.value : '';
     }
+    meetLinkBuoi = meetInput || null; // chỉ lưu khi GV nhập riêng cho buổi
     locationValue = meetLink || 'Google Meet';
   }
 
@@ -875,6 +882,7 @@ async function themLich() {
       end_time: $('schDen').value,
       mode: mode,
       location: locationValue,
+      meet_link: meetLinkBuoi,
       recurrence: rec,
       date: schDateVal,
       teacher_id: teacherId,

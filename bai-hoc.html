@@ -384,8 +384,14 @@ async function taiMucLuc() {
     (nhom[ten] = nhom[ten] || []).push(b);
   });
   var html = '';
+  var chuyenDeCount = 1;
   Object.keys(nhom).forEach(function (ten) {
-    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + ten + '</div>';
+    var displayTen = ten;
+    if (ten !== 'Bài giảng khác') {
+      displayTen = 'Chuyên đề ' + chuyenDeCount + ': ' + ten;
+      chuyenDeCount++;
+    }
+    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + displayTen + '</div>';
     html += nhom[ten].map(function (b) {
       var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
       return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc?id=' + b.id + '">' + b.title + khoa + '</a>';
