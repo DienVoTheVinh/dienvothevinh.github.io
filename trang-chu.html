@@ -367,13 +367,14 @@
         <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
         <div>
           <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
-          <p style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
+          <p id="meetSub" style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
         </div>
       </div>
       <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
         Vào lớp học ngay 🚀
       </a>
     </div>
+    <div id="meetUpcoming" style="position: relative; z-index: 1; margin-top: 16px;"></div>
   </div>
 
   <!-- Banner Phím tắt Vào học bài ngay cho học sinh -->
@@ -1181,63 +1182,98 @@ function veSelectorLopHocSinh() {
 
 async function capNhatMeetLinkTheoLop(classId) {
   var hoSo = hoSoNguoiDung;
+  var THU = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
+
+  // Tên lớp theo class_id
+  var classNameMap = {};
+  (hoSo.class_students || []).forEach(function (c) { if (c.classes) classNameMap[c.class_id] = c.classes.name; });
+
+  // Các lớp online liên quan (theo lớp đang xem)
+  var onlineAll = (hoSo.class_students || [])
+    .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
+    .map(function (c) { return c.class_id; });
+  var relevantIds = (classId === 'all') ? onlineAll : (onlineAll.indexOf(classId) !== -1 ? [classId] : []);
+
+  if (relevantIds.length === 0) { $('khungMeetHoc').style.display = 'none'; return; }
+
+  // Link chung dự phòng + link riêng theo lớp
+  var lkCommon = '';
+  try { var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single(); lkCommon = lk.data ? lk.data.value : ''; } catch (e) {}
+  var classLinkMap = {};
+  try { var cl = await sb.from('class_links').select('class_id, meet_link').in('class_id', relevantIds); (cl.data || []).forEach(function (x) { classLinkMap[x.class_id] = x.meet_link; }); } catch (e) {}
+
+  // Các buổi học của lớp liên quan
+  var rs = await sb.from('schedules')
+    .select('class_id, weekday, start_time, teacher_id, meet_link')
+    .in('class_id', relevantIds);
+  var sessions = rs.data || [];
+
+  // Tên giáo viên từng buổi
+  var tIds = Array.from(new Set(sessions.map(function (s) { return s.teacher_id; }).filter(Boolean)));
+  var teacherMap = {};
+  if (tIds.length) { try { var tp = await sb.from('profiles').select('id, full_name').in('id', tIds); (tp.data || []).forEach(function (p) { teacherMap[p.id] = p.full_name; }); } catch (e) {} }
+
+  function linkCuaBuoi(s) { return s.meet_link || classLinkMap[s.class_id] || lkCommon || ''; }
+  function moTaBuoi(s) {
+    var parts = [];
+    if (classNameMap[s.class_id]) parts.push('Lớp ' + classNameMap[s.class_id]);
+    if (s.teacher_id && teacherMap[s.teacher_id]) parts.push(teacherMap[s.teacher_id]);
+    return parts.join(' · ');
+  }
+
+  var jsThu = new Date().getDay();
+  var homNay = jsThu === 0 ? 7 : jsThu;
+
+  // Buổi hôm nay -> link chính + phụ đề
+  var todaySessions = sessions.filter(function (s) { return s.weekday === homNay; })
+    .sort(function (a, b) { return (a.start_time || '').localeCompare(b.start_time || ''); });
   var meetLink = '';
-  
-  if (classId === 'all') {
-    var onlineClassIds = hoSo.class_students
-      .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
-      .map(function (c) { return c.class_id; });
-      
-    if (onlineClassIds.length > 0) {
-      var jsThu = new Date().getDay();
-      var homNay = jsThu === 0 ? 7 : jsThu;
-      // Lịch hôm nay của các lớp online (kèm link Meet riêng theo buổi/GV)
-      var rToday = await sb.from('schedules')
-        .select('class_id, meet_link')
-        .in('class_id', onlineClassIds)
-        .eq('weekday', homNay);
-      var todayRows = rToday.data || [];
-      // 1. Ưu tiên link Meet riêng của buổi hôm nay (đúng GV phụ trách → là chủ phòng)
-      var buoiCoLink = todayRows.find(function (s) { return s.meet_link; });
-      if (buoiCoLink) meetLink = buoiCoLink.meet_link;
-      // 2. Nếu buổi hôm nay không đặt link riêng → link chung của lớp hôm nay
-      if (!meetLink) {
-        var targetClassId = todayRows.length > 0 ? todayRows[0].class_id : onlineClassIds[0];
-        var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
-        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      }
-      // 3. Thử link riêng của các lớp online còn lại
-      if (!meetLink) {
-        var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
-        var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
-        if (firstLink) meetLink = firstLink.meet_link;
-      }
-    }
+  var subText = '';
+  if (todaySessions.length) {
+    var sToday = todaySessions[0];
+    meetLink = linkCuaBuoi(sToday);
+    var gio = sToday.start_time ? sToday.start_time.slice(0, 5) : '';
+    subText = '🟢 Buổi hôm nay' + (gio ? (' lúc ' + gio) : '') + ' — ' + (moTaBuoi(sToday) || 'Lớp học trực tuyến');
   } else {
-    var selClass = hoSo.class_students.find(function(c) { return c.class_id === classId; });
-    if (selClass && selClass.classes && selClass.classes.mode === 'online') {
-      var jsThu2 = new Date().getDay();
-      var homNay2 = jsThu2 === 0 ? 7 : jsThu2;
-      // 1. Ưu tiên link Meet riêng của buổi hôm nay
-      var rTd = await sb.from('schedules').select('meet_link').eq('class_id', classId).eq('weekday', homNay2);
-      var buoiLink = (rTd.data || []).find(function (s) { return s.meet_link; });
-      if (buoiLink) meetLink = buoiLink.meet_link;
-      // 2. Fallback link chung của lớp
-      if (!meetLink) {
-        var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
-        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      }
-    }
+    meetLink = classLinkMap[relevantIds[0]] || lkCommon || '';
+    if (!meetLink) { relevantIds.forEach(function (id) { if (!meetLink && classLinkMap[id]) meetLink = classLinkMap[id]; }); }
+    subText = 'Hôm nay lớp em không có buổi online. Nút bên dưới dùng phòng dự phòng của lớp.';
   }
-  
-  // Nếu vẫn chưa có meet_link riêng và học sinh này có học lớp online, lấy link chung dự phòng
-  if (!meetLink && hoSo.class_students.some(function(c) { return c.classes && c.classes.mode === 'online'; })) {
-    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
-    meetLink = lk.data ? lk.data.value : '';
-  }
-  
+
+  if ($('meetSub')) $('meetSub').textContent = subText;
   if (meetLink) {
     $('linkMeetHoc').href = meetLink;
+    $('linkMeetHoc').style.pointerEvents = ''; $('linkMeetHoc').style.opacity = '';
+  } else {
+    $('linkMeetHoc').removeAttribute('href');
+    $('linkMeetHoc').style.pointerEvents = 'none'; $('linkMeetHoc').style.opacity = '0.55';
+  }
+
+  // Danh sách buổi sắp tới (hôm nay + các buổi kế tiếp)
+  var withDelta = sessions.map(function (s) { return { s: s, d: (s.weekday - homNay + 7) % 7 }; })
+    .sort(function (a, b) { return a.d - b.d || (a.s.start_time || '').localeCompare(b.s.start_time || ''); });
+  var upHtml = withDelta.slice(0, 5).map(function (o) {
+    var s = o.s;
+    var nhanThu = o.d === 0 ? 'Hôm nay' : (o.d === 1 ? 'Ngày mai' : (THU[s.weekday] || ''));
+    var gio = s.start_time ? s.start_time.slice(0, 5) : '';
+    var link = linkCuaBuoi(s);
+    var laHomNay = (s.weekday === homNay);
+    var aHtml = link
+      ? '<a href="' + link + '" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap;font-size:.85rem">Vào phòng →</a>'
+      : '<span style="color:var(--ink-3);font-size:.8rem;white-space:nowrap">chưa có link</span>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2)">' +
+      '<div style="font-size:.86rem;color:var(--ink-2);min-width:0">' +
+        '<b style="color:' + (laHomNay ? 'var(--ok)' : 'var(--ink)') + '">' + nhanThu + (gio ? (' · ' + gio) : '') + '</b> — ' + (moTaBuoi(s) || 'Lớp học') +
+      '</div>' + aHtml +
+    '</div>';
+  }).join('');
+  if ($('meetUpcoming')) {
+    $('meetUpcoming').innerHTML = upHtml
+      ? ('<div style="font-size:.74rem;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">🗓️ Các buổi học sắp tới</div>' + upHtml)
+      : '';
+  }
+
+  if (meetLink || sessions.length > 0) {
     $('khungMeetHoc').style.display = 'block';
   } else {
     $('khungMeetHoc').style.display = 'none';
