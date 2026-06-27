@@ -328,6 +328,7 @@ var testAttempt = null;
 var mapGiaoVien = {};
 var classInfo = null;
 var coTeachLesson = null;
+var coTest = false;
 
 (async function () {
   var params = new URLSearchParams(window.location.search);
@@ -656,7 +657,7 @@ function renderBaiHoc() {
   var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
-  var coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
+  coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
   $('boChuyen').style.display = 'flex';
