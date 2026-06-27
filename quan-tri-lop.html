@@ -3361,6 +3361,31 @@ function vmPasteAnhVaoInput(inputId, statusId) {
 }
 vmPasteAnhVaoInput('nbhFileInp', 'nbhDanAnhTrangThai');
 
+function vmRenderFileList(inputId, listId) {
+  var inp = document.getElementById(inputId), box = document.getElementById(listId);
+  if (!box) return;
+  var fs = inp ? inp.files : null;
+  if (!fs || !fs.length) { box.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < fs.length; i++) {
+    var f = fs[i];
+    var nm = String(f.name || 'tệp').replace(/[<>&"]/g, '');
+    var icon = (f.type && f.type.indexOf('image') !== -1) ? '🖼' : '📄';
+    html += '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2,#eee);border:1px solid var(--line,#ddd);border-radius:6px;padding:3px 6px 3px 8px;margin:4px 6px 0 0;font-size:.78rem;max-width:240px">' +
+      '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + icon + ' ' + nm + '</span>' +
+      '<button type="button" title="Xoá" onclick="vmXoaFile(\'' + inputId + '\',' + i + ',\'' + listId + '\')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-weight:800;font-size:1.05rem;line-height:1;padding:0 2px">×</button>' +
+      '</span>';
+  }
+  box.innerHTML = html;
+}
+function vmXoaFile(inputId, idx, listId) {
+  var inp = document.getElementById(inputId); if (!inp) return;
+  var dt = new DataTransfer();
+  for (var i = 0; i < inp.files.length; i++) { if (i !== idx) dt.items.add(inp.files[i]); }
+  inp.files = dt.files;
+  vmRenderFileList(inputId, listId);
+}
+
 async function nopBaiHoChoHocSinh() {
   var target = $('nbhTargetSelect').value;
   if (!target) {
@@ -3482,8 +3507,9 @@ async function nopBaiHoChoHocSinh() {
     </div>
     <div class="field">
       <label>Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--accent)">*</b></label>
-      <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple style="padding: 8px;">
+      <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple onchange="vmRenderFileList('nbhFileInp','nbhFileList')" style="padding: 8px;">
       <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+      <div id="nbhFileList"></div>
       <div id="nbhDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
     </div>
     <div id="nbhTrangThai" style="font-size: 0.85rem; margin-top: 8px; min-height: 20px;"></div>
