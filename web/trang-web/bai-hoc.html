@@ -214,8 +214,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <div id="nbDaNop"></div>
       <div class="field" style="margin-top:14px">
         <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
-        <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
+        <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple onchange="vmRenderFileList('nbFiles','nbFileList')" style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
         <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Em có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+        <div id="nbFileList"></div>
         <div id="nbDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
       </div>
       <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
@@ -335,6 +336,31 @@ function vmPasteAnhVaoInput(inputId, statusId) {
   });
 }
 vmPasteAnhVaoInput('nbFiles', 'nbDanAnhTrangThai');
+
+function vmRenderFileList(inputId, listId) {
+  var inp = document.getElementById(inputId), box = document.getElementById(listId);
+  if (!box) return;
+  var fs = inp ? inp.files : null;
+  if (!fs || !fs.length) { box.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < fs.length; i++) {
+    var f = fs[i];
+    var nm = String(f.name || 'tệp').replace(/[<>&"]/g, '');
+    var icon = (f.type && f.type.indexOf('image') !== -1) ? '🖼' : '📄';
+    html += '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2,#eee);border:1px solid var(--line,#ddd);border-radius:6px;padding:3px 6px 3px 8px;margin:4px 6px 0 0;font-size:.78rem;max-width:240px">' +
+      '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + icon + ' ' + nm + '</span>' +
+      '<button type="button" title="Xoá" onclick="vmXoaFile(\'' + inputId + '\',' + i + ',\'' + listId + '\')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-weight:800;font-size:1.05rem;line-height:1;padding:0 2px">×</button>' +
+      '</span>';
+  }
+  box.innerHTML = html;
+}
+function vmXoaFile(inputId, idx, listId) {
+  var inp = document.getElementById(inputId); if (!inp) return;
+  var dt = new DataTransfer();
+  for (var i = 0; i < inp.files.length; i++) { if (i !== idx) dt.items.add(inp.files[i]); }
+  inp.files = dt.files;
+  vmRenderFileList(inputId, listId);
+}
 
 async function taiBaiDaNop() {
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
