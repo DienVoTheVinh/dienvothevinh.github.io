@@ -306,12 +306,20 @@ function veDanhSach() {
       (linksCham ? '<div class="sub-files" style="margin-top:4px">' + linksCham + '</div>' : '') +
       '<div class="grade-row">' +
         '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? s.score : '') + '">' +
-        '<textarea class="input" rows="2" placeholder="Lời phê cho học sinh…" id="phe-' + s.id + '" style="resize:vertical">' + (s.feedback || '') + '</textarea>' +
+        '<textarea class="input" rows="4" placeholder="Lời phê cho học sinh… (nhấn Enter để xuống dòng — mỗi câu/ý một dòng cho dễ đọc)" id="phe-' + s.id + '" style="resize:vertical;line-height:1.5">' + (s.feedback || '') + '</textarea>' +
       '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">' +
+        '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="chenYPhe(\'' + s.id + '\')">• Thêm dòng ý</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="chenCauPhe(\'' + s.id + '\')">➕ Thêm “Câu …”</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" id="btnxem-' + s.id + '" onclick="xemPheNhuHS(\'' + s.id + '\')">👁 Xem như HS</button>' +
+      '</div>' +
+      '<div id="preview-' + s.id + '" style="display:none;margin-top:8px;padding:12px 14px;border:1px solid var(--ok);border-radius:8px;background:var(--ok-soft)"></div>' +
       '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
         '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="font-size:.85rem;flex:1;min-width:200px">' +
         '<button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button>' +
       '</div>' +
+      '<div style="font-size:.76rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: viết lời phê ra giấy/chụp màn hình → bấm vào thẻ này rồi <b>dán (Ctrl/⌘ + V)</b> để đính ảnh trả cho HS.</div>' +
+      '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>' +
       '</div>';
   }).join('');
 }
@@ -347,6 +355,64 @@ async function luuCham(id) {
     nut.disabled = false; nut.textContent = '💾 Lưu & trả bài';
   }
 }
+
+/* ===== Lời phê: hỗ trợ xuống dòng, ngắt ý/câu, xem thử như HS ===== */
+function chamEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+function chenYPhe(id) {
+  var ta = document.getElementById('phe-' + id); if (!ta) return;
+  var cur = ta.value;
+  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + '• ';
+  ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length;
+}
+function chenCauPhe(id) {
+  var ta = document.getElementById('phe-' + id); if (!ta) return;
+  var cur = ta.value;
+  var n = (cur.match(/(^|\n)\s*Câu\s*\d/gi) || []).length + 1;
+  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + 'Câu ' + n + ': ';
+  ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length;
+}
+function xemPheNhuHS(id) {
+  var ta = document.getElementById('phe-' + id), box = document.getElementById('preview-' + id), btn = document.getElementById('btnxem-' + id);
+  if (!ta || !box) return;
+  if (box.style.display === 'none' || !box.style.display) {
+    var txt = ta.value.trim();
+    box.innerHTML = txt
+      ? ('<div style="font-weight:700;color:var(--ok);margin-bottom:6px">💬 Lời phê — HS sẽ thấy như sau:</div><div style="white-space:pre-wrap;line-height:1.6;color:var(--ink)">' + chamEsc(txt) + '</div>')
+      : '<i style="color:var(--ink-3)">Chưa có lời phê.</i>';
+    box.style.display = 'block'; if (btn) btn.textContent = '🙈 Ẩn xem thử';
+  } else {
+    box.style.display = 'none'; if (btn) btn.textContent = '👁 Xem như HS';
+  }
+}
+
+/* ===== Dán ảnh (Ctrl/⌘+V) vào thẻ chấm bài đang thao tác ===== */
+window.addEventListener('paste', function (e) {
+  var ae = document.activeElement;
+  var card = ae && ae.closest ? ae.closest('.sub-card') : null;
+  if (!card) return;
+  var inp = card.querySelector('input[type=file]');
+  if (!inp) return;
+  var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+  if (!cd) return;
+  var imgs = [];
+  if (cd.items) for (var i = 0; i < cd.items.length; i++) { var it = cd.items[i]; if (it.type && it.type.indexOf('image') !== -1) { var f = it.getAsFile(); if (f) imgs.push(f); } }
+  if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
+  if (!imgs.length) return;
+  e.preventDefault();
+  var dt = new DataTransfer();
+  if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
+  for (var k = 0; k < imgs.length; k++) {
+    var src = imgs[k]; var name = src.name;
+    if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'cham-dan-' + Date.now() + '-' + k + '.' + ext; }
+    dt.items.add(new File([src], name, { type: src.type }));
+  }
+  inp.files = dt.files;
+  var id = card.id.replace('sub-', '');
+  var st = document.getElementById('danchamtt-' + id);
+  if (st) st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
+});
 
 async function xemChiTietTest(attemptId, hsName, title) {
   $('mtTieuDe').textContent = 'Chi tiết bài trắc nghiệm — ' + hsName;

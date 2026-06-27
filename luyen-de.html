@@ -928,7 +928,7 @@ async function taiTuLuanDaNop() {
       var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ');
       var cham = (s.graded_files || []).length ? '<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: ' + s.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ') + '</div>' : '';
       var diem = (s.score !== null && s.score !== undefined) ? '<div style="font-size:.9rem;font-weight:700;color:var(--accent);margin-top:4px">Điểm: ' + s.score + '</div>' : '';
-      var phe = s.feedback ? '<div style="font-size:.85rem;margin-top:4px;font-style:italic">Lời phê: ' + s.feedback + '</div>' : '';
+      var phe = s.feedback ? '<div style="font-size:.85rem;margin-top:4px"><b>💬 Lời phê:</b><div style="white-space:pre-wrap;line-height:1.6;margin-top:2px">' + s.feedback + '</div></div>' : '';
       return '<div style="border:1px solid var(--line-2);border-radius:var(--r-sm);padding:10px;margin-bottom:8px">' +
         '<div style="font-size:.85rem">' + links + '</div>' + diem + phe + cham + '</div>';
     }).join('');
