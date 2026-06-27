@@ -3296,7 +3296,11 @@ async function moFormNopBaiHo(studentId, studentName) {
   $('modalNopBaiHo').style.display = 'flex';
   window.nbhTargetStudentId = studentId;
   $('nbhTenHocSinh').textContent = studentName;
-  $('nbhFileInp').value = '';
+  // Reset sạch ô file mỗi khi mở cho HS khác (tránh ảnh dính qua HS trước)
+  var _inp = $('nbhFileInp');
+  if (_inp) { _inp.value = ''; try { _inp.files = new DataTransfer().files; } catch (e) {} }
+  if ($('nbhFileList')) $('nbhFileList').innerHTML = '';
+  if ($('nbhDanAnhTrangThai')) $('nbhDanAnhTrangThai').textContent = '';
   $('nbhTrangThai').textContent = '';
   
   var sel = $('nbhTargetSelect');
