@@ -1192,7 +1192,9 @@ async function capNhatMeetLinkTheoLop(classId) {
   var onlineAll = (hoSo.class_students || [])
     .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
     .map(function (c) { return c.class_id; });
-  var relevantIds = (classId === 'all') ? onlineAll : (onlineAll.indexOf(classId) !== -1 ? [classId] : []);
+  // Thẻ Meet LUÔN tổng hợp mọi lớp online của HS (bỏ qua "lớp đang xem"),
+  // tránh trường hợp HS kẹt ở 1 lớp rồi bỏ lỡ buổi học của lớp khác hôm nay.
+  var relevantIds = onlineAll;
 
   if (relevantIds.length === 0) { $('khungMeetHoc').style.display = 'none'; return; }
 
