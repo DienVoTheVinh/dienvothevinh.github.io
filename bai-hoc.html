@@ -215,6 +215,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <div class="field" style="margin-top:14px">
         <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
         <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
+        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Em có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+        <div id="nbDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
       </div>
       <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
       <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>

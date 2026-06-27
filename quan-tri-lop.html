@@ -3333,6 +3333,34 @@ function dongFormNopBaiHo() {
   $('modalNopBaiHo').style.display = 'none';
 }
 
+/* ===== Dán ảnh (Ctrl/⌘+V) vào ô chọn file ===== */
+function vmPasteAnhVaoInput(inputId, statusId) {
+  window.addEventListener('paste', function (e) {
+    var inp = document.getElementById(inputId);
+    if (!inp || inp.disabled) return;
+    if (inp.offsetParent === null) return; // ô đang ẩn -> bỏ qua
+    var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!cd) return;
+    var imgs = [];
+    if (cd.items) for (var i = 0; i < cd.items.length; i++) { var it = cd.items[i]; if (it.type && it.type.indexOf('image') !== -1) { var f = it.getAsFile(); if (f) imgs.push(f); } }
+    if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
+    if (!imgs.length) return;
+    e.preventDefault();
+    var dt = new DataTransfer();
+    if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
+    for (var k = 0; k < imgs.length; k++) {
+      var src = imgs[k]; var name = src.name;
+      if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'dan-anh-' + Date.now() + '-' + k + '.' + ext; }
+      dt.items.add(new File([src], name, { type: src.type }));
+    }
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    var st = statusId && document.getElementById(statusId);
+    if (st) { st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp'; }
+  });
+}
+vmPasteAnhVaoInput('nbhFileInp', 'nbhDanAnhTrangThai');
+
 async function nopBaiHoChoHocSinh() {
   var target = $('nbhTargetSelect').value;
   if (!target) {
@@ -3455,6 +3483,8 @@ async function nopBaiHoChoHocSinh() {
     <div class="field">
       <label>Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--accent)">*</b></label>
       <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple style="padding: 8px;">
+      <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+      <div id="nbhDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
     </div>
     <div id="nbhTrangThai" style="font-size: 0.85rem; margin-top: 8px; min-height: 20px;"></div>
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px">

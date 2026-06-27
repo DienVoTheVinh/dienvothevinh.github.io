@@ -779,17 +779,17 @@ function veKhuTuLuan(ex, isSubmitted) {
       promptHTML = qs.map(function (q, idx) {
         var qNum = 'Câu ' + (idx + 1);
         return '<div style="margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px">' +
-          '<div class="q-title" style="font-weight:700;margin-bottom:8px">' + qNum + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+          '<div class="q-title" style="font-weight:normal;margin-bottom:8px;line-height:1.6"><strong style="font-weight:700">' + qNum + ':</strong> ' + latexRaHTML(q.content_latex) + '</div>' +
           '</div>';
       }).join('');
     } else {
-      promptHTML = '<div class="q-title" style="margin-bottom:10px">' + latexRaHTML(deLamBai) + '</div>';
+      promptHTML = '<div class="q-title" style="font-weight:normal;margin-bottom:10px;line-height:1.6">' + latexRaHTML(deLamBai) + '</div>';
     }
   }
 
   var disabledAttr = isSubmitted ? 'disabled style="opacity:0.5;cursor:not-allowed"' : '';
 
-  return '<div class="q-box" id="khuTuLuan" style="border:2px solid var(--accent)">' +
+  return '<div class="q-box" id="khuTuLuan" style="border:2px solid var(--accent); padding: 28px 32px; border-radius: var(--r-md); background: var(--surface); max-width: 900px; width: 100%; margin: 0 auto 32px auto; box-sizing: border-box; box-shadow: var(--shadow);">' +
       '<div class="part-header">📝 Phần tự luận — Nộp ảnh bài làm cho thầy chấm</div>' +
       '<div id="khuTuLuanPrompt" style="margin-bottom:15px">' + promptHTML + '</div>' +
       '<div style="margin-top:10px;padding-top:15px;border-top:1px solid var(--line-2)">' +
