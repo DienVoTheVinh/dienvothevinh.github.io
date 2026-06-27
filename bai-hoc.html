@@ -589,15 +589,13 @@ function renderBaiHoc() {
   $('swLyThuyet').style.display = coLyThuyet ? '' : 'none';
   $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
   $('swBang').style.display = dsAnh.length ? '' : 'none';
-  $('swTest').style.display = coTest ? '' : 'none';
+  $('swTest').style.display = ''; // Ô kiểm tra luôn được bật để học sinh nhìn thấy
 
-  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest) {
-    $('boChuyen').style.display = 'none';
-    $('thanNoiDung').innerHTML = '<div class="no-content"><div class="ic">📑</div><h3>Không có nội dung kèm theo</h3><p>Bài học này chỉ có video bài giảng.</p></div>';
-    if ((ytId || driveId) && window.innerWidth > 820) phongToPane('video');
-    return;
+  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
+  chonNoiDung(macDinh);
+  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
+    phongToPane('video');
   }
-  chonNoiDung(coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test')));
 
   // Khởi động bộ đếm giờ kiểm tra
   kiemTraVaChayTestTimer();
@@ -1095,6 +1093,23 @@ async function layKetQuaChamHtml() {
   }
 }
 
+async function checkDaLamTest() {
+  if (!nguoiDung) return false;
+  if (testAttempt) return true;
+  try {
+    var r = await sb.from('submissions')
+      .select('id')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .limit(1)
+      .maybeSingle();
+    if (r.data) return true;
+  } catch (e) {
+    console.error("Lỗi kiểm tra lịch sử nộp bài:", e);
+  }
+  return false;
+}
+
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
   ['LyThuyet', 'TaiLieu', 'Bang', 'Test'].forEach(function (t) { 
@@ -1133,7 +1148,16 @@ async function chonNoiDung(loai) {
   } else {
     $('swTest').classList.add('active');
     capNhatAdminTestBar();
-    if (!details.test_active && !laQuanTriBaiHoc()) {
+    
+    var daLamTest = false;
+    if (nguoiDung) {
+      daLamTest = await checkDaLamTest();
+    }
+
+    if (!coTest) {
+      than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
+        '<div class="no-content" style="background:var(--surface)"><div class="ic">📝</div><h3>Chưa có bài kiểm tra</h3></div>';
+    } else if (!details.test_active && !laQuanTriBaiHoc() && !daLamTest) {
       than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
         '<div class="no-content"><div class="ic">🔒</div><h3>Bài kiểm tra chưa được mở</h3><p>Thầy sẽ kích hoạt bài kiểm tra khi tới giờ làm bài. Em quay lại sau nhé!</p></div>';
     } else if (interactiveQuestions.length > 0) {
@@ -1436,13 +1460,20 @@ async function batTatKichHoatTest(batLen) {
   if (!coTheBatTatTest()) return;
   var bar = $('adminTestBar');
   if (bar) bar.innerHTML = '<span style="color:var(--ink-2)">⏳ Đang cập nhật…</span>';
-  var r = await sb.from('lessons').update({ test_active: batLen }).eq('id', lessonId);
+  var updates = { test_active: batLen };
+  if (!batLen) {
+    updates.test_started_at = null;
+  }
+  var r = await sb.from('lessons').update(updates).eq('id', lessonId);
   if (r.error) {
     alert('Lỗi cập nhật trạng thái: ' + r.error.message);
     capNhatAdminTestBar();
     return;
   }
   details.test_active = batLen;
+  if (!batLen) {
+    details.test_started_at = null;
+  }
   capNhatAdminTestBar();
 }
 

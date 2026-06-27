@@ -215,6 +215,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <div class="field" style="margin-top:14px">
         <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
         <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
+        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Em có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+        <div id="nbDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
       </div>
       <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
       <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
@@ -252,6 +254,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
         <div class="pane-control">
           <button class="ctrl-btn" onclick="phongToPane('content')" title="Phóng to nội dung" id="btnMaxContent">⛶</button>
         </div>
+        <div id="adminTestBar" style="display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:9px 14px; border-bottom:1px solid var(--line); font-size:0.85rem;"></div>
         <div class="content-body" id="thanNoiDung">
           <div class="no-content"><div class="ic">📄</div><h3>Đang tải nội dung…</h3></div>
         </div>
@@ -304,6 +307,34 @@ function moNopBai() {
   taiBaiDaNop();
 }
 function dongNopBai() { $('modalNopBai').style.display = 'none'; }
+
+/* ===== Dán ảnh (Ctrl/⌘+V) vào ô chọn file ===== */
+function vmPasteAnhVaoInput(inputId, statusId) {
+  window.addEventListener('paste', function (e) {
+    var inp = document.getElementById(inputId);
+    if (!inp || inp.disabled) return;
+    if (inp.offsetParent === null) return;
+    var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!cd) return;
+    var imgs = [];
+    if (cd.items) for (var i = 0; i < cd.items.length; i++) { var it = cd.items[i]; if (it.type && it.type.indexOf('image') !== -1) { var f = it.getAsFile(); if (f) imgs.push(f); } }
+    if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
+    if (!imgs.length) return;
+    e.preventDefault();
+    var dt = new DataTransfer();
+    if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
+    for (var k = 0; k < imgs.length; k++) {
+      var src = imgs[k]; var name = src.name;
+      if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'dan-anh-' + Date.now() + '-' + k + '.' + ext; }
+      dt.items.add(new File([src], name, { type: src.type }));
+    }
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    var st = statusId && document.getElementById(statusId);
+    if (st) st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
+  });
+}
+vmPasteAnhVaoInput('nbFiles', 'nbDanAnhTrangThai');
 
 async function taiBaiDaNop() {
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
@@ -412,7 +443,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -558,15 +589,13 @@ function renderBaiHoc() {
   $('swLyThuyet').style.display = coLyThuyet ? '' : 'none';
   $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
   $('swBang').style.display = dsAnh.length ? '' : 'none';
-  $('swTest').style.display = coTest ? '' : 'none';
+  $('swTest').style.display = ''; // Ô kiểm tra luôn được bật để học sinh nhìn thấy
 
-  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest) {
-    $('boChuyen').style.display = 'none';
-    $('thanNoiDung').innerHTML = '<div class="no-content"><div class="ic">📑</div><h3>Không có nội dung kèm theo</h3><p>Bài học này chỉ có video bài giảng.</p></div>';
-    if ((ytId || driveId) && window.innerWidth > 820) phongToPane('video');
-    return;
+  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
+  chonNoiDung(macDinh);
+  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
+    phongToPane('video');
   }
-  chonNoiDung(coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test')));
 
   // Khởi động bộ đếm giờ kiểm tra
   kiemTraVaChayTestTimer();
@@ -1048,7 +1077,7 @@ async function layKetQuaChamHtml() {
         '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài!</h4>' +
         '    <span style="font-size:1.15rem; font-weight:800; color:var(--ok); background:var(--surface); border:2px solid var(--ok); padding:4px 12px; border-radius:8px">' + (sub.score != null ? sub.score + ' Điểm' : 'Đã chấm') + '</span>' +
         '  </div>' +
-        '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b> ' + vclEsc(sub.feedback) + '</div>' : '') +
+        '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + vclEsc(sub.feedback) + '</div></div>' : '') +
         '  ' + baiThayCham +
         '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
         '</div>';
@@ -1062,6 +1091,23 @@ async function layKetQuaChamHtml() {
   } catch (e) {
     return '';
   }
+}
+
+async function checkDaLamTest() {
+  if (!nguoiDung) return false;
+  if (testAttempt) return true;
+  try {
+    var r = await sb.from('submissions')
+      .select('id')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .limit(1)
+      .maybeSingle();
+    if (r.data) return true;
+  } catch (e) {
+    console.error("Lỗi kiểm tra lịch sử nộp bài:", e);
+  }
+  return false;
 }
 
 async function chonNoiDung(loai) {
@@ -1101,7 +1147,20 @@ async function chonNoiDung(loai) {
       }).join('') + '</div>';
   } else {
     $('swTest').classList.add('active');
-    if (interactiveQuestions.length > 0) {
+    capNhatAdminTestBar();
+    
+    var daLamTest = false;
+    if (nguoiDung) {
+      daLamTest = await checkDaLamTest();
+    }
+
+    if (!coTest) {
+      than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
+        '<div class="no-content" style="background:var(--surface)"><div class="ic">📝</div><h3>Chưa có bài kiểm tra</h3></div>';
+    } else if (!details.test_active && !laQuanTriBaiHoc() && !daLamTest) {
+      than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
+        '<div class="no-content"><div class="ic">🔒</div><h3>Bài kiểm tra chưa được mở</h3><p>Thầy sẽ kích hoạt bài kiểm tra khi tới giờ làm bài. Em quay lại sau nhé!</p></div>';
+    } else if (interactiveQuestions.length > 0) {
       renderInteractiveQuiz();
     } else if (details.test_latex_content) {
       await hienTestTex();
@@ -1114,6 +1173,7 @@ async function chonNoiDung(loai) {
       renderPDFWithJS(ut, document.getElementById('pdfViewerArea'));
     }
   }
+  if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
 }
@@ -1349,15 +1409,72 @@ function dangKyRealtimeTest() {
     sb.channel('lesson-test-' + lessonId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
         if (payload.new) {
+          var truocActive = details.test_active;
           details.test_started_at = payload.new.test_started_at;
           details.test_duration_minutes = payload.new.test_duration_minutes;
+          details.test_active = payload.new.test_active;
           kiemTraVaChayTestTimer();
+          // Nếu trạng thái mở/đóng thay đổi và đang xem tab Kiểm tra → vẽ lại
+          if (truocActive !== details.test_active && noiDungDangChon === 'test') {
+            pdfTestTex = null;
+            chonNoiDung('test');
+          }
+          capNhatAdminTestBar();
         }
       })
       .subscribe();
   } catch (e) {
     console.warn("Không đăng ký được realtime test:", e);
   }
+}
+
+/* ===== Cổng kích hoạt bài kiểm tra (chỉ admin/giáo viên) ===== */
+function laQuanTriBaiHoc() {
+  return nguoiDung && ['admin', 'teacher', 'assistant'].includes(nguoiDung.role);
+}
+function coTheBatTatTest() {
+  return nguoiDung && ['admin', 'teacher'].includes(nguoiDung.role);
+}
+
+function capNhatAdminTestBar() {
+  var bar = $('adminTestBar');
+  if (!bar) return;
+  if (noiDungDangChon !== 'test' || !coTheBatTatTest()) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  if (details.test_active) {
+    bar.style.background = 'var(--ok-soft)';
+    bar.style.borderBottom = '1px solid var(--ok)';
+    bar.innerHTML =
+      '<span style="color:var(--ok); font-weight:700">🔓 Đang MỞ — học sinh xem được đề kiểm tra</span>' +
+      '<button class="btn btn-secondary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(false)">🔒 Đóng lại (ẩn với HS)</button>';
+  } else {
+    bar.style.background = 'var(--warn-soft)';
+    bar.style.borderBottom = '1px solid var(--warn)';
+    bar.innerHTML =
+      '<span style="color:var(--warn); font-weight:700">🔒 Đang ẨN — học sinh chưa xem được đề kiểm tra</span>' +
+      '<button class="btn btn-primary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(true)">🔓 Kích hoạt cho HS xem</button>';
+  }
+}
+
+async function batTatKichHoatTest(batLen) {
+  if (!coTheBatTatTest()) return;
+  var bar = $('adminTestBar');
+  if (bar) bar.innerHTML = '<span style="color:var(--ink-2)">⏳ Đang cập nhật…</span>';
+  var updates = { test_active: batLen };
+  if (!batLen) {
+    updates.test_started_at = null;
+  }
+  var r = await sb.from('lessons').update(updates).eq('id', lessonId);
+  if (r.error) {
+    alert('Lỗi cập nhật trạng thái: ' + r.error.message);
+    capNhatAdminTestBar();
+    return;
+  }
+  details.test_active = batLen;
+  if (!batLen) {
+    details.test_started_at = null;
+  }
+  capNhatAdminTestBar();
 }
 
 function khoiTaoResizer() {
