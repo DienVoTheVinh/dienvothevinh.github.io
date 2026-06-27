@@ -180,6 +180,19 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   .resizer { display: none !important; }
   .pane { width: 100% !important; flex: 1 !important; }
 }
+
+/* ===== Hub quản lý buổi ===== */
+.hub-tab { border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2); font-family:inherit; font-size:.85rem; font-weight:600; padding:8px 14px; border-radius:8px 8px 0 0; cursor:pointer; }
+.hub-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.hub-card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 16px; margin-bottom:12px; }
+.hub-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.hub-grade-row { display:grid; grid-template-columns:90px 1fr; gap:8px; margin-top:8px; }
+@media (max-width:560px){ .hub-grade-row{ grid-template-columns:1fr; } }
+.hub-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+.hub-table td, .hub-table th { padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+.hub-stat { display:inline-flex; flex-direction:column; align-items:center; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:6px 14px; min-width:64px; }
+.hub-stat b { font-size:1.15rem; }
+.hub-stat span { font-size:.72rem; color:var(--ink-3); }
 </style>
 </head>
 <body>
@@ -199,6 +212,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+      <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
+      <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
@@ -221,6 +236,39 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       </div>
       <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
       <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
+    </div>
+  </div>
+
+  <!-- ===== HUB QUẢN LÝ BUỔI (thầy/admin) ===== -->
+  <div id="modalHub" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto">
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:900px;width:100%;margin:auto;position:relative">
+      <div style="position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;z-index:2">
+        <div>
+          <h2 style="margin:0;font-size:1.1rem">🛠 Quản lý buổi học</h2>
+          <div id="hubTenBai" style="font-size:.82rem;color:var(--ink-2);margin-top:2px"></div>
+        </div>
+        <button onclick="dongHub()" style="font-size:1.5rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+      </div>
+      <div style="display:flex;gap:6px;padding:12px 22px 0;flex-wrap:wrap">
+        <button class="hub-tab active" id="hubTabCham" onclick="chonHubTab('cham')">📝 Chấm bài</button>
+        <button class="hub-tab" id="hubTabNop" onclick="chonHubTab('nop')">📤 Nộp hộ</button>
+        <button class="hub-tab" id="hubTabDD" onclick="chonHubTab('dd')">✅ Điểm danh & nhận xét</button>
+      </div>
+      <div style="padding:18px 22px 24px">
+        <div id="hubPaneCham"></div>
+        <div id="hubPaneNop" style="display:none"></div>
+        <div id="hubPaneDD" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BUỔI HỌC CỦA EM (học sinh) ===== -->
+  <div id="modalBuoiHS" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:120;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto">
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:600px;width:100%;margin:auto;position:relative;padding:24px">
+      <button onclick="dongBuoiHocHS()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+      <h2 style="margin:0 0 4px;font-size:1.15rem">📊 Buổi học của em</h2>
+      <p style="font-size:.85rem;color:var(--ink-2);margin:0 0 16px" id="bhsTenBai"></p>
+      <div id="bhsNoiDung"><div class="no-content" style="padding:20px"><div class="spinner"></div><h3>Đang tải…</h3></div></div>
     </div>
   </div>
 
@@ -626,6 +674,15 @@ function renderBaiHoc() {
   // Khởi động bộ đếm giờ kiểm tra
   kiemTraVaChayTestTimer();
   dangKyRealtimeTest();
+
+  // Hiện nút theo vai trò
+  if (laQuanTriBaiHoc()) {
+    $('nutQuanLyBuoi').style.display = '';
+    $('nutBuoiHS').style.display = 'none';
+    $('nutNopBai').style.display = 'none';
+  } else {
+    $('nutBuoiHS').style.display = '';
+  }
 }
 
 /* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
@@ -1914,6 +1971,311 @@ function renderTheoryReading() {
   than.innerHTML = html;
   renderLatex(than);
 }
+
+/* ========================================================================
+   HUB QUẢN LÝ BUỔI HỌC (gắn theo từng bài giảng)
+   ======================================================================== */
+function hubEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var hubRoster = [];
+var hubSession = null;
+var hubSubs = [];
+var HUBMAP = { cham:'Cham', nop:'Nop', dd:'DD' };
+
+async function hubTaiRoster(){
+  if (hubRoster.length) return hubRoster;
+  try {
+    var r = await sb.from('class_students')
+      .select('student_id, profiles(id, full_name, username)')
+      .eq('class_id', details.class_id);
+    hubRoster = (r.data||[]).map(function(x){return x.profiles;}).filter(Boolean)
+      .sort(function(a,b){return (a.full_name||'').localeCompare(b.full_name||'','vi');});
+  } catch(e){ hubRoster = []; }
+  return hubRoster;
+}
+
+async function hubGetOrCreateSession(taoNeuChua){
+  var r = await sb.from('class_sessions')
+    .select('id, title, held_on, lesson_id')
+    .eq('class_id', details.class_id).eq('lesson_id', lessonId)
+    .order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if (r.data){ hubSession = r.data; return hubSession; }
+  if (!taoNeuChua){ hubSession = null; return null; }
+  var d = new Date();
+  var iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var ins = await sb.from('class_sessions')
+    .insert({ class_id: details.class_id, lesson_id: lessonId, title: details.title, held_on: iso, teacher_id: nguoiDung.id })
+    .select('id, title, held_on, lesson_id').single();
+  if (ins.error){ alert('Không tạo được buổi: '+ins.error.message); return null; }
+  hubSession = ins.data; return hubSession;
+}
+
+function moHubQuanLy(){
+  $('modalHub').style.display='flex';
+  $('hubTenBai').textContent = details ? details.title : '';
+  chonHubTab('cham');
+}
+function dongHub(){ $('modalHub').style.display='none'; }
+function chonHubTab(tab){
+  ['cham','nop','dd'].forEach(function(t){
+    $('hubTab'+HUBMAP[t]).classList.toggle('active', t===tab);
+    $('hubPane'+HUBMAP[t]).style.display = (t===tab)?'':'none';
+  });
+  if (tab==='cham') hubRenderCham();
+  else if (tab==='nop') hubRenderNop();
+  else hubRenderDD();
+}
+
+/* ---- Tab Chấm bài (bài giảng này) ---- */
+async function hubRenderCham(){
+  var box=$('hubPaneCham');
+  box.innerHTML='<div class="no-content" style="padding:20px"><div class="spinner"></div><h3>Đang tải bài nộp…</h3></div>';
+  var r=await sb.from('submissions')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, student_id, profiles(full_name, username)')
+    .eq('lesson_id', lessonId).order('submitted_at',{ascending:false});
+  if (r.error){ box.innerHTML='<div class="hub-card">Lỗi: '+r.error.message+'</div>'; return; }
+  hubSubs=r.data||[];
+  if (!hubSubs.length){ box.innerHTML='<div class="hub-card" style="text-align:center;color:var(--ink-3)">Chưa có học sinh nào nộp bài cho bài giảng này.</div>'; return; }
+  var cho=hubSubs.filter(function(s){return s.status!=='graded';}).length;
+  box.innerHTML='<div style="margin-bottom:10px;font-size:.85rem;color:var(--ink-2)">Tổng <b>'+hubSubs.length+'</b> bài · <b style="color:var(--warn)">'+cho+'</b> chờ chấm</div>'+
+    hubSubs.map(hubCardCham).join('');
+}
+function hubCardCham(s){
+  var hs=s.profiles||{};
+  var ngay=new Date(s.submitted_at).toLocaleString('vi-VN');
+  var links=(s.files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">📄 '+hubEsc(f.name)+'</a>';}).join(' · ');
+  var linksCham=(s.graded_files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">✏️ '+hubEsc(f.name)+'</a>';}).join(' · ');
+  var badge=s.status==='graded'?'<span class="badge badge-ok">Đã chấm'+(s.score!=null?' · '+s.score+'đ':'')+'</span>':'<span class="badge badge-warn">Chờ chấm</span>';
+  return '<div class="hub-card sub-card" id="hsub-'+s.id+'">'+
+    '<div class="hub-row" style="justify-content:space-between"><div><b>'+hubEsc(hs.full_name||'?')+'</b> <span style="color:var(--ink-3);font-size:.82rem">('+hubEsc(hs.username||'')+')</span></div>'+badge+'</div>'+
+    '<div style="font-size:.8rem;color:var(--ink-3);margin-top:3px">'+ngay+'</div>'+
+    '<div style="margin-top:6px;font-size:.85rem">'+links+'</div>'+
+    (linksCham?'<div style="margin-top:4px;font-size:.85rem">'+linksCham+'</div>':'')+
+    '<div class="hub-grade-row">'+
+      '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="/10" id="hdiem-'+s.id+'" value="'+(s.score!=null?s.score:'')+'">'+
+      '<textarea class="input" rows="3" placeholder="Lời phê… (mỗi ý một dòng)" id="hphe-'+s.id+'" style="resize:vertical;line-height:1.5">'+hubEsc(s.feedback||'')+'</textarea>'+
+    '</div>'+
+    '<div class="hub-row" style="margin-top:6px">'+
+      '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="hubChenY(\''+s.id+'\')">• Dòng ý</button>'+
+      '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="hubChenCau(\''+s.id+'\')">➕ Câu …</button>'+
+    '</div>'+
+    '<div class="hub-row" style="margin-top:8px">'+
+      '<input type="file" id="hfile-'+s.id+'" accept="image/*,application/pdf" multiple onchange="vmRenderFileList(\'hfile-'+s.id+'\',\'hflist-'+s.id+'\')" style="font-size:.82rem;flex:1;min-width:180px">'+
+      '<button class="btn btn-primary btn-sm" id="hluu-'+s.id+'" onclick="hubLuuCham(\''+s.id+'\')">💾 Lưu & trả bài</button>'+
+    '</div>'+
+    '<div id="hflist-'+s.id+'"></div>'+
+    '<div style="font-size:.74rem;color:var(--ink-3);margin-top:3px">📋 Bấm vào thẻ này rồi dán (Ctrl/⌘+V) để đính ảnh bài chấm.</div>'+
+    '<div id="hcham-tt-'+s.id+'" style="font-size:.78rem;color:var(--ok);margin-top:2px"></div>'+
+    '</div>';
+}
+function hubChenY(id){var ta=$('hphe-'+id);if(!ta)return;var c=ta.value;ta.value=c+(c&&!c.endsWith('\n')?'\n':'')+'• ';ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;}
+function hubChenCau(id){var ta=$('hphe-'+id);if(!ta)return;var c=ta.value;var n=(c.match(/(^|\n)\s*Câu\s*\d/gi)||[]).length+1;ta.value=c+(c&&!c.endsWith('\n')?'\n':'')+'Câu '+n+': ';ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length;}
+async function hubLuuCham(id){
+  var nut=$('hluu-'+id); nut.disabled=true; nut.textContent='⏳ Đang lưu…';
+  try{
+    var fs=$('hfile-'+id).files;
+    if(fs.length){
+      nut.textContent='⏳ Đang tải file chấm…';
+      var fd=new FormData(); fd.append('kind','cham'); fd.append('submission_id',id);
+      for(var i=0;i<fs.length;i++) fd.append('files',fs[i]);
+      var r1=await sb.functions.invoke('nop-bai',{body:fd});
+      if(r1.error) throw new Error(r1.error.message||'Trạm lỗi');
+      if(r1.data&&r1.data.error) throw new Error(r1.data.error);
+    }
+    var diem=$('hdiem-'+id).value;
+    var r2=await sb.from('submissions').update({score:diem===''?null:parseFloat(diem),feedback:$('hphe-'+id).value.trim()||null,status:'graded',graded_at:new Date().toISOString()}).eq('id',id);
+    if(r2.error) throw new Error(r2.error.message);
+    await hubRenderCham();
+  }catch(e){ alert('Lỗi khi lưu: '+e.message); nut.disabled=false; nut.textContent='💾 Lưu & trả bài'; }
+}
+
+/* ---- Tab Nộp hộ (bài giảng này) ---- */
+async function hubRenderNop(){
+  var box=$('hubPaneNop');
+  box.innerHTML='<div class="no-content" style="padding:16px"><div class="spinner"></div></div>';
+  await hubTaiRoster();
+  box.innerHTML=
+    '<div class="hub-card">'+
+    '<p style="margin:0 0 10px;font-size:.88rem;color:var(--ink-2)">Nộp bài hộ học sinh vào bài giảng <b>'+hubEsc(details.title)+'</b>. Bài lưu đúng tên em đó (cả trên Google Drive).</p>'+
+    '<div class="field" style="margin-bottom:10px"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px">Chọn học sinh</label>'+
+      '<select class="input" id="hnopHS" style="width:100%"><option value="">-- Chọn học sinh --</option>'+
+        hubRoster.map(function(s){return '<option value="'+s.id+'">'+hubEsc(s.full_name)+' ('+hubEsc(s.username||'')+')</option>';}).join('')+
+      '</select></div>'+
+    '<div class="field"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px">Ảnh/PDF bài làm (chọn nhiều)</label>'+
+      '<input type="file" class="input" id="hnopFile" accept="image/*,application/pdf" multiple onchange="vmRenderFileList(\'hnopFile\',\'hnopList\')" style="width:100%">'+
+      '<div style="font-size:.76rem;color:var(--ink-3);margin-top:3px">📋 Có thể dán ảnh (Ctrl/⌘+V) vào ô này.</div>'+
+      '<div id="hnopList"></div></div>'+
+    '<button class="btn btn-primary" id="hnopBtn" onclick="hubNopHo()" style="width:100%;justify-content:center;margin-top:12px">📤 Nộp bài hộ</button>'+
+    '<div id="hnopTT" style="font-size:.84rem;margin-top:8px"></div>'+
+    '</div>';
+}
+async function hubNopHo(){
+  var hsId=$('hnopHS').value; var tt=$('hnopTT'); var inp=$('hnopFile');
+  if(!hsId){tt.textContent='Thầy chưa chọn học sinh.';tt.style.color='var(--warn)';return;}
+  if(!inp.files.length){tt.textContent='Thầy chưa chọn file bài làm.';tt.style.color='var(--warn)';return;}
+  var btn=$('hnopBtn'); btn.disabled=true; btn.textContent='⏳ Đang nộp…';
+  tt.textContent='Đang tải lên Drive…'; tt.style.color='var(--accent)';
+  try{
+    var fd=new FormData(); fd.append('kind','nop'); fd.append('student_id',hsId); fd.append('lesson_id',lessonId);
+    for(var i=0;i<inp.files.length;i++) fd.append('files',inp.files[i]);
+    var r=await sb.functions.invoke('nop-bai',{body:fd});
+    if(r.error) throw new Error(r.error.message||'Lỗi nộp bài');
+    if(r.data&&r.data.error) throw new Error(r.data.error);
+    tt.textContent='✓ Đã nộp hộ thành công!'; tt.style.color='var(--ok)';
+    inp.value=''; $('hnopList').innerHTML=''; $('hnopHS').value='';
+  }catch(e){ tt.textContent='Lỗi: '+e.message; tt.style.color='var(--err)'; }
+  btn.disabled=false; btn.textContent='📤 Nộp bài hộ';
+}
+
+/* ---- Tab Điểm danh & nhận xét (bài giảng này) ---- */
+async function hubRenderDD(){
+  var box=$('hubPaneDD');
+  box.innerHTML='<div class="no-content" style="padding:16px"><div class="spinner"></div></div>';
+  await hubTaiRoster();
+  await hubGetOrCreateSession(false);
+  if(!hubSession){
+    box.innerHTML='<div class="hub-card" style="text-align:center">'+
+      '<p style="color:var(--ink-2)">Chưa có buổi điểm danh cho bài giảng này.</p>'+
+      '<button class="btn btn-primary" onclick="hubTaoBuoi()">➕ Tạo buổi điểm danh cho bài này</button>'+
+      '</div>';
+    return;
+  }
+  await hubVeRoster();
+}
+async function hubTaoBuoi(){ await hubGetOrCreateSession(true); if(hubSession) hubVeRoster(); }
+async function hubVeRoster(){
+  var box=$('hubPaneDD'); var sid=hubSession.id; var ngay=hubSession.held_on;
+  var rA=await sb.from('attendance').select('student_id,status').eq('session_id',sid);
+  var att={}; (rA.data||[]).forEach(function(a){att[a.student_id]=a;});
+  var rN=await sb.from('session_remarks').select('student_id,remark,attitude_score').eq('class_id',details.class_id).eq('ngay',ngay);
+  var nx={}; (rN.data||[]).forEach(function(n){nx[n.student_id]=n;});
+  var present=0,commented=0;
+  var rows=hubRoster.map(function(s){
+    var on=!!att[s.id]; if(on)present++;
+    var n=nx[s.id]; if(n&&(n.remark||n.attitude_score!=null))commented++;
+    var ddBtn = on
+      ? '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="hubToggleDD(\''+s.id+'\',false)">🟢 Có mặt</button>'
+      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="hubToggleDD(\''+s.id+'\',true)">Điểm danh</button>';
+    var nxVal=n?hubEsc(n.remark||''):''; var dVal=(n&&n.attitude_score!=null)?n.attitude_score:'';
+    return '<tr>'+
+      '<td><b>'+hubEsc(s.full_name)+'</b></td>'+
+      '<td style="text-align:center">'+ddBtn+'</td>'+
+      '<td><input class="input" id="hnx-'+s.id+'" value="'+nxVal+'" placeholder="Nhận xét…" style="font-size:.82rem;padding:5px 8px"></td>'+
+      '<td><input class="input" id="hnxd-'+s.id+'" type="number" min="0" max="10" step="0.25" value="'+dVal+'" placeholder="đ" style="font-size:.82rem;padding:5px 8px;width:60px"></td>'+
+      '<td><button class="btn btn-primary btn-sm" style="padding:4px 8px" onclick="hubLuuNX(\''+s.id+'\')">💾</button></td>'+
+      '</tr>';
+  }).join('');
+  box.innerHTML=
+    '<div class="hub-card" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
+      '<div style="font-size:.85rem"><b>'+hubEsc(hubSession.title||'Buổi học')+'</b><br><span style="color:var(--ink-3)">Ngày '+(ngay?new Date(ngay+'T00:00:00').toLocaleDateString('vi-VN'):'')+'</span></div>'+
+      '<div class="hub-row">'+
+        '<div class="hub-stat"><b>'+hubRoster.length+'</b><span>Sĩ số</span></div>'+
+        '<div class="hub-stat"><b style="color:var(--ok)">'+present+'</b><span>Có mặt</span></div>'+
+        '<div class="hub-stat"><b style="color:var(--err)">'+(hubRoster.length-present)+'</b><span>Vắng</span></div>'+
+        '<div class="hub-stat"><b style="color:var(--accent)">'+commented+'</b><span>Đã NX</span></div>'+
+      '</div>'+
+    '</div>'+
+    (hubRoster.length? '<div class="hub-card" style="padding:4px 10px;overflow-x:auto"><table class="hub-table"><thead><tr><th>Học sinh</th><th style="text-align:center">Điểm danh</th><th>Nhận xét</th><th>Thái độ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      : '<div class="hub-card" style="text-align:center;color:var(--ink-3)">Lớp chưa có học sinh.</div>');
+}
+async function hubToggleDD(studentId,present){
+  var sid=hubSession.id;
+  if(present){
+    var r=await sb.from('attendance').upsert({session_id:sid,student_id:studentId,status:'present',checked_at:new Date().toISOString()},{onConflict:'session_id,student_id'});
+    if(r.error){alert('Lỗi điểm danh: '+r.error.message);return;}
+  }else{
+    var r2=await sb.from('attendance').delete().eq('session_id',sid).eq('student_id',studentId);
+    if(r2.error){alert('Lỗi: '+r2.error.message);return;}
+  }
+  hubVeRoster();
+}
+async function hubLuuNX(studentId){
+  var remark=$('hnx-'+studentId).value.trim();
+  var d=$('hnxd-'+studentId).value;
+  if(!remark&&!d){alert('Nhập nhận xét hoặc điểm thái độ trước nhé.');return;}
+  var rec={class_id:details.class_id,student_id:studentId,ngay:hubSession.held_on,remark:remark,attitude_score:d?parseFloat(d):null,author_id:nguoiDung.id,author_name:(mapGiaoVien[nguoiDung.id]||nguoiDung.full_name||'Giáo viên'),updated_at:new Date().toISOString()};
+  var r=await sb.from('session_remarks').upsert(rec,{onConflict:'class_id,student_id,ngay'});
+  if(r.error){alert('Lỗi lưu nhận xét: '+r.error.message);return;}
+  hubVeRoster();
+}
+
+/* ---- Dán ảnh trong hub (chấm bài + nộp hộ) ---- */
+window.addEventListener('paste',function(e){
+  if(!$('modalHub') || $('modalHub').style.display==='none') return;
+  var ae=document.activeElement;
+  var card=ae&&ae.closest?ae.closest('.sub-card'):null;
+  var inp=null;
+  if(card){ inp=card.querySelector('input[type=file]'); }
+  else if($('hubPaneNop') && $('hubPaneNop').style.display!=='none'){ inp=$('hnopFile'); }
+  if(!inp) return;
+  var cd=e.clipboardData||(e.originalEvent&&e.originalEvent.clipboardData); if(!cd) return;
+  var imgs=[];
+  if(cd.items) for(var i=0;i<cd.items.length;i++){var it=cd.items[i];if(it.type&&it.type.indexOf('image')!==-1){var f=it.getAsFile();if(f)imgs.push(f);}}
+  if(!imgs.length&&cd.files) for(var j=0;j<cd.files.length;j++){var ff=cd.files[j];if(ff.type&&ff.type.indexOf('image')!==-1)imgs.push(ff);}
+  if(!imgs.length) return;
+  e.preventDefault();
+  var dt=new DataTransfer();
+  if(inp.files) for(var a=0;a<inp.files.length;a++) dt.items.add(inp.files[a]);
+  for(var k=0;k<imgs.length;k++){var src=imgs[k];var name=src.name;if(!name||/^image/i.test(name)){var ext=(src.type.split('/')[1]||'png');name='hub-dan-'+Date.now()+'-'+k+'.'+ext;}dt.items.add(new File([src],name,{type:src.type}));}
+  inp.files=dt.files;
+  if(card){ var id=card.id.replace('hsub-',''); var st=$('hcham-tt-'+id); if(st) st.textContent='✓ Đã thêm '+imgs.length+' ảnh dán · tổng '+inp.files.length+' tệp'; vmRenderFileList('hfile-'+id,'hflist-'+id); }
+  else { vmRenderFileList('hnopFile','hnopList'); }
+});
+
+/* ========================================================================
+   BUỔI HỌC CỦA EM (học sinh xem trong từng bài giảng)
+   ======================================================================== */
+async function moBuoiHocHS(){
+  $('modalBuoiHS').style.display='flex';
+  $('bhsTenBai').textContent=details?details.title:'';
+  var box=$('bhsNoiDung');
+  box.innerHTML='<div class="no-content" style="padding:20px"><div class="spinner"></div><h3>Đang tải…</h3></div>';
+  var html='';
+  try{
+    var rS=await sb.from('class_sessions').select('id, title, held_on').eq('class_id', details.class_id).eq('lesson_id', lessonId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(rS.data){
+      var sid=rS.data.id; var ngay=rS.data.held_on;
+      var rA=await sb.from('attendance').select('status').eq('session_id',sid).eq('student_id',nguoiDung.id).maybeSingle();
+      var rN=await sb.from('session_remarks').select('remark, attitude_score').eq('class_id',details.class_id).eq('student_id',nguoiDung.id).eq('ngay',ngay).maybeSingle();
+      var ddTxt = rA.data ? '<span style="color:var(--ok);font-weight:700">🟢 Có mặt</span>' : '<span style="color:var(--err);font-weight:700">🔴 Chưa ghi nhận có mặt</span>';
+      html+='<div class="hub-card"><div style="font-weight:700;margin-bottom:6px">✅ Điểm danh & nhận xét buổi</div>'+
+        '<div style="font-size:.88rem">Điểm danh: '+ddTxt+'</div>';
+      if(rN.data&&(rN.data.remark||rN.data.attitude_score!=null)){
+        if(rN.data.attitude_score!=null) html+='<div style="font-size:.88rem;margin-top:6px">Điểm thái độ: <b style="color:var(--accent)">'+rN.data.attitude_score+'/10</b></div>';
+        if(rN.data.remark) html+='<div style="font-size:.88rem;margin-top:6px;white-space:pre-wrap;padding:8px;background:var(--surface-2);border-radius:6px">💬 '+hubEsc(rN.data.remark)+'</div>';
+      } else {
+        html+='<div style="font-size:.84rem;color:var(--ink-3);margin-top:6px">Chưa có nhận xét cho buổi này.</div>';
+      }
+      html+='</div>';
+    } else {
+      html+='<div class="hub-card" style="color:var(--ink-3);font-size:.85rem">Thầy chưa mở điểm danh cho bài giảng này.</div>';
+    }
+  }catch(e){}
+  try{
+    var rB=await sb.from('submissions').select('id, submitted_at, files, status, score, feedback, graded_files').eq('lesson_id',lessonId).eq('student_id',nguoiDung.id).order('submitted_at',{ascending:false});
+    var ds=rB.data||[];
+    html+='<div class="hub-card"><div style="font-weight:700;margin-bottom:6px">📝 Bài làm & kết quả chấm</div>';
+    if(!ds.length){
+      html+='<div style="font-size:.85rem;color:var(--ink-3)">Em chưa nộp bài cho bài giảng này. <a href="javascript:void(0)" onclick="dongBuoiHocHS();moNopBai()" style="color:var(--accent);text-decoration:underline">Nộp bài ngay</a></div>';
+    } else {
+      html+=ds.map(function(s){
+        var ngay=new Date(s.submitted_at).toLocaleString('vi-VN');
+        var links=(s.files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">'+hubEsc(f.name)+'</a>';}).join(' · ');
+        var kq;
+        if(s.status==='graded'){
+          kq='<span class="badge badge-ok">Đã chấm'+(s.score!=null?' · '+s.score+' điểm':'')+'</span>'+
+            (s.feedback?'<div style="font-size:.85rem;margin-top:6px;white-space:pre-wrap">💬 '+hubEsc(s.feedback)+'</div>':'')+
+            ((s.graded_files||[]).length?'<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: '+s.graded_files.map(function(f){return '<a href="'+f.link+'" target="_blank">'+hubEsc(f.name)+'</a>';}).join(' · ')+'</div>':'');
+        } else { kq='<span class="badge badge-warn">Chờ thầy chấm</span>'; }
+        return '<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px">'+
+          '<div style="font-size:.78rem;color:var(--ink-3)">'+ngay+'</div>'+
+          '<div style="font-size:.85rem;margin:4px 0">'+links+'</div>'+kq+'</div>';
+      }).join('');
+    }
+    html+='</div>';
+  }catch(e){}
+  box.innerHTML=html;
+}
+function dongBuoiHocHS(){ $('modalBuoiHS').style.display='none'; }
 </script>
 </body>
 </html>
