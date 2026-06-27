@@ -1186,6 +1186,7 @@ function renderLessonRow(b) {
     '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
       testBtn +
       '<button class="btn btn-sm chi-gv" style="' + (b.locked ? 'background:#e74c3c;color:#fff;border-color:#e74c3c;' : '') + 'padding:4px 10px;" onclick="toggleKhoaBai(\'' + b.id + '\', ' + (b.locked ? 'true' : 'false') + ')">' + (b.locked ? '🔓 Mở khoá' : '🔒 Khoá') + '</button>' +
+      '<a class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" href="bai-hoc?id=' + b.id + '&hub=1" target="_blank">🛠 Quản lý buổi</a>' +
       '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
       '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
     '</div>' +

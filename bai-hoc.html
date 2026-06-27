@@ -681,6 +681,11 @@ function renderBaiHoc() {
     $('nutQuanLyBuoi').style.display = '';
     $('nutBuoiHS').style.display = 'none';
     $('nutNopBai').style.display = 'none';
+    // Mở thẳng hub khi vào từ "Quản lý buổi" (chỉ 1 lần)
+    if (!window._hubAutoOpened) {
+      var _p = new URLSearchParams(window.location.search);
+      if (_p.get('hub') === '1') { window._hubAutoOpened = true; moHubQuanLy(); }
+    }
   } else {
     $('nutBuoiHS').style.display = '';
   }
