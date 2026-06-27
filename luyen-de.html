@@ -795,6 +795,8 @@ function veKhuTuLuan(ex, isSubmitted) {
       '<div style="margin-top:10px;padding-top:15px;border-top:1px solid var(--line-2)">' +
         '<label style="display:block;font-size:.875rem;font-weight:600;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>' +
         '<input type="file" id="tlFiles" accept="image/*,application/pdf" multiple style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)" ' + disabledAttr + '>' +
+        '<div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Em có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>' +
+        '<div id="tlDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>' +
         '<button class="btn btn-primary" id="tlGui" onclick="guiTuLuan()" style="margin-top:10px" ' + disabledAttr + '>📤 Nộp ảnh bài làm</button>' +
         '<div id="tlTrangThai" style="font-size:.85rem;margin-top:8px"></div>' +
         '<div id="tlDaNop" style="margin-top:10px"></div>' +
@@ -836,6 +838,34 @@ function themKhuTuLuan(ex) {
   renderToanTrong(c);
   taiTuLuanDaNop();
 }
+
+/* ===== Dán ảnh (Ctrl/⌘+V) vào ô chọn file nộp bài ===== */
+function vmPasteAnhVaoInput(inputId, statusId) {
+  window.addEventListener('paste', function (e) {
+    var inp = document.getElementById(inputId);
+    if (!inp || inp.disabled) return;
+    if (inp.offsetParent === null) return;
+    var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!cd) return;
+    var imgs = [];
+    if (cd.items) for (var i = 0; i < cd.items.length; i++) { var it = cd.items[i]; if (it.type && it.type.indexOf('image') !== -1) { var f = it.getAsFile(); if (f) imgs.push(f); } }
+    if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
+    if (!imgs.length) return;
+    e.preventDefault();
+    var dt = new DataTransfer();
+    if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
+    for (var k = 0; k < imgs.length; k++) {
+      var src = imgs[k]; var name = src.name;
+      if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'dan-anh-' + Date.now() + '-' + k + '.' + ext; }
+      dt.items.add(new File([src], name, { type: src.type }));
+    }
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    var st = statusId && document.getElementById(statusId);
+    if (st) st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
+  });
+}
+vmPasteAnhVaoInput('tlFiles', 'tlDanAnhTrangThai');
 
 async function guiTuLuan() {
   var inp = $('tlFiles');
