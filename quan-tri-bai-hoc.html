@@ -1023,7 +1023,7 @@ async function processVirtualFiles(tex) {
           virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
           
           var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          var replacer = new RegExp('\\input\{' + escapeReg + '\}', 'g');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
           tex = tex.replace(replacer, '\\input{' + baseName + '}');
         } else {
           console.warn('Không thể tải file phụ thuộc: ' + urlPath);
