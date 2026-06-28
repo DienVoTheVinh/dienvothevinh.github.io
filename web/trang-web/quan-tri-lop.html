@@ -1186,6 +1186,7 @@ function renderLessonRow(b) {
     '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
       testBtn +
       '<button class="btn btn-sm chi-gv" style="' + (b.locked ? 'background:#e74c3c;color:#fff;border-color:#e74c3c;' : '') + 'padding:4px 10px;" onclick="toggleKhoaBai(\'' + b.id + '\', ' + (b.locked ? 'true' : 'false') + ')">' + (b.locked ? '🔓 Mở khoá' : '🔒 Khoá') + '</button>' +
+      '<a class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" href="bai-hoc?id=' + b.id + '&hub=1" target="_blank">🛠 Quản lý buổi</a>' +
       '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
       '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
     '</div>' +
@@ -1734,6 +1735,7 @@ async function luuNhanXet() {
   nut.disabled = false; nut.textContent = '💾 Lưu nhận xét & Đánh giá';
   if (r.error) { alert('Lỗi lưu nhận xét: ' + r.error.message); return; }
   await taiLichSuNhanXet();
+  if (typeof veRosterTheoDoi === 'function') veRosterTheoDoi();
   nut.textContent = '✓ Đã lưu!';
   setTimeout(function () { nut.textContent = '💾 Lưu nhận xét & Đánh giá'; }, 1500);
 }
@@ -2684,7 +2686,7 @@ async function processVirtualFiles(tex) {
           virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
           
           var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          var replacer = new RegExp('\\input\{' + escapeReg + '\}', 'g');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
           tex = tex.replace(replacer, '\\input{' + baseName + '}');
         } else {
           console.warn('Không thể tải file phụ thuộc: ' + urlPath);
@@ -2751,7 +2753,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -2765,7 +2766,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}
@@ -2785,7 +2785,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\ninek}{\\key{9}}
 \\DeclareRobustCommand{\\rclk}{\\key{RCL}}
 \\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\DeclareRobustCommand{\\log10k}{\\key{log10}}
 \\endinput
 \\end{filecontents*}\n`;
 
@@ -2812,7 +2811,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -2826,7 +2824,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}
@@ -3295,7 +3292,11 @@ async function moFormNopBaiHo(studentId, studentName) {
   $('modalNopBaiHo').style.display = 'flex';
   window.nbhTargetStudentId = studentId;
   $('nbhTenHocSinh').textContent = studentName;
-  $('nbhFileInp').value = '';
+  // Reset sạch ô file mỗi khi mở cho HS khác (tránh ảnh dính qua HS trước)
+  var _inp = $('nbhFileInp');
+  if (_inp) { _inp.value = ''; try { _inp.files = new DataTransfer().files; } catch (e) {} }
+  if ($('nbhFileList')) $('nbhFileList').innerHTML = '';
+  if ($('nbhDanAnhTrangThai')) $('nbhDanAnhTrangThai').textContent = '';
   $('nbhTrangThai').textContent = '';
   
   var sel = $('nbhTargetSelect');
@@ -3330,6 +3331,59 @@ async function moFormNopBaiHo(studentId, studentName) {
 
 function dongFormNopBaiHo() {
   $('modalNopBaiHo').style.display = 'none';
+}
+
+/* ===== Dán ảnh (Ctrl/⌘+V) vào ô chọn file ===== */
+function vmPasteAnhVaoInput(inputId, statusId) {
+  window.addEventListener('paste', function (e) {
+    var inp = document.getElementById(inputId);
+    if (!inp || inp.disabled) return;
+    if (inp.offsetParent === null) return; // ô đang ẩn -> bỏ qua
+    var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!cd) return;
+    var imgs = [];
+    if (cd.items) for (var i = 0; i < cd.items.length; i++) { var it = cd.items[i]; if (it.type && it.type.indexOf('image') !== -1) { var f = it.getAsFile(); if (f) imgs.push(f); } }
+    if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
+    if (!imgs.length) return;
+    e.preventDefault();
+    var dt = new DataTransfer();
+    if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
+    for (var k = 0; k < imgs.length; k++) {
+      var src = imgs[k]; var name = src.name;
+      if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'dan-anh-' + Date.now() + '-' + k + '.' + ext; }
+      dt.items.add(new File([src], name, { type: src.type }));
+    }
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    var st = statusId && document.getElementById(statusId);
+    if (st) { st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp'; }
+  });
+}
+vmPasteAnhVaoInput('nbhFileInp', 'nbhDanAnhTrangThai');
+
+function vmRenderFileList(inputId, listId) {
+  var inp = document.getElementById(inputId), box = document.getElementById(listId);
+  if (!box) return;
+  var fs = inp ? inp.files : null;
+  if (!fs || !fs.length) { box.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < fs.length; i++) {
+    var f = fs[i];
+    var nm = String(f.name || 'tệp').replace(/[<>&"]/g, '');
+    var icon = (f.type && f.type.indexOf('image') !== -1) ? '🖼' : '📄';
+    html += '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2,#eee);border:1px solid var(--line,#ddd);border-radius:6px;padding:3px 6px 3px 8px;margin:4px 6px 0 0;font-size:.78rem;max-width:240px">' +
+      '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + icon + ' ' + nm + '</span>' +
+      '<button type="button" title="Xoá" onclick="vmXoaFile(\'' + inputId + '\',' + i + ',\'' + listId + '\')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-weight:800;font-size:1.05rem;line-height:1;padding:0 2px">×</button>' +
+      '</span>';
+  }
+  box.innerHTML = html;
+}
+function vmXoaFile(inputId, idx, listId) {
+  var inp = document.getElementById(inputId); if (!inp) return;
+  var dt = new DataTransfer();
+  for (var i = 0; i < inp.files.length; i++) { if (i !== idx) dt.items.add(inp.files[i]); }
+  inp.files = dt.files;
+  vmRenderFileList(inputId, listId);
 }
 
 async function nopBaiHoChoHocSinh() {
@@ -3453,7 +3507,10 @@ async function nopBaiHoChoHocSinh() {
     </div>
     <div class="field">
       <label>Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--accent)">*</b></label>
-      <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple style="padding: 8px;">
+      <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple onchange="vmRenderFileList('nbhFileInp','nbhFileList')" style="padding: 8px;">
+      <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
+      <div id="nbhFileList"></div>
+      <div id="nbhDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
     </div>
     <div id="nbhTrangThai" style="font-size: 0.85rem; margin-top: 8px; min-height: 20px;"></div>
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px">

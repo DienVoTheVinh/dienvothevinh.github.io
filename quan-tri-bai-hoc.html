@@ -1023,7 +1023,7 @@ async function processVirtualFiles(tex) {
           virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
           
           var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          var replacer = new RegExp('\\input\{' + escapeReg + '\}', 'g');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
           tex = tex.replace(replacer, '\\input{' + baseName + '}');
         } else {
           console.warn('Không thể tải file phụ thuộc: ' + urlPath);
@@ -1090,7 +1090,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -1104,7 +1103,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}
@@ -1124,7 +1122,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\ninek}{\\key{9}}
 \\DeclareRobustCommand{\\rclk}{\\key{RCL}}
 \\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\DeclareRobustCommand{\\log10k}{\\key{log10}}
 \\endinput
 \\end{filecontents*}\n`;
 
@@ -1151,7 +1148,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -1165,7 +1161,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}

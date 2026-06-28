@@ -359,6 +359,24 @@
     </div>
   </section>
 
+  <!-- Banner Link Google Meet cho học sinh lớp Online -->
+  <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
+    <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1">
+      <div style="display: flex; gap: 16px; align-items: center">
+        <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
+        <div>
+          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
+          <p id="meetSub" style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
+        </div>
+      </div>
+      <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
+        Vào lớp học ngay 🚀
+      </a>
+    </div>
+    <div id="meetUpcoming" style="position: relative; z-index: 1; margin-top: 16px;"></div>
+  </div>
+
   <!-- Banner Phím tắt Vào học bài ngay cho học sinh -->
   <div id="khungVaoHocNgay" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--accent); background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%); position: relative; overflow: hidden">
     <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
@@ -394,23 +412,6 @@
       <div id="tbDiemDanhHoc" style="display: none; font-size: 1rem; font-weight: 600; color: var(--ok)">
         Em đã điểm danh thành công! 🎉
       </div>
-    </div>
-  </div>
-
-  <!-- Banner Link Google Meet cho học sinh lớp Online -->
-  <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
-    <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1">
-      <div style="display: flex; gap: 16px; align-items: center">
-        <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
-        <div>
-          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
-          <p style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
-        </div>
-      </div>
-      <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
-        Vào lớp học ngay 🚀
-      </a>
     </div>
   </div>
 
@@ -1134,7 +1135,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1181,51 +1182,100 @@ function veSelectorLopHocSinh() {
 
 async function capNhatMeetLinkTheoLop(classId) {
   var hoSo = hoSoNguoiDung;
+  var THU = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
+
+  // Tên lớp theo class_id
+  var classNameMap = {};
+  (hoSo.class_students || []).forEach(function (c) { if (c.classes) classNameMap[c.class_id] = c.classes.name; });
+
+  // Các lớp online liên quan (theo lớp đang xem)
+  var onlineAll = (hoSo.class_students || [])
+    .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
+    .map(function (c) { return c.class_id; });
+  // Thẻ Meet LUÔN tổng hợp mọi lớp online của HS (bỏ qua "lớp đang xem"),
+  // tránh trường hợp HS kẹt ở 1 lớp rồi bỏ lỡ buổi học của lớp khác hôm nay.
+  var relevantIds = onlineAll;
+
+  if (relevantIds.length === 0) { $('khungMeetHoc').style.display = 'none'; return; }
+
+  // Link chung dự phòng + link riêng theo lớp
+  var lkCommon = '';
+  try { var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single(); lkCommon = lk.data ? lk.data.value : ''; } catch (e) {}
+  var classLinkMap = {};
+  try { var cl = await sb.from('class_links').select('class_id, meet_link').in('class_id', relevantIds); (cl.data || []).forEach(function (x) { classLinkMap[x.class_id] = x.meet_link; }); } catch (e) {}
+
+  // Các buổi học của lớp liên quan
+  var rs = await sb.from('schedules')
+    .select('class_id, weekday, start_time, teacher_id, meet_link')
+    .in('class_id', relevantIds);
+  var sessions = rs.data || [];
+
+  // Tên giáo viên từng buổi
+  var tIds = Array.from(new Set(sessions.map(function (s) { return s.teacher_id; }).filter(Boolean)));
+  var teacherMap = {};
+  if (tIds.length) { try { var tp = await sb.from('profiles').select('id, full_name').in('id', tIds); (tp.data || []).forEach(function (p) { teacherMap[p.id] = p.full_name; }); } catch (e) {} }
+
+  function linkCuaBuoi(s) { return s.meet_link || classLinkMap[s.class_id] || lkCommon || ''; }
+  function moTaBuoi(s) {
+    var parts = [];
+    if (classNameMap[s.class_id]) parts.push('Lớp ' + classNameMap[s.class_id]);
+    if (s.teacher_id && teacherMap[s.teacher_id]) parts.push(teacherMap[s.teacher_id]);
+    return parts.join(' · ');
+  }
+
+  var jsThu = new Date().getDay();
+  var homNay = jsThu === 0 ? 7 : jsThu;
+
+  // Buổi hôm nay -> link chính + phụ đề
+  var todaySessions = sessions.filter(function (s) { return s.weekday === homNay; })
+    .sort(function (a, b) { return (a.start_time || '').localeCompare(b.start_time || ''); });
   var meetLink = '';
-  
-  if (classId === 'all') {
-    var onlineClassIds = hoSo.class_students
-      .filter(function (c) { return c.classes && c.classes.mode === 'online'; })
-      .map(function (c) { return c.class_id; });
-      
-    if (onlineClassIds.length > 0) {
-      // Tìm xem lớp nào có lịch hôm nay trong schedules để ưu tiên lấy link lớp đó
-      var jsThu = new Date().getDay();
-      var homNay = jsThu === 0 ? 7 : jsThu;
-      var rToday = await sb.from('schedules')
-        .select('class_id')
-        .in('class_id', onlineClassIds)
-        .eq('weekday', homNay)
-        .limit(1);
-      
-      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
-      
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      
-      // Nếu lớp hôm nay không có link riêng, thử tìm trong danh sách các lớp online còn lại
-      if (!meetLink) {
-        var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
-        var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
-        if (firstLink) meetLink = firstLink.meet_link;
-      }
-    }
+  var subText = '';
+  if (todaySessions.length) {
+    var sToday = todaySessions[0];
+    meetLink = linkCuaBuoi(sToday);
+    var gio = sToday.start_time ? sToday.start_time.slice(0, 5) : '';
+    subText = '🟢 Buổi hôm nay' + (gio ? (' lúc ' + gio) : '') + ' — ' + (moTaBuoi(sToday) || 'Lớp học trực tuyến');
   } else {
-    var selClass = hoSo.class_students.find(function(c) { return c.class_id === classId; });
-    if (selClass && selClass.classes && selClass.classes.mode === 'online') {
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-    }
+    meetLink = classLinkMap[relevantIds[0]] || lkCommon || '';
+    if (!meetLink) { relevantIds.forEach(function (id) { if (!meetLink && classLinkMap[id]) meetLink = classLinkMap[id]; }); }
+    subText = 'Hôm nay lớp em không có buổi online. Nút bên dưới dùng phòng dự phòng của lớp.';
   }
-  
-  // Nếu vẫn chưa có meet_link riêng và học sinh này có học lớp online, lấy link chung dự phòng
-  if (!meetLink && hoSo.class_students.some(function(c) { return c.classes && c.classes.mode === 'online'; })) {
-    var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
-    meetLink = lk.data ? lk.data.value : '';
-  }
-  
+
+  if ($('meetSub')) $('meetSub').textContent = subText;
   if (meetLink) {
     $('linkMeetHoc').href = meetLink;
+    $('linkMeetHoc').style.pointerEvents = ''; $('linkMeetHoc').style.opacity = '';
+  } else {
+    $('linkMeetHoc').removeAttribute('href');
+    $('linkMeetHoc').style.pointerEvents = 'none'; $('linkMeetHoc').style.opacity = '0.55';
+  }
+
+  // Danh sách buổi sắp tới (hôm nay + các buổi kế tiếp)
+  var withDelta = sessions.map(function (s) { return { s: s, d: (s.weekday - homNay + 7) % 7 }; })
+    .sort(function (a, b) { return a.d - b.d || (a.s.start_time || '').localeCompare(b.s.start_time || ''); });
+  var upHtml = withDelta.slice(0, 5).map(function (o) {
+    var s = o.s;
+    var nhanThu = o.d === 0 ? 'Hôm nay' : (o.d === 1 ? 'Ngày mai' : (THU[s.weekday] || ''));
+    var gio = s.start_time ? s.start_time.slice(0, 5) : '';
+    var link = linkCuaBuoi(s);
+    var laHomNay = (s.weekday === homNay);
+    var aHtml = link
+      ? '<a href="' + link + '" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap;font-size:.85rem">Vào phòng →</a>'
+      : '<span style="color:var(--ink-3);font-size:.8rem;white-space:nowrap">chưa có link</span>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2)">' +
+      '<div style="font-size:.86rem;color:var(--ink-2);min-width:0">' +
+        '<b style="color:' + (laHomNay ? 'var(--ok)' : 'var(--ink)') + '">' + nhanThu + (gio ? (' · ' + gio) : '') + '</b> — ' + (moTaBuoi(s) || 'Lớp học') +
+      '</div>' + aHtml +
+    '</div>';
+  }).join('');
+  if ($('meetUpcoming')) {
+    $('meetUpcoming').innerHTML = upHtml
+      ? ('<div style="font-size:.74rem;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">🗓️ Các buổi học sắp tới</div>' + upHtml)
+      : '';
+  }
+
+  if (meetLink || sessions.length > 0) {
     $('khungMeetHoc').style.display = 'block';
   } else {
     $('khungMeetHoc').style.display = 'none';
@@ -1263,7 +1313,7 @@ async function taiSchedulesVaExamsStudent() {
   }
   
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -1404,7 +1454,7 @@ async function veLichDayStaff() {
     var hasPassed = info.hasPassed;
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
-    var meet = meetMap[s.class_id] || globalMeetLink;
+    var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
     var phongDichVu = isOnline
       ? (meet ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Dạy Meet</a>'
               : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>')
@@ -2141,6 +2191,7 @@ function formatDateKey(y, m, d) {
    TÍNH NĂNG ĐIỂM DANH CHO GIÁO VIÊN & HỌC SINH
    ========================================== */
 var buoiDangXem = null;
+var lopDangXem = null;
 var hennXoay = null;
 var hennDem = null;
 
@@ -2151,6 +2202,7 @@ function taoToken() {
 }
 
 async function moDiemDanhNhanh(classId, className) {
+  lopDangXem = classId;
   var nowIso = new Date().toISOString();
   var r = await sb.from('class_sessions')
     .select('id, qr_token, title')
@@ -2159,10 +2211,10 @@ async function moDiemDanhNhanh(classId, className) {
     .gt('qr_expires', nowIso)
     .order('created_at', { ascending: false })
     .limit(1);
-    
+
   if (r.data && r.data.length > 0) {
     var b = r.data[0];
-    hienQR(b.id, b.qr_token, b.title);
+    hienQR(b.id, b.qr_token, b.title, classId);
   } else {
     var ten = 'Buổi học ngày ' + new Date().toLocaleDateString('vi-VN');
     var phut = 45;
@@ -2171,26 +2223,44 @@ async function moDiemDanhNhanh(classId, className) {
       title: ten,
       qr_expires: new Date(Date.now() + phut * 60000).toISOString()
     }).select('id, qr_token, title').single();
-    
+
     if (ins.error) {
       alert('Không thể tạo buổi học điểm danh: ' + ins.error.message);
       return;
     }
-    hienQR(ins.data.id, ins.data.qr_token, ins.data.title);
+    hienQR(ins.data.id, ins.data.qr_token, ins.data.title, classId);
   }
+}
+
+function layPhutMa() {
+  var el = $('qrPhut');
+  var p = el ? parseInt(el.value, 10) : 0;
+  if (!p || p < 1) p = 10;
+  return p;
+}
+
+async function apThoiGianMa() {
+  if (!buoiDangXem) return;
+  var phut = layPhutMa();
+  await sb.from('class_sessions')
+    .update({ attendance_open: true, qr_expires: new Date(Date.now() + phut * 60000).toISOString() })
+    .eq('id', buoiDangXem);
+  var tt = $('qrPhutTrangThai');
+  if (tt) { tt.textContent = '✓ Mã có hiệu lực trong ' + phut + ' phút'; setTimeout(function(){ if(tt) tt.textContent=''; }, 2500); }
 }
 
 async function xoayQR() {
   if (!buoiDangXem) return;
   var token = taoToken();
   var code = Math.floor(1000 + Math.random() * 9000).toString();
-  
+  var phut = layPhutMa();
+
   var r = await sb.from('class_sessions')
-    .update({ 
-      qr_token: token, 
+    .update({
+      qr_token: token,
       checkin_code: code,
       attendance_open: true,
-      qr_expires: new Date(Date.now() + 120000).toISOString() 
+      qr_expires: new Date(Date.now() + phut * 60000).toISOString()
     })
     .eq('id', buoiDangXem);
   if (r.error) return;
@@ -2203,14 +2273,16 @@ async function xoayQR() {
   $('khungQR').innerHTML = '<img src="' + qrUrl + '" alt="QR Code" width="220" height="220" style="display:block;">';
 }
 
-function hienQR(id, token, ten) {
+function hienQR(id, token, ten, classId) {
   buoiDangXem = id;
+  if (classId) lopDangXem = classId;
   $('qrTen').textContent = ten;
   $('modalQR').style.display = 'flex';
   xoayQR();
   hennXoay = setInterval(xoayQR, 30000);
   demDiemDanh();
-  hennDem = setInterval(demDiemDanh, 5000);
+  taiRosterDiemDanh();
+  hennDem = setInterval(function () { demDiemDanh(); taiRosterDiemDanh(); }, 5000);
 }
 
 async function demDiemDanh() {
@@ -2226,6 +2298,50 @@ async function demDiemDanh() {
   }).join('<br>');
 }
 
+// Danh sách HS để thầy điểm danh hộ (idempotent: bấm lại = điểm danh lại)
+var rosterDiemDanhCache = null;
+async function taiRosterDiemDanh() {
+  var box = $('qrRoster');
+  if (!box || !buoiDangXem || !lopDangXem) return;
+  if (!rosterDiemDanhCache || rosterDiemDanhCache.classId !== lopDangXem) {
+    var rs = await sb.from('class_students')
+      .select('profiles(id, full_name)')
+      .eq('class_id', lopDangXem);
+    var hs = (rs.data || []).map(function (x) { return x.profiles; }).filter(Boolean);
+    hs.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
+    rosterDiemDanhCache = { classId: lopDangXem, hs: hs };
+  }
+  var ra = await sb.from('attendance').select('student_id').eq('session_id', buoiDangXem);
+  var coMat = {};
+  (ra.data || []).forEach(function (a) { coMat[a.student_id] = true; });
+  var hs = rosterDiemDanhCache.hs;
+  if (!hs.length) { box.innerHTML = '<div style="color:var(--ink-3); font-size:.82rem; padding:8px">Lớp chưa có học sinh.</div>'; return; }
+  box.innerHTML = hs.map(function (s) {
+    var on = !!coMat[s.id];
+    var btn = on
+      ? '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', false)">✓ Có mặt · Bỏ</button>'
+      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', true)">Điểm danh</button>';
+    return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
+      '<span style="font-size:.88rem; ' + (on ? 'color:var(--ok); font-weight:600' : 'color:var(--ink-2)') + '">' + (on ? '🟢 ' : '⚪ ') + s.full_name + '</span>' +
+      btn + '</div>';
+  }).join('');
+}
+
+async function diemDanhHo(studentId, present) {
+  if (!buoiDangXem) return;
+  if (present) {
+    var r = await sb.from('attendance').upsert(
+      { session_id: buoiDangXem, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { onConflict: 'session_id,student_id' });
+    if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
+  } else {
+    var r2 = await sb.from('attendance').delete().eq('session_id', buoiDangXem).eq('student_id', studentId);
+    if (r2.error) { alert('Lỗi bỏ điểm danh: ' + r2.error.message); return; }
+  }
+  await demDiemDanh();
+  await taiRosterDiemDanh();
+}
+
 async function dongQR() {
   $('modalQR').style.display = 'none';
   if (hennDem) clearInterval(hennDem);
@@ -2237,6 +2353,8 @@ async function dongQR() {
       .eq('id', buoiDangXem);
   }
   buoiDangXem = null;
+  lopDangXem = null;
+  rosterDiemDanhCache = null;
 }
 
 var activeSessionHocSinh = null;
@@ -2380,7 +2498,7 @@ function khoiTaoChecklistStaff() {
 
 <!-- Modal QR điểm danh cho giáo viên -->
 <div class="modal" id="modalQR">
-  <div class="modal-inner" style="max-width: 500px; padding: 28px 24px; border-radius: var(--r-lg);">
+  <div class="modal-inner" style="max-width: 500px; padding: 28px 24px; border-radius: var(--r-lg); max-height: 92vh; overflow-y: auto;">
     <button onclick="dongQR()" style="position:absolute;top:16px;right:20px;font-size:1.6rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
     <h2 id="qrTen" style="font-size: 1.35rem; font-weight: 800; color: var(--ink);">Buổi học</h2>
     <p style="font-size:.88rem;color:var(--ink-2);margin-bottom:14px">Học sinh quét mã QR hoặc nhập mã số bên dưới</p>
@@ -2396,13 +2514,29 @@ function khoiTaoChecklistStaff() {
     </div>
 
     <div class="token-text" id="qrToken" style="display:none"></div>
-    
-    <div style="margin-top:20px; padding:16px; background:var(--surface-2); border-radius:12px; display:flex; align-items:center; justify-content:space-around; gap:16px;">
+
+    <!-- Ô chỉnh thời gian mã có hiệu lực -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin:6px 0 2px;">
+      <label style="font-size:.84rem; color:var(--ink-2); font-weight:600;">⏲️ Mã có hiệu lực:</label>
+      <input type="number" id="qrPhut" value="10" min="1" max="180" style="width:70px; padding:6px 8px; border:1px solid var(--line-2); border-radius:8px; text-align:center; font-weight:700;" onchange="apThoiGianMa()">
+      <span style="font-size:.84rem; color:var(--ink-2)">phút</span>
+      <button class="btn btn-secondary btn-sm" style="padding:5px 12px" onclick="apThoiGianMa()">Áp dụng ngay</button>
+    </div>
+    <div id="qrPhutTrangThai" style="text-align:center; font-size:.78rem; color:var(--ok); font-weight:700; min-height:16px;"></div>
+
+    <div style="margin-top:14px; padding:16px; background:var(--surface-2); border-radius:12px; display:flex; align-items:center; justify-content:space-around; gap:16px;">
       <div style="text-align:center; flex-shrink:0;">
         <span class="dem-so" id="qrDem" style="font-size:2.4rem; font-weight:800; color:var(--ok); line-height:1.1">0</span>
         <div style="font-size:.76rem; color:var(--ink-2); font-weight:600; margin-top:2px;">Đã điểm danh</div>
       </div>
       <div id="qrDanhSach" style="font-size:.82rem; color:var(--ink-2); text-align:left; max-height:85px; overflow-y:auto; flex:1; border-left:1px solid var(--line-2); padding-left:16px; line-height:1.5; font-weight:500;"></div>
+    </div>
+
+    <!-- Điểm danh hộ học sinh (cho HS gặp trục trặc / vào trễ) -->
+    <div style="margin-top:14px; text-align:left;">
+      <div style="font-size:.86rem; font-weight:800; color:var(--ink); margin-bottom:6px;">🙋 Điểm danh hộ học sinh</div>
+      <div style="font-size:.76rem; color:var(--ink-3); margin-bottom:8px;">HS không vào được mã, hoặc vào trễ? Bấm “Điểm danh” cạnh tên em đó. Bấm lại bất cứ lúc nào để điểm danh lại — sẽ tự đồng bộ với lớp.</div>
+      <div id="qrRoster" style="max-height:220px; overflow-y:auto; border:1px solid var(--line-2); border-radius:10px;"></div>
     </div>
   </div>
 </div>

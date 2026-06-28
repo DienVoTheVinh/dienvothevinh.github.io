@@ -114,8 +114,10 @@
     <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
     
     <!-- Tab bar -->
-    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+    <div style="display:flex; gap:12px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:10px; flex-wrap:wrap">
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
+      <button type="button" class="tab-btn" id="btnTabTaiLieu" onclick="doiTabForm('tai-lieu')">📄 Tài liệu & Đính kèm</button>
+      <button type="button" class="tab-btn" id="btnTabTest" onclick="doiTabForm('test')">📝 Bài kiểm tra</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
 
@@ -1021,7 +1023,7 @@ async function processVirtualFiles(tex) {
           virtualFiles += '\\begin{filecontents*}{' + baseName + '}\n' + content + '\n\\end{filecontents*}\n';
           
           var escapeReg = importPath.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          var replacer = new RegExp('\\input\{' + escapeReg + '\}', 'g');
+          var replacer = new RegExp('\\\\input\\{' + escapeReg + '\\}', 'g');
           tex = tex.replace(replacer, '\\input{' + baseName + '}');
         } else {
           console.warn('Không thể tải file phụ thuộc: ' + urlPath);
@@ -1088,7 +1090,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -1102,7 +1103,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}
@@ -1122,7 +1122,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\ninek}{\\key{9}}
 \\DeclareRobustCommand{\\rclk}{\\key{RCL}}
 \\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\DeclareRobustCommand{\\log10k}{\\key{log10}}
 \\endinput
 \\end{filecontents*}\n`;
 
@@ -1149,7 +1148,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\vark}{\\key{x}}
 \\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
 \\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
 \\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
 \\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
 \\DeclareRobustCommand{\\logk}{\\key{log}}
@@ -1163,7 +1161,6 @@ async function chuanHoaTexTestLatex(rawCode) {
 \\DeclareRobustCommand{\\closek}{\\key{)}}
 \\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
 \\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
 \\DeclareRobustCommand{\\ansk}{\\key{ANS}}
 \\DeclareRobustCommand{\\subk}{\\key{-}}
 \\DeclareRobustCommand{\\addk}{\\key{+}}

@@ -1135,7 +1135,7 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
   tatCaSchedules = rSched.data || [];
   
@@ -1313,7 +1313,7 @@ async function taiSchedulesVaExamsStudent() {
   }
   
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .in('class_id', classIds);
   tatCaSchedules = rSched.data || [];
   
@@ -1454,7 +1454,7 @@ async function veLichDayStaff() {
     var hasPassed = info.hasPassed;
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
-    var meet = meetMap[s.class_id] || globalMeetLink;
+    var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
     var phongDichVu = isOnline
       ? (meet ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Dạy Meet</a>'
               : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>')
