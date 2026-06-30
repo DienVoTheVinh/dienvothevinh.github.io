@@ -1789,13 +1789,15 @@ function gcalEventsForDay(dt, filterPersonal) {
       // Lấy tên giáo viên để hiển thị riêng dòng dưới
       if (isStaff) {
         var lamSachGV = function (n) { return (n || '').replace(/\s*\((?:Admin|admin)\)\s*/g, '').trim(); };
-        if (s.teacher_id && mapGiaoVien[s.teacher_id]) {
+        if (s.classes.co_teacher_id) {
+          // Lớp đồng giảng (vd lớp Chuyên): luôn ghi đủ 2 giáo viên
+          var gvChinh = lamSachGV(mapGiaoVien[s.classes.teacher_id] || 'Thầy Điền Võ Thế Vinh');
+          var gvPhu = lamSachGV(mapGiaoVien[s.classes.co_teacher_id] || 'GV');
+          teacherFull = gvChinh + ' + ' + gvPhu;
+        } else if (s.teacher_id && mapGiaoVien[s.teacher_id]) {
           teacherFull = lamSachGV(mapGiaoVien[s.teacher_id]);
         } else {
           teacherFull = lamSachGV(mapGiaoVien[s.classes.teacher_id] || 'Thầy Điền Võ Thế Vinh');
-          if (s.classes.co_teacher_id) {
-            teacherFull += ' + ' + lamSachGV(mapGiaoVien[s.classes.co_teacher_id] || 'GV');
-          }
         }
         // Bản ngắn (chỉ tên cuối) cho ô lịch nhỏ; bản đầy đủ cho xuất ảnh
         var teacherShort = teacherFull.split(' + ').map(function (x) { return x.split(' ').pop(); }).join(' + ');
@@ -1994,6 +1996,15 @@ async function xuatLichTuanAnh() {
         document.head.appendChild(sc);
       });
     }
+    // Nạp sẵn logo VinhMath (cùng nguồn) để chèn vào poster
+    var logoUrl = 'logo/VinhMath_logo.png';
+    var logoOk = await new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () { res(true); };
+      im.onerror = function () { res(false); };
+      im.src = logoUrl + '?v=1';
+    });
+
     var mon = gcalThu2(tuanOffset);
     var days = []; for (var i = 0; i < 7; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
     var TEN = ['THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY', 'CHỦ NHẬT'];
@@ -2011,19 +2022,22 @@ async function xuatLichTuanAnh() {
           (ev.teacherFull ? '<div style="font-size:13px;opacity:.96;margin-top:1px">👤 ' + vclEsc(ev.teacherFull) + '</div>' : '') +
           '</div>';
       }).join('') || '<div style="color:#c2bcb1;font-size:13px;text-align:center;padding:18px 0;font-style:italic">— nghỉ —</div>';
-      return '<div style="flex:1;min-width:0;background:#fff;border-radius:16px;padding:11px;border:1px solid ' + (isToday ? '#B5483A' : '#ece8e0') + ';box-shadow:0 2px 8px rgba(0,0,0,.04)">' +
-        '<div style="text-align:center;font-weight:800;color:' + (isToday ? '#B5483A' : '#1F1D1A') + ';font-size:15.5px;margin-bottom:9px;padding-bottom:7px;border-bottom:2px solid #f0ebe2">' + TEN[i] +
+      return '<div style="flex:1;min-width:0;background:#fff;border-radius:16px;padding:11px;border:1px solid #ece8e0;box-shadow:0 2px 8px rgba(0,0,0,.04)">' +
+        '<div style="text-align:center;font-weight:800;color:#1F1D1A;font-size:15.5px;margin-bottom:9px;padding-bottom:7px;border-bottom:2px solid #f0ebe2">' + TEN[i] +
         '<div style="font-size:12.5px;color:#8a857c;font-weight:600;margin-top:1px">' + dt.getDate() + '/' + (dt.getMonth() + 1) + '</div></div>' +
         items + '</div>';
     }).join('');
 
     var poster = document.createElement('div');
     poster.style.cssText = 'position:fixed;left:-99999px;top:0;width:1680px;background:linear-gradient(135deg,#fdfbf7,#f3ecdd);padding:34px;font-family:\'Be Vietnam Pro\',system-ui,sans-serif;box-sizing:border-box;';
+    var brandHtml = logoOk
+      ? '<div style="display:flex;align-items:center;gap:14px"><img src="' + logoUrl + '?v=1" style="height:74px;width:auto;display:block"><span style="font-size:25px;color:#5E7B5E;font-weight:800">THỜI KHOÁ BIỂU</span></div>'
+      : '<div style="font-size:40px;font-weight:800;letter-spacing:.5px"><span style="color:#1F3A5F">VINH</span><span style="color:#C9A227">MATH</span> <span style="font-size:24px;color:#5E7B5E;font-weight:700">· THỜI KHOÁ BIỂU</span></div>';
     poster.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
-        '<div><div style="font-size:38px;font-weight:800;color:#1F1D1A;letter-spacing:.5px">VINH<span style="color:#B5483A">MATH</span> <span style="font-size:24px;color:#5E7B5E;font-weight:700">· THỜI KHOÁ BIỂU</span></div>' +
-        '<div style="font-size:19px;color:#A8842C;font-weight:700;margin-top:4px">Tuần ' + rangeTitle + '</div></div>' +
-        '<div style="text-align:right;font-size:15px;color:#6b6760;line-height:1.6"><b style="color:#B5483A;font-size:17px">Thầy Điền Võ Thế Vinh</b><br>📞 0866 197 857<br>📍 637 Trần Hưng Đạo, Q5</div>' +
+        '<div>' + brandHtml +
+        '<div style="font-size:19px;color:#A8842C;font-weight:700;margin-top:8px">Tuần ' + rangeTitle + '</div></div>' +
+        '<div style="text-align:right;font-size:14.5px;color:#6b6760;line-height:1.55"><b style="color:#B5483A;font-size:17px">Thầy Điền Võ Thế Vinh</b><br>📞 0866 197 857<br>📍 <b>CS1:</b> 248A, P.14, Tân Bình<br>📍 <b>CS2:</b> Trần Hưng Đạo, P. Chợ Quán, Q5</div>' +
       '</div>' +
       '<div style="display:flex;gap:11px;align-items:flex-start">' + cols + '</div>' +
       '<div style="text-align:center;margin-top:20px;font-size:17px;color:#fff;font-weight:800;background:linear-gradient(135deg,#B5483A,#8f3126);padding:12px;border-radius:12px;letter-spacing:.3px">✨ ĐANG TUYỂN SINH CÁC LỚP TOÁN 6–12 · NHẮN TIN ĐỂ ĐƯỢC TƯ VẤN LỘ TRÌNH PHÙ HỢP ✨</div>';
