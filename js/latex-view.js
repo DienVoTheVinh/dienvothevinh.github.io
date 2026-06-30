@@ -71,6 +71,11 @@ function latexRaHTML(src) {
   s = s.replace(/\\textbf\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<b>$1</b>');
   s = s.replace(/\\textit\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<i>$1</i>');
   
+  // Môi trường listEX (gói ex_test) -> hiển thị như danh sách trên web.
+  // Tham số [n] của listEX là SỐ CỘT khi in PDF, web bỏ qua và xếp dọc cho dễ đọc.
+  s = s.replace(/\\begin\{listEX\}(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
+  s = s.replace(/\\end\{listEX\}/g, '\\end{enumerate}');
+
   // Đệ quy xử lý danh sách lồng nhau (enumerate, itemize)
   s = dichMoiTruongDanhSach(s);
   
