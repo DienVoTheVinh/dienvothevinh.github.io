@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.3">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -119,7 +119,6 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 </style>
 </head>
 <body>
-<img id="mapWatermark" src="logo/CLB-MAP-logo.png" alt="">
 
 
 <div class="topbar">
@@ -842,7 +841,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=4.5"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -990,7 +989,7 @@ function chonLopHoc(id) {
   
   // Bộ nhận diện CLB M.A.P
   var isMap = cl.theme === 'map';
-  document.body.classList.toggle('theme-map', isMap);
+  vmApDungThuongHieuMAP(isMap);
   var mapBadge = $('detMapBadge');
   if (mapBadge) mapBadge.style.display = isMap ? 'inline-flex' : 'none';
 
@@ -3346,7 +3345,7 @@ function xacDinhIdsBaiMoiNhat(ds) {
   if (!ds || !ds.length) return newestIds;
   var groups = {};
   ds.forEach(function (b) {
-    var tid = b.teacher_id || 'default';
+    var tid = b.topic_id || 'default';
     if (!groups[tid]) groups[tid] = [];
     groups[tid].push(b);
   });

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.3">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -88,7 +88,6 @@ body.theme-map .map-ribbon { display:flex; }
 </style>
 </head>
 <body>
-<img id="mapWatermark" src="logo/CLB-MAP-logo.png" alt="">
 
 <div class="topbar">
   <div class="nav">
@@ -196,7 +195,7 @@ body.theme-map .map-ribbon { display:flex; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=4.5"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -486,7 +485,7 @@ function xacDinhIdsBaiMoiNhat(ds) {
   if (!ds || !ds.length) return newestIds;
   var groups = {};
   ds.forEach(function (b) {
-    var tid = b.teacher_id || 'default';
+    var tid = b.topic_id || 'default';
     if (!groups[tid]) groups[tid] = [];
     groups[tid].push(b);
   });
@@ -550,7 +549,7 @@ async function taiBangTinLopHS(classId) {
     var theme = (rc.data && rc.data.theme) || 'vinhmath';
     var isMap = theme === 'map';
     // Áp bộ nhận diện cho toàn trang lớp
-    document.body.classList.toggle('theme-map', isMap);
+    vmApDungThuongHieuMAP(isMap);
     var tenLopEl = document.getElementById('tenLop');
     if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
     var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
