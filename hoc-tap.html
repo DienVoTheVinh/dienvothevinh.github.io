@@ -218,7 +218,7 @@ var BAI_HOC_MAU = [
     return;
   }
 
-  var classNames = hoSo.class_students.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+  var classNames = hoSo.class_students.map(function (c) { return c.classes ? (c.classes.name + (c.classes.is_specialized ? ' (Chuyên)' : '')) : ''; }).filter(Boolean).join(', ');
   $('tenLop').textContent = (classNames ? 'Lớp ' + classNames + ' · ' : '') + 'VinhMath';
 
   // (Menu giờ do menu.js vẽ thống nhất cho mọi trang)

@@ -1204,6 +1204,7 @@ function veSelectorLopHocSinh() {
   optionsHtml += '<option value="all" ' + (activeClassId === 'all' ? 'selected' : '') + '>Tất cả các lớp học</option>';
   hoSo.class_students.forEach(function(c) {
     var name = c.classes ? c.classes.name : 'Chưa rõ';
+    if (c.classes && c.classes.is_specialized) name += ' ⭐ Chuyên';
     var selected = c.class_id === activeClassId ? 'selected' : '';
     optionsHtml += '<option value="' + c.class_id + '" ' + selected + '>Lớp ' + name + '</option>';
   });

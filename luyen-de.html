@@ -480,8 +480,9 @@ function taoDongCham(n) {
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
-      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
   }
   

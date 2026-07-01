@@ -454,8 +454,9 @@ function layEmojiGiaoVien(fullName) {
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
-      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
   }
 
@@ -516,7 +517,7 @@ async function taiLessonsHocSinh() {
   var currentClass = dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; });
   if (currentClass && currentClass.classes) {
     var cls = currentClass.classes;
-    $('tenLop').textContent = cls.name + ' · VinhMath';
+    $('tenLop').textContent = cls.name + (cls.is_specialized ? ' · Chuyên' : '') + ' · VinhMath';
     
     var gv1 = mapGiaoVien[cls.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var gv2 = cls.co_teacher_id ? mapGiaoVien[cls.co_teacher_id] : null;
@@ -543,14 +544,14 @@ async function taiBangTinLopHS(classId) {
   var box = document.getElementById('btLopBox');
   if (!box) return;
   try {
-    var rc = await sb.from('classes').select('theme, name').eq('id', classId).maybeSingle();
+    var rc = await sb.from('classes').select('theme, name, is_specialized').eq('id', classId).maybeSingle();
     var theme = (rc.data && rc.data.theme) || 'vinhmath';
     var isMap = theme === 'map';
     // Áp bộ nhận diện cho toàn trang lớp
     if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(isMap);
     else document.body.classList.toggle('theme-map', isMap);
     var tenLopEl = document.getElementById('tenLop');
-    if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
+    if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (rc.data.is_specialized ? ' · Chuyên' : '') + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
     var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
     if (selectedClassId !== classId) return;
     var ds = rp.data || [];
