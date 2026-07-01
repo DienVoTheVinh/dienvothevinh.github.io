@@ -635,7 +635,7 @@ function renderBaiHoc() {
   if (badgeGv) {
     var gvName = mapGiaoVien[details.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var mapChip = laLopMAP ? '<span class="badge" style="background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:4px; font-weight:700; margin-left:6px; display:inline-flex; align-items:center; gap:4px"><img src="logo/CLB-MAP-logo.png" style="width:14px;height:14px;border-radius:50%;background:#fff">CLB M.A.P</span>' : '';
-    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;">👤 ' + gvName + '</span>' + mapChip;
+    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;"><img src="img/sage.svg" alt="GV" style="width:1.1em;height:1.1em;vertical-align:-0.2em"> ' + gvName + '</span>' + mapChip;
   }
 
   // Hiển thị banner chuyển đổi bài giảng tương ứng của giáo viên kia (nếu có)

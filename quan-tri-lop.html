@@ -1203,11 +1203,11 @@ async function taiLessonsLop() {
     
     var html = '';
     if (lessonsMain.length > 0) {
-      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px">🧑‍🏫 Bài giảng của ' + nameMain + '</h3>';
+      html += '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid var(--accent); padding-bottom:6px; display:flex; align-items:center; gap:8px"><img src="img/sage.svg" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em"> Bài giảng của ' + nameMain + '</h3>';
       html += veNhomBaiHoc(lessonsMain);
     }
     if (lessonsCo.length > 0) {
-      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px">🧑‍🏫 Bài giảng của ' + nameCo + '</h3>';
+      html += '<h3 style="margin-top:32px; margin-bottom:12px; color:var(--ink); border-bottom:2px solid #D97706; padding-bottom:6px; display:flex; align-items:center; gap:8px"><img src="img/sage.svg" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em"> Bài giảng của ' + nameCo + '</h3>';
       html += veNhomBaiHoc(lessonsCo);
     }
     $('dsBaiHocLop').innerHTML = html;
@@ -1224,7 +1224,7 @@ function renderLessonRow(b) {
   
   var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
   var gvName = mapGiaoVien[b.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706">👤 ' + gvName + '</span>';
+  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706"><img src="img/sage.svg" alt="GV" style="width:1.15em;height:1.15em;vertical-align:-0.2em"> ' + gvName + '</span>';
   
   var testBtn = '';
   var isTestRunning = false;
