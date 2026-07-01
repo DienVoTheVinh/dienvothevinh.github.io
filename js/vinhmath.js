@@ -1561,3 +1561,38 @@ function themNutChupManHinh() {
   parent.insertBefore(btn, themeBtn);
 }
 
+
+/* ============================================================
+   BỘ NHẬN DIỆN CLB M.A.P — đổi logo/tên cả web + logo chìm
+   Gọi vmApDungThuongHieuMAP(true/false) tuỳ lớp có theme 'map'.
+   ============================================================ */
+function vmApDungThuongHieuMAP(isMap) {
+  try {
+    document.body.classList.toggle('theme-map', !!isMap);
+
+    // Logo chìm toàn cục
+    var wm = document.getElementById('mapWatermarkGlobal');
+    if (!wm) {
+      wm = document.createElement('img');
+      wm.id = 'mapWatermarkGlobal';
+      wm.src = 'logo/CLB-MAP-logo.png';
+      wm.alt = '';
+      document.body.appendChild(wm);
+    }
+
+    // Đổi logo + tên thương hiệu trên thanh điều hướng
+    var logoEl = document.querySelector('.topbar .logo') || document.querySelector('.logo');
+    if (logoEl) {
+      var img = logoEl.querySelector('img');
+      if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : 'img/logo.png';
+      // tìm text node chứa tên thương hiệu (VinhMath) và đổi
+      for (var i = 0; i < logoEl.childNodes.length; i++) {
+        var n = logoEl.childNodes[i];
+        if (n.nodeType === 3 && n.textContent && n.textContent.trim()) {
+          n.textContent = isMap ? ' CLB M.A.P ' : ' VinhMath ';
+          break;
+        }
+      }
+    }
+  } catch (e) { /* im lặng */ }
+}
