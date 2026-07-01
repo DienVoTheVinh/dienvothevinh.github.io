@@ -280,7 +280,7 @@ function theBaiHoc(bh) {
   var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   
   var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px"><img src="img/sage.svg" alt="GV" style="width:1.1em;height:1.1em;vertical-align:-0.2em"> ' + gvName + '</span>';
+  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.1em;height:1.1em;vertical-align:-0.2em"> ' + gvName + '</span>';
 
   var typeBadge = '';
   if (bh.topics) {
@@ -319,7 +319,7 @@ var selectedClassId = null;
 var mapGiaoVien = {};
 
 function layEmojiGiaoVien(fullName) {
-  return '<img src="img/sage.svg" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em">';
+  return '<img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em">';
 }
 
 (async function () {
