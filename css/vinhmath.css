@@ -1626,3 +1626,7 @@ body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
 }
 [data-theme="dark"] #mapWatermarkGlobal { opacity: .12; }
 body.theme-map #mapWatermarkGlobal { display: block; }
+
+/* Logo M.A.P to & nổi bật hơn trên thanh điều hướng */
+body.theme-map .topbar .logo img { width:44px; height:44px; border-radius:50%; object-fit:contain; }
+body.theme-map .topbar .logo { font-size:1.3rem; letter-spacing:.08em; }
