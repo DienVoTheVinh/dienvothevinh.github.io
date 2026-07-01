@@ -1589,7 +1589,7 @@ function vmApDungThuongHieuMAP(isMap) {
       for (var i = 0; i < logoEl.childNodes.length; i++) {
         var n = logoEl.childNodes[i];
         if (n.nodeType === 3 && n.textContent && n.textContent.trim()) {
-          n.textContent = isMap ? ' CLB M.A.P ' : ' VinhMath ';
+          n.textContent = isMap ? ' M.A.P ' : ' VinhMath ';
           break;
         }
       }
