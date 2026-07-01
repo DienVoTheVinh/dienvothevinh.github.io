@@ -1610,3 +1610,19 @@ tr:last-child td{border-bottom:none}
   }
 }
 
+
+/* ============================================================
+   BỘ NHẬN DIỆN CLB M.A.P (áp cho lớp có theme = map)
+   ============================================================ */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+/* Dark mode: làm xanh navy sáng lên, nổi bật dễ nhìn */
+[data-theme="dark"] body.theme-map { --accent:#8FB3EC; --accent-soft:#233149; }
+
+/* Logo chìm giữa màn hình, mờ, đè lên mọi cửa sổ (không chặn thao tác) */
+#mapWatermarkGlobal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(620px, 60vw); max-width: 620px; height: auto;
+  opacity: .06; pointer-events: none; z-index: 9998; display: none; user-select: none;
+}
+[data-theme="dark"] #mapWatermarkGlobal { opacity: .12; }
+body.theme-map #mapWatermarkGlobal { display: block; }
