@@ -107,6 +107,10 @@
 .inline-modal {
   animation: fadeIn 0.2s ease-out;
 }
+@media (max-width: 900px) {
+  .lop-split { grid-template-columns: 1fr !important; }
+  .lop-split .bt-panel { position: static !important; }
+}
 </style>
 </head>
 <body>
@@ -168,13 +172,27 @@
         <button class="tab-header-btn" id="tabStudents" onclick="doiPhanHeLop('students')">👥 Học sinh</button>
       </div>
 
-      <!-- Tab Bài giảng -->
-      <div id="phanHeLessons" style="display:flex; flex-direction:column; gap:12px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
-          <h3 style="font-size:1.1rem">Danh sách bài học</h3>
-          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
+      <!-- Tab Bài giảng (trái: bài giảng · phải: bảng tin lớp) -->
+      <div id="phanHeLessons" style="margin-top:10px">
+        <div class="lop-split" style="display:grid; grid-template-columns:1fr 340px; gap:22px; align-items:start">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+              <h3 style="font-size:1.1rem">📚 Danh sách bài học</h3>
+              <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
+            </div>
+            <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
+          </div>
+          <aside class="bt-panel" style="border:1px solid var(--line); border-radius:var(--r-md,12px); background:var(--surface); overflow:hidden; position:sticky; top:16px">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--surface-2)">
+              <span style="font-weight:800; font-size:.98rem">📢 Bảng tin lớp</span>
+              <a class="btn btn-primary btn-sm chi-gv" id="btPanelDang" href="#">✍️ Đăng bài</a>
+            </div>
+            <div id="btPanelList" style="padding:12px 14px; display:flex; flex-direction:column; gap:10px; max-height:520px; overflow:auto">
+              <div style="color:var(--ink-3); font-size:.86rem">Đang tải…</div>
+            </div>
+            <a id="btPanelAll" href="#" style="display:block; text-align:center; padding:10px; border-top:1px solid var(--line); font-size:.86rem; font-weight:600; color:var(--accent); text-decoration:none">Xem toàn bộ bảng tin →</a>
+          </aside>
         </div>
-        <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
       </div>
 
       <!-- Tab Học sinh -->
@@ -306,6 +324,14 @@
           <option value="">-- Không hợp tác --</option>
         </select>
       </div>
+      <div class="field">
+        <label>Bộ nhận diện lớp (Theme)</label>
+        <select class="input" id="classTheme">
+          <option value="vinhmath">📘 VinhMath (mặc định)</option>
+          <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
+        </select>
+        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">Chọn M.A.P sẽ áp logo &amp; tông màu CLB M.A.P cho giao diện lớp (cả GV lẫn HS).</div>
+      </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
         <button type="button" class="btn btn-secondary" onclick="dongFormLop()">Hủy bỏ</button>
         <button type="submit" class="btn btn-primary">Tạo lớp</button>
@@ -358,6 +384,13 @@
         <label>Thầy cô hợp tác (Tuỳ chọn)</label>
         <select class="input" id="classEditCoTeacher">
           <option value="">-- Không hợp tác --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Bộ nhận diện lớp (Theme)</label>
+        <select class="input" id="classEditTheme">
+          <option value="vinhmath">📘 VinhMath (mặc định)</option>
+          <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
         </select>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
@@ -874,7 +907,7 @@ function napSelectGiaoVien() {
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
   console.log("loadingSidebar: Đang truy vấn bảng classes...");
-  var r = await sb.from('classes').select('id, name, grade, mode, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
+  var r = await sb.from('classes').select('id, name, grade, mode, is_specialized, teacher_id, co_teacher_id, theme').order('grade').order('name');
   console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
   
@@ -948,7 +981,33 @@ function chonLopHoc(id) {
   }
   
   napNutMeet(cl.id);
+  taiBangTinPanel(cl.id);
   doiPhanHeLop(tabDangChon);
+}
+
+/* ===== Panel Bảng tin lớp (trong khu Bài giảng) ===== */
+async function taiBangTinPanel(classId) {
+  var dang = $('btPanelDang'), all = $('btPanelAll'), list = $('btPanelList');
+  if (dang) dang.href = 'bang-tin-lop?classId=' + classId;
+  if (all) all.href = 'bang-tin-lop?classId=' + classId;
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--ink-3); font-size:.86rem">Đang tải…</div>';
+  try {
+    var r = await sb.from('class_posts').select('id, title, author_name, created_at, pinned').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(6);
+    if (!classDangChon || classDangChon.id !== classId) return;
+    var ds = r.data || [];
+    if (!ds.length) { list.innerHTML = '<div style="color:var(--ink-3); font-size:.85rem; line-height:1.5">Chưa có thông báo nào. Bấm <b>Đăng bài</b> để gửi nội quy / dặn dò cho lớp.</div>'; return; }
+    list.innerHTML = ds.map(function (p) {
+      var ngay = new Date(p.created_at).toLocaleDateString('vi-VN');
+      var pin = p.pinned ? '📌 ' : '';
+      return '<a href="bang-tin-lop?classId=' + classId + '" style="text-decoration:none; color:inherit; display:block; padding:9px 11px; border:1px solid var(--line); border-radius:9px; transition:all .15s" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--line)\'">' +
+        '<div style="font-weight:700; font-size:.9rem; line-height:1.35; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical">' + pin + (p.title || '').replace(/[<>&]/g, '') + '</div>' +
+        '<div style="font-size:.75rem; color:var(--ink-3); margin-top:3px">' + (p.author_name || '') + ' · ' + ngay + '</div>' +
+        '</a>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--ink-3); font-size:.85rem">Không tải được bảng tin.</div>';
+  }
 }
 
 // Phím tắt vào phòng Meet của lớp đang chọn
@@ -984,6 +1043,7 @@ function moFormSuaLop() {
   $('classEditMode').value = classDangChon.mode;
   $('classEditYear').value = classDangChon.school_year || '2026-2027';
   $('classEditCoTeacher').value = classDangChon.co_teacher_id || '';
+  $('classEditTheme').value = classDangChon.theme || 'vinhmath';
   $('modalSuaLop').style.display = 'flex';
 }
 function dongFormSuaLop() {
@@ -998,14 +1058,16 @@ async function luuSuaLopHoc(e) {
   var mode = $('classEditMode').value;
   var year = $('classEditYear').value.trim();
   var coTeacherId = $('classEditCoTeacher').value || null;
-  
+  var theme = $('classEditTheme').value || 'vinhmath';
+
   var r = await sb.from('classes').update({
     grade: grade,
     name: name,
     is_specialized: isSpecialized,
     mode: mode,
     school_year: year,
-    co_teacher_id: coTeacherId
+    co_teacher_id: coTeacherId,
+    theme: theme
   }).eq('id', classDangChon.id).select().single();
   
   if (r.error) {
@@ -2047,18 +2109,20 @@ async function luuLopHoc(e) {
   var year = $('classYear').value;
   var isSpecialized = $('classIsSpecialized').value === 'true';
   var coTeacherId = $('classCoTeacher').value || null;
-  
+  var theme = $('classTheme').value || 'vinhmath';
+
   var u = await sb.auth.getUser();
   var teacherId = u.data.user ? u.data.user.id : null;
-  
-  var r = await sb.from('classes').insert({ 
-    name: name, 
-    grade: grade, 
-    mode: mode, 
-    school_year: year, 
+
+  var r = await sb.from('classes').insert({
+    name: name,
+    grade: grade,
+    mode: mode,
+    school_year: year,
     is_specialized: isSpecialized,
     teacher_id: teacherId,
-    co_teacher_id: coTeacherId
+    co_teacher_id: coTeacherId,
+    theme: theme
   }).select('id').single();
   
   if (r.error) {

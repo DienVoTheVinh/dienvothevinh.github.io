@@ -169,7 +169,10 @@
       
       <!-- Bộ chọn lớp học của học sinh (tab button) -->
       <div class="class-tabs" id="tabLopHocSinh" style="display:none; margin-bottom:20px;"></div>
-      
+
+      <!-- Bảng tin lớp (liên kết) -->
+      <div id="btLopBox" style="display:none; margin-bottom:18px"></div>
+
       <div id="dsBaiHocGomNhom"></div>
     </section>
   </div>
@@ -519,6 +522,45 @@ async function taiLessonsHocSinh() {
   var ds = r.data || [];
   window.newestLessonIds = xacDinhIdsBaiMoiNhat(ds);
   hienThiLessonsGomNhom(ds);
+  taiBangTinLopHS(selectedClassId);
+}
+
+/* ===== Bảng tin lớp cho học sinh (banner liên kết + xem trước) ===== */
+async function taiBangTinLopHS(classId) {
+  var box = document.getElementById('btLopBox');
+  if (!box) return;
+  try {
+    var rc = await sb.from('classes').select('theme, name').eq('id', classId).maybeSingle();
+    var theme = (rc.data && rc.data.theme) || 'vinhmath';
+    var isMap = theme === 'map';
+    var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
+    if (selectedClassId !== classId) return;
+    var ds = rp.data || [];
+    var accent = isMap ? '#1B2644' : 'var(--accent)';
+    var logo = isMap ? 'logo/CLB-MAP-logo.png' : '';
+    var brand = isMap ? 'CLB M.A.P' : 'Bảng tin lớp';
+    var head = '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line)">' +
+      '<div style="display:flex; align-items:center; gap:10px">' +
+        (logo ? '<img src="' + logo + '" style="width:34px;height:34px;border-radius:8px;object-fit:contain">' : '<span style="font-size:1.3rem">📢</span>') +
+        '<div><div style="font-weight:800; color:' + accent + '">' + brand + '</div><div style="font-size:.78rem; color:var(--ink-3)">Thông báo &amp; nội quy từ thầy cô</div></div>' +
+      '</div>' +
+      '<a class="btn btn-sm" style="background:' + accent + '; color:#fff; border-color:' + accent + '" href="bang-tin-lop?classId=' + classId + '">Xem tất cả →</a>' +
+    '</div>';
+    var bodyHtml;
+    if (!ds.length) {
+      bodyHtml = '<div style="padding:14px 18px; color:var(--ink-3); font-size:.88rem">Chưa có thông báo mới.</div>';
+    } else {
+      bodyHtml = '<div style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">' + ds.map(function (p) {
+        var ngay = new Date(p.created_at).toLocaleDateString('vi-VN');
+        return '<a href="bang-tin-lop?classId=' + classId + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="font-size:1.05rem">📌</span><span style="flex:1; min-width:0"><span style="display:block; font-weight:600; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">' + (p.title || '').replace(/[<>&]/g, '') + '</span><span style="font-size:.75rem; color:var(--ink-3)">' + (p.author_name || '') + ' · ' + ngay + '</span></span></a>';
+      }).join('') + '</div>';
+    }
+    box.innerHTML = '<div style="border:1px solid var(--line); border-left:4px solid ' + accent + '; border-radius:var(--r-md,12px); background:var(--surface); overflow:hidden; box-shadow:var(--shadow)">' + head + bodyHtml + '</div>';
+    box.style.display = 'block';
+  } catch (e) {
+    box.style.display = 'none';
+  }
 }
 
 async function taiThongKeLop() {

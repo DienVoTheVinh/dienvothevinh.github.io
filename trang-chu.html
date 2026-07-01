@@ -710,6 +710,14 @@
           <div style="font-size:.85rem; color:var(--ink-3)">Đang tải nhận xét...</div>
         </div>
       </div>
+
+      <!-- Thông báo mới từ lớp (bảng tin) -->
+      <div class="card" id="khungClassPosts" style="display:none; margin-top:20px; padding: 20px;">
+        <h3 style="font-size:1.05rem; margin-bottom:12px; display:flex; align-items:center; gap:6px; color:var(--accent);">
+          📢 Thông báo mới từ lớp
+        </h3>
+        <div id="dsClassPosts" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
     </div>
     
     <!-- CỘT PHẢI: LỊCH TUẦN (kiểu Google Calendar) -->
@@ -918,6 +926,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     await taiViecCanLam();
     await kiemTraDiemDanhHocSinh();
     await taiRemarksHocSinh();
+    await taiThongBaoLopHS();
   }
 
   // Khởi dựng Lịch tuần & Đếm ngược
@@ -925,6 +934,31 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   veLichTuan();
   khoiDongCountdown();
 })();
+
+// ===== THÔNG BÁO MỚI TỪ LỚP (bảng tin) =====
+async function taiThongBaoLopHS() {
+  var box = $('dsClassPosts');
+  if (!box) return;
+  var hoSo = hoSoNguoiDung;
+  if (!hoSo || hoSo.role !== 'student' || !hoSo.class_students || !hoSo.class_students.length) return;
+  var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
+  var classNameMap = {};
+  hoSo.class_students.forEach(function (c) { if (c.classes) classNameMap[c.class_id] = c.classes.name; });
+  try {
+    var r = await sb.from('class_posts').select('id, class_id, title, author_name, created_at').in('class_id', classIds).order('created_at', { ascending: false }).limit(5);
+    var ds = r.data || [];
+    if (!ds.length) return;
+    $('khungClassPosts').style.display = 'block';
+    box.innerHTML = ds.map(function (p) {
+      var ngay = new Date(p.created_at).toLocaleDateString('vi-VN');
+      var lop = classNameMap[p.class_id] || 'Lớp';
+      return '<a href="bang-tin-lop?classId=' + p.class_id + '" style="text-decoration:none; color:inherit; display:block; padding:9px 12px; border:1px solid var(--line); border-radius:9px; transition:all .15s" onmouseover="this.style.borderColor=\'var(--accent)\'; this.style.background=\'var(--surface-2)\'" onmouseout="this.style.borderColor=\'var(--line)\'; this.style.background=\'transparent\'">' +
+        '<div style="font-weight:600; font-size:.9rem; line-height:1.35; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical">' + (p.title || '').replace(/[<>&]/g, '') + '</div>' +
+        '<div style="font-size:.75rem; color:var(--ink-3); margin-top:3px">📚 ' + String(lop).replace(/[<>&]/g, '') + ' · ' + (p.author_name || '') + ' · ' + ngay + '</div>' +
+        '</a>';
+    }).join('');
+  } catch (e) { /* ẩn nếu lỗi */ }
+}
 
 // ===== NHẬN XÉT CỦA GIÁO VIÊN DÀNH CHO HỌC SINH =====
 async function taiRemarksHocSinh() {

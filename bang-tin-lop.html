@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bảng tin lớp — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<script>
+  window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<style>
+/* ===== Theme M.A.P (navy + gold) ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+.bt-wrap { max-width: 860px; margin: 0 auto; padding: 0 18px 90px; }
+.bt-hero { display:flex; align-items:center; gap:16px; padding:22px 0 14px; }
+.bt-hero img.logo { width:60px; height:60px; border-radius:14px; object-fit:contain; background:var(--surface); border:1px solid var(--line); padding:4px; flex-shrink:0; }
+.bt-hero h1 { font-size:1.5rem; font-weight:900; line-height:1.2; }
+.bt-hero .sub { color:var(--ink-2); font-size:.9rem; margin-top:2px; }
+.bt-hero .brandtag { display:inline-block; font-size:.7rem; font-weight:800; padding:2px 10px; border-radius:99px; background:var(--accent-soft); color:var(--accent); margin-top:5px; }
+.bt-back { display:inline-flex; align-items:center; gap:6px; font-size:.86rem; font-weight:600; color:var(--ink-2); text-decoration:none; }
+.bt-back:hover { color:var(--accent); }
+
+.bt-composer { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); margin-bottom:24px; overflow:hidden; }
+.bt-composer .head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer; font-weight:800; }
+.bt-composer .body { padding:0 18px 18px; display:none; }
+.bt-composer.open .body { display:block; }
+.title-in { width:100%; font-size:1.2rem; font-weight:800; border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink); padding:8px 2px; margin-bottom:12px; font-family:inherit; }
+.title-in:focus { outline:none; border-color:var(--accent); }
+.bt-cover { position:relative; border:1.5px dashed var(--line); border-radius:12px; padding:16px; text-align:center; color:var(--ink-3); font-size:.85rem; cursor:pointer; margin-bottom:12px; }
+.bt-cover:hover { border-color:var(--accent); color:var(--accent); }
+.bt-cover.has { padding:0; border-style:solid; overflow:hidden; }
+.bt-cover img { width:100%; max-height:200px; object-fit:cover; display:block; }
+.bt-cover .rm { position:absolute; top:8px; right:8px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:8px; padding:4px 10px; font-size:.78rem; cursor:pointer; }
+.bt-tools { display:flex; flex-wrap:wrap; gap:4px; padding:6px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px 10px 0 0; border-bottom:none; }
+.bt-tools button { background:transparent; border:none; border-radius:7px; padding:6px 9px; font-size:.9rem; font-weight:700; color:var(--ink-2); cursor:pointer; min-width:32px; }
+.bt-tools button:hover { background:var(--surface); color:var(--accent); }
+.bt-tools .sep { width:1px; background:var(--line); margin:4px 2px; }
+.body-in { width:100%; min-height:200px; border:1px solid var(--line); border-radius:0 0 10px 10px; padding:12px; background:var(--surface); color:var(--ink); font-family:Menlo,Consolas,monospace; font-size:.88rem; line-height:1.6; resize:vertical; }
+.body-in:focus { outline:none; border-color:var(--accent); }
+.bt-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+.bt-hint { font-size:.74rem; color:var(--ink-3); margin-top:10px; background:var(--surface-2); padding:8px 12px; border-radius:8px; line-height:1.5; }
+
+.bt-post { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg,16px); box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden; }
+.bt-post .cover { width:100%; max-height:280px; object-fit:cover; display:block; }
+.bt-post .pad { padding:18px 22px; }
+.bt-post .meta { display:flex; align-items:center; gap:10px; color:var(--ink-3); font-size:.8rem; margin-bottom:8px; }
+.bt-post .meta .who { font-weight:700; color:var(--accent); }
+.bt-post .pin { font-size:.68rem; font-weight:800; padding:1px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); }
+.bt-post h2.title { font-size:1.35rem; font-weight:900; line-height:1.25; margin-bottom:10px; }
+.bt-post .article { font-size:1.02rem; line-height:1.8; color:var(--ink); overflow-wrap:break-word; }
+.bt-post .article h1,.bt-post .article h2,.bt-post .article h3,.bt-post .article h4 { font-weight:800; line-height:1.3; margin:1.2em 0 .4em; }
+.bt-post .article h1{font-size:1.4rem;} .bt-post .article h2{font-size:1.2rem;} .bt-post .article h3{font-size:1.06rem;}
+.bt-post .article p { margin:0 0 .9em; }
+.bt-post .article ul,.bt-post .article ol { margin:0 0 .9em; padding-left:1.4em; }
+.bt-post .article a { color:var(--accent); text-decoration:underline; }
+.bt-post .article blockquote { border-left:4px solid var(--accent); background:var(--surface-2); margin:0 0 1em; padding:8px 16px; border-radius:0 8px 8px 0; color:var(--ink-2); }
+.bt-post .article img { max-width:100%; border-radius:10px; }
+.bt-post .article figure { margin:1em 0; text-align:center; }
+.bt-post .article figcaption { font-size:.82rem; color:var(--ink-3); margin-top:5px; font-style:italic; }
+.bt-post .article mjx-container { overflow-x:auto; max-width:100%; }
+.bt-bar { display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); flex-wrap:wrap; }
+.bt-like { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line-2); background:var(--surface); border-radius:99px; padding:6px 14px; font-weight:700; font-size:.88rem; cursor:pointer; color:var(--ink-2); transition:all .15s; }
+.bt-like:hover { border-color:#e0245e; color:#e0245e; }
+.bt-like.on { background:#fdeef2; border-color:#e0245e; color:#e0245e; }
+.bt-cmttoggle { display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; color:var(--ink-2); font-weight:600; font-size:.86rem; cursor:pointer; padding:6px 8px; }
+.bt-cmttoggle:hover { color:var(--accent); }
+.bt-admin { margin-left:auto; display:flex; gap:6px; }
+.bt-admin button { border:none; background:transparent; color:var(--ink-3); cursor:pointer; font-size:.82rem; font-weight:600; padding:4px 8px; border-radius:6px; }
+.bt-admin button:hover { background:var(--surface-2); color:var(--accent); }
+.bt-cmts { margin-top:14px; display:none; }
+.bt-cmts.open { display:block; }
+.bt-cmt { display:flex; gap:10px; margin-bottom:12px; }
+.bt-cmt .av { width:34px; height:34px; border-radius:50%; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; font-weight:800; font-size:.85rem; flex-shrink:0; }
+.bt-cmt .bub { background:var(--surface-2); border-radius:12px; padding:8px 13px; flex:1; min-width:0; }
+.bt-cmt .bub .n { font-weight:700; font-size:.83rem; }
+.bt-cmt .bub .n small { color:var(--ink-3); font-weight:400; margin-left:6px; }
+.bt-cmt .bub .c { font-size:.92rem; line-height:1.55; margin-top:2px; white-space:pre-wrap; overflow-wrap:break-word; }
+.bt-cmt .del { border:none;background:none;color:var(--ink-3);cursor:pointer;font-size:.78rem;align-self:flex-start }
+.bt-cmt .del:hover { color:var(--err,#e74c3c); }
+.bt-cmtform { display:flex; gap:8px; margin-top:8px; }
+.bt-cmtform input { flex:1; border:1px solid var(--line-2); border-radius:99px; padding:9px 16px; font-family:inherit; font-size:.9rem; background:var(--surface); color:var(--ink); }
+.bt-cmtform input:focus { outline:none; border-color:var(--accent); }
+.bt-empty { text-align:center; padding:60px 20px; color:var(--ink-3); }
+.up-status { font-size:.8rem; color:var(--accent); margin-top:6px; min-height:1em; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath" id="navLogo">VinhMath <small id="navSub">· Bảng tin lớp</small></a>
+    <nav class="navlinks"></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="bt-wrap" id="btWrap" style="display:none">
+  <a class="bt-back" id="btBack" href="lop-hoc"><span>←</span> <span>Quay lại lớp</span></a>
+  <div class="bt-hero">
+    <img class="logo" id="heroLogo" src="logo/VinhMath_logo.png" alt="logo">
+    <div>
+      <h1 id="heroTitle">Bảng tin lớp</h1>
+      <div class="sub" id="heroSub"></div>
+      <span class="brandtag" id="heroBrand"></span>
+    </div>
+  </div>
+
+  <!-- Composer (chỉ GV/Admin của lớp) -->
+  <div class="bt-composer" id="composer" style="display:none">
+    <div class="head" onclick="toggleComposer()"><span>✍️ <span id="composerTitle">Đăng thông báo mới</span></span><span id="composerCaret">▸</span></div>
+    <div class="body">
+      <input type="hidden" id="postId">
+      <div class="bt-cover" id="coverBox" onclick="chonAnhBia()">
+        <div id="coverPlaceholder">🖼️ Bấm để thêm <b>ảnh bìa</b> (không bắt buộc)</div>
+        <img id="coverImg" style="display:none" alt="Ảnh bìa">
+        <button class="rm" id="coverRm" style="display:none" onclick="xoaAnhBia(event)">✕ Xoá bìa</button>
+      </div>
+      <input class="title-in" id="postTitle" placeholder="Tiêu đề thông báo…">
+      <div class="bt-tools">
+        <button title="Tiêu đề" onclick="chen('\n## ','','Tiêu đề')">H</button>
+        <button title="In đậm" onclick="chen('**','**','chữ đậm')"><b>B</b></button>
+        <button title="In nghiêng" onclick="chen('*','*','chữ nghiêng')"><i>I</i></button>
+        <span class="sep"></span>
+        <button title="Danh sách" onclick="chen('\n- ','','mục')">☰</button>
+        <button title="Trích dẫn" onclick="chen('\n> ','','lưu ý')">❝</button>
+        <button title="Đường kẻ" onclick="chen('\n\n---\n\n','','')">―</button>
+        <span class="sep"></span>
+        <button title="Liên kết" onclick="chen('[','](https://)','văn bản')">🔗</button>
+        <button title="Chèn ảnh" onclick="chonAnhChen()">🖼️</button>
+        <button title="Công thức" onclick="chen('$','$','x^2')">∑</button>
+      </div>
+      <textarea class="body-in" id="postBody" placeholder="Viết nội dung thông báo… (nội quy, dặn dò, tài liệu quan trọng…)"></textarea>
+      <div id="upStatus" class="up-status"></div>
+      <div class="bt-actions">
+        <button class="btn btn-primary btn-sm" id="btnDang" onclick="dangBai()">🚀 Đăng bài</button>
+        <button class="btn btn-secondary btn-sm" id="btnHuySua" style="display:none" onclick="huySua()">Huỷ sửa</button>
+      </div>
+      <div class="bt-hint">Cú pháp: <b>## tiêu đề</b> · <b>**đậm**</b> · <b>*nghiêng*</b> · <b>- danh sách</b> · <b>&gt; lưu ý</b> · công thức <b>$...$</b>. Bài đăng hiện ngay cho học sinh trong lớp.</div>
+    </div>
+  </div>
+
+  <div id="dsBai"></div>
+</div>
+
+<div class="bt-wrap"><div class="bt-empty" id="btDeny" style="display:none">⛔ Bạn không có quyền xem bảng tin lớp này.</div></div>
+
+<input type="file" id="fileChen" accept="image/*" style="display:none">
+<input type="file" id="fileBia" accept="image/*" style="display:none">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/menu.js"></script>
+<script src="js/analytics.js"></script>
+<script>
+/* ===== render markdown (rút gọn từ trình blog) ===== */
+function blogEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderBlog(src){
+  src = String(src || '');
+  var math = [];
+  src = src.replace(/\$\$([\s\S]+?)\$\$/g, function(m){ math.push(m); return '___MATH_'+(math.length-1)+'___'; });
+  src = src.replace(/\\\[([\s\S]+?)\\\]/g, function(m){ math.push(m); return '___MATH_'+(math.length-1)+'___'; });
+  src = src.replace(/\$([^\$\n]+?)\$/g, function(m){ math.push(m); return '___MATH_'+(math.length-1)+'___'; });
+  src = src.replace(/\\\(([\s\S]+?)\\\)/g, function(m){ math.push(m); return '___MATH_'+(math.length-1)+'___'; });
+  function inline(t){
+    t = blogEsc(t);
+    t = t.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return t;
+  }
+  var lines = src.split(/\r?\n/), html='', para=[], inUl=false, inOl=false;
+  function flushPara(){ if(para.length){ html += '<p>'+inline(para.join(' '))+'</p>'; para=[]; } }
+  function closeLists(){ if(inUl){ html+='</ul>'; inUl=false; } if(inOl){ html+='</ol>'; inOl=false; } }
+  lines.forEach(function(ln){
+    var t = ln.trim();
+    if(t===''){ flushPara(); closeLists(); return; }
+    var img = t.match(/^!\[([^\]]*)\]\((https?:[^)\s]+)\)$/);
+    if(img){ flushPara(); closeLists(); html += '<figure><img src="'+img[2]+'" alt="'+blogEsc(img[1])+'" loading="lazy">'+(img[1]?'<figcaption>'+blogEsc(img[1])+'</figcaption>':'')+'</figure>'; return; }
+    var hm = t.match(/^(#{1,4})\s+(.*)$/);
+    if(hm){ flushPara(); closeLists(); var lvl=hm[1].length; html += '<h'+lvl+'>'+inline(hm[2])+'</h'+lvl+'>'; return; }
+    if(/^(---|\*\*\*|___)$/.test(t)){ flushPara(); closeLists(); html+='<hr>'; return; }
+    if(/^>\s?/.test(t)){ flushPara(); closeLists(); html += '<blockquote>'+inline(t.replace(/^>\s?/,''))+'</blockquote>'; return; }
+    var um = t.match(/^[-*]\s+(.*)$/);
+    if(um){ flushPara(); if(inOl){html+='</ol>';inOl=false;} if(!inUl){html+='<ul>';inUl=true;} html+='<li>'+inline(um[1])+'</li>'; return; }
+    var om = t.match(/^\d+\.\s+(.*)$/);
+    if(om){ flushPara(); if(inUl){html+='</ul>';inUl=false;} if(!inOl){html+='<ol>';inOl=true;} html+='<li>'+inline(om[1])+'</li>'; return; }
+    para.push(t);
+  });
+  flushPara(); closeLists();
+  html = html.replace(/___MATH_(\d+)___/g, function(_,i){ return math[+i]; });
+  return html;
+}
+
+var me=null, classInfo=null, classId=null, canManage=false, coverUrl='';
+var postsCache=[], reactMap={}, myReacts={}, cmtMap={};
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function initials(name){ var p=String(name||'?').trim().split(/\s+/); return (p[p.length-1]||'?').charAt(0).toUpperCase(); }
+
+(async function(){
+  var params = new URLSearchParams(location.search);
+  classId = params.get('classId') || params.get('class') || '';
+  if(!classId){ location.href='lop-hoc'; return; }
+  if(!daKetNoi()){ alert('Chưa kết nối Supabase.'); return; }
+  me = await yeuCauDangNhap();
+  if(!me) return;
+
+  var rc = await sb.from('classes').select('id, name, theme, teacher_id, co_teacher_id, grade, is_specialized').eq('id', classId).single();
+  if(rc.error || !rc.data){ $('btDeny').style.display='block'; return; }
+  classInfo = rc.data;
+
+  canManage = me.role==='admin' || classInfo.teacher_id===me.id || classInfo.co_teacher_id===me.id;
+  apDungTheme();
+
+  $('btWrap').style.display='block';
+  $('heroTitle').textContent = 'Bảng tin · ' + classInfo.name;
+  $('heroSub').textContent = 'Nơi thầy đăng thông báo, nội quy và những điều quan trọng cho lớp.';
+  // link quay lại phù hợp vai trò
+  $('btBack').href = canManage ? ('quan-tri-lop?classId='+classId) : 'lop-hoc';
+
+  if(canManage){ $('composer').style.display='block'; }
+  $('postBody').addEventListener('input', function(){ /* no live preview panel */ });
+  $('fileChen').addEventListener('change', function(e){ if(e.target.files[0]) chenAnh(e.target.files[0]); e.target.value=''; });
+  $('fileBia').addEventListener('change', function(e){ if(e.target.files[0]) taiAnhBia(e.target.files[0]); e.target.value=''; });
+
+  await taiTatCa();
+})();
+
+function apDungTheme(){
+  var isMap = classInfo.theme === 'map';
+  if(isMap){
+    document.body.classList.add('theme-map');
+    $('heroLogo').src = 'logo/CLB-MAP-logo.png';
+    $('navLogo').src = 'logo/CLB-MAP-logo.png';
+    $('navSub').textContent = '· CLB M.A.P';
+    $('heroBrand').textContent = '⭐ CLB M.A.P · Math And Passion';
+    document.title = 'Bảng tin lớp — CLB M.A.P';
+  } else {
+    $('heroLogo').src = 'logo/VinhMath_logo.png';
+    $('heroBrand').textContent = '📘 VinhMath';
+  }
+}
+
+async function taiTatCa(){
+  var box = $('dsBai');
+  box.innerHTML = '<div class="bt-empty">Đang tải bảng tin…</div>';
+  var rp = await sb.from('class_posts').select('*').eq('class_id', classId).order('pinned',{ascending:false}).order('created_at',{ascending:false});
+  if(rp.error){ box.innerHTML='<div class="bt-empty">Lỗi tải bảng tin: '+esc(rp.error.message)+'</div>'; return; }
+  postsCache = rp.data || [];
+
+  reactMap={}; myReacts={}; cmtMap={};
+  var rr = await sb.from('class_post_reactions').select('post_id, user_id').eq('class_id', classId);
+  (rr.data||[]).forEach(function(x){ reactMap[x.post_id]=(reactMap[x.post_id]||0)+1; if(x.user_id===me.id) myReacts[x.post_id]=true; });
+  var rcm = await sb.from('class_post_comments').select('id, post_id, author_id, author_name, body, created_at').eq('class_id', classId).order('created_at',{ascending:true});
+  (rcm.data||[]).forEach(function(c){ (cmtMap[c.post_id]=cmtMap[c.post_id]||[]).push(c); });
+
+  veDanhSach();
+}
+
+function veDanhSach(){
+  var box=$('dsBai');
+  if(!postsCache.length){ box.innerHTML='<div class="bt-empty">📭 Chưa có thông báo nào'+(canManage?'. Hãy đăng bài đầu tiên phía trên!':' cho lớp này.')+'</div>'; return; }
+  box.innerHTML = postsCache.map(veMotBai).join('');
+  if(window.MathJax && window.MathJax.typesetPromise){ window.MathJax.typesetPromise([box]); }
+}
+
+function veMotBai(p){
+  var ngay = new Date(p.created_at).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var likes = reactMap[p.id]||0;
+  var liked = !!myReacts[p.id];
+  var cmts = cmtMap[p.id]||[];
+  var cover = p.cover_url ? '<img class="cover" src="'+esc(p.cover_url)+'" alt="">' : '';
+  var pin = p.pinned ? '<span class="pin">📌 Ghim</span>' : '';
+  var adminBtns = canManage ? '<div class="bt-admin">'+
+      '<button onclick="ghim(\''+p.id+'\','+(p.pinned?'false':'true')+')">'+(p.pinned?'Bỏ ghim':'📌 Ghim')+'</button>'+
+      '<button onclick="suaBai(\''+p.id+'\')">✏️ Sửa</button>'+
+      '<button onclick="xoaBai(\''+p.id+'\')" style="color:var(--err,#e74c3c)">🗑 Xoá</button>'+
+    '</div>' : '';
+  var cmtHtml = cmts.map(function(c){
+    var canDel = canManage || c.author_id===me.id;
+    return '<div class="bt-cmt"><div class="av">'+esc(initials(c.author_name))+'</div>'+
+      '<div class="bub"><div class="n">'+esc(c.author_name||'Ẩn danh')+'<small>'+new Date(c.created_at).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</small></div>'+
+      '<div class="c">'+esc(c.body)+'</div></div>'+
+      (canDel?'<button class="del" onclick="xoaBinhLuan(\''+c.id+'\')">Xoá</button>':'')+'</div>';
+  }).join('');
+  return '<article class="bt-post" id="post-'+p.id+'">'+ cover +
+    '<div class="pad">'+
+      '<div class="meta">'+pin+'<span class="who">'+esc(p.author_name||'Giáo viên')+'</span> · <span>'+ngay+'</span></div>'+
+      '<h2 class="title">'+esc(p.title)+'</h2>'+
+      '<div class="article">'+renderBlog(p.body||'')+'</div>'+
+      '<div class="bt-bar">'+
+        '<button class="bt-like'+(liked?' on':'')+'" id="like-'+p.id+'" onclick="thaTim(\''+p.id+'\')">'+(liked?'❤️':'🤍')+' <span id="likec-'+p.id+'">'+likes+'</span></button>'+
+        '<button class="bt-cmttoggle" onclick="moBinhLuan(\''+p.id+'\')">💬 <span>'+cmts.length+'</span> bình luận</button>'+
+        adminBtns+
+      '</div>'+
+      '<div class="bt-cmts" id="cmts-'+p.id+'">'+
+        '<div id="cmtlist-'+p.id+'">'+cmtHtml+'</div>'+
+        '<div class="bt-cmtform"><input id="cmtin-'+p.id+'" placeholder="Viết bình luận…" onkeydown="if(event.key===\'Enter\')guiBinhLuan(\''+p.id+'\')"><button class="btn btn-primary btn-sm" onclick="guiBinhLuan(\''+p.id+'\')">Gửi</button></div>'+
+      '</div>'+
+    '</div></article>';
+}
+
+function moBinhLuan(id){ var el=$('cmts-'+id); if(el) el.classList.toggle('open'); }
+
+async function thaTim(id){
+  var liked = !!myReacts[id];
+  var btn=$('like-'+id), cnt=$('likec-'+id);
+  // cập nhật lạc quan
+  myReacts[id]=!liked;
+  reactMap[id]=(reactMap[id]||0)+(liked?-1:1);
+  if(cnt) cnt.textContent = reactMap[id];
+  if(btn){ btn.classList.toggle('on',!liked); btn.firstChild.textContent = (!liked?'❤️':'🤍')+' '; }
+  if(liked){
+    var r = await sb.from('class_post_reactions').delete().eq('post_id',id).eq('user_id',me.id);
+    if(r.error){ alert('Lỗi: '+r.error.message); await taiTatCa(); }
+  } else {
+    var r2 = await sb.from('class_post_reactions').insert({ post_id:id, class_id:classId, user_id:me.id });
+    if(r2.error){ alert('Lỗi: '+r2.error.message); await taiTatCa(); }
+  }
+}
+
+async function guiBinhLuan(id){
+  var inp=$('cmtin-'+id); if(!inp) return;
+  var body=inp.value.trim(); if(!body) return;
+  inp.disabled=true;
+  var rec={ post_id:id, class_id:classId, author_id:me.id, author_name:(me.full_name||'Ẩn danh'), body:body };
+  var r = await sb.from('class_post_comments').insert(rec).select('id, post_id, author_id, author_name, body, created_at').single();
+  inp.disabled=false;
+  if(r.error){ alert('Lỗi gửi bình luận: '+r.error.message); return; }
+  (cmtMap[id]=cmtMap[id]||[]).push(r.data);
+  inp.value='';
+  // vẽ lại danh sách bình luận của bài, giữ mở
+  var list=$('cmtlist-'+id);
+  if(list){
+    list.insertAdjacentHTML('beforeend',
+      '<div class="bt-cmt"><div class="av">'+esc(initials(r.data.author_name))+'</div>'+
+      '<div class="bub"><div class="n">'+esc(r.data.author_name)+'<small>vừa xong</small></div><div class="c">'+esc(r.data.body)+'</div></div>'+
+      (true?'<button class="del" onclick="xoaBinhLuan(\''+r.data.id+'\')">Xoá</button>':'')+'</div>');
+  }
+}
+
+async function xoaBinhLuan(cid){
+  if(!confirm('Xoá bình luận này?')) return;
+  var r = await sb.from('class_post_comments').delete().eq('id',cid);
+  if(r.error){ alert('Lỗi xoá: '+r.error.message); return; }
+  await taiTatCa();
+}
+
+/* ===== Composer ===== */
+function toggleComposer(){ $('composer').classList.toggle('open'); }
+function chen(before, after, ph){
+  var ta=$('postBody'); var s=ta.selectionStart,e=ta.selectionEnd;
+  var sel=ta.value.substring(s,e)||(ph||'');
+  ta.value=ta.value.substring(0,s)+before+sel+after+ta.value.substring(e);
+  ta.focus(); ta.selectionStart=s+before.length; ta.selectionEnd=s+before.length+sel.length;
+}
+function chonAnhChen(){ $('fileChen').click(); }
+function chonAnhBia(){ $('fileBia').click(); }
+function tenFileAn(name){ return Date.now()+'-'+String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9.\-]+/g,'-').toLowerCase(); }
+async function uploadAnh(file){
+  var path='bang-tin/'+tenFileAn(file.name);
+  var up=await sb.storage.from('hinh-anh').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+  if(up.error) throw new Error(up.error.message);
+  return sb.storage.from('hinh-anh').getPublicUrl(path).data.publicUrl;
+}
+async function chenAnh(file){
+  var st=$('upStatus'); st.textContent='⏳ Đang tải ảnh…';
+  try{ var url=await uploadAnh(file); chen('\n![]('+url+')\n','',''); st.textContent='✓ Đã chèn ảnh.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
+}
+async function taiAnhBia(file){
+  var st=$('upStatus'); st.textContent='⏳ Đang tải ảnh bìa…';
+  try{ var url=await uploadAnh(file); coverUrl=url; veAnhBia(); st.textContent='✓ Đã đặt ảnh bìa.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
+}
+function veAnhBia(){
+  var box=$('coverBox');
+  if(coverUrl){ box.classList.add('has'); $('coverPlaceholder').style.display='none'; var im=$('coverImg'); im.src=coverUrl; im.style.display='block'; $('coverRm').style.display='block'; }
+  else { box.classList.remove('has'); $('coverPlaceholder').style.display='block'; $('coverImg').style.display='none'; $('coverRm').style.display='none'; }
+}
+function xoaAnhBia(ev){ ev.stopPropagation(); coverUrl=''; veAnhBia(); }
+function huySua(){ $('postId').value=''; $('postTitle').value=''; $('postBody').value=''; coverUrl=''; veAnhBia(); $('btnHuySua').style.display='none'; $('composerTitle').textContent='Đăng thông báo mới'; $('btnDang').textContent='🚀 Đăng bài'; }
+function suaBai(id){
+  var p = postsCache.find(function(x){return x.id===id;}); if(!p) return;
+  $('postId').value=p.id; $('postTitle').value=p.title||''; $('postBody').value=p.body||'';
+  coverUrl=p.cover_url||''; veAnhBia();
+  $('composer').classList.add('open'); $('btnHuySua').style.display='inline-flex';
+  $('composerTitle').textContent='Sửa thông báo'; $('btnDang').textContent='💾 Lưu thay đổi';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function dangBai(){
+  var id=$('postId').value;
+  var title=$('postTitle').value.trim();
+  var body=$('postBody').value;
+  if(!title){ alert('Nhập tiêu đề thông báo trước nhé.'); return; }
+  if(!body.trim()){ alert('Nội dung đang trống.'); return; }
+  var btn=$('btnDang'); var old=btn.textContent; btn.disabled=true; btn.textContent='⏳ Đang lưu…';
+  var rec={ class_id:classId, author_id:me.id, author_name:(me.full_name||'Giáo viên'), title:title, body:body, cover_url:coverUrl||null, updated_at:new Date().toISOString() };
+  var r;
+  if(id){ r=await sb.from('class_posts').update(rec).eq('id',id); }
+  else { r=await sb.from('class_posts').insert(rec); }
+  btn.disabled=false; btn.textContent=old;
+  if(r.error){ alert('Lỗi đăng bài: '+r.error.message); return; }
+  huySua();
+  $('composer').classList.remove('open');
+  await taiTatCa();
+}
+async function ghim(id, val){
+  var r=await sb.from('class_posts').update({pinned:val}).eq('id',id);
+  if(r.error){ alert('Lỗi: '+r.error.message); return; }
+  await taiTatCa();
+}
+async function xoaBai(id){
+  if(!confirm('Xoá hẳn thông báo này? Bình luận & lượt tim cũng sẽ mất.')) return;
+  var r=await sb.from('class_posts').delete().eq('id',id);
+  if(r.error){ alert('Lỗi xoá: '+r.error.message); return; }
+  await taiTatCa();
+}
+</script>
+</body>
+</html>
