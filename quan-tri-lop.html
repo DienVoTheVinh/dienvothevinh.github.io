@@ -989,7 +989,8 @@ function chonLopHoc(id) {
   
   // Bộ nhận diện CLB M.A.P
   var isMap = cl.theme === 'map';
-  vmApDungThuongHieuMAP(isMap);
+  if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(isMap);
+  else document.body.classList.toggle('theme-map', isMap);
   var mapBadge = $('detMapBadge');
   if (mapBadge) mapBadge.style.display = isMap ? 'inline-flex' : 'none';
 

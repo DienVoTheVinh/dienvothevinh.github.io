@@ -602,7 +602,8 @@ async function taiChiTietBaiHoc() {
 var laLopMAP = false;
 function apDungThemeLopBaiHoc(theme) {
   laLopMAP = theme === 'map';
-  vmApDungThuongHieuMAP(laLopMAP);
+  if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(laLopMAP);
+  else document.body.classList.toggle('theme-map', laLopMAP);
 }
 
 function extractYoutubeId(url) {

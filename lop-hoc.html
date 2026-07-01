@@ -549,7 +549,8 @@ async function taiBangTinLopHS(classId) {
     var theme = (rc.data && rc.data.theme) || 'vinhmath';
     var isMap = theme === 'map';
     // Áp bộ nhận diện cho toàn trang lớp
-    vmApDungThuongHieuMAP(isMap);
+    if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(isMap);
+    else document.body.classList.toggle('theme-map', isMap);
     var tenLopEl = document.getElementById('tenLop');
     if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
     var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
