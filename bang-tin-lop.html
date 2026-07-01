@@ -240,16 +240,17 @@ function initials(name){ var p=String(name||'?').trim().split(/\s+/); return (p[
 
 function apDungTheme(){
   var isMap = classInfo.theme === 'map';
+  var heroLogo = $('heroLogo'), navLogo = $('navLogo'), navSub = $('navSub'), heroBrand = $('heroBrand');
   if(isMap){
     document.body.classList.add('theme-map');
-    $('heroLogo').src = 'logo/CLB-MAP-logo.png';
-    $('navLogo').src = 'logo/CLB-MAP-logo.png';
-    $('navSub').textContent = '· CLB M.A.P';
-    $('heroBrand').textContent = '⭐ CLB M.A.P · Math And Passion';
+    if(heroLogo) heroLogo.src = 'logo/CLB-MAP-logo.png';
+    if(navLogo) navLogo.src = 'logo/CLB-MAP-logo.png';
+    if(navSub) navSub.textContent = '· CLB M.A.P';
+    if(heroBrand) heroBrand.textContent = '⭐ CLB M.A.P · Math And Passion';
     document.title = 'Bảng tin lớp — CLB M.A.P';
   } else {
-    $('heroLogo').src = 'logo/VinhMath_logo.png';
-    $('heroBrand').textContent = '📘 VinhMath';
+    if(heroLogo) heroLogo.src = 'logo/VinhMath_logo.png';
+    if(heroBrand) heroBrand.textContent = '📘 VinhMath';
   }
 }
 
