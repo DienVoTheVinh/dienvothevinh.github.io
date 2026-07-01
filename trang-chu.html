@@ -947,8 +947,12 @@ async function taiThongBaoLopHS() {
   try {
     var r = await sb.from('class_posts').select('id, class_id, title, author_name, created_at').in('class_id', classIds).order('created_at', { ascending: false }).limit(5);
     var ds = r.data || [];
-    if (!ds.length) return;
     $('khungClassPosts').style.display = 'block';
+    if (!ds.length) {
+      var firstCid = classIds[0];
+      box.innerHTML = '<div style="font-size:.86rem; color:var(--ink-3); line-height:1.5">Chưa có thông báo mới từ lớp. <a href="bang-tin-lop?classId=' + firstCid + '" style="color:var(--accent); text-decoration:underline; font-weight:600">Xem bảng tin lớp →</a></div>';
+      return;
+    }
     box.innerHTML = ds.map(function (p) {
       var ngay = new Date(p.created_at).toLocaleDateString('vi-VN');
       var lop = classNameMap[p.class_id] || 'Lớp';

@@ -193,9 +193,14 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .hub-stat { display:inline-flex; flex-direction:column; align-items:center; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:6px 14px; min-width:64px; }
 .hub-stat b { font-size:1.15rem; }
 .hub-stat span { font-size:.72rem; color:var(--ink-3); }
+/* ===== Theme CLB M.A.P ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+#mapWatermark { display:none; position:fixed; right:1.5vw; bottom:8vh; width:min(300px,30vw); opacity:.05; pointer-events:none; z-index:0; user-select:none; }
+body.theme-map #mapWatermark { display:block; }
 </style>
 </head>
 <body>
+<img id="mapWatermark" src="logo/CLB-MAP-logo.png" alt="">
 
 <div class="lesson-container">
   <header class="topbar-lesson">
@@ -537,8 +542,9 @@ async function taiChiTietBaiHoc() {
 
   // Tải thông tin lớp để kiểm tra đồng giảng dạy
   try {
-    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id').eq('id', details.class_id).single();
+    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id, theme').eq('id', details.class_id).single();
     classInfo = rClass.data;
+    apDungThemeLopBaiHoc(classInfo && classInfo.theme);
   } catch(e) { console.error("Lỗi tải thông tin lớp:", e); }
 
   // Tải bài học tương ứng của giáo viên kia (nếu có)
@@ -594,6 +600,12 @@ async function taiChiTietBaiHoc() {
   renderBaiHoc();
 }
 
+var laLopMAP = false;
+function apDungThemeLopBaiHoc(theme) {
+  laLopMAP = theme === 'map';
+  document.body.classList.toggle('theme-map', laLopMAP);
+}
+
 function extractYoutubeId(url) {
   if (!url) return null;
   var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/);
@@ -622,7 +634,8 @@ function renderBaiHoc() {
   var badgeGv = $('badgeGiaoVien');
   if (badgeGv) {
     var gvName = mapGiaoVien[details.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;">👤 ' + gvName + '</span>';
+    var mapChip = laLopMAP ? '<span class="badge" style="background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:4px; font-weight:700; margin-left:6px; display:inline-flex; align-items:center; gap:4px"><img src="logo/CLB-MAP-logo.png" style="width:14px;height:14px;border-radius:50%;background:#fff">CLB M.A.P</span>' : '';
+    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;">👤 ' + gvName + '</span>' + mapChip;
   }
 
   // Hiển thị banner chuyển đổi bài giảng tương ứng của giáo viên kia (nếu có)

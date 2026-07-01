@@ -111,9 +111,16 @@
   .lop-split { grid-template-columns: 1fr !important; }
   .lop-split .bt-panel { position: static !important; }
 }
+/* ===== Theme CLB M.A.P (khu quản trị) ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+#mapWatermark { display:none; position:fixed; right:2vw; bottom:4vh; width:min(400px,40vw); max-width:400px; opacity:.05; pointer-events:none; z-index:0; user-select:none; }
+body.theme-map #mapWatermark { display:block; }
+body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 </style>
 </head>
 <body>
+<img id="mapWatermark" src="logo/CLB-MAP-logo.png" alt="">
+
 
 <div class="topbar">
   <div class="nav">
@@ -153,6 +160,7 @@
         <div>
           <span class="badge badge-accent" id="detMode">Online</span>
           <span class="badge badge-warn" id="detSpec" style="display:none; margin-left:6px">Chuyên</span>
+          <span id="detMapBadge" style="display:none; margin-left:6px; align-items:center; gap:6px; background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; padding:3px 10px; border-radius:99px; font-size:.72rem; font-weight:800"><img src="logo/CLB-MAP-logo.png" style="width:16px;height:16px;border-radius:50%;background:#fff;vertical-align:middle"> CLB M.A.P</span>
           <h2 id="detTenLop" style="font-size:1.8rem; margin-top:6px">Lớp học</h2>
           <p id="detNienKhoa" style="font-size:.88rem; color:var(--ink-2); margin-top:2px">Niên khóa: 2026-2027</p>
           <p id="detGiaoVien" style="font-size:.88rem; color:var(--ink-2); margin-top:2px"></p>
@@ -980,6 +988,12 @@ function chonLopHoc(id) {
     }
   }
   
+  // Bộ nhận diện CLB M.A.P
+  var isMap = cl.theme === 'map';
+  document.body.classList.toggle('theme-map', isMap);
+  var mapBadge = $('detMapBadge');
+  if (mapBadge) mapBadge.style.display = isMap ? 'inline-flex' : 'none';
+
   napNutMeet(cl.id);
   taiBangTinPanel(cl.id);
   doiPhanHeLop(tabDangChon);

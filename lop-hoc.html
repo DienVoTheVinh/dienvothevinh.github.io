@@ -76,9 +76,19 @@
 .topic-divider { display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); padding: 12px 16px; border-radius: var(--r-md); font-weight: 700; font-size: 0.95rem; text-transform: uppercase; color: var(--ink); border: 1px solid var(--line); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
 .modal-inner { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); max-width: 460px; width: 100%; padding: 32px; text-align: center; position: relative; }
+/* ===== Theme CLB M.A.P ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+#mapWatermark { display:none; position:fixed; right:2vw; bottom:4vh; width:min(420px,42vw); max-width:420px; opacity:.06; pointer-events:none; z-index:0; user-select:none; }
+body.theme-map #mapWatermark { display:block; }
+.map-ribbon { display:none; align-items:center; gap:12px; background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; border-radius:14px; padding:12px 18px; margin-bottom:18px; box-shadow:var(--shadow); }
+body.theme-map .map-ribbon { display:flex; }
+.map-ribbon img { width:44px; height:44px; border-radius:10px; background:#fff; padding:3px; object-fit:contain; flex-shrink:0; }
+.map-ribbon .t b { color:#fff; font-size:1.02rem; font-weight:800; }
+.map-ribbon .t span { display:block; color:#C9A227; font-size:.8rem; font-weight:700; margin-top:1px; }
 </style>
 </head>
 <body>
+<img id="mapWatermark" src="logo/CLB-MAP-logo.png" alt="">
 
 <div class="topbar">
   <div class="nav">
@@ -169,6 +179,12 @@
       
       <!-- Bộ chọn lớp học của học sinh (tab button) -->
       <div class="class-tabs" id="tabLopHocSinh" style="display:none; margin-bottom:20px;"></div>
+
+      <!-- Ruy băng CLB M.A.P (chỉ hiện khi lớp dùng theme M.A.P) -->
+      <div class="map-ribbon" id="mapRibbon">
+        <img src="logo/CLB-MAP-logo.png" alt="M.A.P">
+        <div class="t"><b>CLB M.A.P</b><span>Math And Passion · Thầy Điền Võ Thế Vinh &amp; Thầy Đậu Văn Huy Hoàng</span></div>
+      </div>
 
       <!-- Bảng tin lớp (liên kết) -->
       <div id="btLopBox" style="display:none; margin-bottom:18px"></div>
@@ -533,6 +549,10 @@ async function taiBangTinLopHS(classId) {
     var rc = await sb.from('classes').select('theme, name').eq('id', classId).maybeSingle();
     var theme = (rc.data && rc.data.theme) || 'vinhmath';
     var isMap = theme === 'map';
+    // Áp bộ nhận diện cho toàn trang lớp
+    document.body.classList.toggle('theme-map', isMap);
+    var tenLopEl = document.getElementById('tenLop');
+    if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
     var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
     if (selectedClassId !== classId) return;
     var ds = rp.data || [];
