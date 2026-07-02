@@ -572,6 +572,13 @@ async function taoTaiKhoanHSPH() {
     var data = r.data || {};
     if (r.error || data.error) {
       var em = data.error || (r.error && r.error.message) || 'Lỗi không xác định';
+      // supabase-js bọc lỗi non-2xx; message thật nằm trong body response
+      try {
+        if (r.error && r.error.context && typeof r.error.context.json === 'function') {
+          var body = await r.error.context.json();
+          if (body && body.error) em = body.error;
+        }
+      } catch (e) {}
       ttBao('❌ ' + em);
       btn.disabled = false; btn.textContent = 'Tạo tài khoản';
       return;
