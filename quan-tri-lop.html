@@ -114,6 +114,8 @@
 /* ===== Theme CLB M.A.P (khu quản trị) ===== */
 body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
 .classroom-card-head .badge, #detMapBadge { vertical-align: middle; }
+/* Trợ giảng: ẩn các nút quản trị lớp (tạo/sửa/xoá) */
+body.vai-tro-tg .chi-ql { display: none !important; }
 #mapWatermark { display:none; position:fixed; right:2vw; bottom:4vh; width:min(400px,40vw); max-width:400px; opacity:.05; pointer-events:none; z-index:0; user-select:none; }
 body.theme-map #mapWatermark { display:block; }
 body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
@@ -143,7 +145,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <p style="margin-top:6px">Tạo/xóa khối lớp và các lớp học. Xem danh sách bài giảng, học sinh tương ứng trong từng lớp.</p>
     </div>
     <div style="display:flex; gap:10px">
-      <button class="btn btn-secondary btn-sm chi-gv" onclick="moFormLop()">+ Tạo lớp mới</button>
+      <button class="btn btn-secondary btn-sm chi-gv chi-ql" onclick="moFormLop()">+ Tạo lớp mới</button>
     </div>
   </div>
 
@@ -169,8 +171,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <a class="btn btn-primary btn-sm" id="nutMeetLop" href="#" target="_blank" style="display:none">🎥 Vào phòng Meet</a>
           <a class="btn btn-ghost btn-sm" id="nutChuaMeet" href="quan-tri-lich" style="display:none" title="Lớp chưa có link Meet — bấm để cài trong trang Lịch & QR">＋ Gắn link Meet</a>
           <button class="btn btn-secondary btn-sm chi-gv" onclick="moNhacNho('class')">🔔 Nhắc cả lớp</button>
-          <button class="btn btn-secondary btn-sm chi-gv" onclick="moFormSuaLop()">✏️ Sửa lớp</button>
-          <button class="btn btn-secondary btn-sm chi-gv" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
+          <button class="btn btn-secondary btn-sm chi-gv chi-ql" onclick="moFormSuaLop()">✏️ Sửa lớp</button>
+          <button class="btn btn-secondary btn-sm chi-gv chi-ql" style="color:var(--err)" onclick="xoaLopHocCurrent()">Xoá lớp này</button>
         </div>
       </div>
 
@@ -205,6 +207,9 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 
       <!-- Tab Học sinh -->
       <div id="phanHeStudents" style="display:none; flex-direction:column; gap:12px">
+
+        <!-- Trợ giảng của lớp -->
+        <div id="troGiangCard"></div>
 
         <!-- Theo dõi điểm danh & nhận xét hôm nay -->
         <div class="card" style="padding:16px 18px;">
@@ -920,8 +925,14 @@ async function loadingSidebar() {
   dsLop = r.data || [];
   
   if (hoSoNguoiDung && hoSoNguoiDung.role !== 'admin') {
+    var myAssistantIds = [];
+    try {
+      var ra = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSoNguoiDung.id);
+      myAssistantIds = (ra.data || []).map(function (x) { return x.class_id; });
+    } catch (e) {}
+    window.myAssistantClassIds = myAssistantIds;
     dsLop = dsLop.filter(function (l) {
-      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id;
+      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id || myAssistantIds.indexOf(l.id) !== -1;
     });
   }
   
@@ -997,7 +1008,77 @@ function chonLopHoc(id) {
 
   napNutMeet(cl.id);
   taiBangTinPanel(cl.id);
+  taiTroGiang(cl.id);
   doiPhanHeLop(tabDangChon);
+}
+
+/* ===== Trợ giảng của lớp ===== */
+function laQuanLyLop() {
+  var me = hoSoNguoiDung;
+  return me && (me.role === 'admin' || (classDangChon && (classDangChon.teacher_id === me.id || classDangChon.co_teacher_id === me.id)));
+}
+async function taiTroGiang(classId) {
+  var box = $('troGiangCard');
+  if (!box) return;
+  var canManage = laQuanLyLop();
+  var r = await sb.from('class_assistants').select('assistant_id').eq('class_id', classId);
+  if (!classDangChon || classDangChon.id !== classId) return;
+  var ids = (r.data || []).map(function (x) { return x.assistant_id; });
+  var profs = {};
+  if (ids.length) {
+    var rp = await sb.from('profiles').select('id, full_name, username, role').in('id', ids);
+    (rp.data || []).forEach(function (p) { profs[p.id] = p; });
+  }
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[<>&"]/g, ''); };
+  var listHtml = ids.length ? ids.map(function (id) {
+    var p = profs[id] || {};
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:4px 6px 4px 12px;font-size:.85rem;margin:0 6px 6px 0">' +
+      '🤝 <b>' + esc(p.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.78rem">@' + esc(p.username || '') + '</span>' +
+      (canManage ? '<button title="Gỡ khỏi lớp" onclick="xoaTroGiang(\'' + id + '\')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-weight:800;font-size:1.05rem;line-height:1;padding:0 2px">×</button>' : '') +
+      '</span>';
+  }).join('') : '<span style="color:var(--ink-3);font-size:.86rem">Chưa có trợ giảng nào cho lớp này.</span>';
+  var addHtml = canManage ? '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">' +
+      '<input class="input" id="tgUsername" placeholder="Nhập username tài khoản trợ giảng…" style="flex:1;min-width:220px;font-size:.88rem" onkeydown="if(event.key===\'Enter\')themTroGiang()">' +
+      '<button class="btn btn-primary btn-sm" id="tgAddBtn" onclick="themTroGiang()">+ Thêm trợ giảng</button>' +
+    '</div>' +
+    '<div id="tgTrangThai" style="font-size:.82rem;margin-top:6px"></div>' +
+    '<div style="font-size:.76rem;color:var(--ink-3);margin-top:4px">Trợ giảng được giúp <b>điểm danh, nhận xét, chấm điểm</b> cho lớp này. Nhập username tài khoản đã có — hệ thống sẽ tự cấp quyền Trợ giảng.</div>'
+    : '';
+  box.innerHTML = '<div class="card" style="padding:16px 18px">' +
+    '<h3 style="font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:6px">🤝 Trợ giảng của lớp</h3>' +
+    '<div style="display:flex;flex-wrap:wrap;align-items:center">' + listHtml + '</div>' +
+    addHtml +
+    '</div>';
+}
+async function themTroGiang() {
+  var u = $('tgUsername').value.trim().replace(/^@/, '');
+  var tt = $('tgTrangThai');
+  if (!u) { tt.textContent = 'Nhập username trước nhé.'; tt.style.color = 'var(--warn)'; return; }
+  if (!laQuanLyLop()) { tt.textContent = 'Bạn không có quyền thêm trợ giảng cho lớp này.'; tt.style.color = 'var(--err)'; return; }
+  var btn = $('tgAddBtn'); btn.disabled = true; var old = btn.textContent; btn.textContent = '⏳ Đang thêm…';
+  try {
+    var rp = await sb.from('profiles').select('id, full_name, username, role').eq('username', u).maybeSingle();
+    if (rp.error) throw new Error(rp.error.message);
+    if (!rp.data) throw new Error('Không tìm thấy tài khoản @' + u);
+    var prof = rp.data;
+    if (prof.id === classDangChon.teacher_id || prof.id === classDangChon.co_teacher_id) throw new Error('Tài khoản này đã là giáo viên của lớp.');
+    if (['student', 'parent'].indexOf(prof.role) !== -1) {
+      var ru = await sb.from('profiles').update({ role: 'assistant' }).eq('id', prof.id);
+      if (ru.error) throw new Error('Không cấp được quyền trợ giảng: ' + ru.error.message);
+    }
+    var ri = await sb.from('class_assistants').insert({ class_id: classDangChon.id, assistant_id: prof.id });
+    if (ri.error) { if (ri.error.code === '23505') throw new Error('Trợ giảng này đã có trong lớp.'); throw new Error(ri.error.message); }
+    tt.textContent = '✓ Đã thêm ' + (prof.full_name || u) + ' làm trợ giảng lớp.'; tt.style.color = 'var(--ok)';
+    $('tgUsername').value = '';
+    taiTroGiang(classDangChon.id);
+  } catch (e) { tt.textContent = 'Lỗi: ' + e.message; tt.style.color = 'var(--err)'; }
+  btn.disabled = false; btn.textContent = old;
+}
+async function xoaTroGiang(assistantId) {
+  if (!confirm('Gỡ trợ giảng này khỏi lớp? (Tài khoản vẫn còn, chỉ bỏ khỏi lớp này)')) return;
+  var r = await sb.from('class_assistants').delete().eq('class_id', classDangChon.id).eq('assistant_id', assistantId);
+  if (r.error) { alert('Lỗi gỡ trợ giảng: ' + r.error.message); return; }
+  taiTroGiang(classDangChon.id);
 }
 
 /* ===== Panel Bảng tin lớp (trong khu Bài giảng) ===== */
