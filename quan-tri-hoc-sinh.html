@@ -75,6 +75,7 @@ td, th { font-size: .88rem; }
     <div class="sec-label">Khu vực quản trị</div>
     <h1>Quản lý học sinh</h1>
     <p style="margin-top:6px">Toàn cảnh từng em: truy cập web khi nào, học bao lâu, chuyên cần và điểm số.</p>
+    <button class="btn btn-primary" onclick="moTaoTK()" style="margin-top:12px">➕ Tạo tài khoản HS + PH</button>
   </div>
 
   <div class="stat-strip">
@@ -121,6 +122,51 @@ td, th { font-size: .88rem; }
     <button class="modal-close" onclick="$('modalPhien').style.display='none'">×</button>
     <h2 style="font-size:1.2rem" id="phTieuDe">Lịch sử truy cập</h2>
     <div id="phDanhSach" style="margin-top:14px; display:flex; flex-direction:column; gap:8px"></div>
+  </div>
+</div>
+
+<!-- Modal Tạo tài khoản HS + PH -->
+<div class="modal" id="modalTaoTK">
+  <div class="modal-content" style="max-width: 480px;">
+    <button class="modal-close" onclick="$('modalTaoTK').style.display='none'">×</button>
+    <h2 style="font-size:1.2rem">➕ Tạo tài khoản Học sinh + Phụ huynh</h2>
+    <p style="color:var(--ink-3); font-size:.85rem; margin-top:6px">Hệ thống tạo cùng lúc 1 tài khoản HS và 1 tài khoản PH liên kết với nhau. Tên đăng nhập tự sinh từ họ tên.</p>
+
+    <div style="margin-top:18px; display:flex; flex-direction:column; gap:14px;">
+      <div class="field">
+        <label style="font-weight:600; font-size:.9rem; margin-bottom:6px; display:block;">Họ và tên học sinh</label>
+        <input class="input" id="ttHoTen" placeholder="Ví dụ: Mai Nguyễn Thùy Dương" style="width:100%" oninput="ttXemTruoc()">
+      </div>
+
+      <div style="background:var(--surface-2); border-radius:10px; padding:10px 12px; font-size:.82rem; line-height:1.6">
+        <div>🎓 Đăng nhập HS: <b id="ttPreviewHS" style="color:var(--accent); font-family:monospace">—</b></div>
+        <div>👪 Đăng nhập PH: <b id="ttPreviewPH" style="color:var(--accent); font-family:monospace">—</b></div>
+      </div>
+
+      <div class="field">
+        <label style="font-weight:600; font-size:.9rem; margin-bottom:6px; display:block;">Mật khẩu học sinh <span style="color:var(--ink-3); font-weight:400">(tối thiểu 6 ký tự)</span></label>
+        <input class="input" id="ttMkHS" type="text" placeholder="Mật khẩu cho tài khoản HS" style="width:100%">
+      </div>
+
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:8px; font-size:.88rem; cursor:pointer">
+          <input type="checkbox" id="ttDungChung" checked onchange="ttToggleMkPH()" style="width:16px;height:16px;accent-color:var(--accent)">
+          Phụ huynh dùng chung mật khẩu với học sinh
+        </label>
+      </div>
+
+      <div class="field" id="ttFieldMkPH" style="display:none">
+        <label style="font-weight:600; font-size:.9rem; margin-bottom:6px; display:block;">Mật khẩu phụ huynh</label>
+        <input class="input" id="ttMkPH" type="text" placeholder="Mật khẩu cho tài khoản PH" style="width:100%">
+      </div>
+
+      <div id="ttThongBao" style="display:none; font-size:.85rem; padding:10px 12px; border-radius:9px"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+        <button class="btn btn-secondary" onclick="$('modalTaoTK').style.display='none'">Hủy</button>
+        <button class="btn btn-primary" id="ttNutTao" onclick="taoTaiKhoanHSPH()">Tạo tài khoản</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -464,6 +510,78 @@ async function luuNhanXetPH() {
     btn.disabled = false;
     btn.textContent = 'Lưu thay đổi';
     veBang();
+  }
+}
+
+/* ===== Tạo tài khoản HS + PH ===== */
+function ttSlug(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function moTaoTK() {
+  $('ttHoTen').value = '';
+  $('ttMkHS').value = '';
+  $('ttMkPH').value = '';
+  $('ttDungChung').checked = true;
+  $('ttFieldMkPH').style.display = 'none';
+  $('ttThongBao').style.display = 'none';
+  ttXemTruoc();
+  $('modalTaoTK').style.display = 'flex';
+}
+
+function ttToggleMkPH() {
+  $('ttFieldMkPH').style.display = $('ttDungChung').checked ? 'none' : 'block';
+}
+
+function ttXemTruoc() {
+  var u = ttSlug($('ttHoTen').value);
+  $('ttPreviewHS').textContent = u ? (u + '@hs.vinhmath') : '—';
+  $('ttPreviewPH').textContent = u ? (u + '_ph@ph.vinhmath') : '—';
+}
+
+function ttBao(msg, loai) {
+  var el = $('ttThongBao');
+  el.style.display = 'block';
+  el.innerHTML = msg;
+  if (loai === 'ok') { el.style.background = 'var(--ok-soft, rgba(40,167,69,.12))'; el.style.color = 'var(--ok)'; }
+  else { el.style.background = 'rgba(220,53,69,.12)'; el.style.color = 'var(--err)'; }
+}
+
+async function taoTaiKhoanHSPH() {
+  var fullName = $('ttHoTen').value.trim();
+  var username = ttSlug(fullName);
+  var hsMk = $('ttMkHS').value;
+  var phMk = $('ttDungChung').checked ? hsMk : $('ttMkPH').value;
+
+  if (!fullName) { ttBao('Vui lòng nhập họ tên học sinh.'); return; }
+  if (!username) { ttBao('Họ tên không hợp lệ (không tạo được tên đăng nhập).'); return; }
+  if (hsMk.length < 6) { ttBao('Mật khẩu học sinh tối thiểu 6 ký tự.'); return; }
+  if (phMk.length < 6) { ttBao('Mật khẩu phụ huynh tối thiểu 6 ký tự.'); return; }
+
+  var btn = $('ttNutTao');
+  btn.disabled = true;
+  btn.textContent = 'Đang tạo…';
+  ttBao('Đang tạo tài khoản…', 'ok');
+
+  try {
+    var r = await sb.functions.invoke('tao-tai-khoan', {
+      body: { fullName: fullName, username: username, hsPassword: hsMk, phPassword: phMk }
+    });
+    var data = r.data || {};
+    if (r.error || data.error) {
+      var em = data.error || (r.error && r.error.message) || 'Lỗi không xác định';
+      ttBao('❌ ' + em);
+      btn.disabled = false; btn.textContent = 'Tạo tài khoản';
+      return;
+    }
+    ttBao('✅ Đã tạo xong!<br>🎓 HS: <b>' + data.student.email.replace('.com', '') + '</b><br>👪 PH: <b>' + data.parent.email.replace('.com', '') + '</b><br>Đã liên kết PH ↔ HS. Nhớ gửi mật khẩu cho gia đình.', 'ok');
+    btn.disabled = false; btn.textContent = 'Tạo tài khoản';
+    if (typeof taiTatCa === 'function') taiTatCa();
+  } catch (e) {
+    ttBao('❌ ' + (e.message || e));
+    btn.disabled = false; btn.textContent = 'Tạo tài khoản';
   }
 }
 </script>
