@@ -876,7 +876,15 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     $('staffHomeContainer').style.display = 'block';
     $('staffChecklistContainer').style.display = 'block';
     khoiTaoChecklistStaff();
-    
+
+    window.myAssistantClassIds = [];
+    if (hoSo.role === 'assistant') {
+      try {
+        var raTG = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSo.id);
+        window.myAssistantClassIds = (raTG.data || []).map(function (x) { return x.class_id; });
+      } catch (e) {}
+    }
+
     await taiSchedulesVaExamsStaff();
     await veLichDayStaff();
   } else {
@@ -1423,7 +1431,7 @@ async function veLichDayStaff() {
   if (isStaff) {
     displaySchedules = tatCaSchedules.filter(function (s) {
       if (!s.classes) return false;
-      var isAssigned = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+      var isAssigned = (s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id)) || (window.myAssistantClassIds && window.myAssistantClassIds.indexOf(s.class_id) !== -1);
       if (hoSoNguoiDung.role === 'admin') {
         var isUnassigned = !s.teacher_id && !s.classes.teacher_id;
         return isAssigned || isUnassigned;
@@ -1807,7 +1815,7 @@ function gcalEventsForDay(dt, filterPersonal) {
     // Lọc lịch cá nhân cho giáo viên/trợ giảng
     if (isStaff && filterPersonal) {
       if (!s.classes) return;
-      var isAssigned = s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id);
+      var isAssigned = (s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id)) || (window.myAssistantClassIds && window.myAssistantClassIds.indexOf(s.class_id) !== -1);
       if (hoSoNguoiDung.role === 'admin') {
         var isUnassigned = !s.teacher_id && !s.classes.teacher_id;
         if (!isAssigned && !isUnassigned) return;
@@ -1865,7 +1873,7 @@ function gcalEventsForDay(dt, filterPersonal) {
     if (isStaff && filterPersonal) {
       var cls = tatCaLop.find(function(c) { return c.id === e.class_id; });
       if (!cls) return;
-      var isAssigned = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id;
+      var isAssigned = cls.teacher_id === hoSoNguoiDung.id || cls.co_teacher_id === hoSoNguoiDung.id || (window.myAssistantClassIds && window.myAssistantClassIds.indexOf(cls.id) !== -1);
       if (hoSoNguoiDung.role === 'admin') {
         var isUnassigned = !cls.teacher_id;
         if (!isAssigned && !isUnassigned) return;
