@@ -211,8 +211,29 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <!-- Trợ giảng của lớp -->
         <div id="troGiangCard"></div>
 
-        <!-- Theo dõi điểm danh & nhận xét hôm nay -->
-        <div class="card" style="padding:16px 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
+          <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
+          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
+        </div>
+        <div class="card" style="padding:0; overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Học sinh</th>
+                <th>Tên đăng nhập</th>
+                <th>SĐT phụ huynh</th>
+                <th>Email</th>
+                <th>Trường học</th>
+                <th>📖 Lý thuyết</th>
+                <th style="text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="dsHocSinhLop"></tbody>
+          </table>
+        </div>
+
+        <!-- Theo dõi điểm danh & nhận xét hôm nay (đặt ở dưới cùng của lớp) -->
+        <div class="card" style="padding:16px 18px; margin-top:10px;">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <h3 style="font-size:1.05rem; margin:0;">📋 Theo dõi điểm danh &amp; nhận xét</h3>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -257,27 +278,6 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
               <tbody id="ddRoster"><tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr></tbody>
             </table>
           </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
-          <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
-          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
-        </div>
-        <div class="card" style="padding:0; overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Học sinh</th>
-                <th>Tên đăng nhập</th>
-                <th>SĐT phụ huynh</th>
-                <th>Email</th>
-                <th>Trường học</th>
-                <th>📖 Lý thuyết</th>
-                <th style="text-align:right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="dsHocSinhLop"></tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -1451,9 +1451,11 @@ async function taiStudentsLop() {
   
   if (!students.length) {
     $('dsHocSinhLop').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
+    ddStudentsCache = [];
+    taiBuoiTheoDoi();
     return;
   }
-  
+
   $('dsHocSinhLop').innerHTML = students.map(function (s) {
     var completedCount = 0;
     if (tpLessons.length > 0 && tpProgMap[s.id]) {
@@ -1510,12 +1512,14 @@ function ddEsc(s) {
 async function taiBuoiTheoDoi() {
   var sel = $('ddSessionSel');
   if (!sel || !classDangChon) return;
+  var cid = classDangChon.id;
   var r = await sb.from('class_sessions')
     .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open')
-    .eq('class_id', classDangChon.id)
+    .eq('class_id', cid)
     .order('held_on', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(60);
+  if (!classDangChon || classDangChon.id !== cid) return; // đã chuyển lớp khác
   var ds = r.data || [];
   ddSessionsMap = {};
   ds.forEach(function (b) { ddSessionsMap[b.id] = b; });
