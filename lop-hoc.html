@@ -44,6 +44,32 @@
 .greet p{margin-top:6px}
 .stats{padding:24px 0 8px}
 .lessons{padding:32px 0}
+/* ===== Accordion chuyên đề → bài → mục con + vòng % ===== */
+.lh-topic{border:1px solid var(--line);border-radius:var(--r-md,12px);margin-bottom:14px;overflow:hidden;background:var(--surface)}
+.lh-topic-hd{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;user-select:none;border-left:5px solid var(--accent)}
+.lh-topic-hd .nm{font-weight:800;font-size:.95rem;text-transform:uppercase;color:var(--ink);line-height:1.3}
+.lh-topic-hd .cnt{font-size:.78rem;color:var(--ink-3);margin-top:2px}
+.lh-topic-hd .car{margin-left:auto;color:var(--ink-3);font-size:.8rem;transition:transform .2s}
+.lh-topic.open>.lh-topic-hd .car{transform:rotate(90deg)}
+.lh-topic-body{display:none;border-top:1px solid var(--line)}
+.lh-topic.open>.lh-topic-body{display:block}
+.lh-bai{border-bottom:1px solid var(--line)}
+.lh-bai:last-child{border-bottom:none}
+.lh-bai-hd{display:flex;align-items:center;gap:14px;padding:12px 18px;cursor:pointer}
+.lh-bai-hd:hover{background:var(--surface-2)}
+.lh-bai-hd .tt{flex:1;min-width:0}
+.lh-bai-hd .tt h4{margin:0;font-size:.94rem;font-weight:700;color:var(--ink);line-height:1.35}
+.lh-bai-hd .tt .meta{font-size:.76rem;color:var(--ink-3);margin-top:3px}
+.lh-bai-hd .car2{color:var(--ink-3);font-size:.72rem;transition:transform .2s}
+.lh-bai.open>.lh-bai-hd .car2{transform:rotate(90deg)}
+.lh-sub{display:none;background:var(--surface-2);padding:4px 0 10px}
+.lh-bai.open>.lh-sub{display:block}
+.lh-sub a{display:flex;align-items:center;gap:10px;padding:9px 18px 9px 60px;text-decoration:none;color:var(--ink-2);font-size:.88rem}
+.lh-sub a:hover{background:var(--surface);color:var(--ink)}
+.lh-sub a .tk{margin-left:auto;font-size:.8rem;color:var(--ink-3)}
+.lh-sub a.done{color:var(--ok,#28a745)}
+.lh-sub a.done .tk{color:var(--ok,#28a745)}
+@media(max-width:560px){.lh-bai-hd .btn{display:none}.lh-sub a{padding-left:44px}}
 .lesson{display:flex;flex-direction:column;overflow:hidden;padding:0;transition:all .3s ease;border:1px solid var(--line)}
 .lesson:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:var(--shadow); }
 .lesson .thumb{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);position:relative}
@@ -195,7 +221,7 @@ body.theme-map .map-ribbon { display:flex; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.7"></script>
+<script src="js/vinhmath.js?v=4.8"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -529,15 +555,37 @@ async function taiLessonsHocSinh() {
   
   // Tải các bài học đã xuất bản của lớp đang chọn
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, topics(id, name, color, sort, is_specialized)')
+    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path)')
     .eq('class_id', selectedClassId)
     .eq('published', true);
-    
+
   var ds = r.data || [];
   window.newestLessonIds = xacDinhIdsBaiMoiNhat(ds);
+  await taiTienDoLopHoc(ds);
   hienThiLessonsGomNhom(ds);
   taiBangTinLopHS(selectedClassId);
 }
+
+// Tải tiến độ mục con của học sinh cho toàn bộ bài trong lớp
+var lopViewed = {}, lopAction = {};
+async function taiTienDoLopHoc(ds) {
+  lopViewed = {}; lopAction = {};
+  try {
+    var u = await sb.auth.getUser();
+    var uid = (u && u.data && u.data.user) ? u.data.user.id : null;
+    if (!uid) return;
+    var ids = (ds || []).map(function (b) { return b.id; });
+    if (!ids.length) return;
+    var rv = await sb.from('lesson_item_progress').select('lesson_id, item').eq('student_id', uid).in('lesson_id', ids);
+    (rv.data || []).forEach(function (x) { (lopViewed[x.lesson_id] = lopViewed[x.lesson_id] || new Set()).add(x.item); });
+    var rs = await sb.from('submissions').select('lesson_id, kind').eq('student_id', uid).in('lesson_id', ids);
+    (rs.data || []).forEach(function (x) { (lopAction[x.lesson_id] = lopAction[x.lesson_id] || new Set()).add(x.kind === 'homework' ? 'btvn' : 'test'); });
+    var ra = await sb.from('attempts').select('lesson_id').eq('student_id', uid).in('lesson_id', ids).not('submitted_at', 'is', null);
+    (ra.data || []).forEach(function (x) { (lopAction[x.lesson_id] = lopAction[x.lesson_id] || new Set()).add('test'); });
+  } catch (e) {}
+}
+function lhToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
+function lhEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
 /* ===== Bảng tin lớp cho học sinh (banner liên kết + xem trước) ===== */
 async function taiBangTinLopHS(classId) {
@@ -628,67 +676,57 @@ function hienThiLessonsGomNhom(ds) {
   }
   
   function veGomNhomChuyenDe(list) {
-    var groups = {};
-    var topicOrder = [];
-    var noTopicLessons = [];
-    
+    var groups = {}, topicOrder = [], noTopicLessons = [];
     list.forEach(function (b) {
       if (b.topics) {
-        var tName = b.topics.name || 'Chuyên đề';
-        var tId = b.topics.id || tName;
-        if (!groups[tId]) {
-          groups[tId] = {
-            topic: b.topics,
-            lessons: []
-          };
-          topicOrder.push(groups[tId]);
-        }
+        var tId = b.topics.id || b.topics.name || 'Chuyên đề';
+        if (!groups[tId]) { groups[tId] = { topic: b.topics, lessons: [] }; topicOrder.push(groups[tId]); }
         groups[tId].lessons.push(b);
-      } else {
-        noTopicLessons.push(b);
-      }
+      } else { noTopicLessons.push(b); }
     });
-    
-    topicOrder.sort(function (a, b) {
-      return (a.topic.sort || 0) - (b.topic.sort || 0);
-    });
-    
-    topicOrder.forEach(function (g) {
-      g.lessons.sort(function (a, b) {
-        return (b.sort || 0) - (a.sort || 0);
-      });
-    });
-    
-    noTopicLessons.sort(function (a, b) {
-      return (b.sort || 0) - (a.sort || 0);
-    });
-    
-    var subHtml = '';
-    
-    topicOrder.forEach(function (g) {
-      var tColor = g.topic.color || 'var(--accent)';
-      var tName = g.topic.name || 'Chuyên đề';
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 20px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid ' + tColor + '">' +
-        '<span>📚 ' + tName + '</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
+    topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
+    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
+    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+
+    var blocks = topicOrder.slice();
+    if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác', color: '#A8A29A' }, lessons: noTopicLessons });
+
+    var stt = 1;
+    return blocks.map(function (g, idx) {
+      var isNone = g.topic.name === 'Bài giảng khác';
+      var ten = isNone ? 'Bài giảng khác' : ('Chuyên đề ' + (stt++) + ': ' + (g.topic.name || 'Chuyên đề'));
+      var mau = g.topic.color || 'var(--accent)';
+      var tongPct = 0, coTd = 0;
+      var baiHtml = g.lessons.map(function (b) {
+        var td = vmTinhTienDoBai(b, lopViewed[b.id], lopAction[b.id]);
+        if (td.total) { tongPct += td.percent; coTd++; }
+        var ring = vmVongTienDo(td.total ? td.percent : 0, 42, 5);
+        var glit = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' <span title="Mới nhất">✨</span>' : '';
+        var subs = td.items.map(function (it) {
+          return '<a class="' + (it.done ? 'done' : '') + '" href="bai-hoc?id=' + b.id + '&tab=' + it.tab + '">' +
+            '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
+            '<span class="tk">' + (it.done ? '✓ đã xong' : 'chưa học') + '</span></a>';
+        }).join('');
+        if (!subs) subs = '<a href="bai-hoc?id=' + b.id + '"><span>📄</span><span>Vào học bài này</span></a>';
+        return '<div class="lh-bai">' +
+          '<div class="lh-bai-hd" onclick="lhToggle(this)">' + ring +
+            '<div class="tt"><h4>' + lhEsc(b.title) + glit + '</h4><div class="meta">' + td.done + '/' + td.total + ' mục · ' + td.percent + '% hoàn thành</div></div>' +
+            '<a class="btn btn-primary btn-sm" href="bai-hoc?id=' + b.id + '" onclick="event.stopPropagation()">Vào học</a>' +
+            '<span class="car2">▶</span>' +
+          '</div>' +
+          '<div class="lh-sub">' + subs + '</div>' +
         '</div>';
-      
-      subHtml += '<div class="grid grid-2" style="margin-bottom:20px">' +
-        g.lessons.map(theBaiHoc).join('') +
-        '</div>';
-    });
-    
-    if (noTopicLessons.length > 0) {
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 20px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid #A8A29A">' +
-        '<span>📎 BÀI GIẢNG KHÁC / TỰ DO</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
-        '</div>';
-        
-      subHtml += '<div class="grid grid-2" style="margin-bottom:20px">' +
-        noTopicLessons.map(theBaiHoc).join('') +
-        '</div>';
-    }
-    return subHtml;
+      }).join('');
+      var avg = coTd ? Math.round(tongPct / coTd) : 0;
+      var openC = idx === 0 ? ' open' : '';
+      return '<div class="lh-topic' + openC + '">' +
+        '<div class="lh-topic-hd" style="border-left-color:' + mau + '" onclick="lhToggle(this)">' + vmVongTienDo(avg, 40, 5) +
+          '<div style="min-width:0"><div class="nm">' + lhEsc(ten) + '</div><div class="cnt">' + g.lessons.length + ' bài giảng · ' + avg + '% hoàn thành</div></div>' +
+          '<span class="car">▶</span>' +
+        '</div>' +
+        '<div class="lh-topic-body">' + baiHtml + '</div>' +
+      '</div>';
+    }).join('');
   }
 
   var currentClass = selectedClassId ? dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; }) : null;

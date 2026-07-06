@@ -54,6 +54,27 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sb-item:hover { background:var(--surface-2); color:var(--ink); }
 .sb-item.current { background:var(--accent-soft); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
 .sb-item .lock { font-size:.75rem; margin-left:4px; }
+/* ===== Mục lục accordion (chuyên đề → bài → mục con + vòng %) ===== */
+.ml-topic { border-bottom:1px solid var(--line); }
+.ml-topic-hd { display:flex; align-items:center; gap:8px; padding:11px 16px; cursor:pointer; font-size:.75rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); user-select:none; }
+.ml-topic-hd .tcount { margin-left:auto; font-size:.7rem; font-weight:600; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 8px; }
+.ml-topic-hd .caret { font-size:.7rem; color:var(--ink-3); transition:transform .2s; }
+.ml-topic.open > .ml-topic-hd .caret { transform:rotate(90deg); }
+.ml-topic-body { display:none; padding-bottom:4px; }
+.ml-topic.open > .ml-topic-body { display:block; }
+.ml-bai-hd { display:flex; align-items:center; gap:9px; padding:8px 12px 8px 16px; cursor:pointer; color:var(--ink-2); font-size:.85rem; line-height:1.35; border-left:3px solid transparent; }
+.ml-bai-hd:hover { background:var(--surface-2); color:var(--ink); }
+.ml-bai.current > .ml-bai-hd { background:var(--accent-soft); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
+.ml-bai-hd .ten { flex:1; overflow:hidden; }
+.ml-bai-hd .lock { font-size:.72rem; }
+.ml-bai-hd .caret2 { font-size:.62rem; color:var(--ink-3); transition:transform .2s; }
+.ml-bai.open > .ml-bai-hd .caret2 { transform:rotate(90deg); }
+.ml-sub { display:none; }
+.ml-bai.open > .ml-sub { display:block; }
+.ml-sub a { display:flex; align-items:center; gap:8px; padding:6px 16px 6px 44px; font-size:.82rem; color:var(--ink-2); text-decoration:none; cursor:pointer; }
+.ml-sub a:hover { background:var(--surface-2); color:var(--ink); }
+.ml-sub a .tick { margin-left:auto; font-size:.82rem; color:var(--ink-3); }
+.ml-sub a.done .tick { color:var(--ok, #28a745); }
 
 /* Vùng làm việc */
 .workspace { display:flex; flex:1; min-width:0; background:var(--surface-2); }
@@ -324,7 +345,7 @@ body.theme-map #mapWatermark { display:block; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.7"></script>
+<script src="js/vinhmath.js?v=4.8"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -482,14 +503,17 @@ async function guiBaiNop() {
   nut.disabled = false; nut.textContent = 'Gửi bài cho thầy';
 }
 
-/* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
+/* ===== MỤC LỤC BÊN TRÁI: accordion chuyên đề → bài → mục con + vòng % ===== */
+var mlTopicMo = null, mlBaiMo = null;
+
+function mlEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
 async function taiMucLuc() {
-  // Xác định lớp của bài đang xem để mục lục chỉ hiện bài giảng của ĐÚNG lớp đó
   var rCur = await sb.from('lessons').select('class_id').eq('id', lessonId).maybeSingle();
   var classIdHienTai = rCur.data ? rCur.data.class_id : null;
 
   var q = sb.from('lessons')
-    .select('id, title, sort, locked, class_id, topics(name, color), classes(name)')
+    .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
     .order('sort', { ascending: false });
   if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
   var r = await q;
@@ -498,28 +522,105 @@ async function taiMucLuc() {
     $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';
     return;
   }
-  // Gom nhóm theo chuyên đề
-  var nhom = {}, mauNhom = {};
+
+  // Tiến độ của học sinh
+  var viewedByLesson = {}, actionByLesson = {};
+  if (nguoiDung) {
+    var ids = ds.map(function (b) { return b.id; });
+    try {
+      var rv = await sb.from('lesson_item_progress').select('lesson_id, item').eq('student_id', nguoiDung.id).in('lesson_id', ids);
+      (rv.data || []).forEach(function (x) { (viewedByLesson[x.lesson_id] = viewedByLesson[x.lesson_id] || new Set()).add(x.item); });
+      var rs = await sb.from('submissions').select('lesson_id, kind').eq('student_id', nguoiDung.id).in('lesson_id', ids);
+      (rs.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add(x.kind === 'homework' ? 'btvn' : 'test'); });
+      var ra = await sb.from('attempts').select('lesson_id').eq('student_id', nguoiDung.id).in('lesson_id', ids).not('submitted_at', 'is', null);
+      (ra.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add('test'); });
+    } catch (e) {}
+  }
+
+  // Gom nhóm theo chuyên đề (giữ thứ tự topic.sort)
+  var groups = {}, order = [], noTopic = [];
   ds.forEach(function (b) {
-    var ten = b.topics ? b.topics.name : 'Bài giảng khác';
-    if (b.topics && b.topics.color) mauNhom[ten] = b.topics.color;
-    (nhom[ten] = nhom[ten] || []).push(b);
+    if (b.topics) {
+      var tid = b.topics.id || b.topics.name;
+      if (!groups[tid]) { groups[tid] = { key: 'tp_' + tid, topic: b.topics, lessons: [] }; order.push(groups[tid]); }
+      groups[tid].lessons.push(b);
+    } else { noTopic.push(b); }
   });
+  order.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
+  if (noTopic.length) order.push({ key: 'tp_none', topic: { name: 'Bài giảng khác' }, lessons: noTopic });
+
+  // Khởi tạo trạng thái mở: mở chuyên đề + bài đang học
+  if (!mlTopicMo) {
+    mlTopicMo = {}; mlBaiMo = {};
+    order.forEach(function (g) {
+      if (g.lessons.some(function (b) { return b.id === lessonId; })) { mlTopicMo[g.key] = true; }
+    });
+    mlBaiMo[lessonId] = true;
+  }
+
   var html = '';
-  var chuyenDeCount = 1;
-  Object.keys(nhom).forEach(function (ten) {
-    var displayTen = ten;
-    if (ten !== 'Bài giảng khác') {
-      displayTen = 'Chuyên đề ' + chuyenDeCount + ': ' + ten;
-      chuyenDeCount++;
-    }
-    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + displayTen + '</div>';
-    html += nhom[ten].map(function (b) {
-      var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
-      return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc?id=' + b.id + '">' + b.title + khoa + '</a>';
-    }).join('');
+  var stt = 1;
+  order.forEach(function (g) {
+    var isNone = g.key === 'tp_none';
+    var ten = isNone ? 'Bài giảng khác' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
+    var mau = g.topic.color || 'var(--accent)';
+    var openT = mlTopicMo[g.key] ? ' open' : '';
+    html += '<div class="ml-topic' + openT + '" id="' + g.key + '">' +
+      '<div class="ml-topic-hd" style="color:' + mau + '" onclick="mlToggleTopic(\'' + g.key + '\')">' +
+        '<span>' + mlEsc(ten) + '</span>' +
+        '<span class="tcount">' + g.lessons.length + '</span>' +
+        '<span class="caret">▶</span>' +
+      '</div>' +
+      '<div class="ml-topic-body">' +
+      g.lessons.map(function (b) {
+        var td = vmTinhTienDoBai(b, viewedByLesson[b.id], actionByLesson[b.id]);
+        var ring = td.total ? vmVongTienDo(td.percent, 30, 4) : '<span style="width:30px;display:inline-block"></span>';
+        var openB = mlBaiMo[b.id] ? ' open' : '';
+        var cur = b.id === lessonId ? ' current' : '';
+        var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
+        var subs = td.items.map(function (it) {
+          return '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
+            '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
+            '<span class="tick">' + (it.done ? '✓' : '○') + '</span></a>';
+        }).join('');
+        if (!subs) subs = '<a onclick="window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Mở bài giảng</span></a>';
+        return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
+          '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
+            ring + '<span class="ten">' + mlEsc(b.title) + khoa + '</span><span class="caret2">▶</span>' +
+          '</div>' +
+          '<div class="ml-sub">' + subs + '</div>' +
+        '</div>';
+      }).join('') +
+      '</div>';
   });
   $('dsMucLuc').innerHTML = html;
+}
+
+function mlToggleTopic(key) {
+  mlTopicMo[key] = !mlTopicMo[key];
+  var el = document.getElementById(key);
+  if (el) el.classList.toggle('open', mlTopicMo[key]);
+}
+function mlToggleBai(id) {
+  mlBaiMo[id] = !mlBaiMo[id];
+  var el = document.getElementById('mlbai_' + id);
+  if (el) el.classList.toggle('open', mlBaiMo[id]);
+}
+async function mlMoMuc(lid, tab, key, loai) {
+  if (lid !== lessonId) {
+    window.location.href = 'bai-hoc?id=' + lid + '&tab=' + tab;
+    return;
+  }
+  if (tab === 'video') {
+    if (window.innerWidth <= 820) hienMobilePane('video');
+  } else {
+    chonNoiDung(tab);
+  }
+  if (loai === 'view' && nguoiDung && !laQuanTriBaiHoc()) {
+    await vmDanhDauDaXem(lessonId, key);
+    taiMucLuc();
+  }
+  if (window.innerWidth <= 980) { var sb2 = $('mucLuc'); if (sb2) sb2.classList.remove('open'); }
 }
 
 function batTatMucLuc() {
@@ -710,9 +811,23 @@ function renderBaiHoc() {
   $('swTest').style.display = ''; // Ô kiểm tra luôn được bật để học sinh nhìn thấy
 
   var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : (coBTVN ? 'btvn' : 'test')));
-  chonNoiDung(macDinh);
+  // Mở đúng mục con nếu đến từ mục lục (?tab=)
+  var _tabParam = new URLSearchParams(window.location.search).get('tab');
+  var _tabHopLe = ['lythuyet', 'tailieu', 'bang', 'btvn', 'test'];
+  if (_tabParam === 'video') {
+    if (window.innerWidth <= 820) hienMobilePane('video');
+    chonNoiDung(macDinh);
+  } else if (_tabParam && _tabHopLe.indexOf(_tabParam) !== -1) {
+    chonNoiDung(_tabParam);
+  } else {
+    chonNoiDung(macDinh);
+  }
   if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
     phongToPane('video');
+  }
+  // Học sinh mở bài có video => đánh dấu đã xem video
+  if ((ytId || driveId) && nguoiDung && !laQuanTriBaiHoc()) {
+    vmDanhDauDaXem(lessonId, 'video').then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
 
   // Khởi động bộ đếm giờ kiểm tra
@@ -1308,6 +1423,11 @@ async function chonNoiDung(loai) {
   if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
+
+  // Đánh dấu mục "xem" đã hoàn thành + cập nhật vòng % (chỉ học sinh)
+  if (['lythuyet', 'tailieu', 'bang'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
+    vmDanhDauDaXem(lessonId, loai).then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
+  }
 }
 
 function btvnEsc(s) {
