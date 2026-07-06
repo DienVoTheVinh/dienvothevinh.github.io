@@ -25,6 +25,7 @@ function apDungMenu(role) {
           (role === 'admin' ? { path: 'viet-blog', label: '✍️ Viết blog' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc', label: 'Khóa bài giảng' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh', label: 'Học sinh' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-khoan', label: '➕ Tạo tài khoản' } : null),
           { path: 'quan-tri-lich', label: 'Lịch học' },
           { path: 'quan-tri-de', label: 'Luyện đề' },
           { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
