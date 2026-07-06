@@ -892,7 +892,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.7"></script>
+<script src="js/vinhmath.js?v=4.9"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1255,11 +1255,14 @@ function doiPhanHeLop(tab) {
 async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
-  
+
   var lessons = r.data || [];
   window.newestLessonIds = xacDinhIdsBaiMoiNhat(lessons);
+  if (typeof vmDangKyBai === 'function') vmDangKyBai(lessons);
+  window.vmXemNhanhTarget = ' target="_blank"';
+  window.vmXemNhanhEdit = function (id) { var m = document.getElementById('vmQuickModal'); if (m) m.style.display = 'none'; moFormSua(id); };
   if (!lessons.length) {
     $('dsBaiHocLop').innerHTML = '<div class="empty card">Lớp này chưa có bài giảng nào. Bấm "+ Thêm bài giảng" ở trên để tạo buổi đầu tiên!</div>';
     return;
@@ -1321,11 +1324,13 @@ function qlaEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, functi
 function qlaToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
 
 function renderLessonAcc(b) {
+  var chip = function (item, label) { return '<span class="chip" style="cursor:pointer" title="Xem nhanh — bấm để mở" onclick="event.stopPropagation();vmMoXemNhanh(\'' + b.id + '\',\'' + item + '\')">' + label + '</span>'; };
   var chips = [];
-  if (b.youtube_url) chips.push('<span class="chip">🎥 Video</span>');
-  if (b.document_id) chips.push('<span class="chip">📄 Tài liệu</span>');
-  if (b.images && b.images.length) chips.push('<span class="chip">🖼 ' + b.images.length + '</span>');
-  if (b.test_document_id) chips.push('<span class="chip">📝 Test</span>');
+  if (b.youtube_url) chips.push(chip('video', '🎥 Video'));
+  if (b.document_id || b.latex_content) chips.push(chip('tailieu', '📄 Tài liệu'));
+  if (b.images && b.images.length) chips.push(chip('bang', '🖼 ' + b.images.length));
+  if (b.homework_text || (b.homework_images && b.homework_images.length)) chips.push(chip('btvn', '🏠 BTVN'));
+  if (b.test_document_id || b.test_latex_content) chips.push(chip('test', '📝 Test'));
   var chipsHtml = chips.join('');
   var dot = b.published ? 'pub' : 'draft';
   var lockBadge = b.locked ? ' <span class="badge" style="background:#e74c3c;color:#fff;padding:1px 6px;font-size:.72rem">🔒</span>' : '';

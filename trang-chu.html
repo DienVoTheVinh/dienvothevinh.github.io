@@ -730,11 +730,19 @@
         <div id="weekCal" class="gcal"></div>
       </div>
       
-      <!-- Lịch chung (chỉ cho staff) -->
+      <!-- Lịch chung (CHỈ admin) -->
       <div id="sharedCalContainer" style="display: none;">
-        <h3 class="cal-section-title" style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--accent);">
-          👥 Lịch làm việc chung (Tất cả giáo viên)
-        </h3>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+          <h3 class="cal-section-title" style="font-size: 1.1rem; font-weight: 800; margin:0; display: flex; align-items: center; gap: 8px; color: var(--accent);">
+            👥 Lịch làm việc chung
+          </h3>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">Xem GV:</label>
+            <select id="sharedCalGV" onchange="doiGVLichChung()" style="padding:5px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; background:var(--surface); color:var(--ink);">
+              <option value="">Tất cả giáo viên</option>
+            </select>
+          </div>
+        </div>
         <div id="sharedCal" class="gcal"></div>
       </div>
     </div>
@@ -755,7 +763,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=4.9"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1804,14 +1812,14 @@ function layMauLop(tenLop) {
   return MAU_LOP_PALETTE[index];
 }
 
-function gcalEventsForDay(dt, filterPersonal) {
+function gcalEventsForDay(dt, filterPersonal, teacherFilter) {
   var jsDay = dt.getDay(); var wd = jsDay === 0 ? 7 : jsDay; var key = gcalKey(dt); var arr = [];
   var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
-  
+
   (tatCaSchedules || []).forEach(function (s) {
     var match = s.recurrence === 'once' ? (s.date === key) : (s.weekday === wd);
     if (!match || !s.start_time || !s.end_time) return;
-    
+
     // Lọc lịch cá nhân cho giáo viên/trợ giảng
     if (isStaff && filterPersonal) {
       if (!s.classes) return;
@@ -1823,7 +1831,14 @@ function gcalEventsForDay(dt, filterPersonal) {
         if (!isAssigned) return;
       }
     }
-    
+
+    // Lọc lịch chung theo 1 giáo viên cụ thể (chỉ admin)
+    if (!filterPersonal && teacherFilter) {
+      if (!s.classes) return;
+      var thuocGV = s.teacher_id ? (s.teacher_id === teacherFilter) : (s.classes.teacher_id === teacherFilter || s.classes.co_teacher_id === teacherFilter);
+      if (!thuocGV) return;
+    }
+
     var titleText = 'Lớp học';
     var teacherText = '';
     var teacherFull = '';
@@ -1881,7 +1896,11 @@ function gcalEventsForDay(dt, filterPersonal) {
         if (!isAssigned) return;
       }
     }
-    
+    if (!filterPersonal && teacherFilter) {
+      var clsGV = tatCaLop.find(function (c) { return c.id === e.class_id; });
+      if (!clsGV || (clsGV.teacher_id !== teacherFilter && clsGV.co_teacher_id !== teacherFilter)) return;
+    }
+
     var st = String(od.getHours()).padStart(2, '0') + ':' + String(od.getMinutes()).padStart(2, '0') + ':00';
     var endD = e.closes_at ? new Date(e.closes_at) : new Date(od.getTime() + (e.duration_minutes || 45) * 60000);
     var et = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0') + ':00';
@@ -1890,7 +1909,7 @@ function gcalEventsForDay(dt, filterPersonal) {
   return arr;
 }
 
-function renderCalendarGrid(targetId, filterPersonal) {
+function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
   var host = $(targetId); if (!host) return;
   var TEN = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
   var mon = gcalThu2(tuanOffset);
@@ -1932,7 +1951,7 @@ function renderCalendarGrid(targetId, filterPersonal) {
     var cells = '';
     for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
     var evHtml = '';
-    var visibleEvents = gcalEventsForDay(dt, filterPersonal).filter(function (ev) {
+    var visibleEvents = gcalEventsForDay(dt, filterPersonal, teacherFilter).filter(function (ev) {
       var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
       return !(eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60);
     });
@@ -2111,11 +2130,16 @@ function veLichTuan() {
     // Vẽ lịch cá nhân (chỉ hiển thị các lớp được phân công hoặc hợp tác)
     renderCalendarGrid('weekCal', true);
     
-    // Vẽ lịch chung
+    // Vẽ lịch chung — CHỈ admin mới thấy, kèm bộ lọc theo từng giáo viên
     var sharedContainer = $('sharedCalContainer');
     if (sharedContainer) {
-      sharedContainer.style.display = 'block';
-      renderCalendarGrid('sharedCal', false);
+      if (hoSoNguoiDung.role === 'admin') {
+        sharedContainer.style.display = 'block';
+        napLocGVLichChung();
+        renderCalendarGrid('sharedCal', false, window.sharedCalTeacherId || null);
+      } else {
+        sharedContainer.style.display = 'none';
+      }
     }
   } else {
     // Ẩn tiêu đề Lịch cá nhân
@@ -2132,6 +2156,29 @@ function veLichTuan() {
 function prevTuan() { tuanOffset--; veLichTuan(); }
 function nextTuan() { tuanOffset++; veLichTuan(); }
 function tuanNay() { tuanOffset = 0; veLichTuan(); }
+
+// Nạp danh sách giáo viên vào bộ lọc lịch chung (chỉ admin, chạy 1 lần)
+async function napLocGVLichChung() {
+  var sel = $('sharedCalGV');
+  if (!sel || sel.dataset.loaded === '1') return;
+  sel.dataset.loaded = '1';
+  try {
+    var r = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin']).order('full_name');
+    var ds = r.data || [];
+    var opts = '<option value="">Tất cả giáo viên</option>';
+    ds.forEach(function (u) {
+      var ten = (u.full_name || '').replace(/\s*\((?:Admin|admin)\)\s*/g, '').trim() || 'Giáo viên';
+      opts += '<option value="' + u.id + '">' + ten + '</option>';
+    });
+    sel.innerHTML = opts;
+    if (window.sharedCalTeacherId) sel.value = window.sharedCalTeacherId;
+  } catch (e) {}
+}
+function doiGVLichChung() {
+  var sel = $('sharedCalGV');
+  window.sharedCalTeacherId = sel ? (sel.value || null) : null;
+  renderCalendarGrid('sharedCal', false, window.sharedCalTeacherId);
+}
 
 // ----- KHỞI DỰNG VÀ CHẠY ĐỒNG HỒ ĐẾM NGƯỢC -----
 function khoiDongCountdown() {
