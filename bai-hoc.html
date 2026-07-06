@@ -70,6 +70,11 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .no-content .ic { font-size:3rem; margin-bottom:14px; }
 .no-content h3 { color:var(--ink); margin-bottom:8px; }
 
+/* Chế độ không có video: chỉ hiển thị nội dung (tài liệu/bài tập/kiểm tra) toàn khung */
+.workspace.no-video .pane-video { display:none !important; }
+.workspace.no-video #workspaceResizer { display:none !important; }
+.workspace.no-video .pane-content { display:flex !important; flex:1 1 100% !important; width:100% !important; border-right:none; }
+
 /* Tabs di động */
 .mobile-tabs { display:none; background:var(--surface); border-bottom:1px solid var(--line); height:46px; flex-shrink:0; }
 .mobile-tab-btn { flex:1; border:none; background:transparent; font-family:inherit; font-size:.86rem; font-weight:600; color:var(--ink-2); cursor:pointer; border-bottom:2px solid transparent; }
@@ -213,6 +218,7 @@ body.theme-map #mapWatermark { display:block; }
       <button class="sw-btn" id="swLyThuyet" onclick="chonNoiDung('lythuyet')">📖 <span class="sw-text">Đọc lý thuyết</span></button>
       <button class="sw-btn" id="swTaiLieu" onclick="chonNoiDung('tailieu')">📄 <span class="sw-text">Tài liệu</span></button>
       <button class="sw-btn" id="swBang" onclick="chonNoiDung('bang')">🖼 <span class="sw-text">Bảng</span></button>
+      <button class="sw-btn" id="swBTVN" onclick="chonNoiDung('btvn')" style="display:none">🏠 <span class="sw-text">Bài tập về nhà</span></button>
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
@@ -354,9 +360,14 @@ var coTest = false;
 /* ===== NỘP BÀI ===== */
 var nguoiDung = null;
 
-function moNopBai() {
+var nopBaiPhanLoai = 'test';
+function moNopBai(phanloai) {
+  nopBaiPhanLoai = phanloai === 'homework' ? 'homework' : 'test';
   $('modalNopBai').style.display = 'flex';
-  $('nbTenBai').textContent = details ? details.title : '';
+  var tenBai = details ? details.title : '';
+  $('nbTenBai').textContent = (nopBaiPhanLoai === 'homework' ? '🏠 Bài tập về nhà · ' : '') + tenBai;
+  var h2 = document.querySelector('#modalNopBai h2');
+  if (h2) h2.textContent = nopBaiPhanLoai === 'homework' ? '📤 Nộp bài tập về nhà' : '📤 Nộp bài';
   $('nbThongBao').textContent = '';
   taiBaiDaNop();
 }
@@ -418,9 +429,10 @@ function vmXoaFile(inputId, idx, listId) {
 async function taiBaiDaNop() {
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, kind')
     .eq('lesson_id', lessonId)
     .eq('student_id', nguoiDung.id)
+    .eq('kind', nopBaiPhanLoai)
     .order('submitted_at', { ascending: false });
   var ds = r.data || [];
   if (!ds.length) { $('nbDaNop').innerHTML = ''; return; }
@@ -453,6 +465,7 @@ async function guiBaiNop() {
   try {
     var fd = new FormData();
     fd.append('kind', 'nop');
+    fd.append('phanloai', nopBaiPhanLoai);
     fd.append('lesson_id', lessonId);
     for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
     var r = await sb.functions.invoke('nop-bai', { body: fd });
@@ -522,7 +535,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -655,6 +668,8 @@ function renderBaiHoc() {
   var ytId = extractYoutubeId(details.youtube_url);
   var driveId = extractDriveId(details.youtube_url);
   var vc = $('videoWrapper');
+  var kgVideo = $('khongGianHoc');
+  window.khongCoVideo = false;
   if (ytId) {
     vc.innerHTML = '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
   } else if (driveId) {
@@ -663,13 +678,27 @@ function renderBaiHoc() {
       '<span>Video không chạy? Trình duyệt có thể chặn Drive nhúng.</span>' +
       '<a class="btn btn-secondary btn-sm" style="padding:3px 10px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở cửa sổ riêng</a></div>';
   } else {
-    vc.innerHTML = '<div class="no-content" style="background:var(--surface)"><div class="ic">📭</div><h3>Không có video</h3><p>Bài học này chưa gắn video bài giảng.</p></div>';
+    window.khongCoVideo = true;
+  }
+  // Bố trí giao diện thuần tài liệu khi không có video (ẩn khung video, không hiện ô "Không có video")
+  if (kgVideo) {
+    if (window.khongCoVideo) {
+      kgVideo.classList.add('no-video');
+      kgVideo.classList.remove('show-video');
+      kgVideo.classList.add('show-content');
+      var _tv = document.getElementById('tabVideo'); if (_tv) _tv.style.display = 'none';
+      var _tn = document.getElementById('tabNoiDung'); if (_tn) _tn.classList.add('active');
+    } else {
+      kgVideo.classList.remove('no-video');
+      var _tv2 = document.getElementById('tabVideo'); if (_tv2) _tv2.style.display = '';
+    }
   }
 
-  // ---- Khung phải: 4 loại nội dung ----
+  // ---- Khung phải: các loại nội dung ----
   var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
+  var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0);
   coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
@@ -677,9 +706,10 @@ function renderBaiHoc() {
   $('swLyThuyet').style.display = coLyThuyet ? '' : 'none';
   $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
   $('swBang').style.display = dsAnh.length ? '' : 'none';
+  if ($('swBTVN')) $('swBTVN').style.display = coBTVN ? '' : 'none';
   $('swTest').style.display = ''; // Ô kiểm tra luôn được bật để học sinh nhìn thấy
 
-  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
+  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : (coBTVN ? 'btvn' : 'test')));
   chonNoiDung(macDinh);
   if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
     phongToPane('video');
@@ -1148,6 +1178,7 @@ async function layKetQuaChamHtml() {
       .select('id, submitted_at, files, status, score, feedback, graded_files')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
+      .eq('kind', 'test')
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -1198,6 +1229,7 @@ async function checkDaLamTest() {
       .select('id')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
+      .eq('kind', 'test')
       .limit(1)
       .maybeSingle();
     if (r.data) return true;
@@ -1209,9 +1241,9 @@ async function checkDaLamTest() {
 
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
-  ['LyThuyet', 'TaiLieu', 'Bang', 'Test'].forEach(function (t) { 
+  ['LyThuyet', 'TaiLieu', 'Bang', 'BTVN', 'Test'].forEach(function (t) {
     var el = $('sw' + t);
-    if (el) el.classList.remove('active'); 
+    if (el) el.classList.remove('active');
   });
   var than = $('thanNoiDung');
 
@@ -1242,6 +1274,9 @@ async function chonNoiDung(loai) {
         var u = urlAnh(p);
         return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>';
+  } else if (loai === 'btvn') {
+    if ($('swBTVN')) $('swBTVN').classList.add('active');
+    renderBTVN(than);
   } else {
     $('swTest').classList.add('active');
     capNhatAdminTestBar();
@@ -1273,6 +1308,65 @@ async function chonNoiDung(loai) {
   if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
+}
+
+function btvnEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+async function renderBTVN(than) {
+  var deBai = details.homework_text || '';
+  var dsAnh = Array.isArray(details.homework_images) ? details.homework_images : [];
+  var laAdmin = laQuanTriBaiHoc();
+
+  var deHtml = deBai
+    ? '<div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px">' + btvnEsc(deBai) + '</div>'
+    : '';
+  var anhHtml = dsAnh.length
+    ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
+      dsAnh.map(function (p) {
+        var u = urlAnh(p);
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+      }).join('') + '</div>'
+    : '';
+
+  var actionHtml = '';
+  if (!laAdmin && nguoiDung) {
+    actionHtml = '<div id="btvnTrangThai" style="margin:14px 0;font-size:.86rem;color:var(--ink-3)">Đang kiểm tra bài đã nộp…</div>' +
+      '<button class="btn btn-primary" onclick="moNopBai(\'homework\')" style="align-self:flex-start">📤 Nộp bài tập về nhà</button>';
+  } else if (laAdmin) {
+    actionHtml = '<div style="margin-top:14px;font-size:.85rem;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:10px 12px">👀 Học sinh sẽ thấy nút <b>Nộp bài tập về nhà</b> ở đây. Vào <b>🛠 Quản lý buổi</b> để xem và chấm các bài nộp.</div>';
+  }
+
+  than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
+    '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
+    (deHtml || anhHtml ? (deHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
+    actionHtml +
+    '</div>';
+
+  if (!laAdmin && nguoiDung) {
+    try {
+      var r = await sb.from('submissions')
+        .select('id, submitted_at, status, score')
+        .eq('lesson_id', lessonId).eq('student_id', nguoiDung.id).eq('kind', 'homework')
+        .order('submitted_at', { ascending: false });
+      var ds = r.data || [];
+      var el = $('btvnTrangThai');
+      if (el) {
+        if (!ds.length) {
+          el.innerHTML = '📌 Em chưa nộp bài tập về nhà cho buổi này.';
+        } else {
+          var s0 = ds[0];
+          var tt = s0.status === 'graded'
+            ? '<span class="badge badge-ok">Đã chấm' + (s0.score != null ? ' · ' + s0.score + ' điểm' : '') + '</span>'
+            : '<span class="badge badge-warn">Chờ thầy chấm</span>';
+          el.innerHTML = '✅ Đã nộp ' + ds.length + ' bài · lần cuối ' + new Date(s0.submitted_at).toLocaleString('vi-VN') + ' ' + tt;
+        }
+      }
+    } catch (e) {}
+  }
 }
 
 function renderLatex(element) {
@@ -1675,6 +1769,11 @@ function thanhCongCu(ten, urlTai) {
 /* ===== Chuyển tab di động & phóng to ===== */
 function hienMobilePane(loai) {
   var kg = $('khongGianHoc');
+  if (window.khongCoVideo) {
+    kg.className = 'workspace show-content no-video';
+    $('tabNoiDung').classList.add('active'); $('tabVideo').classList.remove('active');
+    return;
+  }
   if (loai === 'video') {
     kg.className = 'workspace show-video';
     $('tabVideo').classList.add('active'); $('tabNoiDung').classList.remove('active');
@@ -2044,7 +2143,7 @@ async function hubRenderCham(){
   var box=$('hubPaneCham');
   box.innerHTML='<div class="no-content" style="padding:20px"><div class="spinner"></div><h3>Đang tải bài nộp…</h3></div>';
   var r=await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, student_id, profiles(full_name, username)')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, kind, student_id, profiles(full_name, username)')
     .eq('lesson_id', lessonId).order('submitted_at',{ascending:false});
   if (r.error){ box.innerHTML='<div class="hub-card">Lỗi: '+r.error.message+'</div>'; return; }
   hubSubs=r.data||[];
@@ -2059,8 +2158,11 @@ function hubCardCham(s){
   var links=(s.files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">📄 '+hubEsc(f.name)+'</a>';}).join(' · ');
   var linksCham=(s.graded_files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">✏️ '+hubEsc(f.name)+'</a>';}).join(' · ');
   var badge=s.status==='graded'?'<span class="badge badge-ok">Đã chấm'+(s.score!=null?' · '+s.score+'đ':'')+'</span>':'<span class="badge badge-warn">Chờ chấm</span>';
+  var loaiBadge = s.kind==='homework'
+    ? '<span class="badge" style="background:#7c3aed;color:#fff">🏠 BTVN</span> '
+    : '<span class="badge" style="background:var(--accent);color:#fff">📝 Kiểm tra</span> ';
   return '<div class="hub-card sub-card" id="hsub-'+s.id+'">'+
-    '<div class="hub-row" style="justify-content:space-between"><div><b>'+hubEsc(hs.full_name||'?')+'</b> <span style="color:var(--ink-3);font-size:.82rem">('+hubEsc(hs.username||'')+')</span></div>'+badge+'</div>'+
+    '<div class="hub-row" style="justify-content:space-between"><div>'+loaiBadge+'<b>'+hubEsc(hs.full_name||'?')+'</b> <span style="color:var(--ink-3);font-size:.82rem">('+hubEsc(hs.username||'')+')</span></div>'+badge+'</div>'+
     '<div style="font-size:.8rem;color:var(--ink-3);margin-top:3px">'+ngay+'</div>'+
     '<div style="margin-top:6px;font-size:.85rem">'+links+'</div>'+
     (linksCham?'<div style="margin-top:4px;font-size:.85rem">'+linksCham+'</div>':'')+

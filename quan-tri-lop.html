@@ -424,6 +424,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
       <button type="button" class="tab-btn" id="btnTabDinhKem" onclick="doiTabForm('dinh-kem')">📄 Tài liệu & Đính kèm</button>
       <button type="button" class="tab-btn" id="btnTabKiemTra" onclick="doiTabForm('kiem-tra')">📝 Bài kiểm tra</button>
+      <button type="button" class="tab-btn" id="btnTabBTVN" onclick="doiTabForm('btvn')">🏠 Bài tập về nhà</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
     
@@ -575,6 +576,24 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
       </div>
       
+      <!-- TAB: BÀI TẬP VỀ NHÀ -->
+      <div id="tabFormBTVN" style="display:none">
+        <div class="field">
+          <label>🏠 Đề bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(khác với bài kiểm tra — học sinh xem đề và nộp bài về nhà riêng)</small></label>
+          <textarea class="input" id="bhBtvnText" rows="5" placeholder="Nhập đề bài tập về nhà, ghi chú, hạn nộp… Có thể dán ảnh đề ở khung bên dưới." style="resize:vertical"></textarea>
+        </div>
+        <div class="field">
+          <label>📷 Ảnh đề bài tập (chụp màn hình rồi ⌘/Ctrl + V, hoặc chọn/kéo-thả) — nhiều ảnh được</label>
+          <div id="bhBtvnDropZone" tabindex="0" style="border:2px dashed var(--line-2);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--surface-2);transition:border-color .15s,background .15s;color:var(--ink-2)">
+            <div style="font-size:1.6rem;line-height:1">🏠</div>
+            <div style="font-weight:700;margin-top:6px;color:var(--ink)">Dán ảnh đề tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
+            <div style="font-size:.8rem;margin-top:3px">hoặc bấm để chọn tệp · kéo-thả ảnh vào đây</div>
+          </div>
+          <input type="file" id="bhBtvnFile" accept="image/*" multiple style="display:none">
+          <div id="btvnAnhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+        </div>
+      </div>
+
       <!-- TAB 4: LÝ THUYẾT TƯƠNG TÁC -->
       <div id="tabFormLyThuyet" style="display:none">
         <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px">
@@ -859,6 +878,8 @@ var tatCaChuyenDe = [];
 var tatCaTaiLieu = [];
 var anhDaCo = [];
 var selectedImageFiles = [];
+var hwAnhDaCo = [];
+var hwSelectedFiles = [];
 var mapGiaoVien = {};
 var dsGiaoVien = [];
 var hoSoNguoiDung = null;
@@ -2279,6 +2300,56 @@ function veAnhHienCo() {
 function boAnh(i) { anhDaCo.splice(i, 1); veAnhHienCo(); }
 function boAnhMoi(i) { selectedImageFiles.splice(i, 1); veAnhHienCo(); }
 
+/* ===== Ảnh đề Bài tập về nhà ===== */
+function veBtvnAnh() {
+  var box = $('btvnAnhHienCo');
+  if (!box) return;
+  if (!hwAnhDaCo.length && !hwSelectedFiles.length) { box.innerHTML = ''; return; }
+  var html = '';
+  html += hwAnhDaCo.map(function (p, i) {
+    var u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+    return '<div style="position:relative">' +
+      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<button type="button" onclick="boHwAnh(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+  html += hwSelectedFiles.map(function (f, i) {
+    var u = URL.createObjectURL(f);
+    return '<div style="position:relative">' +
+      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2);opacity:0.8">' +
+      '<button type="button" onclick="boHwAnhMoi(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+      '</div>';
+  }).join('');
+  box.innerHTML = html;
+}
+function boHwAnh(i) { hwAnhDaCo.splice(i, 1); veBtvnAnh(); }
+function boHwAnhMoi(i) { hwSelectedFiles.splice(i, 1); veBtvnAnh(); }
+
+if ($('bhBtvnFile')) {
+  $('bhBtvnFile').addEventListener('change', function () {
+    for (var i = 0; i < this.files.length; i++) hwSelectedFiles.push(this.files[i]);
+    this.value = '';
+    veBtvnAnh();
+  });
+}
+(function () {
+  var dz = $('bhBtvnDropZone');
+  if (!dz) return;
+  function reset() { dz.style.borderColor = 'var(--line-2)'; dz.style.background = 'var(--surface-2)'; }
+  function active() { dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-soft)'; }
+  dz.addEventListener('click', function () { if ($('bhBtvnFile')) $('bhBtvnFile').click(); });
+  dz.addEventListener('dragover', function (e) { e.preventDefault(); active(); });
+  dz.addEventListener('dragleave', reset);
+  dz.addEventListener('drop', function (e) {
+    e.preventDefault(); reset();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files) for (var i = 0; i < files.length; i++) {
+      if (files[i].type.indexOf('image') !== -1) hwSelectedFiles.push(files[i]);
+    }
+    veBtvnAnh();
+  });
+})();
+
 // Đăng ký sự kiện paste và change
 if ($('bhAnhFile')) {
   $('bhAnhFile').addEventListener('change', function() {
@@ -2347,6 +2418,20 @@ window.addEventListener('paste', function(e) {
   var _tabTest = document.getElementById('tabFormKiemTra');
   if (_tabTest && _tabTest.style.display !== 'none') {
     themAnhTest(imageFiles);
+    return;
+  }
+
+  // Nếu đang ở tab Bài tập về nhà -> ảnh dán trở thành ẢNH ĐỀ BTVN
+  var _tabBtvn = document.getElementById('tabFormBTVN');
+  if (_tabBtvn && _tabBtvn.style.display !== 'none') {
+    for (var b = 0; b < imageFiles.length; b++) {
+      var fB = imageFiles[b];
+      if (!fB.name || fB.name === 'image.png' || fB.name.indexOf('image') === 0) {
+        var extB = (fB.type.split('/')[1]) || 'png';
+        hwSelectedFiles.push(new File([fB], 'btvn-' + Date.now() + '-' + b + '.' + extB, { type: fB.type }));
+      } else { hwSelectedFiles.push(fB); }
+    }
+    veBtvnAnh();
     return;
   }
 
@@ -2472,6 +2557,8 @@ async function moFormThemBaiGiang() {
 
   $('formBaiHoc').reset();
   anhDaCo = []; selectedImageFiles = []; veAnhHienCo();
+  hwAnhDaCo = []; hwSelectedFiles = []; veBtvnAnh();
+  if ($('bhBtvnText')) $('bhBtvnText').value = '';
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = '';
   $('bhPdfUrl').value = '';
@@ -2529,6 +2616,8 @@ async function moFormSua(id) {
     selTeacher.value = bh.teacher_id || mainTeacherId;
   }
   anhDaCo = Array.isArray(bh.images) ? bh.images.slice() : []; selectedImageFiles = []; veAnhHienCo();
+  hwAnhDaCo = Array.isArray(bh.homework_images) ? bh.homework_images.slice() : []; hwSelectedFiles = []; veBtvnAnh();
+  if ($('bhBtvnText')) $('bhBtvnText').value = bh.homework_text || '';
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = bh.id;
   $('bhTieuDe').value = bh.title || '';
@@ -2705,6 +2794,25 @@ async function luuBaiHoc(e) {
     }
   }
   data.images = anhDaCo;
+
+  // Tải ảnh đề bài tập về nhà
+  if (hwSelectedFiles.length) {
+    for (var hi = 0; hi < hwSelectedFiles.length; hi++) {
+      nut.textContent = '⏳ Đang tải ảnh BTVN ' + (hi + 1) + '/' + hwSelectedFiles.length + '...';
+      var hf = hwSelectedFiles[hi];
+      var hwTen = hf.name || ('btvn-' + Date.now() + '.png');
+      var hwPath = Date.now() + '-hw-' + hi + '-' + tenAnToan(hwTen);
+      var upHw = await sb.storage.from('hinh-anh').upload(hwPath, hf, { contentType: hf.type || 'image/png' });
+      if (upHw.error) {
+        alert('Lỗi tải ảnh BTVN: ' + upHw.error.message);
+        nut.disabled = false; nut.textContent = 'Lưu bài giảng';
+        return;
+      }
+      hwAnhDaCo.push(hwPath);
+    }
+  }
+  data.homework_text = $('bhBtvnText') ? ($('bhBtvnText').value.trim() || null) : null;
+  data.homework_images = hwAnhDaCo;
 
   var r, lessonId = id;
   if (id) {
@@ -3113,17 +3221,19 @@ var theorySections = [];
 var timeoutTimKiem = null;
 
 function doiTabForm(tab) {
-  var tabs = ['chung', 'dinh-kem', 'kiem-tra', 'ly-thuyet'];
+  var tabs = ['chung', 'dinh-kem', 'kiem-tra', 'btvn', 'ly-thuyet'];
   var btnMap = {
     'chung': 'btnTabChung',
     'dinh-kem': 'btnTabDinhKem',
     'kiem-tra': 'btnTabKiemTra',
+    'btvn': 'btnTabBTVN',
     'ly-thuyet': 'btnTabLyThuyet'
   };
   var containerMap = {
     'chung': 'tabFormChung',
     'dinh-kem': 'tabFormDinhKem',
     'kiem-tra': 'tabFormKiemTra',
+    'btvn': 'tabFormBTVN',
     'ly-thuyet': 'tabFormLyThuyet'
   };
   
