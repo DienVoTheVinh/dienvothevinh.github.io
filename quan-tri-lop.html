@@ -67,6 +67,32 @@
 .lesson-title { font-weight: 600; font-size: .98rem; }
 .lesson-meta { font-size: .8rem; color: var(--ink-3); display: flex; gap: 12px; }
 .lesson-meta span { display: flex; align-items: center; gap: 4px; }
+/* ===== Accordion quản lý bài giảng (GV/Admin) ===== */
+.qla-topic { border:1px solid var(--line); border-radius:var(--r-md,12px); margin-bottom:12px; overflow:hidden; background:var(--surface); }
+.qla-topic-hd { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; user-select:none; border-left:5px solid var(--accent); }
+.qla-topic-hd .nm { font-weight:800; font-size:.9rem; text-transform:uppercase; color:var(--ink); }
+.qla-topic-hd .cnt { font-size:.74rem; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 9px; }
+.qla-topic-hd .car { margin-left:auto; color:var(--ink-3); font-size:.8rem; transition:transform .2s; }
+.qla-topic.open > .qla-topic-hd .car { transform:rotate(90deg); }
+.qla-topic-body { display:none; border-top:1px solid var(--line); }
+.qla-topic.open > .qla-topic-body { display:block; }
+.qla-bai { border-bottom:1px solid var(--line); }
+.qla-bai:last-child { border-bottom:none; }
+.qla-bai-hd { display:flex; align-items:center; gap:11px; padding:11px 16px; cursor:pointer; }
+.qla-bai-hd:hover { background:var(--surface-2); }
+.qla-bai-hd .dot { width:9px; height:9px; border-radius:50%; flex:none; }
+.qla-bai-hd .dot.pub { background:var(--ok,#28a745); box-shadow:0 0 0 3px rgba(40,167,69,.15); }
+.qla-bai-hd .dot.draft { background:var(--ink-3); }
+.qla-bai-hd .ten { font-weight:600; font-size:.92rem; color:var(--ink); flex:1; min-width:0; }
+.qla-bai-hd .chips { display:flex; gap:6px; flex-wrap:wrap; }
+.qla-bai-hd .chip { font-size:.72rem; padding:1px 7px; border-radius:20px; background:var(--surface-2); color:var(--ink-2); white-space:nowrap; }
+.qla-bai-hd .car2 { color:var(--ink-3); font-size:.68rem; transition:transform .2s; }
+.qla-bai.open > .qla-bai-hd .car2 { transform:rotate(90deg); }
+.qla-bai-body { display:none; padding:2px 16px 14px 36px; background:var(--surface-2); }
+.qla-bai.open > .qla-bai-body { display:block; }
+.qla-bai-body .meta { font-size:.8rem; color:var(--ink-3); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0 10px; }
+.qla-actions { display:flex; gap:8px; flex-wrap:wrap; }
+@media(max-width:640px){ .qla-bai-hd .chips { display:none; } }
 
 /* Modals */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
@@ -1240,60 +1266,33 @@ async function taiLessonsLop() {
   }
 
   function veNhomBaiHoc(ds) {
-    var groups = {};
-    var topicOrder = [];
-    var noTopicLessons = [];
-    
+    var groups = {}, topicOrder = [], noTopicLessons = [];
     ds.forEach(function (b) {
       if (b.topics) {
         var tId = b.topics.id;
-        if (!groups[tId]) {
-          groups[tId] = {
-            topic: b.topics,
-            lessons: []
-          };
-          topicOrder.push(groups[tId]);
-        }
+        if (!groups[tId]) { groups[tId] = { topic: b.topics, lessons: [] }; topicOrder.push(groups[tId]); }
         groups[tId].lessons.push(b);
-      } else {
-        noTopicLessons.push(b);
-      }
+      } else { noTopicLessons.push(b); }
     });
-    
-    topicOrder.sort(function (a, b) {
-      return (a.topic.sort || 0) - (b.topic.sort || 0);
-    });
-    
-    topicOrder.forEach(function (g) {
-      g.lessons.sort(function (a, b) {
-        return (b.sort || 0) - (a.sort || 0);
-      });
-    });
-    
-    noTopicLessons.sort(function (a, b) {
-      return (b.sort || 0) - (a.sort || 0);
-    });
-    
-    var subHtml = '';
-    
-    topicOrder.forEach(function (g) {
-      var tColor = g.topic.color || 'var(--accent)';
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-sm); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 15px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid ' + tColor + '">' +
-        '<span>📚 ' + g.topic.name + '</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
-        '</div>';
-        
-      subHtml += g.lessons.map(renderLessonRow).join('');
-    });
-    
-    if (noTopicLessons.length > 0) {
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-sm); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 15px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid #A8A29A">' +
-        '<span>📎 BÀI GIẢNG KHÁC / TỰ DO</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
-        '</div>';
-      subHtml += noTopicLessons.map(renderLessonRow).join('');
-    }
-    return subHtml;
+    topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
+    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
+    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+
+    var blocks = topicOrder.slice();
+    if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác / Tự do', color: '#A8A29A', _none: true }, lessons: noTopicLessons });
+
+    var stt = 1;
+    return blocks.map(function (g) {
+      var isNone = g.topic._none;
+      var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
+      var mau = g.topic.color || 'var(--accent)';
+      return '<div class="qla-topic open">' +
+        '<div class="qla-topic-hd" style="border-left-color:' + mau + '" onclick="qlaToggle(this)">' +
+          '<span class="nm">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
+        '</div>' +
+        '<div class="qla-topic-body">' + g.lessons.map(renderLessonAcc).join('') + '</div>' +
+      '</div>';
+    }).join('');
   }
 
   if (classDangChon.co_teacher_id) {
@@ -1318,58 +1317,47 @@ async function taiLessonsLop() {
   }
 }
 
-function renderLessonRow(b) {
-  var iconVideo = b.youtube_url ? '<span style="color:var(--accent)">🎥 Video</span>' : '<span style="color:var(--ink-3)">Không video</span>';
-  var iconDoc = b.document_id ? '<span style="color:var(--ok)">📄 Tài liệu</span>' : '<span style="color:var(--ink-3)">Không tài liệu</span>';
-  var iconImages = (b.images && b.images.length) ? '<span style="color:var(--warn)">🖼️ ' + b.images.length + ' ảnh bảng</span>' : '';
-  var iconTest = b.test_document_id ? '<span style="color:var(--accent)">📝 Bài test</span>' : '';
-  
-  var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
-  var gvName = mapGiaoVien[b.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.15em;height:1.15em;vertical-align:-0.2em"> ' + gvName + '</span>';
-  
-  var testBtn = '';
+function qlaEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function qlaToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
+
+function renderLessonAcc(b) {
+  var chips = [];
+  if (b.youtube_url) chips.push('<span class="chip">🎥 Video</span>');
+  if (b.document_id) chips.push('<span class="chip">📄 Tài liệu</span>');
+  if (b.images && b.images.length) chips.push('<span class="chip">🖼 ' + b.images.length + '</span>');
+  if (b.test_document_id) chips.push('<span class="chip">📝 Test</span>');
+  var chipsHtml = chips.join('');
+  var dot = b.published ? 'pub' : 'draft';
+  var lockBadge = b.locked ? ' <span class="badge" style="background:#e74c3c;color:#fff;padding:1px 6px;font-size:.72rem">🔒</span>' : '';
+  var glitter = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' <span title="Bài mới nhất">✨</span>' : '';
+  var tenJs = b.title.replace(/'/g, "\\'");
+
   var isTestRunning = false;
-  if (b.test_started_at) {
-    var end = new Date(b.test_started_at).getTime() + (b.test_duration_minutes || 15) * 60000;
-    if (end > Date.now()) {
-      isTestRunning = true;
-    }
-  }
-  
-  if (isTestRunning) {
-    testBtn = '<button class="btn btn-sm chi-gv" style="background:#e74c3c; color:#fff; border-color:#e74c3c; padding:4px 10px;" onclick="dungTest(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">⏹ Dừng test</button>';
-  } else {
-    testBtn = '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px;" onclick="moKichHoatTest(\'' + b.id + '\', \'' + b.title.replace(/'/g, "\\'") + '\')">⏱ Kích hoạt test</button>';
-  }
-  
-  var glitterClass = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' newest-lesson-glitter' : '';
-  return '<div class="lesson-row' + glitterClass + '" style="margin-bottom:8px">' +
-    '<div class="lesson-info">' +
-      '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
-        '<span class="lesson-title">' + b.title + '</span>' +
-        (b.locked ? '<span class="badge" style="background:#e74c3c;color:#fff;padding:2px 6px;font-size:0.75rem">🔒 Đã khoá</span>' : '') +
-      '</div>' +
-      '<div style="display:flex; gap:6px; align-items:center; margin-top:2px; flex-wrap:wrap">' +
-        badgeChuyenDe(b.topics) +
-        stateBadge +
-        teacherBadge +
-      '</div>' +
-      '<div class="lesson-meta" style="margin-top:4px">' +
-        iconVideo + iconDoc +
-        (iconImages ? '<span>' + iconImages + '</span>' : '') +
-        (iconTest ? '<span>' + iconTest + '</span>' : '') +
-        '<span>Thứ tự: ' + b.sort + '</span>' +
+  if (b.test_started_at) { var end = new Date(b.test_started_at).getTime() + (b.test_duration_minutes || 15) * 60000; if (end > Date.now()) isTestRunning = true; }
+  var testBtn = isTestRunning
+    ? '<button class="btn btn-sm chi-gv" style="background:#e74c3c;color:#fff;border-color:#e74c3c;padding:4px 10px" onclick="dungTest(\'' + b.id + '\', \'' + tenJs + '\')">⏹ Dừng test</button>'
+    : '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px" onclick="moKichHoatTest(\'' + b.id + '\', \'' + tenJs + '\')">⏱ Kích hoạt test</button>';
+
+  var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
+
+  return '<div class="qla-bai">' +
+    '<div class="qla-bai-hd" onclick="qlaToggle(this)">' +
+      '<span class="dot ' + dot + '" title="' + (b.published ? 'Đã xuất bản' : 'Nháp') + '"></span>' +
+      '<span class="ten">' + qlaEsc(b.title) + lockBadge + glitter + '</span>' +
+      '<span class="chips">' + chipsHtml + '</span>' +
+      '<span class="car2">▶</span>' +
+    '</div>' +
+    '<div class="qla-bai-body">' +
+      '<div class="meta">' + stateBadge + badgeChuyenDe(b.topics) + '<span>Thứ tự: ' + b.sort + '</span></div>' +
+      '<div class="qla-actions">' +
+        '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
+        '<a class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" href="bai-hoc?id=' + b.id + '&hub=1" target="_blank">🛠 Quản lý buổi</a>' +
+        '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
+        testBtn +
+        '<button class="btn btn-sm chi-gv" style="' + (b.locked ? 'background:#e74c3c;color:#fff;border-color:#e74c3c;' : '') + 'padding:4px 10px" onclick="toggleKhoaBai(\'' + b.id + '\', ' + (b.locked ? 'true' : 'false') + ')">' + (b.locked ? '🔓 Mở khoá' : '🔒 Khoá') + '</button>' +
       '</div>' +
     '</div>' +
-    '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
-      testBtn +
-      '<button class="btn btn-sm chi-gv" style="' + (b.locked ? 'background:#e74c3c;color:#fff;border-color:#e74c3c;' : '') + 'padding:4px 10px;" onclick="toggleKhoaBai(\'' + b.id + '\', ' + (b.locked ? 'true' : 'false') + ')">' + (b.locked ? '🔓 Mở khoá' : '🔒 Khoá') + '</button>' +
-      '<a class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" href="bai-hoc?id=' + b.id + '&hub=1" target="_blank">🛠 Quản lý buổi</a>' +
-      '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">Xem học sinh</a>' +
-      '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">Chỉnh sửa</button>' +
-    '</div>' +
-    '</div>';
+  '</div>';
 }
 
 async function moKichHoatTest(lessonId, title) {
