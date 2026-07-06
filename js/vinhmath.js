@@ -1596,3 +1596,60 @@ function vmApDungThuongHieuMAP(isMap) {
     }
   } catch (e) { /* im lặng */ }
 }
+
+/* ===== Tiến độ mục con của bài giảng (dùng chung bai-hoc + lop-hoc) ===== */
+function vmMucConBai(bh) {
+  var items = [];
+  var coVideo = !!(bh.youtube_url && String(bh.youtube_url).trim());
+  var coLyThuyet = Array.isArray(bh.theory_sections) && bh.theory_sections.length > 0;
+  var coTaiLieu = !!(bh.latex_content) || !!(bh.document_id) || !!(bh.documents && bh.documents.file_path);
+  var coBang = Array.isArray(bh.images) && bh.images.length > 0;
+  var coBTVN = !!(bh.homework_text) || (Array.isArray(bh.homework_images) && bh.homework_images.length > 0);
+  var coTest = !!(bh.test_document_id) || !!(bh.test_latex_content) || !!(bh.bai_test && bh.bai_test.file_path);
+  if (coVideo) items.push({ key: 'video', tab: 'video', label: 'Video bài giảng', icon: '🎬', loai: 'view' });
+  if (coLyThuyet) items.push({ key: 'lythuyet', tab: 'lythuyet', label: 'Lý thuyết', icon: '📖', loai: 'view' });
+  if (coTaiLieu) items.push({ key: 'tailieu', tab: 'tailieu', label: 'Tài liệu', icon: '📄', loai: 'view' });
+  if (coBang) items.push({ key: 'bang', tab: 'bang', label: 'Ảnh bảng', icon: '🖼', loai: 'view' });
+  if (coBTVN) items.push({ key: 'btvn', tab: 'btvn', label: 'Bài tập về nhà', icon: '🏠', loai: 'action' });
+  if (coTest) items.push({ key: 'test', tab: 'test', label: 'Bài kiểm tra', icon: '📝', loai: 'action' });
+  return items;
+}
+
+function vmTinhTienDoBai(bh, viewedSet, doneActionSet) {
+  var items = vmMucConBai(bh);
+  var done = 0;
+  items.forEach(function (it) {
+    if (it.loai === 'view') it.done = !!(viewedSet && viewedSet.has(it.key));
+    else it.done = !!(doneActionSet && doneActionSet.has(it.key));
+    if (it.done) done++;
+  });
+  var total = items.length;
+  return { items: items, done: done, total: total, percent: total ? Math.round(100 * done / total) : 0 };
+}
+
+function vmVongTienDo(percent, size, stroke) {
+  size = size || 34; stroke = stroke || 4;
+  var r = (size - stroke) / 2;
+  var c = 2 * Math.PI * r;
+  var off = c * (1 - (percent || 0) / 100);
+  var mau = (percent >= 100) ? 'var(--ok, #28a745)' : 'var(--accent)';
+  var half = size / 2;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex:none">' +
+    '<circle cx="' + half + '" cy="' + half + '" r="' + r + '" fill="none" stroke="var(--line-2, #e5e5e5)" stroke-width="' + stroke + '"></circle>' +
+    '<circle cx="' + half + '" cy="' + half + '" r="' + r + '" fill="none" stroke="' + mau + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 ' + half + ' ' + half + ')"></circle>' +
+    '<text x="' + half + '" y="' + (half + 1) + '" text-anchor="middle" dominant-baseline="middle" font-size="' + (size * 0.3).toFixed(1) + '" font-weight="700" fill="var(--ink)">' + (percent || 0) + '</text>' +
+    '</svg>';
+}
+
+// Đánh dấu 1 mục "xem" (video/tài liệu/lý thuyết/bảng) là đã hoàn thành cho HS hiện tại
+async function vmDanhDauDaXem(lessonId, item) {
+  try {
+    if (!sb || !lessonId || !item) return;
+    var u = await sb.auth.getUser();
+    var uid = (u && u.data && u.data.user) ? u.data.user.id : null;
+    if (!uid) return;
+    await sb.from('lesson_item_progress').upsert(
+      { student_id: uid, lesson_id: lessonId, item: item },
+      { onConflict: 'student_id,lesson_id,item' });
+  } catch (e) {}
+}
