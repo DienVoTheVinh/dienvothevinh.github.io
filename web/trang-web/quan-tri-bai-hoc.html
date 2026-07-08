@@ -159,6 +159,11 @@
           <textarea class="input" id="bhGhiChu" rows="3" placeholder="Ghi chú dặn dò học sinh (ví dụ: Xem kỹ video và hoàn thành bài tập trang 3)..." style="resize:vertical"></textarea>
         </div>
 
+        <div class="field" style="border-left: 3px solid var(--accent); padding-left: 10px; background: rgba(37, 99, 235, 0.03); padding-top: 6px; padding-bottom: 6px; border-radius: 0 6px 6px 0;">
+          <label style="color: var(--accent); font-weight: 700;">📝 Ghi chú dành riêng cho Giáo viên (Ẩn với học sinh)</label>
+          <textarea class="input" id="bhGhiChuGiaoVien" rows="3" placeholder="Ghi chú nội bộ cho buổi dạy tiếp theo (ví dụ: cần sửa bài tập nào, lý thuyết cần nhấn mạnh...)" style="resize:vertical; border-color: rgba(37, 99, 235, 0.3);"></textarea>
+        </div>
+
         <div class="form-row" style="margin-bottom: 24px">
           <div class="field">
             <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
@@ -1484,6 +1489,7 @@ function renderTheorySections() {
 
 async function moFormThemMoi() {
   $('formBaiHoc').reset();
+  if ($('bhGhiChuGiaoVien')) $('bhGhiChuGiaoVien').value = '';
   anhDaCo = []; selectedImageFiles = []; veAnhHienCo();
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = '';
@@ -1543,7 +1549,12 @@ async function moFormSua(id) {
     $('bhTestUrl').value = '';
     $('bhTestTaiLieu').value = bh.test_document_id || '';
   }
-  $('bhGhiChu').value = bh.note || '';
+  var rawNote = bh.note || '';
+  var noteParts = rawNote.split('---TEACHER_NOTE---');
+  $('bhGhiChu').value = noteParts[0].trim();
+  if ($('bhGhiChuGiaoVien')) {
+    $('bhGhiChuGiaoVien').value = (noteParts[1] || '').trim();
+  }
   $('bhSapXep').value = bh.sort !== undefined ? bh.sort : 0;
   $('bhXuatBan').checked = !!bh.published;
   
@@ -1579,7 +1590,14 @@ async function luuBaiHoc(e) {
     test_document_id: $('bhTestTaiLieu').value || null,
     test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
     test_latex_content: $('bhTestLatex') ? $('bhTestLatex').value.trim() || null : null,
-    note: $('bhGhiChu').value.trim() || null,
+    note: (function() {
+      var studentNote = $('bhGhiChu').value.trim();
+      var teacherNote = $('bhGhiChuGiaoVien') ? $('bhGhiChuGiaoVien').value.trim() : '';
+      if (teacherNote) {
+        return studentNote + '\n\n---TEACHER_NOTE---\n' + teacherNote;
+      }
+      return studentNote || null;
+    })(),
     sort: parseInt($('bhSapXep').value) || 0,
     published: $('bhXuatBan').checked,
     theory_sections: theorySections.filter(function (sec) {

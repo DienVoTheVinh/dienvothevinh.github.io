@@ -326,7 +326,7 @@ function theBaiHoc(bh) {
         teacherBadge +
       '</div>' +
       '<h3 style="margin-top:10px">' + bh.title + '</h3>' +
-      '<p>' + (bh.note || 'Video bài giảng + tài liệu kèm theo') + '</p>' +
+      '<p>' + ((bh.note || '').split('---TEACHER_NOTE---')[0].trim() || 'Video bài giảng + tài liệu kèm theo') + '</p>' +
       '<div class="foot"><span style="font-size:.82rem;color:var(--ink-3)">' +
         (bh.so_cau ? bh.so_cau + ' câu hỏi' : '') + '</span>' +
         '<a class="btn btn-primary btn-sm" href="' + href + '">Vào học</a>' +
