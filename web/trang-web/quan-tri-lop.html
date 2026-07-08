@@ -1390,6 +1390,18 @@ function renderLessonAcc(b) {
 
   var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
 
+  var rawNote = b.note || '';
+  var noteParts = rawNote.split('---TEACHER_NOTE---');
+  var teacherNote = (noteParts[1] || '').trim();
+  var teacherNoteHtml = '';
+  if (teacherNote) {
+    teacherNoteHtml = 
+      '<div class="chi-gv" style="background:rgba(37,99,235,0.04); border-left:3px solid var(--accent); padding:10px 14px; border-radius:8px; margin-top:10px; margin-bottom:12px; font-size:0.85rem; border:1px solid rgba(37,99,235,0.1); border-left-width:3px">' +
+        '<div style="font-weight:700; color:var(--accent); margin-bottom:4px; display:flex; align-items:center; gap:4px">👨‍🏫 Ghi chú nội bộ của Trợ giảng / Giáo viên:</div>' +
+        '<div style="white-space:pre-wrap; color:var(--ink-2); line-height:1.45">' + qlaEsc(teacherNote) + '</div>' +
+      '</div>';
+  }
+
   return '<div class="qla-bai">' +
     '<div class="qla-bai-hd" onclick="qlaToggle(this)">' +
       '<span class="dot ' + dot + '" title="' + (b.published ? 'Đã xuất bản' : 'Nháp') + '"></span>' +
@@ -1399,6 +1411,7 @@ function renderLessonAcc(b) {
     '</div>' +
     '<div class="qla-bai-body">' +
       '<div class="qla-status">' + stateBadge + badgeChuyenDe(b.topics) + (b.locked ? '<span class="badge" style="background:#e74c3c;color:#fff">🔒 Đã khoá</span>' : '') + '<span class="ord">Thứ tự: ' + b.sort + '</span></div>' +
+      teacherNoteHtml +
       '<div class="qla-actlabel">⚙️ Thao tác</div>' +
       '<div class="qla-actions">' +
         '<div class="qla-actg">' +
