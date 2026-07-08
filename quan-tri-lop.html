@@ -1438,8 +1438,8 @@ async function taiLessonsLop() {
       var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
       var mau = g.topic.color || 'var(--accent)';
       return '<div class="qla-topic open">' +
-        '<div class="qla-topic-hd" style="border-left-color:' + mau + '" onclick="qlaToggle(this)">' +
-          '<span class="nm">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
+        '<div class="qla-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="qlaToggle(this)">' +
+          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
         '</div>' +
         '<div class="qla-topic-body">' + g.lessons.map(function(b) { return renderLessonAcc(b, mau); }).join('') + '</div>' +
       '</div>';

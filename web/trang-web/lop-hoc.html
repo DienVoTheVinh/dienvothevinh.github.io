@@ -811,8 +811,8 @@ function hienThiLessonsGomNhom(ds) {
       var avg = coTd ? Math.round(tongPct / coTd) : 0;
       var openC = idx === 0 ? ' open' : '';
       return '<div class="lh-topic' + openC + '">' +
-        '<div class="lh-topic-hd" style="border-left-color:' + mau + '" onclick="lhToggle(this)">' + vmVongTienDo(avg, 40, 5) +
-          '<div style="min-width:0"><div class="nm">' + lhEsc(ten) + '</div><div class="cnt">' + g.lessons.length + ' bài giảng · ' + avg + '% hoàn thành</div></div>' +
+        '<div class="lh-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="lhToggle(this)">' + vmVongTienDo(avg, 40, 5) +
+          '<div style="min-width:0"><div class="nm" style="color:var(--topic-color)">' + lhEsc(ten) + '</div><div class="cnt">' + g.lessons.length + ' bài giảng · ' + avg + '% hoàn thành</div></div>' +
           '<span class="car">▶</span>' +
         '</div>' +
         '<div class="lh-topic-body">' + baiHtml + '</div>' +
