@@ -519,16 +519,28 @@ async function taiDuLieuDanhMuc() {
   // 2. Tải danh sách chuyên đề
   await napDropdownChuyenDe();
   
-  // Lắng nghe thay đổi lớp học để lọc lại chuyên đề tương ứng
+  // Lắng nghe thay đổi lớp học để lọc lại chuyên đề và tài liệu tương ứng
   formLopSelect.addEventListener('change', function() {
     napDropdownChuyenDe(this.value);
+    napDropdownTaiLieu(this.value);
   });
+}
 
-  // 3. Tải danh sách tài liệu PDF từ LaTeX
-  var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
-  tatCaTaiLieu = r3.data || [];
+// 3. Tải danh sách tài liệu PDF theo lớp học áp dụng
+var tatCaTaiLieu = [];
+async function napDropdownTaiLieu(classId, selectDocId, selectTestId) {
   var formTlSelect = $('bhTaiLieu');
   var formTestSelect = $('bhTestTaiLieu');
+  if (!formTlSelect || !formTestSelect) return;
+
+  formTlSelect.innerHTML = '<option value="">-- Không đính kèm tài liệu --</option>';
+  formTestSelect.innerHTML = '<option value="">-- Không có bài test --</option>';
+
+  if (!classId) return;
+
+  var r = await sb.from('documents').select('id, title, file_path').eq('class_id', classId).order('created_at', { ascending: false });
+  tatCaTaiLieu = r.data || [];
+  
   tatCaTaiLieu.forEach(function(t) {
     var opt = document.createElement('option');
     opt.value = t.id;
@@ -536,6 +548,9 @@ async function taiDuLieuDanhMuc() {
     formTlSelect.appendChild(opt);
     formTestSelect.appendChild(opt.cloneNode(true));
   });
+
+  if (selectDocId) formTlSelect.value = selectDocId;
+  if (selectTestId) formTestSelect.value = selectTestId;
 }
 
 // --- QUẢN LÝ CHUYÊN ĐỀ DỘNG ---
@@ -1521,6 +1536,7 @@ async function moFormThemMoi() {
     $('bhLop').value = lopDangLoc;
   }
   await napDropdownChuyenDe($('bhLop').value);
+  await napDropdownTaiLieu($('bhLop').value);
   
   $('modalForm').style.display = 'flex';
 }
@@ -1540,6 +1556,7 @@ async function moFormSua(id) {
   $('bhLop').value = bh.class_id || '';
   
   await napDropdownChuyenDe(bh.class_id, bh.topic_id);
+  await napDropdownTaiLieu(bh.class_id, bh.document_id, bh.test_document_id);
   
   $('bhYoutube').value = bh.youtube_url || '';
   var doc = tatCaTaiLieu.find(function(t) { return t.id === bh.document_id; });

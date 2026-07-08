@@ -256,6 +256,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <!-- Tabs -->
       <div class="tab-headers">
         <button class="tab-header-btn active" id="tabLessons" onclick="doiPhanHeLop('lessons')">📖 Bài giảng</button>
+        <button class="tab-header-btn" id="tabTailieu" onclick="doiPhanHeLop('tailieu')">📂 Tài liệu</button>
         <button class="tab-header-btn" id="tabStudents" onclick="doiPhanHeLop('students')">👥 Học sinh</button>
         <button class="tab-header-btn" id="tabBangtin" onclick="doiPhanHeLop('bangtin')">📢 Bảng tin lớp</button>
       </div>
@@ -267,6 +268,15 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
         </div>
         <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
+      </div>
+
+      <!-- Tab Tài liệu -->
+      <div id="phanHeTailieu" style="display:none; margin-top:10px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <h3 style="font-size:1.1rem">📂 Kho tài liệu của lớp</h3>
+          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormTailieu()">+ Thêm tài liệu mới</button>
+        </div>
+        <div id="dsTaiLieuLop"></div>
       </div>
 
       <!-- Tab Bảng tin lớp -->
@@ -763,6 +773,43 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- Modal Thêm Tài Liệu Lớp -->
+<div class="modal" id="modalFormTailieu" style="display:none; z-index: 10008;">
+  <div class="modal-content" style="max-width: 500px; text-align: left;">
+    <button class="modal-close" onclick="dongFormTailieu()">×</button>
+    <h2 style="margin-bottom:18px; font-size:1.3rem">📂 Thêm tài liệu vào kho lớp</h2>
+    <form id="formTailieuLop" onsubmit="luuTailieuLop(event)">
+      <div class="field">
+        <label>Tên tài liệu <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="tlTen" required placeholder="Ví dụ: Đề cương Ôn tập Giữa kì I">
+      </div>
+      
+      <div class="field">
+        <label>Cách đăng tài liệu <b style="color:var(--accent)">*</b></label>
+        <select class="input" id="tlLoai" onchange="doiLoaiUploadTailieu()">
+          <option value="file">Tải lên tệp PDF trực tiếp</option>
+          <option value="url">Dán đường dẫn link (Drive, Dropbox, v.v.)</option>
+        </select>
+      </div>
+
+      <div class="field" id="vungTlFile">
+        <label>Chọn tệp PDF <b style="color:var(--accent)">*</b></label>
+        <input type="file" class="input" id="tlFile" accept="application/pdf" style="padding:6px">
+      </div>
+
+      <div class="field" id="vungTlUrl" style="display:none">
+        <label>Đường dẫn tài liệu (URL) <b style="color:var(--accent)">*</b></label>
+        <input class="input" id="tlUrl" placeholder="Ví dụ: https://drive.google.com/file/d/...">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px">
+        <button type="button" class="btn btn-secondary" onclick="dongFormTailieu()">Hủy</button>
+        <button type="submit" class="btn btn-primary" id="nutLuuTailieu">Lưu tài liệu</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1319,7 +1366,7 @@ async function xoaLopHocCurrent() {
 /* ----- Chuyển đổi tab ----- */
 function doiPhanHeLop(tab) {
   tabDangChon = tab;
-  ['Lessons', 'Students', 'Bangtin'].forEach(function (t) {
+  ['Lessons', 'Students', 'Bangtin', 'Tailieu'].forEach(function (t) {
     var b = $('tab' + t), p = $('phanHe' + t);
     if (b) b.classList.remove('active');
     if (p) p.style.display = 'none';
@@ -1331,11 +1378,13 @@ function doiPhanHeLop(tab) {
   if (tab === 'lessons') taiLessonsLop();
   else if (tab === 'students') taiStudentsLop();
   else if (tab === 'bangtin' && classDangChon) taiBangTinPanel(classDangChon.id);
+  else if (tab === 'tailieu') taiTaiLieuLop();
 }
 
 /* ----- Tab Bài giảng ----- */
 async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
+  await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
     .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
@@ -2380,7 +2429,11 @@ function badgeChuyenDe(t) {
 async function taiDuLieuDanhMuc() {
   await napChuyenDeSelect();
 
-  var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
+  var q = sb.from('documents').select('id, title, file_path, class_id').order('created_at', { ascending: false });
+  if (classDangChon) {
+    q = q.eq('class_id', classDangChon.id);
+  }
+  var r3 = await q;
   tatCaTaiLieu = r3.data || [];
   var formTlSelect = $('bhTaiLieu');
   var formTestSelect = $('bhTestTaiLieu');
@@ -4026,6 +4079,174 @@ function chenDongCau(id) {
   ta.value = c + (c && !c.endsWith('\n') ? '\n' : '') + 'Câu ' + n + ': ';
   ta.focus();
   ta.selectionStart = ta.selectionEnd = ta.value.length;
+}
+
+// ----- KHO TÀI LIỆU LỚP -----
+async function taiTaiLieuLop() {
+  var container = $('dsTaiLieuLop');
+  if (!container) return;
+  container.innerHTML = '<div class="empty">Đang tải tài liệu...</div>';
+  
+  if (!classDangChon) return;
+  
+  var rDocs = await sb.from('documents')
+    .select('id, title, file_path, created_at')
+    .eq('class_id', classDangChon.id)
+    .order('created_at', { ascending: false });
+    
+  var docs = rDocs.data || [];
+  
+  var rLessons = await sb.from('lessons')
+    .select('id, title, document_id, test_document_id, homework_document_id')
+    .eq('class_id', classDangChon.id);
+  var lessons = rLessons.data || [];
+  
+  if (!docs.length) {
+    container.innerHTML = '<div class="empty card">Chưa có tài liệu nào trong kho của lớp. Bấm "+ Thêm tài liệu mới" để đăng tài liệu đầu tiên!</div>';
+    return;
+  }
+  
+  var html = '<table class="table" style="width:100%; border-collapse:collapse; background:var(--bg); text-align:left; border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden">' +
+    '<thead><tr style="background:var(--surface-2); border-bottom:1px solid var(--line)">' +
+      '<th style="padding:12px 14px; font-weight:700; font-size:0.88rem; color:var(--ink-2)">Tên tài liệu / Tệp tin</th>' +
+      '<th style="padding:12px 14px; font-weight:700; font-size:0.88rem; color:var(--ink-2)">Gắn với bài học</th>' +
+      '<th style="padding:12px 14px; font-weight:700; font-size:0.88rem; color:var(--ink-2); text-align:right">Thao tác</th>' +
+    '</tr></thead><tbody>';
+    
+  docs.forEach(function (doc) {
+    var linkedLessons = [];
+    lessons.forEach(function (l) {
+      if (l.document_id === doc.id) linkedLessons.push('📄 ' + l.title);
+      if (l.test_document_id === doc.id) linkedLessons.push('📝 Test: ' + l.title);
+      if (l.homework_document_id === doc.id) linkedLessons.push('🏠 BTVN: ' + l.title);
+    });
+    
+    var linkedHtml = linkedLessons.length 
+      ? '<div style="display:flex; flex-direction:column; gap:4px">' + 
+          linkedLessons.map(function(txt) { 
+            return '<span style="font-size:0.78rem; color:var(--ink-2); background:var(--surface-2); padding:2px 8px; border-radius:4px; display:inline-block; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">' + qlaEsc(txt) + '</span>'; 
+          }).join('') + 
+        '</div>'
+      : '<span style="font-size:0.8rem; color:var(--ink-3)">Chưa gắn bài học nào</span>';
+      
+    var fileLink = doc.file_path || '#';
+    
+    var nutXoa = laQuanLyLop()
+      ? '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-size:0.8rem" onclick="xoaTaiLieuLop(\'' + doc.id + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">🗑 Xóa</button>'
+      : '';
+      
+    html += '<tr style="border-bottom:1px solid var(--line)">' +
+      '<td style="padding:12px 14px">' +
+        '<div style="font-weight:700; font-size:0.92rem; color:var(--ink)">' + qlaEsc(doc.title) + '</div>' +
+        '<div style="font-size:0.75rem; color:var(--ink-3); margin-top:3px; word-break:break-all"><a href="' + fileLink + '" target="_blank" style="color:var(--accent); text-decoration:underline">' + qlaEsc(fileLink.split('/').pop()) + '</a></div>' +
+      '</td>' +
+      '<td style="padding:12px 14px; vertical-align:middle">' + linkedHtml + '</td>' +
+      '<td style="padding:12px 14px; text-align:right; vertical-align:middle">' +
+        '<div style="display:inline-flex; gap:6px">' +
+          '<a class="btn btn-secondary btn-sm" href="' + fileLink + '" target="_blank" style="padding:4px 10px; font-size:0.8rem">👁 Xem</a>' +
+          nutXoa +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+async function xoaTaiLieuLop(id, title) {
+  if (!confirm('Thầy có chắc chắn muốn xóa tài liệu "' + title + '"? Thao tác này sẽ gỡ liên kết khỏi tất cả bài giảng đang sử dụng tài liệu này.')) return;
+  
+  var btn = event.target;
+  btn.disabled = true;
+  
+  try {
+    await sb.from('lessons').update({ document_id: null }).eq('document_id', id);
+    await sb.from('lessons').update({ test_document_id: null }).eq('test_document_id', id);
+    await sb.from('lessons').update({ homework_document_id: null }).eq('homework_document_id', id);
+    
+    var r = await sb.from('documents').delete().eq('id', id);
+    if (r.error) throw r.error;
+    
+    taiTaiLieuLop();
+    taiDuLieuDanhMuc();
+  } catch (e) {
+    alert('Lỗi: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function moFormTailieu() {
+  $('formTailieuLop').reset();
+  doiLoaiUploadTailieu();
+  $('modalFormTailieu').style.display = 'flex';
+}
+function dongFormTailieu() {
+  $('modalFormTailieu').style.display = 'none';
+}
+function doiLoaiUploadTailieu() {
+  var val = $('tlLoai').value;
+  if (val === 'file') {
+    $('vungTlFile').style.display = 'block';
+    $('tlFile').required = true;
+    $('vungTlUrl').style.display = 'none';
+    $('tlUrl').required = false;
+  } else {
+    $('vungTlFile').style.display = 'none';
+    $('tlFile').required = false;
+    $('vungTlUrl').style.display = 'block';
+    $('tlUrl').required = true;
+  }
+}
+async function luuTailieuLop(e) {
+  e.preventDefault();
+  if (!classDangChon) return;
+  
+  var title = $('tlTen').value.trim();
+  var loai = $('tlLoai').value;
+  var path = '';
+  
+  var btn = $('nutLuuTailieu');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang lưu...';
+  
+  try {
+    if (loai === 'file') {
+      var file = $('tlFile').files[0];
+      if (!file) throw new Error('Vui lòng chọn tệp PDF.');
+      
+      var fileExt = file.name.split('.').pop();
+      var fileName = 'doc-' + Date.now() + '.' + fileExt;
+      var filePath = 'documents/' + fileName;
+      
+      var rUpload = await sb.storage.from('documents').upload(filePath, file);
+      if (rUpload.error) throw new Error('Lỗi tải tệp lên: ' + rUpload.error.message);
+      
+      var rUrl = sb.storage.from('documents').getPublicUrl(filePath);
+      path = rUrl.data.publicUrl;
+    } else {
+      path = $('tlUrl').value.trim();
+      if (!path) throw new Error('Vui lòng nhập đường dẫn URL.');
+    }
+    
+    var r = await sb.from('documents').insert({
+      title: title,
+      class_id: classDangChon.id,
+      file_path: path
+    });
+    
+    if (r.error) throw r.error;
+    
+    dongFormTailieu();
+    taiTaiLieuLop();
+    taiDuLieuDanhMuc();
+  } catch (e) {
+    alert('Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Lưu tài liệu';
+  }
 }
 </script>
 
