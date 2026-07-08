@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.5">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.6">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -228,29 +228,30 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <div class="tab-headers">
         <button class="tab-header-btn active" id="tabLessons" onclick="doiPhanHeLop('lessons')">📖 Bài giảng</button>
         <button class="tab-header-btn" id="tabStudents" onclick="doiPhanHeLop('students')">👥 Học sinh</button>
+        <button class="tab-header-btn" id="tabBangtin" onclick="doiPhanHeLop('bangtin')">📢 Bảng tin lớp</button>
       </div>
 
-      <!-- Tab Bài giảng (trái: bài giảng · phải: bảng tin lớp) -->
+      <!-- Tab Bài giảng -->
       <div id="phanHeLessons" style="margin-top:10px">
-        <div class="lop-split" style="display:grid; grid-template-columns:1fr 340px; gap:22px; align-items:start">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-              <h3 style="font-size:1.1rem">📚 Danh sách bài học</h3>
-              <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
-            </div>
-            <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
-          </div>
-          <aside class="bt-panel" style="border:1px solid var(--line); border-radius:var(--r-md,12px); background:var(--surface); overflow:hidden; position:sticky; top:16px">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--surface-2)">
-              <span style="font-weight:800; font-size:.98rem">📢 Bảng tin lớp</span>
-              <a class="btn btn-primary btn-sm chi-gv" id="btPanelDang" href="#">✍️ Đăng bài</a>
-            </div>
-            <div id="btPanelList" style="padding:12px 14px; display:flex; flex-direction:column; gap:10px; max-height:520px; overflow:auto">
-              <div style="color:var(--ink-3); font-size:.86rem">Đang tải…</div>
-            </div>
-            <a id="btPanelAll" href="#" style="display:block; text-align:center; padding:10px; border-top:1px solid var(--line); font-size:.86rem; font-weight:600; color:var(--accent); text-decoration:none">Xem toàn bộ bảng tin →</a>
-          </aside>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <h3 style="font-size:1.1rem">📚 Danh sách bài học</h3>
+          <button class="btn btn-primary btn-sm chi-gv" onclick="moFormThemBaiGiang()">+ Thêm bài giảng</button>
         </div>
+        <div id="dsBaiHocLop" style="display:flex; flex-direction:column; gap:12px"></div>
+      </div>
+
+      <!-- Tab Bảng tin lớp -->
+      <div id="phanHeBangtin" style="display:none; margin-top:10px">
+        <aside class="bt-panel" style="max-width:680px; border:1px solid var(--line); border-radius:var(--r-md,12px); background:var(--surface); overflow:hidden">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid var(--line); background:var(--surface-2)">
+            <span style="font-weight:800; font-size:1.02rem">📢 Bảng tin lớp</span>
+            <a class="btn btn-primary btn-sm chi-gv" id="btPanelDang" href="#">✍️ Đăng bài</a>
+          </div>
+          <div id="btPanelList" style="padding:14px 16px; display:flex; flex-direction:column; gap:10px">
+            <div style="color:var(--ink-3); font-size:.86rem">Đang tải…</div>
+          </div>
+          <a id="btPanelAll" href="#" style="display:block; text-align:center; padding:12px; border-top:1px solid var(--line); font-size:.88rem; font-weight:600; color:var(--accent); text-decoration:none">Xem toàn bộ bảng tin →</a>
+        </aside>
       </div>
 
       <!-- Tab Học sinh -->
@@ -1262,15 +1263,18 @@ async function xoaLopHocCurrent() {
 /* ----- Chuyển đổi tab ----- */
 function doiPhanHeLop(tab) {
   tabDangChon = tab;
-  ['Lessons', 'Students'].forEach(function (t) {
-    $('tab' + t).classList.remove('active');
-    $('phanHe' + t).style.display = 'none';
+  ['Lessons', 'Students', 'Bangtin'].forEach(function (t) {
+    var b = $('tab' + t), p = $('phanHe' + t);
+    if (b) b.classList.remove('active');
+    if (p) p.style.display = 'none';
   });
-  $('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  $('phanHe' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = 'flex';
-  
+  var cap = tab.charAt(0).toUpperCase() + tab.slice(1);
+  if ($('tab' + cap)) $('tab' + cap).classList.add('active');
+  if ($('phanHe' + cap)) $('phanHe' + cap).style.display = (tab === 'students') ? 'flex' : 'block';
+
   if (tab === 'lessons') taiLessonsLop();
-  else taiStudentsLop();
+  else if (tab === 'students') taiStudentsLop();
+  else if (tab === 'bangtin' && classDangChon) taiBangTinPanel(classDangChon.id);
 }
 
 /* ----- Tab Bài giảng ----- */
@@ -2213,18 +2217,21 @@ async function napChuyenDeSelect(chonId) {
       }
     }
     
-    // Hiện chuyên đề khối khác ở dạng thu gọn tham chiếu chéo
-    var ogKhac = document.createElement('optgroup');
-    ogKhac.label = '--- Chuyên đề các khối khác ---';
-    tatCaChuyenDe.filter(function (c) { return c.grade !== targetGrade; }).forEach(function (c) {
-      var opt = document.createElement('option');
-      opt.value = c.id; 
-      opt.textContent = 'Khối ' + c.grade + ': [' + c.code + '] ' + c.name + (c.is_specialized ? ' (Chuyên)' : '');
-      ogKhac.appendChild(opt);
+    // Chuyên đề các khối khác — gom nhóm gọn gàng theo TỪNG KHỐI
+    var khac = tatCaChuyenDe.filter(function (c) { return c.grade !== targetGrade; });
+    var theoKhoiKhac = {};
+    khac.forEach(function (c) { (theoKhoiKhac[c.grade || '?'] = theoKhoiKhac[c.grade || '?'] || []).push(c); });
+    Object.keys(theoKhoiKhac).sort(function (a, b) { return (parseInt(a) || 0) - (parseInt(b) || 0); }).forEach(function (g) {
+      var ogK = document.createElement('optgroup');
+      ogK.label = '── Khối ' + g + ' ──';
+      theoKhoiKhac[g].sort(function (a, b) { return (a.is_specialized ? 1 : 0) - (b.is_specialized ? 1 : 0); }).forEach(function (c) {
+        var opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = '[' + c.code + '] ' + c.name + (c.is_specialized ? ' (Chuyên)' : '');
+        ogK.appendChild(opt);
+      });
+      sel.appendChild(ogK);
     });
-    if (ogKhac.children.length > 0) {
-      sel.appendChild(ogKhac);
-    }
   }
   
   var optMoi = document.createElement('option');
