@@ -4099,6 +4099,12 @@ function chenDongCau(id) {
 }
 
 // ----- KHO TÀI LIỆU LỚP -----
+function buildPdfUrl(p) {
+  if (!p) return '';
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p;
+}
+
 async function taiTaiLieuLop() {
   var container = $('dsTaiLieuLop');
   if (!container) return;
@@ -4146,7 +4152,7 @@ async function taiTaiLieuLop() {
         '</div>'
       : '<span style="font-size:0.8rem; color:var(--ink-3)">Chưa gắn bài học nào</span>';
       
-    var fileLink = doc.file_path || '#';
+    var fileLink = buildPdfUrl(doc.file_path);
     
     var nutXoa = laQuanLyLop()
       ? '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-size:0.8rem" onclick="xoaTaiLieuLop(\'' + doc.id + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">🗑 Xóa</button>'
@@ -4237,10 +4243,10 @@ async function luuTailieuLop(e) {
       var fileName = 'doc-' + Date.now() + '.' + fileExt;
       var filePath = 'documents/' + fileName;
       
-      var rUpload = await sb.storage.from('documents').upload(filePath, file);
+      var rUpload = await sb.storage.from('tai-lieu').upload(filePath, file);
       if (rUpload.error) throw new Error('Lỗi tải tệp lên: ' + rUpload.error.message);
       
-      var rUrl = sb.storage.from('documents').getPublicUrl(filePath);
+      var rUrl = sb.storage.from('tai-lieu').getPublicUrl(filePath);
       path = rUrl.data.publicUrl;
     } else {
       path = $('tlUrl').value.trim();

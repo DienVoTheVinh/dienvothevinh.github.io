@@ -1153,6 +1153,12 @@ function doiStudentTab(tab) {
   }
 }
 
+function buildPdfUrl(p) {
+  if (!p) return '';
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p;
+}
+
 async function taiTaiLieuHocSinh() {
   var container = $('dsTaiLieuHocSinh');
   if (!container) return;
@@ -1207,7 +1213,7 @@ async function taiTaiLieuHocSinh() {
         '</div>'
       : '<span style="font-size:0.8rem; color:var(--ink-3)">Tài liệu tham khảo</span>';
       
-    var fileLink = doc.file_path || '#';
+    var fileLink = buildPdfUrl(doc.file_path);
     
     html += '<tr style="border-bottom:1px solid var(--line)">' +
       '<td style="padding:12px 14px">' +
