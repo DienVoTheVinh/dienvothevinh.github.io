@@ -434,7 +434,7 @@ img{max-width:100%;display:block}
   border-top-right-radius: var(--r-md);
   opacity: 0.85;
 }
-.card::after {
+/* .card::after {
   content: "";
   position: absolute;
   top: 8px; left: 8px; right: 8px; bottom: 8px;
@@ -445,7 +445,7 @@ img{max-width:100%;display:block}
 }
 .card:hover::after {
   border-color: rgba(194, 125, 0, 0.4);
-}
+} */
 .card:hover {
   background: var(--surface-2);
   transform: translateY(-4px);
