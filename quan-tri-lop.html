@@ -1416,7 +1416,6 @@ function renderLessonAcc(b) {
       '<div class="qla-actions">' +
         '<div class="qla-actg">' +
           '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
-          '<button class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" onclick="moQuickHubModal(\'' + b.id + '\')">🛠 Quản lý buổi</button>' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
         '</div>' +
         '<div class="qla-actg">' +
@@ -1786,13 +1785,21 @@ async function veRosterTheoDoi() {
   var nxMap = {};
   (rNx.data || []).forEach(function (n) { nxMap[n.student_id] = n; });
 
-  // Bài tập về nhà của bài đang chọn
+  // Bài tập về nhà & Bài kiểm tra (submissions) của bài đang chọn
   var hwLid = $('hwLessonSel') ? $('hwLessonSel').value : '';
   var hwLesson = hwLid ? (window.hsHwLessonMap || {})[hwLid] : null;
-  var hwSub = {}, hwMark = {};
+  var hwSub = {}, hwMark = {}, subsMap = {};
   if (hwLid) {
-    var rS = await sb.from('submissions').select('student_id').eq('lesson_id', hwLid).eq('kind', 'homework');
-    (rS.data || []).forEach(function (x) { hwSub[x.student_id] = true; });
+    var rS = await sb.from('submissions')
+      .select('id, submitted_at, files, status, score, feedback, graded_files, kind, student_id')
+      .eq('lesson_id', hwLid);
+    (rS.data || []).forEach(function (sub) {
+      if (sub.kind === 'homework') {
+        hwSub[sub.student_id] = true;
+      }
+      subsMap[sub.student_id] = subsMap[sub.student_id] || [];
+      subsMap[sub.student_id].push(sub);
+    });
     var rM = await sb.from('homework_status').select('student_id, submitted').eq('lesson_id', hwLid);
     (rM.data || []).forEach(function (x) { hwMark[x.student_id] = x.submitted; });
   }
@@ -1831,6 +1838,52 @@ async function veRosterTheoDoi() {
         ' <button class="btn btn-secondary btn-sm" onclick="toggleNopBTVN(\'' + s.id + '\', ' + (daNop ? 'false' : 'true') + ')">' + (daNop ? 'Bỏ đánh dấu' : '✓ Đánh dấu đã nộp') + '</button>')
       : '<span style="color:var(--ink-3);font-size:.82rem">Chọn bài tập ở trên để đánh dấu nộp</span>';
 
+    var gradingHtml = '';
+    if (hwLid && subsMap[s.id]) {
+      subsMap[s.id].forEach(function(sub) {
+        var subNgay = new Date(sub.submitted_at).toLocaleString('vi-VN');
+        var filesHtml = (sub.files || []).map(function(f) {
+          return '<a href="' + f.link + '" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:underline; margin-right:12px">📄 ' + ddEsc(f.name) + '</a>';
+        }).join(' ');
+        
+        var gradedFilesHtml = (sub.graded_files || []).map(function(f) {
+          return '<a href="' + f.link + '" target="_blank" style="color:var(--ok); font-weight:700; text-decoration:underline; margin-right:12px">✏️ ' + ddEsc(f.name) + '</a>';
+        }).join(' ');
+
+        var badgeText = sub.status === 'graded' ? 'Đã chấm ' + (sub.score != null ? '· ' + sub.score + 'đ' : '') : 'Chờ chấm';
+        var badgeClass = sub.status === 'graded' ? 'pill-green' : 'pill-warn';
+        var kindText = sub.kind === 'homework' ? '🏠 BTVN' : '📝 Bài kiểm tra';
+        var kindColor = sub.kind === 'homework' ? '#7c3aed' : 'var(--accent)';
+        
+        gradingHtml += 
+          '<div style="background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:8px; margin-bottom:8px; border-left:3px solid ' + kindColor + '; width:100%; box-sizing:border-box">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">' +
+              '<span style="font-size:0.8rem; font-weight:700; color:var(--ink-2)">' + kindText + ' · ' + subNgay + '</span>' +
+              '<span class="pill ' + badgeClass + '" style="font-size:0.72rem; padding:2px 8px; font-weight:700">' + badgeText + '</span>' +
+            '</div>' +
+            '<div style="font-size:0.83rem; margin-bottom:8px; display:flex; flex-direction:column; gap:4px">' +
+              '<div><b>Bài nộp:</b> ' + (filesHtml || '<span style="color:var(--ink-3)">Không có tệp</span>') + '</div>' +
+              (gradedFilesHtml ? '<div><b>Bài đã sửa:</b> ' + gradedFilesHtml + '</div>' : '') +
+            '</div>' +
+            '<div style="display:grid; grid-template-columns:80px 1fr; gap:8px; margin-bottom:8px">' +
+              '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm" id="sdiem-' + sub.id + '" value="' + (sub.score != null ? sub.score : '') + '" style="font-size:0.83rem; padding:6px; height:36px">' +
+              '<textarea class="input" rows="2" placeholder="Lời phê..." id="sphe-' + sub.id + '" style="font-size:0.83rem; padding:6px 8px; resize:vertical; line-height:1.45; min-height:36px">' + ddEsc(sub.feedback || '') + '</textarea>' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:space-between; border-top:1px dashed var(--line); padding-top:8px">' +
+              '<div style="display:inline-flex; align-items:center; gap:4px">' +
+                '<button type="button" class="btn btn-ghost btn-sm" onclick="chenDongY(\'' + sub.id + '\')" style="padding:2px 6px; font-size:0.75rem">• Thêm ý</button>' +
+                '<button type="button" class="btn btn-ghost btn-sm" onclick="chenDongCau(\'' + sub.id + '\')" style="padding:2px 6px; font-size:0.75rem">+ Thêm câu</button>' +
+              '</div>' +
+              '<div style="display:inline-flex; align-items:center; gap:8px">' +
+                '<input type="file" id="sfile-' + sub.id + '" accept="image/*,application/pdf" multiple style="font-size:0.75rem; max-width:140px">' +
+                '<button class="btn btn-primary btn-sm" id="sluu-' + sub.id + '" onclick="luuChamBaiDocLap(\'' + sub.id + '\')" style="padding:4px 10px; font-size:0.78rem">💾 Lưu chấm điểm</button>' +
+              '</div>' +
+            '</div>' +
+            '<div id="sfnotify-' + sub.id + '" style="font-size:0.78rem; color:var(--ok); margin-top:4px"></div>' +
+          '</div>';
+      });
+    }
+
     var ltHtml;
     if (tpLessons.length) {
       var cc = 0; if (tpProgMap[s.id]) tpLessons.forEach(function (l) { if (tpProgMap[s.id][l.id] && tpProgMap[s.id][l.id].completed_at) cc++; });
@@ -1848,6 +1901,7 @@ async function veRosterTheoDoi() {
         '<div class="hs-row"><span class="lbl">📋 Điểm danh</span>' + ddHtml + '</div>' +
         '<div class="hs-row"><span class="lbl">💬 Nhận xét</span><span style="flex:1;min-width:0">' + nxHtml + '</span></div>' +
         '<div class="hs-row"><span class="lbl">🏠 Bài tập về nhà</span><span style="flex:1;min-width:0">' + hwHtml + '</span></div>' +
+        (gradingHtml ? '<div class="hs-row" style="flex-direction:column; align-items:stretch; border-bottom:1px solid var(--line)"><span class="lbl">✏️ Chấm bài học sinh</span><div style="flex:1; width:100%">' + gradingHtml + '</div></div>' : '') +
         '<div class="hs-row"><span class="lbl">📖 Lý thuyết</span><span style="flex:1">' + ltHtml + '</span></div>' +
         '<div class="hs-row" style="border-bottom:none">' +
           '<button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + tenJs + '\')">🔔 Nhắc</button> ' +
@@ -3838,36 +3892,79 @@ async function nopBaiHoChoHocSinh() {
   }
 }
 
-function moQuickHubModal(lessonId) {
-  var iframe = $('iframeQuickHub');
-  if (iframe) {
-    iframe.src = 'bai-hoc?id=' + lessonId + '&hub=1&embed=1';
+async function luuChamBaiDocLap(id) {
+  var nut = $('sluu-' + id);
+  if (!nut) return;
+  var originalText = nut.textContent;
+  nut.disabled = true;
+  nut.textContent = '⏳ Đang lưu…';
+  
+  var notify = $('sfnotify-' + id);
+  if (notify) {
+    notify.textContent = '';
+    notify.style.color = 'var(--ok)';
   }
-  var modal = $('modalQuickHub');
-  if (modal) {
-    modal.style.display = 'flex';
+  
+  try {
+    var fs = $('sfile-' + id).files;
+    if (fs.length) {
+      nut.textContent = '⏳ Đang tải file chấm…';
+      var fd = new FormData();
+      fd.append('kind', 'cham');
+      fd.append('submission_id', id);
+      for (var i = 0; i < fs.length; i++) {
+        fd.append('files', fs[i]);
+      }
+      var r1 = await sb.functions.invoke('nop-bai', { body: fd });
+      if (r1.error) throw new Error(r1.error.message || 'Lỗi trạm tải file');
+      if (r1.data && r1.data.error) throw new Error(r1.data.error);
+    }
+    
+    var diem = $('sdiem-' + id).value;
+    var feedback = $('sphe-' + id).value.trim();
+    var r2 = await sb.from('submissions').update({
+      score: diem === '' ? null : parseFloat(diem),
+      feedback: feedback || null,
+      status: 'graded',
+      graded_at: new Date().toISOString()
+    }).eq('id', id);
+    
+    if (r2.error) throw new Error(r2.error.message);
+    
+    if (notify) {
+      notify.textContent = '✓ Đã lưu chấm điểm và trả bài thành công!';
+      notify.style.color = 'var(--ok)';
+    }
+    
+    setTimeout(function() {
+      veRosterTheoDoi();
+    }, 1200);
+    
+  } catch (e) {
+    alert('Lỗi khi lưu: ' + e.message);
+    nut.disabled = false;
+    nut.textContent = originalText;
   }
 }
 
-function dongQuickHubModal() {
-  var modal = $('modalQuickHub');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-  var iframe = $('iframeQuickHub');
-  if (iframe) {
-    iframe.src = '';
-  }
-  if (typeof taiLessonsLop === 'function') {
-    taiLessonsLop();
-  }
+function chenDongY(id) {
+  var ta = $('sphe-' + id);
+  if (!ta) return;
+  var c = ta.value;
+  ta.value = c + (c && !c.endsWith('\n') ? '\n' : '') + '• ';
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
 }
 
-window.addEventListener('message', function(e) {
-  if (e.data && e.data.action === 'closeHub') {
-    dongQuickHubModal();
-  }
-});
+function chenDongCau(id) {
+  var ta = $('sphe-' + id);
+  if (!ta) return;
+  var c = ta.value;
+  var n = (c.match(/(^|\n)\s*Câu\s*\d/gi) || []).length + 1;
+  ta.value = c + (c && !c.endsWith('\n') ? '\n' : '') + 'Câu ' + n + ': ';
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
+}
 </script>
 
 <!-- Modal Chi Tiết Đọc Lý Thuyết -->
@@ -3929,14 +4026,6 @@ window.addEventListener('message', function(e) {
       <button class="btn btn-secondary" onclick="dongFormNopBaiHo()">Huỷ</button>
       <button class="btn btn-primary" id="btnNopBaiHoSubmit" onclick="nopBaiHoChoHocSinh()">📤 Xác nhận nộp hộ</button>
     </div>
-  </div>
-</div>
-
-<!-- Modal Quick Lesson Hub (Iframe nhúng quản lý buổi học) -->
-<div class="modal" id="modalQuickHub" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10030;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
-  <div class="modal-content" style="max-width:960px; width:100%; height:90vh; padding:0; overflow:hidden; display:flex; flex-direction:column; position:relative; border-radius:14px; border:1px solid var(--line); background:var(--bg); box-shadow:0 24px 64px rgba(0,0,0,.4)">
-    <button onclick="dongQuickHubModal()" style="position:absolute;top:10px;right:14px;font-size:1.6rem;background:var(--surface);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3);z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)">×</button>
-    <iframe id="iframeQuickHub" src="" style="width:100%; height:100%; border:none; background:transparent;"></iframe>
   </div>
 </div>
 
