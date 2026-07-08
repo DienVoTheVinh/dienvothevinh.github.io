@@ -37,6 +37,45 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
 
+.lesson-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  transition: all 0.3s ease;
+  margin-right: 8px;
+}
+.lesson-dot.glowing-dot {
+  animation: dot-glow-pulse 1.8s infinite;
+}
+@keyframes dot-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow-color, rgba(37, 99, 235, 0.7));
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.new-lesson-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 5px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 1.5px 4px rgba(245, 158, 11, 0.35);
+  vertical-align: middle;
+}
+
 /* ===== Bố cục 3 cột: mục lục | video | nội dung ===== */
 .layout { display:flex; flex:1; min-height:0; }
 
@@ -553,11 +592,21 @@ async function taiMucLuc() {
   var classIdHienTai = rCur.data ? rCur.data.class_id : null;
 
   var q = sb.from('lessons')
-    .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
+    .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, created_at, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
     .order('sort', { ascending: false });
   if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
   var r = await q;
   var ds = r.data || [];
+  
+  if (!window.newestLessonIds) {
+    window.newestLessonIds = {};
+    if (ds.length > 0) {
+      var sorted = ds.slice().sort(function (a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      window.newestLessonIds[sorted[0].id] = true;
+    }
+  }
   if (!ds.length) {
     $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';
     return;
@@ -614,7 +663,9 @@ async function taiMucLuc() {
       '<div class="ml-topic-body">' +
       g.lessons.map(function (b) {
         var td = vmTinhTienDoBai(b, viewedByLesson[b.id], actionByLesson[b.id]);
-        var ring = td.total ? vmVongTienDo(td.percent, 30, 4) : '<span style="width:30px;display:inline-block"></span>';
+        var isNew = !!(window.newestLessonIds && window.newestLessonIds[b.id]);
+        var dotClass = isNew ? 'lesson-dot glowing-dot' : 'lesson-dot';
+        var dotHtml = '<div class="' + dotClass + '" style="background:' + mau + '; --glow-color:' + mau + '"></div>';
         var openB = mlBaiMo[b.id] ? ' open' : '';
         var cur = b.id === lessonId ? ' current' : '';
         var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
@@ -626,7 +677,7 @@ async function taiMucLuc() {
         if (!subs) subs = '<a onclick="window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Mở bài giảng</span></a>';
         return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
           '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
-            ring + '<span class="ten">' + mlEsc(b.title) + khoa + '</span><span class="caret2">▶</span>' +
+            dotHtml + '<span class="ten">' + mlEsc(b.title) + (isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '') + khoa + '</span><span class="caret2">▶</span>' +
           '</div>' +
           '<div class="ml-sub">' + subs + '</div>' +
         '</div>';

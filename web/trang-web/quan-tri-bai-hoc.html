@@ -164,12 +164,16 @@
           <textarea class="input" id="bhGhiChuGiaoVien" rows="3" placeholder="Ghi chú nội bộ cho buổi dạy tiếp theo (ví dụ: cần sửa bài tập nào, lý thuyết cần nhấn mạnh...)" style="resize:vertical; border-color: rgba(37, 99, 235, 0.3);"></textarea>
         </div>
 
-        <div class="form-row" style="margin-bottom: 24px">
-          <div class="field">
+        <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-bottom: 24px">
+          <div class="field" style="margin-bottom:0">
             <label>Thứ tự sắp xếp (Càng lớn hiện trước)</label>
             <input type="number" class="input" id="bhSapXep" value="0">
           </div>
-          <div class="field" style="display:flex; align-items:center">
+          <div class="field" style="margin-bottom:0">
+            <label>Ngày giảng dạy / Tạo bài <b style="color:var(--accent)">*</b></label>
+            <input type="date" class="input" id="bhNgayTao" required>
+          </div>
+          <div class="field" style="display:flex; align-items:center; margin-bottom:0">
             <div class="switch-container">
               <input type="checkbox" id="bhXuatBan" checked>
               <label for="bhXuatBan" style="margin:0; font-weight:600">Xuất bản cho học sinh xem</label>
@@ -1489,6 +1493,9 @@ function renderTheorySections() {
 
 async function moFormThemMoi() {
   $('formBaiHoc').reset();
+  if ($('bhNgayTao')) {
+    $('bhNgayTao').value = new Date().toLocaleDateString('sv');
+  }
   if ($('bhGhiChuGiaoVien')) $('bhGhiChuGiaoVien').value = '';
   anhDaCo = []; selectedImageFiles = []; veAnhHienCo();
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
@@ -1527,6 +1534,9 @@ async function moFormSua(id) {
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = bh.id;
   $('bhTieuDe').value = bh.title || '';
+  if ($('bhNgayTao')) {
+    $('bhNgayTao').value = bh.created_at ? bh.created_at.slice(0, 10) : new Date().toLocaleDateString('sv');
+  }
   $('bhLop').value = bh.class_id || '';
   
   await napDropdownChuyenDe(bh.class_id, bh.topic_id);
@@ -1590,6 +1600,7 @@ async function luuBaiHoc(e) {
     test_document_id: $('bhTestTaiLieu').value || null,
     test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
     test_latex_content: $('bhTestLatex') ? $('bhTestLatex').value.trim() || null : null,
+    created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {
       var studentNote = $('bhGhiChu').value.trim();
       var teacherNote = $('bhGhiChuGiaoVien') ? $('bhGhiChuGiaoVien').value.trim() : '';

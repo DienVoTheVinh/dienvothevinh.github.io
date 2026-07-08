@@ -483,9 +483,15 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           </div>
         </div>
 
-        <div class="field">
-          <label>Giáo viên giảng dạy bài này <b style="color:var(--accent)">*</b></label>
-          <select class="input" id="bhTeacher" required></select>
+        <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px">
+          <div class="field" style="margin-bottom:0">
+            <label>Giáo viên giảng dạy bài này <b style="color:var(--accent)">*</b></label>
+            <select class="input" id="bhTeacher" required></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Ngày giảng dạy / Tạo bài <b style="color:var(--accent)">*</b></label>
+            <input type="date" class="input" id="bhNgayTao" required>
+          </div>
         </div>
 
         <div class="field">
@@ -2690,6 +2696,9 @@ async function moFormThemBaiGiang() {
   }
 
   $('formBaiHoc').reset();
+  if ($('bhNgayTao')) {
+    $('bhNgayTao').value = new Date().toLocaleDateString('sv');
+  }
   if ($('bhGhiChuGiaoVien')) $('bhGhiChuGiaoVien').value = '';
   anhDaCo = []; selectedImageFiles = []; veAnhHienCo();
   hwAnhDaCo = []; hwSelectedFiles = []; veBtvnAnh();
@@ -2774,6 +2783,9 @@ async function moFormSua(id) {
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = bh.id;
   $('bhTieuDe').value = bh.title || '';
+  if ($('bhNgayTao')) {
+    $('bhNgayTao').value = bh.created_at ? bh.created_at.slice(0, 10) : new Date().toLocaleDateString('sv');
+  }
   $('bhChuyenDe').value = bh.topic_id || '';
   $('bhYoutube').value = bh.youtube_url || '';
   var doc = tatCaTaiLieu.find(function(t) { return t.id === bh.document_id; });
@@ -2850,6 +2862,7 @@ async function luuBaiHoc(e) {
     test_document_id: $('bhTestTaiLieu').value || null,
     test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
     test_latex_content: $('bhTestLatex') ? $('bhTestLatex').value.trim() || null : null,
+    created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {
       var studentNote = $('bhGhiChu').value.trim();
       var teacherNote = $('bhGhiChuGiaoVien') ? $('bhGhiChuGiaoVien').value.trim() : '';

@@ -1591,7 +1591,17 @@ async function veLichDayStaff() {
       phongDichVu = detailsHtml;
     }
       
-    var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU_VIET[s.weekday] + ')' : TEN_THU_VIET[s.weekday];
+    var classDateStr = '';
+    if (s.recurrence === 'once' && s.date) {
+      classDateStr = formatNgayDep(s.date);
+    } else {
+      var nextDate = new Date(Date.now() + info.diff * 86400000);
+      var dd = String(nextDate.getDate()).padStart(2, '0');
+      var mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+      var yyyy = nextDate.getFullYear();
+      classDateStr = dd + '/' + mm + '/' + yyyy;
+    }
+    var thuText = classDateStr + ' (' + TEN_THU_VIET[s.weekday] + ')';
       
     var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\')">📝 Điểm danh</button>';
     

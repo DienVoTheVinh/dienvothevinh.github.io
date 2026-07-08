@@ -70,6 +70,45 @@
 .lh-sub a.done{color:var(--ok,#28a745)}
 .lh-sub a.done .tk{color:var(--ok,#28a745)}
 @media(max-width:560px){.lh-bai-hd .btn{display:none}.lh-sub a{padding-left:44px}}
+.lesson-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  transition: all 0.3s ease;
+  margin-left: 14px;
+  margin-right: 2px;
+}
+.lesson-dot.glowing-dot {
+  animation: dot-glow-pulse 1.8s infinite;
+}
+@keyframes dot-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow-color, rgba(37, 99, 235, 0.7));
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.new-lesson-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  vertical-align: middle;
+}
 .lesson{display:flex;flex-direction:column;overflow:hidden;padding:0;transition:all .3s ease;border:1px solid var(--line)}
 .lesson:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:var(--shadow); }
 .lesson .thumb{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);position:relative}
@@ -741,8 +780,10 @@ function hienThiLessonsGomNhom(ds) {
       var baiHtml = g.lessons.map(function (b) {
         var td = vmTinhTienDoBai(b, lopViewed[b.id], lopAction[b.id]);
         if (td.total) { tongPct += td.percent; coTd++; }
-        var ring = vmVongTienDo(td.total ? td.percent : 0, 42, 5);
-        var glit = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' <span title="Mới nhất">✨</span>' : '';
+        var isNew = !!(window.newestLessonIds && window.newestLessonIds[b.id]);
+        var dotClass = isNew ? 'lesson-dot glowing-dot' : 'lesson-dot';
+        var dotHtml = '<div class="' + dotClass + '" style="background:' + mau + '; --glow-color:' + mau + '"></div>';
+        var glit = isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '';
         var subs = td.items.map(function (it) {
           return '<a class="' + (it.done ? 'done' : '') + '" style="cursor:pointer" title="Xem nhanh" onclick="vmMoXemNhanh(\'' + b.id + '\',\'' + it.tab + '\')">' +
             '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
@@ -750,7 +791,7 @@ function hienThiLessonsGomNhom(ds) {
         }).join('');
         if (!subs) subs = '<a href="javascript:void(0)" onclick="if(checkGuestAction(event)) window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Vào học bài này</span></a>';
         return '<div class="lh-bai">' +
-          '<div class="lh-bai-hd" onclick="lhToggle(this)">' + ring +
+          '<div class="lh-bai-hd" onclick="lhToggle(this)">' + dotHtml +
             '<div class="tt"><h4>' + lhEsc(b.title) + glit + '</h4><div class="meta">' + td.done + '/' + td.total + ' mục · ' + td.percent + '% hoàn thành</div></div>' +
             '<a class="btn btn-primary btn-sm" href="javascript:void(0)" onclick="if(checkGuestAction(event)) window.location.href=\'bai-hoc?id=' + b.id + '\'; event.stopPropagation()">Vào học</a>' +
             '<span class="car2">▶</span>' +
