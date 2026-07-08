@@ -1604,7 +1604,7 @@ function vmMucConBai(bh) {
   var coLyThuyet = Array.isArray(bh.theory_sections) && bh.theory_sections.length > 0;
   var coTaiLieu = !!(bh.latex_content) || !!(bh.document_id) || !!(bh.documents && bh.documents.file_path);
   var coBang = Array.isArray(bh.images) && bh.images.length > 0;
-  var coBTVN = !!(bh.homework_text) || (Array.isArray(bh.homework_images) && bh.homework_images.length > 0);
+  var coBTVN = !!(bh.homework_text) || (Array.isArray(bh.homework_images) && bh.homework_images.length > 0) || !!bh.homework_latex_content || !!bh.homework_document_id || !!(bh.bai_btvn && bh.bai_btvn.file_path);
   var coTest = !!(bh.test_document_id) || !!(bh.test_latex_content) || !!(bh.bai_test && bh.bai_test.file_path);
   if (coVideo) items.push({ key: 'video', tab: 'video', label: 'Video bài giảng', icon: '🎬', loai: 'view' });
   if (coLyThuyet) items.push({ key: 'lythuyet', tab: 'lythuyet', label: 'Lý thuyết', icon: '📖', loai: 'view' });
@@ -1686,8 +1686,12 @@ function vmNoiDungXemNhanh(b, item) {
     body = imgs.length ? anhList(imgs) : '<p style="color:var(--ink-3)">Chưa có ảnh bảng.</p>';
   } else if (item === 'btvn') {
     var t = b.homework_text || '', hi = Array.isArray(b.homework_images) ? b.homework_images : [];
-    body = (t ? '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>' : '') + (hi.length ? anhList(hi) : '');
-    if (!t && !hi.length) body = '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
+    var hwfp = (b.bai_btvn && b.bai_btvn.file_path) || '';
+    body = (t ? '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>' : '');
+    if (b.homework_latex_content) body += '<p style="color:var(--ink-2);margin-bottom:10px">📝 Đề LaTeX — bấm <b>Vào học</b> để xem bản biên dịch đầy đủ.</p>';
+    if (hwfp) { var hu = vmStorageUrl('tai-lieu', hwfp); body += pdfFrame(hu); dl = hu; }
+    if (hi.length) body += anhList(hi);
+    if (!t && !hi.length && !hwfp && !b.homework_latex_content) body = '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
   } else if (item === 'test') {
     var tfp = (b.bai_test && b.bai_test.file_path) || '';
     if (tfp) { var tu = vmStorageUrl('tai-lieu', tfp); body = pdfFrame(tu); dl = tu; }
