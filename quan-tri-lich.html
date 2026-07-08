@@ -202,9 +202,11 @@
           <option value="online">🎥 Online</option><option value="offline">🏫 Tại lớp</option>
         </select></div>
         <div><label style="font-size:.8rem;font-weight:600">Lặp lại</label><select class="input" id="schRecurrence" onchange="doiLapLai()">
-          <option value="weekly">🔄 Hàng tuần</option><option value="biweekly">🔄 2 tuần/lần</option><option value="once">📅 Chỉ một lần (chọn ngày)</option>
+          <option value="weekly">🔄 Hàng tuần</option><option value="once">📅 Chỉ một lần (chọn ngày)</option>
         </select></div>
         <div id="khungSchNgay" style="display:none"><label style="font-size:.8rem;font-weight:600">Ngày diễn ra</label><input class="input" type="date" id="schDate" onchange="dongBoThuTuNgay()"></div>
+        <div id="khungHieuLuc"><label style="font-size:.8rem;font-weight:600">Áp dụng từ ngày</label><input class="input" type="date" id="schStartDate"></div>
+        <div id="khungKetThuc"><label style="font-size:.8rem;font-weight:600">Kết thúc ngày (để trống nếu kéo dài mãi)</label><input class="input" type="date" id="schEndDate" placeholder="Kéo dài mãi..."></div>
         <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
         <div style="grid-column: span 2; min-width:280px"><label style="font-size:.8rem;font-weight:600">🎥 Link Google Meet (buổi này)</label><input class="input" id="schMeet" placeholder="Dán link Meet của GV phụ trách buổi này — để trống sẽ dùng link chung của lớp"></div>
         <div id="schBtnContainer"><button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button></div>
@@ -323,7 +325,6 @@
           <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Lặp lại</label>
           <select class="input" id="editSchRecurrence" style="width:100%" onchange="doiLapLaiEdit()">
             <option value="weekly">🔄 Hàng tuần</option>
-            <option value="biweekly">🔄 2 tuần/lần</option>
             <option value="once">📅 Chỉ một lần (chọn ngày)</option>
           </select>
         </div>
@@ -331,6 +332,16 @@
       <div id="khungEditSchNgay" style="display:none">
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Ngày diễn ra</label>
         <input class="input" type="date" id="editSchDate" style="width:100%" onchange="dongBoThuTuNgayEdit()">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" id="khungEditHieuLuc">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Áp dụng từ ngày</label>
+          <input class="input" type="date" id="editSchStartDate" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Kết thúc ngày</label>
+          <input class="input" type="date" id="editSchEndDate" placeholder="Kéo dài mãi..." style="width:100%">
+        </div>
       </div>
       <div>
         <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Thứ trong tuần</label>
@@ -539,10 +550,22 @@ async function taiMeetLop() {
 
   // Tải các buổi lịch để lớp có 2 GV sổ ra link riêng từng buổi
   var rs = await sb.from('schedules')
-    .select('id, class_id, weekday, teacher_id, meet_link, start_time')
+    .select('id, class_id, weekday, teacher_id, meet_link, start_time, recurrence, date, start_date, end_date')
     .order('weekday');
+  
+  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
+  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+  var activeSchedules = (rs.data || []).filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date && s.date >= localToday;
+    }
+    if (s.start_date && s.start_date > localToday) return false;
+    if (s.end_date && s.end_date < localToday) return false;
+    return true;
+  });
+
   var schByClass = {};
-  (rs.data || []).forEach(function (s) { (schByClass[s.class_id] = schByClass[s.class_id] || []).push(s); });
+  activeSchedules.forEach(function (s) { (schByClass[s.class_id] = schByClass[s.class_id] || []).push(s); });
 
   var isTeacher = hoSoNguoiDung && (hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant');
   var displayLopMeet = dsLop;
@@ -650,14 +673,25 @@ function formatNgayDep(dStr) {
 function doiLapLai() {
   var r = $('schRecurrence').value;
   var khung = $('khungSchNgay');
+  var khungHieuLuc = $('khungHieuLuc');
+  var khungKetThuc = $('khungKetThuc');
   if (r === 'once') {
     khung.style.display = 'block';
+    if (khungHieuLuc) khungHieuLuc.style.display = 'none';
+    if (khungKetThuc) khungKetThuc.style.display = 'none';
     if (!$('schDate').value) {
       $('schDate').value = new Date().toISOString().split('T')[0];
     }
     dongBoThuTuNgay();
   } else {
     khung.style.display = 'none';
+    if (khungHieuLuc) {
+      khungHieuLuc.style.display = 'block';
+      if (!$('schStartDate').value) {
+        $('schStartDate').value = new Date().toISOString().split('T')[0];
+      }
+    }
+    if (khungKetThuc) khungKetThuc.style.display = 'block';
   }
 }
 
@@ -680,9 +714,19 @@ function dongBoThuTuNgay() {
 
 async function taiLich() {
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, meet_link, note, visible, recurrence, date, class_id, teacher_id, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, location, meet_link, note, visible, recurrence, date, class_id, teacher_id, start_date, end_date, classes(name, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
-  dsLich = r.data || [];
+  
+  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
+  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+  dsLich = (r.data || []).filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date && s.date >= localToday;
+    }
+    if (s.start_date && s.start_date > localToday) return false;
+    if (s.end_date && s.end_date < localToday) return false;
+    return true;
+  });
   
   // Nhóm theo từng lớp
   var groupsCaNhan = {};
@@ -777,10 +821,19 @@ async function taiLich() {
         detailRows = '<tr><td colspan="7" style="text-align: center; color: var(--ink-3); padding: 20px;">Lớp này chưa có lịch học. Sử dụng khung phía trên để thêm lịch.</td></tr>';
       } else {
         detailRows = g.schedules.map(function (s) {
-          var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
+          var recText = '';
           if (s.recurrence === 'once') recText = ' <small style="color:var(--ink-2)"><i>(1 lần)</i></small>';
           var thuText = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) + ' (' + TEN_THU[s.weekday] + ')' : TEN_THU[s.weekday];
           
+          var dateRangeText = '';
+          if (s.start_date || s.end_date) {
+            var start = s.start_date ? formatNgayDep(s.start_date) : '...';
+            var end = s.end_date ? formatNgayDep(s.end_date) : 'mãi mãi';
+            dateRangeText = '<div style="font-size:0.75rem; color:var(--ink-2); font-weight:400; margin-top:2px;">📅 ' + start + ' → ' + end + '</div>';
+          } else if (s.recurrence !== 'once') {
+            dateRangeText = '<div style="font-size:0.75rem; color:var(--ink-2); font-weight:400; margin-top:2px;">📅 Suốt cả khóa</div>';
+          }
+
           var visibleBtn = '';
           var actionsBtn = '';
           
@@ -799,7 +852,7 @@ async function taiLich() {
           var teacherName = s.teacher_id && mapGiaoVien[s.teacher_id] ? mapGiaoVien[s.teacher_id] : (g.info.teacher_id && mapGiaoVien[g.info.teacher_id] ? mapGiaoVien[g.info.teacher_id] : 'Thầy Điền Võ Thế Vinh');
           
           return '<tr>' +
-            '<td style="font-weight: 600; color: var(--ink);">' + thuText + '</td>' +
+            '<td style="font-weight: 600; color: var(--ink);">' + thuText + dateRangeText + '</td>' +
             '<td class="num" style="font-weight: 600;">' + gioDep(s.start_time) + '–' + gioDep(s.end_time) + '</td>' +
             '<td>' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
             '<td style="font-weight: 500;">' + teacherName + '</td>' +
@@ -934,6 +987,16 @@ async function themLich() {
 
   var teacherId = $('schGiaoVien').value || null;
 
+  var start_date = null;
+  var end_date = null;
+  if (rec !== 'once') {
+    start_date = $('schStartDate').value || null;
+    end_date = $('schEndDate').value || null;
+  } else {
+    start_date = schDateVal;
+    end_date = schDateVal;
+  }
+
   var rows = selectedDays.map(function (thu) {
     return {
       class_id: classId,
@@ -946,7 +1009,9 @@ async function themLich() {
       recurrence: rec,
       date: schDateVal,
       teacher_id: teacherId,
-      note: $('schNote').value.trim() || null
+      note: $('schNote').value.trim() || null,
+      start_date: start_date,
+      end_date: end_date
     };
   });
 
@@ -956,6 +1021,8 @@ async function themLich() {
   $('schNote').value = '';
   if ($('schMeet')) $('schMeet').value = '';
   $('schDate').value = '';
+  $('schStartDate').value = '';
+  $('schEndDate').value = '';
   $('schRecurrence').value = 'weekly';
   doiLapLai();
   
@@ -1005,14 +1072,19 @@ function capNhatGiaoVienEditSchedule() {
 function doiLapLaiEdit() {
   var r = $('editSchRecurrence').value;
   var khung = $('khungEditSchNgay');
+  var khungHieuLuc = $('khungEditHieuLuc');
   if (r === 'once') {
     khung.style.display = 'block';
+    if (khungHieuLuc) khungHieuLuc.style.display = 'none';
     if (!$('editSchDate').value) {
       $('editSchDate').value = new Date().toISOString().split('T')[0];
     }
     dongBoThuTuNgayEdit();
   } else {
     khung.style.display = 'none';
+    if (khungHieuLuc) {
+      khungHieuLuc.style.display = 'grid';
+    }
   }
 }
 
@@ -1056,6 +1128,8 @@ function suaLich(id) {
     $('editSchDate').value = '';
   }
   doiLapLaiEdit();
+  $('editSchStartDate').value = s.start_date || '';
+  $('editSchEndDate').value = s.end_date || '';
   $('editSchNote').value = s.note || '';
   if ($('editSchMeet')) $('editSchMeet').value = s.meet_link || '';
   $('editSchTu').value = s.start_time.slice(0, 5);
@@ -1119,6 +1193,16 @@ async function luuSuaLichModal() {
 
   var teacherId = $('editSchGiaoVien').value || null;
 
+  var start_date = null;
+  var end_date = null;
+  if (rec !== 'once') {
+    start_date = $('editSchStartDate').value || null;
+    end_date = $('editSchEndDate').value || null;
+  } else {
+    start_date = schDateVal;
+    end_date = schDateVal;
+  }
+
   var r = await sb.from('schedules').update({
     class_id: classId,
     weekday: weekday,
@@ -1130,7 +1214,9 @@ async function luuSuaLichModal() {
     recurrence: rec,
     date: schDateVal,
     teacher_id: teacherId,
-    note: $('editSchNote').value.trim() || null
+    note: $('editSchNote').value.trim() || null,
+    start_date: start_date,
+    end_date: end_date
   }).eq('id', lichDangSuaId);
 
   if (r.error) {

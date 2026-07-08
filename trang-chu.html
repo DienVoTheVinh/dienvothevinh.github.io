@@ -1189,9 +1189,19 @@ async function taiSchedulesVaExamsStaff() {
   
   // 2. Tải toàn bộ lịch học (schedules)
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, start_date, end_date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .order('weekday').order('start_time');
-  tatCaSchedules = rSched.data || [];
+  
+  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
+  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+  tatCaSchedules = (rSched.data || []).filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date && s.date >= localToday;
+    }
+    if (s.start_date && s.start_date > localToday) return false;
+    if (s.end_date && s.end_date < localToday) return false;
+    return true;
+  });
   
   // 3. Tải toàn bộ kỳ thi (exams) đã xuất bản
   var rExams = await sb.from('exams')
@@ -1261,9 +1271,19 @@ async function capNhatMeetLinkTheoLop(classId) {
 
   // Các buổi học của lớp liên quan
   var rs = await sb.from('schedules')
-    .select('class_id, weekday, start_time, teacher_id, meet_link')
+    .select('class_id, weekday, start_time, teacher_id, meet_link, recurrence, date, start_date, end_date')
     .in('class_id', relevantIds);
-  var sessions = rs.data || [];
+  
+  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
+  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+  var sessions = (rs.data || []).filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date && s.date >= localToday;
+    }
+    if (s.start_date && s.start_date > localToday) return false;
+    if (s.end_date && s.end_date < localToday) return false;
+    return true;
+  });
 
   // Tên giáo viên từng buổi
   var tIds = Array.from(new Set(sessions.map(function (s) { return s.teacher_id; }).filter(Boolean)));
@@ -1368,9 +1388,19 @@ async function taiSchedulesVaExamsStudent() {
   }
   
   var rSched = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
+    .select('id, weekday, start_time, end_time, mode, note, class_id, teacher_id, meet_link, recurrence, date, start_date, end_date, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id)')
     .in('class_id', classIds);
-  tatCaSchedules = rSched.data || [];
+  
+  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
+  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+  tatCaSchedules = (rSched.data || []).filter(function (s) {
+    if (s.recurrence === 'once') {
+      return s.date && s.date >= localToday;
+    }
+    if (s.start_date && s.start_date > localToday) return false;
+    if (s.end_date && s.end_date < localToday) return false;
+    return true;
+  });
   
   // 2. Tải kỳ thi lớp học sinh tham gia
   var rExams = await sb.from('exams')
