@@ -1116,11 +1116,22 @@ async function loadingSidebar() {
     (groups[g] = groups[g] || []).push(l);
   });
   
+  if (!window.sidebarCollapsedGrades) {
+    window.sidebarCollapsedGrades = {};
+  }
+  
   var html = '';
   Object.keys(groups).sort(function(a, b){ return a - b; }).forEach(function (g) {
+    var isCollapsed = !!window.sidebarCollapsedGrades[g];
+    var displayStyle = isCollapsed ? 'style="display:none"' : '';
+    var caret = isCollapsed ? '▶' : '▼';
+    
     html += '<div class="grade-group">' +
-      '<div class="grade-title">Khối ' + g + '</div>' +
-      '<div class="class-list">' +
+      '<div class="grade-title" style="cursor:pointer; user-select:none; display:flex; justify-content:space-between; align-items:center" onclick="toggleGradeCollapse(\'' + g + '\')">' +
+        '<span>Khối ' + g + '</span>' +
+        '<span style="font-size:0.7rem; color:var(--accent); margin-left:8px">' + caret + '</span>' +
+      '</div>' +
+      '<div class="class-list" id="class-list-' + g + '" ' + displayStyle + '>' +
         groups[g].map(function (l) {
           var modeLabel = l.mode === 'online' ? '🎥' : '🏫';
           var specBadge = l.is_specialized ? '<span class="badge badge-accent" style="font-size:0.68rem; padding:1px 5px; margin-left:4px; font-weight:700">Chuyên</span>' : '';
@@ -1135,6 +1146,12 @@ async function loadingSidebar() {
   });
   
   $('dsKhoiLop').innerHTML = html || '<div class="empty">Chưa có lớp học nào.</div>';
+}
+
+function toggleGradeCollapse(g) {
+  if (!window.sidebarCollapsedGrades) window.sidebarCollapsedGrades = {};
+  window.sidebarCollapsedGrades[g] = !window.sidebarCollapsedGrades[g];
+  loadingSidebar();
 }
 
 function chonLopHoc(id) {
