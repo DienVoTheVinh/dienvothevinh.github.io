@@ -80,9 +80,38 @@
 .qla-bai:last-child { border-bottom:none; }
 .qla-bai-hd { display:flex; align-items:center; gap:11px; padding:11px 16px; cursor:pointer; }
 .qla-bai-hd:hover { background:var(--surface-2); }
-.qla-bai-hd .dot { width:9px; height:9px; border-radius:50%; flex:none; }
-.qla-bai-hd .dot.pub { background:var(--ok,#28a745); box-shadow:0 0 0 3px rgba(40,167,69,.15); }
-.qla-bai-hd .dot.draft { background:var(--ink-3); }
+.qla-bai-hd .dot { width:10px; height:10px; border-radius:50%; flex:none; transition: all 0.3s ease; }
+.qla-bai-hd .dot.pub { background:var(--ok,#28a745); }
+.qla-bai-hd .dot.draft { background:var(--ink-3); opacity: 0.55; }
+.qla-bai-hd .dot.glowing-dot {
+  animation: dot-glow-pulse 1.8s infinite;
+}
+@keyframes dot-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow-color, rgba(37, 99, 235, 0.7));
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.new-lesson-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  vertical-align: middle;
+}
 .qla-bai-hd .ten { font-weight:600; font-size:.92rem; color:var(--ink); flex:1; min-width:0; }
 .qla-bai-hd .chips { display:flex; gap:6px; flex-wrap:wrap; }
 .qla-bai-hd .chip { font-size:.72rem; padding:1px 7px; border-radius:20px; background:var(--surface-2); color:var(--ink-2); white-space:nowrap; }
@@ -1346,7 +1375,7 @@ async function taiLessonsLop() {
         '<div class="qla-topic-hd" style="border-left-color:' + mau + '" onclick="qlaToggle(this)">' +
           '<span class="nm">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
         '</div>' +
-        '<div class="qla-topic-body">' + g.lessons.map(renderLessonAcc).join('') + '</div>' +
+        '<div class="qla-topic-body">' + g.lessons.map(function(b) { return renderLessonAcc(b, mau); }).join('') + '</div>' +
       '</div>';
     }).join('');
   }
@@ -1377,7 +1406,7 @@ function qlaEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, functi
 function isoToLocalInput(iso) { if (!iso) return ''; var d = new Date(iso); var p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
 function qlaToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
 
-function renderLessonAcc(b) {
+function renderLessonAcc(b, mauChuyenDe) {
   var chip = function (item, label) { return '<span class="chip" style="cursor:pointer" title="Xem nhanh — bấm để mở" onclick="event.stopPropagation();vmMoXemNhanh(\'' + b.id + '\',\'' + item + '\')">' + label + '</span>'; };
   var chips = [];
   if (b.youtube_url) chips.push(chip('video', '🎥 Video'));
@@ -1386,9 +1415,17 @@ function renderLessonAcc(b) {
   if (b.homework_text || (b.homework_images && b.homework_images.length) || b.homework_latex_content || b.homework_document_id) chips.push(chip('btvn', '🏠 BTVN'));
   if (b.test_document_id || b.test_latex_content) chips.push(chip('test', '📝 Test'));
   var chipsHtml = chips.join('');
-  var dot = b.published ? 'pub' : 'draft';
+  
+  var isNew = !!(window.newestLessonIds && window.newestLessonIds[b.id]);
+  var dotClass = 'dot';
+  if (!b.published) dotClass += ' draft';
+  if (isNew) dotClass += ' glowing-dot';
+  
+  var colorVal = b.published ? (mauChuyenDe || 'var(--accent)') : 'var(--ink-3)';
+  var dotStyle = 'background: ' + colorVal + '; --glow-color: ' + (mauChuyenDe || 'var(--accent)') + ';';
+  
   var lockBadge = b.locked ? ' <span class="badge" style="background:#e74c3c;color:#fff;padding:1px 6px;font-size:.72rem">🔒</span>' : '';
-  var glitter = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' <span title="Bài mới nhất">✨</span>' : '';
+  var glitter = isNew ? ' <span class="new-lesson-badge" title="Bài mới nhất">MỚI ✨</span>' : '';
   var tenJs = b.title.replace(/'/g, "\\'");
 
   var isTestRunning = false;
@@ -1413,7 +1450,7 @@ function renderLessonAcc(b) {
 
   return '<div class="qla-bai">' +
     '<div class="qla-bai-hd" onclick="qlaToggle(this)">' +
-      '<span class="dot ' + dot + '" title="' + (b.published ? 'Đã xuất bản' : 'Nháp') + '"></span>' +
+      '<span class="' + dotClass + '" style="' + dotStyle + '" title="' + (b.published ? 'Đã xuất bản' : 'Nháp') + '"></span>' +
       '<span class="ten">' + qlaEsc(b.title) + lockBadge + glitter + '</span>' +
       '<span class="chips">' + chipsHtml + '</span>' +
       '<span class="car2">▶</span>' +
