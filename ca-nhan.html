@@ -1393,7 +1393,7 @@ async function taiLeaderboard() {
     // Để tính nhanh Điểm tổng hợp cho Leaderboard:
     // Ta lấy toàn bộ profiles của học sinh, attempts và sessions gần đây để ghép điểm
     var resProfiles = await sb.from('profiles')
-      .select('id, full_name, username, avatar_url, class_students(class_id, classes(name))')
+      .select('id, full_name, username, avatar_url, class_students(class_id, classes(name, is_specialized))')
       .eq('role', 'student');
     var students = resProfiles.data || [];
     
@@ -1474,7 +1474,7 @@ async function taiLeaderboard() {
       if (examScore !== null) { valSum += examScore * subWeights.exam; wSum += subWeights.exam; }
       
       var finalScore = wSum > 0 ? (valSum / wSum) : 0;
-      var classesNames = (s.class_students || []).map(function(c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+      var classesNames = (s.class_students || []).map(function(c) { return c.classes ? (c.classes.name + (c.classes.is_specialized ? ' (Chuyên)' : '')) : ''; }).filter(Boolean).join(', ');
       
       return {
         id: s.id,

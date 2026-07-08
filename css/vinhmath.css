@@ -299,7 +299,7 @@ img{max-width:100%;display:block}
 @media(max-width:960px){
   .topbar .nav{position:relative;flex-wrap:wrap}
   .nav-burger{display:grid;place-items:center}
-  .navlinks{display:none;position:absolute;top:100%;left:0;right:0;background:var(--topbar-bg);border-bottom:var(--topbar-border);box-shadow:var(--shadow);flex-direction:column;align-items:stretch;padding:8px 16px 14px;gap:2px;z-index:99;max-height:calc(100vh - 60px);overflow-y:auto}
+  .navlinks{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--line);border-top:none;box-shadow:0 14px 34px rgba(0,0,0,.35);flex-direction:column;align-items:stretch;padding:8px 16px 14px;gap:2px;z-index:99;max-height:calc(100vh - 60px);overflow-y:auto}
   .navlinks.open{display:flex}
   .navlinks a{padding:12px 14px;font-size:1rem}
   .nav-dropdown {
@@ -1610,3 +1610,23 @@ tr:last-child td{border-bottom:none}
   }
 }
 
+
+/* ============================================================
+   BỘ NHẬN DIỆN CLB M.A.P (áp cho lớp có theme = map)
+   ============================================================ */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+/* Dark mode: làm xanh navy sáng lên, nổi bật dễ nhìn */
+[data-theme="dark"] body.theme-map { --accent:#8FB3EC; --accent-soft:#233149; }
+
+/* Logo chìm giữa màn hình, mờ, đè lên mọi cửa sổ (không chặn thao tác) */
+#mapWatermarkGlobal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(620px, 60vw); max-width: 620px; height: auto;
+  opacity: .06; pointer-events: none; z-index: 9998; display: none; user-select: none;
+}
+[data-theme="dark"] #mapWatermarkGlobal { opacity: .12; }
+body.theme-map #mapWatermarkGlobal { display: block; }
+
+/* Logo M.A.P to & nổi bật hơn trên thanh điều hướng */
+body.theme-map .topbar .logo img { width:44px; height:44px; border-radius:50%; object-fit:contain; }
+body.theme-map .topbar .logo { font-size:1.3rem; letter-spacing:.08em; }

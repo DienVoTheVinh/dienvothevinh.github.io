@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.5">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -54,6 +54,27 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sb-item:hover { background:var(--surface-2); color:var(--ink); }
 .sb-item.current { background:var(--accent-soft); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
 .sb-item .lock { font-size:.75rem; margin-left:4px; }
+/* ===== Mục lục accordion (chuyên đề → bài → mục con + vòng %) ===== */
+.ml-topic { border-bottom:1px solid var(--line); }
+.ml-topic-hd { display:flex; align-items:center; gap:8px; padding:11px 16px; cursor:pointer; font-size:.75rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); user-select:none; }
+.ml-topic-hd .tcount { margin-left:auto; font-size:.7rem; font-weight:600; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 8px; }
+.ml-topic-hd .caret { font-size:.7rem; color:var(--ink-3); transition:transform .2s; }
+.ml-topic.open > .ml-topic-hd .caret { transform:rotate(90deg); }
+.ml-topic-body { display:none; padding-bottom:4px; }
+.ml-topic.open > .ml-topic-body { display:block; }
+.ml-bai-hd { display:flex; align-items:center; gap:9px; padding:8px 12px 8px 16px; cursor:pointer; color:var(--ink-2); font-size:.85rem; line-height:1.35; border-left:3px solid transparent; }
+.ml-bai-hd:hover { background:var(--surface-2); color:var(--ink); }
+.ml-bai.current > .ml-bai-hd { background:var(--accent-soft); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
+.ml-bai-hd .ten { flex:1; overflow:hidden; }
+.ml-bai-hd .lock { font-size:.72rem; }
+.ml-bai-hd .caret2 { font-size:.62rem; color:var(--ink-3); transition:transform .2s; }
+.ml-bai.open > .ml-bai-hd .caret2 { transform:rotate(90deg); }
+.ml-sub { display:none; }
+.ml-bai.open > .ml-sub { display:block; }
+.ml-sub a { display:flex; align-items:center; gap:8px; padding:6px 16px 6px 44px; font-size:.82rem; color:var(--ink-2); text-decoration:none; cursor:pointer; }
+.ml-sub a:hover { background:var(--surface-2); color:var(--ink); }
+.ml-sub a .tick { margin-left:auto; font-size:.82rem; color:var(--ink-3); }
+.ml-sub a.done .tick { color:var(--ok, #28a745); }
 
 /* Vùng làm việc */
 .workspace { display:flex; flex:1; min-width:0; background:var(--surface-2); }
@@ -69,6 +90,11 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .no-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; color:var(--ink-3); height:100%; }
 .no-content .ic { font-size:3rem; margin-bottom:14px; }
 .no-content h3 { color:var(--ink); margin-bottom:8px; }
+
+/* Chế độ không có video: chỉ hiển thị nội dung (tài liệu/bài tập/kiểm tra) toàn khung */
+.workspace.no-video .pane-video { display:none !important; }
+.workspace.no-video #workspaceResizer { display:none !important; }
+.workspace.no-video .pane-content { display:flex !important; flex:1 1 100% !important; width:100% !important; border-right:none; }
 
 /* Tabs di động */
 .mobile-tabs { display:none; background:var(--surface); border-bottom:1px solid var(--line); height:46px; flex-shrink:0; }
@@ -193,6 +219,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .hub-stat { display:inline-flex; flex-direction:column; align-items:center; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:6px 14px; min-width:64px; }
 .hub-stat b { font-size:1.15rem; }
 .hub-stat span { font-size:.72rem; color:var(--ink-3); }
+/* ===== Theme CLB M.A.P ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+#mapWatermark { display:none; position:fixed; right:1.5vw; bottom:8vh; width:min(300px,30vw); opacity:.05; pointer-events:none; z-index:0; user-select:none; }
+body.theme-map #mapWatermark { display:block; }
 </style>
 </head>
 <body>
@@ -209,6 +239,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
       <button class="sw-btn" id="swLyThuyet" onclick="chonNoiDung('lythuyet')">📖 <span class="sw-text">Đọc lý thuyết</span></button>
       <button class="sw-btn" id="swTaiLieu" onclick="chonNoiDung('tailieu')">📄 <span class="sw-text">Tài liệu</span></button>
       <button class="sw-btn" id="swBang" onclick="chonNoiDung('bang')">🖼 <span class="sw-text">Bảng</span></button>
+      <button class="sw-btn" id="swBTVN" onclick="chonNoiDung('btvn')" style="display:none">🏠 <span class="sw-text">Bài tập về nhà</span></button>
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
@@ -314,7 +345,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=5.0"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -350,9 +381,14 @@ var coTest = false;
 /* ===== NỘP BÀI ===== */
 var nguoiDung = null;
 
-function moNopBai() {
+var nopBaiPhanLoai = 'test';
+function moNopBai(phanloai) {
+  nopBaiPhanLoai = phanloai === 'homework' ? 'homework' : 'test';
   $('modalNopBai').style.display = 'flex';
-  $('nbTenBai').textContent = details ? details.title : '';
+  var tenBai = details ? details.title : '';
+  $('nbTenBai').textContent = (nopBaiPhanLoai === 'homework' ? '🏠 Bài tập về nhà · ' : '') + tenBai;
+  var h2 = document.querySelector('#modalNopBai h2');
+  if (h2) h2.textContent = nopBaiPhanLoai === 'homework' ? '📤 Nộp bài tập về nhà' : '📤 Nộp bài';
   $('nbThongBao').textContent = '';
   taiBaiDaNop();
 }
@@ -414,9 +450,10 @@ function vmXoaFile(inputId, idx, listId) {
 async function taiBaiDaNop() {
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, kind')
     .eq('lesson_id', lessonId)
     .eq('student_id', nguoiDung.id)
+    .eq('kind', nopBaiPhanLoai)
     .order('submitted_at', { ascending: false });
   var ds = r.data || [];
   if (!ds.length) { $('nbDaNop').innerHTML = ''; return; }
@@ -449,6 +486,7 @@ async function guiBaiNop() {
   try {
     var fd = new FormData();
     fd.append('kind', 'nop');
+    fd.append('phanloai', nopBaiPhanLoai);
     fd.append('lesson_id', lessonId);
     for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
     var r = await sb.functions.invoke('nop-bai', { body: fd });
@@ -465,14 +503,17 @@ async function guiBaiNop() {
   nut.disabled = false; nut.textContent = 'Gửi bài cho thầy';
 }
 
-/* ===== MỤC LỤC BÊN TRÁI: bài giảng nhóm theo chuyên đề ===== */
+/* ===== MỤC LỤC BÊN TRÁI: accordion chuyên đề → bài → mục con + vòng % ===== */
+var mlTopicMo = null, mlBaiMo = null;
+
+function mlEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
 async function taiMucLuc() {
-  // Xác định lớp của bài đang xem để mục lục chỉ hiện bài giảng của ĐÚNG lớp đó
   var rCur = await sb.from('lessons').select('class_id').eq('id', lessonId).maybeSingle();
   var classIdHienTai = rCur.data ? rCur.data.class_id : null;
 
   var q = sb.from('lessons')
-    .select('id, title, sort, locked, class_id, topics(name, color), classes(name)')
+    .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
     .order('sort', { ascending: false });
   if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
   var r = await q;
@@ -481,28 +522,105 @@ async function taiMucLuc() {
     $('dsMucLuc').innerHTML = '<div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Chưa có bài giảng nào.</div>';
     return;
   }
-  // Gom nhóm theo chuyên đề
-  var nhom = {}, mauNhom = {};
+
+  // Tiến độ của học sinh
+  var viewedByLesson = {}, actionByLesson = {};
+  if (nguoiDung) {
+    var ids = ds.map(function (b) { return b.id; });
+    try {
+      var rv = await sb.from('lesson_item_progress').select('lesson_id, item').eq('student_id', nguoiDung.id).in('lesson_id', ids);
+      (rv.data || []).forEach(function (x) { (viewedByLesson[x.lesson_id] = viewedByLesson[x.lesson_id] || new Set()).add(x.item); });
+      var rs = await sb.from('submissions').select('lesson_id, kind').eq('student_id', nguoiDung.id).in('lesson_id', ids);
+      (rs.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add(x.kind === 'homework' ? 'btvn' : 'test'); });
+      var ra = await sb.from('attempts').select('lesson_id').eq('student_id', nguoiDung.id).in('lesson_id', ids).not('submitted_at', 'is', null);
+      (ra.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add('test'); });
+    } catch (e) {}
+  }
+
+  // Gom nhóm theo chuyên đề (giữ thứ tự topic.sort)
+  var groups = {}, order = [], noTopic = [];
   ds.forEach(function (b) {
-    var ten = b.topics ? b.topics.name : 'Bài giảng khác';
-    if (b.topics && b.topics.color) mauNhom[ten] = b.topics.color;
-    (nhom[ten] = nhom[ten] || []).push(b);
+    if (b.topics) {
+      var tid = b.topics.id || b.topics.name;
+      if (!groups[tid]) { groups[tid] = { key: 'tp_' + tid, topic: b.topics, lessons: [] }; order.push(groups[tid]); }
+      groups[tid].lessons.push(b);
+    } else { noTopic.push(b); }
   });
+  order.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
+  if (noTopic.length) order.push({ key: 'tp_none', topic: { name: 'Bài giảng khác' }, lessons: noTopic });
+
+  // Khởi tạo trạng thái mở: mở chuyên đề + bài đang học
+  if (!mlTopicMo) {
+    mlTopicMo = {}; mlBaiMo = {};
+    order.forEach(function (g) {
+      if (g.lessons.some(function (b) { return b.id === lessonId; })) { mlTopicMo[g.key] = true; }
+    });
+    mlBaiMo[lessonId] = true;
+  }
+
   var html = '';
-  var chuyenDeCount = 1;
-  Object.keys(nhom).forEach(function (ten) {
-    var displayTen = ten;
-    if (ten !== 'Bài giảng khác') {
-      displayTen = 'Chuyên đề ' + chuyenDeCount + ': ' + ten;
-      chuyenDeCount++;
-    }
-    html += '<div class="sb-group"' + (mauNhom[ten] ? ' style="color:' + mauNhom[ten] + '"' : '') + '>' + displayTen + '</div>';
-    html += nhom[ten].map(function (b) {
-      var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
-      return '<a class="sb-item' + (b.id === lessonId ? ' current' : '') + '" href="bai-hoc?id=' + b.id + '">' + b.title + khoa + '</a>';
-    }).join('');
+  var stt = 1;
+  order.forEach(function (g) {
+    var isNone = g.key === 'tp_none';
+    var ten = isNone ? 'Bài giảng khác' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
+    var mau = g.topic.color || 'var(--accent)';
+    var openT = mlTopicMo[g.key] ? ' open' : '';
+    html += '<div class="ml-topic' + openT + '" id="' + g.key + '">' +
+      '<div class="ml-topic-hd" style="color:' + mau + '" onclick="mlToggleTopic(\'' + g.key + '\')">' +
+        '<span>' + mlEsc(ten) + '</span>' +
+        '<span class="tcount">' + g.lessons.length + '</span>' +
+        '<span class="caret">▶</span>' +
+      '</div>' +
+      '<div class="ml-topic-body">' +
+      g.lessons.map(function (b) {
+        var td = vmTinhTienDoBai(b, viewedByLesson[b.id], actionByLesson[b.id]);
+        var ring = td.total ? vmVongTienDo(td.percent, 30, 4) : '<span style="width:30px;display:inline-block"></span>';
+        var openB = mlBaiMo[b.id] ? ' open' : '';
+        var cur = b.id === lessonId ? ' current' : '';
+        var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
+        var subs = td.items.map(function (it) {
+          return '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
+            '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
+            '<span class="tick">' + (it.done ? '✓' : '○') + '</span></a>';
+        }).join('');
+        if (!subs) subs = '<a onclick="window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Mở bài giảng</span></a>';
+        return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
+          '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
+            ring + '<span class="ten">' + mlEsc(b.title) + khoa + '</span><span class="caret2">▶</span>' +
+          '</div>' +
+          '<div class="ml-sub">' + subs + '</div>' +
+        '</div>';
+      }).join('') +
+      '</div>';
   });
   $('dsMucLuc').innerHTML = html;
+}
+
+function mlToggleTopic(key) {
+  mlTopicMo[key] = !mlTopicMo[key];
+  var el = document.getElementById(key);
+  if (el) el.classList.toggle('open', mlTopicMo[key]);
+}
+function mlToggleBai(id) {
+  mlBaiMo[id] = !mlBaiMo[id];
+  var el = document.getElementById('mlbai_' + id);
+  if (el) el.classList.toggle('open', mlBaiMo[id]);
+}
+async function mlMoMuc(lid, tab, key, loai) {
+  if (lid !== lessonId) {
+    window.location.href = 'bai-hoc?id=' + lid + '&tab=' + tab;
+    return;
+  }
+  if (tab === 'video') {
+    if (window.innerWidth <= 820) hienMobilePane('video');
+  } else {
+    chonNoiDung(tab);
+  }
+  if (loai === 'view' && nguoiDung && !laQuanTriBaiHoc()) {
+    await vmDanhDauDaXem(lessonId, key);
+    taiMucLuc();
+  }
+  if (window.innerWidth <= 980) { var sb2 = $('mucLuc'); if (sb2) sb2.classList.remove('open'); }
 }
 
 function batTatMucLuc() {
@@ -518,7 +636,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -537,8 +655,9 @@ async function taiChiTietBaiHoc() {
 
   // Tải thông tin lớp để kiểm tra đồng giảng dạy
   try {
-    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id').eq('id', details.class_id).single();
+    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id, theme').eq('id', details.class_id).single();
     classInfo = rClass.data;
+    apDungThemeLopBaiHoc(classInfo && classInfo.theme);
   } catch(e) { console.error("Lỗi tải thông tin lớp:", e); }
 
   // Tải bài học tương ứng của giáo viên kia (nếu có)
@@ -594,6 +713,13 @@ async function taiChiTietBaiHoc() {
   renderBaiHoc();
 }
 
+var laLopMAP = false;
+function apDungThemeLopBaiHoc(theme) {
+  laLopMAP = theme === 'map';
+  if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(laLopMAP);
+  else document.body.classList.toggle('theme-map', laLopMAP);
+}
+
 function extractYoutubeId(url) {
   if (!url) return null;
   var m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/);
@@ -622,7 +748,8 @@ function renderBaiHoc() {
   var badgeGv = $('badgeGiaoVien');
   if (badgeGv) {
     var gvName = mapGiaoVien[details.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;">👤 ' + gvName + '</span>';
+    var mapChip = laLopMAP ? '<span class="badge" style="background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:4px; font-weight:700; margin-left:6px; display:inline-flex; align-items:center; gap:4px"><img src="logo/CLB-MAP-logo.png" style="width:14px;height:14px;border-radius:50%;background:#fff">CLB M.A.P</span>' : '';
+    badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500;"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.1em;height:1.1em;vertical-align:-0.2em"> ' + gvName + '</span>' + mapChip;
   }
 
   // Hiển thị banner chuyển đổi bài giảng tương ứng của giáo viên kia (nếu có)
@@ -642,6 +769,8 @@ function renderBaiHoc() {
   var ytId = extractYoutubeId(details.youtube_url);
   var driveId = extractDriveId(details.youtube_url);
   var vc = $('videoWrapper');
+  var kgVideo = $('khongGianHoc');
+  window.khongCoVideo = false;
   if (ytId) {
     vc.innerHTML = '<iframe src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
   } else if (driveId) {
@@ -650,13 +779,27 @@ function renderBaiHoc() {
       '<span>Video không chạy? Trình duyệt có thể chặn Drive nhúng.</span>' +
       '<a class="btn btn-secondary btn-sm" style="padding:3px 10px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở cửa sổ riêng</a></div>';
   } else {
-    vc.innerHTML = '<div class="no-content" style="background:var(--surface)"><div class="ic">📭</div><h3>Không có video</h3><p>Bài học này chưa gắn video bài giảng.</p></div>';
+    window.khongCoVideo = true;
+  }
+  // Bố trí giao diện thuần tài liệu khi không có video (ẩn khung video, không hiện ô "Không có video")
+  if (kgVideo) {
+    if (window.khongCoVideo) {
+      kgVideo.classList.add('no-video');
+      kgVideo.classList.remove('show-video');
+      kgVideo.classList.add('show-content');
+      var _tv = document.getElementById('tabVideo'); if (_tv) _tv.style.display = 'none';
+      var _tn = document.getElementById('tabNoiDung'); if (_tn) _tn.classList.add('active');
+    } else {
+      kgVideo.classList.remove('no-video');
+      var _tv2 = document.getElementById('tabVideo'); if (_tv2) _tv2.style.display = '';
+    }
   }
 
-  // ---- Khung phải: 4 loại nội dung ----
+  // ---- Khung phải: các loại nội dung ----
   var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
+  var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0) || !!details.homework_latex_content || !!(details.bai_btvn && details.bai_btvn.file_path);
   coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
@@ -664,12 +807,27 @@ function renderBaiHoc() {
   $('swLyThuyet').style.display = coLyThuyet ? '' : 'none';
   $('swTaiLieu').style.display = coTaiLieu ? '' : 'none';
   $('swBang').style.display = dsAnh.length ? '' : 'none';
+  if ($('swBTVN')) $('swBTVN').style.display = coBTVN ? '' : 'none';
   $('swTest').style.display = ''; // Ô kiểm tra luôn được bật để học sinh nhìn thấy
 
-  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : 'test'));
-  chonNoiDung(macDinh);
+  var macDinh = coLyThuyet ? 'lythuyet' : (coTaiLieu ? 'tailieu' : (dsAnh.length ? 'bang' : (coBTVN ? 'btvn' : 'test')));
+  // Mở đúng mục con nếu đến từ mục lục (?tab=)
+  var _tabParam = new URLSearchParams(window.location.search).get('tab');
+  var _tabHopLe = ['lythuyet', 'tailieu', 'bang', 'btvn', 'test'];
+  if (_tabParam === 'video') {
+    if (window.innerWidth <= 820) hienMobilePane('video');
+    chonNoiDung(macDinh);
+  } else if (_tabParam && _tabHopLe.indexOf(_tabParam) !== -1) {
+    chonNoiDung(_tabParam);
+  } else {
+    chonNoiDung(macDinh);
+  }
   if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
     phongToPane('video');
+  }
+  // Học sinh mở bài có video => đánh dấu đã xem video
+  if ((ytId || driveId) && nguoiDung && !laQuanTriBaiHoc()) {
+    vmDanhDauDaXem(lessonId, 'video').then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
 
   // Khởi động bộ đếm giờ kiểm tra
@@ -931,7 +1089,7 @@ async function chuanHoaTexBaiHoc(rawCode) {
     % Trung tâm 1: Điền Võ Thế Vinh
     \\def\\hoten{Thầy Điền Võ Thế Vinh}
     \\def\\SDT{0866197857}
-    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\DC{Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
     \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
 \\else
     % Trung tâm 2: Duy Minh
@@ -1135,6 +1293,7 @@ async function layKetQuaChamHtml() {
       .select('id, submitted_at, files, status, score, feedback, graded_files')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
+      .eq('kind', 'test')
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -1185,6 +1344,7 @@ async function checkDaLamTest() {
       .select('id')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
+      .eq('kind', 'test')
       .limit(1)
       .maybeSingle();
     if (r.data) return true;
@@ -1196,9 +1356,9 @@ async function checkDaLamTest() {
 
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
-  ['LyThuyet', 'TaiLieu', 'Bang', 'Test'].forEach(function (t) { 
+  ['LyThuyet', 'TaiLieu', 'Bang', 'BTVN', 'Test'].forEach(function (t) {
     var el = $('sw' + t);
-    if (el) el.classList.remove('active'); 
+    if (el) el.classList.remove('active');
   });
   var than = $('thanNoiDung');
 
@@ -1229,6 +1389,9 @@ async function chonNoiDung(loai) {
         var u = urlAnh(p);
         return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>';
+  } else if (loai === 'btvn') {
+    if ($('swBTVN')) $('swBTVN').classList.add('active');
+    renderBTVN(than);
   } else {
     $('swTest').classList.add('active');
     capNhatAdminTestBar();
@@ -1260,6 +1423,109 @@ async function chonNoiDung(loai) {
   if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
+
+  // Đánh dấu mục "xem" đã hoàn thành + cập nhật vòng % (chỉ học sinh)
+  if (['lythuyet', 'tailieu', 'bang'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
+    vmDanhDauDaXem(lessonId, loai).then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
+  }
+}
+
+function btvnEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+async function renderBTVN(than) {
+  var deBai = details.homework_text || '';
+  var dsAnh = Array.isArray(details.homework_images) ? details.homework_images : [];
+  var coDoc = !!(details.bai_btvn && details.bai_btvn.file_path);
+  var coLatex = !!details.homework_latex_content;
+  var laAdmin = laQuanTriBaiHoc();
+
+  var deHtml = deBai
+    ? '<div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px">' + btvnEsc(deBai) + '</div>'
+    : '';
+  var latexHtml = coLatex
+    ? '<div id="btvnLatexBox" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>'
+    : '';
+  var pdfUrlBtvn = coDoc ? buildPdfUrl(details.bai_btvn.file_path) : '';
+  var docHtml = coDoc
+    ? '<div style="margin-top:12px">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrlBtvn) +
+      '<iframe src="' + pdfUrlBtvn + '#toolbar=1" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe></div>'
+    : '';
+  var anhHtml = dsAnh.length
+    ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
+      dsAnh.map(function (p) {
+        var u = urlAnh(p);
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+      }).join('') + '</div>'
+    : '';
+
+  var actionHtml = '';
+  if (!laAdmin && nguoiDung) {
+    actionHtml = '<div id="btvnTrangThai" style="margin:14px 0;font-size:.86rem;color:var(--ink-3)">Đang kiểm tra bài đã nộp…</div>' +
+      '<button class="btn btn-primary" onclick="moNopBai(\'homework\')" style="align-self:flex-start">📤 Nộp bài tập về nhà</button>';
+  } else if (laAdmin) {
+    actionHtml = '<div style="margin-top:14px;font-size:.85rem;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:10px 12px">👀 Học sinh sẽ thấy nút <b>Nộp bài tập về nhà</b> ở đây. Vào <b>🛠 Quản lý buổi</b> để xem và chấm các bài nộp.</div>';
+  }
+
+  var coDe = deHtml || anhHtml || docHtml || latexHtml;
+  than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
+    '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
+    (coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
+    actionHtml +
+    '</div>';
+
+  // Biên dịch đề LaTeX của BTVN (nếu có)
+  if (coLatex) {
+    (async function () {
+      var box = document.getElementById('btvnLatexBox');
+      if (!box) return;
+      try {
+        var tex = await chuanHoaTexBaiHoc(details.homework_latex_content);
+        var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+        if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
+        if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+          var u = URL.createObjectURL(r.data);
+          box.innerHTML = thanhCongCu('📝 Đề bài tập (LaTeX)', u) +
+            '<iframe src="' + u + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>';
+        } else {
+          box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Đề LaTeX chưa biên dịch được</h3></div>';
+        }
+      } catch (e) {
+        box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề LaTeX</h3></div>';
+      }
+    })();
+  }
+
+  if (!laAdmin && nguoiDung) {
+    try {
+      var r = await sb.from('submissions')
+        .select('id, submitted_at, status, score')
+        .eq('lesson_id', lessonId).eq('student_id', nguoiDung.id).eq('kind', 'homework')
+        .order('submitted_at', { ascending: false });
+      var ds = r.data || [];
+      var el = $('btvnTrangThai');
+      var hanHtml = '';
+      if (details.homework_due) {
+        var quaHan = new Date(details.homework_due).getTime() < Date.now();
+        hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(details.homework_due).toLocaleString('vi-VN') + (quaHan ? ' (đã quá hạn)' : '') + '</span>';
+      }
+      if (el) {
+        if (!ds.length) {
+          var quaHan2 = details.homework_due && new Date(details.homework_due).getTime() < Date.now();
+          el.innerHTML = (quaHan2 ? '⚠️ <b style="color:var(--err)">Chưa nộp — đã quá hạn.</b>' : '📌 Em chưa nộp bài tập về nhà cho buổi này.') + hanHtml;
+        } else {
+          var s0 = ds[0];
+          var tt = s0.status === 'graded'
+            ? '<span class="badge badge-ok">Đã chấm' + (s0.score != null ? ' · ' + s0.score + ' điểm' : '') + '</span>'
+            : '<span class="badge badge-warn">Chờ thầy chấm</span>';
+          el.innerHTML = '✅ Đã nộp ' + ds.length + ' bài · lần cuối ' + new Date(s0.submitted_at).toLocaleString('vi-VN') + ' ' + tt + hanHtml;
+        }
+      }
+    } catch (e) {}
+  }
 }
 
 function renderLatex(element) {
@@ -1662,6 +1928,11 @@ function thanhCongCu(ten, urlTai) {
 /* ===== Chuyển tab di động & phóng to ===== */
 function hienMobilePane(loai) {
   var kg = $('khongGianHoc');
+  if (window.khongCoVideo) {
+    kg.className = 'workspace show-content no-video';
+    $('tabNoiDung').classList.add('active'); $('tabVideo').classList.remove('active');
+    return;
+  }
   if (loai === 'video') {
     kg.className = 'workspace show-video';
     $('tabVideo').classList.add('active'); $('tabNoiDung').classList.remove('active');
@@ -2031,7 +2302,7 @@ async function hubRenderCham(){
   var box=$('hubPaneCham');
   box.innerHTML='<div class="no-content" style="padding:20px"><div class="spinner"></div><h3>Đang tải bài nộp…</h3></div>';
   var r=await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, student_id, profiles(full_name, username)')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, kind, student_id, profiles(full_name, username)')
     .eq('lesson_id', lessonId).order('submitted_at',{ascending:false});
   if (r.error){ box.innerHTML='<div class="hub-card">Lỗi: '+r.error.message+'</div>'; return; }
   hubSubs=r.data||[];
@@ -2046,8 +2317,11 @@ function hubCardCham(s){
   var links=(s.files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">📄 '+hubEsc(f.name)+'</a>';}).join(' · ');
   var linksCham=(s.graded_files||[]).map(function(f){return '<a href="'+f.link+'" target="_blank">✏️ '+hubEsc(f.name)+'</a>';}).join(' · ');
   var badge=s.status==='graded'?'<span class="badge badge-ok">Đã chấm'+(s.score!=null?' · '+s.score+'đ':'')+'</span>':'<span class="badge badge-warn">Chờ chấm</span>';
+  var loaiBadge = s.kind==='homework'
+    ? '<span class="badge" style="background:#7c3aed;color:#fff">🏠 BTVN</span> '
+    : '<span class="badge" style="background:var(--accent);color:#fff">📝 Kiểm tra</span> ';
   return '<div class="hub-card sub-card" id="hsub-'+s.id+'">'+
-    '<div class="hub-row" style="justify-content:space-between"><div><b>'+hubEsc(hs.full_name||'?')+'</b> <span style="color:var(--ink-3);font-size:.82rem">('+hubEsc(hs.username||'')+')</span></div>'+badge+'</div>'+
+    '<div class="hub-row" style="justify-content:space-between"><div>'+loaiBadge+'<b>'+hubEsc(hs.full_name||'?')+'</b> <span style="color:var(--ink-3);font-size:.82rem">('+hubEsc(hs.username||'')+')</span></div>'+badge+'</div>'+
     '<div style="font-size:.8rem;color:var(--ink-3);margin-top:3px">'+ngay+'</div>'+
     '<div style="margin-top:6px;font-size:.85rem">'+links+'</div>'+
     (linksCham?'<div style="margin-top:4px;font-size:.85rem">'+linksCham+'</div>':'')+

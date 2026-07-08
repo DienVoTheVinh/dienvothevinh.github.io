@@ -196,7 +196,7 @@ async function layHoSo() {
     console.warn("Lỗi layHoSo với các cột co-teaching (có thể chưa chạy SQL migration):", r.error);
     console.log("Thử tự động tải hồ sơ phiên bản cũ (không có co-teaching)...");
     r = await sb.from('profiles')
-      .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode))')
+      .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode, grade, is_specialized))')
       .eq('id', s.data.session.user.id).single();
     if (r.error) {
       console.error("Lỗi layHoSo phiên bản cũ:", r.error);
@@ -1561,3 +1561,179 @@ function themNutChupManHinh() {
   parent.insertBefore(btn, themeBtn);
 }
 
+
+/* ============================================================
+   BỘ NHẬN DIỆN CLB M.A.P — đổi logo/tên cả web + logo chìm
+   Gọi vmApDungThuongHieuMAP(true/false) tuỳ lớp có theme 'map'.
+   ============================================================ */
+function vmApDungThuongHieuMAP(isMap) {
+  try {
+    document.body.classList.toggle('theme-map', !!isMap);
+
+    // Logo chìm toàn cục
+    var wm = document.getElementById('mapWatermarkGlobal');
+    if (!wm) {
+      wm = document.createElement('img');
+      wm.id = 'mapWatermarkGlobal';
+      wm.src = 'logo/CLB-MAP-logo.png';
+      wm.alt = '';
+      document.body.appendChild(wm);
+    }
+
+    // Đổi logo + tên thương hiệu trên thanh điều hướng
+    var logoEl = document.querySelector('.topbar .logo') || document.querySelector('.logo');
+    if (logoEl) {
+      var img = logoEl.querySelector('img');
+      if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : 'img/logo.png';
+      // tìm text node chứa tên thương hiệu (VinhMath) và đổi
+      for (var i = 0; i < logoEl.childNodes.length; i++) {
+        var n = logoEl.childNodes[i];
+        if (n.nodeType === 3 && n.textContent && n.textContent.trim()) {
+          n.textContent = isMap ? ' M.A.P ' : ' VinhMath ';
+          break;
+        }
+      }
+    }
+  } catch (e) { /* im lặng */ }
+}
+
+/* ===== Tiến độ mục con của bài giảng (dùng chung bai-hoc + lop-hoc) ===== */
+function vmMucConBai(bh) {
+  var items = [];
+  var coVideo = !!(bh.youtube_url && String(bh.youtube_url).trim());
+  var coLyThuyet = Array.isArray(bh.theory_sections) && bh.theory_sections.length > 0;
+  var coTaiLieu = !!(bh.latex_content) || !!(bh.document_id) || !!(bh.documents && bh.documents.file_path);
+  var coBang = Array.isArray(bh.images) && bh.images.length > 0;
+  var coBTVN = !!(bh.homework_text) || (Array.isArray(bh.homework_images) && bh.homework_images.length > 0) || !!bh.homework_latex_content || !!bh.homework_document_id || !!(bh.bai_btvn && bh.bai_btvn.file_path);
+  var coTest = !!(bh.test_document_id) || !!(bh.test_latex_content) || !!(bh.bai_test && bh.bai_test.file_path);
+  if (coVideo) items.push({ key: 'video', tab: 'video', label: 'Video bài giảng', icon: '🎬', loai: 'view' });
+  if (coLyThuyet) items.push({ key: 'lythuyet', tab: 'lythuyet', label: 'Lý thuyết', icon: '📖', loai: 'view' });
+  if (coTaiLieu) items.push({ key: 'tailieu', tab: 'tailieu', label: 'Tài liệu', icon: '📄', loai: 'view' });
+  if (coBang) items.push({ key: 'bang', tab: 'bang', label: 'Ảnh bảng', icon: '🖼', loai: 'view' });
+  if (coBTVN) items.push({ key: 'btvn', tab: 'btvn', label: 'Bài tập về nhà', icon: '🏠', loai: 'action' });
+  if (coTest) items.push({ key: 'test', tab: 'test', label: 'Bài kiểm tra', icon: '📝', loai: 'action' });
+  return items;
+}
+
+function vmTinhTienDoBai(bh, viewedSet, doneActionSet) {
+  var items = vmMucConBai(bh);
+  var done = 0;
+  items.forEach(function (it) {
+    if (it.loai === 'view') it.done = !!(viewedSet && viewedSet.has(it.key));
+    else it.done = !!(doneActionSet && doneActionSet.has(it.key));
+    if (it.done) done++;
+  });
+  var total = items.length;
+  return { items: items, done: done, total: total, percent: total ? Math.round(100 * done / total) : 0 };
+}
+
+function vmVongTienDo(percent, size, stroke) {
+  size = size || 34; stroke = stroke || 4;
+  var r = (size - stroke) / 2;
+  var c = 2 * Math.PI * r;
+  var off = c * (1 - (percent || 0) / 100);
+  var mau = (percent >= 100) ? 'var(--ok, #28a745)' : 'var(--accent)';
+  var half = size / 2;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex:none">' +
+    '<circle cx="' + half + '" cy="' + half + '" r="' + r + '" fill="none" stroke="var(--line-2, #e5e5e5)" stroke-width="' + stroke + '"></circle>' +
+    '<circle cx="' + half + '" cy="' + half + '" r="' + r + '" fill="none" stroke="' + mau + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 ' + half + ' ' + half + ')"></circle>' +
+    '<text x="' + half + '" y="' + (half + 1) + '" text-anchor="middle" dominant-baseline="middle" font-size="' + (size * 0.3).toFixed(1) + '" font-weight="700" fill="var(--ink)">' + (percent || 0) + '</text>' +
+    '</svg>';
+}
+
+// Đánh dấu 1 mục "xem" (video/tài liệu/lý thuyết/bảng) là đã hoàn thành cho HS hiện tại
+async function vmDanhDauDaXem(lessonId, item) {
+  try {
+    if (!sb || !lessonId || !item) return;
+    var u = await sb.auth.getUser();
+    var uid = (u && u.data && u.data.user) ? u.data.user.id : null;
+    if (!uid) return;
+    await sb.from('lesson_item_progress').upsert(
+      { student_id: uid, lesson_id: lessonId, item: item },
+      { onConflict: 'student_id,lesson_id,item' });
+  } catch (e) {}
+}
+
+/* ===== Popup XEM NHANH nội dung 1 mục của bài giảng (dùng chung admin + HS) ===== */
+window.vmBaiMap = window.vmBaiMap || {};
+function vmDangKyBai(list) { (list || []).forEach(function (b) { if (b && b.id) window.vmBaiMap[b.id] = b; }); }
+
+function vmStorageUrl(bucket, path) {
+  if (!path) return '';
+  if (/^https?:\/\//.test(path)) return path;
+  return (VM.SUPABASE_URL || '') + '/storage/v1/object/public/' + bucket + '/' + path;
+}
+function vmEscQ(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function vmYtIdQ(u) { if (!u) return ''; var m = String(u).match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ''; }
+function vmDriveIdQ(u) { if (!u) return ''; var m = String(u).match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([A-Za-z0-9_-]+)/); return m ? m[1] : ''; }
+
+function vmNoiDungXemNhanh(b, item) {
+  var body = '', dl = '';
+  var iframe = function (src) { return '<div style="position:relative;padding-top:56.25%;background:#000;border-radius:10px;overflow:hidden"><iframe src="' + src + '" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe></div>'; };
+  var pdfFrame = function (u) { return '<iframe src="' + u + '#toolbar=1" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>'; };
+  var anhList = function (arr) { return '<div style="display:flex;flex-direction:column;gap:10px">' + arr.map(function (p) { var u = vmStorageUrl('hinh-anh', p); return '<a href="' + u + '" target="_blank"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line)" loading="lazy"></a>'; }).join('') + '</div>'; };
+
+  if (item === 'video') {
+    var yt = vmYtIdQ(b.youtube_url), dr = vmDriveIdQ(b.youtube_url);
+    body = yt ? iframe('https://www.youtube.com/embed/' + yt + '?rel=0&modestbranding=1') : (dr ? iframe('https://drive.google.com/file/d/' + dr + '/preview') : '<p style="color:var(--ink-3)">Chưa có video.</p>');
+  } else if (item === 'tailieu') {
+    var fp = (b.documents && b.documents.file_path) || '';
+    if (fp) { var u = vmStorageUrl('tai-lieu', fp); body = pdfFrame(u); dl = u; }
+    else if (b.latex_content) body = '<p style="color:var(--ink-2)">Tài liệu dạng LaTeX sẽ được biên dịch khi vào học. Bấm <b>Vào học</b> để xem bản PDF đầy đủ.</p>';
+    else body = '<p style="color:var(--ink-3)">Chưa có tài liệu.</p>';
+  } else if (item === 'bang') {
+    var imgs = Array.isArray(b.images) ? b.images : [];
+    body = imgs.length ? anhList(imgs) : '<p style="color:var(--ink-3)">Chưa có ảnh bảng.</p>';
+  } else if (item === 'btvn') {
+    var t = b.homework_text || '', hi = Array.isArray(b.homework_images) ? b.homework_images : [];
+    var hwfp = (b.bai_btvn && b.bai_btvn.file_path) || '';
+    body = (t ? '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>' : '');
+    if (b.homework_latex_content) body += '<p style="color:var(--ink-2);margin-bottom:10px">📝 Đề LaTeX — bấm <b>Vào học</b> để xem bản biên dịch đầy đủ.</p>';
+    if (hwfp) { var hu = vmStorageUrl('tai-lieu', hwfp); body += pdfFrame(hu); dl = hu; }
+    if (hi.length) body += anhList(hi);
+    if (!t && !hi.length && !hwfp && !b.homework_latex_content) body = '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
+  } else if (item === 'test') {
+    var tfp = (b.bai_test && b.bai_test.file_path) || '';
+    if (tfp) { var tu = vmStorageUrl('tai-lieu', tfp); body = pdfFrame(tu); dl = tu; }
+    else body = '<p style="color:var(--ink-2)">Đây là bài kiểm tra. Bấm <b>Vào học</b> để làm bài / xem chi tiết.</p>';
+  } else if (item === 'lythuyet') {
+    body = '<p style="color:var(--ink-2)">Lý thuyết tương tác — bấm <b>Vào học</b> để đọc và trả lời câu hỏi chặn.</p>';
+  }
+  return { body: body, download: dl };
+}
+
+function vmHienModalXN(titleHtml, bodyHtml, footerHtml) {
+  var m = document.getElementById('vmQuickModal');
+  if (!m) {
+    m = document.createElement('div'); m.id = 'vmQuickModal';
+    m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:12000;align-items:center;justify-content:center;padding:16px';
+    m.innerHTML = '<div style="background:var(--bg);border:1px solid var(--line);border-radius:14px;max-width:860px;width:100%;max-height:92vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<button onclick="document.getElementById(\'vmQuickModal\').style.display=\'none\'" style="position:absolute;top:12px;right:14px;font-size:1.5rem;background:none;border:none;color:var(--ink-3);cursor:pointer;z-index:2">×</button>' +
+      '<h3 id="vmQmTitle" style="margin:0;padding:15px 46px 12px 18px;border-bottom:1px solid var(--line);font-size:1.02rem;color:var(--ink)"></h3>' +
+      '<div id="vmQmBody" style="padding:16px 18px"></div>' +
+      '<div id="vmQmFooter" style="padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target === m) m.style.display = 'none'; });
+  }
+  document.getElementById('vmQmTitle').innerHTML = titleHtml;
+  document.getElementById('vmQmBody').innerHTML = bodyHtml;
+  document.getElementById('vmQmFooter').innerHTML = footerHtml;
+  m.style.display = 'flex';
+}
+
+function vmMoXemNhanh(id, item) {
+  var b = window.vmBaiMap[id];
+  if (!b) return;
+  // Học sinh xem nhanh mục "xem" (video/lý thuyết/tài liệu/bảng) => tính đã hoàn thành
+  if (typeof window.vmXemNhanhEdit !== 'function' && ['video', 'lythuyet', 'tailieu', 'bang'].indexOf(item) !== -1) {
+    if (typeof vmDanhDauDaXem === 'function') vmDanhDauDaXem(id, item);
+  }
+  var nhan = { video: '🎬 Video', lythuyet: '📖 Lý thuyết', tailieu: '📄 Tài liệu', bang: '🖼 Ảnh bảng', btvn: '🏠 Bài tập về nhà', test: '📝 Bài kiểm tra' };
+  var nd = vmNoiDungXemNhanh(b, item);
+  var footer = '';
+  if (nd.download) footer += '<a class="btn btn-secondary btn-sm" target="_blank" download href="' + nd.download + '">⬇ Tải về</a>';
+  if (typeof window.vmXemNhanhEdit === 'function') footer += '<button class="btn btn-primary btn-sm" onclick="window.vmXemNhanhEdit(\'' + id + '\')">✏️ Chỉnh sửa bài</button>';
+  var target = window.vmXemNhanhTarget || '';
+  footer += '<a class="btn btn-sm" style="background:var(--accent);color:#fff;border-color:var(--accent)" href="bai-hoc?id=' + id + '&tab=' + item + '"' + target + '>▶ Vào học</a>';
+  vmHienModalXN((nhan[item] || 'Nội dung') + ' · ' + vmEscQ(b.title), nd.body, footer);
+}

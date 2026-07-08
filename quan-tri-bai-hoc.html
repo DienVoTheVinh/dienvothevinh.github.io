@@ -484,7 +484,7 @@ async function batTatKhoaTheoLop(khoa) {
 
 async function taiDuLieuDanhMuc() {
   // 1. Tải danh sách lớp (Khối 6 -> Khối 12)
-  var r1 = await sb.from('classes').select('id, name').order('name');
+  var r1 = await sb.from('classes').select('id, name, grade, is_specialized').order('name');
   tatCaLop = r1.data || [];
   
   var tabContainer = $('tabKhongGianLop');
@@ -509,6 +509,11 @@ async function taiDuLieuDanhMuc() {
 
   // 2. Tải danh sách chuyên đề
   await napDropdownChuyenDe();
+  
+  // Lắng nghe thay đổi lớp học để lọc lại chuyên đề tương ứng
+  formLopSelect.addEventListener('change', function() {
+    napDropdownChuyenDe(this.value);
+  });
 
   // 3. Tải danh sách tài liệu PDF từ LaTeX
   var r3 = await sb.from('documents').select('id, title, file_path').order('created_at', { ascending: false });
@@ -538,28 +543,76 @@ function moQuanLyChuyenDe() {
 
 function dongQuanLyChuyenDe() {
   $('modalChuyenDe').style.display = 'none';
-  napDropdownChuyenDe();
+  napDropdownChuyenDe($('bhLop').value);
 }
 
-async function napDropdownChuyenDe() {
-  var r = await sb.from('topics').select('id, name, grade, code').order('sort');
+async function napDropdownChuyenDe(lopId, chonId) {
+  var r = await sb.from('topics').select('id, name, grade, code, is_specialized').order('sort');
   tatCaChuyenDe = r.data || [];
   
   var formCdSelect = $('bhChuyenDe');
   formCdSelect.innerHTML = '<option value="">-- Chọn chuyên đề --</option>';
-  var theoKhoi = {};
-  tatCaChuyenDe.forEach(function (c) { (theoKhoi[c.grade] = theoKhoi[c.grade] || []).push(c); });
-  Object.keys(theoKhoi).sort(function (a, b) { return b - a; }).forEach(function (g) {
-    var og = document.createElement('optgroup');
-    og.label = 'Khối ' + g;
-    theoKhoi[g].forEach(function (c) {
-      var opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = '[' + c.code + '] ' + c.name;
-      og.appendChild(opt);
+  
+  var lopObj = tatCaLop.find(function(l) { return l.id === lopId; });
+  if (!lopObj) {
+    var theoKhoi = {};
+    tatCaChuyenDe.forEach(function (c) { (theoKhoi[c.grade || '?'] = theoKhoi[c.grade || '?'] || []).push(c); });
+    Object.keys(theoKhoi).sort(function (a, b) { return b - a; }).forEach(function (g) {
+      var og = document.createElement('optgroup');
+      og.label = 'Khối ' + g;
+      theoKhoi[g].forEach(function (c) {
+        var opt = document.createElement('option');
+        opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name + (c.is_specialized ? ' (Chuyên)' : '');
+        og.appendChild(opt);
+      });
+      formCdSelect.appendChild(og);
     });
-    formCdSelect.appendChild(og);
-  });
+  } else {
+    var targetGrade = lopObj.grade;
+    var isClassChuyen = !!lopObj.is_specialized;
+    
+    var cdsLopMinh = tatCaChuyenDe.filter(function (c) { return String(c.grade) === String(targetGrade); });
+    
+    if (isClassChuyen) {
+      var cdsNangCao = cdsLopMinh.filter(function (c) { return c.is_specialized; });
+      var cdsCoBan = cdsLopMinh.filter(function (c) { return !c.is_specialized; });
+      
+      if (cdsNangCao.length > 0) {
+        var og = document.createElement('optgroup');
+        og.label = '⭐ Chuyên đề Nâng cao (Khối ' + targetGrade + ')';
+        cdsNangCao.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          og.appendChild(opt);
+        });
+        formCdSelect.appendChild(og);
+      }
+      
+      if (cdsCoBan.length > 0) {
+        var og = document.createElement('optgroup');
+        og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
+        cdsCoBan.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          og.appendChild(opt);
+        });
+        formCdSelect.appendChild(og);
+      }
+    } else {
+      var cdsCoBan = cdsLopMinh.filter(function (c) { return !c.is_specialized; });
+      if (cdsCoBan.length > 0) {
+        var og = document.createElement('optgroup');
+        og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
+        cdsCoBan.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          og.appendChild(opt);
+        });
+        formCdSelect.appendChild(og);
+      }
+    }
+  }
+  if (chonId) formCdSelect.value = chonId;
 }
 
 async function taiBangChuyenDe() {
@@ -1205,7 +1258,7 @@ async function chuanHoaTexTestLatex(rawCode) {
     % Trung tâm 1: Điền Võ Thế Vinh
     \\def\\hoten{Thầy Điền Võ Thế Vinh}
     \\def\\SDT{0866197857}
-    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\DC{Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
     \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
 \\else
     % Trung tâm 2: Duy Minh
@@ -1429,7 +1482,7 @@ function renderTheorySections() {
   });
 }
 
-function moFormThemMoi() {
+async function moFormThemMoi() {
   $('formBaiHoc').reset();
   anhDaCo = []; selectedImageFiles = []; veAnhHienCo();
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
@@ -1454,11 +1507,12 @@ function moFormThemMoi() {
   if (lopDangLoc !== 'tat-ca') {
     $('bhLop').value = lopDangLoc;
   }
+  await napDropdownChuyenDe($('bhLop').value);
   
   $('modalForm').style.display = 'flex';
 }
 
-function moFormSua(id) {
+async function moFormSua(id) {
   var bh = tatCaBaiHoc.find(function(b) { return b.id === id; });
   if (!bh) return;
 
@@ -1468,7 +1522,9 @@ function moFormSua(id) {
   $('bhId').value = bh.id;
   $('bhTieuDe').value = bh.title || '';
   $('bhLop').value = bh.class_id || '';
-  $('bhChuyenDe').value = bh.topic_id || '';
+  
+  await napDropdownChuyenDe(bh.class_id, bh.topic_id);
+  
   $('bhYoutube').value = bh.youtube_url || '';
   var doc = tatCaTaiLieu.find(function(t) { return t.id === bh.document_id; });
   if (doc && (doc.file_path.startsWith('http://') || doc.file_path.startsWith('https://'))) {

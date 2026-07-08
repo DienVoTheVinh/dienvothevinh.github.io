@@ -244,6 +244,7 @@
     <!-- Chọn chế độ xem báo cáo -->
     <div class="view-tabs">
       <div class="view-tab active" onclick="chuyenCheDoBaoCao('realtime', this)">Ngay bây giờ</div>
+      <div class="view-tab" onclick="chuyenCheDoBaoCao('buoi', this)">📋 Từng buổi</div>
       <div class="view-tab" onclick="chuyenCheDoBaoCao('weekly', this)">Theo tuần</div>
       <div class="view-tab" onclick="chuyenCheDoBaoCao('monthly', this)">Theo tháng</div>
     </div>
@@ -281,7 +282,7 @@
           
           <!-- Nhận xét của giáo viên & nhận xét tự động -->
           <div class="comment-card" style="border-left: 4px solid var(--accent); background: var(--surface);">
-            <h4>👨‍🏫 Nhận xét trực tiếp của thầy Vinh</h4>
+            <h4><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em"> Nhận xét trực tiếp của thầy Vinh</h4>
             <p id="nhanXetCuaThay">Chưa có nhận xét tổng quát từ thầy cô.</p>
           </div>
 
@@ -298,6 +299,22 @@
             <canvas id="chartRadar"></canvas>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PHÂN KHÚC: TỪNG BUỔI HỌC (điểm danh · nhận xét · bài tập) -->
+    <!-- ============================================ -->
+    <div class="report-section" id="secBuoi">
+      <div class="card" style="padding:18px 20px; margin-bottom:16px;">
+        <h3 style="margin:0 0 4px; font-size:1.1rem; display:flex; align-items:center; gap:8px;">📋 Nhật ký từng buổi học</h3>
+        <p style="margin:0 0 14px; font-size:.86rem; color:var(--ink-3);">Mỗi buổi con có đi học không, thầy cô nhận xét gì.</p>
+        <div id="phBuoiList"><p style="color:var(--ink-3); font-size:.9rem;">Đang tải…</p></div>
+      </div>
+      <div class="card" style="padding:18px 20px;">
+        <h3 style="margin:0 0 4px; font-size:1.1rem; display:flex; align-items:center; gap:8px;">🏠 Bài tập về nhà</h3>
+        <p style="margin:0 0 14px; font-size:.86rem; color:var(--ink-3);">Các bài tập thầy giao và tình trạng nộp bài của con.</p>
+        <div id="phBtvnList"><p style="color:var(--ink-3); font-size:.9rem;">Đang tải…</p></div>
       </div>
     </div>
 
@@ -1032,22 +1049,97 @@ function chuyenCheDoBaoCao(type, el) {
   if (activeTab) activeTab.classList.remove('active');
   el.classList.add('active');
   
-  var sections = ['realtime', 'weekly', 'monthly'];
+  var sections = ['realtime', 'buoi', 'weekly', 'monthly'];
   sections.forEach(function(s) {
     var sectionEl = $('sec' + s.charAt(0).toUpperCase() + s.slice(1));
+    if (!sectionEl) return;
     if (s === type) {
       sectionEl.classList.add('active');
     } else {
       sectionEl.classList.remove('active');
     }
   });
-  
+
   // Re-render charts on tab switch to avoid dimensions glitch
   if (type === 'realtime') {
     renderRadarChart();
   } else if (type === 'weekly') {
     renderWeekHoursChart();
+  } else if (type === 'buoi') {
+    taiTungBuoi();
   }
+}
+
+function phEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function phDate(d) { if (!d) return ''; var p = String(d).split('-'); return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : d; }
+
+async function taiTungBuoi() {
+  if (!selectedChild) return;
+  var childId = selectedChild.id;
+  var classIds = (selectedChild.class_students || []).map(function (c) { return c.class_id; });
+  var buoiBox = $('phBuoiList'), btvnBox = $('phBtvnList');
+  if (!classIds.length) { buoiBox.innerHTML = '<p style="color:var(--ink-3)">Con chưa được xếp lớp.</p>'; btvnBox.innerHTML = ''; return; }
+  buoiBox.innerHTML = '<p style="color:var(--ink-3)">Đang tải…</p>';
+
+  // ----- Danh sách buổi học + điểm danh + nhận xét -----
+  var rS = await sb.from('class_sessions').select('id, title, held_on').in('class_id', classIds).order('held_on', { ascending: false }).limit(80);
+  var sessions = rS.data || [];
+  var sessIds = sessions.map(function (s) { return s.id; });
+  var att = {};
+  if (sessIds.length) {
+    var rA = await sb.from('attendance').select('session_id, status').eq('student_id', childId).in('session_id', sessIds);
+    (rA.data || []).forEach(function (a) { att[a.session_id] = a.status || 'present'; });
+  }
+  var rNx = await sb.from('session_remarks').select('ngay, remark, attitude_score').eq('student_id', childId);
+  var nxByDate = {};
+  (rNx.data || []).forEach(function (n) { nxByDate[n.ngay] = n; });
+
+  if (!sessions.length) {
+    buoiBox.innerHTML = '<p style="color:var(--ink-3)">Chưa có buổi học nào được ghi nhận.</p>';
+  } else {
+    buoiBox.innerHTML = sessions.map(function (s) {
+      var coMat = att[s.id];
+      var ddBadge = coMat
+        ? (coMat === 'late' ? '<span class="badge badge-warn">🟡 Đi trễ</span>' : '<span class="badge badge-ok">🟢 Có mặt</span>')
+        : '<span class="badge" style="background:rgba(231,76,60,.14);color:var(--err)">🔴 Vắng</span>';
+      var nx = nxByDate[s.held_on];
+      var nxHtml = (nx && (nx.remark || nx.attitude_score != null))
+        ? '<div style="margin-top:8px;font-size:.88rem;background:var(--surface-2);border-radius:8px;padding:8px 12px">' + (nx.attitude_score != null ? '<b style="color:var(--accent)">Thái độ: ' + nx.attitude_score + 'đ</b> · ' : '') + (nx.remark ? phEsc(nx.remark) : '<i>(chỉ chấm điểm)</i>') + '</div>'
+        : '<div style="margin-top:6px;font-size:.82rem;color:var(--ink-3)">Chưa có nhận xét cho buổi này.</div>';
+      return '<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:.95rem">' + phDate(s.held_on) + ' — ' + phEsc(s.title || 'Buổi học') + '</b>' + ddBadge + '</div>' +
+        nxHtml + '</div>';
+    }).join('');
+  }
+
+  // ----- Bài tập về nhà + tình trạng nộp -----
+  var rL = await sb.from('lessons').select('id, title, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, created_at').in('class_id', classIds).eq('published', true).order('created_at', { ascending: false });
+  var hwLessons = (rL.data || []).filter(function (l) { return l.homework_text || (l.homework_images && l.homework_images.length) || l.homework_latex_content || l.homework_document_id; });
+  if (!hwLessons.length) { btvnBox.innerHTML = '<p style="color:var(--ink-3)">Chưa có bài tập về nhà nào.</p>'; return; }
+  var lids = hwLessons.map(function (l) { return l.id; });
+  var subs = {}, marks = {};
+  var rSub = await sb.from('submissions').select('lesson_id, submitted_at, status, score').eq('student_id', childId).eq('kind', 'homework').in('lesson_id', lids).order('submitted_at', { ascending: false });
+  (rSub.data || []).forEach(function (x) { if (!subs[x.lesson_id]) subs[x.lesson_id] = x; });
+  var rMk = await sb.from('homework_status').select('lesson_id, submitted').eq('student_id', childId).in('lesson_id', lids);
+  (rMk.data || []).forEach(function (x) { marks[x.lesson_id] = x.submitted; });
+
+  btvnBox.innerHTML = hwLessons.map(function (l) {
+    var sub = subs[l.id]; var mark = marks[l.id];
+    var daNop = sub ? true : (mark === true);
+    var quaHan = l.homework_due && new Date(l.homework_due).getTime() < Date.now();
+    var statusBadge;
+    if (daNop) {
+      var extra = sub && sub.status === 'graded' && sub.score != null ? ' · ' + sub.score + 'đ' : '';
+      statusBadge = '<span class="badge badge-ok">✅ Đã nộp' + extra + '</span>';
+    } else if (quaHan) {
+      statusBadge = '<span class="badge" style="background:rgba(231,76,60,.14);color:var(--err)">⚠️ Chưa nộp (quá hạn)</span>';
+    } else {
+      statusBadge = '<span class="badge badge-warn">⏳ Chưa nộp</span>';
+    }
+    var hanTxt = l.homework_due ? '<div style="font-size:.8rem;color:var(--ink-3);margin-top:3px">⏰ Hạn nộp: ' + new Date(l.homework_due).toLocaleString('vi-VN') + '</div>' : '';
+    return '<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<div><b style="font-size:.92rem">' + phEsc(l.title) + '</b>' + hanTxt + '</div>' + statusBadge + '</div>';
+  }).join('');
 }
 
 function thoiGianDep(ts) {

@@ -383,7 +383,7 @@
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
 <script src="js/menu.js"></script>
-<script src="js/latex-view.js"></script>
+<script src="js/latex-view.js?v=2"></script>
 <script src="js/analytics.js"></script>
 <script>
 var listExams = [];
@@ -480,8 +480,9 @@ function taoDongCham(n) {
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
-      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
   }
   
@@ -1692,7 +1693,7 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 % --- THÔNG SỐ TRANG ---
 \\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
 \\def\\watermarktext{VinhMath}
-\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+\\def\\DC{Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
 \\def\\SDT{0866197857}
 
 % --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---
