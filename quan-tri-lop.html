@@ -272,7 +272,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">📋 Buổi điểm danh:</label>
             <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:180px;"></select>
-            <button class="btn btn-secondary btn-sm chi-gv" onclick="taoBuoiHomNay()" style="padding:6px 10px;">➕ Tạo buổi hôm nay</button>
+            <div class="chi-gv" style="display:inline-flex; align-items:center; gap:4px;">
+              <input type="date" id="ddSessionDateInput" style="padding:5px 8px; border:1px solid var(--line-2); border-radius:8px; font-size:.82rem; height:32px;">
+              <button class="btn btn-secondary btn-sm" onclick="taoBuoiTheoNgayChon()" style="padding:5px 10px; height:32px; font-size:.82rem">➕ Tạo buổi</button>
+            </div>
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600; margin-left:10px;">🏠 Bài tập:</label>
             <select id="hwLessonSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:170px;"><option value="">— Không xem BTVN —</option></select>
           </div>
@@ -1542,6 +1545,9 @@ async function taiStudentsLop() {
   var soMoi = students.filter(function (s) { return window.hsCreatedMap[s.id] && new Date(window.hsCreatedMap[s.id]).getTime() > nguongMoi; }).length;
   var elMoi = $('hsMoiCount');
   if (elMoi) { if (soMoi > 0) { elMoi.style.display = 'inline'; elMoi.textContent = '· ✨ ' + soMoi + ' HS mới'; } else elMoi.style.display = 'none'; }
+  if ($('ddSessionDateInput') && !$('ddSessionDateInput').value) {
+    $('ddSessionDateInput').value = homNayISO();
+  }
 
   if (!students.length) {
     if ($('dsHocSinhAcc')) $('dsHocSinhAcc').innerHTML = '<div style="padding:16px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào. Bấm <b>+ Xếp học sinh vào lớp</b> để thêm.</div>';
@@ -1593,18 +1599,24 @@ async function taiBuoiTheoDoi() {
   veRosterTheoDoi();
 }
 
-async function taoBuoiHomNay() {
+async function taoBuoiTheoNgayChon() {
   if (!classDangChon) return;
-  var hn = homNayISO();
+  var inp = $('ddSessionDateInput');
+  var TargetDate = inp ? inp.value : '';
+  if (!TargetDate) {
+    alert('Vui lòng chọn ngày trước khi tạo buổi.');
+    return;
+  }
+  
   var existed = Object.keys(ddSessionsMap).map(function (k) { return ddSessionsMap[k]; })
-    .find(function (b) { return b.held_on === hn; });
+    .find(function (b) { return b.held_on === TargetDate; });
   if (existed) {
     $('ddSessionSel').value = existed.id;
     veRosterTheoDoi();
     return;
   }
-  var ten = 'Buổi học ngày ' + ddDinhDangNgay(hn);
-  var ins = await sb.from('class_sessions').insert({ class_id: classDangChon.id, title: ten, held_on: hn })
+  var ten = 'Buổi học ngày ' + ddDinhDangNgay(TargetDate);
+  var ins = await sb.from('class_sessions').insert({ class_id: classDangChon.id, title: ten, held_on: TargetDate })
     .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open').single();
   if (ins.error) { alert('Không tạo được buổi: ' + ins.error.message); return; }
   await taiBuoiTheoDoi();
