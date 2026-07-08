@@ -306,7 +306,7 @@ function theBaiHoc(bh) {
   var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   
   var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.1em;height:1.1em;vertical-align:-0.2em"> ' + gvName + '</span>';
+  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-flex; align-items:center; gap:4px">' + layEmojiGiaoVien(gvName) + ' ' + gvName + '</span>';
 
   var typeBadge = '';
   if (bh.topics) {
@@ -345,7 +345,12 @@ var selectedClassId = null;
 var mapGiaoVien = {};
 
 function layEmojiGiaoVien(fullName) {
-  return '<img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.2em">';
+  var name = (fullName || '').toLowerCase().trim();
+  var isFemale = name.includes('cô') || name.includes('co ') || name.startsWith('co') || name.includes('nữ');
+  var emoji = isFemale ? '👩‍🏫' : '👨‍🏫';
+  var bg = isFemale ? 'rgba(219, 39, 119, 0.12)' : 'rgba(37, 99, 235, 0.12)';
+  var color = isFemale ? '#db2777' : '#2563eb';
+  return '<span class="gv-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border-radius:50%;background:' + bg + ';color:' + color + ';font-size:0.95em;vertical-align:-0.2em;margin-right:0.2em;border:1px solid ' + color + '33" title="' + (isFemale ? 'Cô' : 'Thầy') + '">' + emoji + '</span>';
 }
 
 (async function () {

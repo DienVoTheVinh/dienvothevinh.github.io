@@ -422,6 +422,7 @@ function showSamSuccess(msg) {
 
 /* ---------- 6. KHỞI TẠO TRUNG TÂM ĐIỀU KHIỂN (APPLE CONTROL CENTER) ---------- */
 function khoiTaoControlCenter() {
+  return; // Hủy theo yêu cầu: Bỏ các icon bổ sung trên thanh công cụ
   var nav = document.querySelector('.topbar .nav') || document.querySelector('.nav') || document.querySelector('.topbar');
   if (!nav) return;
   
@@ -1541,6 +1542,7 @@ function chupBangHtml2Canvas() {
 }
 
 function themNutChupManHinh() {
+  return; // Hủy theo yêu cầu: Bỏ các icon bổ sung trên thanh công cụ
   var themeBtn = document.getElementById('themeBtn');
   if (!themeBtn || document.getElementById('screenshotBtn')) return;
 
@@ -1736,4 +1738,13 @@ function vmMoXemNhanh(id, item) {
   var target = window.vmXemNhanhTarget || '';
   footer += '<a class="btn btn-sm" style="background:var(--accent);color:#fff;border-color:var(--accent)" href="bai-hoc?id=' + id + '&tab=' + item + '"' + target + '>▶ Vào học</a>';
   vmHienModalXN((nhan[item] || 'Nội dung') + ' · ' + vmEscQ(b.title), nd.body, footer);
+}
+
+function layEmojiGiaoVien(fullName) {
+  var name = (fullName || '').toLowerCase().trim();
+  var isFemale = name.includes('cô') || name.includes('co ') || name.startsWith('co') || name.includes('nữ');
+  var emoji = isFemale ? '👩‍🏫' : '👨‍🏫';
+  var bg = isFemale ? 'rgba(219, 39, 119, 0.12)' : 'rgba(37, 99, 235, 0.12)';
+  var color = isFemale ? '#db2777' : '#2563eb';
+  return '<span class="gv-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border-radius:50%;background:' + bg + ';color:' + color + ';font-size:0.95em;vertical-align:-0.2em;margin-right:0.2em;border:1px solid ' + color + '33" title="' + (isFemale ? 'Cô' : 'Thầy') + '">' + emoji + '</span>';
 }

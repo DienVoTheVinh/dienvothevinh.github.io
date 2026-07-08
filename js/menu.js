@@ -22,10 +22,10 @@ function apDungMenu(role) {
         items: [
           { path: 'quan-tri-lop', label: 'Lớp học' },
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu', label: 'Soạn tài liệu' } : null),
-          (role === 'admin' ? { path: 'viet-blog', label: '✍️ Viết blog' } : null),
+          (role === 'admin' ? { path: 'viet-blog', label: 'Viết blog' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc', label: 'Khóa bài giảng' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-hoc-sinh', label: 'Học sinh' } : null),
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-khoan', label: '➕ Tạo tài khoản' } : null),
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-khoan', label: 'Tạo tài khoản' } : null),
           { path: 'quan-tri-lich', label: 'Lịch học' },
           { path: 'quan-tri-de', label: 'Luyện đề' },
           { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
@@ -33,14 +33,14 @@ function apDungMenu(role) {
         ].filter(Boolean)
       },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
-      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
+      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ].filter(Boolean);
   } else if (role === 'parent') {
     // ----- MENU CỦA PHỤ HUYNH -----
     muc = [
       { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
-      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
+      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' }
     ];
   } else {
@@ -57,7 +57,7 @@ function apDungMenu(role) {
           { path: 'lich-hoc', label: 'Lịch học' }
         ]
       },
-      { type: 'link', path: 'goc-tu-hoc', label: '🌳 Góc tự học' },
+      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
       { type: 'link', path: 'blog', label: 'Blog' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }

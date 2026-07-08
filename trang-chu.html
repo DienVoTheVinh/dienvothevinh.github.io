@@ -2028,7 +2028,7 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
       
       var teacherHtml = '';
       if (isStaff && ev.teacher) {
-        teacherHtml = '<div style="font-size: 0.65rem; opacity: 0.95; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; margin-bottom: 2px;"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.25em"> ' + vclEsc(ev.teacher) + '</div>';
+        teacherHtml = '<div style="font-size: 0.65rem; opacity: 0.95; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; margin-bottom: 2px; display: inline-flex; align-items: center; gap: 4px;">' + layEmojiGiaoVien(ev.teacher) + ' ' + vclEsc(ev.teacher) + '</div>';
       }
       
       var tooltipText = vclEsc(ev.title) + (ev.teacher ? '\n👤 GV: ' + vclEsc(ev.teacher) : '') + '\n⏰ ' + ev.start.slice(0, 5) + ' - ' + ev.end.slice(0, 5);
@@ -2085,7 +2085,7 @@ async function xuatLichTuanAnh() {
         return '<div style="background:' + ev.bg + ';color:#fff;border-radius:10px;padding:9px 11px;margin-bottom:9px;box-shadow:0 1px 4px rgba(0,0,0,.18)">' +
           '<div style="font-weight:800;font-size:16px;line-height:1.25">' + vclEsc(ev.title) + '</div>' +
           '<div style="font-size:13.5px;opacity:.96;margin-top:3px;font-weight:600">⏰ ' + ev.start.slice(0, 5) + ' – ' + ev.end.slice(0, 5) + '</div>' +
-          (ev.teacherFull ? '<div style="font-size:13px;opacity:.96;margin-top:1px"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.2em;height:1.2em;vertical-align:-0.25em"> ' + vclEsc(ev.teacherFull) + '</div>' : '') +
+          (ev.teacherFull ? '<div style="font-size:13px;opacity:.96;margin-top:1px;display:inline-flex;align-items:center;gap:4px;">' + layEmojiGiaoVien(ev.teacherFull) + ' ' + vclEsc(ev.teacherFull) + '</div>' : '') +
           '</div>';
       }).join('') || '<div style="color:#c2bcb1;font-size:13px;text-align:center;padding:18px 0;font-style:italic">— nghỉ —</div>';
       return '<div style="flex:1;min-width:0;background:#fff;border-radius:16px;padding:11px;border:1px solid #ece8e0;box-shadow:0 2px 8px rgba(0,0,0,.04)">' +
@@ -2254,7 +2254,7 @@ function timSuKienGanNhat() {
           '<div style="font-weight:700; font-size:1.05rem; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px">📚 ' + vclEsc(className) + onceLabel + '</div>' +
           '<div style="font-size:0.85rem; color:var(--ink-2); display:flex; flex-direction:column; gap:6px; font-weight:500">' +
           '  <div style="display:flex; align-items:center; gap:6px">🏫 <b>Khối lớp:</b> ' + vclEsc(grade) + ' (' + vclEsc(spec) + ')</div>' +
-          '  <div style="display:flex; align-items:center; gap:6px"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.15em;height:1.15em;vertical-align:-0.2em"> <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
+          '  <div style="display:flex; align-items:center; gap:6px; min-height: 1.45em;">' + layEmojiGiaoVien(teacherName) + ' <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
           '  <div style="display:flex; align-items:center; gap:6px">⏰ <b>Giờ học:</b> ' + s.start_time.slice(0,5) + ' - ' + s.end_time.slice(0,5) + '</div>' +
           '</div>';
       }
@@ -2293,7 +2293,7 @@ function timSuKienGanNhat() {
         '<div style="font-weight:700; font-size:1.05rem; color:var(--err); margin-bottom:10px; display:flex; align-items:center; gap:6px">📝 Kỳ thi: ' + vclEsc(e.title) + '</div>' +
         '<div style="font-size:0.85rem; color:var(--ink-2); display:flex; flex-direction:column; gap:6px; font-weight:500">' +
         '  <div style="display:flex; align-items:center; gap:6px">🏫 <b>Lớp:</b> ' + vclEsc(clsName) + ' (' + vclEsc(grade) + ' - ' + vclEsc(spec) + ')</div>' +
-        '  <div style="display:flex; align-items:center; gap:6px"><img src="logo/CLB-MAP-logo.png" alt="GV" style="width:1.15em;height:1.15em;vertical-align:-0.2em"> <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
+        '  <div style="display:flex; align-items:center; gap:6px; min-height: 1.45em;">' + layEmojiGiaoVien(teacherName) + ' <b>Giáo viên:</b> ' + vclEsc(teacherName) + '</div>' +
         '  <div style="display:flex; align-items:center; gap:6px">⏰ <b>Bắt đầu lúc:</b> ' + timeStr + '</div>' +
         '</div>';
     }

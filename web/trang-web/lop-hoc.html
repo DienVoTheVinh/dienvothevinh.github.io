@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=5.5">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -44,10 +44,37 @@
 .greet p{margin-top:6px}
 .stats{padding:24px 0 8px}
 .lessons{padding:32px 0}
+/* ===== Accordion chuyên đề → bài → mục con + vòng % ===== */
+.lh-topic{border:1px solid var(--line);border-radius:var(--r-md,12px);margin-bottom:14px;overflow:hidden;background:var(--surface)}
+.lh-topic-hd{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;user-select:none;border-left:5px solid var(--accent)}
+.lh-topic-hd .nm{font-weight:800;font-size:.95rem;text-transform:uppercase;color:var(--ink);line-height:1.3}
+.lh-topic-hd .cnt{font-size:.78rem;color:var(--ink-3);margin-top:2px}
+.lh-topic-hd .car{margin-left:auto;color:var(--ink-3);font-size:.8rem;transition:transform .2s}
+.lh-topic.open>.lh-topic-hd .car{transform:rotate(90deg)}
+.lh-topic-body{display:none;border-top:1px solid var(--line)}
+.lh-topic.open>.lh-topic-body{display:block}
+.lh-bai{border-bottom:1px solid var(--line)}
+.lh-bai:last-child{border-bottom:none}
+.lh-bai-hd{display:flex;align-items:center;gap:14px;padding:12px 18px;cursor:pointer}
+.lh-bai-hd:hover{background:var(--surface-2)}
+.lh-bai-hd .tt{flex:1;min-width:0}
+.lh-bai-hd .tt h4{margin:0;font-size:.94rem;font-weight:700;color:var(--ink);line-height:1.35}
+.lh-bai-hd .tt .meta{font-size:.76rem;color:var(--ink-3);margin-top:3px}
+.lh-bai-hd .car2{color:var(--ink-3);font-size:.72rem;transition:transform .2s}
+.lh-bai.open>.lh-bai-hd .car2{transform:rotate(90deg)}
+.lh-sub{display:none;background:var(--surface-2);padding:4px 0 10px}
+.lh-bai.open>.lh-sub{display:block}
+.lh-sub a{display:flex;align-items:center;gap:10px;padding:9px 18px 9px 60px;text-decoration:none;color:var(--ink-2);font-size:.88rem}
+.lh-sub a:hover{background:var(--surface);color:var(--ink)}
+.lh-sub a .tk{margin-left:auto;font-size:.8rem;color:var(--ink-3)}
+.lh-sub a.done{color:var(--ok,#28a745)}
+.lh-sub a.done .tk{color:var(--ok,#28a745)}
+@media(max-width:560px){.lh-bai-hd .btn{display:none}.lh-sub a{padding-left:44px}}
 .lesson{display:flex;flex-direction:column;overflow:hidden;padding:0;transition:all .3s ease;border:1px solid var(--line)}
 .lesson:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:var(--shadow); }
 .lesson .thumb{aspect-ratio:16/9;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);position:relative}
 .lesson .thumb img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.lesson .thumb .mthumb{width:100%;height:100%;position:absolute;inset:0;display:block}
 .lesson .thumb .play{width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:1.1rem;padding-left:4px;position:relative;z-index:1}
 .lesson .body{padding:18px 20px 20px}
 .lesson .body p{font-size:.875rem;margin-top:4px}
@@ -75,6 +102,15 @@
 .topic-divider { display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); padding: 12px 16px; border-radius: var(--r-md); font-weight: 700; font-size: 0.95rem; text-transform: uppercase; color: var(--ink); border: 1px solid var(--line); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
 .modal-inner { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); max-width: 460px; width: 100%; padding: 32px; text-align: center; position: relative; }
+/* ===== Theme CLB M.A.P ===== */
+body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+#mapWatermark { display:none; position:fixed; right:2vw; bottom:4vh; width:min(420px,42vw); max-width:420px; opacity:.06; pointer-events:none; z-index:0; user-select:none; }
+body.theme-map #mapWatermark { display:block; }
+.map-ribbon { display:none; align-items:center; gap:12px; background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; border-radius:14px; padding:12px 18px; margin-bottom:18px; box-shadow:var(--shadow); }
+body.theme-map .map-ribbon { display:flex; }
+.map-ribbon img { width:44px; height:44px; border-radius:10px; background:#fff; padding:3px; object-fit:contain; flex-shrink:0; }
+.map-ribbon .t b { color:#fff; font-size:1.02rem; font-weight:800; }
+.map-ribbon .t span { display:block; color:#C9A227; font-size:.8rem; font-weight:700; margin-top:1px; }
 </style>
 </head>
 <body>
@@ -168,7 +204,16 @@
       
       <!-- Bộ chọn lớp học của học sinh (tab button) -->
       <div class="class-tabs" id="tabLopHocSinh" style="display:none; margin-bottom:20px;"></div>
-      
+
+      <!-- Ruy băng CLB M.A.P (chỉ hiện khi lớp dùng theme M.A.P) -->
+      <div class="map-ribbon" id="mapRibbon">
+        <img src="logo/CLB-MAP-logo.png" alt="M.A.P">
+        <div class="t"><b>CLB M.A.P</b><span>Math And Passion · Thầy Điền Võ Thế Vinh &amp; Thầy Đậu Văn Huy Hoàng</span></div>
+      </div>
+
+      <!-- Bảng tin lớp (liên kết) -->
+      <div id="btLopBox" style="display:none; margin-bottom:18px"></div>
+
       <div id="dsBaiHocGomNhom"></div>
     </section>
   </div>
@@ -176,7 +221,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=5.0"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -187,15 +232,81 @@ function youtubeId(url) {
   return m ? m[1] : null;
 }
 
+// ===== Bộ sinh thumbnail phong cách Toán học (ngẫu nhiên nhưng ổn định theo từng bài) =====
+function vmHash(s) {
+  var h = 2166136261;
+  s = String(s || 'x');
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mathThumb(bh) {
+  var key = (bh.id || '') + '|' + (bh.title || '') + '|' + ((bh.topics && bh.topics.name) || '');
+  var seed = vmHash(key);
+  function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
+  function pick(a) { return a[Math.floor(rnd() * a.length)]; }
+  var palettes = [
+    ['#0f2c5c', '#2f6df0'], ['#0b3d2e', '#16a34a'], ['#5b2110', '#f59e0b'],
+    ['#3b0a58', '#a855f7'], ['#5e1230', '#fb7185'], ['#0d4a47', '#22d3ee'],
+    ['#1f2937', '#6b7280'], ['#262b6b', '#7c8cf8'], ['#4a1d1d', '#ef4444']
+  ];
+  var pal = palettes[seed % palettes.length];
+  // Bộ ký hiệu chung + ưu tiên theo chủ đề
+  var pool = ['x^2', 'a^2{+}b^2{=}c^2', '\\u03c0r^2', '\\u222b', '\\u03a3', '\\u221ax', 'f(x)', '\\u0394', '\\u03b8', '\\u221e', '\\u2248', 'sin\\u03b8', '90\\u00b0', '\\u00bd', 'log', 'lim'];
+  var tn = ((bh.topics && bh.topics.name) || '').toLowerCase();
+  var bias = [];
+  if (/phần trăm|tỉ số/.test(tn)) bias = ['%', '\\u00be', '\\u00bd', 'x\\u00b7100%'];
+  else if (/góc/.test(tn)) bias = ['90\\u00b0', '\\u03b1', '\\u03b2', '45\\u00b0', '\\u2220'];
+  else if (/hàm|đồ thị|đơn điệu|cực trị/.test(tn)) bias = ['f(x)', 'y{=}ax\\u00b2', "f'(x)", '\\u0394'];
+  else if (/căn|phân thức/.test(tn)) bias = ['\\u221ax', '\\u221a2', '\\u00bd', 'a/b'];
+  else if (/số học|tập hợp/.test(tn)) bias = ['\\u2115', '\\u2208', '\\u2286', '\\u03a3'];
+  else if (/hình|pythagore|thales|diện tích/.test(tn)) bias = ['a\\u00b2{+}b\\u00b2', '\\u03c0r\\u00b2', 'S{=}\\u00bdbh', '\\u25b3'];
+  function deg(){ return Math.floor(rnd()*50-25); }
+  var w = 400, h = 225;
+  var svg = '<svg class="mthumb" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<defs><linearGradient id="g' + (seed % 9999) + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + pal[0] + '"/><stop offset="1" stop-color="' + pal[1] + '"/></linearGradient></defs>';
+  svg += '<rect width="' + w + '" height="' + h + '" fill="url(#g' + (seed % 9999) + ')"/>';
+  // Lưới kẻ ô (graph paper) mờ
+  var step = 25, grid = '';
+  for (var gx = step; gx < w; gx += step) grid += '<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="' + h + '"/>';
+  for (var gy = step; gy < h; gy += step) grid += '<line x1="0" y1="' + gy + '" x2="' + w + '" y2="' + gy + '"/>';
+  svg += '<g stroke="#ffffff" stroke-width="1" opacity="0.08">' + grid + '</g>';
+  // Hình học trang trí
+  var shapes = ['<circle cx="' + (40 + rnd() * 320) + '" cy="' + (30 + rnd() * 160) + '" r="' + (28 + rnd() * 34) + '" fill="none" stroke="#fff" stroke-width="2" opacity="0.18"/>',
+    '<path d="M' + (30 + rnd() * 60) + ' ' + (170 + rnd() * 30) + ' L' + (120 + rnd() * 80) + ' ' + (60 + rnd() * 40) + ' L' + (250 + rnd() * 90) + ' ' + (175 + rnd() * 25) + ' Z" fill="none" stroke="#fff" stroke-width="2" opacity="0.16"/>',
+    '<path d="M20 ' + (180 + rnd() * 20) + ' Q200 ' + (-20 + rnd() * 40) + ' 380 ' + (180 + rnd() * 20) + '" fill="none" stroke="#fff" stroke-width="2" opacity="0.16"/>'];
+  // chọn 2 hình
+  svg += pick(shapes) + pick(shapes);
+  // Trục toạ độ mờ ở góc
+  if (rnd() > 0.5) svg += '<g stroke="#fff" stroke-width="1.5" opacity="0.22"><line x1="30" y1="195" x2="30" y2="120"/><line x1="30" y1="195" x2="110" y2="195"/></g>';
+  // Watermark lớn
+  var big = pick(['\\u222b', '\\u03c0', '\\u03a3', '\\u221a', 'f', '\\u0394']).replace(/\\u([0-9a-f]{4})/gi, function (_, c) { return String.fromCharCode(parseInt(c, 16)); });
+  svg += '<text x="' + (300 + rnd() * 60) + '" y="' + (150 + rnd() * 50) + '" font-family="Georgia,serif" font-size="150" fill="#ffffff" opacity="0.10" text-anchor="middle">' + big + '</text>';
+  // Các ký hiệu rải rác
+  var syms = bias.concat(pool);
+  var n = 5 + Math.floor(rnd() * 3);
+  for (var i = 0; i < n; i++) {
+    var raw = syms[Math.floor(rnd() * Math.min(syms.length, bias.length ? bias.length + 8 : syms.length))];
+    var txt = raw.replace(/\\u([0-9a-f]{4})/gi, function (_, c) { return String.fromCharCode(parseInt(c, 16)); }).replace(/\{|\}/g, '').replace(/\^2/g, '²').replace(/\^3/g, '³');
+    var fs = 16 + Math.floor(rnd() * 26);
+    var x = 20 + rnd() * (w - 60);
+    var y = 35 + rnd() * (h - 55);
+    var op = (0.5 + rnd() * 0.4).toFixed(2);
+    svg += '<text x="' + x.toFixed(0) + '" y="' + y.toFixed(0) + '" font-family="Georgia,serif" font-style="italic" font-size="' + fs + '" fill="#ffffff" opacity="' + op + '" transform="rotate(' + deg() + ' ' + x.toFixed(0) + ' ' + y.toFixed(0) + ')">' + txt + '</text>';
+  }
+  svg += '</svg>';
+  return svg;
+}
+
 // Vẽ một thẻ bài học
 function theBaiHoc(bh) {
   var vid = youtubeId(bh.youtube_url);
   var thumb = vid
-    ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">' : '';
+    ? '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="">'
+    : mathThumb(bh);
   var href = bh.id ? 'bai-hoc?id=' + bh.id : '#';
   
   var gvName = mapGiaoVien[bh.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px">👤 ' + gvName + '</span>';
+  var teacherBadge = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:4px; display:inline-flex; align-items:center; gap:4px">' + layEmojiGiaoVien(gvName) + ' ' + gvName + '</span>';
 
   var typeBadge = '';
   if (bh.topics) {
@@ -234,7 +345,12 @@ var selectedClassId = null;
 var mapGiaoVien = {};
 
 function layEmojiGiaoVien(fullName) {
-  return '🧑‍🏫';
+  var name = (fullName || '').toLowerCase().trim();
+  var isFemale = name.includes('cô') || name.includes('co ') || name.startsWith('co') || name.includes('nữ');
+  var emoji = isFemale ? '👩‍🏫' : '👨‍🏫';
+  var bg = isFemale ? 'rgba(219, 39, 119, 0.12)' : 'rgba(37, 99, 235, 0.12)';
+  var color = isFemale ? '#db2777' : '#2563eb';
+  return '<span class="gv-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border-radius:50%;background:' + bg + ';color:' + color + ';font-size:0.95em;vertical-align:-0.2em;margin-right:0.2em;border:1px solid ' + color + '33" title="' + (isFemale ? 'Cô' : 'Thầy') + '">' + emoji + '</span>';
 }
 
 (async function () {
@@ -317,16 +433,20 @@ function layEmojiGiaoVien(fullName) {
       var jsThu = new Date().getDay();
       var homNay = jsThu === 0 ? 7 : jsThu;
       var rToday = await sb.from('schedules')
-        .select('class_id')
+        .select('class_id, meet_link')
         .in('class_id', onlineClassIds)
-        .eq('weekday', homNay)
-        .limit(1);
-      
-      var targetClassId = (rToday.data && rToday.data.length > 0) ? rToday.data[0].class_id : onlineClassIds[0];
-      
-      var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
-      if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
-      
+        .eq('weekday', homNay);
+      var todayRows = rToday.data || [];
+      // 1. Ưu tiên link Meet riêng của buổi hôm nay (đúng GV phụ trách → là chủ phòng)
+      var buoiCoLink = todayRows.find(function (s) { return s.meet_link; });
+      if (buoiCoLink) meetLink = buoiCoLink.meet_link;
+      // 2. Link chung của lớp hôm nay
+      if (!meetLink) {
+        var targetClassId = todayRows.length > 0 ? todayRows[0].class_id : onlineClassIds[0];
+        var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
+        if (lr.data && lr.data.meet_link) meetLink = lr.data.meet_link;
+      }
+      // 3. Thử link riêng các lớp online còn lại
       if (!meetLink) {
         var lrAll = await sb.from('class_links').select('meet_link').in('class_id', onlineClassIds);
         var firstLink = (lrAll.data || []).find(function(x) { return x.meet_link; });
@@ -365,8 +485,9 @@ function layEmojiGiaoVien(fullName) {
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
-      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
   }
 
@@ -396,7 +517,7 @@ function xacDinhIdsBaiMoiNhat(ds) {
   if (!ds || !ds.length) return newestIds;
   var groups = {};
   ds.forEach(function (b) {
-    var tid = b.teacher_id || 'default';
+    var tid = b.topic_id || 'default';
     if (!groups[tid]) groups[tid] = [];
     groups[tid].push(b);
   });
@@ -427,27 +548,92 @@ async function taiLessonsHocSinh() {
   var currentClass = dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; });
   if (currentClass && currentClass.classes) {
     var cls = currentClass.classes;
-    $('tenLop').textContent = cls.name + ' · VinhMath';
+    $('tenLop').textContent = cls.name + (cls.is_specialized ? ' · Chuyên' : '') + ' · VinhMath';
     
     var gv1 = mapGiaoVien[cls.teacher_id] || 'Thầy Điền Võ Thế Vinh';
     var gv2 = cls.co_teacher_id ? mapGiaoVien[cls.co_teacher_id] : null;
     
-    var subText = layEmojiGiaoVien(gv1) + ' Giáo viên: ' + gv1;
-    if (gv2) {
-      subText += ' & ' + gv2;
-    }
-    $('loiChaoSub').textContent = subText;
+    var escGV = function (s) { return String(s || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+    var subText = layEmojiGiaoVien(gv1) + ' Giáo viên: ' + escGV(gv1) + (gv2 ? ' & ' + escGV(gv2) : '');
+    $('loiChaoSub').innerHTML = subText;
   }
   
   // Tải các bài học đã xuất bản của lớp đang chọn
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, topics(id, name, color, sort, is_specialized)')
+    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, homework_latex_content, homework_document_id, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
     .eq('class_id', selectedClassId)
     .eq('published', true);
-    
+
   var ds = r.data || [];
   window.newestLessonIds = xacDinhIdsBaiMoiNhat(ds);
+  await taiTienDoLopHoc(ds);
   hienThiLessonsGomNhom(ds);
+  taiBangTinLopHS(selectedClassId);
+}
+
+// Tải tiến độ mục con của học sinh cho toàn bộ bài trong lớp
+var lopViewed = {}, lopAction = {};
+async function taiTienDoLopHoc(ds) {
+  if (typeof vmDangKyBai === 'function') vmDangKyBai(ds);
+  lopViewed = {}; lopAction = {};
+  try {
+    var u = await sb.auth.getUser();
+    var uid = (u && u.data && u.data.user) ? u.data.user.id : null;
+    if (!uid) return;
+    var ids = (ds || []).map(function (b) { return b.id; });
+    if (!ids.length) return;
+    var rv = await sb.from('lesson_item_progress').select('lesson_id, item').eq('student_id', uid).in('lesson_id', ids);
+    (rv.data || []).forEach(function (x) { (lopViewed[x.lesson_id] = lopViewed[x.lesson_id] || new Set()).add(x.item); });
+    var rs = await sb.from('submissions').select('lesson_id, kind').eq('student_id', uid).in('lesson_id', ids);
+    (rs.data || []).forEach(function (x) { (lopAction[x.lesson_id] = lopAction[x.lesson_id] || new Set()).add(x.kind === 'homework' ? 'btvn' : 'test'); });
+    var ra = await sb.from('attempts').select('lesson_id').eq('student_id', uid).in('lesson_id', ids).not('submitted_at', 'is', null);
+    (ra.data || []).forEach(function (x) { (lopAction[x.lesson_id] = lopAction[x.lesson_id] || new Set()).add('test'); });
+  } catch (e) {}
+}
+function lhToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
+function lhEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+/* ===== Bảng tin lớp cho học sinh (banner liên kết + xem trước) ===== */
+async function taiBangTinLopHS(classId) {
+  var box = document.getElementById('btLopBox');
+  if (!box) return;
+  try {
+    var rc = await sb.from('classes').select('theme, name, is_specialized').eq('id', classId).maybeSingle();
+    var theme = (rc.data && rc.data.theme) || 'vinhmath';
+    var isMap = theme === 'map';
+    // Áp bộ nhận diện cho toàn trang lớp
+    if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(isMap);
+    else document.body.classList.toggle('theme-map', isMap);
+    var tenLopEl = document.getElementById('tenLop');
+    if (tenLopEl && rc.data) tenLopEl.textContent = rc.data.name + (rc.data.is_specialized ? ' · Chuyên' : '') + (isMap ? ' · CLB M.A.P' : ' · VinhMath');
+    var rp = await sb.from('class_posts').select('id, title, author_name, created_at, cover_url').eq('class_id', classId).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3);
+    if (selectedClassId !== classId) return;
+    var ds = rp.data || [];
+    var accent = isMap ? '#1B2644' : 'var(--accent)';
+    var logo = isMap ? 'logo/CLB-MAP-logo.png' : '';
+    var brand = isMap ? 'CLB M.A.P' : 'Bảng tin lớp';
+    var head = '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line)">' +
+      '<div style="display:flex; align-items:center; gap:10px">' +
+        (logo ? '<img src="' + logo + '" style="width:34px;height:34px;border-radius:8px;object-fit:contain">' : '<span style="font-size:1.3rem">📢</span>') +
+        '<div><div style="font-weight:800; color:' + accent + '">' + brand + '</div><div style="font-size:.78rem; color:var(--ink-3)">Thông báo &amp; nội quy từ thầy cô</div></div>' +
+      '</div>' +
+      '<a class="btn btn-sm" style="background:' + accent + '; color:#fff; border-color:' + accent + '" href="bang-tin-lop?classId=' + classId + '">Xem tất cả →</a>' +
+    '</div>';
+    var bodyHtml;
+    if (!ds.length) {
+      bodyHtml = '<div style="padding:14px 18px; color:var(--ink-3); font-size:.88rem">Chưa có thông báo mới.</div>';
+    } else {
+      bodyHtml = '<div style="padding:8px 10px; display:flex; flex-direction:column; gap:6px">' + ds.map(function (p) {
+        var ngay = new Date(p.created_at).toLocaleDateString('vi-VN');
+        return '<a href="bang-tin-lop?classId=' + classId + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="font-size:1.05rem">📌</span><span style="flex:1; min-width:0"><span style="display:block; font-weight:600; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">' + (p.title || '').replace(/[<>&]/g, '') + '</span><span style="font-size:.75rem; color:var(--ink-3)">' + (p.author_name || '') + ' · ' + ngay + '</span></span></a>';
+      }).join('') + '</div>';
+    }
+    box.innerHTML = '<div style="border:1px solid var(--line); border-left:4px solid ' + accent + '; border-radius:var(--r-md,12px); background:var(--surface); overflow:hidden; box-shadow:var(--shadow)">' + head + bodyHtml + '</div>';
+    box.style.display = 'block';
+  } catch (e) {
+    box.style.display = 'none';
+  }
 }
 
 async function taiThongKeLop() {
@@ -496,67 +682,57 @@ function hienThiLessonsGomNhom(ds) {
   }
   
   function veGomNhomChuyenDe(list) {
-    var groups = {};
-    var topicOrder = [];
-    var noTopicLessons = [];
-    
+    var groups = {}, topicOrder = [], noTopicLessons = [];
     list.forEach(function (b) {
       if (b.topics) {
-        var tName = b.topics.name || 'Chuyên đề';
-        var tId = b.topics.id || tName;
-        if (!groups[tId]) {
-          groups[tId] = {
-            topic: b.topics,
-            lessons: []
-          };
-          topicOrder.push(groups[tId]);
-        }
+        var tId = b.topics.id || b.topics.name || 'Chuyên đề';
+        if (!groups[tId]) { groups[tId] = { topic: b.topics, lessons: [] }; topicOrder.push(groups[tId]); }
         groups[tId].lessons.push(b);
-      } else {
-        noTopicLessons.push(b);
-      }
+      } else { noTopicLessons.push(b); }
     });
-    
-    topicOrder.sort(function (a, b) {
-      return (a.topic.sort || 0) - (b.topic.sort || 0);
-    });
-    
-    topicOrder.forEach(function (g) {
-      g.lessons.sort(function (a, b) {
-        return (b.sort || 0) - (a.sort || 0);
-      });
-    });
-    
-    noTopicLessons.sort(function (a, b) {
-      return (b.sort || 0) - (a.sort || 0);
-    });
-    
-    var subHtml = '';
-    
-    topicOrder.forEach(function (g) {
-      var tColor = g.topic.color || 'var(--accent)';
-      var tName = g.topic.name || 'Chuyên đề';
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 20px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid ' + tColor + '">' +
-        '<span>📚 ' + tName + '</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
+    topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
+    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
+    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+
+    var blocks = topicOrder.slice();
+    if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác', color: '#A8A29A' }, lessons: noTopicLessons });
+
+    var stt = 1;
+    return blocks.map(function (g, idx) {
+      var isNone = g.topic.name === 'Bài giảng khác';
+      var ten = isNone ? 'Bài giảng khác' : ('Chuyên đề ' + (stt++) + ': ' + (g.topic.name || 'Chuyên đề'));
+      var mau = g.topic.color || 'var(--accent)';
+      var tongPct = 0, coTd = 0;
+      var baiHtml = g.lessons.map(function (b) {
+        var td = vmTinhTienDoBai(b, lopViewed[b.id], lopAction[b.id]);
+        if (td.total) { tongPct += td.percent; coTd++; }
+        var ring = vmVongTienDo(td.total ? td.percent : 0, 42, 5);
+        var glit = (window.newestLessonIds && window.newestLessonIds[b.id]) ? ' <span title="Mới nhất">✨</span>' : '';
+        var subs = td.items.map(function (it) {
+          return '<a class="' + (it.done ? 'done' : '') + '" style="cursor:pointer" title="Xem nhanh" onclick="vmMoXemNhanh(\'' + b.id + '\',\'' + it.tab + '\')">' +
+            '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
+            '<span class="tk">' + (it.done ? '✓ đã xong' : 'xem nhanh') + '</span></a>';
+        }).join('');
+        if (!subs) subs = '<a href="bai-hoc?id=' + b.id + '"><span>📄</span><span>Vào học bài này</span></a>';
+        return '<div class="lh-bai">' +
+          '<div class="lh-bai-hd" onclick="lhToggle(this)">' + ring +
+            '<div class="tt"><h4>' + lhEsc(b.title) + glit + '</h4><div class="meta">' + td.done + '/' + td.total + ' mục · ' + td.percent + '% hoàn thành</div></div>' +
+            '<a class="btn btn-primary btn-sm" href="bai-hoc?id=' + b.id + '" onclick="event.stopPropagation()">Vào học</a>' +
+            '<span class="car2">▶</span>' +
+          '</div>' +
+          '<div class="lh-sub">' + subs + '</div>' +
         '</div>';
-      
-      subHtml += '<div class="grid grid-2" style="margin-bottom:20px">' +
-        g.lessons.map(theBaiHoc).join('') +
-        '</div>';
-    });
-    
-    if (noTopicLessons.length > 0) {
-      subHtml += '<div class="topic-divider" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); padding:10px 14px; border-radius:var(--r-md); font-weight:700; font-size:0.88rem; text-transform:uppercase; color:var(--ink); margin: 20px 0 10px 0; border: 1px solid var(--line); border-left: 5px solid #A8A29A">' +
-        '<span>📎 BÀI GIẢNG KHÁC / TỰ DO</span>' +
-        '<span style="color:var(--ink-3); font-size: 0.75rem;">▶</span>' +
-        '</div>';
-        
-      subHtml += '<div class="grid grid-2" style="margin-bottom:20px">' +
-        noTopicLessons.map(theBaiHoc).join('') +
-        '</div>';
-    }
-    return subHtml;
+      }).join('');
+      var avg = coTd ? Math.round(tongPct / coTd) : 0;
+      var openC = idx === 0 ? ' open' : '';
+      return '<div class="lh-topic' + openC + '">' +
+        '<div class="lh-topic-hd" style="border-left-color:' + mau + '" onclick="lhToggle(this)">' + vmVongTienDo(avg, 40, 5) +
+          '<div style="min-width:0"><div class="nm">' + lhEsc(ten) + '</div><div class="cnt">' + g.lessons.length + ' bài giảng · ' + avg + '% hoàn thành</div></div>' +
+          '<span class="car">▶</span>' +
+        '</div>' +
+        '<div class="lh-topic-body">' + baiHtml + '</div>' +
+      '</div>';
+    }).join('');
   }
 
   var currentClass = selectedClassId ? dsHocSinhLop.find(function(c) { return c.class_id === selectedClassId; }) : null;

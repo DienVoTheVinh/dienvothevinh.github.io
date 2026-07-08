@@ -130,9 +130,7 @@ img{max-width:100%;display:block}
 }
 
 /* Đồng bộ toàn bộ nút bấm trong Topbar để không bị che khuất và hiển thị đẹp mắt */
-.topbar .btn-secondary,
-.topbar #themeBtn,
-.topbar #screenshotBtn {
+.topbar .btn-secondary {
   background: var(--topbar-btn-bg) !important;
   border: var(--topbar-btn-border) !important;
   color: var(--topbar-btn-text) !important;
@@ -143,11 +141,36 @@ img{max-width:100%;display:block}
   font-weight: 700 !important;
   letter-spacing: 0.05em !important;
   font-size: 0.8rem !important;
-  padding: 6px 14px !important;
+  padding: 0 16px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm) !important;
+  white-space: nowrap !important;
 }
-.topbar .btn-secondary:hover,
-.topbar #themeBtn:hover,
-.topbar #screenshotBtn:hover {
+.topbar .btn-secondary:hover {
+  background: var(--topbar-btn-hover-bg) !important;
+  color: var(--topbar-link-hover) !important;
+  border-color: var(--topbar-link-hover) !important;
+}
+.topbar #themeBtn {
+  background: var(--topbar-btn-bg) !important;
+  border: var(--topbar-btn-border) !important;
+  color: var(--topbar-btn-text) !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem !important;
+  border-radius: var(--r-sm) !important;
+  cursor: pointer;
+}
+.topbar #themeBtn:hover {
   background: var(--topbar-btn-hover-bg) !important;
   color: var(--topbar-link-hover) !important;
   border-color: var(--topbar-link-hover) !important;
