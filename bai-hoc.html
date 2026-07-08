@@ -365,6 +365,33 @@ var coTest = false;
   var params = new URLSearchParams(window.location.search);
   lessonId = params.get('id');
   if (!lessonId) { window.location.href = 'lop-hoc'; return; }
+  
+  if (params.get('hub') === '1' && params.get('embed') === '1') {
+    var style = document.createElement('style');
+    style.innerHTML = `
+      body { background: transparent !important; padding: 0 !important; overflow: auto !important; }
+      header.header, .switcher, #coTeachBanner, .layout-resizer, .container-split, #modalBuoiHS, #modalNopBai { display: none !important; }
+      #modalHub {
+        position: relative !important;
+        inset: auto !important;
+        background: transparent !important;
+        padding: 0 !important;
+        z-index: 1 !important;
+        display: flex !important;
+        overflow: visible !important;
+      }
+      #modalHub > div {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        height: auto !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   if (!daKetNoi()) { alert('Chưa kết nối Supabase.'); return; }
 
   var hoSo = await yeuCauDangNhap();
@@ -2286,7 +2313,12 @@ function moHubQuanLy(){
   $('hubTenBai').textContent = details ? details.title : '';
   chonHubTab('cham');
 }
-function dongHub(){ $('modalHub').style.display='none'; }
+function dongHub(){
+  $('modalHub').style.display='none';
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ action: 'closeHub' }, '*');
+  }
+}
 function chonHubTab(tab){
   ['cham','nop','dd'].forEach(function(t){
     $('hubTab'+HUBMAP[t]).classList.toggle('active', t===tab);

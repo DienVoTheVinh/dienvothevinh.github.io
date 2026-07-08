@@ -1398,7 +1398,7 @@ function renderLessonAcc(b) {
       '<div class="qla-actions">' +
         '<div class="qla-actg">' +
           '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
-          '<a class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" href="bai-hoc?id=' + b.id + '&hub=1" target="_blank">🛠 Quản lý buổi</a>' +
+          '<button class="btn btn-sm chi-gv" style="background:var(--accent);color:#fff;border-color:var(--accent);padding:4px 10px;font-weight:600" onclick="moQuickHubModal(\'' + b.id + '\')">🛠 Quản lý buổi</button>' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
         '</div>' +
         '<div class="qla-actg">' +
@@ -3806,6 +3806,37 @@ async function nopBaiHoChoHocSinh() {
     nut.textContent = originalText;
   }
 }
+
+function moQuickHubModal(lessonId) {
+  var iframe = $('iframeQuickHub');
+  if (iframe) {
+    iframe.src = 'bai-hoc?id=' + lessonId + '&hub=1&embed=1';
+  }
+  var modal = $('modalQuickHub');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function dongQuickHubModal() {
+  var modal = $('modalQuickHub');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  var iframe = $('iframeQuickHub');
+  if (iframe) {
+    iframe.src = '';
+  }
+  if (typeof taiLessonsLop === 'function') {
+    taiLessonsLop();
+  }
+}
+
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.action === 'closeHub') {
+    dongQuickHubModal();
+  }
+});
 </script>
 
 <!-- Modal Chi Tiết Đọc Lý Thuyết -->
@@ -3867,6 +3898,14 @@ async function nopBaiHoChoHocSinh() {
       <button class="btn btn-secondary" onclick="dongFormNopBaiHo()">Huỷ</button>
       <button class="btn btn-primary" id="btnNopBaiHoSubmit" onclick="nopBaiHoChoHocSinh()">📤 Xác nhận nộp hộ</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal Quick Lesson Hub (Iframe nhúng quản lý buổi học) -->
+<div class="modal" id="modalQuickHub" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10030;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
+  <div class="modal-content" style="max-width:960px; width:100%; height:90vh; padding:0; overflow:hidden; display:flex; flex-direction:column; position:relative; border-radius:14px; border:1px solid var(--line); background:var(--bg); box-shadow:0 24px 64px rgba(0,0,0,.4)">
+    <button onclick="dongQuickHubModal()" style="position:absolute;top:10px;right:14px;font-size:1.6rem;background:var(--surface);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3);z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)">×</button>
+    <iframe id="iframeQuickHub" src="" style="width:100%; height:100%; border:none; background:transparent;"></iframe>
   </div>
 </div>
 
