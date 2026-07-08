@@ -880,6 +880,7 @@ function moPhongTuLuan(ex, isSubmitted) {
   if (isSubmitted) {
     if ($('wkTimer')) $('wkTimer').style.display = 'none';
     if ($('wkSubmitBtn')) $('wkSubmitBtn').style.display = 'none';
+    if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'none';
     if ($('wkRetryBtn')) $('wkRetryBtn').style.display = 'inline-flex';
     if ($('wkExitBtn')) $('wkExitBtn').style.display = 'inline-flex';
   } else {
@@ -888,6 +889,7 @@ function moPhongTuLuan(ex, isSubmitted) {
       $('wkTimer').textContent = '00:00:00';
     }
     if ($('wkSubmitBtn')) $('wkSubmitBtn').style.display = 'inline-flex';
+    if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'inline-flex';
     if ($('wkRetryBtn')) $('wkRetryBtn').style.display = 'none';
     if ($('wkExitBtn')) $('wkExitBtn').style.display = 'none';
   }
@@ -1538,6 +1540,7 @@ async function lamLuotMoi() {
   selectedAnswers = {};
   timeLeftSeconds = currentExam.duration_minutes * 60;
   $('wkSubmitBtn').style.display = 'inline-flex';
+  if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'inline-flex';
   $('wkExitBtn').style.display = 'none';
   $('wkRetryBtn').style.display = 'none';
   $('btnPdfSolution').style.display = 'none';
