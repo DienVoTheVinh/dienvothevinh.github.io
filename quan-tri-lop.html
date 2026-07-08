@@ -97,6 +97,23 @@
 .qla-actg { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .qla-actg + .qla-actg { margin-left:4px; padding-left:12px; border-left:1px solid var(--line-2, var(--line)); }
 @media(max-width:640px){ .qla-bai-hd .chips { display:none; } .qla-actg + .qla-actg { border-left:none; padding-left:0; margin-left:0; } }
+/* ===== Accordion Học sinh ===== */
+.hs-item { border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden; background:var(--surface); }
+.hs-hd { display:flex; align-items:center; gap:11px; padding:10px 14px; cursor:pointer; }
+.hs-hd:hover { background:var(--surface-2); }
+.hs-av { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; flex:none; font-size:.9rem; }
+.hs-hd .nm { font-weight:700; font-size:.92rem; color:var(--ink); flex:1; min-width:0; }
+.hs-hd .st { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.hs-hd .pill { font-size:.72rem; padding:2px 9px; border-radius:20px; white-space:nowrap; }
+.hs-hd .car { color:var(--ink-3); font-size:.68rem; transition:transform .2s; }
+.hs-item.open > .hs-hd .car { transform:rotate(90deg); }
+.hs-body { display:none; padding:2px 14px 14px 14px; background:var(--surface-2); border-top:1px solid var(--line); }
+.hs-item.open > .hs-body { display:block; }
+.hs-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 0; border-bottom:1px dashed var(--line); }
+.hs-row:last-child { border-bottom:none; }
+.hs-row .lbl { font-size:.8rem; font-weight:700; color:var(--ink-2); min-width:120px; }
+.hs-info { font-size:.78rem; color:var(--ink-3); display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; }
+.pill-green{background:rgba(40,167,69,.14);color:var(--ok,#28a745)} .pill-gray{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line)} .pill-red{background:rgba(231,76,60,.14);color:var(--err)} .pill-purple{background:rgba(124,58,237,.14);color:#7c3aed} .pill-amber{background:rgba(217,119,6,.14);color:#d97706}
 
 /* Modals */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
@@ -242,36 +259,21 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <!-- Trợ giảng của lớp -->
         <div id="troGiangCard"></div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:12px;">
-          <h3 style="font-size:1.1rem">Danh sách học sinh</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <h3 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:10px;">👥 Học sinh
+            <span id="hsSiSo" class="badge badge-accent" style="font-size:.9rem; padding:4px 13px;">Sĩ số: 0</span>
+            <span id="hsMoiCount" style="display:none; font-size:.78rem; color:var(--ok); font-weight:700;"></span>
+          </h3>
           <button class="btn btn-primary btn-sm chi-gv" onclick="moFormXepLop()">+ Xếp học sinh vào lớp</button>
         </div>
-        <div class="card" style="padding:0; overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Học sinh</th>
-                <th>Tên đăng nhập</th>
-                <th>SĐT phụ huynh</th>
-                <th>Email</th>
-                <th>Trường học</th>
-                <th>📖 Lý thuyết</th>
-                <th style="text-align:right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="dsHocSinhLop"></tbody>
-          </table>
-        </div>
 
-        <!-- Theo dõi điểm danh & nhận xét hôm nay (đặt ở dưới cùng của lớp) -->
-        <div class="card" style="padding:16px 18px; margin-top:10px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-            <h3 style="font-size:1.05rem; margin:0;">📋 Theo dõi điểm danh &amp; nhận xét</h3>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">Buổi:</label>
-              <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:210px;"></select>
-              <button class="btn btn-secondary btn-sm chi-gv" onclick="taoBuoiHomNay()" style="padding:6px 10px;">➕ Tạo buổi hôm nay</button>
-            </div>
+        <div class="card" style="padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+            <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">📋 Buổi điểm danh:</label>
+            <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:180px;"></select>
+            <button class="btn btn-secondary btn-sm chi-gv" onclick="taoBuoiHomNay()" style="padding:6px 10px;">➕ Tạo buổi hôm nay</button>
+            <label style="font-size:.82rem; color:var(--ink-2); font-weight:600; margin-left:10px;">🏠 Bài tập:</label>
+            <select id="hwLessonSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:170px;"><option value="">— Không xem BTVN —</option></select>
           </div>
 
           <!-- Controls for session check-in / QR / Code validity -->
@@ -292,23 +294,14 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           </div>
 
           <!-- Stats row -->
-          <div id="ddStatsRow" style="display:none; gap:16px; align-items:center; flex-wrap:wrap; font-size:.82rem; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line-2);">
-            <span style="color:var(--ink-2)">Sĩ số: <b id="ddStatTotal">0</b></span>
+          <div id="ddStatsRow" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; font-size:.82rem; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line-2);">
             <span style="color:var(--ok)">Có mặt: <b id="ddStatPresent">0</b></span>
             <span style="color:var(--ink-3)">Vắng: <b id="ddStatAbsent">0</b></span>
             <span style="color:var(--accent)">Đã nhận xét: <b id="ddStatCommented">0</b></span>
+            <span id="ddStatBTVNwrap" style="display:none; color:#7c3aed">Đã nộp BTVN: <b id="ddStatBTVN">0</b></span>
           </div>
 
-          <div style="overflow-x:auto;">
-            <table style="font-size:.88rem; width:100%;">
-              <thead><tr>
-                <th>Học sinh</th>
-                <th style="text-align:center; white-space:nowrap">Điểm danh</th>
-                <th>Nhận xét hôm nay</th>
-              </tr></thead>
-              <tbody id="ddRoster"><tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr></tbody>
-            </table>
-          </div>
+          <div id="dsHocSinhAcc"><div style="padding:14px; text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh…</div></div>
         </div>
       </div>
     </div>
@@ -611,6 +604,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       
       <!-- TAB: BÀI TẬP VỀ NHÀ -->
       <div id="tabFormBTVN" style="display:none">
+        <div class="field">
+          <label>⏰ Hạn nộp bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn — quá hạn mà HS chưa nộp sẽ bị đánh dấu "Chưa nộp")</small></label>
+          <input type="datetime-local" class="input" id="bhBtvnDue" style="max-width:260px">
+        </div>
         <div class="field">
           <label>🏠 Ghi chú / đề ngắn <small style="color:var(--ink-3);font-weight:400">(khác với bài kiểm tra — học sinh xem đề và nộp bài về nhà riêng)</small></label>
           <textarea class="input" id="bhBtvnText" rows="3" placeholder="Ghi chú, dặn dò, hạn nộp… (đề chi tiết có thể dùng PDF / LaTeX / ảnh bên dưới)" style="resize:vertical"></textarea>
@@ -1346,6 +1343,7 @@ async function taiLessonsLop() {
 }
 
 function qlaEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function isoToLocalInput(iso) { if (!iso) return ''; var d = new Date(iso); var p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
 function qlaToggle(el) { var box = el.parentElement; if (box) box.classList.toggle('open'); }
 
 function renderLessonAcc(b) {
@@ -1457,82 +1455,65 @@ async function dungTest(lessonId, title) {
 var tpLessons = [];
 var tpProgMap = {};
 
+var hsHwLessons = [];
+function mauTuTen(ten) { var h = 0; ten = String(ten || ''); for (var i = 0; i < ten.length; i++) h = ten.charCodeAt(i) + ((h << 5) - h); var mau = ['#ff5e62', '#10b981', '#d97706', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#e11d48']; return mau[Math.abs(h) % mau.length]; }
+function hsToggle(id) {
+  if (!window.hsOpenSet) window.hsOpenSet = new Set();
+  if (window.hsOpenSet.has(id)) window.hsOpenSet.delete(id); else window.hsOpenSet.add(id);
+  var el = document.getElementById('hsit_' + id);
+  if (el) el.classList.toggle('open', window.hsOpenSet.has(id));
+}
+
 async function taiStudentsLop() {
-  $('dsHocSinhLop').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-3)">Đang tải danh sách học sinh...</td></tr>';
-  
-  // 1. Tải danh sách bài giảng có lý thuyết chặn câu hỏi của lớp
+  if ($('dsHocSinhAcc')) $('dsHocSinhAcc').innerHTML = '<div style="padding:14px;text-align:center;color:var(--ink-3)">Đang tải danh sách học sinh…</div>';
+
+  // Tải bài giảng của lớp (lấy lý thuyết + bài tập về nhà)
   var rLessons = await sb.from('lessons')
-    .select('id, title, theory_sections')
-    .eq('class_id', classDangChon.id);
-    
-  tpLessons = (rLessons.data || []).filter(function (l) {
-    return Array.isArray(l.theory_sections) && l.theory_sections.length > 0;
-  });
-  
-  // 2. Tải tiến độ học sinh
+    .select('id, title, sort, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due')
+    .eq('class_id', classDangChon.id).order('sort', { ascending: false });
+  var allLessons = rLessons.data || [];
+  tpLessons = allLessons.filter(function (l) { return Array.isArray(l.theory_sections) && l.theory_sections.length > 0; });
+
+  // Tiến độ lý thuyết
   tpProgMap = {};
   if (tpLessons.length > 0) {
     var lessonIds = tpLessons.map(function (l) { return l.id; });
-    var rProg = await sb.from('student_lesson_progress')
-      .select('student_id, lesson_id, unlocked_section, completed_at')
-      .in('lesson_id', lessonIds);
-      
-    (rProg.data || []).forEach(function (p) {
-      tpProgMap[p.student_id] = tpProgMap[p.student_id] || {};
-      tpProgMap[p.student_id][p.lesson_id] = p;
-    });
+    var rProg = await sb.from('student_lesson_progress').select('student_id, lesson_id, completed_at').in('lesson_id', lessonIds);
+    (rProg.data || []).forEach(function (p) { tpProgMap[p.student_id] = tpProgMap[p.student_id] || {}; tpProgMap[p.student_id][p.lesson_id] = p; });
   }
-  
-  // 3. Tải danh sách học sinh
+
+  // Danh sách bài có BTVN -> selector
+  hsHwLessons = allLessons.filter(function (l) { return l.homework_text || (l.homework_images && l.homework_images.length) || l.homework_latex_content || l.homework_document_id; });
+  window.hsHwLessonMap = {}; hsHwLessons.forEach(function (l) { window.hsHwLessonMap[l.id] = l; });
+  var hwSel = $('hwLessonSel');
+  if (hwSel) {
+    var cur = hwSel.value;
+    hwSel.innerHTML = '<option value="">— Không xem BTVN —</option>' + hsHwLessons.map(function (l) { return '<option value="' + l.id + '">' + ddEsc(l.title) + '</option>'; }).join('');
+    if (cur && hsHwLessons.some(function (l) { return l.id === cur; })) hwSel.value = cur;
+  }
+
+  // Học sinh + created_at (đánh dấu HS mới)
   var r = await sb.from('class_students')
-    .select('student_id, profiles(id, full_name, username, phone, email, school)')
+    .select('student_id, created_at, profiles(id, full_name, username, phone, email, school)')
     .eq('class_id', classDangChon.id);
-  
   var items = r.data || [];
   var students = items.map(function (x) { return x.profiles; }).filter(Boolean);
-  
+  window.hsCreatedMap = {}; items.forEach(function (x) { if (x.profiles) window.hsCreatedMap[x.profiles.id] = x.created_at; });
   students.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
-  
+  ddStudentsCache = students;
+
+  // Sĩ số + HS mới
+  if ($('hsSiSo')) $('hsSiSo').textContent = 'Sĩ số: ' + students.length;
+  var nguongMoi = Date.now() - 7 * 86400000;
+  var soMoi = students.filter(function (s) { return window.hsCreatedMap[s.id] && new Date(window.hsCreatedMap[s.id]).getTime() > nguongMoi; }).length;
+  var elMoi = $('hsMoiCount');
+  if (elMoi) { if (soMoi > 0) { elMoi.style.display = 'inline'; elMoi.textContent = '· ✨ ' + soMoi + ' HS mới'; } else elMoi.style.display = 'none'; }
+
   if (!students.length) {
-    $('dsHocSinhLop').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-3)">Chưa có học sinh nào được xếp vào lớp này. Bấm nút xếp lớp để thêm.</td></tr>';
-    ddStudentsCache = [];
+    if ($('dsHocSinhAcc')) $('dsHocSinhAcc').innerHTML = '<div style="padding:16px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào. Bấm <b>+ Xếp học sinh vào lớp</b> để thêm.</div>';
     taiBuoiTheoDoi();
     return;
   }
-
-  $('dsHocSinhLop').innerHTML = students.map(function (s) {
-    var completedCount = 0;
-    if (tpLessons.length > 0 && tpProgMap[s.id]) {
-      tpLessons.forEach(function (l) {
-        if (tpProgMap[s.id][l.id] && tpProgMap[s.id][l.id].completed_at) {
-          completedCount++;
-        }
-      });
-    }
-    
-    var progressCell = '<span style="color:var(--ink-3)">—</span>';
-    if (tpLessons.length > 0) {
-      progressCell = '<b>' + completedCount + '/' + tpLessons.length + '</b> ' +
-        '<button class="btn btn-ghost btn-sm" onclick="xemChiTietLyThuyet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:2px 6px; font-size:.8rem; color:var(--accent);">Chi tiết</button>';
-    }
-    
-    return '<tr>' +
-      '<td><b>' + s.full_name + '</b></td>' +
-      '<td class="num">' + s.username + '</td>' +
-      '<td class="num">' + (s.phone || '—') + '</td>' +
-      '<td>' + (s.email || '—') + '</td>' +
-      '<td>' + (s.school || '—') + '</td>' +
-      '<td>' + progressCell + '</td>' +
-      '<td style="text-align:right">' +
-      '  <button class="btn btn-primary btn-sm" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">💬 Nhận xét</button> ' +
-      '  <button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;">🔔 Nhắc</button> ' +
-      '  <button class="btn btn-ghost btn-sm" onclick="moFormNopBaiHo(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="padding:4px 10px; color:var(--accent);">📥 Nộp hộ</button> ' +
-      '  <button class="btn btn-ghost btn-sm chi-gv" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + s.full_name + '\')" style="color:var(--err); padding:4px 8px;">Xóa khỏi lớp</button>' +
-      '</td>' +
-      '</tr>';
-  }).join('');
-
-  ddStudentsCache = students;
   taiBuoiTheoDoi();
 }
 
@@ -1569,9 +1550,7 @@ async function taiBuoiTheoDoi() {
   ds.forEach(function (b) { ddSessionsMap[b.id] = b; });
   if (!ds.length) {
     sel.innerHTML = '<option value="">— Chưa có buổi học nào —</option>';
-    $('ddRoster').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chưa có buổi nào. Bấm “Tạo buổi hôm nay” để bắt đầu điểm danh.</td></tr>';
-    $('ddSessionControls').style.display = 'none';
-    $('ddStatsRow').style.display = 'none';
+    veRosterTheoDoi();
     return;
   }
   sel.innerHTML = ds.map(function (b) {
@@ -1746,76 +1725,120 @@ function taoToken() {
 }
 
 async function veRosterTheoDoi() {
-  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
-  var box = $('ddRoster');
+  var box = $('dsHocSinhAcc');
   if (!box) return;
-  if (!sid) {
-    box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Chọn hoặc tạo buổi để xem.</td></tr>';
-    $('ddSessionControls').style.display = 'none';
-    $('ddStatsRow').style.display = 'none';
+  if (!ddStudentsCache.length) {
+    box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--ink-3)">Lớp chưa có học sinh.</div>';
+    if ($('ddSessionControls')) $('ddSessionControls').style.display = 'none';
+    if ($('ddStatsRow')) $('ddStatsRow').style.display = 'none';
     return;
   }
-  var buoi = ddSessionsMap[sid];
-  updateDDControlsUI(buoi);
-  $('ddSessionControls').style.display = 'flex';
-  
+
+  var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
+  var buoi = sid ? ddSessionsMap[sid] : null;
+  if (sid) { updateDDControlsUI(buoi); $('ddSessionControls').style.display = 'flex'; }
+  else { if ($('ddSessionControls')) $('ddSessionControls').style.display = 'none'; }
   var ngay = buoi ? buoi.held_on : homNayISO();
 
-  var rA = await sb.from('attendance').select('student_id, status, checked_at').eq('session_id', sid);
+  // Điểm danh của buổi (nếu có)
   var coMat = {};
-  (rA.data || []).forEach(function (a) { coMat[a.student_id] = a; });
-
-  var rNx = await sb.from('session_remarks').select('student_id, remark, attitude_score')
-    .eq('class_id', classDangChon.id).eq('ngay', ngay);
+  if (sid) {
+    var rA = await sb.from('attendance').select('student_id, status, checked_at').eq('session_id', sid);
+    (rA.data || []).forEach(function (a) { coMat[a.student_id] = a; });
+  }
+  // Nhận xét theo ngày
+  var rNx = await sb.from('session_remarks').select('student_id, remark, attitude_score').eq('class_id', classDangChon.id).eq('ngay', ngay);
   var nxMap = {};
   (rNx.data || []).forEach(function (n) { nxMap[n.student_id] = n; });
 
-  if (!ddStudentsCache.length) {
-    box.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-3); padding:14px">Lớp chưa có học sinh.</td></tr>';
-    $('ddStatsRow').style.display = 'none';
-    return;
+  // Bài tập về nhà của bài đang chọn
+  var hwLid = $('hwLessonSel') ? $('hwLessonSel').value : '';
+  var hwLesson = hwLid ? (window.hsHwLessonMap || {})[hwLid] : null;
+  var hwSub = {}, hwMark = {};
+  if (hwLid) {
+    var rS = await sb.from('submissions').select('student_id').eq('lesson_id', hwLid).eq('kind', 'homework');
+    (rS.data || []).forEach(function (x) { hwSub[x.student_id] = true; });
+    var rM = await sb.from('homework_status').select('student_id, submitted').eq('lesson_id', hwLid);
+    (rM.data || []).forEach(function (x) { hwMark[x.student_id] = x.submitted; });
   }
+  var quaHan = hwLesson && hwLesson.homework_due && (new Date(hwLesson.homework_due).getTime() < Date.now());
+  var nguongMoi = Date.now() - 7 * 86400000;
 
-  var totalCount = ddStudentsCache.length;
-  var presentCount = 0;
-  var commentCount = 0;
-
+  var present = 0, commented = 0, hwDone = 0;
   box.innerHTML = ddStudentsCache.map(function (s) {
-    var att = coMat[s.id];
-    var nx = nxMap[s.id];
-    var on = !!att;
-    if (on) presentCount++;
-    if (nx && (nx.remark || nx.attitude_score != null)) commentCount++;
+    var att = coMat[s.id]; var on = !!att; if (on) present++;
+    var nx = nxMap[s.id]; var coNx = nx && (nx.remark || nx.attitude_score != null); if (coNx) commented++;
+    var daNop = false;
+    if (hwLid) { daNop = (hwMark[s.id] !== undefined) ? hwMark[s.id] : !!hwSub[s.id]; if (daNop) hwDone++; }
+    var laMoi = window.hsCreatedMap && window.hsCreatedMap[s.id] && new Date(window.hsCreatedMap[s.id]).getTime() > nguongMoi;
+    var mo = window.hsOpenSet && window.hsOpenSet.has(s.id);
+    var tenJs = s.full_name.replace(/'/g, "\\'");
 
-    var ddCell = '';
-    if (on) {
-      var statusLabel = att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt';
-      ddCell = '<button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">' + statusLabel + '</button>';
-    } else {
-      ddCell = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>';
-    }
+    var pills = '';
+    if (sid) pills += on ? '<span class="pill pill-green">🟢 Có mặt</span>' : '<span class="pill pill-gray">Vắng</span>';
+    if (coNx) pills += '<span class="pill pill-amber">💬 Đã NX</span>';
+    if (hwLid) pills += daNop ? '<span class="pill pill-purple">🏠 Đã nộp</span>' : (quaHan ? '<span class="pill pill-red">🏠 Chưa nộp</span>' : '<span class="pill pill-gray">🏠 Chưa</span>');
+    if (laMoi) pills += '<span class="pill" style="background:var(--accent);color:#fff">✨ Mới</span>';
 
-    var nxCell;
-    if (nx && (nx.remark || nx.attitude_score != null)) {
-      var diem = (nx.attitude_score != null) ? ' <b style="color:var(--accent)">' + nx.attitude_score + 'đ</b>' : '';
-      var noi = nx.remark ? ddEsc(nx.remark) : '<i style="color:var(--ink-3)">(chỉ chấm điểm)</i>';
-      nxCell = '<span style="color:var(--ok); font-weight:700">✓</span>' + diem + ' · ' + noi +
-        ' <a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="color:var(--accent); text-decoration:underline; font-size:.8rem">sửa</a>';
-    } else {
-      nxCell = '<a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + s.full_name.replace(/'/g, "\\'") + '\')" style="color:var(--ink-3); text-decoration:underline">Chưa — nhận xét ngay</a>';
-    }
-    return '<tr>' +
-      '<td><b>' + s.full_name + '</b></td>' +
-      '<td style="text-align:center">' + ddCell + '</td>' +
-      '<td>' + nxCell + '</td>' +
-      '</tr>';
+    var initial = (s.full_name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase();
+
+    var ddHtml = sid ? (on
+      ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + ' · bỏ</button>'
+      : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>')
+      : '<span style="color:var(--ink-3);font-size:.82rem">Chọn buổi ở trên để điểm danh</span>';
+
+    var nxHtml = coNx
+      ? ((nx.attitude_score != null ? '<b style="color:var(--accent)">' + nx.attitude_score + 'đ</b> · ' : '') + (nx.remark ? ddEsc(nx.remark) : '<i style="color:var(--ink-3)">(chỉ chấm điểm)</i>') + ' <a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + tenJs + '\')" style="color:var(--accent);text-decoration:underline">sửa</a>')
+      : '<a href="javascript:void(0)" onclick="moNhanXet(\'' + s.id + '\', \'' + tenJs + '\')" style="color:var(--accent);text-decoration:underline">✏️ Nhận xét ngay</a>';
+
+    var hwHtml = hwLid
+      ? ((daNop ? '<span class="pill pill-purple">✓ Đã nộp</span>' : (quaHan ? '<span class="pill pill-red">Chưa nộp (quá hạn)</span>' : '<span class="pill pill-gray">Chưa nộp</span>')) +
+        ' <button class="btn btn-secondary btn-sm" onclick="toggleNopBTVN(\'' + s.id + '\', ' + (daNop ? 'false' : 'true') + ')">' + (daNop ? 'Bỏ đánh dấu' : '✓ Đánh dấu đã nộp') + '</button>')
+      : '<span style="color:var(--ink-3);font-size:.82rem">Chọn bài tập ở trên để đánh dấu nộp</span>';
+
+    var ltHtml;
+    if (tpLessons.length) {
+      var cc = 0; if (tpProgMap[s.id]) tpLessons.forEach(function (l) { if (tpProgMap[s.id][l.id] && tpProgMap[s.id][l.id].completed_at) cc++; });
+      ltHtml = '<b>' + cc + '/' + tpLessons.length + '</b> <button class="btn btn-ghost btn-sm" style="padding:2px 8px;color:var(--accent)" onclick="xemChiTietLyThuyet(\'' + s.id + '\', \'' + tenJs + '\')">Chi tiết</button>';
+    } else ltHtml = '<span style="color:var(--ink-3)">—</span>';
+
+    return '<div class="hs-item' + (mo ? ' open' : '') + '" id="hsit_' + s.id + '">' +
+      '<div class="hs-hd" onclick="hsToggle(\'' + s.id + '\')">' +
+        '<span class="hs-av" style="background:' + mauTuTen(s.full_name) + '">' + initial + '</span>' +
+        '<span class="nm">' + ddEsc(s.full_name) + '</span>' +
+        '<span class="st">' + pills + '</span>' +
+        '<span class="car">▶</span>' +
+      '</div>' +
+      '<div class="hs-body">' +
+        '<div class="hs-row"><span class="lbl">📋 Điểm danh</span>' + ddHtml + '</div>' +
+        '<div class="hs-row"><span class="lbl">💬 Nhận xét</span><span style="flex:1;min-width:0">' + nxHtml + '</span></div>' +
+        '<div class="hs-row"><span class="lbl">🏠 Bài tập về nhà</span><span style="flex:1;min-width:0">' + hwHtml + '</span></div>' +
+        '<div class="hs-row"><span class="lbl">📖 Lý thuyết</span><span style="flex:1">' + ltHtml + '</span></div>' +
+        '<div class="hs-row" style="border-bottom:none">' +
+          '<button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + tenJs + '\')">🔔 Nhắc</button> ' +
+          '<button class="btn btn-ghost btn-sm" style="color:var(--accent)" onclick="moFormNopBaiHo(\'' + s.id + '\', \'' + tenJs + '\')">📥 Nộp hộ</button> ' +
+          '<button class="btn btn-ghost btn-sm chi-gv" style="color:var(--err)" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + tenJs + '\')">🗑 Xóa khỏi lớp</button>' +
+        '</div>' +
+        '<div class="hs-info"><span>👤 ' + ddEsc(s.username) + '</span><span>📞 ' + (s.phone ? ddEsc(s.phone) : '—') + '</span><span>✉️ ' + (s.email ? ddEsc(s.email) : '—') + '</span><span>🏫 ' + (s.school ? ddEsc(s.school) : '—') + '</span></div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 
-  $('ddStatTotal').textContent = totalCount;
-  $('ddStatPresent').textContent = presentCount;
-  $('ddStatAbsent').textContent = totalCount - presentCount;
-  $('ddStatCommented').textContent = commentCount;
-  $('ddStatsRow').style.display = 'flex';
+  if ($('ddStatPresent')) $('ddStatPresent').textContent = present;
+  if ($('ddStatAbsent')) $('ddStatAbsent').textContent = ddStudentsCache.length - present;
+  if ($('ddStatCommented')) $('ddStatCommented').textContent = commented;
+  var wBt = $('ddStatBTVNwrap');
+  if (wBt) { if (hwLid) { wBt.style.display = 'inline'; $('ddStatBTVN').textContent = hwDone; } else wBt.style.display = 'none'; }
+  if ($('ddStatsRow')) $('ddStatsRow').style.display = 'flex';
+}
+
+async function toggleNopBTVN(studentId, submitted) {
+  var hwLid = $('hwLessonSel') ? $('hwLessonSel').value : '';
+  if (!hwLid) { alert('Chưa chọn bài tập.'); return; }
+  var uid = null; try { var u = await sb.auth.getUser(); uid = (u.data && u.data.user) ? u.data.user.id : null; } catch (e) {}
+  var r = await sb.from('homework_status').upsert({ lesson_id: hwLid, student_id: studentId, submitted: submitted, marked_by: uid, updated_at: new Date().toISOString() }, { onConflict: 'lesson_id,student_id' });
+  if (r.error) { alert('Lỗi đánh dấu nộp bài: ' + r.error.message); return; }
+  veRosterTheoDoi();
 }
 
 async function toggleDiemDanhLop(studentId, present) {
@@ -2583,6 +2606,7 @@ async function moFormThemBaiGiang() {
   hwAnhDaCo = []; hwSelectedFiles = []; veBtvnAnh();
   if ($('bhBtvnText')) $('bhBtvnText').value = '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = '';
+  if ($('bhBtvnDue')) $('bhBtvnDue').value = '';
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('bhBtvnPdfHienCo')) $('bhBtvnPdfHienCo').style.display = 'none';
@@ -2648,6 +2672,7 @@ async function moFormSua(id) {
   hwAnhDaCo = Array.isArray(bh.homework_images) ? bh.homework_images.slice() : []; hwSelectedFiles = []; veBtvnAnh();
   if ($('bhBtvnText')) $('bhBtvnText').value = bh.homework_text || '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = bh.homework_latex_content || '';
+  if ($('bhBtvnDue')) $('bhBtvnDue').value = bh.homework_due ? isoToLocalInput(bh.homework_due) : '';
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('khungXemBtvn')) $('khungXemBtvn').style.display = 'none';
@@ -2853,6 +2878,8 @@ async function luuBaiHoc(e) {
   data.homework_text = $('bhBtvnText') ? ($('bhBtvnText').value.trim() || null) : null;
   data.homework_images = hwAnhDaCo;
   data.homework_latex_content = $('bhBtvnLatex') ? ($('bhBtvnLatex').value.trim() || null) : null;
+  var dueVal = $('bhBtvnDue') ? $('bhBtvnDue').value : '';
+  data.homework_due = dueVal ? new Date(dueVal).toISOString() : null;
 
   // Đề BTVN dạng PDF: tải file hoặc dán URL -> lưu vào documents
   var fileBtvn = $('bhBtvnPdfFile') ? $('bhBtvnPdfFile').files[0] : null;

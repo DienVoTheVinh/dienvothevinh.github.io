@@ -636,7 +636,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -1507,15 +1507,21 @@ async function renderBTVN(than) {
         .order('submitted_at', { ascending: false });
       var ds = r.data || [];
       var el = $('btvnTrangThai');
+      var hanHtml = '';
+      if (details.homework_due) {
+        var quaHan = new Date(details.homework_due).getTime() < Date.now();
+        hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(details.homework_due).toLocaleString('vi-VN') + (quaHan ? ' (đã quá hạn)' : '') + '</span>';
+      }
       if (el) {
         if (!ds.length) {
-          el.innerHTML = '📌 Em chưa nộp bài tập về nhà cho buổi này.';
+          var quaHan2 = details.homework_due && new Date(details.homework_due).getTime() < Date.now();
+          el.innerHTML = (quaHan2 ? '⚠️ <b style="color:var(--err)">Chưa nộp — đã quá hạn.</b>' : '📌 Em chưa nộp bài tập về nhà cho buổi này.') + hanHtml;
         } else {
           var s0 = ds[0];
           var tt = s0.status === 'graded'
             ? '<span class="badge badge-ok">Đã chấm' + (s0.score != null ? ' · ' + s0.score + ' điểm' : '') + '</span>'
             : '<span class="badge badge-warn">Chờ thầy chấm</span>';
-          el.innerHTML = '✅ Đã nộp ' + ds.length + ' bài · lần cuối ' + new Date(s0.submitted_at).toLocaleString('vi-VN') + ' ' + tt;
+          el.innerHTML = '✅ Đã nộp ' + ds.length + ' bài · lần cuối ' + new Date(s0.submitted_at).toLocaleString('vi-VN') + ' ' + tt + hanHtml;
         }
       }
     } catch (e) {}
