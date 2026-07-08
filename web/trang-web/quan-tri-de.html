@@ -28,6 +28,18 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 .empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
 #vungPreview { position: sticky; top: 80px; max-height: calc(100vh - 120px); background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 18px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
 #dsPreview { flex: 1; overflow-y: auto; padding-right: 6px; margin-top: 12px; }
+.tab-headers { display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 20px; }
+.tab-header-btn { background: transparent; border: none; padding: 8px 16px; font-size: .9rem; font-weight: 600; color: var(--ink-2); cursor: pointer; border-radius: var(--r-sm); transition: all 0.15s; }
+.tab-header-btn:hover { background: var(--surface-2); color: var(--ink); }
+.tab-header-btn.active { background: var(--accent-soft); color: var(--accent); }
+.qla-topic { border:1px solid var(--line); border-radius:var(--r-md,12px); margin-bottom:12px; overflow:hidden; background:var(--surface); }
+.qla-topic-hd { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; user-select:none; border-left:5px solid var(--accent); }
+.qla-topic-hd .nm { font-weight:800; font-size:.9rem; text-transform:uppercase; color:var(--ink); }
+.qla-topic-hd .cnt { font-size:.74rem; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 9px; }
+.qla-topic-hd .car { margin-left:auto; color:var(--ink-3); font-size:.8rem; transition:transform .2s; }
+.qla-topic.open > .qla-topic-hd .car { transform:rotate(90deg); }
+.qla-topic-body { display:none; border-top:1px solid var(--line); }
+.qla-topic.open > .qla-topic-body { display:block; }
 </style>
 </head>
 <body>
@@ -54,89 +66,98 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
     </div>
   </div>
 
-  <div class="cols">
-    <!-- Cột trái: Form tạo đề & Soạn LaTeX -->
-    <div class="card" style="display:flex; flex-direction:column; gap:16px">
-      <h3 id="formTitle">🛠️ Tạo đề thi mới</h3>
-      <form onsubmit="parseAndSaveExam(event)">
-        <div class="field">
-          <label>Tiêu đề đề thi/đề luyện <b style="color:var(--accent)">*</b></label>
-          <input class="input" id="exTitle" required placeholder="Ví dụ: Đề thi thử lần 1 - Khối 12">
-        </div>
-        <div class="form-row">
+  <!-- Tabs -->
+  <div class="tab-headers">
+    <button class="tab-header-btn active" id="tabSoan" onclick="switchDeTab('soan')">🛠️ Biên soạn đề (LaTeX)</button>
+    <button class="tab-header-btn" id="tabKho" onclick="switchDeTab('kho')">📦 Kho đề thi đã tạo</button>
+  </div>
+
+  <!-- Tab Biên soạn -->
+  <div id="phanHeSoan">
+    <div class="cols">
+      <!-- Cột trái: Form tạo đề & Soạn LaTeX -->
+      <div class="card" style="display:flex; flex-direction:column; gap:16px">
+        <h3 id="formTitle">🛠️ Tạo đề thi mới</h3>
+        <form onsubmit="parseAndSaveExam(event)">
           <div class="field">
-            <label>Lớp áp dụng (Để trống = Mọi lớp)</label>
-            <select class="input" id="exLop">
-              <option value="">-- Mọi lớp --</option>
+            <label>Tiêu đề đề thi/đề luyện <b style="color:var(--accent)">*</b></label>
+            <input class="input" id="exTitle" required placeholder="Ví dụ: Đề thi thử lần 1 - Khối 12">
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Lớp áp dụng (Để trống = Mọi lớp)</label>
+              <select class="input" id="exLop">
+                <option value="">-- Mọi lớp --</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Thời gian làm bài (Phút) <b style="color:var(--accent)">*</b></label>
+              <input class="input" type="number" id="exDuration" value="90" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Mở lúc (Trống = mở ngay)</label>
+              <input class="input" type="datetime-local" id="exOpens">
+            </div>
+            <div class="field">
+              <label>Đóng lúc (Trống = không hạn chế)</label>
+              <input class="input" type="datetime-local" id="exCloses">
+            </div>
+          </div>
+          <div class="field" style="display:flex; gap:16px; margin: 10px 0">
+            <div class="switch-container">
+              <input type="checkbox" id="exShuffle" checked>
+              <label for="exShuffle" style="margin:0; font-weight:600">Xáo trộn câu hỏi</label>
+            </div>
+            <div class="switch-container">
+              <input type="checkbox" id="exPublished" checked>
+              <label for="exPublished" style="margin:0; font-weight:600">Xuất bản đề</label>
+            </div>
+          </div>
+          
+          <div class="field">
+            <label>Hình thức đề <b style="color:var(--accent)">*</b></label>
+            <select class="input" id="exType" onchange="capNhatHinhThucDe()">
+              <option value="mc">Chỉ trắc nghiệm (tự động chấm)</option>
+              <option value="essay">Chỉ tự luận (học sinh chụp ảnh nộp)</option>
+              <option value="combo">Kết hợp (trắc nghiệm + tự luận)</option>
             </select>
           </div>
-          <div class="field">
-            <label>Thời gian làm bài (Phút) <b style="color:var(--accent)">*</b></label>
-            <input class="input" type="number" id="exDuration" value="90" required>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Mở lúc (Trống = mở ngay)</label>
-            <input class="input" type="datetime-local" id="exOpens">
-          </div>
-          <div class="field">
-            <label>Đóng lúc (Trống = không hạn chế)</label>
-            <input class="input" type="datetime-local" id="exCloses">
-          </div>
-        </div>
-        <div class="field" style="display:flex; gap:16px; margin: 10px 0">
-          <div class="switch-container">
-            <input type="checkbox" id="exShuffle" checked>
-            <label for="exShuffle" style="margin:0; font-weight:600">Xáo trộn câu hỏi</label>
-          </div>
-          <div class="switch-container">
-            <input type="checkbox" id="exPublished" checked>
-            <label for="exPublished" style="margin:0; font-weight:600">Xuất bản đề</label>
-          </div>
-        </div>
-        
-        <div class="field">
-          <label>Hình thức đề <b style="color:var(--accent)">*</b></label>
-          <select class="input" id="exType" onchange="capNhatHinhThucDe()">
-            <option value="mc">Chỉ trắc nghiệm (tự động chấm)</option>
-            <option value="essay">Chỉ tự luận (học sinh chụp ảnh nộp)</option>
-            <option value="combo">Kết hợp (trắc nghiệm + tự luận)</option>
-          </select>
-        </div>
 
-        <div class="field" id="wrapEssayPrompt" style="display:none">
-          <label>Đề bài / yêu cầu phần tự luận</label>
-          <textarea class="code" id="exEssayPrompt" style="min-height:140px" placeholder="Nhập đề bài tự luận (có thể dùng LaTeX $...$). Học sinh đọc đề rồi chụp ảnh bài làm nộp lên cho thầy chấm tay."></textarea>
-        </div>
+          <div class="field" id="wrapEssayPrompt" style="display:none">
+            <label>Đề bài / yêu cầu phần tự luận</label>
+            <textarea class="code" id="exEssayPrompt" style="min-height:140px" placeholder="Nhập đề bài tự luận (có thể dùng LaTeX $...$). Học sinh đọc đề rồi chụp ảnh bài làm nộp lên cho thầy chấm tay."></textarea>
+          </div>
 
-        <div class="field" id="wrapLatex">
-          <label>Nội dung đề LaTeX (ex_test format) <b style="color:var(--accent)">*</b></label>
-          <textarea class="code" id="exLatex" placeholder="\begin{ex}&#10;Đề bài toán...&#10;\choice&#10;{A. Lựa chọn 1}&#10;{\True B. Lựa chọn đúng}&#10;{C. Lựa chọn 3}&#10;{D. Lựa chọn 4}&#10;\loigiai{&#10;Lời giải chi tiết...&#10;}&#10;\end{ex}"></textarea>
-        </div>
+          <div class="field" id="wrapLatex">
+            <label>Nội dung đề LaTeX (ex_test format) <b style="color:var(--accent)">*</b></label>
+            <textarea class="code" id="exLatex" placeholder="\begin{ex}&#10;Đề bài toán...&#10;\choice&#10;{A. Lựa chọn 1}&#10;{\True B. Lựa chọn đúng}&#10;{C. Lựa chọn 3}&#10;{D. Lựa chọn 4}&#10;\loigiai{&#10;Lời giải chi tiết...&#10;}&#10;\end{ex}"></textarea>
+          </div>
 
-        <div style="display:flex; gap:12px; margin-top:20px">
-          <button type="button" class="btn btn-secondary" onclick="demoParseLaTeX()" style="flex:1">🔍 Phân tích đề</button>
-          <button type="submit" class="btn btn-primary" id="btnSave" style="flex:1" disabled>💾 Lưu đề thi</button>
-        </div>
-        <button type="button" class="btn btn-ghost" id="btnCancelEdit" style="display:none; margin-top:10px; width:100%; color:var(--ink-3)" onclick="cancelEditExam()">❌ Huỷ chỉnh sửa (Tạo đề mới)</button>
-      </form>
-    </div>
+          <div style="display:flex; gap:12px; margin-top:20px">
+            <button type="button" class="btn btn-secondary" onclick="demoParseLaTeX()" style="flex:1">🔍 Phân tích đề</button>
+            <button type="submit" class="btn btn-primary" id="btnSave" style="flex:1" disabled>💾 Lưu đề thi</button>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btnCancelEdit" style="display:none; margin-top:10px; width:100%; color:var(--ink-3)" onclick="cancelEditExam()">❌ Huỷ chỉnh sửa (Tạo đề mới)</button>
+        </form>
+      </div>
 
-    <!-- Cột phải: Xem thử câu hỏi bóc tách -->
-    <div style="align-self: stretch;">
-      <div id="vungPreview" style="display:none">
-        <h3 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line-2); padding-bottom:10px; margin-bottom:0; font-size:1.05rem">
-          <span>👁️ Xem trước hiển thị</span>
-          <small style="font-size:0.8rem; font-weight:500; color:var(--ink-2)" id="previewCountLabel"></small>
-        </h3>
-        <div id="dsPreview"></div>
+      <!-- Cột phải: Xem thử câu hỏi bóc tách -->
+      <div style="align-self: stretch;">
+        <div id="vungPreview" style="display:none">
+          <h3 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line-2); padding-bottom:10px; margin-bottom:0; font-size:1.05rem">
+            <span>👁️ Xem trước hiển thị</span>
+            <small style="font-size:0.8rem; font-weight:500; color:var(--ink-2)" id="previewCountLabel"></small>
+          </h3>
+          <div id="dsPreview"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Danh sách đề đã tạo -->
-  <div style="margin-top:40px">
+  <!-- Tab Kho đề -->
+  <div id="phanHeKho" style="display:none; margin-top:10px">
     <h3 style="margin-bottom:16px">📋 Danh sách đề thi đã tạo</h3>
     <div id="dsDeThi" style="display:flex; flex-direction:column; gap:12px">
       <div class="empty card">Đang tải đề thi...</div>
@@ -148,7 +169,7 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
 <script src="js/menu.js"></script>
-<script src="js/latex-view.js"></script>
+<script src="js/latex-view.js?v=2"></script>
 <script src="js/analytics.js"></script>
 <script>
 var listExams = [];
@@ -174,6 +195,57 @@ var editingExamId = null;
   await taiDanhSachDe();
 })();
 
+function switchDeTab(tab) {
+  var tabSoan = $('tabSoan');
+  var tabKho = $('tabKho');
+  var phanHeSoan = $('phanHeSoan');
+  var phanHeKho = $('phanHeKho');
+  
+  if (tab === 'soan') {
+    tabSoan.classList.add('active');
+    tabKho.classList.remove('active');
+    phanHeSoan.style.display = 'block';
+    phanHeKho.style.display = 'none';
+  } else {
+    tabSoan.classList.remove('active');
+    tabKho.classList.add('active');
+    phanHeSoan.style.display = 'none';
+    phanHeKho.style.display = 'block';
+    taiDanhSachDe();
+  }
+}
+
+function qlaToggle(el) {
+  var box = el.parentElement;
+  if (box) box.classList.toggle('open');
+}
+
+function renderExamRow(e) {
+  var state = e.published ? '<span class="badge badge-ok">Đang mở</span>' : '<span class="badge badge-mute">Nháp</span>';
+  var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
+  
+  return '<div class="card" style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; margin-bottom: 0px;" title="Bấm vào để xem và chỉnh sửa" onclick="loadExamForEdit(\'' + e.id + '\')">' +
+    '<div>' +
+      '<div style="display:flex; gap:8px; align-items:center">' +
+        '<b style="font-size:1.05rem; color:var(--accent); text-decoration:underline">' + e.title + '</b>' +
+        state +
+      '</div>' +
+      '<div style="font-size:.82rem; color:var(--ink-2); margin-top:4px">' +
+        'Thời gian: ' + e.duration_minutes + ' phút · Số câu: ' + countQ +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex; gap:8px; align-items:center">' +
+      '<a href="luyen-de?exam_id=' + e.id + '" target="_blank" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">👁️ Xem kiểu HS</a>' +
+      '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="event.stopPropagation(); xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
+    '</div>' +
+    '</div>';
+}
+
+function qlaEsc(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 async function taiDanhSachDe() {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
   var r = await sb.from('exams')
@@ -186,27 +258,54 @@ async function taiDanhSachDe() {
     return;
   }
   
-  $('dsDeThi').innerHTML = listExams.map(function (e) {
-    var classLabel = e.classes ? e.classes.name : 'Mọi lớp';
-    var state = e.published ? '<span class="badge badge-ok">Đang mở</span>' : '<span class="badge badge-mute">Nháp</span>';
-    var countQ = e.exam_questions && e.exam_questions[0] ? e.exam_questions[0].count : 0;
-    
-    return '<div class="card" style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer" title="Bấm vào để xem và chỉnh sửa" onclick="loadExamForEdit(\'' + e.id + '\')">' +
-      '<div>' +
-        '<div style="display:flex; gap:8px; align-items:center">' +
-          '<b style="font-size:1.05rem; color:var(--accent); text-decoration:underline">' + e.title + '</b>' +
-          state +
-        '</div>' +
-        '<div style="font-size:.82rem; color:var(--ink-2); margin-top:4px">' +
-          'Lớp: ' + classLabel + ' · Thời gian: ' + e.duration_minutes + ' phút · Số câu: ' + countQ +
-        '</div>' +
+  // Grouping listExams
+  var groups = {};
+  var noClassExams = [];
+  listExams.forEach(function (e) {
+    if (e.classes && e.classes.name) {
+      var className = e.classes.name;
+      if (!groups[className]) groups[className] = [];
+      groups[className].push(e);
+    } else {
+      noClassExams.push(e);
+    }
+  });
+
+  var html = '';
+  
+  // Sort class names alphabetically
+  var sortedClassNames = Object.keys(groups).sort();
+  
+  // Render grouped exams
+  sortedClassNames.forEach(function (className) {
+    var exams = groups[className];
+    html += '<div class="qla-topic open" style="margin-bottom: 16px;">' +
+      '<div class="qla-topic-hd" style="border-left-color: var(--accent); background-color: color-mix(in srgb, var(--accent) 8%, transparent);" onclick="qlaToggle(this)">' +
+        '<span class="nm">🏫 Lớp: ' + qlaEsc(className) + '</span>' +
+        '<span class="cnt" style="margin-left: 10px;">' + exams.length + ' đề thi</span>' +
+        '<span class="car" style="margin-left: auto;">▶</span>' +
       '</div>' +
-      '<div style="display:flex; gap:8px; align-items:center">' +
-        '<a href="luyen-de?exam_id=' + e.id + '" target="_blank" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">👁️ Xem kiểu HS</a>' +
-        '<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="event.stopPropagation(); xoaDeThi(\'' + e.id + '\')">Xoá</button>' +
+      '<div class="qla-topic-body" style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">' +
+        exams.map(function(e) { return renderExamRow(e); }).join('') +
       '</div>' +
-      '</div>';
-  }).join('');
+    '</div>';
+  });
+  
+  // Render "Mọi lớp / Khác" if any
+  if (noClassExams.length > 0) {
+    html += '<div class="qla-topic open" style="margin-bottom: 16px;">' +
+      '<div class="qla-topic-hd" style="border-left-color: #A8A29A; background-color: color-mix(in srgb, #A8A29A 8%, transparent);" onclick="qlaToggle(this)">' +
+        '<span class="nm">🌍 Đề chung (Mọi lớp)</span>' +
+        '<span class="cnt" style="margin-left: 10px;">' + noClassExams.length + ' đề thi</span>' +
+        '<span class="car" style="margin-left: auto;">▶</span>' +
+      '</div>' +
+      '<div class="qla-topic-body" style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">' +
+        noClassExams.map(function(e) { return renderExamRow(e); }).join('') +
+      '</div>' +
+    '</div>';
+  }
+  
+  $('dsDeThi').innerHTML = html;
 }
 
 async function xoaDeThi(id) {
@@ -226,9 +325,16 @@ function demoParseLaTeX() {
   var html = '';
   var totalCountQ = 0;
   
-  // 1. Render tự luận
+  // 1. Render tự luận (chỉ phần ĐỀ, bỏ phần HƯỚNG DẪN GIẢI để không lặp câu)
   if ((type === 'essay' || type === 'combo') && essayPrompt) {
-    var qs = parseLatexQuestions(essayPrompt);
+    var deOnly = essayPrompt;
+    var cutIdx = -1;
+    ['\\boxde', 'HƯỚNG DẪN GIẢI', '\\newpage'].forEach(function (m) {
+      var p = essayPrompt.indexOf(m);
+      if (p !== -1 && (cutIdx === -1 || p < cutIdx)) cutIdx = p;
+    });
+    if (cutIdx !== -1) deOnly = essayPrompt.substring(0, cutIdx);
+    var qs = parseLatexQuestions(deOnly);
     html += '<div style="margin-bottom: 20px; border: 2px solid var(--accent); border-radius: var(--r-md); padding: 16px; background: var(--surface);">';
     html += '<div style="font-size:0.95rem; font-weight:700; color:var(--accent); border-bottom:1px solid var(--line-2); padding-bottom:6px; margin-bottom:12px">📝 XEM TRƯỚC TỰ LUẬN</div>';
     if (qs && qs.length > 0) {
@@ -359,6 +465,7 @@ function escapeHTML(str) {
 }
 
 async function loadExamForEdit(examId) {
+  switchDeTab('soan');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   
   $('formTitle').textContent = '⏳ Đang tải đề thi...';
@@ -381,8 +488,8 @@ async function loadExamForEdit(examId) {
     $('exLop').value = exam.class_id || '';
     $('exDuration').value = exam.duration_minutes || 90;
     
-    $('exOpens').value = exam.opens_at ? new Date(new Date(exam.opens_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
-    $('exCloses').value = exam.closes_at ? new Date(new Date(exam.closes_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16) : '';
+    $('exOpens').value = exam.opens_at ? new Date(new Date(exam.opens_at).getTime() + 7*3600000).toISOString().slice(0, 16) : '';
+    $('exCloses').value = exam.closes_at ? new Date(new Date(exam.closes_at).getTime() + 7*3600000).toISOString().slice(0, 16) : '';
     
     $('exShuffle').checked = !!exam.shuffle;
     $('exPublished').checked = !!exam.published;
@@ -455,33 +562,30 @@ function cancelEditExam() {
 function parseDateTime(str) {
   if (!str) return null;
   str = str.trim();
-  var d = new Date(str);
-  if (!isNaN(d.getTime())) return d.toISOString();
-
+  // Luôn coi giờ thầy nhập là GIỜ VIỆT NAM (UTC+7), không phụ thuộc múi giờ thiết bị.
+  // Định dạng từ ô datetime-local: "YYYY-MM-DDTHH:MM"
+  var m = str.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/);
+  if (m) {
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 7 * 3600000).toISOString();
+  }
+  // Dự phòng: định dạng "dd/mm/yyyy hh:mm" cũng coi là giờ VN
   var parts = str.split(/[\sT]+/);
   var datePart = '';
   var timePart = '00:00';
-  
   parts.forEach(function (p) {
     if (p.includes('/')) datePart = p;
     else if (p.includes(':')) timePart = p;
   });
-
   if (datePart) {
     var dateSegments = datePart.split('/');
     if (dateSegments.length === 3) {
       var day = parseInt(dateSegments[0], 10);
       var month = parseInt(dateSegments[1], 10) - 1;
       var year = parseInt(dateSegments[2], 10);
-      
       var timeSegments = timePart.split(':');
       var hours = parseInt(timeSegments[0], 10) || 0;
       var minutes = parseInt(timeSegments[1], 10) || 0;
-      
-      var parsedDate = new Date(year, month, day, hours, minutes, 0);
-      if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString();
-      }
+      return new Date(Date.UTC(year, month, day, hours, minutes) - 7 * 3600000).toISOString();
     }
   }
   return null;
