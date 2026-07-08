@@ -345,7 +345,7 @@ body.theme-map #mapWatermark { display:block; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.8"></script>
+<script src="js/vinhmath.js?v=5.0"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -636,7 +636,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -799,7 +799,7 @@ function renderBaiHoc() {
   var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
-  var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0);
+  var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0) || !!details.homework_latex_content || !!(details.bai_btvn && details.bai_btvn.file_path);
   coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
@@ -1439,10 +1439,20 @@ function btvnEsc(s) {
 async function renderBTVN(than) {
   var deBai = details.homework_text || '';
   var dsAnh = Array.isArray(details.homework_images) ? details.homework_images : [];
+  var coDoc = !!(details.bai_btvn && details.bai_btvn.file_path);
+  var coLatex = !!details.homework_latex_content;
   var laAdmin = laQuanTriBaiHoc();
 
   var deHtml = deBai
     ? '<div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px">' + btvnEsc(deBai) + '</div>'
+    : '';
+  var latexHtml = coLatex
+    ? '<div id="btvnLatexBox" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>'
+    : '';
+  var pdfUrlBtvn = coDoc ? buildPdfUrl(details.bai_btvn.file_path) : '';
+  var docHtml = coDoc
+    ? '<div style="margin-top:12px">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrlBtvn) +
+      '<iframe src="' + pdfUrlBtvn + '#toolbar=1" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe></div>'
     : '';
   var anhHtml = dsAnh.length
     ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
@@ -1460,11 +1470,34 @@ async function renderBTVN(than) {
     actionHtml = '<div style="margin-top:14px;font-size:.85rem;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:10px 12px">👀 Học sinh sẽ thấy nút <b>Nộp bài tập về nhà</b> ở đây. Vào <b>🛠 Quản lý buổi</b> để xem và chấm các bài nộp.</div>';
   }
 
+  var coDe = deHtml || anhHtml || docHtml || latexHtml;
   than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
     '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
-    (deHtml || anhHtml ? (deHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
+    (coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
     actionHtml +
     '</div>';
+
+  // Biên dịch đề LaTeX của BTVN (nếu có)
+  if (coLatex) {
+    (async function () {
+      var box = document.getElementById('btvnLatexBox');
+      if (!box) return;
+      try {
+        var tex = await chuanHoaTexBaiHoc(details.homework_latex_content);
+        var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+        if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
+        if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
+          var u = URL.createObjectURL(r.data);
+          box.innerHTML = thanhCongCu('📝 Đề bài tập (LaTeX)', u) +
+            '<iframe src="' + u + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>';
+        } else {
+          box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Đề LaTeX chưa biên dịch được</h3></div>';
+        }
+      } catch (e) {
+        box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề LaTeX</h3></div>';
+      }
+    })();
+  }
 
   if (!laAdmin && nguoiDung) {
     try {
