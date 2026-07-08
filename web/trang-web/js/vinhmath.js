@@ -179,12 +179,36 @@ function formatAuthorName(name) {
 
 
 async function dangXuat() {
+  sessionStorage.removeItem('vm-guest-mode');
   if (daKetNoi()) await sb.auth.signOut();
   window.location.href = 'dang-nhap';
 }
 
 // Lấy hồ sơ (họ tên, vai trò, lớp) của người đang đăng nhập
 async function layHoSo() {
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    return {
+      id: 'guest-id',
+      role: 'student',
+      username: 'khach',
+      full_name: 'Khách Trải Nghiệm',
+      class_id: 'guest-class',
+      class_students: [
+        {
+          class_id: 'guest-class',
+          classes: {
+            id: 'guest-class',
+            name: 'Lớp Trải Nghiệm VinhMath',
+            mode: 'online',
+            grade: 10,
+            is_specialized: false,
+            teacher_id: null,
+            co_teacher_id: null
+          }
+        }
+      ]
+    };
+  }
   if (!daKetNoi()) return null;
   var s = await sb.auth.getSession();
   if (!s.data.session) return null;
@@ -224,6 +248,9 @@ async function layHoSo() {
 /* ---------- 4. CHẶN TRANG CẦN ĐĂNG NHẬP ---------- */
 // Gọi ở đầu các trang như lop-hoc. Chưa đăng nhập → đưa về trang đăng nhập.
 async function yeuCauDangNhap() {
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    return layHoSo();
+  }
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
   var s = await sb.auth.getSession();
   if (!s.data.session) { window.location.href = 'dang-nhap'; return null; }
@@ -1723,7 +1750,23 @@ function vmHienModalXN(titleHtml, bodyHtml, footerHtml) {
   m.style.display = 'flex';
 }
 
+function checkGuestAction(e) {
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    alert('🔒 Bạn đang ở chế độ Trải Nghiệm (Khách). Vui lòng đăng nhập tài khoản học sinh chính thức để vào học, xem bài giảng chi tiết và làm bài tập!');
+    return false;
+  }
+  return true;
+}
+
 function vmMoXemNhanh(id, item) {
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    checkGuestAction();
+    return;
+  }
   var b = window.vmBaiMap[id];
   if (!b) return;
   // Học sinh xem nhanh mục "xem" (video/lý thuyết/tài liệu/bảng) => tính đã hoàn thành

@@ -559,12 +559,47 @@ async function taiLessonsHocSinh() {
   }
   
   // Tải các bài học đã xuất bản của lớp đang chọn
-  var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, homework_latex_content, homework_document_id, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
-    .eq('class_id', selectedClassId)
-    .eq('published', true);
-
-  var ds = r.data || [];
+  var ds = [];
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    ds = [
+      {
+        id: 'mock-lesson-1',
+        title: 'Buổi 1: Nhân đơn thức với đa thức',
+        sort: 1,
+        created_at: new Date().toISOString(),
+        published: true,
+        theory_sections: [{ title: 'Lý thuyết cơ bản' }],
+        homework_text: 'Bài tập 1 trang 10...',
+        topics: { id: 'mock-topic-1', name: 'Phép nhân đa thức', color: '#2563eb', sort: 1 }
+      },
+      {
+        id: 'mock-lesson-2',
+        title: 'Buổi 2: Nhân đa thức với đa thức',
+        sort: 2,
+        created_at: new Date().toISOString(),
+        published: true,
+        theory_sections: [{ title: 'Lý thuyết cơ bản' }],
+        homework_text: 'Bài tập 2 trang 12...',
+        topics: { id: 'mock-topic-1', name: 'Phép nhân đa thức', color: '#2563eb', sort: 1 }
+      },
+      {
+        id: 'mock-lesson-3',
+        title: 'Buổi 3: Luyện tập hằng đẳng thức đáng nhớ',
+        sort: 3,
+        created_at: new Date().toISOString(),
+        published: true,
+        theory_sections: [{ title: 'Lý thuyết cơ bản' }],
+        homework_text: 'Bài tập 3 trang 15...',
+        topics: { id: 'mock-topic-2', name: 'Hằng đẳng thức đáng nhớ', color: '#db2777', sort: 2 }
+      }
+    ];
+  } else {
+    var r = await sb.from('lessons')
+      .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, homework_latex_content, homework_document_id, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
+      .eq('class_id', selectedClassId)
+      .eq('published', true);
+    ds = r.data || [];
+  }
   window.newestLessonIds = xacDinhIdsBaiMoiNhat(ds);
   await taiTienDoLopHoc(ds);
   hienThiLessonsGomNhom(ds);
@@ -713,11 +748,11 @@ function hienThiLessonsGomNhom(ds) {
             '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
             '<span class="tk">' + (it.done ? '✓ đã xong' : 'xem nhanh') + '</span></a>';
         }).join('');
-        if (!subs) subs = '<a href="bai-hoc?id=' + b.id + '"><span>📄</span><span>Vào học bài này</span></a>';
+        if (!subs) subs = '<a href="javascript:void(0)" onclick="if(checkGuestAction(event)) window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Vào học bài này</span></a>';
         return '<div class="lh-bai">' +
           '<div class="lh-bai-hd" onclick="lhToggle(this)">' + ring +
             '<div class="tt"><h4>' + lhEsc(b.title) + glit + '</h4><div class="meta">' + td.done + '/' + td.total + ' mục · ' + td.percent + '% hoàn thành</div></div>' +
-            '<a class="btn btn-primary btn-sm" href="bai-hoc?id=' + b.id + '" onclick="event.stopPropagation()">Vào học</a>' +
+            '<a class="btn btn-primary btn-sm" href="javascript:void(0)" onclick="if(checkGuestAction(event)) window.location.href=\'bai-hoc?id=' + b.id + '\'; event.stopPropagation()">Vào học</a>' +
             '<span class="car2">▶</span>' +
           '</div>' +
           '<div class="lh-sub">' + subs + '</div>' +

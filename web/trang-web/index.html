@@ -14,10 +14,7 @@
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
-  background-image: 
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: 30px 30px;
+  /* removed grid pattern */
 }
 
 .wrap {
@@ -756,19 +753,7 @@ body.math-grid {
   overflow: hidden;
 }
 .portrait-grid .ph-portrait::before, .portrait-grid .ph-landscape::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  animation: hologram-scan 3s linear infinite;
-  z-index: 5;
-}
-.portrait-grid .ph-landscape::before {
-  background: linear-gradient(90deg, transparent, var(--warn), transparent);
-  animation-delay: 1.5s;
+  display: none !important;
 }
 
 @keyframes hologram-scan {
@@ -865,7 +850,7 @@ body.math-grid {
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
       
       <div style="margin-top:32px; display:flex; gap:16px; flex-wrap:wrap">
-        <a class="btn btn-primary btn-lg" href="dang-nhap" style="box-shadow: 0 4px 14px var(--accent-soft)">Vào hệ thống học tập</a>
+        <a class="btn btn-primary btn-lg" href="javascript:void(0)" onclick="sessionStorage.setItem('vm-guest-mode', 'true'); window.location.href='trang-chu'" style="box-shadow: 0 4px 14px var(--accent-soft)">Trải nghiệm hệ thống</a>
         <a class="btn btn-secondary btn-lg" href="#blog-cong-khai" style="display:inline-flex; align-items:center; gap:8px; border:2px solid var(--accent); color:var(--accent); background:transparent; font-weight:700">
           📰 Đọc Blog Toán Học
         </a>
@@ -964,7 +949,7 @@ body.math-grid {
           <div style="padding: 16px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
             <div>
               <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 700; color: var(--accent);">📍 CS2: Lớp toán VinhMath</h4>
-              <p style="margin: 0; font-size: 0.88rem; color: var(--ink-2); line-height: 1.45;">637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5, TPHCM</p>
+              <p style="margin: 0; font-size: 0.88rem; color: var(--ink-2); line-height: 1.45;">Trần Hưng Đạo, Phường Chợ Quán, Quận 5, TPHCM</p>
             </div>
             <div style="font-size: 0.8rem; color: var(--ok); font-weight: 600; display: flex; align-items: center; gap: 6px; background: var(--ok-soft); padding: 4px 8px; border-radius: 4px; width: fit-content;">
               📺 TV, Điều hòa ❄️ Tiện nghi đầy đủ
@@ -1105,13 +1090,12 @@ body.math-grid {
       <table style="width:100%;border-collapse:collapse;font-size:.92rem">
         <thead><tr>
           <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lớp</th>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Thứ</th>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Giờ học</th>
+          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lịch học trong tuần</th>
           <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Hình thức</th>
           <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Ghi chú</th>
         </tr></thead>
         <tbody id="bangLichCongKhai">
-          <tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Đang tải lịch học…</td></tr>
+          <tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Đang tải lịch học…</td></tr>
         </tbody>
       </table>
     </div>
@@ -1164,53 +1148,95 @@ body.math-grid {
 // Lịch học công khai (đọc được không cần đăng nhập)
 (async function () {
   var o = document.getElementById('bangLichCongKhai');
-  if (!daKetNoi()) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch đang cập nhật.</td></tr>'; return; }
+  if (!daKetNoi()) { o.innerHTML = '<tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Lịch đang cập nhật.</td></tr>'; return; }
   var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
   var r = await sb.from('schedules')
     .select('weekday, start_time, end_time, mode, note, recurrence, classes(name, grade, is_specialized)')
     .order('weekday').order('start_time');
   var ds = r.data || [];
-  if (!ds.length) { o.innerHTML = '<tr><td colspan="5" style="padding:16px 14px;color:var(--ink-3)">Lịch khai giảng sẽ được cập nhật sớm — phụ huynh liên hệ Zalo để được tư vấn.</td></tr>'; return; }
-  // Gom theo lớp cho dễ đọc
-  ds.sort(function (a, b) { return (a.classes ? a.classes.name : '').localeCompare(b.classes ? b.classes.name : '', 'vi', { numeric: true }) || a.weekday - b.weekday; });
-  o.innerHTML = ds.map(function (s) {
-    var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-2)"><i>(2 tuần/lần)</i></small>' : '';
+  if (!ds.length) { o.innerHTML = '<tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Lịch khai giảng sẽ được cập nhật sớm — phụ huynh liên hệ Zalo để được tư vấn.</td></tr>'; return; }
+  
+  // Nhóm theo lớp
+  var classesMap = {};
+  ds.forEach(function (s) {
+    var className = s.classes ? s.classes.name : '?';
+    if (!classesMap[className]) {
+      classesMap[className] = {
+        name: className,
+        grade: s.classes ? s.classes.grade : null,
+        is_specialized: s.classes ? s.classes.is_specialized : false,
+        modes: [],
+        schedules: []
+      };
+    }
+    var modeText = s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp';
+    if (classesMap[className].modes.indexOf(modeText) === -1) {
+      classesMap[className].modes.push(modeText);
+    }
+    classesMap[className].schedules.push(s);
+  });
+
+  var uniqueClasses = Object.keys(classesMap).map(function (k) { return classesMap[k]; });
+  uniqueClasses.sort(function (a, b) { return a.name.localeCompare(b.name, 'vi', { numeric: true }); });
+
+  o.innerHTML = uniqueClasses.map(function (c) {
+    c.schedules.sort(function (a, b) { return a.weekday - b.weekday; });
+    var scheduleTexts = c.schedules.map(function (s) {
+      var timeStr = s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5);
+      var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-3)"><i>(2 tuần/lần)</i></small>' : '';
+      return '<b>' + TEN_THU[s.weekday] + '</b>: ' + timeStr + recText;
+    });
+    
+    var timeColumnHtml = scheduleTexts.join('<br/>');
+    var modesHtml = c.modes.join(', ');
+    var notes = c.schedules.map(function (s) { return s.note; }).filter(Boolean);
+    var notesHtml = notes.length ? notes.join(' · ') : '';
+
     return '<tr>' +
       '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">' +
-          '<b>' + (s.classes ? s.classes.name : '?') + '</b>' +
-          (s.classes && s.classes.grade ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + s.classes.grade + '</span>' : '') +
-          (s.classes && s.classes.is_specialized ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>' : '') +
+          '<b>' + c.name + '</b>' +
+          (c.grade ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + c.grade + '</span>' : '') +
+          (c.is_specialized ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>' : '') +
         '</div>' +
       '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + TEN_THU[s.weekday] + '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums">' + s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5) + '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + (s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp') + recText + '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + (s.note || '') + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);line-height:1.5;font-variant-numeric:tabular-nums">' + timeColumnHtml + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + modesHtml + '</td>' +
+      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + notesHtml + '</td>' +
       '</tr>';
   }).join('');
   // Kiểm tra đăng nhập để đổi nút Đăng nhập thành Vào học
   try {
-    if (daKetNoi()) {
+    var isGuest = sessionStorage.getItem('vm-guest-mode') === 'true';
+    var loggedIn = false;
+    var isStaff = false;
+    
+    if (isGuest) {
+      loggedIn = true;
+    } else if (daKetNoi()) {
       var s = await sb.auth.getSession();
       if (s.data.session) {
         var rUser = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
         if (rUser.data) {
-          var isStaff = ['admin', 'teacher', 'assistant'].indexOf(rUser.data.role) !== -1;
-          var btn = document.querySelector('.topbar .btn-primary');
-          if (btn) {
-            var isMobile = window.innerWidth < 768;
-            btn.textContent = isStaff ? (isMobile ? 'Quản trị' : 'Trang chủ Quản trị') : (isMobile ? 'Vào học' : 'Vào Trang chủ');
-            btn.href = 'trang-chu';
-          }
-          // Cập nhật navlinks
-          var nav = document.querySelector('.navlinks');
-          if (nav) {
-            nav.innerHTML = isStaff
-              ? '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="quan-tri-lop">Lớp học</a>'
-              : '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="lop-hoc">Lớp học</a><a href="luyen-de">Luyện đề</a>';
-          }
+          loggedIn = true;
+          isStaff = ['admin', 'teacher', 'assistant'].indexOf(rUser.data.role) !== -1;
         }
+      }
+    }
+    
+    if (loggedIn) {
+      var btn = document.querySelector('.topbar .btn-primary');
+      if (btn) {
+        var isMobile = window.innerWidth < 768;
+        btn.textContent = isStaff ? (isMobile ? 'Quản trị' : 'Trang chủ Quản trị') : (isMobile ? 'Vào học' : 'Vào Trang chủ');
+        btn.href = 'trang-chu';
+      }
+      // Cập nhật navlinks
+      var nav = document.querySelector('.navlinks');
+      if (nav) {
+        nav.innerHTML = isStaff
+          ? '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="quan-tri-lop">Lớp học</a>'
+          : '<a href="index" class="active">Giới thiệu</a><a href="trang-chu">Trang chủ</a><a href="lop-hoc">Lớp học</a><a href="luyen-de">Luyện đề</a>';
       }
     }
   } catch (e) {}

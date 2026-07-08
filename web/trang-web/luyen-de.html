@@ -383,7 +383,7 @@
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
 <script src="js/menu.js"></script>
-<script src="js/latex-view.js"></script>
+<script src="js/latex-view.js?v=2"></script>
 <script src="js/analytics.js"></script>
 <script>
 var listExams = [];
@@ -480,8 +480,9 @@ function taoDongCham(n) {
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
-      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
+      return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
   }
   
@@ -529,36 +530,59 @@ async function taiDanhSachDe(classIds) {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
   
   var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
+  var isGuest = sessionStorage.getItem('vm-guest-mode') === 'true';
   
-  // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
-  var query = sb.from('exams')
-    .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, exam_questions(count)')
-    .eq('published', true);
+  var rAttemptsData = [];
+  if (isGuest) {
+    listExams = [
+      {
+        id: 'mock-exam-1',
+        title: 'Khảo sát chất lượng đầu năm - Khối 10',
+        duration_minutes: 45,
+        de_type: 'trac_nghiem',
+        exam_questions: [{ count: 20 }]
+      },
+      {
+        id: 'mock-exam-2',
+        title: 'Đề kiểm tra Chương 1: Hàm số & Đồ thị (Đề thi mẫu)',
+        duration_minutes: 60,
+        de_type: 'tu_luan',
+        exam_questions: [{ count: 0 }]
+      }
+    ];
+  } else {
+    // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
+    var query = sb.from('exams')
+      .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, exam_questions(count)')
+      .eq('published', true);
+      
+    if (!isStaff) {
+      if (classIds && classIds.length > 0) {
+        query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
+      } else {
+        query = query.is('class_id', null);
+      }
+    }
     
-  if (!isStaff) {
-    if (classIds && classIds.length > 0) {
-      query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
-    } else {
-      query = query.is('class_id', null);
+    var r = await query.order('created_at', { ascending: false });
+    listExams = r.data || [];
+    
+    if (listExams.length > 0) {
+      var rAttempts = await sb.from('attempts')
+        .select('id, exam_id, score, submitted_at, started_at')
+        .eq('student_id', studentInfo.id)
+        .not('exam_id', 'is', null);
+      rAttemptsData = rAttempts.data || [];
     }
   }
   
-  var r = await query.order('created_at', { ascending: false });
-    
-  listExams = r.data || [];
   if (!listExams.length) {
     $('dsDeThi').innerHTML = '<div class="empty card">Lớp em chưa có đề thi/đề kiểm tra nào. Quay lại sau nhé!</div>';
     return;
   }
   
-  // Lấy lịch sử làm bài thi của học sinh
-  var rAttempts = await sb.from('attempts')
-    .select('id, exam_id, score, submitted_at, started_at')
-    .eq('student_id', studentInfo.id)
-    .not('exam_id', 'is', null);
-  
-  var attemptsMap = {}; // exam_id -> { latest, soLuotNop, diemCaoNhat (= điểm lượt nộp đầu tiên) }
-  (rAttempts.data || []).forEach(function (att) {
+  var attemptsMap = {};
+  rAttemptsData.forEach(function (att) {
     var th = attemptsMap[att.exam_id];
     if (!th) th = attemptsMap[att.exam_id] = { latest: null, soLuotNop: 0, diemCaoNhat: null, firstSub: null };
     if (!th.latest || new Date(att.started_at) > new Date(th.latest.started_at)) th.latest = att;
@@ -636,6 +660,10 @@ async function taiDanhSachDe(classIds) {
 
 /* ----- Phân hệ Làm bài thi ----- */
 async function startExam(examId) {
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    checkGuestAction();
+    return;
+  }
   var ex = listExams.find(function (e) { return e.id === examId; });
   if (!ex) return;
   currentExam = ex;
@@ -1692,7 +1720,7 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 % --- THÔNG SỐ TRANG ---
 \\def\\tren{1.65}\\def\\duoi{1.5}\\def\\trai{1}\\def\\phai{1}
 \\def\\watermarktext{VinhMath}
-\\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+\\def\\DC{Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
 \\def\\SDT{0866197857}
 
 % --- CÁC GÓI VÀ KHAI BÁO CƠ BẢN ---

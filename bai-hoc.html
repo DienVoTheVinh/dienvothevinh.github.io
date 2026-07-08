@@ -401,7 +401,11 @@ var coTest = false;
     document.head.appendChild(style);
   }
 
-  if (!daKetNoi()) { alert('Chưa kết nối Supabase.'); return; }
+  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    alert('🔒 Bạn đang ở chế độ Trải Nghiệm (Khách). Vui lòng đăng nhập tài khoản học sinh chính thức để xem nội dung bài giảng chi tiết!');
+    window.location.href = 'trang-chu';
+    return;
+  }
 
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
