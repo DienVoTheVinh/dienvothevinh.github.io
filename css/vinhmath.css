@@ -1750,7 +1750,7 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
 /* =========================================================================
    SCROLL REVEAL — hiện dần khi cuộn tới (JS gắn .is-visible)
    ========================================================================= */
-.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); will-change: opacity, transform; animation: revealFailsafe 0s linear 1.5s forwards; }
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); will-change: opacity, transform; animation: revealFailsafe 0s linear 3s forwards; }
 .reveal.is-visible, .reveal.active { opacity: 1; transform: none; }
 /* Failsafe: nếu JS lỗi/không chạy, vẫn hiện nội dung sau 1.5s (không khoá màn đăng nhập) */
 @keyframes revealFailsafe { to { opacity: 1; transform: none; } }
