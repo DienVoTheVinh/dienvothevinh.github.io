@@ -40,11 +40,11 @@ body {
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  opacity: var(--canvas-opacity, 0.25);
+  opacity: 0.5;
   transition: opacity 0.2s ease;
   animation: canvasFadeIn 1.6s ease-out;
 }
-@keyframes canvasFadeIn { from { opacity: 0; } to { opacity: var(--canvas-opacity, 0.25); } }
+@keyframes canvasFadeIn { from { opacity: 0; } to { opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { #cyberCanvas { animation: none; } }
 
 /* --- SIDE PANEL (LEFT) --- */
@@ -124,24 +124,8 @@ body {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .box::before, .box::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-color: var(--accent);
-  border-style: solid;
-  pointer-events: none;
-  transition: border-color 0.3s ease;
-}
-.box::before {
-  top: -1px;
-  left: -1px;
-  border-width: 3px 0 0 3px;
-}
-.box::after {
-  bottom: -1px;
-  right: -1px;
-  border-width: 0 3px 3px 0;
+  display: none !important;
+  content: none !important;
 }
 .box:hover {
   transform: translateY(-2px);
@@ -368,7 +352,7 @@ body {
 <script src="js/vinhmath.js?v=6.1"></script>
 <script src="js/analytics.js"></script>
 <script>
-// --- INTERACTIVE DOT-SPHERE FIELD (phong cách Antigravity, tông VinhMath) ---
+// --- NEN: DO THI MANG LUOI DI CHUYEN + QUA CAU DIEM (VinhMath) ---
 var canvas = document.getElementById('cyberCanvas');
 var ctx = canvas.getContext('2d');
 var DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -379,14 +363,33 @@ window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY =
 window.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; } }, { passive: true });
 
-// Vi tri cac qua cau theo ti le khung nhin (responsive)
+// Bang mau sac so nhung hai hoa voi VinhMath (navy/xanh/cyan/tim + vang gold)
+var PALETTE_LIGHT = ['#1e3a8c', '#2563eb', '#0ea5b7', '#7c3aed', '#c27d00', '#e0a020'];
+var PALETTE_DARK  = ['#5b8cff', '#38bdf8', '#22d3ee', '#a78bfa', '#f3d483', '#e0a020'];
+
+// ---- Lop 1: do thi mang luoi di chuyen (khong chu) ----
+var NODES = [];
+function buildNodes() {
+  NODES = [];
+  var count = Math.round((VW * VH) / 26000);
+  count = Math.max(30, Math.min(72, count));
+  for (var i = 0; i < count; i++) {
+    NODES.push({
+      x: Math.random() * VW, y: Math.random() * VH,
+      vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+      ci: (Math.random() * 6) | 0
+    });
+  }
+}
+
+// ---- Lop 2: cac qua cau diem (to hon, nhieu diem hon) ----
 var SPHERE_DEF = [
-  { fx: 0.63, fy: 0.20, rf: 0.115, n: 150 },
-  { fx: 0.85, fy: 0.30, rf: 0.085, n: 100 },
-  { fx: 0.74, fy: 0.56, rf: 0.130, n: 170 },
-  { fx: 0.93, fy: 0.64, rf: 0.080, n: 95 },
-  { fx: 0.55, fy: 0.78, rf: 0.095, n: 120 },
-  { fx: 0.17, fy: 0.70, rf: 0.075, n: 90 }
+  { fx: 0.66, fy: 0.24, rf: 0.17, n: 240 },
+  { fx: 0.88, fy: 0.34, rf: 0.12, n: 150 },
+  { fx: 0.76, fy: 0.60, rf: 0.19, n: 280 },
+  { fx: 0.95, fy: 0.70, rf: 0.11, n: 140 },
+  { fx: 0.53, fy: 0.82, rf: 0.14, n: 190 },
+  { fx: 0.15, fy: 0.72, rf: 0.11, n: 140 }
 ];
 var spheres = [];
 function buildSpheres() {
@@ -398,13 +401,13 @@ function buildSpheres() {
       var y = 1 - (i / (n - 1)) * 2;
       var rad = Math.sqrt(Math.max(0, 1 - y * y));
       var th = gr * i;
-      pts.push({ bx: Math.cos(th) * rad, by: y, bz: Math.sin(th) * rad, ox: 0, oy: 0, gold: (i % 6 === 0) });
+      pts.push({ bx: Math.cos(th) * rad, by: y, bz: Math.sin(th) * rad, ox: 0, oy: 0, ci: (i * 7 + si * 3) % 6 });
     }
     return {
       cx: d.fx * VW, cy: d.fy * VH, r: d.rf * minSide, pts: pts,
       rotY: Math.random() * Math.PI * 2,
-      rotX: (si % 2 ? 0.34 : -0.26),
-      speed: 0.10 + Math.random() * 0.06
+      rotX: (si % 2 ? 0.40 : -0.30),
+      speed: 0.16 + Math.random() * 0.10
     };
   });
 }
@@ -416,32 +419,68 @@ function resize() {
   canvas.style.width = VW + 'px';
   canvas.style.height = VH + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildNodes();
   buildSpheres();
 }
 window.addEventListener('resize', resize);
 resize();
 
+function hexA(hex, a) {
+  var n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
 var _prevTs = 0;
-var ANIM_SPEED = 0.5;
+var ANIM_SPEED = 0.62;
 function draw(ts) {
   ts = ts || performance.now();
   var dtf = _prevTs ? Math.min((ts - _prevTs) / 16.667, 2.5) : 1;
   _prevTs = ts;
   var spd = dtf * ANIM_SPEED;
   var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var PAL = dark ? PALETTE_DARK : PALETTE_LIGHT;
 
   ctx.clearRect(0, 0, VW, VH);
 
-  var R = 135, R2 = R * R; // ban kinh tuong tac chuot
+  // ----- Lop 1: do thi mang luoi di chuyen -----
+  for (var i = 0; i < NODES.length; i++) {
+    var nd = NODES[i];
+    nd.x += nd.vx * spd; nd.y += nd.vy * spd;
+    if (nd.x < 0) nd.x += VW; else if (nd.x > VW) nd.x -= VW;
+    if (nd.y < 0) nd.y += VH; else if (nd.y > VH) nd.y -= VH;
+  }
+  var LINK = 155, LINK2 = LINK * LINK;
+  ctx.lineWidth = 1;
+  for (var a2 = 0; a2 < NODES.length; a2++) {
+    var na = NODES[a2];
+    for (var b2 = a2 + 1; b2 < NODES.length; b2++) {
+      var nb = NODES[b2];
+      var dx = na.x - nb.x, dy = na.y - nb.y;
+      var d2 = dx * dx + dy * dy;
+      if (d2 < LINK2) {
+        var al = (1 - d2 / LINK2) * (dark ? 0.26 : 0.2);
+        ctx.strokeStyle = hexA(PAL[na.ci], al);
+        ctx.beginPath();
+        ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y); ctx.stroke();
+      }
+    }
+  }
+  for (var k = 0; k < NODES.length; k++) {
+    var n2 = NODES[k];
+    ctx.fillStyle = hexA(PAL[n2.ci], dark ? 0.6 : 0.5);
+    ctx.beginPath(); ctx.arc(n2.x, n2.y, 1.8, 0, Math.PI * 2); ctx.fill();
+  }
 
+  // ----- Lop 2: qua cau diem (to, nhieu mau, dam hon, dong hon) -----
+  var R = 155, R2 = R * R;
   for (var s = 0; s < spheres.length; s++) {
     var sp = spheres[s];
     sp.rotY += sp.speed * spd * 0.02;
     var cyR = Math.cos(sp.rotY), syR = Math.sin(sp.rotY);
     var cxR = Math.cos(sp.rotX), sxR = Math.sin(sp.rotX);
     var pts = sp.pts;
-    for (var i = 0; i < pts.length; i++) {
-      var p = pts[i];
+    for (var i2 = 0; i2 < pts.length; i2++) {
+      var p = pts[i2];
       var x1 = p.bx * cyR - p.bz * syR;
       var z1 = p.bx * syR + p.bz * cyR;
       var y1 = p.by * cxR - z1 * sxR;
@@ -450,7 +489,7 @@ function draw(ts) {
       var py0 = sp.cy + y1 * sp.r;
       var depth = (z2 + 1) / 2;
 
-      p.ox *= 0.86; p.oy *= 0.86;
+      p.ox *= 0.88; p.oy *= 0.88;
       var px = px0 + p.ox, py = py0 + p.oy;
 
       var mdx = px - mouseX, mdy = py - mouseY;
@@ -458,18 +497,14 @@ function draw(ts) {
       if (md2 < R2) {
         var dd = Math.sqrt(md2) || 1;
         var f = (1 - dd / R);
-        p.ox += (mdx / dd) * f * f * 20 * spd;
-        p.oy += (mdy / dd) * f * f * 20 * spd;
+        p.ox += (mdx / dd) * f * f * 30 * spd;
+        p.oy += (mdy / dd) * f * f * 30 * spd;
         px = px0 + p.ox; py = py0 + p.oy;
       }
 
-      var size = 0.6 + depth * 1.7;
-      var a = 0.06 + depth * 0.5;
-      if (dark) {
-        ctx.fillStyle = p.gold ? 'rgba(223,188,94,' + a + ')' : 'rgba(170,196,235,' + (a * 0.9) + ')';
-      } else {
-        ctx.fillStyle = p.gold ? 'rgba(194,125,0,' + (a + 0.05) + ')' : 'rgba(31,74,140,' + a + ')';
-      }
+      var size = 0.8 + depth * 2.3;
+      var a = (dark ? 0.2 : 0.16) + depth * (dark ? 0.62 : 0.6);
+      ctx.fillStyle = hexA(PAL[p.ci], a);
       ctx.beginPath();
       ctx.arc(px, py, size, 0, Math.PI * 2);
       ctx.fill();
