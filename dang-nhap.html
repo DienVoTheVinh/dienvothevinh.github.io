@@ -372,8 +372,8 @@ function lineRGB(dark) { return dark ? '150,166,198' : '70,96,140'; }
 var NET = [];
 function buildNet() {
   NET = [];
-  var count = Math.round((VW * VH) / 30000);
-  count = Math.max(46, Math.min(84, count));
+  var count = Math.round((VW * VH) / 19000);
+  count = Math.max(70, Math.min(130, count));
   for (var i = 0; i < count; i++) {
     NET.push({
       x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1,
@@ -445,7 +445,7 @@ function draw(ts) {
   var rotY = ts * 0.00007 + tiltY;
   var rotX = Math.sin(ts * 0.00004) * 0.18 + tiltX;
   var cyN = Math.cos(rotY), syN = Math.sin(rotY), cxN = Math.cos(rotX), sxN = Math.sin(rotX);
-  var CXs = VW / 2, CYs = VH / 2, SC = Math.max(VW, VH) * 0.46, focal = 2.7;
+  var CXs = VW * 0.45, CYs = VH / 2, SCx = VW * 0.58, SCy = VH * 0.56, focal = 2.7;
 
   var i, j;
   for (i = 0; i < NET.length; i++) {
@@ -461,8 +461,8 @@ function draw(ts) {
     var Z2 = n.y * sxN + Z * cxN;
     n.rx = X; n.ry = Y; n.rz = Z2;
     var persp = focal / (focal - Z2);
-    var bx = CXs + X * persp * SC * 0.5;
-    var by = CYs + Y * persp * SC * 0.5;
+    var bx = CXs + X * persp * SCx;
+    var by = CYs + Y * persp * SCy;
     // day diem khi chuot toi gan (tuong tac)
     n.ox *= 0.85; n.oy *= 0.85;
     var mdx = bx + n.ox - mouseX, mdy = by + n.oy - mouseY, md2 = mdx * mdx + mdy * mdy, RR = 150;
