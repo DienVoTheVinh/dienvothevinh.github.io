@@ -392,6 +392,7 @@ var tatCaChuyenDe = [];
 var tatCaTaiLieu = [];
 var lopDangLoc = 'tat-ca';
 var vaiTro = null;
+var myClassIds = [];
 
 /* ===== CHẾ ĐỘ XEM TOÀN HỆ THỐNG (chỉ admin đổi được) ===== */
 var MO_TA_CHE_DO = {
@@ -430,12 +431,18 @@ async function batTatKhoa(id, khoa) {
 
 /* ===== KHOÁ / MỞ TOÀN BỘ HỆ THỐNG BÀI GIẢNG ===== */
 async function batTatKhoaToanBo(khoa) {
-  var msg = khoa 
-    ? 'Bạn có chắc chắn muốn KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?'
-    : 'Bạn có chắc chắn muốn MỞ KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?';
+  var msg = vaiTro === 'admin'
+    ? (khoa ? 'Bạn có chắc chắn muốn KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?' : 'Bạn có chắc chắn muốn MỞ KHÓA TOÀN BỘ bài giảng của tất cả các lớp trên hệ thống không?')
+    : (khoa ? 'Bạn có chắc chắn muốn KHÓA TOÀN BỘ bài giảng của các lớp bạn phụ trách không?' : 'Bạn có chắc chắn muốn MỞ KHÓA TOÀN BỘ bài giảng của các lớp bạn phụ trách không?');
   if (!confirm(msg)) return;
   
-  var r = await sb.from('lessons').update({ locked: khoa }).neq('id', '00000000-0000-0000-0000-000000000000');
+  var query = sb.from('lessons').update({ locked: khoa });
+  if (vaiTro !== 'admin') {
+    query = query.in('class_id', myClassIds);
+  } else {
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+  }
+  var r = await query;
   if (r.error) {
     alert('Lỗi: ' + r.error.message);
   } else {
@@ -480,6 +487,16 @@ async function batTatKhoaTheoLop(khoa) {
     return;
   }
   vaiTro = hoSo.role;
+  
+  if (hoSo.role !== 'admin') {
+    var rC = await sb.from('classes').select('id').or('teacher_id.eq.' + hoSo.id + ',co_teacher_id.eq.' + hoSo.id);
+    myClassIds = (rC.data || []).map(function (x) { return x.id; });
+    
+    var rA = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSo.id);
+    (rA.data || []).forEach(function (x) {
+      if (myClassIds.indexOf(x.class_id) === -1) myClassIds.push(x.class_id);
+    });
+  }
 
   // Cả Admin và Teacher đều được xem bảng điều khiển khóa nhanh
   if (hoSo.role === 'admin' || hoSo.role === 'teacher') {
@@ -495,6 +512,11 @@ async function taiDuLieuDanhMuc() {
   // 1. Tải danh sách lớp (Khối 6 -> Khối 12)
   var r1 = await sb.from('classes').select('id, name, grade, is_specialized').order('name');
   tatCaLop = r1.data || [];
+  if (vaiTro !== 'admin') {
+    tatCaLop = tatCaLop.filter(function (l) {
+      return myClassIds.indexOf(l.id) !== -1;
+    });
+  }
   
   var tabContainer = $('tabKhongGianLop');
   var formLopSelect = $('bhLop');
@@ -748,6 +770,11 @@ async function taiDanhSachBaiHoc() {
     .order('created_at', { ascending: false });
   
   tatCaBaiHoc = r.data || [];
+  if (vaiTro !== 'admin') {
+    tatCaBaiHoc = tatCaBaiHoc.filter(function (b) {
+      return myClassIds.indexOf(b.class_id) !== -1;
+    });
+  }
   hienThiBaiHoc();
 }
 
@@ -1633,6 +1660,11 @@ async function luuBaiHoc(e) {
     })
   };
 
+  if (vaiTro !== 'admin' && myClassIds.indexOf(data.class_id) === -1) {
+    alert('Bạn không có quyền chỉnh sửa/thêm bài giảng cho lớp này!');
+    return;
+  }
+
   var nut = $('nutLuu');
   nut.disabled = true;
   nut.textContent = '⏳ Đang lưu…';
@@ -1761,6 +1793,16 @@ async function xoaBaiHoc() {
   var nut = $('nutXoa');
   nut.disabled = true;
   nut.textContent = '⏳ Đang xoá…';
+
+  if (vaiTro !== 'admin') {
+    var b = tatCaBaiHoc.find(function(x) { return x.id === id; });
+    if (!b || myClassIds.indexOf(b.class_id) === -1) {
+      alert('Bạn không có quyền xoá bài giảng này!');
+      nut.disabled = false;
+      nut.textContent = 'Xoá bài giảng';
+      return;
+    }
+  }
 
   var r = await sb.from('lessons').delete().eq('id', id);
   if (r.error) {

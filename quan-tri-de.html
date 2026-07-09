@@ -177,18 +177,44 @@ var listClasses = [];
 var parsedQuestions = [];
 var editingExamId = null;
 
+var hoSoNguoiDung = null;
+var myClassIds = [];
+
 (async function () {
   if (!daKetNoi()) return;
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) {
+  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) {
     window.location.href = 'luyen-de';
     return;
   }
+  hoSoNguoiDung = hoSo;
+  
+  if (hoSo.role !== 'admin') {
+    var rC = await sb.from('classes').select('id').or('teacher_id.eq.' + hoSo.id + ',co_teacher_id.eq.' + hoSo.id);
+    myClassIds = (rC.data || []).map(function (x) { return x.id; });
+    
+    var rA = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSo.id);
+    (rA.data || []).forEach(function (x) {
+      if (myClassIds.indexOf(x.class_id) === -1) myClassIds.push(x.class_id);
+    });
+  }
   
   // Tải lớp
-  var rCl = await sb.from('classes').select('id, name, is_specialized').order('name');
+  var rCl = await sb.from('classes').select('id, name, is_specialized, teacher_id, co_teacher_id').order('name');
   listClasses = rCl.data || [];
+  
+  if (hoSo.role !== 'admin') {
+    var myAssistantIds = [];
+    try {
+      var ra = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSo.id);
+      myAssistantIds = (ra.data || []).map(function (x) { return x.class_id; });
+    } catch (e) {}
+    listClasses = listClasses.filter(function (l) {
+      return l.teacher_id === hoSo.id || l.co_teacher_id === hoSo.id || myAssistantIds.indexOf(l.id) !== -1;
+    });
+  }
+  
   $('exLop').innerHTML = '<option value="">-- Mọi lớp --</option>' + 
     listClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>'; }).join('');
     
@@ -249,10 +275,15 @@ function qlaEsc(str) {
 async function taiDanhSachDe() {
   $('dsDeThi').innerHTML = '<div class="empty">Đang tải...</div>';
   var r = await sb.from('exams')
-    .select('id, title, duration_minutes, opens_at, closes_at, published, classes(name), exam_questions(count)')
+    .select('id, title, duration_minutes, opens_at, closes_at, published, class_id, classes(name), exam_questions(count)')
     .order('created_at', { ascending: false });
     
   listExams = r.data || [];
+  if (hoSoNguoiDung.role !== 'admin') {
+    listExams = listExams.filter(function (e) {
+      return e.class_id === null || myClassIds.indexOf(e.class_id) !== -1;
+    });
+  }
   if (!listExams.length) {
     $('dsDeThi').innerHTML = '<div class="empty card">Chưa có đề thi nào được tạo.</div>';
     return;

@@ -73,18 +73,26 @@ td, th { font-size: .88rem; }
 <div class="wrap">
   <div class="head">
     <div class="sec-label">Khu vực quản trị</div>
-    <h1>Quản lý học sinh</h1>
-    <p style="margin-top:6px">Toàn cảnh từng em: truy cập web khi nào, học bao lâu, chuyên cần và điểm số.</p>
+    <h1 id="lblTitle">Quản lý học sinh</h1>
+    <p id="lblDesc" style="margin-top:6px">Toàn cảnh từng em: truy cập web khi nào, học bao lâu, chuyên cần và điểm số.</p>
   </div>
 
   <div class="stat-strip">
-    <div class="card"><b id="tkTongHS">—</b><span>Tổng học sinh</span></div>
+    <div class="card"><b id="tkTongHS">—</b><span id="lblStatTong">Tổng học sinh</span></div>
     <div class="card"><b id="tkDangOnline" style="color:var(--ok)">—</b><span>Đang trên web</span></div>
     <div class="card"><b id="tkHomNay">—</b><span>Truy cập hôm nay</span></div>
     <div class="card"><b id="tkTongGio">—</b><span>Tổng giờ trên web</span></div>
   </div>
 
   <div class="filters">
+    <select class="input" id="locRole" onchange="veBang()" style="display:none">
+      <option value="all">-- Tất cả vai trò --</option>
+      <option value="student">🎓 Học sinh (HS)</option>
+      <option value="parent">👪 Phụ huynh (PH)</option>
+      <option value="teacher">👨‍🏫 Giáo viên (GV)</option>
+      <option value="assistant">🙋 Trợ giảng (TG)</option>
+      <option value="admin">🔑 Admin</option>
+    </select>
     <select class="input" id="locLop" onchange="veBang()">
       <option value="">Tất cả các lớp</option>
     </select>
@@ -97,16 +105,7 @@ td, th { font-size: .88rem; }
   <div class="card" style="padding:0; overflow-x:auto">
     <table>
       <thead>
-        <tr>
-          <th>Học sinh</th>
-          <th>Lớp</th>
-          <th>Lần cuối truy cập</th>
-          <th>Phiên gần nhất</th>
-          <th class="num2">Tổng giờ web</th>
-          <th class="num2">Chuyên cần</th>
-          <th class="num2">Điểm TB</th>
-          <th></th>
-        </tr>
+        <tr><th id="thName">Học sinh</th><th>Lớp</th><th>Lần cuối truy cập</th><th class="num2">Phiên gần nhất</th><th class="num2">Tổng giờ web</th><th class="num2">Chuyên cần</th><th class="num2">Điểm TB</th><th></th></tr>
       </thead>
       <tbody id="bangHS">
         <tr><td colspan="8" class="empty">Đang tải dữ liệu…</td></tr>
@@ -176,11 +175,24 @@ var MAU = [
   'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)'  // Rose
 ];
 
+var hoSoNguoiDung = null;
+
 (async function () {
   if (!daKetNoi()) { $('bangHS').innerHTML = '<tr><td colspan="8" class="empty">Chưa kết nối Supabase.</td></tr>'; return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
-  if (!['admin', 'teacher'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
+  if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
+  hoSoNguoiDung = hoSo;
+  
+  // Điều chỉnh giao diện theo role của Admin
+  if (hoSo.role === 'admin') {
+    $('lblTitle').textContent = 'Quản lý tài khoản';
+    $('lblDesc').textContent = 'Toàn cảnh toàn bộ tài khoản học sinh, phụ huynh, giáo viên, trợ giảng trên hệ thống.';
+    $('lblStatTong').textContent = 'Tổng tài khoản';
+    $('locRole').style.display = 'inline-block';
+    $('thName').textContent = 'Tài khoản / Vai trò';
+  }
+  
   await taiTatCa();
 })();
 
@@ -203,10 +215,32 @@ function phutDep(giay) {
 }
 
 async function taiTatCa() {
-  // Tải song song 8 nguồn dữ liệu
+  var myClassIds = [];
+  if (hoSoNguoiDung.role !== 'admin') {
+    var rC = await sb.from('classes').select('id').or('teacher_id.eq.' + hoSoNguoiDung.id + ',co_teacher_id.eq.' + hoSoNguoiDung.id);
+    myClassIds = (rC.data || []).map(function (x) { return x.id; });
+    
+    var rA = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSoNguoiDung.id);
+    (rA.data || []).forEach(function (x) {
+      if (myClassIds.indexOf(x.class_id) === -1) myClassIds.push(x.class_id);
+    });
+  }
+
+  var profileQuerySelect = 'id, role, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name, is_specialized))';
+  var pProfiles;
+  
+  if (hoSoNguoiDung.role === 'admin') {
+    pProfiles = sb.from('profiles').select(profileQuerySelect);
+  } else {
+    var rCs = await sb.from('class_students').select('student_id').in('class_id', myClassIds);
+    var studentIds = (rCs.data || []).map(function (x) { return x.student_id; });
+    if (studentIds.length === 0) studentIds = ['00000000-0000-0000-0000-000000000000'];
+    pProfiles = sb.from('profiles').select(profileQuerySelect).eq('role', 'student').in('id', studentIds);
+  }
+
   var ketQua = await Promise.all([
-    sb.from('profiles').select('id, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name, is_specialized))').eq('role', 'student'),
-    sb.from('classes').select('id, name, is_specialized').order('name'),
+    pProfiles,
+    sb.from('classes').select('id, name, is_specialized, teacher_id, co_teacher_id').order('name'),
     sb.from('analytics_sessions').select('profile_id, started_at, last_active_at, duration_seconds, device_type').not('profile_id', 'is', null).order('last_active_at', { ascending: false }).limit(2000),
     sb.from('class_sessions').select('id, class_id, teacher_id'),
     sb.from('attendance').select('student_id, status, session_id, class_sessions(teacher_id)').in('status', ['present', 'late']),
@@ -223,6 +257,17 @@ async function taiTatCa() {
   rawLuot = ketQua[5].data || [];
   dsPhuHuynh = ketQua[6].data || [];
   dsGiaoVien = ketQua[7].data || [];
+
+  if (hoSoNguoiDung.role !== 'admin') {
+    var myAssistantIds = [];
+    try {
+      var ra = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSoNguoiDung.id);
+      myAssistantIds = (ra.data || []).map(function (x) { return x.class_id; });
+    } catch (e) {}
+    rawClasses = rawClasses.filter(function (l) {
+      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id || myAssistantIds.indexOf(l.id) !== -1;
+    });
+  }
 
   // Bộ lọc lớp
   $('locLop').innerHTML = '<option value="">Tất cả các lớp</option>' +
@@ -300,9 +345,9 @@ function veBang() {
     var ccPhanTram = tongBuoi > 0 ? Math.round(((ddTheoHS[s.id] || 0) / tongBuoi) * 100) : null;
     var d = diemTheoHS[s.id];
     return {
-      id: s.id, ten: s.full_name || '?', username: s.username || '', avatar: s.avatar_url,
+      id: s.id, role: s.role || 'student', ten: s.full_name || '?', username: s.username || '', avatar: s.avatar_url,
       parent_id: s.parent_id, teacher_comment: s.teacher_comment,
-      lopIds: lopIds, tenLop: tenLop || '—',
+      lopIds: lopIds, tenLop: s.role === 'student' ? (tenLop || '—') : (s.role === 'parent' ? ('Liên kết: ' + s.username.replace('_ph', '')) : '—'),
       lanCuoi: moiNhat ? moiNhat.last_active_at : null,
       dangOnline: moiNhat && (bayGio - new Date(moiNhat.last_active_at).getTime()) < 2 * 60000,
       phienGanNhat: moiNhat,
@@ -320,8 +365,11 @@ function veBang() {
   $('tkHomNay').textContent = dsHS.filter(function (x) { return x.homNay; }).length;
   $('tkTongGio').textContent = (dsHS.reduce(function (t, x) { return t + x.tongGiay; }, 0) / 3600).toFixed(1) + 'h';
 
-  // Lọc theo lớp và tìm kiếm tên
+  var roleChon = $('locRole').value;
+
+  // Lọc theo lớp, vai trò và tìm kiếm tên
   var dsFiltered = dsHS.filter(function (s) {
+    if (roleChon && roleChon !== 'all' && s.role !== roleChon) return false;
     if (lopChon && s.lopIds.indexOf(lopChon) === -1) return false;
     if (tim && s.ten.toLowerCase().indexOf(tim) === -1 && s.username.toLowerCase().indexOf(tim) === -1) return false;
     return true;
@@ -358,19 +406,33 @@ function veBang() {
     var diem = s.diemTB == null ? '—'
       : '<b>' + s.diemTB.toFixed(1) + '</b> <span style="color:var(--ink-3)">(' + s.soBai + ' bài)</span>';
       
-    // Tính Rank badge
-    var ccScore = s.chuyenCan !== null ? s.chuyenCan / 10 : 10;
-    var hoursScore = Math.min(10, (s.tongGiay / 3600) * 0.5);
-    var quizScore = s.diemTB !== null ? s.diemTB : null;
+    // Tính Rank badge / Role badge
+    var badgeHtml = '';
+    if (s.role === 'student') {
+      var ccScore = s.chuyenCan !== null ? s.chuyenCan / 10 : 10;
+      var hoursScore = Math.min(10, (s.tongGiay / 3600) * 0.5);
+      var quizScore = s.diemTB !== null ? s.diemTB : null;
 
-    var scoreSum = ccScore * 0.3 + hoursScore * 0.3;
-    var weightSum = 0.6;
-    if (quizScore !== null) {
-      scoreSum += quizScore * 0.4;
-      weightSum += 0.4;
+      var scoreSum = ccScore * 0.3 + hoursScore * 0.3;
+      var weightSum = 0.6;
+      if (quizScore !== null) {
+        scoreSum += quizScore * 0.4;
+        weightSum += 0.4;
+      }
+      var weightedScore = scoreSum / weightSum;
+      badgeHtml = layBadgeMini(weightedScore);
+    } else {
+      badgeHtml = layBadgeRole(s.role);
     }
-    var weightedScore = scoreSum / weightSum;
-    var badgeHtml = layBadgeMini(weightedScore);
+    
+    var buttonsHtml = '';
+    if (s.role === 'student') {
+      buttonsHtml = '<a class="btn btn-primary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
+        '<button class="btn btn-secondary btn-sm" onclick="moNhanXetPH(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">💬 Nhận xét & PH</button>' +
+        '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>';
+    } else {
+      buttonsHtml = '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>';
+    }
     
     return '<tr>' +
       '<td><div style="display:flex; align-items:center; gap:10px">' + anh +
@@ -383,13 +445,19 @@ function veBang() {
       '<td class="num2">' + diem + '</td>' +
       '<td style="text-align:right; white-space:nowrap;">' +
         '<div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:8px;">' +
-          '<a class="btn btn-primary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
-          '<button class="btn btn-secondary btn-sm" onclick="moNhanXetPH(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">💬 Nhận xét & PH</button>' +
-          '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>' +
+          buttonsHtml +
         '</div>' +
       '</td>' +
       '</tr>';
   }).join('');
+}
+
+function layBadgeRole(role) {
+  if (role === 'admin') return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; margin-left:6px; background:linear-gradient(135deg, #1B2644, #24335C); color:#fff; border:1px solid rgba(255,255,255,0.15)">🔑 Admin</span>';
+  if (role === 'teacher') return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; margin-left:6px; background:linear-gradient(135deg, #059669, #10b981); color:#fff; border:1px solid rgba(255,255,255,0.15)">👨‍🏫 GV</span>';
+  if (role === 'assistant') return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; margin-left:6px; background:linear-gradient(135deg, #7c3aed, #a78bfa); color:#fff; border:1px solid rgba(255,255,255,0.15)">🙋 TG</span>';
+  if (role === 'parent') return '<span style="font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:3px; margin-left:6px; background:linear-gradient(135deg, #d97706, #fbbf24); color:#fff; border:1px solid rgba(255,255,255,0.15)">👪 PH</span>';
+  return '';
 }
 
 function moChiTiet(id) {
