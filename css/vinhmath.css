@@ -413,7 +413,7 @@ img{max-width:100%;display:block}
 
 /* ---- Thẻ ---- */
 .card{
-  background:var(--surface);
+  background: var(--card-glow, transparent), var(--surface);
   border:var(--glass-border);
   backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
@@ -421,19 +421,11 @@ img{max-width:100%;display:block}
   padding:24px;
   box-shadow:var(--shadow);
   position:relative;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--accent-gradient);
-  border-top-left-radius: var(--r-md);
-  border-top-right-radius: var(--r-md);
-  opacity: 0.85;
-}
+/* Bỏ thanh vàng 4px cạnh trên — thay bằng lớp đổ màu gradient (--card-glow) */
+.card::before { display: none !important; }
 /* .card::after {
   content: "";
   position: absolute;
@@ -447,7 +439,7 @@ img{max-width:100%;display:block}
   border-color: rgba(194, 125, 0, 0.4);
 } */
 .card:hover {
-  background: var(--surface-2);
+  background: var(--card-glow, transparent), var(--surface-2);
   transform: translateY(-4px);
   box-shadow: 0 16px 36px 0 rgba(31, 58, 96, 0.12), 0 0 15px var(--accent-soft);
   border-color: var(--line-2);
@@ -1674,6 +1666,10 @@ body.theme-map .topbar .logo { font-size:1.3rem; letter-spacing:.08em; }
   --aurora-1: rgba(223, 188, 94, 0.28);  /* vàng gold */
   --aurora-2: rgba(48, 120, 200, 0.16);  /* xanh dương nhạt */
   --aurora-3: rgba(240, 176, 64, 0.14);
+  /* Đổ màu gradient vàng dịu cho thẻ (thay thanh vàng cạnh trên) — nền sáng */
+  --card-glow:
+    radial-gradient(circle at 20% -12%, rgba(224,160,32,0.10), transparent 56%),
+    radial-gradient(circle at 84% -4%, rgba(181,96,52,0.055), transparent 56%);
 }
 [data-theme="dark"] {
   --shadow-soft: 0 1px 2px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.45);
@@ -1681,6 +1677,10 @@ body.theme-map .topbar .logo { font-size:1.3rem; letter-spacing:.08em; }
   --aurora-1: rgba(223, 188, 94, 0.20);
   --aurora-2: rgba(70, 140, 220, 0.12);
   --aurora-3: rgba(243, 212, 131, 0.10);
+  /* Đổ màu gradient ấm hơn cho nền tối (giống bảng vinh danh) */
+  --card-glow:
+    radial-gradient(circle at 20% -12%, rgba(241,196,15,0.13), transparent 56%),
+    radial-gradient(circle at 84% -4%, rgba(181,72,58,0.10), transparent 56%);
 }
 
 /* --- Chuyển động mượt cho các thành phần tương tác --- */
