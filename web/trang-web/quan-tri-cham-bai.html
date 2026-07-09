@@ -103,7 +103,7 @@ var dangLoc = 'submitted';
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   
   try {
-    var rLop = await sb.from('classes').select('id, name').order('grade').order('name');
+    var rLop = await sb.from('classes').select('id, name, is_specialized').order('grade').order('name');
     dsLop = rLop.data || [];
     
     var rBai = await sb.from('lessons').select('id, title, class_id').order('title');
@@ -113,7 +113,7 @@ var dangLoc = 'submitted';
     dsDe = rDe.data || [];
     
     $('selLop').innerHTML = '<option value="">-- Tất cả các lớp --</option>' + 
-      dsLop.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+      dsLop.map(function (l) { return '<option value="' + l.id + '">' + l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>'; }).join('');
       
     capNhatDropdownBoLoc();
   } catch (e) {

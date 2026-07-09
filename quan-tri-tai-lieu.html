@@ -126,10 +126,10 @@ function bao(msg, loai) {
 
   // Menu quản trị động được tự động vẽ bởi menu.js
   // nạp danh sách lớp vào ô chọn
-  var r = await sb.from('classes').select('id, name').order('name');
+  var r = await sb.from('classes').select('id, name, is_specialized').order('name');
   (r.data || []).forEach(function (l) {
     var o = document.createElement('option');
-    o.value = l.id; o.textContent = l.name;
+    o.value = l.id; o.textContent = l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)');
     $('lopChon').appendChild(o);
   });
 })();

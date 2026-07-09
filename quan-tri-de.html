@@ -187,10 +187,10 @@ var editingExamId = null;
   }
   
   // Tải lớp
-  var rCl = await sb.from('classes').select('id, name').order('name');
+  var rCl = await sb.from('classes').select('id, name, is_specialized').order('name');
   listClasses = rCl.data || [];
   $('exLop').innerHTML = '<option value="">-- Mọi lớp --</option>' + 
-    listClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+    listClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>'; }).join('');
     
   await taiDanhSachDe();
 })();

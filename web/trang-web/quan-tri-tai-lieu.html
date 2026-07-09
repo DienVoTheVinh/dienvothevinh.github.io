@@ -126,10 +126,10 @@ function bao(msg, loai) {
 
   // Menu quản trị động được tự động vẽ bởi menu.js
   // nạp danh sách lớp vào ô chọn
-  var r = await sb.from('classes').select('id, name').order('name');
+  var r = await sb.from('classes').select('id, name, is_specialized').order('name');
   (r.data || []).forEach(function (l) {
     var o = document.createElement('option');
-    o.value = l.id; o.textContent = l.name;
+    o.value = l.id; o.textContent = l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)');
     $('lopChon').appendChild(o);
   });
 })();
@@ -157,7 +157,7 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
     % Trung tâm 1: Điền Võ Thế Vinh
     \\def\\hoten{Thầy Điền Võ Thế Vinh}
     \\def\\SDT{0866197857}
-    \\def\\DC{637 Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
+    \\def\\DC{Trần Hưng Đạo, Phường Chợ Quán, Quận 5}
     \\def\\watermarktext{VinhMath - Thầy Điền Võ Thế Vinh}
 \\else
     % Trung tâm 2: Duy Minh

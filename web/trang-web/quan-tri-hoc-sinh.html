@@ -205,8 +205,8 @@ function phutDep(giay) {
 async function taiTatCa() {
   // Tải song song 8 nguồn dữ liệu
   var ketQua = await Promise.all([
-    sb.from('profiles').select('id, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name))').eq('role', 'student'),
-    sb.from('classes').select('id, name').order('name'),
+    sb.from('profiles').select('id, full_name, username, avatar_url, school, parent_id, teacher_comment, class_students(class_id, classes(name, is_specialized))').eq('role', 'student'),
+    sb.from('classes').select('id, name, is_specialized').order('name'),
     sb.from('analytics_sessions').select('profile_id, started_at, last_active_at, duration_seconds, device_type').not('profile_id', 'is', null).order('last_active_at', { ascending: false }).limit(2000),
     sb.from('class_sessions').select('id, class_id, teacher_id'),
     sb.from('attendance').select('student_id, status, session_id, class_sessions(teacher_id)').in('status', ['present', 'late']),
@@ -226,7 +226,7 @@ async function taiTatCa() {
 
   // Bộ lọc lớp
   $('locLop').innerHTML = '<option value="">Tất cả các lớp</option>' +
-    rawClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+    rawClasses.map(function (l) { return '<option value="' + l.id + '">' + l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>'; }).join('');
 
   // Bộ lọc giáo viên
   $('locGiaoVien').innerHTML = '<option value="">Tất cả giáo viên</option>' +
@@ -292,7 +292,7 @@ function veBang() {
   dsHS = rawHS.map(function (s) {
     var cacLop = (s.class_students || []);
     var lopIds = cacLop.map(function (c) { return c.class_id; });
-    var tenLop = cacLop.map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+    var tenLop = cacLop.map(function (c) { return c.classes ? c.classes.name + (c.classes.is_specialized ? ' (Chuyên)' : ' (Đại trà)') : ''; }).filter(Boolean).join(', ');
     var ph = phienTheoHS[s.id] || [];
     var moiNhat = ph[0] || null;
     var tongGiay = ph.reduce(function (t, x) { return t + (x.duration_seconds || 0); }, 0);
@@ -466,6 +466,7 @@ async function luuNhanXetPH() {
     veBang();
   }
 }
+
 </script>
 </body>
 </html>

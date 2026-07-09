@@ -72,7 +72,7 @@ function urlPdf(path) {
 async function taiTaiLieuHocSinh() {
   $('dsTaiLieu').innerHTML = '<div class="empty card">Đang tải…</div>';
   var query = sb.from('documents')
-    .select('id, title, file_path, created_at, class_id, classes(name), topics(name)');
+    .select('id, title, file_path, created_at, class_id, classes(name, is_specialized), topics(name)');
   
   if (!isStaff) {
     if (selectedClassId) {
@@ -91,7 +91,8 @@ async function taiTaiLieuHocSinh() {
   }
   $('dsTaiLieu').innerHTML = ds.map(function (d) {
     var ngay = new Date(d.created_at).toLocaleDateString('vi-VN');
-    var meta = [d.topics && d.topics.name, d.classes ? 'Lớp ' + d.classes.name : 'Mọi lớp', ngay]
+    var classText = d.classes ? 'Lớp ' + d.classes.name + (d.classes.is_specialized ? ' (Chuyên)' : ' (Đại trà)') : 'Mọi lớp';
+    var meta = [d.topics && d.topics.name, classText, ngay]
       .filter(Boolean).join(' · ');
     return '<div class="card doc">' +
       '<span class="ic">📄</span>' +
@@ -142,7 +143,8 @@ async function chonLopHocSinh(classId) {
     var tabsBox = $('tabLopHocSinh');
     tabsBox.style.display = 'flex';
     tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
-      var name = cs.classes ? cs.classes.name : 'Khác';
+      if (!cs.classes) return '';
+      var name = cs.classes.name + (cs.classes.is_specialized ? ' (Chuyên)' : ' (Đại trà)');
       var active = cs.class_id === selectedClassId ? ' active' : '';
       return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + '</button>';
     }).join('');
