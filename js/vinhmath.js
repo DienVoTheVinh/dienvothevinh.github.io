@@ -1614,13 +1614,29 @@ function vmApDungThuongHieuMAP(isMap) {
     if (logoEl) {
       var img = logoEl.querySelector('img');
       if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : 'img/logo.png';
-      // tìm text node chứa tên thương hiệu (VinhMath) và đổi
-      for (var i = 0; i < logoEl.childNodes.length; i++) {
-        var n = logoEl.childNodes[i];
-        if (n.nodeType === 3 && n.textContent && n.textContent.trim()) {
-          n.textContent = isMap ? ' M.A.P ' : ' VinhMath ';
-          break;
+      
+      var brandTextEl = logoEl.querySelector('.brand-container-el');
+      if (!brandTextEl) {
+        var oldSpan = logoEl.querySelector('span[style*="display: inline-flex"]') || logoEl.querySelector('span[style*="display:inline-flex"]');
+        if (oldSpan) {
+          oldSpan.classList.add('brand-container-el');
+          brandTextEl = oldSpan;
+        } else {
+          brandTextEl = document.createElement('span');
+          brandTextEl.className = 'brand-container-el';
+          brandTextEl.style.cssText = 'display: inline-flex; align-items: center; gap: 0;';
+          if (img) {
+            img.after(brandTextEl);
+          } else {
+            logoEl.prepend(brandTextEl);
+          }
         }
+      }
+      
+      if (isMap) {
+        brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">P</span>';
+      } else {
+        brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span>';
       }
     }
   } catch (e) { /* im lặng */ }
