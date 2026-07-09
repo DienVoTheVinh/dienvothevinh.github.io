@@ -95,6 +95,14 @@
   color: var(--ink);
 }
 .chart-container { position: relative; height: 200px; width: 100%; }
+.growth { font-size: .76rem; font-weight: 700; margin-top: 5px; display: flex; align-items: center; gap: 4px; }
+.growth.up { color: var(--ok); }
+.growth.down { color: var(--err); }
+.growth.flat { color: var(--ink-3); }
+.insight-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); }
+.insight-item .ico { font-size: 1.3rem; flex: none; line-height: 1.2; }
+.insight-item .txt b { display: block; font-size: .92rem; margin-bottom: 2px; color: var(--ink); }
+.insight-item .txt span { font-size: .84rem; color: var(--ink-2); line-height: 1.5; }
 
 .table-card {
   padding: 0;
@@ -164,16 +172,36 @@ tr:last-child td{border-bottom:none}
   <div class="metrics">
     <div class="card metric">
       <span class="ic" style="background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 12px var(--accent-soft);">👥</span>
-      <div><span>Tổng lượt truy cập</span><div class="val" id="totalVisits">—</div></div>
+      <div><span>Tổng lượt truy cập</span><div class="val" id="totalVisits">—</div><div class="growth" id="grVisits"></div></div>
+    </div>
+    <div class="card metric">
+      <span class="ic" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.35);">🧑‍🎓</span>
+      <div><span>Học sinh hoạt động</span><div class="val" id="totalStudents">—</div><div class="growth" id="grStudents"></div></div>
     </div>
     <div class="card metric">
       <span class="ic" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">⏳</span>
-      <div><span>Tổng thời lượng (giờ)</span><div class="val" id="totalHours">—</div></div>
+      <div><span>Tổng thời lượng (giờ)</span><div class="val" id="totalHours">—</div><div class="growth" id="grHours"></div></div>
+    </div>
+    <div class="card metric">
+      <span class="ic" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 12px rgba(139,92,246,0.35);">⏱️</span>
+      <div><span>TB phút / phiên</span><div class="val" id="avgMin">—</div><div class="growth flat" id="grAvg"></div></div>
     </div>
     <div class="card metric">
       <span class="ic" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);">📱</span>
       <div><span>Tỉ lệ thiết bị di động</span><div class="val" id="mobilePercent">—</div></div>
     </div>
+  </div>
+
+  <!-- Nhận định & khuyến nghị tự động -->
+  <div class="card" id="insightsCard" style="margin-bottom:28px; padding:22px 24px">
+    <h2 style="font-size:1.1rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px">📊 Nhận định & Khuyến nghị</h2>
+    <div id="insightsBox" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px"></div>
+  </div>
+
+  <!-- Xu hướng tăng trưởng theo tuần -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <h3>📊 Tăng trưởng theo tuần — Lượt truy cập &amp; Học sinh hoạt động</h3>
+    <div class="chart-container" style="height:230px"><canvas id="chartWeekly"></canvas></div>
   </div>
 
   <!-- Các biểu đồ tách riêng, mỗi loại một chỉ số cho dễ hiểu -->
@@ -230,7 +258,7 @@ tr:last-child td{border-bottom:none}
 var cachedAnalyticsData = [];
 
 // Biến giữ tham chiếu biểu đồ Chart.js
-var charts = { daily: null, devices: null, hours: null };
+var charts = { visits: null, hours: null, devices: null, hoursOfDay: null, weekly: null };
 
 // Hàm lấy biến màu CSS
 function getCSSVar(name) {
@@ -283,12 +311,17 @@ var logRows = [];
 var logsPageSize = 10, logsCurrentPage = 1;
 var _lastStats = null;
 
-function _fromISO(p) {
+function _periodRange(p) {
+  // Tra ve { from, prev } de so sanh voi ky truoc lien ke
   var now = new Date();
-  if (p === 'today') { var d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); }
-  if (p === '7d')  return new Date(now.getTime() - 7 * 86400000).toISOString();
-  if (p === '30d') return new Date(now.getTime() - 30 * 86400000).toISOString();
-  return null; // tat ca
+  if (p === 'today') {
+    var d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    var dPrev = new Date(d0.getTime() - 86400000);
+    return { from: d0.toISOString(), prev: dPrev.toISOString() };
+  }
+  if (p === '7d')  return { from: new Date(now - 7 * 86400000).toISOString(),  prev: new Date(now - 14 * 86400000).toISOString() };
+  if (p === '30d') return { from: new Date(now - 30 * 86400000).toISOString(), prev: new Date(now - 60 * 86400000).toISOString() };
+  return { from: null, prev: null }; // tat ca — khong so sanh
 }
 
 async function khoiTaoGiamSat() {
@@ -303,14 +336,112 @@ async function chonKhoang(p) {
 }
 
 async function taiThongKe() {
-  var from = _fromISO(currentPeriod);
-  var r = await sb.rpc('thong_ke_truy_cap', { p_from: from });
-  if (r.error) { console.error('thong_ke_truy_cap', r.error); return; }
+  var rg = _periodRange(currentPeriod);
+  var r = await sb.rpc('phan_tich_truy_cap', { p_from: rg.from, p_prev: rg.prev });
+  if (r.error) { console.error('phan_tich_truy_cap', r.error); return; }
   var t = r.data || {};
-  document.getElementById('totalVisits').textContent = (t.total_visits || 0).toLocaleString('vi-VN');
-  document.getElementById('totalHours').textContent = (t.total_hours != null ? t.total_hours : 0);
-  document.getElementById('mobilePercent').textContent = (t.mobile_pct || 0) + '%';
+  var cur = t.cur || {}, prev = t.prev || null;
+  document.getElementById('totalVisits').textContent   = (cur.visits || 0).toLocaleString('vi-VN');
+  document.getElementById('totalStudents').textContent = (cur.students || 0).toLocaleString('vi-VN');
+  document.getElementById('totalHours').textContent    = (cur.hours != null ? cur.hours : 0).toLocaleString('vi-VN');
+  document.getElementById('avgMin').textContent        = (cur.avg_min != null ? cur.avg_min : 0) + ' phút';
+  document.getElementById('mobilePercent').textContent = (cur.mobile_pct || 0) + '%';
+
+  growthBadge('grVisits',   cur.visits,   prev ? prev.visits   : null);
+  growthBadge('grStudents', cur.students, prev ? prev.students : null, (cur.new_students || 0) + ' HS mới');
+  growthBadge('grHours',    cur.hours,    prev ? prev.hours    : null);
+  var av = document.getElementById('grAvg');
+  av.className = 'growth flat';
+  av.textContent = (currentPeriod === 'all' ? 'Toàn thời gian' : 'thời lượng mỗi lần vào web');
+
+  renderInsights(t);
   veBieuDo(t);
+}
+
+function growthBadge(id, cur, prev, suffix) {
+  var el = document.getElementById(id); if (!el) return;
+  cur = cur || 0;
+  if (prev == null) {
+    el.className = 'growth flat';
+    el.textContent = suffix || '';
+    return;
+  }
+  if (prev === 0) {
+    el.className = 'growth up';
+    el.textContent = (cur > 0 ? '▲ Mới tăng' : '—') + (suffix ? ' · ' + suffix : '');
+    return;
+  }
+  var pc = Math.round((cur - prev) / prev * 100);
+  var arrow = pc > 0 ? '▲ +' : (pc < 0 ? '▼ ' : '→ ');
+  el.className = 'growth ' + (pc > 0 ? 'up' : (pc < 0 ? 'down' : 'flat'));
+  el.textContent = arrow + pc + '% so với kỳ trước' + (suffix ? ' · ' + suffix : '');
+}
+
+function renderInsights(t) {
+  var box = document.getElementById('insightsBox'); if (!box) return;
+  var cur = t.cur || {}, prev = t.prev || null, dv = t.devices || {}, hourly = t.hourly || [];
+  var items = [];
+  function pct(c, p) { return (p && p > 0) ? Math.round((c - p) / p * 100) : null; }
+
+  // 1) Xu huong tang truong tong the
+  if (prev) {
+    var gv = pct(cur.visits, prev.visits);
+    var gs = pct(cur.students, prev.students);
+    if (gv != null) {
+      if (gv > 5) items.push(['📈', 'Đang tăng trưởng tốt',
+        'Lượt truy cập ' + (gv >= 0 ? '+' : '') + gv + '%' + (gs != null ? ', học sinh hoạt động ' + (gs >= 0 ? '+' : '') + gs + '%' : '') + ' so với kỳ trước. Web đang hút người học — hãy giữ nhịp đăng bài giảng và đề mới đều đặn để duy trì đà này.']);
+      else if (gv < -5) items.push(['📉', 'Lưu lượng đang giảm',
+        'Lượt truy cập giảm ' + gv + '%' + (gs != null ? ', học sinh ' + (gs >= 0 ? '+' : '') + gs + '%' : '') + ' so với kỳ trước. Nên đăng bài mới, giao BTVN có hạn nộp, hoặc nhắc các em qua Zalo/thông báo để kéo lưu lượng trở lại.']);
+      else items.push(['➖', 'Lưu lượng ổn định',
+        'Gần như không đổi so với kỳ trước (' + gv + '%). Thử thêm nội dung tạo hứng thú (đề thi thử, bảng vàng vinh danh, video mới) để tạo bước nhảy.']);
+    }
+  } else {
+    items.push(['📊', 'Tổng quan toàn thời gian',
+      'Đang xem toàn bộ dữ liệu. Chọn “7 ngày” hoặc “30 ngày” để xem mức tăng/giảm so với kỳ liền trước.']);
+  }
+
+  // 2) Chat luong hoc — gio + TB phien
+  if (prev && cur.hours != null && prev.hours != null) {
+    var gh = pct(cur.hours, prev.hours);
+    if (gh != null && gh < -10) items.push(['⏳', 'Thời lượng học giảm',
+      'Tổng giờ trên web giảm ' + gh + '% dù lượt vào có thể vẫn ổn — các em vào nhưng ở lại ngắn hơn. Cân nhắc nội dung tương tác hơn (bài tập chấm điểm, video ngắn có câu hỏi) để giữ chân.']);
+    else if (gh != null && gh > 10) items.push(['🔥', 'Học sinh gắn bó hơn',
+      'Tổng thời lượng học tăng ' + gh + '% so với kỳ trước — dấu hiệu các em học sâu và ở lại lâu hơn. Nội dung đang phát huy hiệu quả.']);
+  }
+  if (cur.avg_min != null) {
+    if (cur.avg_min >= 30) items.push(['⭐', 'Mỗi phiên học chất lượng',
+      'Trung bình ' + cur.avg_min + ' phút mỗi lần vào web — các em thực sự học chứ không chỉ lướt qua. Rất tốt.']);
+    else if (cur.avg_min > 0 && cur.avg_min < 8) items.push(['⚡', 'Phiên truy cập khá ngắn',
+      'Trung bình chỉ ' + cur.avg_min + ' phút/lần. Hãy đặt nội dung quan trọng ngay trang đầu và thêm lối tắt tới bài đang học để các em ở lại lâu hơn.']);
+  }
+
+  // 3) Hoc sinh moi
+  if ((cur.new_students || 0) > 0) items.push(['🌱', 'Có học sinh mới',
+    'Kỳ này có ' + cur.new_students + ' học sinh lần đầu truy cập. Nên chào mừng, hướng dẫn các em cách dùng web và theo dõi xem các em có quay lại tuần sau không.']);
+
+  // 4) Khung gio vang
+  if (hourly.length === 24) {
+    var mx = Math.max.apply(null, hourly);
+    if (mx > 0) {
+      var peak = hourly.indexOf(mx);
+      items.push(['🕐', 'Khung giờ vàng: ' + peak + 'h–' + ((peak + 1) % 24) + 'h',
+        'Học sinh online đông nhất quanh ' + peak + 'h. Nên đăng bài mới, gửi thông báo hoặc mở livestream/giải đáp vào khung giờ này để tiếp cận nhiều em nhất.']);
+    }
+  }
+
+  // 5) Ti le thiet bi
+  var mob = dv.Mobile || 0, pc2 = dv.Desktop || 0, tot = mob + pc2 + (dv.Tablet || 0) + (dv.Unknown || 0);
+  if (tot > 0) {
+    var mpct = Math.round(mob / tot * 100);
+    if (mpct >= 60) items.push(['📱', 'Đa số học trên điện thoại',
+      mpct + '% truy cập từ điện thoại. Ưu tiên giao diện gọn cho màn hình nhỏ: chữ đủ lớn, ảnh đề rõ nét, nút bấm dễ chạm.']);
+    else if (mpct <= 35) items.push(['💻', 'Đa số học trên máy tính',
+      (100 - mpct) + '% truy cập từ máy tính — phù hợp cho bài giảng dài và đề chi tiết. Vẫn nên đảm bảo bản điện thoại dùng tốt cho các em học di động.']);
+  }
+
+  box.innerHTML = items.map(function (it) {
+    return '<div class="insight-item"><span class="ico">' + it[0] + '</span><span class="txt"><b>' + it[1] + '</b><span>' + it[2] + '</span></span></div>';
+  }).join('') || '<div style="color:var(--ink-3);font-size:.9rem">Chưa đủ dữ liệu để đưa ra nhận định.</div>';
 }
 
 function _chartTheme() {
@@ -336,7 +467,31 @@ function veBieuDo(t) {
   var hourly = t.hourly || [];
   var dv = t.devices || {};
 
-  ['visits', 'hours', 'devices', 'hoursOfDay'].forEach(function (k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+  var weekly = t.weekly || [];
+  ['visits', 'hours', 'devices', 'hoursOfDay', 'weekly'].forEach(function (k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+
+  // 0) Tang truong theo tuan (cot = luot, duong = hoc sinh)
+  var wCanvas = document.getElementById('chartWeekly');
+  if (wCanvas && weekly.length) {
+    charts.weekly = new Chart(wCanvas.getContext('2d'), {
+      data: {
+        labels: weekly.map(function (x) { return 'Tuần ' + x.w; }),
+        datasets: [
+          { type: 'bar', label: 'Lượt truy cập', data: weekly.map(function (x) { return x.luot; }), backgroundColor: getRGBA(th.accent, 0.5), hoverBackgroundColor: getRGBA(th.accent, 0.85), borderRadius: 6, maxBarThickness: 46, yAxisID: 'y', order: 2 },
+          { type: 'line', label: 'Học sinh hoạt động', data: weekly.map(function (x) { return x.hs; }), borderColor: th.ok, backgroundColor: getRGBA(th.ok, 0.12), tension: 0.35, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: th.ok, yAxisID: 'y1', order: 1 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 14, color: th.ink2, font: { family: 'Outfit, sans-serif', size: 12 } } } },
+        scales: {
+          y:  { beginAtZero: true, position: 'left', grid: { color: getRGBA(th.line, 0.35) }, ticks: { color: th.ink2, font: font, precision: 0 }, title: { display: true, text: 'Lượt', color: th.ink2, font: font } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: th.ink2, font: font, precision: 0 }, title: { display: true, text: 'Học sinh', color: th.ink2, font: font } },
+          x:  { grid: { display: false }, ticks: { color: th.ink2, font: font } }
+        }
+      }
+    });
+  }
 
   var baseOpts = {
     responsive: true, maintainAspectRatio: false,
