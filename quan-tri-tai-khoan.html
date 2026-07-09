@@ -94,8 +94,32 @@
   <!-- Vùng quản lý danh sách & Xoá tài khoản dành riêng cho Admin -->
   <div class="card" id="ttVungQuanLy" style="display:none; padding:24px; max-width:560px; margin-top:24px">
     <h3 style="margin-bottom:12px; font-weight:800; font-size:1.1rem; color:var(--ink)">👥 Danh sách & Xóa tài khoản</h3>
-    <div class="field" style="margin-bottom:16px">
-      <input class="input" id="ttSearchUser" placeholder="Tìm theo tên hoặc tên đăng nhập..." style="width:100%" oninput="ttTimKiemUser()">
+    
+    <div class="field" style="margin-bottom:12px">
+      <input class="input" id="ttSearchUser" placeholder="Tìm theo tên hoặc tên đăng nhập..." style="width:100%" oninput="ttLocUser()">
+    </div>
+
+    <!-- Bộ lọc theo chức danh/loại TK và khối lớp -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px">
+      <select id="filterRole" class="input" onchange="ttLocUser()" style="flex:1; min-width:120px">
+        <option value="all">-- Tất cả vai trò --</option>
+        <option value="student">🎓 Học sinh (HS)</option>
+        <option value="parent">👪 Phụ huynh (PH)</option>
+        <option value="teacher">👨‍🏫 Giáo viên (GV)</option>
+        <option value="assistant">🙋 Trợ giảng (TG)</option>
+        <option value="admin">🔑 Admin</option>
+      </select>
+      <select id="filterGrade" class="input" onchange="ttLocUser()" style="flex:1; min-width:100px; display:none">
+        <option value="all">-- Tất cả khối --</option>
+        <option value="10">Khối 10</option>
+        <option value="11">Khối 11</option>
+        <option value="12">Khối 12</option>
+      </select>
+      <select id="filterSpec" class="input" onchange="ttLocUser()" style="flex:1; min-width:100px; display:none">
+        <option value="all">-- Loại lớp --</option>
+        <option value="special">Chuyên</option>
+        <option value="standard">Đại trà</option>
+      </select>
     </div>
     
     <div id="ttDsTaiKhoan" style="max-height:350px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px">
@@ -272,27 +296,83 @@ async function taiDanhSachTaiKhoan() {
   $('ttDsTaiKhoan').innerHTML = '<div style="text-align:center; padding:20px; color:var(--ink-3)">Đang tải tài khoản...</div>';
   
   try {
-    var r = await sb.from('profiles').select('id, full_name, username, role, classes(name)').order('created_at', { ascending: false });
+    var r = await sb.from('profiles')
+      .select('id, full_name, username, role, class_students(class_id,classes(name,grade,is_specialized))')
+      .order('created_at', { ascending: false });
+      
     if (r.error) throw r.error;
     window.allUsers = r.data || [];
-    ttTimKiemUser();
+    ttLocUser();
   } catch (e) {
     $('ttDsTaiKhoan').innerHTML = '<div style="color:var(--err); padding:20px; text-align:center">Lỗi tải danh sách: ' + e.message + '</div>';
   }
 }
 
-function ttTimKiemUser() {
+function ttLocUser() {
   var q = ($('ttSearchUser').value || '').trim().toLowerCase();
-  var filtered = window.allUsers;
-  if (q) {
-    filtered = window.allUsers.filter(function (u) {
-      return (u.full_name || '').toLowerCase().indexOf(q) !== -1 ||
-             (u.username || '').toLowerCase().indexOf(q) !== -1;
-    });
+  var role = $('filterRole').value;
+  var grade = $('filterGrade').value;
+  var spec = $('filterSpec').value;
+  
+  // Show/hide sub-filters for student
+  if (role === 'student') {
+    $('filterGrade').style.display = 'inline-block';
+    $('filterSpec').style.display = 'inline-block';
+  } else {
+    $('filterGrade').style.display = 'none';
+    $('filterSpec').style.display = 'none';
+    // Reset selections if hidden
+    $('filterGrade').value = 'all';
+    $('filterSpec').value = 'all';
+    grade = 'all';
+    spec = 'all';
   }
   
+  var filtered = window.allUsers.filter(function (u) {
+    // 1. Text search
+    if (q) {
+      var matchText = (u.full_name || '').toLowerCase().indexOf(q) !== -1 ||
+                      (u.username || '').toLowerCase().indexOf(q) !== -1;
+      if (!matchText) return false;
+    }
+    
+    // 2. Role filter
+    if (role !== 'all') {
+      if (u.role !== role) return false;
+    }
+    
+    // 3. Grade & Spec filters (only applied if role is student or all)
+    if (u.role === 'student') {
+      var enrolls = u.class_students || [];
+      
+      // Grade filter
+      if (grade !== 'all') {
+        var hasGrade = enrolls.some(function (cs) {
+          return cs.classes && String(cs.classes.grade) === grade;
+        });
+        if (!hasGrade) return false;
+      }
+      
+      // Spec filter
+      if (spec !== 'all') {
+        var isSpecSelected = spec === 'special';
+        var hasSpec = enrolls.some(function (cs) {
+          return cs.classes && cs.classes.is_specialized === isSpecSelected;
+        });
+        if (!hasSpec) return false;
+      }
+    } else {
+      // Non-students cannot match grade/spec filters
+      if (grade !== 'all' || spec !== 'all') {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
   if (filtered.length === 0) {
-    $('ttDsTaiKhoan').innerHTML = '<div style="text-align:center; padding:20px; color:var(--ink-3)">Không tìm thấy tài khoản nào.</div>';
+    $('ttDsTaiKhoan').innerHTML = '<div style="text-align:center; padding:20px; color:var(--ink-3)">Không tìm thấy tài khoản nào khớp bộ lọc.</div>';
     return;
   }
   
@@ -300,8 +380,19 @@ function ttTimKiemUser() {
 }
 
 function renderUserRow(u) {
-  var roleLabel = u.role === 'admin' ? '🔑 Admin' : (u.role === 'teacher' ? '👨‍🏫 GV' : (u.role === 'assistant' ? '🙋 Trợ giảng' : '🎓 Học sinh'));
-  var detail = u.classes ? (' · Lớp: ' + u.classes.name) : '';
+  var roleLabel = u.role === 'admin' ? '🔑 Admin' : (u.role === 'teacher' ? '👨‍🏫 GV' : (u.role === 'assistant' ? '🙋 Trợ giảng' : (u.role === 'parent' ? '👪 PH' : '🎓 HS')));
+  
+  var detail = '';
+  if (u.role === 'student') {
+    var classesList = (u.class_students || []).map(function (cs) {
+      if (!cs.classes) return '';
+      var specText = cs.classes.is_specialized ? ' (Chuyên)' : ' (Đại trà)';
+      return cs.classes.name + specText;
+    }).filter(Boolean);
+    detail = classesList.length > 0 ? (' · Lớp: ' + classesList.join(', ')) : ' · Chưa vào lớp';
+  } else if (u.role === 'parent') {
+    detail = ' · Phụ huynh của: ' + u.username.replace('_ph', '');
+  }
   
   var isSelf = u.id === window._hoSo.id;
   var deleteBtn = isSelf ? '' : '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\', \'' + u.full_name.replace(/'/g, "\\'") + '\')">Xoá</button>';
