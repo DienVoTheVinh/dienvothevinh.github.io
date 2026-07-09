@@ -892,11 +892,13 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <input class="input" id="qtName" placeholder="Ví dụ: Lượng giác" required>
     </div>
     
+    <input type="hidden" id="qtCode">
+
     <div class="field">
-      <label>Mã code chuyên đề <b style="color:var(--accent)">*</b></label>
-      <input class="input" id="qtCode" placeholder="Ví dụ: 11D1" required>
+      <label>Chỉ số chuyên đề</label>
+      <input type="number" class="input" id="qtSort" value="0" min="0" placeholder="VD: 1 → Chuyên đề 1">
     </div>
-    
+
     <div class="field">
       <label>Khối lớp <b style="color:var(--accent)">*</b></label>
       <select class="input" id="qtGrade" required>
@@ -925,6 +927,16 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
   </div>
 </div>
 
+<!-- Modal: Ai đã xem bài giảng -->
+<div class="modal" id="modalAiXem" style="display:none; z-index:10020">
+  <div class="modal-content" style="max-width:700px">
+    <button class="modal-close" onclick="dongAiXem()">×</button>
+    <h2>👀 Học sinh đã xem gì trong bài</h2>
+    <div id="aiXemTitle" style="font-size:.95rem; color:var(--ink-2); font-weight:600; margin:6px 0 14px"></div>
+    <div id="aiXemBody"></div>
+  </div>
+</div>
+
 <!-- Modal Quản Lý Chuyên Đề -->
 <div class="modal" id="modalChuyenDe" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
@@ -941,10 +953,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <label style="font-size:0.8rem">Tên chuyên đề <b style="color:var(--accent)">*</b></label>
           <input class="input" id="cdName" placeholder="Ví dụ: Hàm số" style="padding:6px 10px; font-size:0.9rem" required>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label style="font-size:0.8rem">Mã code <b style="color:var(--accent)">*</b></label>
-          <input class="input" id="cdCode" placeholder="Ví dụ: 12D1" style="padding:6px 10px; font-size:0.9rem" required>
-        </div>
+        <input type="hidden" id="cdCode">
         <div class="field" style="margin-bottom:0">
           <label style="font-size:0.8rem">Khối lớp <b style="color:var(--accent)">*</b></label>
           <select class="input" id="cdGrade" style="padding:6px 10px; font-size:0.9rem" required>
@@ -965,8 +974,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           </select>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label style="font-size:0.8rem">Thứ tự</label>
-          <input type="number" class="input" id="cdSort" value="0" style="padding:6px 10px; font-size:0.9rem">
+          <label style="font-size:0.8rem">Chỉ số chuyên đề</label>
+          <input type="number" class="input" id="cdSort" value="0" min="0" placeholder="VD: 1 → Chuyên đề 1" style="padding:6px 10px; font-size:0.9rem">
         </div>
         <div class="field" style="margin-bottom:0">
           <label style="font-size:0.8rem">Màu sắc</label>
@@ -1000,11 +1009,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <table style="font-size:0.85rem">
         <thead>
           <tr>
-            <th style="padding:8px">Mã</th>
+            <th style="padding:8px">Chỉ số</th>
             <th style="padding:8px">Tên chuyên đề</th>
             <th style="padding:8px">Khối</th>
             <th style="padding:8px">Phân loại</th>
-            <th style="padding:8px">Sắp xếp</th>
             <th style="padding:8px; text-align:right">Thao tác</th>
           </tr>
         </thead>
@@ -1448,7 +1456,8 @@ async function taiLessonsLop() {
     var stt = 1;
     return blocks.map(function (g) {
       var isNone = g.topic._none;
-      var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
+      var cs = (g.topic.sort && g.topic.sort > 0) ? g.topic.sort : (stt++);
+      var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + cs + ': ' + g.topic.name);
       var mau = g.topic.color || 'var(--accent)';
       return '<div class="qla-topic open">' +
         '<div class="qla-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="qlaToggle(this)">' +
@@ -1542,6 +1551,7 @@ function renderLessonAcc(b, mauChuyenDe) {
         '<div class="qla-actg">' +
           '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
+          '<button class="btn btn-secondary btn-sm chi-gv" onclick="moAiDaXem(\'' + b.id + '\', \'' + (b.title || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">👀 Ai đã xem</button>' +
         '</div>' +
         '<div class="qla-actg">' +
           testBtn +
@@ -1551,6 +1561,48 @@ function renderLessonAcc(b, mauChuyenDe) {
     '</div>' +
   '</div>';
 }
+
+/* ----- Ai đã xem: HS nào đã bấm mở từng mục trong bài giảng ----- */
+async function moAiDaXem(lessonId, title) {
+  if (!classDangChon) return;
+  $('modalAiXem').style.display = 'flex';
+  $('aiXemTitle').textContent = '📘 ' + (title || 'Bài giảng');
+  $('aiXemBody').innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-3)">Đang tải…</div>';
+  var esc = (typeof ddEsc === 'function') ? ddEsc : function (s) { return s; };
+  try {
+    var rs = await sb.from('class_students').select('student_id, profiles(full_name)').eq('class_id', classDangChon.id);
+    var students = (rs.data || []).map(function (x) { return { id: x.student_id, name: x.profiles ? x.profiles.full_name : '?' }; });
+    students.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '', 'vi'); });
+    var rp = await sb.from('lesson_item_progress').select('student_id, item').eq('lesson_id', lessonId);
+    var seen = {};
+    (rp.data || []).forEach(function (x) { (seen[x.student_id] = seen[x.student_id] || {})[x.item] = true; });
+    var ITEMS = [['video', '🎬 Video'], ['lythuyet', '📖 Lý thuyết'], ['tailieu', '📄 Tài liệu'], ['bang', '🖼️ Ảnh bảng'], ['btvn', '🏠 BTVN'], ['test', '📝 Kiểm tra']];
+    var used = {};
+    Object.keys(seen).forEach(function (sid) { Object.keys(seen[sid]).forEach(function (k) { used[k] = true; }); });
+    var cols = ITEMS.filter(function (it) { return used[it[0]]; });
+    if (!cols.length) {
+      $('aiXemBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào bấm xem mục nào trong bài này.</div>';
+      return;
+    }
+    var counts = {};
+    cols.forEach(function (c) { counts[c[0]] = 0; });
+    students.forEach(function (s) { cols.forEach(function (c) { if (seen[s.id] && seen[s.id][c[0]]) counts[c[0]]++; }); });
+    var head = '<th style="text-align:left;padding:8px;position:sticky;left:0;background:var(--surface-solid)">Học sinh</th>' +
+      cols.map(function (c) { return '<th style="padding:8px;white-space:nowrap;text-align:center">' + c[1] + '<div style="font-size:.7rem;color:var(--ink-3);font-weight:600">' + counts[c[0]] + '/' + students.length + '</div></th>'; }).join('');
+    var rows = students.map(function (s) {
+      var cells = cols.map(function (c) {
+        var ok = seen[s.id] && seen[s.id][c[0]];
+        return '<td style="text-align:center;padding:6px">' + (ok ? '<span style="color:var(--ok)">✅</span>' : '<span style="color:var(--ink-3)">–</span>') + '</td>';
+      }).join('');
+      return '<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 8px;position:sticky;left:0;background:var(--surface-solid);white-space:nowrap">' + esc(s.name) + '</td>' + cells + '</tr>';
+    }).join('');
+    $('aiXemBody').innerHTML = '<div style="overflow-x:auto"><table style="width:100%;font-size:.86rem;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--line-2)">' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px">✅ = đã bấm xem/mở mục đó · – = chưa. Chỉ hiện các mục đã có ít nhất 1 HS xem.</div>';
+  } catch (e) {
+    $('aiXemBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải dữ liệu: ' + (e && e.message ? e.message : e) + '</div>';
+  }
+}
+function dongAiXem() { $('modalAiXem').style.display = 'none'; }
 
 async function moKichHoatTest(lessonId, title) {
   $('khtLessonId').value = lessonId;
@@ -2390,7 +2442,7 @@ async function napChuyenDeSelect(chonId) {
       og.label = 'Khối ' + g;
       theoKhoi[g].forEach(function (c) {
         var opt = document.createElement('option');
-        opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name + (c.is_specialized ? ' (Chuyên)' : '');
+        opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name + (c.is_specialized ? ' (Chuyên)' : '');
         og.appendChild(opt);
       });
       sel.appendChild(og);
@@ -2412,7 +2464,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '⭐ Chuyên đề Nâng cao (Khối ' + targetGrade + ')';
         cdsNangCao.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -2423,7 +2475,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
         cdsCoBan.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -2436,7 +2488,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
         cdsCoBan.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -3709,18 +3761,17 @@ async function taiBangChuyenDe() {
   
   var tbody = $('bangChuyenDe');
   if (!topics.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Không có chuyên đề nào.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Không có chuyên đề nào.</td></tr>';
     return;
   }
   
   tbody.innerHTML = topics.map(function(t) {
     var specLabel = t.is_specialized ? '<span style="color:var(--accent); font-weight:600">⭐ Chuyên</span>' : '📘 Thường';
     return '<tr>' +
-           '  <td style="padding:8px"><b>' + t.code + '</b></td>' +
+           '  <td style="padding:8px"><b>' + (t.sort > 0 ? 'Chuyên đề ' + t.sort : '—') + '</b></td>' +
            '  <td style="padding:8px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + (t.color || 'var(--ink-3)') + ';margin-right:7px;vertical-align:middle"></span>' + t.name + '</td>' +
            '  <td style="padding:8px" class="num">Lớp ' + t.grade + '</td>' +
            '  <td style="padding:8px">' + specLabel + '</td>' +
-           '  <td style="padding:8px" class="num">' + t.sort + '</td>' +
            '  <td style="padding:8px; text-align:right;">' +
            '    <button type="button" class="btn btn-ghost btn-sm" onclick="suaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px;">Sửa</button>' +
            '    <button type="button" class="btn btn-ghost btn-sm" onclick="xoaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px; color:var(--err);">Xóa</button>' +
@@ -3732,22 +3783,24 @@ async function taiBangChuyenDe() {
 async function luuChuyenDe() {
   var id = $('cdId').value;
   var name = $('cdName').value.trim();
-  var code = $('cdCode').value.trim();
   var grade = parseInt($('cdGrade').value);
   var sort = parseInt($('cdSort').value) || 0;
   var isSpecialized = $('cdIsSpecialized').value === 'true';
-  
-  if (!name || !code) {
-    alert('Vui lòng điền đầy đủ Tên chuyên đề và Mã code.');
+
+  if (!name) {
+    alert('Vui lòng nhập Tên chuyên đề.');
     return;
   }
-  
-  var data = { name: name, code: code, grade: grade, sort: sort, color: $('cdColor').value, is_specialized: isSpecialized };
-  
+
+  var data = { name: name, grade: grade, sort: sort, color: $('cdColor').value, is_specialized: isSpecialized };
+
   var r;
   if (id) {
+    // Giữ nguyên mã code cũ (không đưa vào payload nên không đổi)
     r = await sb.from('topics').update(data).eq('id', id);
   } else {
+    // Tự sinh mã code duy nhất ngầm (cột code NOT NULL + UNIQUE trong DB)
+    data.code = 'CD-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     r = await sb.from('topics').insert(data);
   }
   
@@ -3806,7 +3859,8 @@ function resetCdForm() {
 /* --- TẠO NHANH CHUYÊN ĐỀ TỪ DROPDOWN --- */
 function moQuickTopicModal() {
   $('qtName').value = '';
-  $('qtCode').value = '';
+  if ($('qtCode')) $('qtCode').value = '';
+  if ($('qtSort')) $('qtSort').value = '0';
   if (classDangChon) {
     $('qtGrade').value = classDangChon.grade;
     $('qtIsSpecialized').value = classDangChon.is_specialized ? 'true' : 'false';
@@ -3823,23 +3877,23 @@ function dongQuickTopicModal() {
 
 async function luuQuickTopic() {
   var name = $('qtName').value.trim();
-  var code = $('qtCode').value.trim();
   var grade = $('qtGrade').value;
+  var sort = parseInt($('qtSort') ? $('qtSort').value : '0') || 0;
   var isSpecialized = $('qtIsSpecialized').value === 'true';
-  
-  if (!name || !code || !grade) {
-    alert('Vui lòng nhập đầy đủ tên, mã và khối lớp cho chuyên đề.');
+
+  if (!name || !grade) {
+    alert('Vui lòng nhập tên chuyên đề và khối lớp.');
     return;
   }
-  
+
   var color = BANG_MAU_CD[tatCaChuyenDe.length % BANG_MAU_CD.length];
-  
+
   var r = await sb.from('topics').insert({
     name: name,
-    code: code,
+    code: 'CD-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     grade: parseInt(grade),
     is_specialized: isSpecialized,
-    sort: 0,
+    sort: sort,
     color: color
   }).select('id').single();
   

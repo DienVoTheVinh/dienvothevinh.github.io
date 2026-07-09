@@ -1474,21 +1474,25 @@ async function veLichDayStaff() {
     }
   });
   
-  var lessonsByClass = {};
+  // Gán bài giảng cho buổi theo NGÀY GIẢNG DẠY (created_at) trùng ngày buổi
+  var lessonByClassDate = {};
   if (topClassIds.length > 0) {
     try {
       var rL = await sb.from('lessons')
-        .select('id, title, note, class_id')
-        .in('class_id', topClassIds)
-        .order('sort', { ascending: false });
+        .select('id, title, note, class_id, created_at')
+        .in('class_id', topClassIds);
       if (rL.data) {
         rL.data.forEach(function (l) {
-          if (!lessonsByClass[l.class_id]) {
-            lessonsByClass[l.class_id] = l;
+          if (!l.created_at) return;
+          var d = new Date(l.created_at);
+          var key = l.class_id + '|' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          // Nếu trùng ngày cùng lớp, giữ bài tạo sau cùng
+          if (!lessonByClassDate[key] || new Date(l.created_at) > new Date(lessonByClassDate[key].created_at)) {
+            lessonByClassDate[key] = l;
           }
         });
       }
-    } catch(e) {
+    } catch (e) {
       console.error("Lỗi khi tải bài học cho danh sách lịch dạy:", e);
     }
   }
@@ -1500,7 +1504,15 @@ async function veLichDayStaff() {
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
-    var lesson = lessonsByClass[s.class_id];
+    // Ngày của buổi này (once -> s.date; định kỳ -> hôm nay + diff)
+    var sDateStr;
+    if (s.recurrence === 'once' && s.date) {
+      sDateStr = s.date;
+    } else {
+      var _nd = new Date(Date.now() + info.diff * 86400000);
+      sDateStr = _nd.getFullYear() + '-' + String(_nd.getMonth() + 1).padStart(2, '0') + '-' + String(_nd.getDate()).padStart(2, '0');
+    }
+    var lesson = lessonByClassDate[s.class_id + '|' + sDateStr];
     var phongDichVu = '';
     if (isOnline) {
       phongDichVu = meet 
