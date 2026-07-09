@@ -74,6 +74,8 @@
 .qla-topic-hd .cnt { font-size:.74rem; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 9px; }
 .qla-topic-hd .car { margin-left:auto; color:var(--ink-3); font-size:.8rem; transition:transform .2s; }
 .qla-topic.open > .qla-topic-hd .car { transform:rotate(90deg); }
+.qla-topic-hd .qla-cd-edit { margin-left:auto; background:transparent; border:none; cursor:pointer; font-size:.92rem; padding:2px 8px; border-radius:6px; opacity:.6; transition:opacity .15s, background .15s; line-height:1; }
+.qla-topic-hd .qla-cd-edit:hover { opacity:1; background:rgba(127,127,127,.16); }
 .qla-topic-body { display:none; border-top:1px solid var(--line); }
 .qla-topic.open > .qla-topic-body { display:block; }
 .qla-bai { border-bottom:1px solid var(--line); }
@@ -1002,6 +1004,12 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <option value="7">Khối 7</option>
         <option value="6">Khối 6</option>
       </select>
+      <span style="font-size:0.85rem; font-weight:600; color:var(--ink-2); margin-left:6px">Chương trình:</span>
+      <select class="input" id="locCdType" onchange="taiBangChuyenDe()" style="width:130px; padding:6px 10px; font-size:0.85rem">
+        <option value="all">Tất cả</option>
+        <option value="dt">📘 Đại trà</option>
+        <option value="ch">⭐ Chuyên</option>
+      </select>
     </div>
 
     <!-- Danh sách chuyên đề -->
@@ -1461,7 +1469,9 @@ async function taiLessonsLop() {
       var mau = g.topic.color || 'var(--accent)';
       return '<div class="qla-topic open">' +
         '<div class="qla-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="qlaToggle(this)">' +
-          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
+          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span>' +
+          (isNone ? '' : '<button class="qla-cd-edit" onclick="event.stopPropagation();suaChuyenDeNhanh(\'' + g.topic.id + '\')" title="Sửa nhanh chuyên đề này">✏️</button>') +
+          '<span class="car">▶</span>' +
         '</div>' +
         '<div class="qla-topic-body">' + g.lessons.map(function(b) { return renderLessonAcc(b, mau); }).join('') + '</div>' +
       '</div>';
@@ -3739,8 +3749,23 @@ function renderTheorySections() {
 function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
+  if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
   $('modalChuyenDe').style.display = 'flex';
   taiBangChuyenDe();
+}
+
+/* Sửa nhanh 1 chuyên đề ngay từ tiêu đề nhóm bài giảng */
+async function suaChuyenDeNhanh(id) {
+  if (!id) return;
+  resetCdForm();
+  $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
+  if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
+  $('modalChuyenDe').style.display = 'flex';
+  await taiBangChuyenDe();
+  await suaChuyenDe(id);
+  var modalC = $('modalChuyenDe') ? $('modalChuyenDe').querySelector('.modal-content') : null;
+  if (modalC) modalC.scrollTop = 0;
+  if ($('cdName')) $('cdName').focus();
 }
 
 function dongQuanLyChuyenDe() {
@@ -3751,9 +3776,15 @@ function dongQuanLyChuyenDe() {
 
 async function taiBangChuyenDe() {
   var gradeFilter = $('locCdGrade').value;
+  var typeFilter = $('locCdType') ? $('locCdType').value : 'all';
   var query = sb.from('topics').select('id, name, code, grade, sort, color, is_specialized').order('sort');
   if (gradeFilter !== 'all') {
     query = query.eq('grade', parseInt(gradeFilter));
+  }
+  if (typeFilter === 'dt') {
+    query = query.eq('is_specialized', false);
+  } else if (typeFilter === 'ch') {
+    query = query.eq('is_specialized', true);
   }
   
   var r = await query;
