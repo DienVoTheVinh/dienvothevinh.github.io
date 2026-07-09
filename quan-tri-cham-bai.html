@@ -85,7 +85,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
-<script src="js/menu.js"></script>
+<script src="js/menu.js?v=5.0"></script>
 <script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
@@ -285,15 +285,22 @@ function veDanhSach() {
   var selectedLop = $('selLop').value;
   var selectedSub = $('selBai').value;
   
-  function studentInClass(hs) {
+  function matchLop(lessonOrExam, studentProfiles) {
     if (!selectedLop) return true;
-    var studentClassIds = (hs.class_students || []).map(function (cs) { return cs.class_id; });
-    return studentClassIds.includes(selectedLop);
+    if (lessonOrExam && lessonOrExam.class_id) {
+      return lessonOrExam.class_id === selectedLop;
+    }
+    // Fallback nếu bài học / đề thi không gán lớp học nào
+    if (studentProfiles && studentProfiles.class_students) {
+      var studentClassIds = (studentProfiles.class_students || []).map(function (cs) { return cs.class_id; });
+      return studentClassIds.includes(selectedLop);
+    }
+    return false;
   }
   
   if (dangLoc === 'test') {
     var ds = dsTestAttempts.filter(function (s) {
-      if (!studentInClass(s.profiles)) return false;
+      if (!matchLop(s.lessons || s.exams, s.profiles)) return false;
       if (selectedSub && s.lesson_id !== selectedSub) return false;
       return true;
     });
@@ -322,7 +329,7 @@ function veDanhSach() {
 
   if (dangLoc === 'luyende') {
     var ds = dsLuyenDeAttempts.filter(function (s) {
-      if (!studentInClass(s.profiles)) return false;
+      if (!matchLop(s.exams || s.lessons, s.profiles)) return false;
       if (selectedSub && s.exam_id !== selectedSub) return false;
       return true;
     });
@@ -351,7 +358,7 @@ function veDanhSach() {
 
   var ds = dangLoc === 'tatca' ? tatCa : tatCa.filter(function (s) { return s.status === dangLoc; });
   ds = ds.filter(function (s) {
-    if (!studentInClass(s.profiles)) return false;
+    if (!matchLop(s.lessons || s.exams, s.profiles)) return false;
     if (selectedSub && s.lesson_id !== selectedSub) return false;
     return true;
   });
