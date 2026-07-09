@@ -74,7 +74,7 @@
 .qla-topic-hd .cnt { font-size:.74rem; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 9px; }
 .qla-topic-hd .car { margin-left:auto; color:var(--ink-3); font-size:.8rem; transition:transform .2s; }
 .qla-topic.open > .qla-topic-hd .car { transform:rotate(90deg); }
-.qla-topic-hd .qla-cd-edit { margin-left:auto; background:transparent; border:none; cursor:pointer; font-size:.92rem; padding:2px 8px; border-radius:6px; opacity:.6; transition:opacity .15s, background .15s; line-height:1; }
+.qla-topic-hd .qla-cd-edit { background:transparent; border:none; cursor:pointer; font-size:.92rem; padding:2px 6px; border-radius:6px; opacity:.6; transition:opacity .15s, background .15s; line-height:1; }
 .qla-topic-hd .qla-cd-edit:hover { opacity:1; background:rgba(127,127,127,.16); }
 .qla-topic-body { display:none; border-top:1px solid var(--line); }
 .qla-topic.open > .qla-topic-body { display:block; }
@@ -1469,8 +1469,9 @@ async function taiLessonsLop() {
       var mau = g.topic.color || 'var(--accent)';
       return '<div class="qla-topic open">' +
         '<div class="qla-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="qlaToggle(this)">' +
-          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span>' +
+          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span>' +
           (isNone ? '' : '<button class="qla-cd-edit" onclick="event.stopPropagation();suaChuyenDeNhanh(\'' + g.topic.id + '\')" title="Sửa nhanh chuyên đề này">✏️</button>') +
+          '<span class="cnt">' + g.lessons.length + ' bài</span>' +
           '<span class="car">▶</span>' +
         '</div>' +
         '<div class="qla-topic-body">' + g.lessons.map(function(b) { return renderLessonAcc(b, mau); }).join('') + '</div>' +
