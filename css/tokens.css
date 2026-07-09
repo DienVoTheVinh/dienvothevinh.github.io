@@ -48,10 +48,10 @@
   --ink-2: #111111; /* brandBlack - Đen đậm cho tiêu đề */
   --ink-3: #555555; /* brandGray - Xám ghi phụ */
   
-  --accent: #c27d00; /* brandGold - Vàng hổ phách chính */
-  --accent-hover: #a66b00;
-  --accent-soft: rgba(194, 125, 0, 0.08);
-  --accent-gradient: linear-gradient(135deg, #e09916 0%, #a66b00 100%);
+  --accent: #a06200; /* brandGold - Vàng hổ phách đậm đà, dễ đọc trên nền sáng */
+  --accent-hover: #855100;
+  --accent-soft: rgba(160, 98, 0, 0.08);
+  --accent-gradient: linear-gradient(135deg, #c27d00 0%, #855100 100%);
   
   --ok: #1a7556;
   --ok-soft: rgba(26, 117, 86, 0.1);
