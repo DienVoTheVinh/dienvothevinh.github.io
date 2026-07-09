@@ -9,8 +9,8 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/tokens.css?v=6.1">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.1">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
@@ -228,65 +228,74 @@
   transform: rotateX(60deg) rotateZ(45deg);
   animation: rotate3dScene 25s linear infinite;
 }
-.hero-3d-axis {
-  position: absolute;
-  background: currentColor;
-  opacity: 0.3;
-}
-.hero-3d-axis-x { width: 140px; height: 1px; top: 100px; left: 30px; color: var(--accent); }
-.hero-3d-axis-y { width: 1px; height: 140px; left: 100px; top: 30px; color: var(--ok); }
-.hero-3d-axis-z { width: 140px; height: 1px; top: 100px; left: 30px; color: var(--warn); transform: rotateY(90deg); }
+/* Bỏ trục toạ độ */
+.hero-3d-axis { display: none !important; }
 
-/* Cube in positive octant */
+/* ===== KHỐI LẬP PHƯƠNG VÀNG (phải) — mặt gradient + góc phát sáng ===== */
 .hero-3d-cube {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  top: 75px;
-  left: 75px;
+  width: 56px;
+  height: 56px;
+  top: 72px;
+  left: 72px;
   transform-style: preserve-3d;
-  animation: spinCube 12s linear infinite;
+  animation: spinCube 17s linear infinite;
 }
 @keyframes spinCube {
-  0% { transform: rotateX(0deg) rotateY(0deg); }
-  100% { transform: rotateX(360deg) rotateY(360deg); }
+  0%   { transform: rotateX(-18deg) rotateY(0deg); }
+  100% { transform: rotateX(-18deg) rotateY(360deg); }
 }
 .hero-3d-face {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
-  box-shadow: 0 0 5px var(--accent-soft);
+  width: 56px;
+  height: 56px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--accent);
+  background: linear-gradient(135deg, rgba(224,160,32,0.22) 0%, rgba(224,160,32,0.03) 65%);
+  box-shadow: inset 0 0 14px rgba(224,160,32,0.28);
 }
-.hero-f-front  { transform: translateZ(25px); }
-.hero-f-back   { transform: rotateY(180deg) translateZ(25px); }
-.hero-f-left   { transform: rotateY(-90deg) translateZ(25px); }
-.hero-f-right  { transform: rotateY(90deg) translateZ(25px); }
-.hero-f-top    { transform: rotateX(90deg) translateZ(25px); }
-.hero-f-bottom { transform: rotateX(-90deg) translateZ(25px); }
+.hero-3d-face::before, .hero-3d-face::after {
+  content: ""; position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent);
+}
+.hero-3d-face::before { top: -2.5px; left: -2.5px; }
+.hero-3d-face::after  { bottom: -2.5px; right: -2.5px; }
+.hero-f-front  { transform: translateZ(28px); }
+.hero-f-back   { transform: rotateY(180deg) translateZ(28px); }
+.hero-f-left   { transform: rotateY(-90deg) translateZ(28px); }
+.hero-f-right  { transform: rotateY(90deg) translateZ(28px); }
+.hero-f-top    { transform: rotateX(90deg) translateZ(28px); }
+.hero-f-bottom { transform: rotateX(-90deg) translateZ(28px); }
 
-/* Sphere in negative octant */
+/* ===== QUẢ CẦU LƯỚI VÀNG (trái) — kinh/vĩ tuyến + lõi phát sáng ===== */
 .hero-3d-sphere {
   position: absolute;
-  width: 60px;
-  height: 60px;
-  top: 70px;
-  left: 70px;
+  width: 68px;
+  height: 68px;
+  top: 66px;
+  left: 66px;
   transform-style: preserve-3d;
-  animation: spinSphere 15s linear infinite;
+  animation: spinSphere 22s linear infinite;
 }
 @keyframes spinSphere {
-  0% { transform: rotateY(0deg) rotateX(0deg); }
-  100% { transform: rotateY(360deg) rotateX(360deg); }
+  0%   { transform: rotateY(0deg) rotateX(-14deg); }
+  100% { transform: rotateY(360deg) rotateX(-14deg); }
+}
+.hero-3d-sphere::after {
+  content: ""; position: absolute; inset: 33%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 72%);
+  opacity: .5; filter: blur(1px);
 }
 .sphere-ring {
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 1px dashed var(--ok);
+  border: 1px solid var(--accent);
   border-radius: 50%;
   box-sizing: border-box;
+  box-shadow: 0 0 5px var(--accent-soft);
+  opacity: .85;
 }
 .ring-y-0   { transform: rotateY(0deg); }
 .ring-y-30  { transform: rotateY(30deg); }
@@ -294,7 +303,9 @@
 .ring-y-90  { transform: rotateY(90deg); }
 .ring-y-120 { transform: rotateY(120deg); }
 .ring-y-150 { transform: rotateY(150deg); }
-.ring-x-90  { transform: rotateX(90deg); border-style: solid; border-color: var(--ok); }
+.ring-x-90  { transform: rotateX(90deg); }
+.ring-lat-top { transform: rotateX(90deg) translateZ(21px) scale(0.78); opacity: 0.68; }
+.ring-lat-bot { transform: rotateX(90deg) translateZ(-21px) scale(0.78); opacity: 0.68; }
 
 /* Brand Badge */
 .brand-badge {
@@ -318,65 +329,97 @@
 /* Portrait Column Styling */
 .portrait {
   position: relative;
-  height: 520px;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .portrait-grid {
   position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 440px;
+  height: 480px;
+  margin: 0 auto;
   z-index: 2;
 }
-.portrait-grid .ph-portrait {
+/* Quầng sáng vàng dịu phía sau ảnh — lồng ghép với hiệu ứng quả cầu điểm */
+.portrait-grid::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 320px;
-  height: 440px;
-  border-radius: var(--r-lg);
+  left: 50%;
+  top: 50%;
+  width: 122%;
+  height: 122%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 50% 45%, var(--accent-soft), transparent 62%);
+  z-index: 0;
+  pointer-events: none;
+}
+.portrait-grid .ph-portrait,
+.portrait-grid .ph-landscape {
+  position: absolute;
+  border-radius: 20px;
   overflow: hidden;
   background: var(--surface-2);
+  box-shadow: var(--shadow-lift, 0 18px 40px rgba(20, 20, 40, 0.14));
+  transition: transform 0.45s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.portrait-grid .ph-portrait {
+  top: 0;
+  left: 0;
+  width: 60%;
+  aspect-ratio: 3 / 4;
   border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 2;
 }
 .portrait-grid .ph-landscape {
-  position: absolute;
   bottom: 0;
   right: 0;
-  width: 300px;
-  height: 410px;
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 1;
+  width: 58%;
+  aspect-ratio: 3 / 4;
+  border: 2px solid var(--accent);
+  z-index: 3;
 }
-.portrait-grid .ph-portrait:hover {
-  transform: translateY(-10px) scale(1.03);
-  z-index: 4;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-}
+.portrait-grid .ph-portrait:hover,
 .portrait-grid .ph-landscape:hover {
-  transform: translateY(-10px) scale(1.03);
+  transform: translateY(-8px) scale(1.02);
   z-index: 4;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+.portrait-grid img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.portrait-grid .photo-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 20px 12px 9px;
+  text-align: center;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.72), transparent);
 }
 @media(max-width: 860px) {
   .portrait {
-    height: auto;
-    margin-top: 40px;
+    min-height: 0;
+    margin-top: 36px;
   }
   .portrait-grid {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 24px;
     align-items: center;
     height: auto;
+    max-width: 340px;
   }
+  .portrait-grid::before { display: none; }
   .portrait-grid .ph-portrait,
   .portrait-grid .ph-landscape {
     position: relative;
@@ -384,16 +427,10 @@
     bottom: auto;
     left: auto;
     right: auto;
-    width: 90%;
+    width: 88%;
     max-width: 320px;
-    height: auto;
-    aspect-ratio: 1/1.25;
+    aspect-ratio: 3 / 4;
   }
-}
-.portrait-grid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .vertical-text {
@@ -709,8 +746,13 @@ footer .wrap {
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  opacity: var(--canvas-opacity, 0.25);
+  opacity: 0.5;
   transition: opacity 0.2s ease;
+  animation: canvasFadeIn 1.6s ease-out;
+}
+@keyframes canvasFadeIn { from { opacity: 0; } to { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) {
+  #cyberCanvas { animation: none; }
 }
 
 /* Add canvas visibility through transparent bodies */
@@ -728,14 +770,8 @@ body.math-grid {
   background: rgba(var(--surface-rgb), 0.75) !important;
 }
 .hero-brand-banner::before, .hero-brand-banner::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-color: var(--accent);
-  border-style: solid;
-  pointer-events: none;
-  transition: border-color 0.3s ease;
+  display: none !important;
+  content: none !important;
 }
 .hero-brand-banner::before {
   top: -1px;
@@ -762,9 +798,104 @@ body.math-grid {
   95% { opacity: 1; }
   100% { top: 100%; opacity: 0; }
 }
+
+/* Custom Premium Preloader Styles */
+#vm-preloader {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: #0c0c0e;
+  z-index: 999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.6s ease;
+}
+#vm-preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+.vm-preloader-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.vm-preloader-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: preloaderPulse 2s infinite ease-in-out;
+}
+.vm-preloader-logo img {
+  width: 90px;
+  height: 90px;
+  filter: drop-shadow(0 0 15px rgba(181, 72, 58, 0.4));
+}
+.vm-preloader-logo span {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  color: #fff;
+  background: linear-gradient(135deg, #fff, #B5483A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.vm-preloader-bar {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+.vm-preloader-progress {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #B5483A, #e67e22);
+  border-radius: 99px;
+  position: absolute;
+  left: -40%;
+  animation: preloaderBarAnim 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vm-preloader-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8a8a93;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@keyframes preloaderPulse {
+  0%, 100% { transform: scale(0.98); opacity: 0.95; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+@keyframes preloaderBarAnim {
+  0% { left: -40%; width: 30%; }
+  50% { width: 40%; }
+  100% { left: 100%; width: 30%; }
+}
 </style>
 </head>
 <body class="math-grid">
+<!-- Premium Page Preloader -->
+<div id="vm-preloader">
+  <div class="vm-preloader-content">
+    <div class="vm-preloader-logo">
+      <img src="img/logo.png" alt="VinhMath">
+      <span>VINHMATH</span>
+    </div>
+    <div class="vm-preloader-bar">
+      <div class="vm-preloader-progress"></div>
+    </div>
+    <div class="vm-preloader-text">Đang tải tài nguyên lớp học...</div>
+  </div>
+</div>
+
+<!-- Aurora nền dịu (phong cách Antigravity, tông vàng gold VinhMath) -->
+<div class="vm-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 
 <canvas id="cyberCanvas"></canvas>
 
@@ -817,6 +948,8 @@ body.math-grid {
               <div class="sphere-ring ring-y-120"></div>
               <div class="sphere-ring ring-y-150"></div>
               <div class="sphere-ring ring-x-90"></div>
+              <div class="sphere-ring ring-lat-top"></div>
+              <div class="sphere-ring ring-lat-bot"></div>
             </div>
           </div>
         </div>
@@ -845,10 +978,10 @@ body.math-grid {
       </div>
     </div>
 
-    <div>
+    <div class="reveal">
       <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
-      
+
       <div style="margin-top:32px; display:flex; gap:16px; flex-wrap:wrap">
         <a class="btn btn-primary btn-lg" href="javascript:void(0)" onclick="sessionStorage.setItem('vm-guest-mode', 'true'); window.location.href='trang-chu'" style="box-shadow: 0 4px 14px var(--accent-soft)">Trải nghiệm hệ thống</a>
         <a class="btn btn-secondary btn-lg" href="#blog-cong-khai" style="display:inline-flex; align-items:center; gap:8px; border:2px solid var(--accent); color:var(--accent); background:transparent; font-weight:700">
@@ -1119,7 +1252,7 @@ body.math-grid {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=6.1"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1526,342 +1659,212 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <script>
-// --- INTERACTIVE MATH LAB CANVAS ---
+// --- NEN: MANG LUOI 3D (doan thang gap khuc) + QUA CAU DEN-VANG ---
 var canvas = document.getElementById('cyberCanvas');
 var ctx = canvas.getContext('2d');
-var themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
+var DPR = Math.min(window.devicePixelRatio || 1, 2);
+var VW = window.innerWidth, VH = window.innerHeight;
 
-// Resizing
+var mouseX = -9999, mouseY = -9999, mvX = VW / 2, mvY = VH / 2;
+window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; mvX = e.clientX; mvY = e.clientY; });
+window.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
+window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mvX = mouseX; mvY = mouseY; } }, { passive: true });
+
+var GOLD = '224,160,32';
+var GOLD_GLOW = '#efc046';
+function inkRGB(dark) { return dark ? '206,216,234' : '31,58,96'; }
+function lineRGB(dark) { return dark ? '150,166,198' : '70,96,140'; }
+
+// ---- Lop 1: MANG LUOI 3D (cac nut noi bang doan thang) ----
+var NET = [];
+function buildNet() {
+  NET = [];
+  var count = Math.round((VW * VH) / 19000);
+  count = Math.max(70, Math.min(130, count));
+  for (var i = 0; i < count; i++) {
+    NET.push({
+      x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1,
+      vx: (Math.random() - 0.5) * 0.0016, vy: (Math.random() - 0.5) * 0.0016, vz: (Math.random() - 0.5) * 0.0016,
+      gold: (i % 5 === 0), ox: 0, oy: 0, sx: 0, sy: 0, dp: 0, rx: 0, ry: 0, rz: 0
+    });
+  }
+}
+
+// ---- Lop 2: QUA CAU (3 qua, den + vang phat sang, 3D hon) ----
+var SPHERE_DEF = [
+  { fx: 0.73, fy: 0.30, rf: 0.20, n: 220 },
+  { fx: 0.91, fy: 0.63, rf: 0.13, n: 150 },
+  { fx: 0.60, fy: 0.77, rf: 0.16, n: 190 }
+];
+var spheres = [];
+function buildSpheres() {
+  var minSide = Math.min(VW, VH);
+  spheres = SPHERE_DEF.map(function (d, si) {
+    var n = d.n, pts = [];
+    var gr = Math.PI * (3 - Math.sqrt(5));
+    for (var i = 0; i < n; i++) {
+      var y = 1 - (i / (n - 1)) * 2;
+      var rad = Math.sqrt(Math.max(0, 1 - y * y));
+      var th = gr * i;
+      pts.push({ bx: Math.cos(th) * rad, by: y, bz: Math.sin(th) * rad, ox: 0, oy: 0, gold: (i % 3 === 0) });
+    }
+    return {
+      cx: d.fx * VW, cy: d.fy * VH, r: d.rf * minSide, pts: pts,
+      rotY: Math.random() * Math.PI * 2,
+      rotX: (si % 2 ? 0.36 : -0.26),
+      speed: 0.16 + Math.random() * 0.10
+    };
+  });
+}
+
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  VW = window.innerWidth; VH = window.innerHeight;
+  canvas.width = Math.floor(VW * DPR);
+  canvas.height = Math.floor(VH * DPR);
+  canvas.style.width = VW + 'px';
+  canvas.style.height = VH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildNet();
+  buildSpheres();
 }
 window.addEventListener('resize', resize);
 resize();
 
-// 1. Tesseract (4D Hypercube) Setup
-var tesseractVertices = [];
-for (var x = -1; x <= 1; x += 2) {
-  for (var y = -1; y <= 1; y += 2) {
-    for (var z = -1; z <= 1; z += 2) {
-      for (var w = -1; w <= 1; w += 2) {
-        tesseractVertices.push([x, y, z, w]);
+var tiltX = 0, tiltY = 0;
+var _prevTs = 0;
+var ANIM_SPEED = 0.6;
+function draw(ts) {
+  ts = ts || performance.now();
+  var dtf = _prevTs ? Math.min((ts - _prevTs) / 16.667, 2.5) : 1;
+  _prevTs = ts;
+  var spd = dtf * ANIM_SPEED;
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var INK = inkRGB(dark), LINE = lineRGB(dark);
+
+  ctx.clearRect(0, 0, VW, VH);
+
+  // ---------- Lop 1: mang luoi 3D xoay khong gian ----------
+  // Nghieng nhe theo chuot -> tuong tac
+  var tgX = (mvY - VH / 2) / VH * 0.5;
+  var tgY = (mvX - VW / 2) / VW * 0.6;
+  tiltX += (tgX - tiltX) * 0.04;
+  tiltY += (tgY - tiltY) * 0.04;
+  var rotY = ts * 0.00007 + tiltY;
+  var rotX = Math.sin(ts * 0.00004) * 0.18 + tiltX;
+  var cyN = Math.cos(rotY), syN = Math.sin(rotY), cxN = Math.cos(rotX), sxN = Math.sin(rotX);
+  var CXs = VW * 0.45, CYs = VH / 2, SCx = VW * 0.58, SCy = VH * 0.56, focal = 2.7;
+
+  var i, j;
+  for (i = 0; i < NET.length; i++) {
+    var n = NET[i];
+    n.x += n.vx * spd; n.y += n.vy * spd; n.z += n.vz * spd;
+    if (n.x < -1) n.x += 2; else if (n.x > 1) n.x -= 2;
+    if (n.y < -1) n.y += 2; else if (n.y > 1) n.y -= 2;
+    if (n.z < -1) n.z += 2; else if (n.z > 1) n.z -= 2;
+    // xoay Y roi X
+    var X = n.x * cyN - n.z * syN;
+    var Z = n.x * syN + n.z * cyN;
+    var Y = n.y * cxN - Z * sxN;
+    var Z2 = n.y * sxN + Z * cxN;
+    n.rx = X; n.ry = Y; n.rz = Z2;
+    var persp = focal / (focal - Z2);
+    var bx = CXs + X * persp * SCx;
+    var by = CYs + Y * persp * SCy;
+    // day diem khi chuot toi gan (tuong tac)
+    n.ox *= 0.85; n.oy *= 0.85;
+    var mdx = bx + n.ox - mouseX, mdy = by + n.oy - mouseY, md2 = mdx * mdx + mdy * mdy, RR = 150;
+    if (md2 < RR * RR) { var dd = Math.sqrt(md2) || 1, f = 1 - dd / RR; n.ox += (mdx / dd) * f * f * 22 * spd; n.oy += (mdy / dd) * f * f * 22 * spd; }
+    n.sx = bx + n.ox; n.sy = by + n.oy;
+    n.dp = (Z2 + 1) / 2;
+  }
+
+  // Doan thang gap khuc noi cac nut gan nhau trong khong gian 3D
+  var TH = 0.62, TH2 = TH * TH;
+  ctx.lineWidth = 1;
+  for (i = 0; i < NET.length; i++) {
+    var a = NET[i];
+    for (j = i + 1; j < NET.length; j++) {
+      var b = NET[j];
+      var dx = a.rx - b.rx, dy = a.ry - b.ry, dz = a.rz - b.rz;
+      var d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < TH2) {
+        var t = 1 - Math.sqrt(d2) / TH;
+        var dep = (a.dp + b.dp) / 2;
+        var al = t * (0.06 + dep * (dark ? 0.24 : 0.2));
+        ctx.strokeStyle = 'rgba(' + LINE + ',' + al + ')';
+        ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
       }
     }
   }
-}
-var tesseractEdges = [];
-for (var i = 0; i < 16; i++) {
-  for (var j = i + 1; j < 16; j++) {
-    var diff = 0;
-    for (var k = 0; k < 4; k++) {
-      if (tesseractVertices[i][k] !== tesseractVertices[j][k]) diff++;
+  // Cac nut
+  for (i = 0; i < NET.length; i++) {
+    var nn = NET[i];
+    var sz = 1.0 + nn.dp * 2.4;
+    if (nn.gold) {
+      ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 7 + nn.dp * 8;
+      ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + nn.dp * 0.5) + ')';
+      ctx.beginPath(); ctx.arc(nn.sx, nn.sy, sz * 1.05, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = 'rgba(' + INK + ',' + (0.22 + nn.dp * 0.5) + ')';
+      ctx.beginPath(); ctx.arc(nn.sx, nn.sy, sz, 0, Math.PI * 2); ctx.fill();
     }
-    if (diff === 1) tesseractEdges.push([i, j]);
   }
-}
 
-// 2. Lorenz Attractor Setup (Real-time integration)
-var lorenzParticles = [
-  { x: 0.1, y: 0.0, z: 0.0, history: [], color: 'rgba(0, 242, 254, 0.85)', glow: '#00f2fe' },
-  { x: 0.1001, y: 0.0, z: 0.0, history: [], color: 'rgba(139, 92, 246, 0.8)', glow: '#8b5cf6' },
-  { x: 0.1002, y: 0.0, z: 0.0, history: [], color: 'rgba(245, 158, 11, 0.75)', glow: '#f59e0b' }
-];
-var sigma = 10, rho = 28, beta = 8/3;
-var dt = 0.007;
+  // ---------- Lop 2: qua cau (3D hon, vang sang hon) ----------
+  var R = 155, R2 = R * R;
+  for (var s = 0; s < spheres.length; s++) {
+    var sp = spheres[s];
+    sp.rotY += sp.speed * spd * 0.02;
+    var cyR = Math.cos(sp.rotY), syR = Math.sin(sp.rotY);
+    var cxR = Math.cos(sp.rotX), sxR = Math.sin(sp.rotX);
+    var pts2 = sp.pts;
+    for (var i2 = 0; i2 < pts2.length; i2++) {
+      var p = pts2[i2];
+      var x1 = p.bx * cyR - p.bz * syR;
+      var z1 = p.bx * syR + p.bz * cyR;
+      var y1 = p.by * cxR - z1 * sxR;
+      var z2 = p.by * sxR + z1 * cxR;
+      var persp2 = 1.9 / (1.9 - z2);
+      var px0 = sp.cx + x1 * sp.r * persp2;
+      var py0 = sp.cy + y1 * sp.r * persp2;
+      var depth = (z2 + 1) / 2;
 
-// 3. Floating Math Formulas Setup
-var formulas = [
-  { text: "e^{iπ} + 1 = 0", x: 100, y: 150, vx: 0.1, vy: -0.05, alpha: 0.1, targetAlpha: 0.3, size: 14 },
-  { text: "∫_{-∞}^{∞} e^{-x²} dx = √π", x: 300, y: 400, vx: -0.08, vy: 0.05, alpha: 0.15, targetAlpha: 0.35, size: 15 },
-  { text: "iℏ ∂/∂t Ψ = Ĥ Ψ", x: 700, y: 200, vx: 0.05, vy: -0.07, alpha: 0.08, targetAlpha: 0.28, size: 14 },
-  { text: "f̂(ξ) = ∫_{-∞}^{∞} f(x) e^{-2πixξ} dx", x: 500, y: 600, vx: -0.06, vy: -0.04, alpha: 0.12, targetAlpha: 0.32, size: 15 },
-  { text: "∇ × E = -∂B/∂t", x: 800, y: 500, vx: 0.07, vy: 0.06, alpha: 0.1, targetAlpha: 0.3, size: 14 },
-  { text: "P(A|B) = P(B|A)P(A) / P(B)", x: 200, y: 700, vx: 0.08, vy: -0.08, alpha: 0.09, targetAlpha: 0.29, size: 13 }
-];
+      p.ox *= 0.88; p.oy *= 0.88;
+      var px = px0 + p.ox, py = py0 + p.oy;
+      var mdx2 = px - mouseX, mdy2 = py - mouseY, m2 = mdx2 * mdx2 + mdy2 * mdy2;
+      if (m2 < R2) { var dd2 = Math.sqrt(m2) || 1, ff = 1 - dd2 / R; p.ox += (mdx2 / dd2) * ff * ff * 30 * spd; p.oy += (mdy2 / dd2) * ff * ff * 30 * spd; px = px0 + p.ox; py = py0 + p.oy; }
 
-// 4. Fourier Epicycles Setup
-var fourierAngle = 0;
-var fourierPath = [];
-
-// 3D rotation angles
-var angleX = -0.3;
-var angleY = 0.5;
-var mouseX = window.innerWidth / 2;
-var mouseY = window.innerHeight / 2;
-
-window.addEventListener('mousemove', function(e) {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-});
-
-function draw() {
-  themeIsDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  ctx.fillStyle = themeIsDark ? '#050811' : '#f5f8ff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb';
-  var w = canvas.width;
-  var h = canvas.height;
-  
-  // 1. Draw Floating Math Formulas (Gently floating & fading)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  formulas.forEach(function(f) {
-    f.x += f.vx;
-    f.y += f.vy;
-    
-    if (f.x < 50 || f.x > w - 50) f.vx *= -1;
-    if (f.y < 50 || f.y > h - 50) f.vy *= -1;
-    
-    if (Math.random() > 0.99) f.targetAlpha = 0.1 + Math.random() * 0.3;
-    f.alpha += (f.targetAlpha - f.alpha) * 0.02;
-    
-    ctx.fillStyle = themeIsDark ? 'rgba(255, 255, 255, ' + f.alpha * 0.4 + ')' : 'rgba(37, 99, 235, ' + f.alpha * 0.3 + ')';
-    ctx.font = 'bold ' + f.size + 'px "Be Vietnam Pro", sans-serif';
-    ctx.fillText(f.text, f.x, f.y);
-  });
-  
-  // Smooth automatic continuous Y rotation + subtle mouse offset tilt
-  var autoRotateY = Date.now() * 0.00015;
-  var autoRotateX = Math.sin(Date.now() * 0.00005) * 0.1;
-  var targetAngleX = autoRotateX + (mouseY - h / 2) * 0.0002;
-  var targetAngleY = autoRotateY + (mouseX - w / 2) * 0.0002;
-  angleX += (targetAngleX - angleX) * 0.05;
-  angleY += (targetAngleY - angleY) * 0.05;
-  
-  // --- A. DRAW 4D TESSERACT (LEFT SIDE) ---
-  var tessCenterX = w * 0.22;
-  var tessCenterY = h * 0.55;
-  var loginSide = document.querySelector('.side');
-  if (loginSide) {
-    var rect = loginSide.getBoundingClientRect();
-    tessCenterX = rect.left + rect.width * 0.25;
-    tessCenterY = rect.top + rect.height * 0.5;
-  }
-  
-  var tRotXW = Date.now() * 0.0002;
-  var tRotYW = Date.now() * 0.00015;
-  var tRotYZ = Date.now() * 0.0001;
-  
-  var projectedVertices = [];
-  tesseractVertices.forEach(function(v) {
-    var r1 = rotateXW(v, tRotXW);
-    var r2 = rotateYW(r1, tRotYW);
-    var r3 = rotateYZ(r2, tRotYZ);
-    
-    var dist4D = 2.0;
-    var scale4D = dist4D / (dist4D - r3[3]);
-    var x3D = r3[0] * scale4D;
-    var y3D = r3[1] * scale4D;
-    var z3D = r3[2] * scale4D;
-    
-    var cosY = Math.cos(angleY);
-    var sinY = Math.sin(angleY);
-    var x3_1 = x3D * cosY - z3D * sinY;
-    var z3_1 = x3D * sinY + z3D * cosY;
-    
-    var cosX = Math.cos(angleX);
-    var sinX = Math.sin(angleX);
-    var y3_2 = y3D * cosX - z3_1 * sinX;
-    var z3_2 = y3D * sinX + z3_1 * cosX;
-    
-    var zoom = Math.min(w, h) * 0.12;
-    var dist3D = 3.0;
-    var scale3D = dist3D / (dist3D + z3_2);
-    projectedVertices.push({
-      x: tessCenterX + x3_1 * scale3D * zoom,
-      y: tessCenterY + y3_2 * scale3D * zoom
-    });
-  });
-  
-  // Draw Tesseract Edges
-  ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.2)' : 'rgba(37, 99, 235, 0.16)';
-  ctx.lineWidth = 1.0;
-  tesseractEdges.forEach(function(edge) {
-    var p1 = projectedVertices[edge[0]];
-    var p2 = projectedVertices[edge[1]];
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-  });
-  // Draw vertices
-  ctx.fillStyle = themeIsDark ? '#00f2fe' : '#2563eb';
-  projectedVertices.forEach(function(p) {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  
-  // Label Tesseract
-  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
-  ctx.font = '10px monospace';
-  ctx.fillText("4D Hypercube (Tesseract)", tessCenterX, tessCenterY - Math.min(w, h) * 0.18);
-  
-  // --- B. DRAW LORENZ ATTRACTOR (RIGHT SIDE - REALTIME) ---
-  var lorenzCenterX = w * 0.7;
-  var lorenzCenterY = h * 0.5;
-  if (loginSide) {
-    var rect = loginSide.getBoundingClientRect();
-    lorenzCenterX = rect.left + rect.width * 0.72;
-    lorenzCenterY = rect.top + rect.height * 0.5;
-  }
-  
-  var lorenzZoom = Math.min(w, h) * 0.011;
-  var lorenzScaleFocal = 300;
-  
-  // Integrate Lorenz
-  for (var step = 0; step < 2; step++) {
-    lorenzParticles.forEach(function(p) {
-      var dx = sigma * (p.y - p.x) * dt;
-      var dy = (p.x * (rho - p.z) - p.y) * dt;
-      var dz = (p.x * p.y - beta * p.z) * dt;
-      p.x += dx;
-      p.y += dy;
-      p.z += dz;
-      
-      p.history.push({ x: p.x, y: p.y, z: p.z });
-      if (p.history.length > 150) p.history.shift();
-    });
-  }
-  
-  function projectLorenz(pt) {
-    var cx = pt.x;
-    var cy = pt.y;
-    var cz = pt.z - 25;
-    
-    var cosY = Math.cos(angleY * 0.7);
-    var sinY = Math.sin(angleY * 0.7);
-    var x1 = cx * cosY - cz * sinY;
-    var z1 = cx * sinY + cz * cosY;
-    
-    var cosX = Math.cos(angleX * 0.7);
-    var sinX = Math.sin(angleX * 0.7);
-    var y2 = cy * cosX - z1 * sinX;
-    var z2 = cy * sinX + z1 * cosX;
-    
-    var scale = lorenzScaleFocal / (lorenzScaleFocal + z2);
-    return {
-      x: lorenzCenterX + x1 * scale * lorenzZoom,
-      y: lorenzCenterY + y2 * scale * lorenzZoom
-    };
-  }
-  
-  ctx.strokeStyle = themeIsDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  var ox = projectLorenz({ x: -30, y: 0, z: 25 });
-  var oy = projectLorenz({ x: 30, y: 0, z: 25 });
-  ctx.moveTo(ox.x, ox.y); ctx.lineTo(oy.x, oy.y);
-  ctx.stroke();
-  
-  lorenzParticles.forEach(function(p) {
-    if (p.history.length < 2) return;
-    
-    ctx.beginPath();
-    var pStart = projectLorenz(p.history[0]);
-    ctx.moveTo(pStart.x, pStart.y);
-    for (var j = 1; j < p.history.length; j++) {
-      var pProj = projectLorenz(p.history[j]);
-      ctx.lineTo(pProj.x, pProj.y);
+      if (p.gold) {
+        ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 8 + depth * 12;
+        ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + depth * 0.55) + ')';
+        ctx.beginPath(); ctx.arc(px, py, (0.7 + depth * 1.7) * persp2, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = 'rgba(' + INK + ',' + ((dark ? 0.14 : 0.1) + depth * 0.5) + ')';
+        ctx.beginPath(); ctx.arc(px, py, (0.5 + depth * 1.5) * persp2, 0, Math.PI * 2); ctx.fill();
+      }
     }
-    ctx.strokeStyle = p.color;
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    
-    var tip = projectLorenz(p);
-    ctx.fillStyle = p.glow;
-    ctx.beginPath();
-    ctx.arc(tip.x, tip.y, 4, 0, Math.PI * 2);
-    ctx.shadowBlur = themeIsDark ? 10 : 3;
-    ctx.shadowColor = p.glow;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  });
-  
-  // Label Lorenz
-  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
-  ctx.font = '10px monospace';
-  ctx.fillText("Lorenz Chaos Attractor (σ=10, ρ=28, β=8/3)", lorenzCenterX, lorenzCenterY - Math.min(w, h) * 0.18);
-  
-  // --- C. DRAW FOURIER SERIES EPICYCLES (CENTER BOTTOM) ---
-  var fourierCenterX = w * 0.48;
-  var fourierCenterY = h * 0.75;
-  if (loginSide) {
-    fourierCenterX = rect.left + rect.width * 0.5;
-    fourierCenterY = rect.top + rect.height * 0.78;
   }
-  
-  fourierAngle += 0.008;
-  var fX = 0, fY = 0;
-  var radii = [45, 18, 6];
-  var speeds = [1, 3, -7];
-  
-  ctx.strokeStyle = themeIsDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
-  ctx.lineWidth = 0.8;
-  
-  for (var k = 0; k < radii.length; k++) {
-    var prevX = fX;
-    var prevY = fY;
-    var r = radii[k];
-    var sp = speeds[k];
-    
-    fX += r * Math.cos(sp * fourierAngle);
-    fY += r * Math.sin(sp * fourierAngle);
-    
-    ctx.beginPath();
-    ctx.arc(fourierCenterX + prevX, fourierCenterY + prevY, r, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo(fourierCenterX + prevX, fourierCenterY + prevY);
-    ctx.lineTo(fourierCenterX + fX, fourierCenterY + fY);
-    ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.2)' : 'rgba(37, 99, 235, 0.15)';
-    ctx.stroke();
-  }
-  
-  fourierPath.push({ x: fX, y: fY });
-  if (fourierPath.length > 500) fourierPath.shift();
-  
-  if (fourierPath.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(fourierCenterX + fourierPath[0].x, fourierCenterY + fourierPath[0].y);
-    for (var m = 1; m < fourierPath.length; m++) {
-      ctx.lineTo(fourierCenterX + fourierPath[m].x, fourierCenterY + fourierPath[m].y);
-    }
-    ctx.strokeStyle = themeIsDark ? 'rgba(0, 242, 254, 0.7)' : 'rgba(37, 99, 235, 0.55)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-  
-  // Label Fourier
-  ctx.fillStyle = themeIsDark ? 'rgba(0, 242, 254, 0.4)' : 'rgba(37, 99, 235, 0.4)';
-  ctx.font = '10px monospace';
-  ctx.fillText("Fourier Approximation", fourierCenterX, fourierCenterY - 65);
-  
   requestAnimationFrame(draw);
 }
-
-// 4D Rotation Helpers
-function rotateXW(pt, theta) {
-  var x = pt[0], w = pt[3];
-  var cos = Math.cos(theta), sin = Math.sin(theta);
-  return [x * cos - w * sin, pt[1], pt[2], x * sin + w * cos];
-}
-function rotateYW(pt, theta) {
-  var y = pt[1], w = pt[3];
-  var cos = Math.cos(theta), sin = Math.sin(theta);
-  return [pt[0], y * cos - w * sin, pt[2], y * sin + w * cos];
-}
-function rotateYZ(pt, theta) {
-  var y = pt[1], z = pt[2];
-  var cos = Math.cos(theta), sin = Math.sin(theta);
-  return [pt[0], y * cos - z * sin, y * sin + z * cos, pt[3]];
-}
-
-resize();
 draw();
+
+// Hide preloader when page finishes loading
+(function() {
+  function hideLoader() {
+    var pl = document.getElementById('vm-preloader');
+    if (pl && !pl.classList.contains('fade-out')) {
+      pl.classList.add('fade-out');
+      setTimeout(function () {
+        pl.style.display = 'none';
+      }, 600);
+    }
+  }
+  window.addEventListener('load', hideLoader);
+  // Safety timeout: force hide after 2.5 seconds
+  setTimeout(hideLoader, 2500);
+})();
 </script>
 </body>
 </html>

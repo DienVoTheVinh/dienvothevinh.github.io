@@ -150,9 +150,100 @@ body.theme-map .map-ribbon { display:flex; }
 .map-ribbon img { width:44px; height:44px; border-radius:10px; background:#fff; padding:3px; object-fit:contain; flex-shrink:0; }
 .map-ribbon .t b { color:#fff; font-size:1.02rem; font-weight:800; }
 .map-ribbon .t span { display:block; color:#C9A227; font-size:.8rem; font-weight:700; margin-top:1px; }
+/* Custom Premium Preloader Styles */
+#vm-preloader {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: #0c0c0e;
+  z-index: 999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.6s ease;
+}
+#vm-preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+.vm-preloader-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.vm-preloader-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: preloaderPulse 2s infinite ease-in-out;
+}
+.vm-preloader-logo img {
+  width: 90px;
+  height: 90px;
+  filter: drop-shadow(0 0 15px rgba(181, 72, 58, 0.4));
+}
+.vm-preloader-logo span {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  color: #fff;
+  background: linear-gradient(135deg, #fff, #B5483A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.vm-preloader-bar {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+.vm-preloader-progress {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #B5483A, #e67e22);
+  border-radius: 99px;
+  position: absolute;
+  left: -40%;
+  animation: preloaderBarAnim 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vm-preloader-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8a8a93;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@keyframes preloaderPulse {
+  0%, 100% { transform: scale(0.98); opacity: 0.95; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+@keyframes preloaderBarAnim {
+  0% { left: -40%; width: 30%; }
+  50% { width: 40%; }
+  100% { left: 100%; width: 30%; }
+}
 </style>
 </head>
 <body>
+<!-- Premium Page Preloader -->
+<div id="vm-preloader">
+  <div class="vm-preloader-content">
+    <div class="vm-preloader-logo">
+      <img src="img/logo.png" alt="VinhMath">
+      <span>VINHMATH</span>
+    </div>
+    <div class="vm-preloader-bar">
+      <div class="vm-preloader-progress"></div>
+    </div>
+    <div class="vm-preloader-text">Đang tải tài nguyên lớp học...</div>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="nav">
@@ -540,6 +631,7 @@ function layEmojiGiaoVien(fullName) {
   await taiLessonsHocSinh();
   await taiThongKeLop();
   await kiemTraDiemDanhHocSinh();
+  if (window.hideLoader) window.hideLoader();
 })();
 
 async function chonLopHocSinh(classId) {
@@ -1236,6 +1328,20 @@ async function taiTaiLieuHocSinh() {
   html += '</tbody></table>';
   container.innerHTML = html;
 }
+
+// Hide preloader when page finishes loading
+window.hideLoader = function() {
+  var pl = document.getElementById('vm-preloader');
+  if (pl && !pl.classList.contains('fade-out')) {
+    pl.classList.add('fade-out');
+    setTimeout(function () {
+      pl.style.display = 'none';
+    }, 600);
+  }
+};
+window.addEventListener('load', window.hideLoader);
+// Safety timeout: force hide after 2.5 seconds
+setTimeout(window.hideLoader, 2500);
 </script>
 
 <!-- Modal QR điểm danh cho giáo viên -->

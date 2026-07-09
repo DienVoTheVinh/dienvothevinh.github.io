@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.2">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -333,9 +333,100 @@
 }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
 .modal-inner { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); max-width: 460px; width: 100%; padding: 32px; text-align: center; position: relative; }
+/* Custom Premium Preloader Styles */
+#vm-preloader {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: #0c0c0e;
+  z-index: 999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.6s ease;
+}
+#vm-preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+.vm-preloader-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.vm-preloader-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: preloaderPulse 2s infinite ease-in-out;
+}
+.vm-preloader-logo img {
+  width: 90px;
+  height: 90px;
+  filter: drop-shadow(0 0 15px rgba(181, 72, 58, 0.4));
+}
+.vm-preloader-logo span {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  color: #fff;
+  background: linear-gradient(135deg, #fff, #B5483A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.vm-preloader-bar {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+.vm-preloader-progress {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #B5483A, #e67e22);
+  border-radius: 99px;
+  position: absolute;
+  left: -40%;
+  animation: preloaderBarAnim 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vm-preloader-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8a8a93;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@keyframes preloaderPulse {
+  0%, 100% { transform: scale(0.98); opacity: 0.95; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+@keyframes preloaderBarAnim {
+  0% { left: -40%; width: 30%; }
+  50% { width: 40%; }
+  100% { left: 100%; width: 30%; }
+}
 </style>
 </head>
 <body>
+<!-- Premium Page Preloader -->
+<div id="vm-preloader">
+  <div class="vm-preloader-content">
+    <div class="vm-preloader-logo">
+      <img src="img/logo.png" alt="VinhMath">
+      <span>VINHMATH</span>
+    </div>
+    <div class="vm-preloader-bar">
+      <div class="vm-preloader-progress"></div>
+    </div>
+    <div class="vm-preloader-text">Đang tải tài nguyên lớp học...</div>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="nav">
@@ -488,7 +579,7 @@
   </section>
 
   <!-- Checklist Nhiệm vụ Giảng dạy cho Trợ giảng/GV/Admin (Dạng ô thông báo lưu ý) -->
-  <div class="card" id="staffChecklistContainer" style="display:none; margin-bottom:24px; padding:20px 24px; border:1px solid var(--line); background: var(--surface-2); border-radius:var(--r-md, 12px); border-left: 5px solid var(--accent)">
+  <div class="card" id="staffChecklistContainer" style="display:none; margin-bottom:24px; padding:20px 24px; border:1px solid var(--line-2); border-radius:var(--r-md, 12px)">
     <h3 style="margin-top:0; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:8px; color:var(--accent)">
       💡 LƯU Ý QUAN TRỌNG TRONG BUỔI HỌC (TRÁNH BỎ QUÊN)
     </h3>
@@ -882,6 +973,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   await taiBlogTrangChu();
   veLichTuan();
   khoiDongCountdown();
+  if (window.hideLoader) window.hideLoader();
 })();
 
 // ===== THÔNG BÁO MỚI TỪ LỚP (bảng tin) =====
@@ -1474,21 +1566,25 @@ async function veLichDayStaff() {
     }
   });
   
-  var lessonsByClass = {};
+  // Gán bài giảng cho buổi theo NGÀY GIẢNG DẠY (created_at) trùng ngày buổi
+  var lessonByClassDate = {};
   if (topClassIds.length > 0) {
     try {
       var rL = await sb.from('lessons')
-        .select('id, title, note, class_id')
-        .in('class_id', topClassIds)
-        .order('sort', { ascending: false });
+        .select('id, title, note, class_id, created_at')
+        .in('class_id', topClassIds);
       if (rL.data) {
         rL.data.forEach(function (l) {
-          if (!lessonsByClass[l.class_id]) {
-            lessonsByClass[l.class_id] = l;
+          if (!l.created_at) return;
+          var d = new Date(l.created_at);
+          var key = l.class_id + '|' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          // Nếu trùng ngày cùng lớp, giữ bài tạo sau cùng
+          if (!lessonByClassDate[key] || new Date(l.created_at) > new Date(lessonByClassDate[key].created_at)) {
+            lessonByClassDate[key] = l;
           }
         });
       }
-    } catch(e) {
+    } catch (e) {
       console.error("Lỗi khi tải bài học cho danh sách lịch dạy:", e);
     }
   }
@@ -1500,7 +1596,15 @@ async function veLichDayStaff() {
     var tenLop = s.classes ? s.classes.name : '?';
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
-    var lesson = lessonsByClass[s.class_id];
+    // Ngày của buổi này (once -> s.date; định kỳ -> hôm nay + diff)
+    var sDateStr;
+    if (s.recurrence === 'once' && s.date) {
+      sDateStr = s.date;
+    } else {
+      var _nd = new Date(Date.now() + info.diff * 86400000);
+      sDateStr = _nd.getFullYear() + '-' + String(_nd.getMonth() + 1).padStart(2, '0') + '-' + String(_nd.getDate()).padStart(2, '0');
+    }
+    var lesson = lessonByClassDate[s.class_id + '|' + sDateStr];
     var phongDichVu = '';
     if (isOnline) {
       phongDichVu = meet 
@@ -2517,18 +2621,20 @@ async function taiRosterDiemDanh() {
   }
   
   box.innerHTML = absentHs.map(function (s) {
-    var btn = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', true)">Điểm danh</button>';
+    var btn = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
+      ' <button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>';
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
       '<span style="font-size:.88rem; color:var(--ink-2)">⚪ ' + s.full_name + '</span>' +
-      btn + '</div>';
+      '<span style="display:flex; gap:6px">' + btn + '</span></div>';
   }).join('');
 }
 
-async function diemDanhHo(studentId, present) {
+async function diemDanhHo(studentId, trangThai) {
   if (!buoiDangXem) return;
-  if (present) {
+  var st = (trangThai === true) ? 'present' : trangThai;
+  if (st === 'present' || st === 'late') {
     var r = await sb.from('attendance').upsert(
-      { session_id: buoiDangXem, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { session_id: buoiDangXem, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
     if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
   } else {
@@ -2666,6 +2772,20 @@ async function nopCodeDiemDanhHoc() {
 function khoiTaoChecklistStaff() {
   // Điểm danh đã chuyển sang dạng thông báo không tương tác
 }
+
+// Hide preloader when page finishes loading
+window.hideLoader = function() {
+  var pl = document.getElementById('vm-preloader');
+  if (pl && !pl.classList.contains('fade-out')) {
+    pl.classList.add('fade-out');
+    setTimeout(function () {
+      pl.style.display = 'none';
+    }, 600);
+  }
+};
+window.addEventListener('load', window.hideLoader);
+// Safety timeout: force hide after 2.5 seconds
+setTimeout(window.hideLoader, 2500);
 </script>
 
 <!-- Modal QR điểm danh cho giáo viên -->
