@@ -1634,7 +1634,7 @@ function vmApDungThuongHieuMAP(isMap) {
       }
       
       if (isMap) {
-        brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">P</span>';
+        brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.P</span>';
       } else {
         brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span>';
       }
