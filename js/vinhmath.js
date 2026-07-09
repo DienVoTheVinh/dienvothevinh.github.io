@@ -1791,3 +1791,34 @@ function layEmojiGiaoVien(fullName) {
   var color = isFemale ? '#db2777' : '#2563eb';
   return '<span class="gv-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border-radius:50%;background:' + bg + ';color:' + color + ';font-size:0.95em;vertical-align:-0.2em;margin-right:0.2em;border:1px solid ' + color + '33" title="' + (isFemale ? 'Cô' : 'Thầy') + '">' + emoji + '</span>';
 }
+
+/* =========================================================================
+   SCROLL REVEAL — hiệu ứng hiện dần khi cuộn (phong cách Antigravity)
+   Gắn class .reveal (tuỳ chọn .reveal-delay-1/2/3, .reveal-scale) cho phần tử.
+   Tự bỏ qua nếu người dùng bật "giảm chuyển động".
+   ========================================================================= */
+(function () {
+  function initReveal(root) {
+    root = root || document;
+    var els = root.querySelectorAll('.reveal:not(.is-visible)');
+    if (!els.length) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-visible'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    els.forEach(function (el) { io.observe(el); });
+  }
+  // Cho phép gọi lại sau khi render nội dung động
+  window.vmInitReveal = initReveal;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { initReveal(); });
+  } else {
+    initReveal();
+  }
+})();
