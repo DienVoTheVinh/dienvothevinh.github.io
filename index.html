@@ -1553,64 +1553,42 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <script>
-// --- NEN: DO THI TOAN HOC CHUYEN DONG + QUA CAU DEN-VANG (VinhMath) ---
+// --- NEN: MANG LUOI 3D (doan thang gap khuc) + QUA CAU DEN-VANG ---
 var canvas = document.getElementById('cyberCanvas');
 var ctx = canvas.getContext('2d');
 var DPR = Math.min(window.devicePixelRatio || 1, 2);
 var VW = window.innerWidth, VH = window.innerHeight;
 
-var mouseX = -9999, mouseY = -9999;
-window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; });
+var mouseX = -9999, mouseY = -9999, mvX = VW / 2, mvY = VH / 2;
+window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; mvX = e.clientX; mvY = e.clientY; });
 window.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
-window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; } }, { passive: true });
+window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mvX = mouseX; mvY = mouseY; } }, { passive: true });
 
-var GOLD = '224,160,32';        // vang gold
-var GOLD_GLOW = '#e8b53a';
+var GOLD = '224,160,32';
+var GOLD_GLOW = '#efc046';
+function inkRGB(dark) { return dark ? '206,216,234' : '31,58,96'; }
+function lineRGB(dark) { return dark ? '150,166,198' : '70,96,140'; }
 
-function inkRGB(dark) { return dark ? '216,222,234' : '22,26,36'; } // den (sang tren nen toi)
-
-// ---- Lop 1: CAC DO THI TOAN HOC CHUYEN DONG (nhieu duong cong ham so) ----
-var GRAPHS = [];
-function buildGraphs() {
-  var W = VW, H = VH, m = Math.min(W, H);
-  GRAPHS = [
-    { kind: 'sine',   cx: 0.30 * W, cy: 0.30 * H, w: 0.36 * W, amp: 0.055 * H, k: 3.0, sp: 0.5,  gold: false },
-    { kind: 'sine',   cx: 0.68 * W, cy: 0.82 * H, w: 0.44 * W, amp: 0.045 * H, k: 2.2, sp: -0.4, gold: true  },
-    { kind: 'damped', cx: 0.22 * W, cy: 0.66 * H, w: 0.34 * W, amp: 0.075 * H, k: 5.0, sp: 0.6,  gold: false },
-    { kind: 'parab',  cx: 0.84 * W, cy: 0.24 * H, w: 0.24 * W, amp: 0.12 * H,  sp: 0.6,  gold: true  },
-    { kind: 'lissa',  cx: 0.48 * W, cy: 0.48 * H, w: 0.11 * m, h: 0.11 * m, a: 3, b: 2, sp: 0.35, gold: false },
-    { kind: 'spiral', cx: 0.16 * W, cy: 0.34 * H, r: 0.10 * m, sp: 0.5,  gold: true  },
-    { kind: 'gauss',  cx: 0.44 * W, cy: 0.88 * H, w: 0.30 * W, amp: 0.10 * H, sp: 0.7,  gold: false },
-    { kind: 'sine',   cx: 0.86 * W, cy: 0.52 * H, w: 0.22 * W, amp: 0.05 * H,  k: 4.0, sp: 0.45, gold: false }
-  ];
-}
-
-function graphPoints(g, T) {
-  var pts = [], i, x, t, r, ang, N;
-  if (g.kind === 'sine') {
-    for (i = 0; i <= 90; i++) { x = -1 + i / 45; pts.push([g.cx + x * g.w / 2, g.cy + g.amp * Math.sin(g.k * x * Math.PI + T * g.sp * 2)]); }
-  } else if (g.kind === 'damped') {
-    for (i = 0; i <= 90; i++) { x = -1 + i / 45; pts.push([g.cx + x * g.w / 2, g.cy + g.amp * Math.exp(-Math.abs(x) * 1.6) * Math.cos(g.k * x * Math.PI + T * g.sp * 2)]); }
-  } else if (g.kind === 'parab') {
-    var bob = Math.sin(T * g.sp) * g.amp * 0.12;
-    for (i = 0; i <= 60; i++) { x = -1 + i / 30; pts.push([g.cx + x * g.w / 2, g.cy - g.amp * (0.5 - x * x) + bob]); }
-  } else if (g.kind === 'gauss') {
-    var wob = 1 + Math.sin(T * g.sp) * 0.18;
-    for (i = 0; i <= 80; i++) { x = -1 + i / 40; pts.push([g.cx + x * g.w / 2, g.cy - g.amp * Math.exp(-(x * 2.6 / wob) * (x * 2.6 / wob))]); }
-  } else if (g.kind === 'lissa') {
-    for (i = 0; i <= 120; i++) { t = i / 120 * Math.PI * 2; pts.push([g.cx + g.w * Math.sin(g.a * t + T * g.sp), g.cy + g.h * Math.sin(g.b * t)]); }
-  } else if (g.kind === 'spiral') {
-    N = 130;
-    for (i = 0; i <= N; i++) { t = i / N; r = g.r * t; ang = t * Math.PI * 5 + T * g.sp; pts.push([g.cx + r * Math.cos(ang), g.cy + r * Math.sin(ang)]); }
+// ---- Lop 1: MANG LUOI 3D (cac nut noi bang doan thang) ----
+var NET = [];
+function buildNet() {
+  NET = [];
+  var count = Math.round((VW * VH) / 30000);
+  count = Math.max(46, Math.min(84, count));
+  for (var i = 0; i < count; i++) {
+    NET.push({
+      x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1,
+      vx: (Math.random() - 0.5) * 0.0016, vy: (Math.random() - 0.5) * 0.0016, vz: (Math.random() - 0.5) * 0.0016,
+      gold: (i % 5 === 0), ox: 0, oy: 0, sx: 0, sy: 0, dp: 0, rx: 0, ry: 0, rz: 0
+    });
   }
-  return pts;
 }
 
-// ---- Lop 2: QUA CAU DIEM (it hon: 3 qua, den + vang phat sang) ----
+// ---- Lop 2: QUA CAU (3 qua, den + vang phat sang, 3D hon) ----
 var SPHERE_DEF = [
-  { fx: 0.72, fy: 0.30, rf: 0.20, n: 220 },
-  { fx: 0.90, fy: 0.62, rf: 0.13, n: 150 },
-  { fx: 0.60, fy: 0.76, rf: 0.16, n: 190 }
+  { fx: 0.73, fy: 0.30, rf: 0.20, n: 220 },
+  { fx: 0.91, fy: 0.63, rf: 0.13, n: 150 },
+  { fx: 0.60, fy: 0.77, rf: 0.16, n: 190 }
 ];
 var spheres = [];
 function buildSpheres() {
@@ -1627,7 +1605,7 @@ function buildSpheres() {
     return {
       cx: d.fx * VW, cy: d.fy * VH, r: d.rf * minSide, pts: pts,
       rotY: Math.random() * Math.PI * 2,
-      rotX: (si % 2 ? 0.38 : -0.28),
+      rotX: (si % 2 ? 0.36 : -0.26),
       speed: 0.16 + Math.random() * 0.10
     };
   });
@@ -1640,12 +1618,13 @@ function resize() {
   canvas.style.width = VW + 'px';
   canvas.style.height = VH + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  buildGraphs();
+  buildNet();
   buildSpheres();
 }
 window.addEventListener('resize', resize);
 resize();
 
+var tiltX = 0, tiltY = 0;
 var _prevTs = 0;
 var ANIM_SPEED = 0.6;
 function draw(ts) {
@@ -1654,33 +1633,79 @@ function draw(ts) {
   _prevTs = ts;
   var spd = dtf * ANIM_SPEED;
   var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  var INK = inkRGB(dark);
-  var T = ts * 0.001;
+  var INK = inkRGB(dark), LINE = lineRGB(dark);
 
   ctx.clearRect(0, 0, VW, VH);
 
-  // ----- Lop 1: do thi toan hoc chuyen dong -----
-  for (var gi = 0; gi < GRAPHS.length; gi++) {
-    var g = GRAPHS[gi];
-    var pts = graphPoints(g, T);
-    if (!pts.length) continue;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (var pi = 1; pi < pts.length; pi++) ctx.lineTo(pts[pi][0], pts[pi][1]);
-    if (g.gold) {
-      ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 8;
-      ctx.strokeStyle = 'rgba(' + GOLD + ',' + (dark ? 0.5 : 0.42) + ')';
-      ctx.lineWidth = 1.7;
-    } else {
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(' + INK + ',' + (dark ? 0.22 : 0.2) + ')';
-      ctx.lineWidth = 1.3;
-    }
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+  // ---------- Lop 1: mang luoi 3D xoay khong gian ----------
+  // Nghieng nhe theo chuot -> tuong tac
+  var tgX = (mvY - VH / 2) / VH * 0.5;
+  var tgY = (mvX - VW / 2) / VW * 0.6;
+  tiltX += (tgX - tiltX) * 0.04;
+  tiltY += (tgY - tiltY) * 0.04;
+  var rotY = ts * 0.00007 + tiltY;
+  var rotX = Math.sin(ts * 0.00004) * 0.18 + tiltX;
+  var cyN = Math.cos(rotY), syN = Math.sin(rotY), cxN = Math.cos(rotX), sxN = Math.sin(rotX);
+  var CXs = VW / 2, CYs = VH / 2, SC = Math.max(VW, VH) * 0.46, focal = 2.7;
+
+  var i, j;
+  for (i = 0; i < NET.length; i++) {
+    var n = NET[i];
+    n.x += n.vx * spd; n.y += n.vy * spd; n.z += n.vz * spd;
+    if (n.x < -1) n.x += 2; else if (n.x > 1) n.x -= 2;
+    if (n.y < -1) n.y += 2; else if (n.y > 1) n.y -= 2;
+    if (n.z < -1) n.z += 2; else if (n.z > 1) n.z -= 2;
+    // xoay Y roi X
+    var X = n.x * cyN - n.z * syN;
+    var Z = n.x * syN + n.z * cyN;
+    var Y = n.y * cxN - Z * sxN;
+    var Z2 = n.y * sxN + Z * cxN;
+    n.rx = X; n.ry = Y; n.rz = Z2;
+    var persp = focal / (focal - Z2);
+    var bx = CXs + X * persp * SC * 0.5;
+    var by = CYs + Y * persp * SC * 0.5;
+    // day diem khi chuot toi gan (tuong tac)
+    n.ox *= 0.85; n.oy *= 0.85;
+    var mdx = bx + n.ox - mouseX, mdy = by + n.oy - mouseY, md2 = mdx * mdx + mdy * mdy, RR = 150;
+    if (md2 < RR * RR) { var dd = Math.sqrt(md2) || 1, f = 1 - dd / RR; n.ox += (mdx / dd) * f * f * 22 * spd; n.oy += (mdy / dd) * f * f * 22 * spd; }
+    n.sx = bx + n.ox; n.sy = by + n.oy;
+    n.dp = (Z2 + 1) / 2;
   }
 
-  // ----- Lop 2: qua cau diem (den + vang phat sang) -----
+  // Doan thang gap khuc noi cac nut gan nhau trong khong gian 3D
+  var TH = 0.62, TH2 = TH * TH;
+  ctx.lineWidth = 1;
+  for (i = 0; i < NET.length; i++) {
+    var a = NET[i];
+    for (j = i + 1; j < NET.length; j++) {
+      var b = NET[j];
+      var dx = a.rx - b.rx, dy = a.ry - b.ry, dz = a.rz - b.rz;
+      var d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < TH2) {
+        var t = 1 - Math.sqrt(d2) / TH;
+        var dep = (a.dp + b.dp) / 2;
+        var al = t * (0.06 + dep * (dark ? 0.24 : 0.2));
+        ctx.strokeStyle = 'rgba(' + LINE + ',' + al + ')';
+        ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+      }
+    }
+  }
+  // Cac nut
+  for (i = 0; i < NET.length; i++) {
+    var nn = NET[i];
+    var sz = 1.0 + nn.dp * 2.4;
+    if (nn.gold) {
+      ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 7 + nn.dp * 8;
+      ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + nn.dp * 0.5) + ')';
+      ctx.beginPath(); ctx.arc(nn.sx, nn.sy, sz * 1.05, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = 'rgba(' + INK + ',' + (0.22 + nn.dp * 0.5) + ')';
+      ctx.beginPath(); ctx.arc(nn.sx, nn.sy, sz, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // ---------- Lop 2: qua cau (3D hon, vang sang hon) ----------
   var R = 155, R2 = R * R;
   for (var s = 0; s < spheres.length; s++) {
     var sp = spheres[s];
@@ -1694,33 +1719,24 @@ function draw(ts) {
       var z1 = p.bx * syR + p.bz * cyR;
       var y1 = p.by * cxR - z1 * sxR;
       var z2 = p.by * sxR + z1 * cxR;
-      var px0 = sp.cx + x1 * sp.r;
-      var py0 = sp.cy + y1 * sp.r;
+      var persp2 = 1.9 / (1.9 - z2);
+      var px0 = sp.cx + x1 * sp.r * persp2;
+      var py0 = sp.cy + y1 * sp.r * persp2;
       var depth = (z2 + 1) / 2;
 
       p.ox *= 0.88; p.oy *= 0.88;
       var px = px0 + p.ox, py = py0 + p.oy;
-
-      var mdx = px - mouseX, mdy = py - mouseY;
-      var md2 = mdx * mdx + mdy * mdy;
-      if (md2 < R2) {
-        var dd = Math.sqrt(md2) || 1;
-        var f = (1 - dd / R);
-        p.ox += (mdx / dd) * f * f * 30 * spd;
-        p.oy += (mdy / dd) * f * f * 30 * spd;
-        px = px0 + p.ox; py = py0 + p.oy;
-      }
+      var mdx2 = px - mouseX, mdy2 = py - mouseY, m2 = mdx2 * mdx2 + mdy2 * mdy2;
+      if (m2 < R2) { var dd2 = Math.sqrt(m2) || 1, ff = 1 - dd2 / R; p.ox += (mdx2 / dd2) * ff * ff * 30 * spd; p.oy += (mdy2 / dd2) * ff * ff * 30 * spd; px = px0 + p.ox; py = py0 + p.oy; }
 
       if (p.gold) {
-        var ga = 0.32 + depth * 0.55;
-        ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 6 + depth * 6;
-        ctx.fillStyle = 'rgba(' + GOLD + ',' + ga + ')';
-        ctx.beginPath(); ctx.arc(px, py, 1.0 + depth * 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 8 + depth * 12;
+        ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + depth * 0.55) + ')';
+        ctx.beginPath(); ctx.arc(px, py, (0.7 + depth * 1.7) * persp2, 0, Math.PI * 2); ctx.fill();
         ctx.shadowBlur = 0;
       } else {
-        var ia = (dark ? 0.14 : 0.1) + depth * (dark ? 0.5 : 0.5);
-        ctx.fillStyle = 'rgba(' + INK + ',' + ia + ')';
-        ctx.beginPath(); ctx.arc(px, py, 0.7 + depth * 2.0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(' + INK + ',' + ((dark ? 0.14 : 0.1) + depth * 0.5) + ')';
+        ctx.beginPath(); ctx.arc(px, py, (0.5 + depth * 1.5) * persp2, 0, Math.PI * 2); ctx.fill();
       }
     }
   }
