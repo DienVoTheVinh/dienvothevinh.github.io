@@ -9,8 +9,8 @@
 <meta name="description" content="Hệ thống học tập của Lớp Toán Thầy Vinh: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng học sinh.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.2">
+<link rel="stylesheet" href="css/tokens.css?v=6.0">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.0">
 <style>
 /* --- MATH GRID BACKGROUND --- */
 .math-grid {
@@ -770,6 +770,8 @@ body.math-grid {
 </style>
 </head>
 <body class="math-grid">
+<!-- Aurora nền dịu (phong cách Antigravity, tông vàng gold VinhMath) -->
+<div class="vm-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 
 <canvas id="cyberCanvas"></canvas>
 
@@ -850,10 +852,10 @@ body.math-grid {
       </div>
     </div>
 
-    <div>
+    <div class="reveal">
       <h1>Hiểu bản chất.<br><span class="accent">Điểm số sẽ theo sau.</span></h1>
       <p class="sub">Hệ thống học tập riêng cho học sinh của thầy: video bài giảng, luyện đề tự chấm theo chuyên đề, theo dõi tiến độ từng em — học đến đâu, chắc đến đó.</p>
-      
+
       <div style="margin-top:32px; display:flex; gap:16px; flex-wrap:wrap">
         <a class="btn btn-primary btn-lg" href="javascript:void(0)" onclick="sessionStorage.setItem('vm-guest-mode', 'true'); window.location.href='trang-chu'" style="box-shadow: 0 4px 14px var(--accent-soft)">Trải nghiệm hệ thống</a>
         <a class="btn btn-secondary btn-lg" href="#blog-cong-khai" style="display:inline-flex; align-items:center; gap:8px; border:2px solid var(--accent); color:var(--accent); background:transparent; font-weight:700">
@@ -1124,7 +1126,7 @@ body.math-grid {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/vinhmath.js?v=6.0"></script>
 <script src="js/menu.js"></script>
 <script src="js/analytics.js"></script>
 <script>
