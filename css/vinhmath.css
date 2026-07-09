@@ -1693,7 +1693,7 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
 }
 
 /* --- Nút bấm tinh chỉnh: nâng nhẹ khi hover, bo tròn mềm --- */
-.btn { border-radius: var(--r-md); will-change: transform; }
+.btn { border-radius: var(--r-md); }
 .btn:hover { transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn-lg { border-radius: var(--r-pill); padding: 14px 30px; font-weight: 700; letter-spacing: .01em; }
@@ -1750,7 +1750,7 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
 /* =========================================================================
    SCROLL REVEAL — hiện dần khi cuộn tới (JS gắn .is-visible)
    ========================================================================= */
-.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); will-change: opacity, transform; animation: revealFailsafe 0s linear 3s forwards; }
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); animation: revealFailsafe 0s linear 3s forwards; }
 .reveal.is-visible, .reveal.active { opacity: 1; transform: none; }
 /* Failsafe: nếu JS lỗi/không chạy, vẫn hiện nội dung sau 1.5s (không khoá màn đăng nhập) */
 @keyframes revealFailsafe { to { opacity: 1; transform: none; } }
