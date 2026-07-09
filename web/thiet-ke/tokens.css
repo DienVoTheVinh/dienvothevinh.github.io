@@ -1,72 +1,139 @@
-/* ============================================
-   VINHMATH — DESIGN TOKENS (bộ biến giao diện chuẩn)
-   Tối giản kiểu Nhật: nền giấy washi, mực đen dịu,
-   một điểm nhấn đỏ son (hanko) dùng tiết chế.
-   File này sẽ được import vào web app sau này.
-   ============================================ */
+/* =========================================================================
+   VINHMATH — DESIGN TOKENS
+   - Chế độ Sáng (Light Mode): Phong cách "Liquid Glass" của Apple
+     (Kính mờ phủ sương, mờ đục nhẹ, viền mảnh sắc sảo, nền gradient chuyển màu mượt).
+   - Chế độ Tối (Dark Mode): Phong cách "Neon Terminal / Blackbox" viễn tưởng
+     (Kính mờ tối, viền phát sáng nhẹ, đồ họa neon cyan/coral rực rỡ).
+   ========================================================================= */
 
 :root {
-  /* --- Màu nền & bề mặt (giấy) --- */
-  --bg:            #F7F5F1;  /* nền chính — giấy washi ấm */
-  --surface:       #FFFFFF;  /* thẻ, khối nội dung */
-  --surface-2:     #EFECE6;  /* khối phụ, hover nhẹ */
+  /* --- PHÔNG CHỮ --- */
+  --font-sans: "Be Vietnam Pro", -apple-system, sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-title: "Lora", Georgia, serif;
+  --font-mono: "Fira Code", monospace;
 
-  /* --- Mực (chữ) --- */
-  --ink:           #1F1D1A;  /* chữ chính */
-  --ink-2:         #6E6862;  /* chữ phụ, chú thích */
-  --ink-3:         #A8A29A;  /* chữ mờ, placeholder */
+  --fs-h1: 2.5rem;
+  --fs-h2: 1.75rem;
+  --fs-h3: 1.35rem;
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-tiny: 0.8rem;
 
-  /* --- Viền --- */
-  --line:          #E4E0D8;  /* viền mảnh */
-  --line-2:        #D2CCC2;  /* viền đậm hơn khi cần */
+  /* --- CẤU TRÚC: BO GÓC & BÓNG --- */
+  --r-sm: 6px; /* Hơi vuông hơn đậm chất học thuật phương Tây */
+  --r-md: 10px;
+  --r-lg: 16px;
+  
+  /* --- ĐỘ TRONG SUỐT VÀ BLUR (Liquid Glass Controls) --- */
+  --glass-opacity: 0.15;
+  --glass-blur-radius: 16px;
+  
+  /* --- CHẾ ĐỘ SÁNG (LIGHT MODE) - CỔ ĐIỂN PHƯƠNG TÂY ĐỒNG BỘ TÀI LIỆU --- */
+  --bg: #faf8f5; /* Màu giấy da/ivory ấm áp cổ điển */
+  --bg-gradient: linear-gradient(135deg, #faf8f5 0%, #f4f6fa 100%);
+  --bg-rgb: 250, 248, 245;
+  --surface-rgb: 255, 255, 255;
+  --surface-2-rgb: 240, 246, 255;
+  
+  --surface: rgba(255, 255, 255, 0.85); /* Kính mờ tráng gương */
+  --surface-2: rgba(31, 58, 96, 0.05); /* Hover kính nhạt xanh navy */
+  --surface-solid: #ffffff;
+  
+  --line: rgba(30, 78, 140, 0.12); /* Viền màu brandNavy mờ */
+  --line-2: rgba(194, 125, 0, 0.3); /* Viền màu brandGold mờ */
+  --grid-line: rgba(30, 78, 140, 0.05); /* Đường kẻ ô toán học navy mờ */
+  
+  --ink: #1e293b; /* brandDark - Xám tối/Đen chữ chính */
+  --ink-2: #1f3a60; /* brandBlue - Xanh dương trung tính */
+  --ink-3: #64748b; /* brandGray - Xám ghi phụ */
+  
+  --accent: #c27d00; /* brandGold - Vàng hổ phách chính */
+  --accent-hover: #a66b00;
+  --accent-soft: rgba(194, 125, 0, 0.08);
+  --accent-gradient: linear-gradient(135deg, #e09916 0%, #a66b00 100%);
+  
+  --ok: #1a7556;
+  --ok-soft: rgba(26, 117, 86, 0.1);
+  --warn: #b87d14;
+  --warn-soft: rgba(184, 125, 20, 0.1);
+  --err: #9e2a2b;
+  --err-soft: rgba(158, 42, 43, 0.1);
+  
+  --shadow: 0 10px 30px rgba(31, 58, 96, 0.06), 0 1px 3px rgba(31, 58, 96, 0.02);
+  --glass-blur: blur(var(--glass-blur-radius));
+  --glass-border: 1px solid rgba(194, 125, 0, 0.2); /* Viền vàng gold mảnh bao quanh card */
 
-  /* --- Điểm nhấn: đỏ son (shu-iro) --- */
-  --accent:        #B5483A;  /* nút chính, liên kết, dấu nhấn */
-  --accent-hover:  #9E3C30;
-  --accent-soft:   #F6E9E6;  /* nền nhạt của điểm nhấn */
-
-  /* --- Màu trạng thái (dịu, không chói) --- */
-  --ok:            #5E7B5E;  /* đúng / thành công — xanh matcha */
-  --ok-soft:       #EAF0EA;
-  --warn:          #A8842C;  /* cảnh báo — hổ phách trầm */
-  --warn-soft:     #F5EEDD;
-  --err:           #A4453B;  /* sai / lỗi */
-  --err-soft:      #F6E9E6;
-
-  /* --- Chữ --- */
-  --font-sans: "Be Vietnam Pro", -apple-system, "Segoe UI", Roboto, sans-serif;
-  --fs-h1: 2.0rem;   --fs-h2: 1.5rem;   --fs-h3: 1.17rem;
-  --fs-body: 1rem;   --fs-small: .875rem; --fs-tiny: .8rem;
-
-  /* --- Bo góc & bóng (rất nhẹ — tinh thần tối giản) --- */
-  --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;
-  --shadow: 0 1px 3px rgba(31,29,26,.06), 0 4px 16px rgba(31,29,26,.05);
-
-  /* --- Khoảng cách --- */
-  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
-  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  /* Thiết lập riêng biệt cho Topbar để xanh dương đen (brandBlue) dạng Kính mờ trong suốt */
+  --topbar-bg: rgba(250, 248, 245, 0.7);
+  --topbar-border: 1px solid rgba(30, 78, 140, 0.1);
+  --topbar-link: var(--ink-2);
+  --topbar-link-hover: var(--accent);
+  --topbar-link-active: var(--accent);
+  --topbar-text: var(--ink-2);
+  --topbar-text-muted: var(--ink-3);
+  --topbar-btn-bg: rgba(30, 78, 140, 0.05);
+  --topbar-btn-border: 1px solid rgba(30, 78, 140, 0.15);
+  --topbar-btn-text: var(--ink-2);
+  --topbar-btn-hover-bg: rgba(30, 78, 140, 0.15);
 }
 
-/* ============ CHẾ ĐỘ TỐI (cho HS học đêm) ============ */
 [data-theme="dark"] {
-  --bg:            #181715;
-  --surface:       #201E1B;
-  --surface-2:     #2A2724;
+  /* --- CHẾ ĐỘ TỐI (DARK MODE) - HOÀNG GIA HUYỀN BÍ --- */
+  --glass-opacity: 0.25;
+  --glass-blur-radius: 16px;
 
-  --ink:           #ECE8E1;
-  --ink-2:         #A39D94;
-  --ink-3:         #6E6962;
+  --bg: #000000; /* Đen tuyền tuyệt đối */
+  --bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #000000 100%);
+  --bg-rgb: 0, 0, 0;
+  --surface-rgb: 20, 20, 20;
+  --surface-2-rgb: 30, 30, 30;
+  
+  --surface: rgba(20, 20, 20, 0.7); /* Kính mờ đen tối */
+  --surface-2: rgba(30, 30, 30, 0.85); /* Hover kính tối */
+  --surface-solid: #121212;
+  
+  --line: rgba(255, 255, 255, 0.07); /* Viền kính mờ */
+  --line-2: rgba(194, 125, 0, 0.25); /* Viền vàng gold phát sáng mờ */
+  --grid-line: rgba(255, 255, 255, 0.02); /* Đường kẻ ô toán học tối */
+  
+  --ink: #f1f5f9; /* Slate 100 */
+  --ink-2: #cbd5e1; /* Slate 300 */
+  --ink-3: #64748b; /* Slate 500 */
+  
+  --accent: #dfbc5e; /* Vàng gold sáng rực rỡ */
+  --accent-hover: #f3d483;
+  --accent-soft: rgba(223, 188, 94, 0.15);
+  --accent-gradient: linear-gradient(135deg, #f3d483 0%, #a66b00 100%);
+  
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.15);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.15);
+  --err: #f87171;
+  --err-soft: rgba(248, 113, 113, 0.15);
+  
+  --shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+  --glass-blur: blur(var(--glass-blur-radius));
+  --glass-border: 1px solid rgba(194, 125, 0, 0.15);
 
-  --line:          #34312C;
-  --line-2:        #45413B;
+  /* Topbar ở chế độ Tối */
+  --topbar-bg: rgba(15, 15, 15, 0.75);
+  --topbar-border: 1px solid rgba(197, 155, 39, 0.2);
+  --topbar-link: #cbd5e1;
+  --topbar-link-hover: #dfbc5e;
+  --topbar-link-active: #dfbc5e;
+  --topbar-text: #f1f5f9;
+  --topbar-text-muted: #64748b;
+  --topbar-btn-bg: rgba(255, 255, 255, 0.08);
+  --topbar-btn-border: 1px solid rgba(255, 255, 255, 0.15);
+  --topbar-btn-text: #cbd5e1;
+  --topbar-btn-hover-bg: rgba(255, 255, 255, 0.15);
+}
 
-  --accent:        #D97A6B;
-  --accent-hover:  #E08D80;
-  --accent-soft:   #34231F;
-
-  --ok:            #8FAE8F;  --ok-soft:   #232B23;
-  --warn:          #C5A75B;  --warn-soft: #2E2817;
-  --err:           #D08077;  --err-soft:  #342220;
-
-  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+.brand-vinh {
+  color: var(--accent) !important;
+}
+.brand-math {
+  color: var(--topbar-text, #ffffff) !important;
 }
