@@ -1491,7 +1491,7 @@ async function chonNoiDung(loai) {
       '<div style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)">' +
       dsAnh.map(function (p) {
         var u = urlAnh(p);
-        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>';
   } else if (loai === 'btvn') {
     if ($('swBTVN')) $('swBTVN').classList.add('active');
@@ -1562,7 +1562,7 @@ async function renderBTVN(than) {
     ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
       dsAnh.map(function (p) {
         var u = urlAnh(p);
-        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>'
     : '';
 

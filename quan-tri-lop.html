@@ -2814,20 +2814,32 @@ function _loadImgEl(src) {
     var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = src;
   });
 }
+function _fileToDataURL(file) {
+  return new Promise(function (res, rej) {
+    var r = new FileReader();
+    r.onload = function () { res(r.result); };
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
 async function buildTestPdfFromImages() {
   if (!testImgFiles.length) { pdfBlobTest = null; return; }
   if (!window.jspdf || !window.jspdf.jsPDF) { console.error('jsPDF chưa tải'); return; }
   var JsPDF = window.jspdf.jsPDF;
   var doc = null;
   for (var i = 0; i < testImgFiles.length; i++) {
-    var url = URL.createObjectURL(testImgFiles[i]);
-    var img = await _loadImgEl(url);
+    var f = testImgFiles[i];
+    // Dùng dữ liệu gốc (base64) — KHÔNG vẽ lại qua canvas -> giữ nguyên độ nét
+    var dataUrl = await _fileToDataURL(f);
+    var img = await _loadImgEl(dataUrl); // chỉ để lấy kích thước gốc
     var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var ty = (f.type || '').toLowerCase();
+    var fmt = (ty.indexOf('jpeg') !== -1 || ty.indexOf('jpg') !== -1) ? 'JPEG' : 'PNG';
     var orient = w >= h ? 'l' : 'p';
     if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [w, h] });
     else doc.addPage([w, h], orient);
-    doc.addImage(img, 'PNG', 0, 0, w, h);
-    URL.revokeObjectURL(url);
+    // compression 'NONE' -> không nén thêm, ảnh sắc nét tối đa
+    doc.addImage(dataUrl, fmt, 0, 0, w, h, undefined, 'NONE');
   }
   pdfBlobTest = doc.output('blob');
 }
