@@ -104,16 +104,23 @@ Deno.serve(async (req) => {
 
       let folderPath: string[] = [];
       if (examId) {
-        const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name)").eq("id", examId).single();
+        const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name, grade, is_specialized)").eq("id", examId).single();
         if (errE || !exam) throw new Error("Khong tim thay de thi: " + (errE?.message || ""));
-        const className = (exam.classes as any)?.name || "Luyện đề chung";
+        const cl = exam.classes as any;
+        const className = cl 
+          ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
+          : "Luyện đề chung";
         const examTitle = exam.title || "Đề thi";
         folderPath = ["Luyện đề tự luận", className, examTitle, targetProf.username + " - " + targetProf.full_name, ngay];
       } else if (lessonId) {
-        const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name)").eq("id", lessonId).single();
+        const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name, grade, is_specialized)").eq("id", lessonId).single();
         if (errL || !lesson) throw new Error("Khong tim thay bai hoc: " + (errL?.message || ""));
-        const className = (lesson.classes as any)?.name || "Chưa phân lớp";
-        folderPath = [className, targetProf.username + " - " + targetProf.full_name, ngay];
+        const cl = lesson.classes as any;
+        const className = cl 
+          ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
+          : "Chưa phân lớp";
+        const lessonTitle = lesson.title || "Bài giảng";
+        folderPath = [className, lessonTitle, targetProf.username + " - " + targetProf.full_name, ngay];
       }
 
       let currentParentId = goc;
@@ -147,16 +154,23 @@ Deno.serve(async (req) => {
     
     let folderPath: string[] = [];
     if (sub.exam_id) {
-      const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name)").eq("id", sub.exam_id).single();
+      const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name, grade, is_specialized)").eq("id", sub.exam_id).single();
       if (errE || !exam) throw new Error("Khong tim thay de thi: " + (errE?.message || ""));
-      const className = (exam.classes as any)?.name || "Luyện đề chung";
+      const cl = exam.classes as any;
+      const className = cl 
+        ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
+        : "Luyện đề chung";
       const examTitle = exam.title || "Đề thi";
       folderPath = ["Luyện đề tự luận", className, examTitle, hs.username + " - " + hs.full_name, ngay];
     } else if (sub.lesson_id) {
-      const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name)").eq("id", sub.lesson_id).single();
+      const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name, grade, is_specialized)").eq("id", sub.lesson_id).single();
       if (errL || !lesson) throw new Error("Khong tim thay bai hoc: " + (errL?.message || ""));
-      const className = (lesson.classes as any)?.name || "Chưa phân lớp";
-      folderPath = [className, hs.username + " - " + hs.full_name, ngay];
+      const cl = lesson.classes as any;
+      const className = cl 
+        ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
+        : "Chưa phân lớp";
+      const lessonTitle = lesson.title || "Bài giảng";
+      folderPath = [className, lessonTitle, hs.username + " - " + hs.full_name, ngay];
     } else {
       folderPath = [hs.username + " - " + hs.full_name, ngay];
     }

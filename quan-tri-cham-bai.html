@@ -85,7 +85,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
-<script src="js/menu.js?v=5.0"></script>
+<script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
@@ -181,6 +181,18 @@ function locDuLieu() {
   veDanhSach();
 }
 
+function matchLopMyClassIds(lessonOrExam, studentProfiles) {
+  if (lessonOrExam && lessonOrExam.class_id) {
+    return myClassIds.indexOf(lessonOrExam.class_id) !== -1;
+  }
+  if (studentProfiles && studentProfiles.class_students) {
+    return studentProfiles.class_students.some(function (cs) {
+      return myClassIds.indexOf(cs.class_id) !== -1;
+    });
+  }
+  return false;
+}
+
 async function taiAttempts() {
   var r = await sb.from('attempts')
     .select('id, submitted_at, score, correct_n, total_n, lesson_id, lessons(title, class_id), profiles(full_name, username, class_students(class_id, classes(name)))')
@@ -190,13 +202,7 @@ async function taiAttempts() {
   var data = r.data || [];
   if (hoSoNguoiDung.role !== 'admin') {
     data = data.filter(function (a) {
-      if (a.lessons && myClassIds.indexOf(a.lessons.class_id) !== -1) return true;
-      if (a.profiles && a.profiles.class_students) {
-        return a.profiles.class_students.some(function (cs) {
-          return myClassIds.indexOf(cs.class_id) !== -1;
-        });
-      }
-      return false;
+      return matchLopMyClassIds(a.lessons || a.exams, a.profiles);
     });
   }
   return data;
@@ -211,13 +217,7 @@ async function taiAttemptsLuyenDe() {
   var data = r.data || [];
   if (hoSoNguoiDung.role !== 'admin') {
     data = data.filter(function (a) {
-      if (a.exams && myClassIds.indexOf(a.exams.class_id) !== -1) return true;
-      if (a.profiles && a.profiles.class_students) {
-        return a.profiles.class_students.some(function (cs) {
-          return myClassIds.indexOf(cs.class_id) !== -1;
-        });
-      }
-      return false;
+      return matchLopMyClassIds(a.exams || a.lessons, a.profiles);
     });
   }
   return data;
@@ -232,14 +232,7 @@ async function taiDanhSach() {
   var data = r.data || [];
   if (hoSoNguoiDung.role !== 'admin') {
     data = data.filter(function (s) {
-      if (s.lessons && myClassIds.indexOf(s.lessons.class_id) !== -1) return true;
-      if (s.exams && myClassIds.indexOf(s.exams.class_id) !== -1) return true;
-      if (s.profiles && s.profiles.class_students) {
-        return s.profiles.class_students.some(function (cs) {
-          return myClassIds.indexOf(cs.class_id) !== -1;
-        });
-      }
-      return false;
+      return matchLopMyClassIds(s.lessons || s.exams, s.profiles);
     });
   }
   tatCa = data;
