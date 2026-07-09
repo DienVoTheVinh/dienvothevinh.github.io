@@ -479,6 +479,64 @@ function draw(ts) {
 }
 draw();
 
+// --- LOGIN LOGIC ---
+function togglePass() {
+  var p = $('pass');
+  p.type = p.type === 'password' ? 'text' : 'password';
+  $('eyeBtn').textContent = p.type === 'password' ? '👁' : '🙈';
+}
+
+function baoLoi(msg, loai) {
+  var el = $('thongBao');
+  el.className = 'alert ' + (loai || 'err');
+  el.textContent = msg;
+}
+
+// Chưa điền config.js → nhắc nhẹ (chế độ xem thử)
+if (!daKetNoi()) {
+  baoLoi('Chế độ xem thử: web chưa kết nối Supabase nên chưa đăng nhập được thật.', 'warn');
+}
+
+// Đã đăng nhập từ trước → vào thẳng trang tương ứng
+if (daKetNoi()) {
+  sb.auth.getSession().then(function (s) {
+    if (s.data.session) {
+      sb.from('profiles').select('role').eq('id', s.data.session.user.id).single().then(function(rp) {
+        if (rp.data && rp.data.role === 'parent') {
+          window.location.href = 'phu-huynh';
+        } else {
+          window.location.href = 'trang-chu';
+        }
+      }).catch(function() {
+        window.location.href = 'trang-chu';
+      });
+    }
+  });
+}
+
+// Xử lý khi bấm nút "AUTH_SIGN_IN"
+$('formDangNhap').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  var nut = $('nutVao');
+  nut.disabled = true; nut.textContent = 'CHECKING_CREDENTIALS…';
+  var r = await dangNhap($('user').value, $('pass').value);
+  if (r.error) {
+    baoLoi(r.error);
+    nut.disabled = false; nut.textContent = 'AUTH_SIGN_IN';
+  } else {
+    try {
+      var s = await sb.auth.getSession();
+      if (s.data.session) {
+        var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
+        if (rp.data && rp.data.role === 'parent') {
+          window.location.href = 'phu-huynh';
+          return;
+        }
+      }
+    } catch (err) {}
+    window.location.href = 'trang-chu';
+  }
+});
 </script>
 </body>
 </html>
