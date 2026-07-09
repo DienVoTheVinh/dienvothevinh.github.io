@@ -2517,18 +2517,20 @@ async function taiRosterDiemDanh() {
   }
   
   box.innerHTML = absentHs.map(function (s) {
-    var btn = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', true)">Điểm danh</button>';
+    var btn = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
+      ' <button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>';
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
       '<span style="font-size:.88rem; color:var(--ink-2)">⚪ ' + s.full_name + '</span>' +
-      btn + '</div>';
+      '<span style="display:flex; gap:6px">' + btn + '</span></div>';
   }).join('');
 }
 
-async function diemDanhHo(studentId, present) {
+async function diemDanhHo(studentId, trangThai) {
   if (!buoiDangXem) return;
-  if (present) {
+  var st = (trangThai === true) ? 'present' : trangThai;
+  if (st === 'present' || st === 'late') {
     var r = await sb.from('attendance').upsert(
-      { session_id: buoiDangXem, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { session_id: buoiDangXem, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
     if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
   } else {

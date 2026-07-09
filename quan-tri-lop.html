@@ -1117,9 +1117,14 @@ async function loadingSidebar() {
   });
   
   if (!window.sidebarCollapsedGrades) {
+    // Mặc định thu gọn tất cả khối; chỉ bung khối của lớp đang chọn (nếu có)
     window.sidebarCollapsedGrades = {};
+    var khoiDangChon = (classDangChon && classDangChon.grade != null) ? String(classDangChon.grade || 12) : null;
+    Object.keys(groups).forEach(function (g) {
+      window.sidebarCollapsedGrades[g] = (khoiDangChon === null) ? true : (g !== khoiDangChon);
+    });
   }
-  
+
   var html = '';
   Object.keys(groups).sort(function(a, b){ return a - b; }).forEach(function (g) {
     var isCollapsed = !!window.sidebarCollapsedGrades[g];
@@ -1158,7 +1163,9 @@ function chonLopHoc(id) {
   var cl = dsLop.find(function (l) { return l.id === id; });
   if (!cl) return;
   classDangChon = cl;
-  
+  // Bung khối của lớp vừa chọn
+  if (window.sidebarCollapsedGrades) window.sidebarCollapsedGrades[String(cl.grade || 12)] = false;
+
   // Highlight active
   document.querySelectorAll('.class-item').forEach(function (btn) {
     btn.classList.remove('active');
@@ -1426,8 +1433,14 @@ async function taiLessonsLop() {
       } else { noTopicLessons.push(b); }
     });
     topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
-    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
-    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+    var sapTheoNgay = function (a, b) {
+      var da = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var db = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (da !== db) return da - db; // cũ -> mới
+      return (a.sort || 0) - (b.sort || 0);
+    };
+    topicOrder.forEach(function (g) { g.lessons.sort(sapTheoNgay); });
+    noTopicLessons.sort(sapTheoNgay);
 
     var blocks = topicOrder.slice();
     if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác / Tự do', color: '#A8A29A', _none: true }, lessons: noTopicLessons });
@@ -1615,8 +1628,8 @@ async function taiStudentsLop() {
 
   // Tải bài giảng của lớp (lấy lý thuyết + bài tập về nhà)
   var rLessons = await sb.from('lessons')
-    .select('id, title, sort, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due')
-    .eq('class_id', classDangChon.id).order('sort', { ascending: false });
+    .select('id, title, sort, created_at, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due')
+    .eq('class_id', classDangChon.id).order('created_at', { ascending: true });
   var allLessons = rLessons.data || [];
   tpLessons = allLessons.filter(function (l) { return Array.isArray(l.theory_sections) && l.theory_sections.length > 0; });
 
@@ -1946,8 +1959,13 @@ async function veRosterTheoDoi() {
     var initial = (s.full_name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase();
 
     var ddHtml = sid ? (on
-      ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + ' · bỏ</button>'
-      : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>')
+      ? '<span class="pill ' + (att.status === 'late' ? 'pill-amber' : 'pill-green') + '">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + '</span> ' +
+        (att.status === 'late'
+          ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">🟢 Chuyển Có mặt</button> '
+          : '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Chuyển Trễ</button> ') +
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">Bỏ</button>'
+      : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">Điểm danh</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button>')
       : '<span style="color:var(--ink-3);font-size:.82rem">Chọn buổi ở trên để điểm danh</span>';
 
     var nxHtml = coNx
@@ -2051,12 +2069,14 @@ async function toggleNopBTVN(studentId, submitted) {
   veRosterTheoDoi();
 }
 
-async function toggleDiemDanhLop(studentId, present) {
+async function toggleDiemDanhLop(studentId, trangThai) {
   var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
   if (!sid) { alert('Chưa chọn buổi.'); return; }
-  if (present) {
+  // trangThai: 'present' | 'late' | true (=present) | false/null (=bỏ điểm danh)
+  var st = (trangThai === true) ? 'present' : trangThai;
+  if (st === 'present' || st === 'late') {
     var r = await sb.from('attendance').upsert(
-      { session_id: sid, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { session_id: sid, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
     if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
   } else {

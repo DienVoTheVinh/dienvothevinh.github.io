@@ -774,8 +774,14 @@ function hienThiLessonsGomNhom(ds) {
       } else { noTopicLessons.push(b); }
     });
     topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
-    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
-    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+    var sapTheoNgay = function (a, b) {
+      var da = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var db = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (da !== db) return da - db;
+      return (a.sort || 0) - (b.sort || 0);
+    };
+    topicOrder.forEach(function (g) { g.lessons.sort(sapTheoNgay); });
+    noTopicLessons.sort(sapTheoNgay);
 
     var blocks = topicOrder.slice();
     if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác', color: '#A8A29A' }, lessons: noTopicLessons });

@@ -593,7 +593,7 @@ async function taiMucLuc() {
 
   var q = sb.from('lessons')
     .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, created_at, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
-    .order('sort', { ascending: false });
+    .order('created_at', { ascending: true });
   if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
   var r = await q;
   var ds = r.data || [];
