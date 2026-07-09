@@ -34,19 +34,19 @@
   --bg-gradient: linear-gradient(135deg, #faf8f5 0%, #f4f6fa 100%);
   --bg-rgb: 250, 248, 245;
   --surface-rgb: 255, 255, 255;
-  --surface-2-rgb: 240, 246, 255;
+  --surface-2-rgb: 241, 245, 249;
   
   --surface: rgba(255, 255, 255, 0.85); /* Kính mờ tráng gương */
-  --surface-2: rgba(31, 58, 96, 0.05); /* Hover kính nhạt xanh navy */
+  --surface-2: rgba(15, 23, 42, 0.05); /* Hover kính nhạt xám tối */
   --surface-solid: #ffffff;
   
-  --line: rgba(30, 78, 140, 0.12); /* Viền màu brandNavy mờ */
+  --line: rgba(15, 23, 42, 0.12); /* Viền kính mờ */
   --line-2: rgba(194, 125, 0, 0.3); /* Viền màu brandGold mờ */
-  --grid-line: rgba(30, 78, 140, 0.05); /* Đường kẻ ô toán học navy mờ */
+  --grid-line: rgba(15, 23, 42, 0.04); /* Đường kẻ ô toán học xám mờ */
   
-  --ink: #1e293b; /* brandDark - Xám tối/Đen chữ chính */
-  --ink-2: #1f3a60; /* brandBlue - Xanh dương trung tính */
-  --ink-3: #64748b; /* brandGray - Xám ghi phụ */
+  --ink: #1a1a1a; /* brandDark - Đen xám chữ chính */
+  --ink-2: #111111; /* brandBlack - Đen đậm cho tiêu đề */
+  --ink-3: #555555; /* brandGray - Xám ghi phụ */
   
   --accent: #c27d00; /* brandGold - Vàng hổ phách chính */
   --accent-hover: #a66b00;
@@ -60,22 +60,22 @@
   --err: #9e2a2b;
   --err-soft: rgba(158, 42, 43, 0.1);
   
-  --shadow: 0 10px 30px rgba(31, 58, 96, 0.06), 0 1px 3px rgba(31, 58, 96, 0.02);
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
   --glass-blur: blur(var(--glass-blur-radius));
   --glass-border: 1px solid rgba(194, 125, 0, 0.2); /* Viền vàng gold mảnh bao quanh card */
 
-  /* Thiết lập riêng biệt cho Topbar để xanh dương đen (brandBlue) dạng Kính mờ trong suốt */
+  /* Thiết lập riêng biệt cho Topbar để xám đen dạng Kính mờ trong suốt */
   --topbar-bg: rgba(250, 248, 245, 0.7);
-  --topbar-border: 1px solid rgba(30, 78, 140, 0.1);
+  --topbar-border: 1px solid rgba(15, 23, 42, 0.08);
   --topbar-link: var(--ink-2);
   --topbar-link-hover: var(--accent);
   --topbar-link-active: var(--accent);
   --topbar-text: var(--ink-2);
   --topbar-text-muted: var(--ink-3);
-  --topbar-btn-bg: rgba(30, 78, 140, 0.05);
-  --topbar-btn-border: 1px solid rgba(30, 78, 140, 0.15);
+  --topbar-btn-bg: rgba(15, 23, 42, 0.04);
+  --topbar-btn-border: 1px solid rgba(15, 23, 42, 0.12);
   --topbar-btn-text: var(--ink-2);
-  --topbar-btn-hover-bg: rgba(30, 78, 140, 0.15);
+  --topbar-btn-hover-bg: rgba(15, 23, 42, 0.12);
 }
 
 [data-theme="dark"] {
