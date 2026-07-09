@@ -103,6 +103,23 @@
 .insight-item .ico { font-size: 1.3rem; flex: none; line-height: 1.2; }
 .insight-item .txt b { display: block; font-size: .92rem; margin-bottom: 2px; color: var(--ink); }
 .insight-item .txt span { font-size: .84rem; color: var(--ink-2); line-height: 1.5; }
+/* Phan loai theo vai tro */
+.role-row { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 12px; padding: 9px 0; }
+.role-row + .role-row { border-top: 1px dashed var(--line); }
+.role-tag { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: .9rem; }
+.role-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.role-bar-track { height: 12px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.role-bar-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+.role-nums { font-size: .86rem; color: var(--ink-2); white-space: nowrap; text-align: right; min-width: 118px; }
+.role-nums b { color: var(--ink); font-size: .95rem; }
+/* Bang top nguoi truy cap */
+.role-badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: .74rem; font-weight: 700; }
+.tu-wrap { max-height: 360px; overflow-y: auto; }
+.tu-wrap table { width: 100%; border-collapse: collapse; }
+.tu-wrap th { position: sticky; top: 0; background: var(--surface-solid, var(--surface)); text-align: left; font-size: .78rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; padding: 10px 16px; border-bottom: 1px solid var(--line); z-index: 1; }
+.tu-wrap td { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.tu-wrap tr:hover td { background: var(--surface-2); }
+.tu-rank { color: var(--ink-3); font-weight: 700; width: 34px; }
 
 .table-card {
   padding: 0;
@@ -192,6 +209,13 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <!-- Phân loại lượt truy cập theo loại tài khoản -->
+  <div class="card" id="roleCard" style="margin-bottom:28px; padding:22px 24px">
+    <h2 style="font-size:1.1rem; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:8px">👥 Phân loại lượt truy cập theo tài khoản</h2>
+    <p style="font-size:.84rem; color:var(--ink-3); margin-bottom:14px">Mỗi nhóm chiếm bao nhiêu lượt vào web và có bao nhiêu người khác nhau.</p>
+    <div id="roleBox"></div>
+  </div>
+
   <!-- Nhận định & khuyến nghị tự động -->
   <div class="card" id="insightsCard" style="margin-bottom:28px; padding:22px 24px">
     <h2 style="font-size:1.1rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px">📊 Nhận định & Khuyến nghị</h2>
@@ -221,6 +245,21 @@ tr:last-child td{border-bottom:none}
     <div class="chart-card">
       <h3>⏰ Khung giờ học sinh tập trung học</h3>
       <div class="chart-container"><canvas id="chartHoursOfDay"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Người truy cập nhiều nhất -->
+  <div class="card" id="topUsersCard" style="margin-bottom:24px; padding:0; overflow:hidden">
+    <h2 style="padding:20px 24px 12px; border-bottom:1px solid var(--line); font-size:1.1rem; font-weight:700">🏆 Người truy cập nhiều nhất <span style="font-size:.8rem;font-weight:500;color:var(--ink-3)">(theo khoảng thời gian đang chọn)</span></h2>
+    <div class="tu-wrap">
+      <table>
+        <thead>
+          <tr><th class="tu-rank">#</th><th>Họ tên</th><th>Loại tài khoản</th><th style="text-align:right">Số lượt</th><th style="text-align:right">Tổng giờ</th></tr>
+        </thead>
+        <tbody id="topUsersBody">
+          <tr><td colspan="5" class="empty" style="padding:18px 24px;color:var(--ink-3)">Đang tải…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -355,7 +394,50 @@ async function taiThongKe() {
   av.textContent = (currentPeriod === 'all' ? 'Toàn thời gian' : 'thời lượng mỗi lần vào web');
 
   renderInsights(t);
+  renderRoles(t.roles || []);
+  renderTopUsers(t.top_users || []);
   veBieuDo(t);
+}
+
+var ROLE_META = {
+  guest:     { label: 'Khách vãng lai',   color: '#94a3b8' },
+  student:   { label: 'Học sinh',         color: '#3b82f6' },
+  parent:    { label: 'Phụ huynh',        color: '#10b981' },
+  teacher:   { label: 'Giáo viên',        color: '#e0a020' },
+  assistant: { label: 'Trợ giảng',        color: '#8b5cf6' },
+  admin:     { label: 'Quản trị (Admin)', color: '#ef4444' }
+};
+function roleMeta(r) { return ROLE_META[r] || { label: r || 'Khác', color: '#94a3b8' }; }
+
+function renderRoles(roles) {
+  var box = document.getElementById('roleBox'); if (!box) return;
+  if (!roles.length) { box.innerHTML = '<div style="color:var(--ink-3);font-size:.9rem">Chưa có dữ liệu.</div>'; return; }
+  var tot = roles.reduce(function (s, r) { return s + (r.luot || 0); }, 0) || 1;
+  var mx = Math.max.apply(null, roles.map(function (r) { return r.luot || 0; })) || 1;
+  box.innerHTML = roles.map(function (r) {
+    var m = roleMeta(r.role);
+    var w = Math.round((r.luot || 0) / mx * 100);
+    var pctTot = Math.round((r.luot || 0) / tot * 100);
+    var who = r.role === 'guest' ? 'khách ẩn danh' : (r.nguoi || 0) + ' người';
+    return '<div class="role-row">'
+      + '<span class="role-tag"><span class="role-dot" style="background:' + m.color + '"></span>' + m.label + '</span>'
+      + '<div class="role-bar-track"><div class="role-bar-fill" style="width:' + w + '%;background:' + m.color + '"></div></div>'
+      + '<span class="role-nums"><b>' + (r.luot || 0).toLocaleString('vi-VN') + '</b> lượt · ' + pctTot + '% · ' + who + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function renderTopUsers(list) {
+  var b = document.getElementById('topUsersBody'); if (!b) return;
+  if (!list.length) { b.innerHTML = '<tr><td colspan="5" class="empty" style="padding:18px 24px;color:var(--ink-3)">Chưa có người dùng định danh trong khoảng này.</td></tr>'; return; }
+  b.innerHTML = list.map(function (u, i) {
+    var m = roleMeta(u.role);
+    return '<tr><td class="tu-rank">' + (i + 1) + '</td>'
+      + '<td style="font-weight:600">' + _escLog(u.name) + '</td>'
+      + '<td><span class="role-badge" style="background:' + getRGBA(m.color, 0.16) + ';color:' + m.color + '">' + m.label + '</span></td>'
+      + '<td style="text-align:right;font-weight:700">' + (u.luot || 0).toLocaleString('vi-VN') + '</td>'
+      + '<td style="text-align:right;color:var(--ink-2)">' + (u.gio || 0).toLocaleString('vi-VN') + 'h</td></tr>';
+  }).join('');
 }
 
 function growthBadge(id, cur, prev, suffix) {
@@ -437,6 +519,18 @@ function renderInsights(t) {
       mpct + '% truy cập từ điện thoại. Ưu tiên giao diện gọn cho màn hình nhỏ: chữ đủ lớn, ảnh đề rõ nét, nút bấm dễ chạm.']);
     else if (mpct <= 35) items.push(['💻', 'Đa số học trên máy tính',
       (100 - mpct) + '% truy cập từ máy tính — phù hợp cho bài giảng dài và đề chi tiết. Vẫn nên đảm bảo bản điện thoại dùng tốt cho các em học di động.']);
+  }
+
+  // 6) Ti le khach vang lai vs tai khoan
+  var roles = t.roles || [];
+  var totR = roles.reduce(function (s, r) { return s + (r.luot || 0); }, 0);
+  var guest = 0; roles.forEach(function (r) { if (r.role === 'guest') guest = r.luot || 0; });
+  if (totR > 0) {
+    var gp = Math.round(guest / totR * 100);
+    if (gp >= 50) items.push(['🕵️', 'Nhiều lượt khách vãng lai',
+      gp + '% lượt truy cập là khách chưa đăng nhập. Đây có thể là người ghé trang công khai (blog, giới thiệu). Hãy thêm lời kêu gọi đăng ký/đăng nhập để biến họ thành học sinh và theo dõi được tiến độ.']);
+    else if (gp > 0) items.push(['🔐', 'Đa số đã đăng nhập',
+      (100 - gp) + '% lượt truy cập đến từ tài khoản đã đăng nhập — thầy nắm rõ ai đang học. Rất tốt cho việc theo dõi từng em.']);
   }
 
   box.innerHTML = items.map(function (it) {
