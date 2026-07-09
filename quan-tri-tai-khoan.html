@@ -80,6 +80,15 @@
     <div id="ttThongBao" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
 
     <button class="btn btn-primary" id="ttNutTao" onclick="taoTaiKhoan()" style="width:100%; justify-content:center">Tạo tài khoản</button>
+
+    <!-- Hộp chứa thông tin tài khoản để copy nhanh -->
+    <div id="ttResultBox" style="display:none; margin-top:20px; padding:16px; border:1px solid var(--ok); border-radius:var(--r-md); background:var(--surface-2); flex-direction:column; gap:12px">
+      <div style="font-weight:800; color:var(--ok); font-size:.9rem; display:flex; align-items:center; gap:6px">
+        <span>✅ ĐÃ TẠO TÀI KHOẢN THÀNH CÔNG!</span>
+      </div>
+      <textarea id="ttCopyArea" readonly style="width:100%; min-height:120px; resize:none; font-family:monospace; font-size:.86rem; padding:10px; border:1px solid var(--line-2); border-radius:var(--r-sm); background:var(--surface); color:var(--ink); line-height:1.5; outline:none;"></textarea>
+      <button class="btn btn-secondary btn-sm" id="ttNutSaoChep" onclick="ttSaoChepInfo()" style="width:100%; justify-content:center; font-weight:700">📋 Sao chép thông tin</button>
+    </div>
   </div>
 </div>
 
@@ -153,6 +162,7 @@ function ttBao(msg, loai) {
 }
 
 async function taoTaiKhoan() {
+  $('ttResultBox').style.display = 'none';
   var loai = $('ttLoai').value;
   var fullName = $('ttHoTen').value.trim();
   var username = ttSlug(fullName);
@@ -187,18 +197,54 @@ async function taoTaiKhoan() {
       return;
     }
     var html;
+    var textVal = '';
     if (data.type === 'hs_ph') {
+      textVal = 'THÔNG TIN TÀI KHOẢN HỌC SINH & PHỤ HUYNH\n\n' +
+                '1. Email hệ thống (tk): ' + data.student.login + '\n' +
+                'Mật khẩu: ' + mk + '\n' +
+                'Vai trò: Học sinh\n\n' +
+                '2. Email hệ thống (tk): ' + data.parent.login + '\n' +
+                'Mật khẩu: ' + mk2 + '\n' +
+                'Vai trò: Phụ huynh';
       html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + data.student.login + '</b><br>👪 PH: <b>' + data.parent.login + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
     } else {
+      var roleName = data.type === 'gv' ? 'Giáo viên' : 'Trợ giảng';
+      textVal = 'THÔNG TIN TÀI KHOẢN\n\n' +
+                'Email hệ thống (tk): ' + data.account.login + '\n' +
+                'Mật khẩu: ' + mk + '\n' +
+                'Vai trò: ' + roleName;
       html = '✅ Đã tạo xong!<br>🔑 Đăng nhập: <b>' + data.account.login + '</b><br>Mật khẩu như đã nhập.';
     }
     ttBao(html, 'ok');
+    $('ttCopyArea').value = textVal;
+    $('ttResultBox').style.display = 'flex';
     $('ttHoTen').value = '';
     ttXemTruoc();
     btn.disabled = false; btn.textContent = 'Tạo tài khoản';
   } catch (e) {
     ttBao('❌ ' + (e.message || e));
     btn.disabled = false; btn.textContent = 'Tạo tài khoản';
+  }
+}
+
+function ttSaoChepInfo() {
+  var area = $('ttCopyArea');
+  area.select();
+  area.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(area.value);
+    var btn = $('ttNutSaoChep');
+    var txt = btn.textContent;
+    btn.textContent = '✓ Đã sao chép!';
+    btn.style.borderColor = 'var(--ok)';
+    btn.style.color = 'var(--ok)';
+    setTimeout(function () {
+      btn.textContent = txt;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 1500);
+  } catch (err) {
+    alert('Không thể sao chép tự động, thầy vui lòng bôi đen chọn thủ công.');
   }
 }
 </script>
