@@ -1280,6 +1280,7 @@ function veSelectorLopHocSinh() {
 
 async function capNhatMeetLinkTheoLop(classId) {
   var hoSo = hoSoNguoiDung;
+  await taiOverrides();   // đảm bảo có dữ liệu buổi dời/nghỉ trước khi dựng banner
   var THU = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' };
 
   // Tên lớp theo class_id
@@ -1558,16 +1559,26 @@ async function veLichDayStaff() {
   });
   
   // Sắp xếp lịch dạy theo ngày gần hôm nay nhất, ưu tiên lớp chưa kết thúc hôm nay và lớp tương lai lên trên, lớp đã dạy xong hôm nay xuống dưới
+  function _ymd2(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
   var schedsWithInfo = validSchedules.map(function (s) {
-    var laHomNay = s.recurrence === 'once' ? (s.date === todayStr) : (s.weekday === todayWeekday);
-    var endTimeStr = s.end_time ? s.end_time.slice(0, 5) : '';
+    // Ngày diễn ra gốc của buổi này
+    var occDate;
+    if (s.recurrence === 'once' && s.date) occDate = s.date;
+    else occDate = _ymd2(new Date(Date.now() + (((s.weekday - todayWeekday) + 7) % 7) * 86400000));
+    // Áp buổi dời/nghỉ tạm thời
+    var ov = ovByOrig[s.id + '|' + occDate];
+    var effDateMoved = (ov && ov.status === 'moved' && ov.new_date) ? ov.new_date : null;
+    var effDateFull = effDateMoved || occDate;
+    var effStart = (ov && ov.status === 'moved' && ov.new_start) ? ov.new_start : s.start_time;
+    var effEnd = (ov && ov.status === 'moved' && ov.new_end) ? ov.new_end : s.end_time;
+    // diff & hasPassed tính theo NGÀY HIỆU LỰC (sau khi dời) để sắp xếp đúng
+    var diff = Math.round((new Date(effDateFull + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
+    var laHomNay = (effDateFull === todayStr);
+    var endTimeStr = effEnd ? effEnd.slice(0, 5) : '';
     var hasPassed = laHomNay && endTimeStr && (endTimeStr < curTime);
-    var diff = ((s.weekday - todayWeekday) + 7) % 7;
     return {
-      s: s,
-      laHomNay: laHomNay,
-      hasPassed: hasPassed,
-      diff: diff
+      s: s, laHomNay: laHomNay, hasPassed: hasPassed, diff: diff,
+      ov: ov, effStart: effStart, effEnd: effEnd, effDateMoved: effDateMoved
     };
   });
   
@@ -1629,14 +1640,11 @@ async function veLichDayStaff() {
     var laHomNay = info.laHomNay;
     var hasPassed = info.hasPassed;
     var tenLop = s.classes ? s.classes.name : '?';
-    // Buổi dời/nghỉ tạm thời cho ngày diễn ra này
-    var _occDate;
-    if (s.recurrence === 'once' && s.date) _occDate = s.date;
-    else { var _nd = new Date(Date.now() + info.diff * 86400000); _occDate = _nd.getFullYear() + '-' + String(_nd.getMonth() + 1).padStart(2, '0') + '-' + String(_nd.getDate()).padStart(2, '0'); }
-    var _ov = ovByOrig[s.id + '|' + _occDate];
-    var effStart = (_ov && _ov.status === 'moved' && _ov.new_start) ? _ov.new_start : s.start_time;
-    var effEnd = (_ov && _ov.status === 'moved' && _ov.new_end) ? _ov.new_end : s.end_time;
-    var effDate = (_ov && _ov.status === 'moved' && _ov.new_date) ? _ov.new_date : null;
+    // Buổi dời/nghỉ đã tính sẵn ở schedsWithInfo
+    var _ov = info.ov;
+    var effStart = info.effStart;
+    var effEnd = info.effEnd;
+    var effDate = info.effDateMoved;
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
     // Ngày của buổi này (once -> s.date; định kỳ -> hôm nay + diff)
