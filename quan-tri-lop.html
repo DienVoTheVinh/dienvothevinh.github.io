@@ -629,19 +629,6 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
 
         <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
-          <label>📷 Hoặc dán / chọn ảnh đề kiểm tra (chụp màn hình rồi ⌘/Ctrl + V)</label>
-          <div id="testDropZone" tabindex="0"
-               style="border:2px dashed var(--line-2); border-radius:var(--r-sm); background:var(--surface-2); padding:22px 14px; text-align:center; cursor:pointer; transition:.15s">
-            <div style="font-size:1.6rem">🖼️</div>
-            <div style="font-weight:700; margin-top:6px; color:var(--ink)">Dán ảnh đề tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
-            <div style="font-size:.8rem; color:var(--ink-3); margin-top:4px">hoặc bấm để chọn ảnh · kéo-thả vào đây · nhiều ảnh được (mỗi ảnh là 1 trang đề)</div>
-          </div>
-          <input type="file" id="bhTestImgFile" accept="image/*" multiple style="display:none">
-          <div id="testImgPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
-          <small style="color:var(--ink-3); margin-top:6px; display:block">Các ảnh sẽ được gộp thành một file PDF đề kiểm tra, học sinh xem như bài test bình thường.</small>
-        </div>
-
-        <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
           <label>✍️ Hoặc soạn đề kiểm tra trực tiếp bằng LaTeX</label>
           <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn LaTeX đề thi ở đây (sử dụng ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
           <small style="color:var(--ink-3); margin-top:4px; display:block">
@@ -655,6 +642,19 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 
         <div id="khungXemTest" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px; margin-bottom:16px">
           <div id="xemTestOutput" style="width:100%; min-height:350px"></div>
+        </div>
+
+        <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
+          <label>📷 Hoặc dán / chọn ảnh đề kiểm tra (chụp màn hình rồi ⌘/Ctrl + V)</label>
+          <div id="testDropZone" tabindex="0"
+               style="border:2px dashed var(--line-2); border-radius:var(--r-sm); background:var(--surface-2); padding:22px 14px; text-align:center; cursor:pointer; transition:.15s">
+            <div style="font-size:1.6rem">🖼️</div>
+            <div style="font-weight:700; margin-top:6px; color:var(--ink)">Dán ảnh đề tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
+            <div style="font-size:.8rem; color:var(--ink-3); margin-top:4px">hoặc bấm để chọn ảnh · kéo-thả vào đây · nhiều ảnh được (mỗi ảnh là 1 trang đề)</div>
+          </div>
+          <input type="file" id="bhTestImgFile" accept="image/*" multiple style="display:none">
+          <div id="testImgPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+          <small style="color:var(--ink-3); margin-top:6px; display:block">Các ảnh sẽ được gộp thành một file PDF đề kiểm tra, học sinh xem như bài test bình thường.</small>
         </div>
       </div>
       
@@ -2646,25 +2646,83 @@ function veBtvnAnh() {
   var box = $('btvnAnhHienCo');
   if (!box) return;
   if (!hwAnhDaCo.length && !hwSelectedFiles.length) { box.innerHTML = ''; return; }
-  var html = '';
-  html += hwAnhDaCo.map(function (p, i) {
-    var u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
-    return '<div style="position:relative">' +
-      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
-      '<button type="button" onclick="boHwAnh(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+  
+  // Tạo danh sách kết hợp để vẽ và cho phép sắp xếp thống nhất
+  var combined = hwAnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hwSelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+    
+  box.innerHTML = combined.map(function (item, i) {
+    var u = '';
+    if (item.type === 'old') {
+      u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + item.value;
+    } else {
+      u = URL.createObjectURL(item.value);
+    }
+    
+    var prevBtn = i > 0 ? '<button type="button" onclick="dichChuyenBtvnAnh(' + i + ', -1)" title="Di chuyển lên trước" style="position:absolute;bottom:4px;left:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">◀</button>' : '';
+    var nextBtn = i < combined.length - 1 ? '<button type="button" onclick="dichChuyenBtvnAnh(' + i + ', 1)" title="Di chuyển ra sau" style="position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">▶</button>' : '';
+    
+    return '<div draggable="true" ondragstart="keoBtvnAnh(event, ' + i + ')" ondragover="event.preventDefault()" ondrop="thaBtvnAnh(event, ' + i + ')" style="position:relative;width:72px;height:72px;border-radius:8px;cursor:move;overflow:visible">' +
+      '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
+      prevBtn + nextBtn +
+      '<button type="button" onclick="boBtvnAnhMoi(' + i + ')" title="Gỡ ảnh" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.2)">×</button>' +
       '</div>';
   }).join('');
-  html += hwSelectedFiles.map(function (f, i) {
-    var u = URL.createObjectURL(f);
-    return '<div style="position:relative">' +
-      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2);opacity:0.8">' +
-      '<button type="button" onclick="boHwAnhMoi(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
-      '</div>';
-  }).join('');
-  box.innerHTML = html;
 }
-function boHwAnh(i) { hwAnhDaCo.splice(i, 1); veBtvnAnh(); }
-function boHwAnhMoi(i) { hwSelectedFiles.splice(i, 1); veBtvnAnh(); }
+function dichChuyenBtvnAnh(index, huong) {
+  var combined = hwAnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hwSelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+  var target = index + huong;
+  if (target < 0 || target >= combined.length) return;
+  var temp = combined[index];
+  combined[index] = combined[target];
+  combined[target] = temp;
+  
+  hwAnhDaCo = [];
+  hwSelectedFiles = [];
+  combined.forEach(function (item) {
+    if (item.type === 'old') hwAnhDaCo.push(item.value);
+    else hwSelectedFiles.push(item.value);
+  });
+  veBtvnAnh();
+}
+var draggedBtvnIndex = null;
+function keoBtvnAnh(event, i) {
+  draggedBtvnIndex = i;
+  event.dataTransfer.effectAllowed = 'move';
+}
+function thaBtvnAnh(event, j) {
+  event.preventDefault();
+  if (draggedBtvnIndex === null || draggedBtvnIndex === j) return;
+  
+  var combined = hwAnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hwSelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+    
+  var movedItem = combined.splice(draggedBtvnIndex, 1)[0];
+  combined.splice(j, 0, movedItem);
+  draggedBtvnIndex = null;
+  
+  hwAnhDaCo = [];
+  hwSelectedFiles = [];
+  combined.forEach(function (item) {
+    if (item.type === 'old') hwAnhDaCo.push(item.value);
+    else hwSelectedFiles.push(item.value);
+  });
+  veBtvnAnh();
+}
+function boBtvnAnhMoi(i) {
+  var combined = hwAnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hwSelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+  combined.splice(i, 1);
+  
+  hwAnhDaCo = [];
+  hwSelectedFiles = [];
+  combined.forEach(function (item) {
+    if (item.type === 'old') hwAnhDaCo.push(item.value);
+    else hwSelectedFiles.push(item.value);
+  });
+  veBtvnAnh();
+}
 
 if ($('bhBtvnFile')) {
   $('bhBtvnFile').addEventListener('change', function () {
