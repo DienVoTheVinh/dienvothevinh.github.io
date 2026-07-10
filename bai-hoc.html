@@ -36,6 +36,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sw-btn:hover { color:var(--ink); border-color:var(--ink-3); }
 .sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
+/* Bỏ thanh nút tính năng trên đỉnh — mọi tính năng nằm trong mục lục trái */
+#boChuyen { display:none !important; }
+.ml-vao-btn { font-size:.66rem; font-weight:800; padding:2px 9px; border-radius:99px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent); cursor:pointer; flex:none; white-space:nowrap; margin-left:6px; }
+.ml-vao-btn:hover { background:var(--accent); color:#fff; }
 
 .lesson-dot {
   width: 10px;
@@ -703,10 +707,19 @@ async function taiMucLuc() {
             '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
             '<span class="tick">' + (it.done ? '✓' : '○') + '</span></a>';
         }).join('');
-        if (!subs) subs = '<a onclick="window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Mở bài giảng</span></a>';
+        // Nộp bài — tách riêng theo Kiểm tra / Bài tập về nhà (chỉ học sinh)
+        if (nguoiDung && !laQuanTriBaiHoc()) {
+          if (td.items.some(function (it) { return it.key === 'btvn'; }))
+            subs += '<a onclick="mlNop(\'' + b.id + '\',\'homework\')" style="color:var(--accent)"><span>📤</span><span>Nộp bài tập về nhà</span></a>';
+          if (td.items.some(function (it) { return it.key === 'test'; }))
+            subs += '<a onclick="mlNop(\'' + b.id + '\',\'test\')" style="color:var(--accent)"><span>📤</span><span>Nộp bài kiểm tra</span></a>';
+        }
+        if (!subs) subs = '<a onclick="vaoBai(\'' + b.id + '\')"><span>📄</span><span>Mở bài giảng</span></a>';
         return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
           '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
-            dotHtml + '<span class="ten">' + mlEsc(b.title) + (isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '') + khoa + '</span><span class="caret2">▶</span>' +
+            dotHtml + '<span class="ten">' + mlEsc(b.title) + (isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '') + khoa + '</span>' +
+            '<button class="ml-vao-btn" title="Mở bài này đầy đủ" onclick="event.stopPropagation();vaoBai(\'' + b.id + '\')">Vào ▸</button>' +
+            '<span class="caret2">▶</span>' +
           '</div>' +
           '<div class="ml-sub">' + subs + '</div>' +
         '</div>';
@@ -726,15 +739,33 @@ function mlToggleBai(id) {
   var el = document.getElementById('mlbai_' + id);
   if (el) el.classList.toggle('open', mlBaiMo[id]);
 }
-async function mlMoMuc(lid, tab, key, loai) {
-  if (lid !== lessonId) {
-    window.location.href = 'bai-hoc?id=' + lid + '&tab=' + tab;
+// Chuyển sang bài khác NGAY TRONG TRANG (không tải lại), mở đúng mục nếu có
+async function switchLesson(lid, tab) {
+  if (lid === lessonId) {
+    if (tab === 'video') { if (window.innerWidth <= 820) hienMobilePane('video'); }
+    else if (tab) chonNoiDung(tab);
     return;
   }
-  if (tab === 'video') {
-    if (window.innerWidth <= 820) hienMobilePane('video');
+  lessonId = lid;
+  mlBaiMo[lid] = true;
+  try { history.replaceState(null, '', 'bai-hoc?id=' + lid + (tab ? '&tab=' + tab : '')); } catch (e) {}
+  var than = $('thanNoiDung'); if (than) than.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang mở bài…</h3></div>';
+  var vc = $('videoWrapper'); if (vc) vc.innerHTML = '';
+  await taiChiTietBaiHoc();   // tự đọc tab từ URL → hiển thị đúng mục
+  taiMucLuc();
+  if (window.innerWidth <= 980) { var sb2 = $('mucLuc'); if (sb2) sb2.classList.remove('open'); }
+}
+function vaoBai(lid) { switchLesson(lid, null); }
+async function mlNop(lid, phanloai) {
+  if (lid !== lessonId) await switchLesson(lid, phanloai === 'homework' ? 'btvn' : 'test');
+  moNopBai(phanloai);
+}
+async function mlMoMuc(lid, tab, key, loai) {
+  if (lid !== lessonId) {
+    await switchLesson(lid, tab);
   } else {
-    chonNoiDung(tab);
+    if (tab === 'video') { if (window.innerWidth <= 820) hienMobilePane('video'); }
+    else chonNoiDung(tab);
   }
   if (loai === 'view' && nguoiDung && !laQuanTriBaiHoc()) {
     await vmDanhDauDaXem(lessonId, key);
@@ -1926,7 +1957,8 @@ function kiemTraVaChayTestTimer() {
 
 function dangKyRealtimeTest() {
   try {
-    sb.channel('lesson-test-' + lessonId)
+    if (window._testChannel) { try { sb.removeChannel(window._testChannel); } catch (e) {} window._testChannel = null; }
+    window._testChannel = sb.channel('lesson-test-' + lessonId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
         if (payload.new) {
           var truocActive = details.test_active;
