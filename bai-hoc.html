@@ -277,7 +277,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 /* ===== Theme CLB M.A.P ===== */
 body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
 #mapWatermark { display:none; position:fixed; right:1.5vw; bottom:8vh; width:min(300px,30vw); opacity:.05; pointer-events:none; z-index:0; user-select:none; }
-body.theme-map #mapWatermark { display:block; }
+body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây khó nhìn */
 </style>
 </head>
 <body>
@@ -298,6 +298,7 @@ body.theme-map #mapWatermark { display:block; }
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+      <img id="mapHeaderLogo" src="logo/CLB-MAP-logo.png" alt="CLB M.A.P" title="Lớp thuộc CLB M.A.P" style="display:none;width:34px;height:34px;border-radius:50%;background:#fff;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
       <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
       <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
@@ -837,6 +838,8 @@ function apDungThemeLopBaiHoc(theme) {
   laLopMAP = theme === 'map';
   if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(laLopMAP);
   else document.body.classList.toggle('theme-map', laLopMAP);
+  var mlogo = document.getElementById('mapHeaderLogo');
+  if (mlogo) mlogo.style.display = laLopMAP ? 'block' : 'none';
 }
 
 function extractYoutubeId(url) {
