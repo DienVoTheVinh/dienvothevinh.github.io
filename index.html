@@ -1670,6 +1670,14 @@ window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY =
 window.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mvX = mouseX; mvY = mouseY; } }, { passive: true });
 
+// Đóng băng hoạt ảnh nền khi đang cuộn -> hết giật khung hình khi lướt (nhất là mobile)
+var vmScrolling = false, _vmScrollT = null;
+window.addEventListener('scroll', function () {
+  vmScrolling = true;
+  clearTimeout(_vmScrollT);
+  _vmScrollT = setTimeout(function () { vmScrolling = false; }, 160);
+}, { passive: true });
+
 var GOLD = '224,160,32';
 var GOLD_GLOW = '#efc046';
 function inkRGB(dark) { return dark ? '206,216,234' : '31,58,96'; }
@@ -1680,7 +1688,7 @@ var NET = [];
 function buildNet() {
   NET = [];
   var count = Math.round((VW * VH) / 19000);
-  count = Math.max(70, Math.min(130, count));
+  count = Math.max(MOB ? 34 : 70, Math.min(MOB ? 50 : 130, count));
   for (var i = 0; i < count; i++) {
     NET.push({
       x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1,
@@ -1736,6 +1744,8 @@ var _prevTs = 0;
 var ANIM_SPEED = 0.6;
 function draw(ts) {
   ts = ts || performance.now();
+  // Đang cuộn: giữ nguyên khung hình nền, không vẽ lại -> cuộn mượt, không giật
+  if (vmScrolling) { _prevTs = ts; requestAnimationFrame(draw); return; }
   var dtf = _prevTs ? Math.min((ts - _prevTs) / 16.667, 2.5) : 1;
   _prevTs = ts;
   var spd = dtf * ANIM_SPEED;
@@ -1779,10 +1789,10 @@ function draw(ts) {
     n.dp = (Z2 + 1) / 2;
   }
 
-  // Doan thang gap khuc noi cac nut gan nhau trong khong gian 3D
+  // Doan thang gap khuc noi cac nut gan nhau trong khong gian 3D (bo qua tren mobile cho nhe)
   var TH = 0.62, TH2 = TH * TH;
   ctx.lineWidth = 1;
-  for (i = 0; i < NET.length; i++) {
+  for (i = 0; !MOB && i < NET.length; i++) {
     var a = NET[i];
     for (j = i + 1; j < NET.length; j++) {
       var b = NET[j];
@@ -1851,46 +1861,22 @@ function draw(ts) {
 }
 draw();
 
-// Preloader: đợi TẢI + DECODE hết ảnh rồi mới ẩn — để khi cuộn xuống chỉ còn hiệu ứng hiện dần, không phải tải nữa (hết lag)
+// Preloader: ẩn nhanh khi trang tải xong (nhẹ, không chặn) — giữ chữ "Đang tải tài nguyên lớp học"
 (function () {
   var pl = document.getElementById('vm-preloader');
-  var txt = pl ? pl.querySelector('.vm-preloader-text') : null;
   var hidden = false;
   function hideLoader() {
     if (hidden) return; hidden = true;
     if (pl && !pl.classList.contains('fade-out')) {
       pl.classList.add('fade-out');
-      setTimeout(function () { pl.style.display = 'none'; }, 600);
+      setTimeout(function () { pl.style.display = 'none'; }, 500);
     }
   }
-  function preloadImages() {
-    // Tất cả ảnh nội dung (bỏ qua logo trong preloader)
-    var imgs = [].slice.call(document.images).filter(function (im) {
-      return im && im.getAttribute('src') && !(pl && pl.contains(im));
-    });
-    var total = imgs.length, done = 0;
-    if (!total) { setTimeout(hideLoader, 300); return; }
-    function tick() {
-      done++;
-      if (txt) txt.textContent = 'Đang tải hình ảnh lớp học… ' + Math.round(done / total * 100) + '%';
-      if (done >= total) setTimeout(hideLoader, 260);
-    }
-    imgs.forEach(function (im) {
-      try { im.loading = 'eager'; } catch (e) {}   // ép tải sớm, không chờ cuộn tới
-      var fin = function () { tick(); };
-      var dec = function () { if (im.decode) { im.decode().then(fin).catch(fin); } else fin(); };
-      if (im.complete && im.naturalWidth > 0) { dec(); }
-      else if (im.complete) { fin(); }             // đã xong nhưng lỗi
-      else {
-        im.addEventListener('load', dec, { once: true });
-        im.addEventListener('error', fin, { once: true });
-      }
-    });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', preloadImages);
-  else preloadImages();
-  // An toàn: dù mạng chậm/ảnh lỗi cũng ẩn sau tối đa 10 giây
-  setTimeout(hideLoader, 10000);
+  // Ảnh decode bất đồng bộ để không giật khi hiện ra
+  try { [].forEach.call(document.images, function (im) { im.decoding = 'async'; }); } catch (e) {}
+  if (document.readyState === 'complete') hideLoader();
+  else window.addEventListener('load', hideLoader);
+  setTimeout(hideLoader, 3500); // chốt an toàn
 })();
 </script>
 </body>
