@@ -289,6 +289,16 @@ body.theme-map #mapWatermark { display:block; }
     </div>
   </header>
   
+  <!-- 📌 Dặn dò chung của thầy (hiện cho tất cả, kể cả học sinh) -->
+  <div id="lessonNoteBanner" style="display:none; margin:14px 20px 0; padding:14px 18px 15px; border-radius:16px; background:linear-gradient(135deg, rgba(224,160,32,0.14), rgba(181,96,52,0.06)); border:1px solid rgba(224,160,32,0.32); box-shadow:0 4px 18px rgba(224,160,32,0.10); position:relative; overflow:hidden">
+    <div style="position:absolute; inset:0 auto 0 0; width:5px; background:linear-gradient(180deg, var(--accent), rgba(181,96,52,0.7))"></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:7px; padding-left:6px">
+      <span style="font-size:1.2rem">📌</span>
+      <span style="font-weight:800; color:var(--accent); letter-spacing:.01em; font-size:1rem">Dặn dò của thầy</span>
+    </div>
+    <div id="lessonNoteContent" style="white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding-left:6px"></div>
+  </div>
+
   <!-- Ghi chú nội bộ dành cho Giáo viên / Trợ giảng -->
   <div id="teacherNotesBanner" style="display:none; background:rgba(37,99,235,0.07); border-bottom:1px solid rgba(37,99,235,0.18); color:var(--ink); padding:12px 20px; font-size:0.9rem; align-items:center; gap:12px; flex-wrap:wrap; border-left:4px solid var(--accent); z-index: 10;">
     <div style="flex:1; min-width:300px">
@@ -371,9 +381,7 @@ body.theme-map #mapWatermark { display:block; }
         <div class="pane-control">
           <button class="ctrl-btn" onclick="phongToPane('video')" title="Phóng to Video" id="btnMaxVideo">⛶</button>
         </div>
-        <div class="video-wrapper" id="videoWrapper">
-          <div class="no-content"><div class="ic">🎬</div><h3>Đang tải video bài giảng…</h3></div>
-        </div>
+        <div class="video-wrapper" id="videoWrapper"></div>
       </section>
 
       <div class="resizer" id="workspaceResizer"></div>
@@ -871,6 +879,7 @@ function renderBaiHoc() {
       '<a class="btn btn-secondary btn-sm" style="padding:3px 10px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở cửa sổ riêng</a></div>';
   } else {
     window.khongCoVideo = true;
+    if (vc) vc.innerHTML = ''; // Không có video: không hiện hoạt ảnh tải video
   }
   // Bố trí giao diện thuần tài liệu khi không có video (ẩn khung video, không hiện ô "Không có video")
   if (kgVideo) {
@@ -939,9 +948,23 @@ function renderBaiHoc() {
     $('nutBuoiHS').style.display = '';
   }
 
-  // Hiển thị ghi chú nội bộ của giáo viên
+  // Tách ghi chú: phần công khai (dặn dò chung) + phần nội bộ cho GV
   var noteParts = (details.note || '').split('---TEACHER_NOTE---');
+  var publicNote = (noteParts[0] || '').trim();
   var teacherNote = (noteParts[1] || '').trim();
+
+  // 📌 Dặn dò chung — hiện cho TẤT CẢ (kể cả học sinh)
+  var noteBanner = $('lessonNoteBanner');
+  if (noteBanner) {
+    if (publicNote) {
+      noteBanner.style.display = 'block';
+      $('lessonNoteContent').textContent = publicNote;
+    } else {
+      noteBanner.style.display = 'none';
+    }
+  }
+
+  // Ghi chú nội bộ — chỉ GV/Trợ giảng/Admin
   var bannerNotes = $('teacherNotesBanner');
   if (bannerNotes) {
     if (laQuanTriBaiHoc() && teacherNote) {
@@ -1548,7 +1571,9 @@ async function renderBTVN(than) {
   var laAdmin = laQuanTriBaiHoc();
 
   var deHtml = deBai
-    ? '<div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px">' + btvnEsc(deBai) + '</div>'
+    ? '<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(224,160,32,0.3);background:linear-gradient(135deg, rgba(224,160,32,0.10), rgba(181,96,52,0.05))">' +
+      '<div style="display:flex;align-items:center;gap:7px;padding:9px 14px;font-weight:800;color:var(--accent);font-size:.9rem;border-bottom:1px solid rgba(224,160,32,0.2)"><span>📝</span> Ghi chú cho học sinh</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.62;font-size:.95rem;color:var(--ink);padding:13px 16px">' + btvnEsc(deBai) + '</div></div>'
     : '';
   var latexHtml = coLatex
     ? '<div id="btvnLatexBox" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>'

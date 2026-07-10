@@ -665,7 +665,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <input type="datetime-local" class="input" id="bhBtvnDue" style="max-width:260px">
         </div>
         <div class="field">
-          <label>🏠 Ghi chú / đề ngắn <small style="color:var(--ink-3);font-weight:400">(khác với bài kiểm tra — học sinh xem đề và nộp bài về nhà riêng)</small></label>
+          <label>🏠 Ghi chú cho HS <small style="color:var(--ink-3);font-weight:400">(học sinh xem ghi chú này ở tab Bài tập về nhà, rồi nộp bài riêng)</small></label>
           <textarea class="input" id="bhBtvnText" rows="3" placeholder="Ghi chú, dặn dò, hạn nộp… (đề chi tiết có thể dùng PDF / LaTeX / ảnh bên dưới)" style="resize:vertical"></textarea>
         </div>
 
@@ -2809,6 +2809,40 @@ function veAnhTest() {
       '</div>';
   }).join('');
 }
+/* ===== Lightbox: bấm thumbnail ảnh đề để xem phóng to ===== */
+(function () {
+  function moAnhLightbox(src) {
+    var lb = document.getElementById('anhLightbox');
+    if (!lb) {
+      lb = document.createElement('div');
+      lb.id = 'anhLightbox';
+      lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+      lb.innerHTML = '<img id="anhLightboxImg" alt="Ảnh đề" style="max-width:95vw;max-height:92vh;border-radius:12px;box-shadow:0 12px 55px rgba(0,0,0,.6);object-fit:contain">' +
+        '<button type="button" aria-label="Đóng" style="position:absolute;top:18px;right:22px;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:1.6rem;cursor:pointer;line-height:1">×</button>';
+      lb.addEventListener('click', dongLightbox);
+      document.body.appendChild(lb);
+    }
+    document.getElementById('anhLightboxImg').src = src;
+    lb.style.display = 'flex';
+  }
+  function dongLightbox() {
+    var lb = document.getElementById('anhLightbox');
+    if (lb) { lb.style.display = 'none'; var im = document.getElementById('anhLightboxImg'); if (im) im.src = ''; }
+  }
+  window.moAnhLightbox = moAnhLightbox;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dongLightbox(); });
+  ['anhHienCo', 'btvnAnhHienCo', 'testImgPreview'].forEach(function (id) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      if (e.target && e.target.tagName === 'IMG' && e.target.src) moAnhLightbox(e.target.src);
+    });
+  });
+  var st = document.createElement('style');
+  st.textContent = '#anhHienCo img,#btvnAnhHienCo img,#testImgPreview img{cursor:zoom-in;transition:transform .12s}#anhHienCo img:hover,#btvnAnhHienCo img:hover,#testImgPreview img:hover{transform:scale(1.06)}';
+  document.head.appendChild(st);
+})();
+
 function _loadImgEl(src) {
   return new Promise(function (res, rej) {
     var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = src;
