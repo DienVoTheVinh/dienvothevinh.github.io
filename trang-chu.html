@@ -795,7 +795,7 @@ var ovByOrig = {}, ovMakeupByDate = {};   // buổi dời/nghỉ tạm thời
 async function taiOverrides() {
   ovByOrig = {}; ovMakeupByDate = {};
   try {
-    var r = await sb.from('schedule_overrides').select('id, schedule_id, class_id, orig_date, status, new_date, new_start, new_end, note');
+    var r = await sb.rpc('lay_overrides');   // HS/PH: note tự động bị ẩn (chỉ GV quản lý mới thấy)
     (r.data || []).forEach(function (o) {
       ovByOrig[o.schedule_id + '|' + o.orig_date] = o;
       if (o.status === 'moved' && o.new_date) (ovMakeupByDate[o.new_date] = ovMakeupByDate[o.new_date] || []).push(o);
@@ -1304,7 +1304,7 @@ async function capNhatMeetLinkTheoLop(classId) {
 
   // Các buổi học của lớp liên quan
   var rs = await sb.from('schedules')
-    .select('class_id, weekday, start_time, teacher_id, meet_link, recurrence, date, start_date, end_date')
+    .select('id, class_id, weekday, start_time, teacher_id, meet_link, recurrence, date, start_date, end_date')
     .in('class_id', relevantIds);
   
   var tzOffset = (new Date()).getTimezoneOffset() * 60000;
@@ -1331,19 +1331,37 @@ async function capNhatMeetLinkTheoLop(classId) {
     return parts.join(' · ');
   }
 
-  var jsThu = new Date().getDay();
-  var homNay = jsThu === 0 ? 7 : jsThu;
+  // Mở rộng thành các lần diễn ra thực tế 14 ngày tới, áp dụng buổi dời/nghỉ
+  function _ymd(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
+  var occ = [];
+  for (var di = 0; di < 14; di++) {
+    var dObj = new Date(); dObj.setHours(0, 0, 0, 0); dObj.setDate(dObj.getDate() + di);
+    var dKey = _ymd(dObj);
+    var wdv = (dObj.getDay() === 0) ? 7 : dObj.getDay();
+    sessions.forEach(function (s) {
+      var isOccur = s.recurrence === 'once' ? (s.date === dKey) : (s.weekday === wdv);
+      if (!isOccur) return;
+      var ov = ovByOrig[s.id + '|' + dKey];
+      if (ov && (ov.status === 'cancelled' || ov.status === 'moved')) return; // buổi gốc đã nghỉ/dời
+      occ.push({ s: s, delta: di, weekday: wdv, gio: s.start_time });
+    });
+    (ovMakeupByDate[dKey] || []).forEach(function (o) {
+      var s = sessions.find(function (x) { return x.id === o.schedule_id; });
+      if (!s) return;
+      occ.push({ s: s, delta: di, weekday: wdv, gio: o.new_start || s.start_time, makeup: true });
+    });
+  }
+  occ.sort(function (a, b) { return a.delta - b.delta || (a.gio || '').localeCompare(b.gio || ''); });
 
   // Buổi hôm nay -> link chính + phụ đề
-  var todaySessions = sessions.filter(function (s) { return s.weekday === homNay; })
-    .sort(function (a, b) { return (a.start_time || '').localeCompare(b.start_time || ''); });
+  var todayOcc = occ.filter(function (o) { return o.delta === 0; });
   var meetLink = '';
   var subText = '';
-  if (todaySessions.length) {
-    var sToday = todaySessions[0];
-    meetLink = linkCuaBuoi(sToday);
-    var gio = sToday.start_time ? sToday.start_time.slice(0, 5) : '';
-    subText = '🟢 Buổi hôm nay' + (gio ? (' lúc ' + gio) : '') + ' — ' + (moTaBuoi(sToday) || 'Lớp học trực tuyến');
+  if (todayOcc.length) {
+    var oToday = todayOcc[0];
+    meetLink = linkCuaBuoi(oToday.s);
+    var gioT = oToday.gio ? oToday.gio.slice(0, 5) : '';
+    subText = '🟢 Buổi hôm nay' + (gioT ? (' lúc ' + gioT) : '') + (oToday.makeup ? ' (buổi bù)' : '') + ' — ' + (moTaBuoi(oToday.s) || 'Lớp học trực tuyến');
   } else {
     meetLink = classLinkMap[relevantIds[0]] || lkCommon || '';
     if (!meetLink) { relevantIds.forEach(function (id) { if (!meetLink && classLinkMap[id]) meetLink = classLinkMap[id]; }); }
@@ -1359,21 +1377,18 @@ async function capNhatMeetLinkTheoLop(classId) {
     $('linkMeetHoc').style.pointerEvents = 'none'; $('linkMeetHoc').style.opacity = '0.55';
   }
 
-  // Danh sách buổi sắp tới (hôm nay + các buổi kế tiếp)
-  var withDelta = sessions.map(function (s) { return { s: s, d: (s.weekday - homNay + 7) % 7 }; })
-    .sort(function (a, b) { return a.d - b.d || (a.s.start_time || '').localeCompare(b.s.start_time || ''); });
-  var upHtml = withDelta.slice(0, 5).map(function (o) {
+  // Danh sách buổi sắp tới
+  var upHtml = occ.slice(0, 5).map(function (o) {
     var s = o.s;
-    var nhanThu = o.d === 0 ? 'Hôm nay' : (o.d === 1 ? 'Ngày mai' : (THU[s.weekday] || ''));
-    var gio = s.start_time ? s.start_time.slice(0, 5) : '';
+    var nhanThu = o.delta === 0 ? 'Hôm nay' : (o.delta === 1 ? 'Ngày mai' : (THU[o.weekday] || ''));
+    var gio = o.gio ? o.gio.slice(0, 5) : '';
     var link = linkCuaBuoi(s);
-    var laHomNay = (s.weekday === homNay);
     var aHtml = link
       ? '<a href="' + link + '" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap;font-size:.85rem">Vào phòng →</a>'
       : '<span style="color:var(--ink-3);font-size:.8rem;white-space:nowrap">chưa có link</span>';
     return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2)">' +
       '<div style="font-size:.86rem;color:var(--ink-2);min-width:0">' +
-        '<b style="color:' + (laHomNay ? 'var(--ok)' : 'var(--ink)') + '">' + nhanThu + (gio ? (' · ' + gio) : '') + '</b> — ' + (moTaBuoi(s) || 'Lớp học') +
+        '<b style="color:' + (o.delta === 0 ? 'var(--ok)' : 'var(--ink)') + '">' + nhanThu + (gio ? (' · ' + gio) : '') + '</b>' + (o.makeup ? ' <span style="color:var(--ok);font-size:.72rem;font-weight:700">(bù)</span>' : '') + ' — ' + (moTaBuoi(s) || 'Lớp học') +
       '</div>' + aHtml +
     '</div>';
   }).join('');
@@ -1451,40 +1466,51 @@ async function taiThongKeTongHopHS() {
   if (activeClassId && activeClassId !== 'all') {
     classIds = [activeClassId];
   } else {
-    classIds = hoSoNguoiDung.class_students.map(function(c) { return c.class_id; });
+    classIds = (hoSoNguoiDung.class_students || []).map(function (c) { return c.class_id; });
   }
-  var rLessons = await sb.from('lessons').select('id').in('class_id', classIds);
-  var lessonIds = (rLessons.data || []).map(function (l) { return l.id; });
-  
-  if (lessonIds.length > 0) {
-    var att = await sb.from('attempts')
-      .select('score')
-      .in('lesson_id', lessonIds)
-      .not('submitted_at', 'is', null);
-      
-    if (att.data && att.data.length) {
-      var tb = att.data.reduce(function (s, a) { return s + (a.score || 0); }, 0) / att.data.length;
-      $('tkDiem').textContent = tb.toFixed(1);
-      $('tkBaiHoc').textContent = att.data.length;
-    } else {
-      $('tkDiem').textContent = '—';
-      $('tkBaiHoc').textContent = '0';
-    }
-  } else {
-    $('tkDiem').textContent = '—';
-    $('tkBaiHoc').textContent = '0';
+  if (!classIds.length) {
+    $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0'; $('tkChuyenCan').textContent = '—';
+    return;
   }
 
-  var dd = await sb.from('attendance')
-    .select('status')
-    .in('class_id', classIds);
-    
-  if (dd.data && dd.data.length) {
-    var coMat = dd.data.filter(function (d) { return d.status !== 'absent'; }).length;
-    $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
-  } else {
-    $('tkChuyenCan').textContent = '—';
-  }
+  // Bài đã hoàn thành + Điểm TB: gộp bài tập theo bài giảng + đề luyện của lớp
+  try {
+    var rLessons = await sb.from('lessons').select('id').in('class_id', classIds);
+    var lessonIds = (rLessons.data || []).map(function (l) { return l.id; });
+    var rExams = await sb.from('exams').select('id').in('class_id', classIds);
+    var examIds = (rExams.data || []).map(function (e) { return e.id; });
+
+    var atts = [];
+    if (lessonIds.length) {
+      var a1 = await sb.from('attempts').select('score').in('lesson_id', lessonIds).not('submitted_at', 'is', null);
+      if (a1.data) atts = atts.concat(a1.data);
+    }
+    if (examIds.length) {
+      var a2 = await sb.from('attempts').select('score').in('exam_id', examIds).not('submitted_at', 'is', null);
+      if (a2.data) atts = atts.concat(a2.data);
+    }
+    if (atts.length) {
+      var withScore = atts.filter(function (a) { return a.score != null; });
+      $('tkBaiHoc').textContent = atts.length;
+      $('tkDiem').textContent = withScore.length ? (withScore.reduce(function (s, a) { return s + a.score; }, 0) / withScore.length).toFixed(1) : '—';
+    } else {
+      $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0';
+    }
+  } catch (e) { $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0'; }
+
+  // Chuyên cần: điểm danh của chính em trong lớp (attendance nối qua class_sessions)
+  try {
+    var dd = await sb.from('attendance')
+      .select('status, class_sessions!inner(class_id)')
+      .eq('student_id', hoSoNguoiDung.id)
+      .in('class_sessions.class_id', classIds);
+    if (dd.data && dd.data.length) {
+      var coMat = dd.data.filter(function (d) { return d.status !== 'absent'; }).length;
+      $('tkChuyenCan').textContent = Math.round(100 * coMat / dd.data.length) + '%';
+    } else {
+      $('tkChuyenCan').textContent = dd.error ? '—' : '0%';
+    }
+  } catch (e) { $('tkChuyenCan').textContent = '—'; }
 }
 
 function formatNgayDep(dStr) {
@@ -1603,6 +1629,14 @@ async function veLichDayStaff() {
     var laHomNay = info.laHomNay;
     var hasPassed = info.hasPassed;
     var tenLop = s.classes ? s.classes.name : '?';
+    // Buổi dời/nghỉ tạm thời cho ngày diễn ra này
+    var _occDate;
+    if (s.recurrence === 'once' && s.date) _occDate = s.date;
+    else { var _nd = new Date(Date.now() + info.diff * 86400000); _occDate = _nd.getFullYear() + '-' + String(_nd.getMonth() + 1).padStart(2, '0') + '-' + String(_nd.getDate()).padStart(2, '0'); }
+    var _ov = ovByOrig[s.id + '|' + _occDate];
+    var effStart = (_ov && _ov.status === 'moved' && _ov.new_start) ? _ov.new_start : s.start_time;
+    var effEnd = (_ov && _ov.status === 'moved' && _ov.new_end) ? _ov.new_end : s.end_time;
+    var effDate = (_ov && _ov.status === 'moved' && _ov.new_date) ? _ov.new_date : null;
     var isOnline = s.mode === 'online' || (s.classes && s.classes.mode === 'online');
     var meet = s.meet_link || meetMap[s.class_id] || globalMeetLink;
     // Ngày của buổi này (once -> s.date; định kỳ -> hôm nay + diff)
@@ -1639,7 +1673,11 @@ async function veLichDayStaff() {
     }
       
     var classDateStr = '';
-    if (s.recurrence === 'once' && s.date) {
+    var _thuWd = s.weekday;
+    if (effDate) {
+      classDateStr = formatNgayDep(effDate);
+      var _ed = new Date(effDate + 'T00:00:00'); _thuWd = (_ed.getDay() === 0 ? 7 : _ed.getDay());
+    } else if (s.recurrence === 'once' && s.date) {
       classDateStr = formatNgayDep(s.date);
     } else {
       var nextDate = new Date(Date.now() + info.diff * 86400000);
@@ -1648,7 +1686,7 @@ async function veLichDayStaff() {
       var yyyy = nextDate.getFullYear();
       classDateStr = dd + '/' + mm + '/' + yyyy;
     }
-    var thuText = classDateStr + ' (' + TEN_THU_VIET[s.weekday] + ')';
+    var thuText = classDateStr + ' (' + TEN_THU_VIET[_thuWd] + ')';
       
     var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\')">📝 Điểm danh</button>';
     
@@ -1666,11 +1704,16 @@ async function veLichDayStaff() {
     } else if (laHomNay) {
       badgeHtml = ' <span class="badge badge-accent">Hôm nay</span>';
     }
+    if (_ov && _ov.status === 'cancelled') { badgeHtml += ' <span class="badge" style="background:rgba(239,68,68,.9);color:#fff">🚫 Nghỉ</span>'; rowStyle += 'opacity:.55;'; }
+    else if (_ov && _ov.status === 'moved') { badgeHtml += ' <span class="badge" style="background:rgba(245,158,11,.92);color:#fff">↷ Đã dời</span>'; }
+    var gioText = (_ov && _ov.status === 'cancelled')
+      ? '<span style="text-decoration:line-through;opacity:.7">' + s.start_time.slice(0,5) + ' – ' + s.end_time.slice(0,5) + '</span>'
+      : (effStart.slice(0,5) + ' – ' + effEnd.slice(0,5));
 
     return '<tr style="' + rowStyle + '">' +
       '<td style="' + tdSty + '"><b>' + tenLop + '</b>' + badgeHtml + '</td>' +
       '<td style="' + tdSty + '">' + thuText + '</td>' +
-      '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + s.start_time.slice(0,5) + ' – ' + s.end_time.slice(0,5) + '</td>' +
+      '<td style="' + tdSty + '; font-variant-numeric:tabular-nums">' + gioText + '</td>' +
       '<td style="' + tdSty + '">' + phongDichVu + '</td>' +
       '<td style="' + tdSty + '">' + btnDiemDanh + '</td>' +
       '</tr>';
