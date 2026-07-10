@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giám sát số buổi — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.2">
+<style>
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 36px 0 18px; }
+.month-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.month-bar .mlabel { font-size: 1.15rem; font-weight: 800; min-width: 190px; text-align: center; }
+.month-bar button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-size: 1.1rem; }
+.month-bar button:hover { border-color: var(--accent); color: var(--accent); }
+.month-bar .today-btn { width: auto; padding: 0 16px; font-size: .9rem; font-weight: 700; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 26px; }
+.metric { display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); }
+.metric .ic { width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; font-size: 1.35rem; flex: none; color: #fff; }
+.metric .val { font-size: 1.9rem; font-weight: 800; line-height: 1.1; color: var(--ink); }
+.metric small { color: var(--ink-3); font-size: .82rem; font-weight: 600; }
+.tbl-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow); }
+.tbl-card h2 { padding: 18px 22px 12px; border-bottom: 1px solid var(--line); font-size: 1.08rem; font-weight: 800; }
+.tbl-wrap { overflow-x: auto; }
+table.gs { width: 100%; border-collapse: collapse; min-width: 640px; }
+table.gs th { text-align: left; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); padding: 11px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.gs td { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: .92rem; vertical-align: middle; }
+table.gs tr:last-child td { border-bottom: none; }
+table.gs tbody tr:hover td { background: var(--surface-2); }
+.num { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar-track { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 5px; min-width: 90px; }
+.bar-fill { height: 100%; border-radius: 99px; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+.pill.ok { background: rgba(16,185,129,.16); color: #10b981; }
+.pill.warn { background: rgba(245,158,11,.16); color: #f59e0b; }
+.pill.low { background: rgba(239,68,68,.16); color: #ef4444; }
+.mode-tag { font-size: .72rem; color: var(--ink-3); }
+.grade-row td { background: var(--surface-2); font-weight: 800; font-size: .82rem; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.empty { text-align: center; color: var(--ink-3); padding: 30px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display:inline-flex;align-items:center;gap:0;"><span class="brand-vinh" style="color:var(--accent)!important;">Vinh</span><span class="brand-math" style="color:var(--topbar-text,#fff)!important;">Math</span></span> <small>· Giám sát buổi</small></a>
+    <nav class="navlinks"></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label" style="color:var(--accent);font-weight:800;letter-spacing:.08em;font-size:.8rem">KHU VỰC QUẢN TRỊ</div>
+    <h1 style="margin:6px 0 0">GIÁM SÁT SỐ BUỔI DẠY &amp; HỌC</h1>
+    <p style="margin-top:6px;color:var(--ink-2)" id="moTa">Theo dõi mỗi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).</p>
+  </div>
+
+  <div class="month-bar">
+    <button onclick="doiThang(-1)" title="Tháng trước">‹</button>
+    <div class="mlabel" id="mlabel">—</div>
+    <button onclick="doiThang(1)" title="Tháng sau">›</button>
+    <button class="today-btn" onclick="veThangNay()">Tháng này</button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <span class="ic" style="background:linear-gradient(135deg,#10b981,#059669)">✅</span>
+      <div><small>Tổng buổi đã dạy</small><div class="val" id="mDaDay">—</div></div>
+    </div>
+    <div class="metric">
+      <span class="ic" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">🎯</span>
+      <div><small>Tổng buổi cần dạy</small><div class="val" id="mCanDay">—</div></div>
+    </div>
+    <div class="metric">
+      <span class="ic" style="background:linear-gradient(135deg,#e0a020,#b56034)">🏫</span>
+      <div><small>Lớp đã đủ buổi</small><div class="val" id="mDuLop">—</div></div>
+    </div>
+  </div>
+
+  <div class="tbl-card">
+    <h2 id="tblTitle">Chi tiết theo lớp</h2>
+    <div class="tbl-wrap">
+      <table class="gs">
+        <thead>
+          <tr>
+            <th>Lớp</th><th>Giáo viên</th>
+            <th class="num">Đã dạy</th><th class="num">Cần dạy</th>
+            <th>Tiến độ</th><th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody id="gsBody">
+          <tr><td colspan="6" class="empty">Đang tải…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/menu-v5.js"></script>
+<script>
+var curMonth = new Date(); curMonth.setDate(1);
+var mapGV = {};
+var laAdmin = false;
+
+var THANG_VN = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+
+function ymd(d) {
+  var m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+function doiThang(delta) { curMonth.setMonth(curMonth.getMonth() + delta); taiGiamSat(); }
+function veThangNay() { curMonth = new Date(); curMonth.setDate(1); taiGiamSat(); }
+function esc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'; }); }
+
+(async function () {
+  if (typeof daKetNoi === 'function' && !daKetNoi()) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Chưa kết nối dữ liệu.</td></tr>'; return; }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (['admin', 'teacher'].indexOf(hoSo.role) === -1) { window.location.href = 'lop-hoc'; return; }
+  laAdmin = hoSo.role === 'admin';
+  document.getElementById('moTa').textContent = laAdmin
+    ? 'Theo dõi mọi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).'
+    : 'Theo dõi các lớp của bạn trong tháng đã dạy đủ buổi hay chưa.';
+  // Bản đồ tên giáo viên
+  try {
+    var rp = await sb.from('profiles').select('id, full_name').in('role', ['admin', 'teacher']);
+    (rp.data || []).forEach(function (p) { mapGV[p.id] = p.full_name; });
+  } catch (e) {}
+  taiGiamSat();
+})();
+
+async function taiGiamSat() {
+  document.getElementById('mlabel').textContent = THANG_VN[curMonth.getMonth()] + ' / ' + curMonth.getFullYear();
+  var from = new Date(curMonth.getFullYear(), curMonth.getMonth(), 1);
+  var to = new Date(curMonth.getFullYear(), curMonth.getMonth() + 1, 0);
+  document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Đang tải…</td></tr>';
+
+  var r = await sb.rpc('giam_sat_buoi', { p_from: ymd(from), p_to: ymd(to) });
+  if (r.error) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Lỗi tải dữ liệu: ' + esc(r.error.message) + '</td></tr>'; return; }
+  var rows = r.data || [];
+  render(rows);
+}
+
+function render(rows) {
+  var tongDaDay = 0, tongCanDay = 0, duLop = 0, coBuoi = 0;
+  rows.forEach(function (x) {
+    tongDaDay += x.actual || 0; tongCanDay += x.expected || 0;
+    if ((x.expected || 0) > 0) { coBuoi++; if ((x.actual || 0) >= x.expected) duLop++; }
+  });
+  document.getElementById('mDaDay').textContent = tongDaDay;
+  document.getElementById('mCanDay').textContent = tongCanDay;
+  document.getElementById('mDuLop').textContent = duLop + ' / ' + coBuoi;
+
+  if (!rows.length) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Chưa có lớp nào trong phạm vi của bạn.</td></tr>'; return; }
+
+  // Nhóm theo khối
+  var byGrade = {};
+  rows.forEach(function (x) { (byGrade[x.grade || 0] = byGrade[x.grade || 0] || []).push(x); });
+  var grades = Object.keys(byGrade).sort(function (a, b) { return a - b; });
+
+  var html = '';
+  grades.forEach(function (g) {
+    html += '<tr class="grade-row"><td colspan="6">Khối ' + (g === '0' ? '—' : g) + '</td></tr>';
+    byGrade[g].forEach(function (x) {
+      var exp = x.expected || 0, act = x.actual || 0;
+      var thieu = Math.max(0, exp - act);
+      var pct = exp > 0 ? Math.min(100, Math.round(act / exp * 100)) : 0;
+      var cls = exp === 0 ? 'warn' : (act >= exp ? 'ok' : (pct >= 60 ? 'warn' : 'low'));
+      var barColor = cls === 'ok' ? '#10b981' : (cls === 'warn' ? '#f59e0b' : '#ef4444');
+      var trangThai = exp === 0 ? 'Không có lịch cố định'
+        : (act >= exp ? '✓ Đủ buổi' : ('Thiếu ' + thieu + ' buổi'));
+      var gv = mapGV[x.teacher_id] || 'Thầy Điền Võ Thế Vinh';
+      if (x.co_teacher_id && mapGV[x.co_teacher_id]) gv += ' & ' + mapGV[x.co_teacher_id];
+      var modeTag = x.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
+      html += '<tr>'
+        + '<td><div style="font-weight:700">' + esc(x.name) + (x.is_specialized ? ' <span class="mode-tag">⭐ Chuyên</span>' : '') + '</div><div class="mode-tag">' + modeTag + '</div></td>'
+        + '<td style="color:var(--ink-2)">' + esc(gv) + '</td>'
+        + '<td class="num" style="font-size:1.05rem">' + act + '</td>'
+        + '<td class="num" style="color:var(--ink-2)">' + exp + '</td>'
+        + '<td><div style="font-size:.78rem;color:var(--ink-3)">' + pct + '%</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div></td>'
+        + '<td><span class="pill ' + cls + '">' + trangThai + '</span></td>'
+        + '</tr>';
+    });
+  });
+  document.getElementById('gsBody').innerHTML = html;
+}
+</script>
+</body>
+</html>
