@@ -2827,7 +2827,7 @@ function veAnhTest() {
     if (!lb) {
       lb = document.createElement('div');
       lb.id = 'anhLightbox';
-      lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+      lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
       lb.innerHTML = '<img id="anhLightboxImg" alt="Ảnh đề" style="max-width:95vw;max-height:92vh;border-radius:12px;box-shadow:0 12px 55px rgba(0,0,0,.6);object-fit:contain">' +
         '<button type="button" aria-label="Đóng" style="position:absolute;top:18px;right:22px;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:1.6rem;cursor:pointer;line-height:1">×</button>';
       lb.addEventListener('click', dongLightbox);
