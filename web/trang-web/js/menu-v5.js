@@ -29,6 +29,7 @@ function apDungMenu(role) {
           { path: 'quan-tri-lich', label: 'Lịch học' },
           { path: 'quan-tri-de', label: 'Luyện đề' },
           { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-buoi-day', label: 'Giám sát buổi' } : null),
           (role === 'admin' ? { path: 'quan-tri-truy-cap', label: 'Giám sát' } : null)
         ].filter(Boolean)
       },
