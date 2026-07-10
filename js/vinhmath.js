@@ -1599,15 +1599,9 @@ function vmApDungThuongHieuMAP(isMap) {
   try {
     document.body.classList.toggle('theme-map', !!isMap);
 
-    // Logo chìm toàn cục
+    // Bỏ logo chìm nền (gây khó nhìn) — xoá nếu còn tồn tại từ phiên trước
     var wm = document.getElementById('mapWatermarkGlobal');
-    if (!wm) {
-      wm = document.createElement('img');
-      wm.id = 'mapWatermarkGlobal';
-      wm.src = 'logo/CLB-MAP-logo.png';
-      wm.alt = '';
-      document.body.appendChild(wm);
-    }
+    if (wm) wm.remove();
 
     // Đổi logo + tên thương hiệu trên thanh điều hướng
     var logoEl = document.querySelector('.topbar .logo') || document.querySelector('.logo');
