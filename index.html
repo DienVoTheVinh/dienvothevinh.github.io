@@ -1660,6 +1660,10 @@ var canvas = document.getElementById('cyberCanvas');
 var ctx = canvas.getContext('2d');
 var DPR = Math.min(window.devicePixelRatio || 1, 2);
 var VW = window.innerWidth, VH = window.innerHeight;
+// Trên điện thoại: chấm nhỏ & glow nhẹ hơn cho tinh tế
+var MOB = false, DOTK = 1, GLOWK = 1;
+function computeScale() { MOB = VW <= 640; DOTK = MOB ? 0.58 : 1; GLOWK = MOB ? 0.4 : 1; }
+computeScale();
 
 var mouseX = -9999, mouseY = -9999, mvX = VW / 2, mvY = VH / 2;
 window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; mvX = e.clientX; mvY = e.clientY; });
@@ -1696,7 +1700,7 @@ var spheres = [];
 function buildSpheres() {
   var minSide = Math.min(VW, VH);
   spheres = SPHERE_DEF.map(function (d, si) {
-    var n = d.n, pts = [];
+    var n = MOB ? Math.round(d.n * 0.6) : d.n, pts = [];
     var gr = Math.PI * (3 - Math.sqrt(5));
     for (var i = 0; i < n; i++) {
       var y = 1 - (i / (n - 1)) * 2;
@@ -1720,6 +1724,7 @@ function resize() {
   canvas.style.width = VW + 'px';
   canvas.style.height = VH + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  computeScale();
   buildNet();
   buildSpheres();
 }
@@ -1795,9 +1800,9 @@ function draw(ts) {
   // Cac nut
   for (i = 0; i < NET.length; i++) {
     var nn = NET[i];
-    var sz = 1.0 + nn.dp * 2.4;
+    var sz = (1.0 + nn.dp * 2.4) * DOTK;
     if (nn.gold) {
-      ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 7 + nn.dp * 8;
+      ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = (7 + nn.dp * 8) * GLOWK;
       ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + nn.dp * 0.5) + ')';
       ctx.beginPath(); ctx.arc(nn.sx, nn.sy, sz * 1.05, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
@@ -1832,13 +1837,13 @@ function draw(ts) {
       if (m2 < R2) { var dd2 = Math.sqrt(m2) || 1, ff = 1 - dd2 / R; p.ox += (mdx2 / dd2) * ff * ff * 30 * spd; p.oy += (mdy2 / dd2) * ff * ff * 30 * spd; px = px0 + p.ox; py = py0 + p.oy; }
 
       if (p.gold) {
-        ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = 8 + depth * 12;
+        ctx.shadowColor = GOLD_GLOW; ctx.shadowBlur = (8 + depth * 12) * GLOWK;
         ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.4 + depth * 0.55) + ')';
-        ctx.beginPath(); ctx.arc(px, py, (0.7 + depth * 1.7) * persp2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, (0.7 + depth * 1.7) * persp2 * DOTK, 0, Math.PI * 2); ctx.fill();
         ctx.shadowBlur = 0;
       } else {
         ctx.fillStyle = 'rgba(' + INK + ',' + ((dark ? 0.14 : 0.1) + depth * 0.5) + ')';
-        ctx.beginPath(); ctx.arc(px, py, (0.5 + depth * 1.5) * persp2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, (0.5 + depth * 1.5) * persp2 * DOTK, 0, Math.PI * 2); ctx.fill();
       }
     }
   }

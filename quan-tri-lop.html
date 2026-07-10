@@ -1223,6 +1223,17 @@ function chonLopHoc(id) {
   taiBangTinPanel(cl.id);
   taiTroGiang(cl.id);
   doiPhanHeLop(tabDangChon);
+
+  // 📱 Trên điện thoại: tự cuộn vào phần chi tiết lớp để không phải kéo tay (tránh tưởng web lỗi)
+  if (window.innerWidth <= 820) {
+    setTimeout(function () {
+      var el = document.getElementById('vungChiTiet');
+      if (el) {
+        var y = el.getBoundingClientRect().top + window.pageYOffset - 66;
+        window.scrollTo({ top: y < 0 ? 0 : y, behavior: 'smooth' });
+      }
+    }, 90);
+  }
 }
 
 /* ===== Trợ giảng của lớp ===== */
