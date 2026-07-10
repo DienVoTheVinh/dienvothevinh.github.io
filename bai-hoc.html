@@ -153,7 +153,15 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   .mobile-tabs { display:flex; }
   .pane-control { display:none; }
   .switcher .sw-text { display:none; }
+  /* Dặn dò gọn hơn trên điện thoại */
+  #lessonNoteBanner { margin:10px 12px 0; padding:10px 14px 11px; }
+  #lessonNoteContent { max-height:26vh; font-size:.9rem; }
+  #ghiChuGVPopover { top:58px; right:10px; left:10px; width:auto; max-width:none; }
 }
+/* Thu gọn / mở dặn dò */
+#lessonNoteBanner.collapsed #lessonNoteContent { display:none; }
+#lessonNoteBanner.collapsed #danDoCaret { transform:rotate(180deg); }
+#lessonNoteHead:hover #danDoCaret { opacity:.75; }
 
 /* Quiz CSS */
 .quiz-container { padding: 24px; overflow-y: auto; flex: 1; background: var(--surface); display: flex; flex-direction: column; gap: 24px; }
@@ -285,26 +293,30 @@ body.theme-map #mapWatermark { display:block; }
       <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
       <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
+      <button class="btn btn-secondary btn-sm" id="btnGhiChuGV" style="display:none;background:rgba(37,99,235,0.14);border-color:rgba(37,99,235,0.35);color:var(--ink)" onclick="toggleGhiChuGV()" title="Ghi chú riêng cho giáo viên (học sinh không thấy)">👨‍🏫 <span class="sw-text">Ghi chú GV</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </header>
   
-  <!-- 📌 Dặn dò chung của thầy (hiện cho tất cả, kể cả học sinh) -->
-  <div id="lessonNoteBanner" style="display:none; margin:14px 20px 0; padding:14px 18px 15px; border-radius:16px; background:linear-gradient(135deg, rgba(224,160,32,0.14), rgba(181,96,52,0.06)); border:1px solid rgba(224,160,32,0.32); box-shadow:0 4px 18px rgba(224,160,32,0.10); position:relative; overflow:hidden">
+  <!-- 📌 Dặn dò chung của thầy (hiện cho tất cả, kể cả học sinh) — thu gọn được -->
+  <div id="lessonNoteBanner" style="display:none; margin:12px 20px 0; padding:12px 18px 13px; border-radius:16px; background:linear-gradient(135deg, rgba(224,160,32,0.14), rgba(181,96,52,0.06)); border:1px solid rgba(224,160,32,0.32); box-shadow:0 4px 18px rgba(224,160,32,0.10); position:relative; overflow:hidden">
     <div style="position:absolute; inset:0 auto 0 0; width:5px; background:linear-gradient(180deg, var(--accent), rgba(181,96,52,0.7))"></div>
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:7px; padding-left:6px">
+    <div id="lessonNoteHead" onclick="toggleDanDo()" style="display:flex; align-items:center; gap:8px; padding-left:6px; cursor:pointer; user-select:none">
       <span style="font-size:1.2rem">📌</span>
-      <span style="font-weight:800; color:var(--accent); letter-spacing:.01em; font-size:1rem">Dặn dò của thầy</span>
+      <span style="font-weight:800; color:var(--accent); letter-spacing:.01em; font-size:1rem; flex:1">Dặn dò của thầy</span>
+      <span id="danDoCaret" style="color:var(--accent); font-size:.7rem; transition:transform .2s">▲</span>
     </div>
-    <div id="lessonNoteContent" style="white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding-left:6px"></div>
+    <div id="lessonNoteContent" style="white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding-left:6px; margin-top:8px; max-height:34vh; overflow-y:auto"></div>
   </div>
 
-  <!-- Ghi chú nội bộ dành cho Giáo viên / Trợ giảng -->
-  <div id="teacherNotesBanner" style="display:none; background:rgba(37,99,235,0.07); border-bottom:1px solid rgba(37,99,235,0.18); color:var(--ink); padding:12px 20px; font-size:0.9rem; align-items:center; gap:12px; flex-wrap:wrap; border-left:4px solid var(--accent); z-index: 10;">
-    <div style="flex:1; min-width:300px">
-      <span style="font-weight:700; color:var(--accent); display:inline-flex; align-items:center; gap:6px; margin-bottom:4px"><span style="font-size:1.1rem">👨‍🏫</span> Ghi chú bài giảng của Trợ giảng / GV dành riêng cho thầy:</span>
-      <div id="teacherNotesContent" style="white-space:pre-wrap; line-height:1.45; font-weight:500"></div>
+  <!-- Ghi chú riêng cho GV — popover (chỉ GV/Admin bấm nút mới hiện, HS không thấy) -->
+  <div id="ghiChuGVPopover" style="display:none; position:fixed; top:64px; right:16px; z-index:130; max-width:380px; width:calc(100vw - 32px); background:var(--surface); border:1px solid rgba(37,99,235,0.4); border-radius:14px; box-shadow:0 14px 44px rgba(0,0,0,.3); padding:16px 18px">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px">
+      <span style="font-weight:800; color:#2563eb; display:inline-flex; align-items:center; gap:6px; font-size:.92rem"><span style="font-size:1.05rem">👨‍🏫</span> Ghi chú riêng cho GV</span>
+      <button onclick="toggleGhiChuGV(false)" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-3);line-height:1">×</button>
     </div>
+    <div style="font-size:.74rem; color:var(--ink-3); margin-bottom:8px">Chỉ thầy/trợ giảng thấy — học sinh không nhìn thấy phần này.</div>
+    <div id="teacherNotesContent" style="white-space:pre-wrap; line-height:1.5; font-size:.9rem; color:var(--ink); max-height:50vh; overflow-y:auto"></div>
   </div>
 
   <div id="coTeachBanner" style="display:none; background:rgba(217,119,6,0.08); border-bottom:1px solid rgba(217,119,6,0.2); color:var(--ink); padding:10px 16px; font-size:0.88rem; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap"></div>
@@ -959,22 +971,40 @@ function renderBaiHoc() {
     if (publicNote) {
       noteBanner.style.display = 'block';
       $('lessonNoteContent').textContent = publicNote;
+      noteBanner.classList.toggle('collapsed', window.innerWidth <= 820); // mobile: thu gọn sẵn cho gọn
     } else {
       noteBanner.style.display = 'none';
     }
   }
 
-  // Ghi chú nội bộ — chỉ GV/Trợ giảng/Admin
-  var bannerNotes = $('teacherNotesBanner');
-  if (bannerNotes) {
-    if (laQuanTriBaiHoc() && teacherNote) {
-      bannerNotes.style.display = 'flex';
-      $('teacherNotesContent').textContent = teacherNote;
-    } else {
-      bannerNotes.style.display = 'none';
-    }
+  // 👨‍🏫 Ghi chú riêng cho GV — chỉ hiện nút cho GV/Trợ giảng/Admin (học sinh KHÔNG thấy)
+  var btnGV = $('btnGhiChuGV');
+  if (laQuanTriBaiHoc() && teacherNote) {
+    if (btnGV) btnGV.style.display = '';
+    $('teacherNotesContent').textContent = teacherNote;
+  } else {
+    if (btnGV) btnGV.style.display = 'none';
+    var pop = $('ghiChuGVPopover'); if (pop) pop.style.display = 'none';
   }
 }
+
+function toggleDanDo() {
+  var b = document.getElementById('lessonNoteBanner');
+  if (b) b.classList.toggle('collapsed');
+}
+function toggleGhiChuGV(force) {
+  var pop = document.getElementById('ghiChuGVPopover');
+  if (!pop) return;
+  var show = (typeof force === 'boolean') ? force : (pop.style.display === 'none' || !pop.style.display);
+  pop.style.display = show ? 'block' : 'none';
+}
+document.addEventListener('click', function (e) {
+  var pop = document.getElementById('ghiChuGVPopover');
+  var btn = document.getElementById('btnGhiChuGV');
+  if (!pop || pop.style.display !== 'block') return;
+  if (pop.contains(e.target) || (btn && btn.contains(e.target))) return;
+  pop.style.display = 'none';
+});
 
 /* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
 var pdfTaiLieuTex = null;
