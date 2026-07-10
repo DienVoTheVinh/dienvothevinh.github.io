@@ -726,6 +726,30 @@ async function startExam(examId) {
     
   examQuestions = (rQ.data || []).map(function (item) { return item.questions; }).filter(Boolean);
 
+  // Nếu là Giáo viên/Admin: vào thẳng chế độ làm bài preview (lượt luyện tập ảo) không lưu CSDL
+  var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
+  if (isStaff) {
+    currentAttempt = { id: 'staff-preview-attempt', exam_id: examId, started_at: new Date().toISOString(), is_practice: true, attempt_answers: [] };
+    timeLeftSeconds = ex.duration_minutes * 60;
+    $('wkExitBtn').style.display = 'inline-flex';
+    $('wkRetryBtn').style.display = 'none';
+    $('wkSubmitBtn').style.display = 'inline-flex';
+    if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'inline-flex';
+    
+    $('viewMain').style.display = 'none';
+    $('viewWorkspace').style.display = 'flex';
+    $('wkTitle').textContent = ex.title + ' (XEM THỬ)';
+    
+    if (ex.de_type === 'essay') {
+      moPhongTuLuan(ex, false);
+    } else {
+      renderExamQuestions(false);
+      renderExamNav(false);
+      runTimer();
+    }
+    return;
+  }
+
   // Lấy lịch sử lượt làm bài thi của học sinh
   var rAtt = await sb.from('attempts')
     .select('id, score, started_at, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
