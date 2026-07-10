@@ -1662,21 +1662,14 @@ var DPR = Math.min(window.devicePixelRatio || 1, 2);
 var VW = window.innerWidth, VH = window.innerHeight;
 // Trên điện thoại: chấm nhỏ & glow nhẹ hơn cho tinh tế
 var MOB = false, DOTK = 1, GLOWK = 1;
-function computeScale() { MOB = VW <= 640; DOTK = MOB ? 0.58 : 1; GLOWK = MOB ? 0.4 : 1; }
+// Mobile: chấm nhỏ hơn + TẮT glow (shadowBlur rất nặng) cho mượt khi cuộn
+function computeScale() { MOB = VW <= 640; DOTK = MOB ? 0.62 : 1; GLOWK = MOB ? 0 : 1; }
 computeScale();
 
 var mouseX = -9999, mouseY = -9999, mvX = VW / 2, mvY = VH / 2;
 window.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; mvX = e.clientX; mvY = e.clientY; });
 window.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 window.addEventListener('touchmove', function (e) { if (e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mvX = mouseX; mvY = mouseY; } }, { passive: true });
-
-// Đóng băng hoạt ảnh nền khi đang cuộn -> hết giật khung hình khi lướt (nhất là mobile)
-var vmScrolling = false, _vmScrollT = null;
-window.addEventListener('scroll', function () {
-  vmScrolling = true;
-  clearTimeout(_vmScrollT);
-  _vmScrollT = setTimeout(function () { vmScrolling = false; }, 160);
-}, { passive: true });
 
 var GOLD = '224,160,32';
 var GOLD_GLOW = '#efc046';
@@ -1727,12 +1720,13 @@ function buildSpheres() {
 
 function resize() {
   VW = window.innerWidth; VH = window.innerHeight;
+  computeScale();
+  DPR = Math.min(window.devicePixelRatio || 1, MOB ? 1.5 : 2); // mobile: ít pixel hơn -> nhẹ
   canvas.width = Math.floor(VW * DPR);
   canvas.height = Math.floor(VH * DPR);
   canvas.style.width = VW + 'px';
   canvas.style.height = VH + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  computeScale();
   buildNet();
   buildSpheres();
 }
@@ -1740,12 +1734,13 @@ window.addEventListener('resize', resize);
 resize();
 
 var tiltX = 0, tiltY = 0;
-var _prevTs = 0;
+var _prevTs = 0, _lastDraw = 0;
 var ANIM_SPEED = 0.6;
 function draw(ts) {
   ts = ts || performance.now();
-  // Đang cuộn: giữ nguyên khung hình nền, không vẽ lại -> cuộn mượt, không giật
-  if (vmScrolling) { _prevTs = ts; requestAnimationFrame(draw); return; }
+  // Giới hạn ~45fps trên điện thoại cho nhẹ (vẫn chuyển động liên tục, mượt khi cuộn)
+  if (MOB && ts - _lastDraw < 21) { requestAnimationFrame(draw); return; }
+  _lastDraw = ts;
   var dtf = _prevTs ? Math.min((ts - _prevTs) / 16.667, 2.5) : 1;
   _prevTs = ts;
   var spd = dtf * ANIM_SPEED;
