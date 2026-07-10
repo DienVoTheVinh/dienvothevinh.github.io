@@ -38,8 +38,13 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
 /* Bỏ thanh nút tính năng trên đỉnh — mọi tính năng nằm trong mục lục trái */
 #boChuyen { display:none !important; }
+#nutBuoiHS, #nutNopBai { display:none !important; }   /* dời hết vào mục lục */
 .ml-vao-btn { font-size:.66rem; font-weight:800; padding:2px 9px; border-radius:99px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent); cursor:pointer; flex:none; white-space:nowrap; margin-left:6px; }
 .ml-vao-btn:hover { background:var(--accent); color:#fff; }
+/* Mục con cấp 2 (Nộp bài / Kết quả) dưới Bài kiểm tra & Bài tập về nhà */
+.ml-sub a.ml-sub2 { padding-left:62px; font-size:.79rem; color:var(--accent); }
+.ml-sub a.ml-sub2:hover { background:var(--accent-soft); }
+.ml-sub a.ml-sub2 span:first-child { opacity:.85; }
 
 .lesson-dot {
   width: 10px;
@@ -702,18 +707,19 @@ async function taiMucLuc() {
         var openB = mlBaiMo[b.id] ? ' open' : '';
         var cur = b.id === lessonId ? ' current' : '';
         var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
+        var laHS = nguoiDung && !laQuanTriBaiHoc();
         var subs = td.items.map(function (it) {
-          return '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
+          var link = '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
             '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
             '<span class="tick">' + (it.done ? '✓' : '○') + '</span></a>';
+          // Bài kiểm tra & Bài tập về nhà: 2 mục con "Nộp bài" + "Kết quả" (chỉ học sinh)
+          if (laHS && (it.key === 'btvn' || it.key === 'test')) {
+            var kind = it.key === 'btvn' ? 'homework' : 'test';
+            link += '<a class="ml-sub2" onclick="mlNop(\'' + b.id + '\',\'' + kind + '\')"><span>📤</span><span>Nộp bài</span></a>' +
+                    '<a class="ml-sub2" onclick="xemKetQua(\'' + b.id + '\',\'' + kind + '\')"><span>📋</span><span>Kết quả</span></a>';
+          }
+          return link;
         }).join('');
-        // Nộp bài — tách riêng theo Kiểm tra / Bài tập về nhà (chỉ học sinh)
-        if (nguoiDung && !laQuanTriBaiHoc()) {
-          if (td.items.some(function (it) { return it.key === 'btvn'; }))
-            subs += '<a onclick="mlNop(\'' + b.id + '\',\'homework\')" style="color:var(--accent)"><span>📤</span><span>Nộp bài tập về nhà</span></a>';
-          if (td.items.some(function (it) { return it.key === 'test'; }))
-            subs += '<a onclick="mlNop(\'' + b.id + '\',\'test\')" style="color:var(--accent)"><span>📤</span><span>Nộp bài kiểm tra</span></a>';
-        }
         if (!subs) subs = '<a onclick="vaoBai(\'' + b.id + '\')"><span>📄</span><span>Mở bài giảng</span></a>';
         return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
           '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
@@ -759,6 +765,14 @@ function vaoBai(lid) { switchLesson(lid, null); }
 async function mlNop(lid, phanloai) {
   if (lid !== lessonId) await switchLesson(lid, phanloai === 'homework' ? 'btvn' : 'test');
   moNopBai(phanloai);
+}
+// Xem kết quả (bài thầy chấm / điểm) của Bài kiểm tra hoặc Bài tập về nhà
+async function xemKetQua(lid, kind) {
+  if (lid !== lessonId) await switchLesson(lid, kind === 'homework' ? 'btvn' : 'test');
+  var than = $('thanNoiDung'); if (!than) return;
+  if (window.innerWidth <= 820) hienMobilePane('content');
+  than.innerHTML = thanhCongCu(kind === 'homework' ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra', null) +
+    '<div style="flex:1;overflow-y:auto;padding-bottom:20px">' + (nguoiDung ? (await layKetQuaChamHtml(kind)) : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>') + '</div>';
 }
 async function mlMoMuc(lid, tab, key, loai) {
   if (lid !== lessonId) {
@@ -1486,23 +1500,25 @@ async function veTestTex() {
   renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
 }
 
-async function layKetQuaChamHtml() {
+async function layKetQuaChamHtml(kind) {
+  kind = kind || 'test';
+  var tenLoai = kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận';
   try {
     var r = await sb.from('submissions')
       .select('id, submitted_at, files, status, score, feedback, graded_files')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
-      .eq('kind', 'test')
+      .eq('kind', kind)
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-      
+
     var sub = r.data;
     if (!sub) {
       return '<div class="card" style="margin:14px; padding:16px; border:1px dashed var(--accent); background:var(--accent-soft); text-align:center">' +
-        '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp bài kiểm tra tự luận của bài học này</h4>' +
+        '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp ' + tenLoai + ' của bài học này</h4>' +
         '  <p style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-2)">Hãy làm bài ra giấy, chụp ảnh lại rồi nộp cho thầy chấm điểm nhé.</p>' +
-        '  <button class="btn btn-primary btn-sm" onclick="moNopBai()">📤 Nộp bài làm ngay</button>' +
+        '  <button class="btn btn-primary btn-sm" onclick="moNopBai(\'' + kind + '\')">📤 Nộp bài làm ngay</button>' +
         '</div>';
     }
     
@@ -1521,13 +1537,13 @@ async function layKetQuaChamHtml() {
         '  </div>' +
         '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + vclEsc(sub.feedback) + '</div></div>' : '') +
         '  ' + baiThayCham +
-        '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
+        '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
         '</div>';
     } else {
       return '<div class="card" style="margin:14px; padding:16px; border:1px solid var(--warn); background:linear-gradient(135deg, var(--surface) 0%, var(--warn-soft) 100%)">' +
         '  <h4 style="margin:0 0 6px; color:var(--warn)">📤 Đã nộp bài thành công!</h4>' +
         '  <p style="margin:0; font-size:0.88rem; color:var(--ink)">Bài làm của em gửi ngày <b>' + ngay + '</b> đang chờ thầy xem và chấm điểm. Kết quả sẽ hiện ngay tại đây sau khi thầy chấm xong!</p>' +
-        '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
+        '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
         '</div>';
     }
   } catch (e) {
