@@ -103,6 +103,8 @@ Deno.serve(async (req) => {
       }
 
       let folderPath: string[] = [];
+      let examTitle = "";
+      let lessonTitle = "";
       if (examId) {
         const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name, grade, is_specialized)").eq("id", examId).single();
         if (errE || !exam) throw new Error("Khong tim thay de thi: " + (errE?.message || ""));
@@ -110,8 +112,8 @@ Deno.serve(async (req) => {
         const className = cl 
           ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
           : "Luyện đề chung";
-        const examTitle = exam.title || "Đề thi";
-        folderPath = ["Luyện đề tự luận", className, examTitle, targetProf.username + " - " + targetProf.full_name, ngay];
+        examTitle = exam.title || "Đề thi";
+        folderPath = [className, "Kiểm tra", targetProf.username + " - " + targetProf.full_name, ngay];
       } else if (lessonId) {
         const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name, grade, is_specialized)").eq("id", lessonId).single();
         if (errL || !lesson) throw new Error("Khong tim thay bai hoc: " + (errL?.message || ""));
@@ -119,8 +121,8 @@ Deno.serve(async (req) => {
         const className = cl 
           ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
           : "Chưa phân lớp";
-        const lessonTitle = lesson.title || "Bài giảng";
-        folderPath = [className, lessonTitle, targetProf.username + " - " + targetProf.full_name, ngay];
+        lessonTitle = lesson.title || "Bài giảng";
+        folderPath = [className, "Bài tập về nhà", targetProf.username + " - " + targetProf.full_name, ngay];
       }
 
       let currentParentId = goc;
@@ -129,7 +131,10 @@ Deno.serve(async (req) => {
       }
 
       const ketQua = [];
-      for (const f of files) ketQua.push(await taiLenDrive(token, f, currentParentId, f.name));
+      const titlePrefix = examId ? `[${examTitle}] ` : `[${lessonTitle}] `;
+      for (const f of files) {
+        ketQua.push(await taiLenDrive(token, f, currentParentId, titlePrefix + f.name));
+      }
 
       const { data: row, error } = await svc.from("submissions")
         .insert({
@@ -153,6 +158,7 @@ Deno.serve(async (req) => {
     const hs = sub.profiles as unknown as { username: string; full_name: string };
     
     let folderPath: string[] = [];
+    let titlePrefix = "";
     if (sub.exam_id) {
       const { data: exam, error: errE } = await svc.from("exams").select("title, class_id, classes(name, grade, is_specialized)").eq("id", sub.exam_id).single();
       if (errE || !exam) throw new Error("Khong tim thay de thi: " + (errE?.message || ""));
@@ -161,7 +167,8 @@ Deno.serve(async (req) => {
         ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
         : "Luyện đề chung";
       const examTitle = exam.title || "Đề thi";
-      folderPath = ["Luyện đề tự luận", className, examTitle, hs.username + " - " + hs.full_name, ngay];
+      titlePrefix = `[${examTitle}] `;
+      folderPath = [className, "Kiểm tra", hs.username + " - " + hs.full_name, ngay];
     } else if (sub.lesson_id) {
       const { data: lesson, error: errL } = await svc.from("lessons").select("title, class_id, classes(name, grade, is_specialized)").eq("id", sub.lesson_id).single();
       if (errL || !lesson) throw new Error("Khong tim thay bai hoc: " + (errL?.message || ""));
@@ -170,7 +177,8 @@ Deno.serve(async (req) => {
         ? `Khối ${cl.grade} - ${cl.name} (${cl.is_specialized ? 'Chuyên' : 'Đại trà'})`
         : "Chưa phân lớp";
       const lessonTitle = lesson.title || "Bài giảng";
-      folderPath = [className, lessonTitle, hs.username + " - " + hs.full_name, ngay];
+      titlePrefix = `[${lessonTitle}] `;
+      folderPath = [className, "Bài tập về nhà", hs.username + " - " + hs.full_name, ngay];
     } else {
       folderPath = [hs.username + " - " + hs.full_name, ngay];
     }
@@ -181,7 +189,9 @@ Deno.serve(async (req) => {
     }
 
     const ketQua2 = [];
-    for (const f of files) ketQua2.push(await taiLenDrive(token, f, currentParentId, "CHAM-" + f.name));
+    for (const f of files) {
+      ketQua2.push(await taiLenDrive(token, f, currentParentId, titlePrefix + "CHAM-" + f.name));
+    }
     const tatCa = [...((sub.graded_files as unknown[]) || []), ...ketQua2];
     const { error: e2 } = await svc.from("submissions").update({ graded_files: tatCa }).eq("id", subId);
     if (e2) throw new Error("Cap nhat loi: " + e2.message);
