@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=5.6">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.2">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -74,6 +74,8 @@
 .qla-topic-hd .cnt { font-size:.74rem; color:var(--ink-3); background:var(--surface-2); border-radius:20px; padding:1px 9px; }
 .qla-topic-hd .car { margin-left:auto; color:var(--ink-3); font-size:.8rem; transition:transform .2s; }
 .qla-topic.open > .qla-topic-hd .car { transform:rotate(90deg); }
+.qla-topic-hd .qla-cd-edit { background:transparent; border:none; cursor:pointer; font-size:.92rem; padding:2px 6px; border-radius:6px; opacity:.6; transition:opacity .15s, background .15s; line-height:1; }
+.qla-topic-hd .qla-cd-edit:hover { opacity:1; background:rgba(127,127,127,.16); }
 .qla-topic-body { display:none; border-top:1px solid var(--line); }
 .qla-topic.open > .qla-topic-body { display:block; }
 .qla-bai { border-bottom:1px solid var(--line); }
@@ -663,7 +665,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <input type="datetime-local" class="input" id="bhBtvnDue" style="max-width:260px">
         </div>
         <div class="field">
-          <label>🏠 Ghi chú / đề ngắn <small style="color:var(--ink-3);font-weight:400">(khác với bài kiểm tra — học sinh xem đề và nộp bài về nhà riêng)</small></label>
+          <label>🏠 Ghi chú cho HS <small style="color:var(--ink-3);font-weight:400">(học sinh xem ghi chú này ở tab Bài tập về nhà, rồi nộp bài riêng)</small></label>
           <textarea class="input" id="bhBtvnText" rows="3" placeholder="Ghi chú, dặn dò, hạn nộp… (đề chi tiết có thể dùng PDF / LaTeX / ảnh bên dưới)" style="resize:vertical"></textarea>
         </div>
 
@@ -892,11 +894,13 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <input class="input" id="qtName" placeholder="Ví dụ: Lượng giác" required>
     </div>
     
+    <input type="hidden" id="qtCode">
+
     <div class="field">
-      <label>Mã code chuyên đề <b style="color:var(--accent)">*</b></label>
-      <input class="input" id="qtCode" placeholder="Ví dụ: 11D1" required>
+      <label>Chỉ số chuyên đề</label>
+      <input type="number" class="input" id="qtSort" value="0" min="0" placeholder="VD: 1 → Chuyên đề 1">
     </div>
-    
+
     <div class="field">
       <label>Khối lớp <b style="color:var(--accent)">*</b></label>
       <select class="input" id="qtGrade" required>
@@ -925,6 +929,16 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
   </div>
 </div>
 
+<!-- Modal: Ai đã xem bài giảng -->
+<div class="modal" id="modalAiXem" style="display:none; z-index:10020">
+  <div class="modal-content" style="max-width:700px">
+    <button class="modal-close" onclick="dongAiXem()">×</button>
+    <h2>👀 Học sinh đã xem gì trong bài</h2>
+    <div id="aiXemTitle" style="font-size:.95rem; color:var(--ink-2); font-weight:600; margin:6px 0 14px"></div>
+    <div id="aiXemBody"></div>
+  </div>
+</div>
+
 <!-- Modal Quản Lý Chuyên Đề -->
 <div class="modal" id="modalChuyenDe" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
@@ -941,10 +955,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <label style="font-size:0.8rem">Tên chuyên đề <b style="color:var(--accent)">*</b></label>
           <input class="input" id="cdName" placeholder="Ví dụ: Hàm số" style="padding:6px 10px; font-size:0.9rem" required>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label style="font-size:0.8rem">Mã code <b style="color:var(--accent)">*</b></label>
-          <input class="input" id="cdCode" placeholder="Ví dụ: 12D1" style="padding:6px 10px; font-size:0.9rem" required>
-        </div>
+        <input type="hidden" id="cdCode">
         <div class="field" style="margin-bottom:0">
           <label style="font-size:0.8rem">Khối lớp <b style="color:var(--accent)">*</b></label>
           <select class="input" id="cdGrade" style="padding:6px 10px; font-size:0.9rem" required>
@@ -965,8 +976,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           </select>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label style="font-size:0.8rem">Thứ tự</label>
-          <input type="number" class="input" id="cdSort" value="0" style="padding:6px 10px; font-size:0.9rem">
+          <label style="font-size:0.8rem">Chỉ số chuyên đề</label>
+          <input type="number" class="input" id="cdSort" value="0" min="0" placeholder="VD: 1 → Chuyên đề 1" style="padding:6px 10px; font-size:0.9rem">
         </div>
         <div class="field" style="margin-bottom:0">
           <label style="font-size:0.8rem">Màu sắc</label>
@@ -993,6 +1004,12 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <option value="7">Khối 7</option>
         <option value="6">Khối 6</option>
       </select>
+      <span style="font-size:0.85rem; font-weight:600; color:var(--ink-2); margin-left:6px">Chương trình:</span>
+      <select class="input" id="locCdType" onchange="taiBangChuyenDe()" style="width:130px; padding:6px 10px; font-size:0.85rem">
+        <option value="all">Tất cả</option>
+        <option value="dt">📘 Đại trà</option>
+        <option value="ch">⭐ Chuyên</option>
+      </select>
     </div>
 
     <!-- Danh sách chuyên đề -->
@@ -1000,11 +1017,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <table style="font-size:0.85rem">
         <thead>
           <tr>
-            <th style="padding:8px">Mã</th>
+            <th style="padding:8px">Chỉ số</th>
             <th style="padding:8px">Tên chuyên đề</th>
             <th style="padding:8px">Khối</th>
             <th style="padding:8px">Phân loại</th>
-            <th style="padding:8px">Sắp xếp</th>
             <th style="padding:8px; text-align:right">Thao tác</th>
           </tr>
         </thead>
@@ -1117,9 +1133,14 @@ async function loadingSidebar() {
   });
   
   if (!window.sidebarCollapsedGrades) {
+    // Mặc định thu gọn tất cả khối; chỉ bung khối của lớp đang chọn (nếu có)
     window.sidebarCollapsedGrades = {};
+    var khoiDangChon = (classDangChon && classDangChon.grade != null) ? String(classDangChon.grade || 12) : null;
+    Object.keys(groups).forEach(function (g) {
+      window.sidebarCollapsedGrades[g] = (khoiDangChon === null) ? true : (g !== khoiDangChon);
+    });
   }
-  
+
   var html = '';
   Object.keys(groups).sort(function(a, b){ return a - b; }).forEach(function (g) {
     var isCollapsed = !!window.sidebarCollapsedGrades[g];
@@ -1158,7 +1179,9 @@ function chonLopHoc(id) {
   var cl = dsLop.find(function (l) { return l.id === id; });
   if (!cl) return;
   classDangChon = cl;
-  
+  // Bung khối của lớp vừa chọn
+  if (window.sidebarCollapsedGrades) window.sidebarCollapsedGrades[String(cl.grade || 12)] = false;
+
   // Highlight active
   document.querySelectorAll('.class-item').forEach(function (btn) {
     btn.classList.remove('active');
@@ -1200,6 +1223,17 @@ function chonLopHoc(id) {
   taiBangTinPanel(cl.id);
   taiTroGiang(cl.id);
   doiPhanHeLop(tabDangChon);
+
+  // 📱 Trên điện thoại: tự cuộn vào phần chi tiết lớp để không phải kéo tay (tránh tưởng web lỗi)
+  if (window.innerWidth <= 820) {
+    setTimeout(function () {
+      var el = document.getElementById('vungChiTiet');
+      if (el) {
+        var y = el.getBoundingClientRect().top + window.pageYOffset - 66;
+        window.scrollTo({ top: y < 0 ? 0 : y, behavior: 'smooth' });
+      }
+    }, 90);
+  }
 }
 
 /* ===== Trợ giảng của lớp ===== */
@@ -1426,8 +1460,14 @@ async function taiLessonsLop() {
       } else { noTopicLessons.push(b); }
     });
     topicOrder.sort(function (a, b) { return (a.topic.sort || 0) - (b.topic.sort || 0); });
-    topicOrder.forEach(function (g) { g.lessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); }); });
-    noTopicLessons.sort(function (a, b) { return (b.sort || 0) - (a.sort || 0); });
+    var sapTheoNgay = function (a, b) {
+      var da = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var db = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (da !== db) return da - db; // cũ -> mới
+      return (a.sort || 0) - (b.sort || 0);
+    };
+    topicOrder.forEach(function (g) { g.lessons.sort(sapTheoNgay); });
+    noTopicLessons.sort(sapTheoNgay);
 
     var blocks = topicOrder.slice();
     if (noTopicLessons.length) blocks.push({ topic: { name: 'Bài giảng khác / Tự do', color: '#A8A29A', _none: true }, lessons: noTopicLessons });
@@ -1435,11 +1475,15 @@ async function taiLessonsLop() {
     var stt = 1;
     return blocks.map(function (g) {
       var isNone = g.topic._none;
-      var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + (stt++) + ': ' + g.topic.name);
+      var cs = (g.topic.sort && g.topic.sort > 0) ? g.topic.sort : (stt++);
+      var ten = isNone ? 'Bài giảng khác / Tự do' : ('Chuyên đề ' + cs + ': ' + g.topic.name);
       var mau = g.topic.color || 'var(--accent)';
       return '<div class="qla-topic open">' +
         '<div class="qla-topic-hd" style="border-left-color:' + mau + '; --topic-color:' + mau + '; background-color:color-mix(in srgb, var(--topic-color) 8%, transparent)" onclick="qlaToggle(this)">' +
-          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span><span class="cnt">' + g.lessons.length + ' bài</span><span class="car">▶</span>' +
+          '<span class="nm" style="color:var(--topic-color)">📚 ' + qlaEsc(ten) + '</span>' +
+          (isNone ? '' : '<button class="qla-cd-edit" onclick="event.stopPropagation();suaChuyenDeNhanh(\'' + g.topic.id + '\')" title="Sửa nhanh chuyên đề này">✏️</button>') +
+          '<span class="cnt">' + g.lessons.length + ' bài</span>' +
+          '<span class="car">▶</span>' +
         '</div>' +
         '<div class="qla-topic-body">' + g.lessons.map(function(b) { return renderLessonAcc(b, mau); }).join('') + '</div>' +
       '</div>';
@@ -1529,6 +1573,7 @@ function renderLessonAcc(b, mauChuyenDe) {
         '<div class="qla-actg">' +
           '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
+          '<button class="btn btn-secondary btn-sm chi-gv" onclick="moAiDaXem(\'' + b.id + '\', \'' + (b.title || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">👀 Ai đã xem</button>' +
         '</div>' +
         '<div class="qla-actg">' +
           testBtn +
@@ -1538,6 +1583,48 @@ function renderLessonAcc(b, mauChuyenDe) {
     '</div>' +
   '</div>';
 }
+
+/* ----- Ai đã xem: HS nào đã bấm mở từng mục trong bài giảng ----- */
+async function moAiDaXem(lessonId, title) {
+  if (!classDangChon) return;
+  $('modalAiXem').style.display = 'flex';
+  $('aiXemTitle').textContent = '📘 ' + (title || 'Bài giảng');
+  $('aiXemBody').innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-3)">Đang tải…</div>';
+  var esc = (typeof ddEsc === 'function') ? ddEsc : function (s) { return s; };
+  try {
+    var rs = await sb.from('class_students').select('student_id, profiles(full_name)').eq('class_id', classDangChon.id);
+    var students = (rs.data || []).map(function (x) { return { id: x.student_id, name: x.profiles ? x.profiles.full_name : '?' }; });
+    students.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '', 'vi'); });
+    var rp = await sb.from('lesson_item_progress').select('student_id, item').eq('lesson_id', lessonId);
+    var seen = {};
+    (rp.data || []).forEach(function (x) { (seen[x.student_id] = seen[x.student_id] || {})[x.item] = true; });
+    var ITEMS = [['video', '🎬 Video'], ['lythuyet', '📖 Lý thuyết'], ['tailieu', '📄 Tài liệu'], ['bang', '🖼️ Ảnh bảng'], ['btvn', '🏠 BTVN'], ['test', '📝 Kiểm tra']];
+    var used = {};
+    Object.keys(seen).forEach(function (sid) { Object.keys(seen[sid]).forEach(function (k) { used[k] = true; }); });
+    var cols = ITEMS.filter(function (it) { return used[it[0]]; });
+    if (!cols.length) {
+      $('aiXemBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào bấm xem mục nào trong bài này.</div>';
+      return;
+    }
+    var counts = {};
+    cols.forEach(function (c) { counts[c[0]] = 0; });
+    students.forEach(function (s) { cols.forEach(function (c) { if (seen[s.id] && seen[s.id][c[0]]) counts[c[0]]++; }); });
+    var head = '<th style="text-align:left;padding:8px;position:sticky;left:0;background:var(--surface-solid)">Học sinh</th>' +
+      cols.map(function (c) { return '<th style="padding:8px;white-space:nowrap;text-align:center">' + c[1] + '<div style="font-size:.7rem;color:var(--ink-3);font-weight:600">' + counts[c[0]] + '/' + students.length + '</div></th>'; }).join('');
+    var rows = students.map(function (s) {
+      var cells = cols.map(function (c) {
+        var ok = seen[s.id] && seen[s.id][c[0]];
+        return '<td style="text-align:center;padding:6px">' + (ok ? '<span style="color:var(--ok)">✅</span>' : '<span style="color:var(--ink-3)">–</span>') + '</td>';
+      }).join('');
+      return '<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 8px;position:sticky;left:0;background:var(--surface-solid);white-space:nowrap">' + esc(s.name) + '</td>' + cells + '</tr>';
+    }).join('');
+    $('aiXemBody').innerHTML = '<div style="overflow-x:auto"><table style="width:100%;font-size:.86rem;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--line-2)">' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px">✅ = đã bấm xem/mở mục đó · – = chưa. Chỉ hiện các mục đã có ít nhất 1 HS xem.</div>';
+  } catch (e) {
+    $('aiXemBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải dữ liệu: ' + (e && e.message ? e.message : e) + '</div>';
+  }
+}
+function dongAiXem() { $('modalAiXem').style.display = 'none'; }
 
 async function moKichHoatTest(lessonId, title) {
   $('khtLessonId').value = lessonId;
@@ -1615,8 +1702,8 @@ async function taiStudentsLop() {
 
   // Tải bài giảng của lớp (lấy lý thuyết + bài tập về nhà)
   var rLessons = await sb.from('lessons')
-    .select('id, title, sort, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due')
-    .eq('class_id', classDangChon.id).order('sort', { ascending: false });
+    .select('id, title, sort, created_at, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due')
+    .eq('class_id', classDangChon.id).order('created_at', { ascending: true });
   var allLessons = rLessons.data || [];
   tpLessons = allLessons.filter(function (l) { return Array.isArray(l.theory_sections) && l.theory_sections.length > 0; });
 
@@ -1946,8 +2033,13 @@ async function veRosterTheoDoi() {
     var initial = (s.full_name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase();
 
     var ddHtml = sid ? (on
-      ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + ' · bỏ</button>'
-      : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', true)">Điểm danh</button>')
+      ? '<span class="pill ' + (att.status === 'late' ? 'pill-amber' : 'pill-green') + '">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + '</span> ' +
+        (att.status === 'late'
+          ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">🟢 Chuyển Có mặt</button> '
+          : '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Chuyển Trễ</button> ') +
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">Bỏ</button>'
+      : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">Điểm danh</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button>')
       : '<span style="color:var(--ink-3);font-size:.82rem">Chọn buổi ở trên để điểm danh</span>';
 
     var nxHtml = coNx
@@ -2051,12 +2143,14 @@ async function toggleNopBTVN(studentId, submitted) {
   veRosterTheoDoi();
 }
 
-async function toggleDiemDanhLop(studentId, present) {
+async function toggleDiemDanhLop(studentId, trangThai) {
   var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
   if (!sid) { alert('Chưa chọn buổi.'); return; }
-  if (present) {
+  // trangThai: 'present' | 'late' | true (=present) | false/null (=bỏ điểm danh)
+  var st = (trangThai === true) ? 'present' : trangThai;
+  if (st === 'present' || st === 'late') {
     var r = await sb.from('attendance').upsert(
-      { session_id: sid, student_id: studentId, status: 'present', checked_at: new Date().toISOString() },
+      { session_id: sid, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
     if (r.error) { alert('Lỗi điểm danh: ' + r.error.message); return; }
   } else {
@@ -2370,7 +2464,7 @@ async function napChuyenDeSelect(chonId) {
       og.label = 'Khối ' + g;
       theoKhoi[g].forEach(function (c) {
         var opt = document.createElement('option');
-        opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name + (c.is_specialized ? ' (Chuyên)' : '');
+        opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name + (c.is_specialized ? ' (Chuyên)' : '');
         og.appendChild(opt);
       });
       sel.appendChild(og);
@@ -2392,7 +2486,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '⭐ Chuyên đề Nâng cao (Khối ' + targetGrade + ')';
         cdsNangCao.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -2403,7 +2497,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
         cdsCoBan.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -2416,7 +2510,7 @@ async function napChuyenDeSelect(chonId) {
         og.label = '📘 Chuyên đề Cơ bản (Khối ' + targetGrade + ')';
         cdsCoBan.forEach(function (c) {
           var opt = document.createElement('option');
-          opt.value = c.id; opt.textContent = '[' + c.code + '] ' + c.name;
+          opt.value = c.id; opt.textContent = (c.sort > 0 ? 'Chuyên đề ' + c.sort + ': ' : '') + c.name;
           og.appendChild(opt);
         });
         sel.appendChild(og);
@@ -2714,21 +2808,90 @@ function themAnhTest(files) {
   buildTestPdfFromImages();
 }
 function boAnhTest(i) { testImgFiles.splice(i, 1); veAnhTest(); buildTestPdfFromImages(); }
+function dichChuyenAnhTest(index, huong) {
+  var target = index + huong;
+  if (target < 0 || target >= testImgFiles.length) return;
+  var temp = testImgFiles[index];
+  testImgFiles[index] = testImgFiles[target];
+  testImgFiles[target] = temp;
+  veAnhTest();
+  buildTestPdfFromImages();
+}
+var draggedIndex = null;
+function keoAnhTest(event, i) {
+  draggedIndex = i;
+  event.dataTransfer.effectAllowed = 'move';
+}
+function thaAnhTest(event, j) {
+  event.preventDefault();
+  if (draggedIndex === null || draggedIndex === j) return;
+  var movedItem = testImgFiles.splice(draggedIndex, 1)[0];
+  testImgFiles.splice(j, 0, movedItem);
+  draggedIndex = null;
+  veAnhTest();
+  buildTestPdfFromImages();
+}
 function veAnhTest() {
   var box = document.getElementById('testImgPreview');
   if (!box) return;
   box.innerHTML = testImgFiles.map(function (f, i) {
     var u = URL.createObjectURL(f);
-    return '<div style="position:relative">' +
-      '<img src="' + u + '" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
-      '<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0">Trang ' + (i + 1) + '</span>' +
-      '<button type="button" onclick="boAnhTest(' + i + ')" title="Gỡ ảnh" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
+    var prevBtn = i > 0 ? '<button type="button" onclick="dichChuyenAnhTest(' + i + ', -1)" title="Di chuyển lên trước" style="position:absolute;bottom:22px;left:6px;width:20px;height:20px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.65rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">◀</button>' : '';
+    var nextBtn = i < testImgFiles.length - 1 ? '<button type="button" onclick="dichChuyenAnhTest(' + i + ', 1)" title="Di chuyển ra sau" style="position:absolute;bottom:22px;right:6px;width:20px;height:20px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.65rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">▶</button>' : '';
+    
+    return '<div draggable="true" ondragstart="keoAnhTest(event, ' + i + ')" ondragover="event.preventDefault()" ondrop="thaAnhTest(event, ' + i + ')" style="position:relative;width:84px;height:84px;border-radius:8px;cursor:move;overflow:visible">' +
+      '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
+      '<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.6rem;text-align:center;border-radius:0 0 8px 8px;padding:1px 0;pointer-events:none">Trang ' + (i + 1) + '</span>' +
+      prevBtn + nextBtn +
+      '<button type="button" onclick="boAnhTest(' + i + ')" title="Gỡ ảnh" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.2)">×</button>' +
       '</div>';
   }).join('');
 }
+/* ===== Lightbox: bấm thumbnail ảnh đề để xem phóng to ===== */
+(function () {
+  function moAnhLightbox(src) {
+    var lb = document.getElementById('anhLightbox');
+    if (!lb) {
+      lb = document.createElement('div');
+      lb.id = 'anhLightbox';
+      lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+      lb.innerHTML = '<img id="anhLightboxImg" alt="Ảnh đề" style="max-width:95vw;max-height:92vh;border-radius:12px;box-shadow:0 12px 55px rgba(0,0,0,.6);object-fit:contain">' +
+        '<button type="button" aria-label="Đóng" style="position:absolute;top:18px;right:22px;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:1.6rem;cursor:pointer;line-height:1">×</button>';
+      lb.addEventListener('click', dongLightbox);
+      document.body.appendChild(lb);
+    }
+    document.getElementById('anhLightboxImg').src = src;
+    lb.style.display = 'flex';
+  }
+  function dongLightbox() {
+    var lb = document.getElementById('anhLightbox');
+    if (lb) { lb.style.display = 'none'; var im = document.getElementById('anhLightboxImg'); if (im) im.src = ''; }
+  }
+  window.moAnhLightbox = moAnhLightbox;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dongLightbox(); });
+  ['anhHienCo', 'btvnAnhHienCo', 'testImgPreview'].forEach(function (id) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    box.addEventListener('click', function (e) {
+      if (e.target && e.target.tagName === 'IMG' && e.target.src) moAnhLightbox(e.target.src);
+    });
+  });
+  var st = document.createElement('style');
+  st.textContent = '#anhHienCo img,#btvnAnhHienCo img,#testImgPreview img{cursor:zoom-in;transition:transform .12s}#anhHienCo img:hover,#btvnAnhHienCo img:hover,#testImgPreview img:hover{transform:scale(1.06)}';
+  document.head.appendChild(st);
+})();
+
 function _loadImgEl(src) {
   return new Promise(function (res, rej) {
     var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = src;
+  });
+}
+function _fileToDataURL(file) {
+  return new Promise(function (res, rej) {
+    var r = new FileReader();
+    r.onload = function () { res(r.result); };
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
 async function buildTestPdfFromImages() {
@@ -2737,14 +2900,18 @@ async function buildTestPdfFromImages() {
   var JsPDF = window.jspdf.jsPDF;
   var doc = null;
   for (var i = 0; i < testImgFiles.length; i++) {
-    var url = URL.createObjectURL(testImgFiles[i]);
-    var img = await _loadImgEl(url);
+    var f = testImgFiles[i];
+    // Dùng dữ liệu gốc (base64) — KHÔNG vẽ lại qua canvas -> giữ nguyên độ nét
+    var dataUrl = await _fileToDataURL(f);
+    var img = await _loadImgEl(dataUrl); // chỉ để lấy kích thước gốc
     var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var ty = (f.type || '').toLowerCase();
+    var fmt = (ty.indexOf('jpeg') !== -1 || ty.indexOf('jpg') !== -1) ? 'JPEG' : 'PNG';
     var orient = w >= h ? 'l' : 'p';
     if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [w, h] });
     else doc.addPage([w, h], orient);
-    doc.addImage(img, 'PNG', 0, 0, w, h);
-    URL.revokeObjectURL(url);
+    // compression 'NONE' -> không nén thêm, ảnh sắc nét tối đa
+    doc.addImage(dataUrl, fmt, 0, 0, w, h, undefined, 'NONE');
   }
   pdfBlobTest = doc.output('blob');
 }
@@ -3667,8 +3834,23 @@ function renderTheorySections() {
 function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
+  if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
   $('modalChuyenDe').style.display = 'flex';
   taiBangChuyenDe();
+}
+
+/* Sửa nhanh 1 chuyên đề ngay từ tiêu đề nhóm bài giảng */
+async function suaChuyenDeNhanh(id) {
+  if (!id) return;
+  resetCdForm();
+  $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
+  if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
+  $('modalChuyenDe').style.display = 'flex';
+  await taiBangChuyenDe();
+  await suaChuyenDe(id);
+  var modalC = $('modalChuyenDe') ? $('modalChuyenDe').querySelector('.modal-content') : null;
+  if (modalC) modalC.scrollTop = 0;
+  if ($('cdName')) $('cdName').focus();
 }
 
 function dongQuanLyChuyenDe() {
@@ -3679,9 +3861,15 @@ function dongQuanLyChuyenDe() {
 
 async function taiBangChuyenDe() {
   var gradeFilter = $('locCdGrade').value;
+  var typeFilter = $('locCdType') ? $('locCdType').value : 'all';
   var query = sb.from('topics').select('id, name, code, grade, sort, color, is_specialized').order('sort');
   if (gradeFilter !== 'all') {
     query = query.eq('grade', parseInt(gradeFilter));
+  }
+  if (typeFilter === 'dt') {
+    query = query.eq('is_specialized', false);
+  } else if (typeFilter === 'ch') {
+    query = query.eq('is_specialized', true);
   }
   
   var r = await query;
@@ -3689,18 +3877,17 @@ async function taiBangChuyenDe() {
   
   var tbody = $('bangChuyenDe');
   if (!topics.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--ink-3)">Không có chuyên đề nào.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3)">Không có chuyên đề nào.</td></tr>';
     return;
   }
   
   tbody.innerHTML = topics.map(function(t) {
     var specLabel = t.is_specialized ? '<span style="color:var(--accent); font-weight:600">⭐ Chuyên</span>' : '📘 Thường';
     return '<tr>' +
-           '  <td style="padding:8px"><b>' + t.code + '</b></td>' +
+           '  <td style="padding:8px"><b>' + (t.sort > 0 ? 'Chuyên đề ' + t.sort : '—') + '</b></td>' +
            '  <td style="padding:8px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + (t.color || 'var(--ink-3)') + ';margin-right:7px;vertical-align:middle"></span>' + t.name + '</td>' +
            '  <td style="padding:8px" class="num">Lớp ' + t.grade + '</td>' +
            '  <td style="padding:8px">' + specLabel + '</td>' +
-           '  <td style="padding:8px" class="num">' + t.sort + '</td>' +
            '  <td style="padding:8px; text-align:right;">' +
            '    <button type="button" class="btn btn-ghost btn-sm" onclick="suaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px;">Sửa</button>' +
            '    <button type="button" class="btn btn-ghost btn-sm" onclick="xoaChuyenDe(\'' + t.id + '\')" style="padding:4px 8px; color:var(--err);">Xóa</button>' +
@@ -3712,22 +3899,24 @@ async function taiBangChuyenDe() {
 async function luuChuyenDe() {
   var id = $('cdId').value;
   var name = $('cdName').value.trim();
-  var code = $('cdCode').value.trim();
   var grade = parseInt($('cdGrade').value);
   var sort = parseInt($('cdSort').value) || 0;
   var isSpecialized = $('cdIsSpecialized').value === 'true';
-  
-  if (!name || !code) {
-    alert('Vui lòng điền đầy đủ Tên chuyên đề và Mã code.');
+
+  if (!name) {
+    alert('Vui lòng nhập Tên chuyên đề.');
     return;
   }
-  
-  var data = { name: name, code: code, grade: grade, sort: sort, color: $('cdColor').value, is_specialized: isSpecialized };
-  
+
+  var data = { name: name, grade: grade, sort: sort, color: $('cdColor').value, is_specialized: isSpecialized };
+
   var r;
   if (id) {
+    // Giữ nguyên mã code cũ (không đưa vào payload nên không đổi)
     r = await sb.from('topics').update(data).eq('id', id);
   } else {
+    // Tự sinh mã code duy nhất ngầm (cột code NOT NULL + UNIQUE trong DB)
+    data.code = 'CD-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     r = await sb.from('topics').insert(data);
   }
   
@@ -3786,7 +3975,8 @@ function resetCdForm() {
 /* --- TẠO NHANH CHUYÊN ĐỀ TỪ DROPDOWN --- */
 function moQuickTopicModal() {
   $('qtName').value = '';
-  $('qtCode').value = '';
+  if ($('qtCode')) $('qtCode').value = '';
+  if ($('qtSort')) $('qtSort').value = '0';
   if (classDangChon) {
     $('qtGrade').value = classDangChon.grade;
     $('qtIsSpecialized').value = classDangChon.is_specialized ? 'true' : 'false';
@@ -3803,23 +3993,23 @@ function dongQuickTopicModal() {
 
 async function luuQuickTopic() {
   var name = $('qtName').value.trim();
-  var code = $('qtCode').value.trim();
   var grade = $('qtGrade').value;
+  var sort = parseInt($('qtSort') ? $('qtSort').value : '0') || 0;
   var isSpecialized = $('qtIsSpecialized').value === 'true';
-  
-  if (!name || !code || !grade) {
-    alert('Vui lòng nhập đầy đủ tên, mã và khối lớp cho chuyên đề.');
+
+  if (!name || !grade) {
+    alert('Vui lòng nhập tên chuyên đề và khối lớp.');
     return;
   }
-  
+
   var color = BANG_MAU_CD[tatCaChuyenDe.length % BANG_MAU_CD.length];
-  
+
   var r = await sb.from('topics').insert({
     name: name,
-    code: code,
+    code: 'CD-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     grade: parseInt(grade),
     is_specialized: isSpecialized,
-    sort: 0,
+    sort: sort,
     color: color
   }).select('id').single();
   
