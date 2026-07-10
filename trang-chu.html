@@ -791,6 +791,17 @@
 var hoSoNguoiDung = null;
 var tatCaLop = [];
 var tatCaSchedules = [];
+var ovByOrig = {}, ovMakeupByDate = {};   // buổi dời/nghỉ tạm thời
+async function taiOverrides() {
+  ovByOrig = {}; ovMakeupByDate = {};
+  try {
+    var r = await sb.from('schedule_overrides').select('id, schedule_id, class_id, orig_date, status, new_date, new_start, new_end, note');
+    (r.data || []).forEach(function (o) {
+      ovByOrig[o.schedule_id + '|' + o.orig_date] = o;
+      if (o.status === 'moved' && o.new_date) (ovMakeupByDate[o.new_date] = ovMakeupByDate[o.new_date] || []).push(o);
+    });
+  } catch (e) {}
+}
 var tatCaExams = [];
 var suKienThang = {}; // keyed by YYYY-MM-DD
 var mapGiaoVien = {};
@@ -1223,7 +1234,8 @@ async function taiSchedulesVaExamsStaff() {
     if (s.end_date && s.end_date < localToday) return false;
     return true;
   });
-  
+  await taiOverrides();
+
   // 3. Tải toàn bộ kỳ thi (exams) đã xuất bản
   var rExams = await sb.from('exams')
     .select('id, title, opens_at, closes_at, class_id')
@@ -1422,7 +1434,8 @@ async function taiSchedulesVaExamsStudent() {
     if (s.end_date && s.end_date < localToday) return false;
     return true;
   });
-  
+  await taiOverrides();
+
   // 2. Tải kỳ thi lớp học sinh tham gia
   var rExams = await sb.from('exams')
     .select('id, title, opens_at, closes_at, class_id')
@@ -1603,11 +1616,12 @@ async function veLichDayStaff() {
     var lesson = lessonByClassDate[s.class_id + '|' + sDateStr];
     var phongDichVu = '';
     if (isOnline) {
-      phongDichVu = meet 
-        ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank">🎥 Dạy Meet</a>'
+      phongDichVu = meet
+        ? '<a class="btn btn-primary btn-sm" href="' + meet + '" target="_blank" onclick="ghiNhanDayMeet(\'' + s.class_id + '\')">🎥 Dạy Meet</a>'
         : '<span style="font-size:.8rem; color:var(--ink-3)">Chưa có link Meet</span>';
     } else {
       var detailsHtml = '<div style="display:flex; align-items:center; gap:6px;"><span style="font-size:.85rem; color:var(--ink-2); white-space:nowrap">🏫 Tại trung tâm</span></div>';
+      if (laHomNay || hasPassed) detailsHtml += '<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:.78rem;padding:3px 10px" onclick="danhDauDaDay(\'' + s.class_id + '\',this)">✓ Đánh dấu đã dạy</button>';
       if (lesson) {
         detailsHtml += '<div style="font-size:0.8rem; color:var(--ink-2); margin-top:4px; max-width:280px; text-align:left">📚 Bài: <b style="color:var(--accent)">' + vclEsc(lesson.title) + '</b></div>';
         if (lesson.note && lesson.note.includes('---TEACHER_NOTE---')) {
@@ -1988,17 +2002,54 @@ function gcalEventsForDay(dt, filterPersonal, teacherFilter) {
       if (badges.length) titleText += ' (' + badges.join(', ') + ')';
     }
 
+    var _ov = ovByOrig[s.id + '|' + key];
     arr.push({
-      id: s.id,
+      id: s.id, class_id: s.class_id,
       start: s.start_time, end: s.end_time,
       title: titleText,
       teacher: teacherText,
       teacherFull: teacherFull,
       bg: layMauLop(s.classes ? s.classes.name : 'Lớp học'),
-      type: 'schedule'
+      type: 'schedule',
+      dateKey: key,
+      cancelled: !!(_ov && _ov.status === 'cancelled'),
+      movedAway: !!(_ov && _ov.status === 'moved'),
+      ovNote: _ov ? (_ov.note || '') : '',
+      ovNew: (_ov && _ov.status === 'moved') ? _ov : null
     });
   });
-  
+
+  // Buổi bù tạm thời (moved) rơi vào ngày này
+  (ovMakeupByDate[key] || []).forEach(function (o) {
+    var s = (tatCaSchedules || []).find(function (x) { return x.id === o.schedule_id; });
+    if (!s || !s.classes) return;
+    if (isStaff && filterPersonal) {
+      var isAssigned = (s.teacher_id ? s.teacher_id === hoSoNguoiDung.id : (s.classes.teacher_id === hoSoNguoiDung.id || s.classes.co_teacher_id === hoSoNguoiDung.id)) || (window.myAssistantClassIds && window.myAssistantClassIds.indexOf(s.class_id) !== -1);
+      if (hoSoNguoiDung.role === 'admin') { if (!isAssigned && !(!s.teacher_id && !s.classes.teacher_id)) return; }
+      else { if (!isAssigned) return; }
+    }
+    if (!filterPersonal && teacherFilter) {
+      var thuocGV = s.teacher_id ? (s.teacher_id === teacherFilter) : (s.classes.teacher_id === teacherFilter || s.classes.co_teacher_id === teacherFilter);
+      if (!thuocGV) return;
+    }
+    var t = s.classes.name, bd = [];
+    if (s.classes.is_specialized) bd.push('Chuyên');
+    if (s.classes.grade) bd.push('K' + s.classes.grade);
+    if (bd.length) t += ' (' + bd.join(', ') + ')';
+    var tvShort = '';
+    if (isStaff) {
+      var gvn = (mapGiaoVien[s.teacher_id] || mapGiaoVien[s.classes.teacher_id] || 'Thầy Điền Võ Thế Vinh').replace(/\s*\((?:Admin|admin)\)\s*/g, '').trim();
+      tvShort = 'GV: ' + gvn.split(' ').pop();
+    }
+    arr.push({
+      id: s.id, class_id: s.class_id,
+      start: o.new_start || s.start_time, end: o.new_end || s.end_time,
+      title: t, teacher: tvShort, teacherFull: '',
+      bg: layMauLop(s.classes.name),
+      type: 'schedule', dateKey: key, makeup: true, origDate: o.orig_date, ovNote: o.note || ''
+    });
+  });
+
   (tatCaExams || []).forEach(function (e) {
     if (!e.opens_at) return; var od = new Date(e.opens_at);
     if (gcalKey(od) !== key) return;
@@ -2151,12 +2202,18 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
       }
       
       var tooltipText = vclEsc(ev.title) + (ev.teacher ? '\n👤 GV: ' + vclEsc(ev.teacher) : '') + '\n⏰ ' + ev.start.slice(0, 5) + ' - ' + ev.end.slice(0, 5);
-      if (isStaff && ev.type === 'schedule' && ev.id) {
-        evHtml += '<a href="quan-tri-lich?schedule_id=' + ev.id + '" class="gcal-ev" title="' + tooltipText + '" style="' + styleStr + 'display:block;cursor:pointer;">' +
-          '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></a>';
+      // Trạng thái buổi bù/nghỉ/dời
+      var ovBadge = '', ovStyle = '', titleTag = '<b>' + vclEsc(ev.title) + '</b>';
+      if (ev.cancelled) { ovStyle = 'opacity:.5;'; ovBadge = '<span style="display:inline-block;background:rgba(239,68,68,.9);color:#fff;font-size:.56rem;font-weight:800;padding:0 5px;border-radius:5px;margin-bottom:1px">🚫 NGHỈ</span>'; titleTag = '<b style="text-decoration:line-through">' + vclEsc(ev.title) + '</b>'; tooltipText += '\n🚫 Đã cho nghỉ' + (ev.ovNote ? '\n📝 ' + ev.ovNote : ''); }
+      else if (ev.movedAway) { ovStyle = 'opacity:.55;'; ovBadge = '<span style="display:inline-block;background:rgba(245,158,11,.92);color:#fff;font-size:.56rem;font-weight:800;padding:0 5px;border-radius:5px;margin-bottom:1px">↷ DỜI</span>'; tooltipText += (ev.ovNew ? '\n↷ Dời sang ' + ev.ovNew.new_date + (ev.ovNew.new_start ? ' ' + ev.ovNew.new_start.slice(0,5) : '') : '') + (ev.ovNote ? '\n📝 ' + ev.ovNote : ''); }
+      else if (ev.makeup) { ovStyle = 'outline:2px dashed rgba(255,255,255,.6);outline-offset:-2px;'; ovBadge = '<span style="display:inline-block;background:rgba(16,185,129,.92);color:#fff;font-size:.56rem;font-weight:800;padding:0 5px;border-radius:5px;margin-bottom:1px">🔄 BÙ</span>'; tooltipText += '\n🔄 Buổi bù (gốc ' + (ev.origDate || '') + ')' + (ev.ovNote ? '\n📝 ' + ev.ovNote : ''); }
+      var inner = ovBadge + titleTag + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span>';
+      if (isStaff && ev.type === 'schedule' && ev.id && !ev.makeup) {
+        evHtml += '<div class="gcal-ev" onclick="moDoiBuoi(\'' + ev.id + '\',\'' + ev.dateKey + '\')" title="' + tooltipText + '" style="' + styleStr + ovStyle + 'cursor:pointer;">' + inner + '</div>';
+      } else if (isStaff && ev.makeup) {
+        evHtml += '<div class="gcal-ev" onclick="moDoiBuoi(\'' + ev.id + '\',\'' + ev.origDate + '\')" title="' + tooltipText + '" style="' + styleStr + ovStyle + 'cursor:pointer;">' + inner + '</div>';
       } else {
-        evHtml += '<div class="gcal-ev" title="' + tooltipText + '" style="' + styleStr + '">' +
-          '<b>' + vclEsc(ev.title) + '</b>' + teacherHtml + '<span class="evt">' + ev.start.slice(0, 5) + '–' + ev.end.slice(0, 5) + '</span></div>';
+        evHtml += '<div class="gcal-ev" title="' + tooltipText + '" style="' + styleStr + ovStyle + '">' + inner + '</div>';
       }
     });
     var nowHtml = '';
@@ -2828,6 +2885,116 @@ setTimeout(window.hideLoader, 2500);
     </div>
   </div>
 </div>
+
+<!-- ===== Dời / cho nghỉ buổi (bù tạm thời) ===== -->
+<div id="modalDoiBuoi" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:440px;width:100%;padding:24px;position:relative;max-height:92vh;overflow-y:auto">
+    <button onclick="dongDoiBuoi()" style="position:absolute;top:14px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
+    <h2 style="font-size:1.2rem;font-weight:800;margin:0 0 4px">🔄 Dời / cho nghỉ buổi</h2>
+    <div style="font-weight:700;color:var(--accent);font-size:1rem" id="dbTenLop">Lớp</div>
+    <div style="font-size:.85rem;color:var(--ink-2);margin-bottom:16px" id="dbNgayGoc">—</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+        <input type="radio" name="dbStatus" value="moved" onchange="dbToggleMoveFields()" checked> ↷ Dời sang ngày/giờ khác (bù tạm)
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+        <input type="radio" name="dbStatus" value="cancelled" onchange="dbToggleMoveFields()"> 🚫 Cho nghỉ (không bù)
+      </label>
+    </div>
+
+    <div id="dbMoveFields" style="margin-bottom:14px">
+      <label style="font-size:.82rem;font-weight:700;color:var(--ink-2)">Ngày bù</label>
+      <input type="date" id="dbNewDate" class="input" style="width:100%;margin-bottom:8px">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label style="font-size:.82rem;font-weight:700;color:var(--ink-2)">Từ</label><input type="time" id="dbNewStart" class="input" style="width:100%"></div>
+        <div style="flex:1"><label style="font-size:.82rem;font-weight:700;color:var(--ink-2)">Đến</label><input type="time" id="dbNewEnd" class="input" style="width:100%"></div>
+      </div>
+    </div>
+
+    <label style="font-size:.82rem;font-weight:700;color:var(--ink-2)">📝 Ghi chú (vì sao đổi buổi)</label>
+    <textarea id="dbNote" class="input" rows="2" placeholder="VD: Em A báo nghỉ, dời sang CN; hoặc thầy bận họp…" style="width:100%;resize:vertical;margin-bottom:16px"></textarea>
+
+    <div style="display:flex;gap:10px;align-items:center">
+      <button id="dbXoa" onclick="xoaDoiBuoi()" class="btn btn-ghost btn-sm" style="color:var(--err);display:none">Bỏ thay đổi</button>
+      <div style="display:flex;gap:10px;margin-left:auto">
+        <button onclick="dongDoiBuoi()" class="btn btn-secondary btn-sm">Huỷ</button>
+        <button id="dbLuu" onclick="luuDoiBuoi()" class="btn btn-primary btn-sm">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _dbSchedId = null, _dbDate = null;
+function _fmtVN(d) { var p = String(d).split('-'); return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : d; }
+function moDoiBuoi(schedId, dateKey) {
+  var s = (tatCaSchedules || []).find(function (x) { return x.id === schedId; });
+  if (!s) return;
+  _dbSchedId = schedId; _dbDate = dateKey;
+  var ov = ovByOrig[schedId + '|' + dateKey];
+  document.getElementById('dbTenLop').textContent = s.classes ? s.classes.name : 'Lớp';
+  document.getElementById('dbNgayGoc').textContent = 'Buổi cố định: ' + _fmtVN(dateKey) + ' · ' + (s.start_time || '').slice(0, 5) + '–' + (s.end_time || '').slice(0, 5);
+  var status = ov ? ov.status : 'moved';
+  var rb = document.querySelector('input[name="dbStatus"][value="' + status + '"]'); if (rb) rb.checked = true;
+  document.getElementById('dbNewDate').value = ov && ov.new_date ? ov.new_date : dateKey;
+  document.getElementById('dbNewStart').value = ov && ov.new_start ? ov.new_start.slice(0, 5) : (s.start_time || '').slice(0, 5);
+  document.getElementById('dbNewEnd').value = ov && ov.new_end ? ov.new_end.slice(0, 5) : (s.end_time || '').slice(0, 5);
+  document.getElementById('dbNote').value = ov ? (ov.note || '') : '';
+  document.getElementById('dbXoa').style.display = ov ? '' : 'none';
+  dbToggleMoveFields();
+  document.getElementById('modalDoiBuoi').style.display = 'flex';
+}
+function dbToggleMoveFields() {
+  var el = document.querySelector('input[name="dbStatus"]:checked');
+  document.getElementById('dbMoveFields').style.display = (el && el.value === 'moved') ? 'block' : 'none';
+}
+function dongDoiBuoi() { document.getElementById('modalDoiBuoi').style.display = 'none'; }
+async function luuDoiBuoi() {
+  var s = (tatCaSchedules || []).find(function (x) { return x.id === _dbSchedId; });
+  if (!s) return;
+  var status = document.querySelector('input[name="dbStatus"]:checked').value;
+  var note = document.getElementById('dbNote').value.trim() || null;
+  var payload = { schedule_id: _dbSchedId, class_id: s.class_id, orig_date: _dbDate, status: status, note: note, teacher_id: (hoSoNguoiDung ? hoSoNguoiDung.id : null) };
+  if (status === 'moved') {
+    payload.new_date = document.getElementById('dbNewDate').value || _dbDate;
+    payload.new_start = document.getElementById('dbNewStart').value || null;
+    payload.new_end = document.getElementById('dbNewEnd').value || null;
+  } else { payload.new_date = null; payload.new_start = null; payload.new_end = null; }
+  var btn = document.getElementById('dbLuu'); btn.disabled = true; btn.textContent = 'Đang lưu…';
+  var r = await sb.from('schedule_overrides').upsert(payload, { onConflict: 'schedule_id,orig_date' });
+  btn.disabled = false; btn.textContent = 'Lưu';
+  if (r.error) { alert('Lỗi lưu: ' + r.error.message); return; }
+  await taiOverrides(); veLichTuan(); dongDoiBuoi();
+}
+async function xoaDoiBuoi() {
+  if (!confirm('Bỏ thay đổi buổi này, khôi phục về lịch cố định?')) return;
+  var r = await sb.from('schedule_overrides').delete().eq('schedule_id', _dbSchedId).eq('orig_date', _dbDate);
+  if (r.error) { alert('Lỗi: ' + r.error.message); return; }
+  await taiOverrides(); veLichTuan(); dongDoiBuoi();
+}
+
+function _homNayISO() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+// Lớp online: bấm Dạy Meet -> tự ghi nhận buổi đã dạy hôm nay
+async function ghiNhanDayMeet(classId) {
+  try {
+    await sb.from('taught_sessions').upsert(
+      { class_id: classId, held_on: _homNayISO(), source: 'meet', teacher_id: (hoSoNguoiDung ? hoSoNguoiDung.id : null) },
+      { onConflict: 'class_id,held_on' });
+  } catch (e) {}
+}
+// Lớp trực tiếp: đánh dấu đã dạy thủ công
+async function danhDauDaDay(classId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Đang ghi…'; }
+  var r = await sb.from('taught_sessions').upsert(
+    { class_id: classId, held_on: _homNayISO(), source: 'manual', teacher_id: (hoSoNguoiDung ? hoSoNguoiDung.id : null) },
+    { onConflict: 'class_id,held_on' });
+  if (btn) {
+    if (r.error) { btn.disabled = false; btn.textContent = '✓ Đánh dấu đã dạy'; alert('Lỗi: ' + r.error.message); }
+    else { btn.textContent = '✓ Đã ghi nhận'; btn.style.color = 'var(--ok)'; }
+  }
+}
+</script>
 
 </body>
 </html>
