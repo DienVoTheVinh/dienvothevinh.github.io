@@ -1851,20 +1851,46 @@ function draw(ts) {
 }
 draw();
 
-// Hide preloader when page finishes loading
-(function() {
+// Preloader: đợi TẢI + DECODE hết ảnh rồi mới ẩn — để khi cuộn xuống chỉ còn hiệu ứng hiện dần, không phải tải nữa (hết lag)
+(function () {
+  var pl = document.getElementById('vm-preloader');
+  var txt = pl ? pl.querySelector('.vm-preloader-text') : null;
+  var hidden = false;
   function hideLoader() {
-    var pl = document.getElementById('vm-preloader');
+    if (hidden) return; hidden = true;
     if (pl && !pl.classList.contains('fade-out')) {
       pl.classList.add('fade-out');
-      setTimeout(function () {
-        pl.style.display = 'none';
-      }, 600);
+      setTimeout(function () { pl.style.display = 'none'; }, 600);
     }
   }
-  window.addEventListener('load', hideLoader);
-  // Safety timeout: force hide after 2.5 seconds
-  setTimeout(hideLoader, 2500);
+  function preloadImages() {
+    // Tất cả ảnh nội dung (bỏ qua logo trong preloader)
+    var imgs = [].slice.call(document.images).filter(function (im) {
+      return im && im.getAttribute('src') && !(pl && pl.contains(im));
+    });
+    var total = imgs.length, done = 0;
+    if (!total) { setTimeout(hideLoader, 300); return; }
+    function tick() {
+      done++;
+      if (txt) txt.textContent = 'Đang tải hình ảnh lớp học… ' + Math.round(done / total * 100) + '%';
+      if (done >= total) setTimeout(hideLoader, 260);
+    }
+    imgs.forEach(function (im) {
+      try { im.loading = 'eager'; } catch (e) {}   // ép tải sớm, không chờ cuộn tới
+      var fin = function () { tick(); };
+      var dec = function () { if (im.decode) { im.decode().then(fin).catch(fin); } else fin(); };
+      if (im.complete && im.naturalWidth > 0) { dec(); }
+      else if (im.complete) { fin(); }             // đã xong nhưng lỗi
+      else {
+        im.addEventListener('load', dec, { once: true });
+        im.addEventListener('error', fin, { once: true });
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', preloadImages);
+  else preloadImages();
+  // An toàn: dù mạng chậm/ảnh lỗi cũng ẩn sau tối đa 10 giây
+  setTimeout(hideLoader, 10000);
 })();
 </script>
 </body>
