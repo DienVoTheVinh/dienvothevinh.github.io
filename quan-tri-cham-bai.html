@@ -28,6 +28,27 @@
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 640px; padding: 28px; max-height: 88vh; overflow-y: auto; position: relative; }
+/* ===== Ảnh nộp / ảnh chấm dạng thumbnail ===== */
+.chb-label { font-size:.76rem; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.03em; margin:10px 0 4px; }
+.chb-thumbs { display:flex; flex-wrap:wrap; gap:8px; }
+.chb-thumb { position:relative; width:88px; height:88px; border-radius:8px; overflow:hidden; border:1px solid var(--line-2); cursor:pointer; background:var(--surface-2); flex:none; }
+.chb-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.chb-thumb .idx { position:absolute; top:2px; left:2px; background:rgba(0,0,0,.68); color:#fff; font-size:.64rem; font-weight:800; padding:0 5px; border-radius:5px; z-index:1; }
+.chb-thumb.file { display:flex; align-items:center; justify-content:center; font-size:1.7rem; text-decoration:none; color:var(--ink-2); }
+.chb-thumb:hover { border-color:var(--accent); transform:scale(1.03); transition:.12s; }
+/* Khu dán/chọn ảnh chấm */
+.chb-stage-zone { border:2px dashed var(--line-2); border-radius:10px; padding:12px; text-align:center; color:var(--ink-3); font-size:.84rem; cursor:pointer; outline:none; }
+.chb-stage-zone:hover, .chb-stage-zone:focus, .chb-stage-zone.drag { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.chb-cham-thumb { position:relative; width:94px; height:94px; border-radius:8px; overflow:hidden; border:1px solid var(--ok); flex:none; }
+.chb-cham-thumb > img { width:100%; height:100%; object-fit:cover; cursor:zoom-in; display:block; }
+.chb-cham-thumb .idx { position:absolute; top:2px; left:2px; background:rgba(16,185,129,.92); color:#fff; font-size:.64rem; font-weight:800; padding:0 5px; border-radius:5px; }
+.chb-cham-thumb .ops { position:absolute; bottom:0; left:0; right:0; display:flex; background:rgba(0,0,0,.58); }
+.chb-cham-thumb .ops button { flex:1; border:none; background:none; color:#fff; cursor:pointer; font-size:.72rem; padding:2px 0; line-height:1.4; }
+.chb-cham-thumb .ops button:hover { background:rgba(255,255,255,.22); }
+/* Lightbox */
+#chbLightbox { display:none; position:fixed; inset:0; z-index:100000; background:rgba(0,0,0,.9); align-items:center; justify-content:center; padding:20px; cursor:zoom-out; flex-direction:column; gap:12px; }
+#chbLightbox img { max-width:95vw; max-height:84vh; object-fit:contain; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.5); }
+#chbLightbox .lb-open { color:#fff; text-decoration:underline; font-size:.9rem; }
 </style>
 </head>
 <body>
@@ -364,8 +385,8 @@ function veDanhSach() {
     var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
     var lop = classNames || '—';
     var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
-    var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">📄 ' + f.name + '</a>'; }).join(' &nbsp; ');
-    var linksCham = (s.graded_files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">✏️ ' + f.name + '</a>'; }).join(' &nbsp; ');
+    var links = chbThumbs(s.files);
+    var linksCham = chbThumbs(s.graded_files);
     var badge = s.status === 'graded'
       ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>'
       : '<span class="badge badge-warn">Chờ chấm</span>';
@@ -375,8 +396,9 @@ function veDanhSach() {
         badge +
       '</div>' +
       '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : (s.exams ? '📝 Đề (tự luận): ' + s.exams.title : 'Bài đã xoá')) + ' · ' + ngay + '</div>' +
-      '<div class="sub-files" style="margin-top:8px">' + links + '</div>' +
-      (linksCham ? '<div class="sub-files" style="margin-top:4px">' + linksCham + '</div>' : '') +
+      '<div class="chb-label">📎 Ảnh học sinh nộp (' + (s.files || []).length + ') — bấm để xem lớn</div>' +
+      '<div class="chb-thumbs">' + links + '</div>' +
+      (linksCham ? ('<div class="chb-label">✏️ Ảnh thầy đã chấm trả</div><div class="chb-thumbs">' + linksCham + '</div>') : '') +
       '<div class="grade-row">' +
         '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? s.score : '') + '">' +
         '<textarea class="input" rows="4" placeholder="Lời phê cho học sinh… (nhấn Enter để xuống dòng — mỗi câu/ý một dòng cho dễ đọc)" id="phe-' + s.id + '" style="resize:vertical;line-height:1.5">' + (s.feedback || '') + '</textarea>' +
@@ -387,13 +409,12 @@ function veDanhSach() {
         '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" id="btnxem-' + s.id + '" onclick="xemPheNhuHS(\'' + s.id + '\')">👁 Xem như HS</button>' +
       '</div>' +
       '<div id="preview-' + s.id + '" style="display:none;margin-top:8px;padding:12px 14px;border:1px solid var(--ok);border-radius:8px;background:var(--ok-soft)"></div>' +
-      '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
-        '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple onchange="vmRenderFileList(\'filecham-' + s.id + '\',\'filelist-' + s.id + '\')" style="font-size:.85rem;flex:1;min-width:200px">' +
-        '<button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button>' +
-      '</div>' +
-      '<div id="filelist-' + s.id + '"></div>' +
-      '<div style="font-size:.76rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: viết lời phê ra giấy/chụp màn hình → bấm vào thẻ này rồi <b>dán (Ctrl/⌘ + V)</b> để đính ảnh trả cho HS.</div>' +
-      '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>' +
+      '<div class="chb-label">✏️ Ảnh chấm trả cho học sinh — dán (Ctrl/⌘+V) hoặc chọn tệp, ◀▶ đổi thứ tự, ✕ xoá, bấm ảnh để xem lớn</div>' +
+      '<div class="chb-stage-zone" id="stagezone-' + s.id + '" tabindex="0" onclick="document.getElementById(\'filecham-' + s.id + '\').click()">📤 Bấm chọn ảnh · hoặc bấm vào đây rồi <b>dán (Ctrl/⌘ + V)</b></div>' +
+      '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="display:none" onchange="chamThemFile(\'' + s.id + '\', this.files); this.value=String()">' +
+      '<div class="chb-thumbs" id="chamstage-' + s.id + '" style="margin-top:8px"></div>' +
+      '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:4px"></div>' +
+      '<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button></div>' +
       '</div>';
   }).join('');
 }
@@ -402,17 +423,19 @@ async function luuCham(id) {
   var nut = $('luu-' + id);
   nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
   try {
-    // 1. Nếu có file chấm: gửi lên Drive qua trạm nop-bai
-    var fs = $('filecham-' + id).files;
-    if (fs.length) {
-      nut.textContent = '⏳ Đang tải file chấm…';
+    // 1. Nếu có ảnh chấm (staging, đúng thứ tự): gửi lên Drive qua trạm nop-bai — chỉ lưu link, không tốn dung lượng DB
+    var arr = chamStaged[id] || [];
+    if (arr.length) {
+      nut.textContent = '⏳ Đang tải ảnh chấm lên Drive…';
       var fd = new FormData();
       fd.append('kind', 'cham');
       fd.append('submission_id', id);
-      for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
+      arr.forEach(function (it) { fd.append('files', it.file); });
       var r1 = await sb.functions.invoke('nop-bai', { body: fd });
       if (r1.error) throw new Error(r1.error.message || 'Trạm lỗi');
       if (r1.data && r1.data.error) throw new Error(r1.data.error);
+      arr.forEach(function (it) { try { URL.revokeObjectURL(it.url); } catch (e) {} });
+      delete chamStaged[id];
     }
     // 2. Lưu điểm + lời phê
     var diem = $('diem-' + id).value;
@@ -461,13 +484,80 @@ function xemPheNhuHS(id) {
   }
 }
 
-/* ===== Dán ảnh (Ctrl/⌘+V) vào thẻ chấm bài đang thao tác ===== */
+/* ===== Ảnh nộp / ảnh chấm: thumbnail Drive + lightbox ===== */
+function chbThumbs(files) {
+  return (files || []).map(function (f, i) {
+    var isImg = /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(f.name || '');
+    if (isImg && f.id) {
+      return '<div class="chb-thumb" onclick="chbXemDrive(\'' + f.id + '\')" title="' + chamEsc(f.name) + '">' +
+        '<span class="idx">' + (i + 1) + '</span>' +
+        '<img loading="lazy" src="https://drive.google.com/thumbnail?id=' + f.id + '&sz=w300" onerror="chbImgLoi(this)"></div>';
+    }
+    return '<a class="chb-thumb file" href="' + f.link + '" target="_blank" title="' + chamEsc(f.name) + '"><span class="idx">' + (i + 1) + '</span>📄</a>';
+  }).join('') || '<span style="font-size:.82rem;color:var(--ink-3)">Không có ảnh.</span>';
+}
+function chbImgLoi(img) { img.onerror = null; var p = img.parentNode; p.classList.add('file'); img.remove(); p.insertAdjacentText('beforeend', '🖼'); }
+function chbLightboxEl() {
+  var lb = document.getElementById('chbLightbox');
+  if (!lb) {
+    lb = document.createElement('div'); lb.id = 'chbLightbox';
+    lb.innerHTML = '<img id="chbLbImg" alt=""><a class="lb-open" id="chbLbOpen" target="_blank">🔗 Mở ảnh gốc trong Drive</a>';
+    lb.addEventListener('click', function (e) { if (e.target.id !== 'chbLbOpen') lb.style.display = 'none'; });
+    document.body.appendChild(lb);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lb.style.display = 'none'; });
+  }
+  return lb;
+}
+function chbXemDrive(id) {
+  var lb = chbLightboxEl();
+  document.getElementById('chbLbImg').src = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1600';
+  var op = document.getElementById('chbLbOpen'); op.href = 'https://drive.google.com/file/d/' + id + '/view'; op.style.display = '';
+  lb.style.display = 'flex';
+}
+function chbXemUrl(url) {
+  var lb = chbLightboxEl();
+  document.getElementById('chbLbImg').src = url;
+  document.getElementById('chbLbOpen').style.display = 'none';
+  lb.style.display = 'flex';
+}
+
+/* ===== Ảnh chấm trả (staging): dán / chọn, sắp thứ tự, đổi vị trí, xoá ===== */
+var chamStaged = {};
+function chamThemFile(subId, fileList) {
+  chamStaged[subId] = chamStaged[subId] || [];
+  var them = 0;
+  for (var i = 0; i < fileList.length; i++) {
+    var f = fileList[i]; if (!f) continue;
+    chamStaged[subId].push({ file: f, url: URL.createObjectURL(f) }); them++;
+  }
+  chamRenderStage(subId);
+  var st = document.getElementById('danchamtt-' + subId);
+  if (st && them) st.textContent = '✓ Đã thêm ' + them + ' ảnh · tổng ' + chamStaged[subId].length + ' ảnh chấm (sẽ lưu vào Drive theo thứ tự này)';
+}
+function chamRenderStage(subId) {
+  var box = document.getElementById('chamstage-' + subId); if (!box) return;
+  var arr = chamStaged[subId] || [];
+  box.innerHTML = arr.map(function (it, i) {
+    var isImg = it.file.type.indexOf('image') !== -1;
+    var inner = isImg
+      ? '<img src="' + it.url + '" onclick="chbXemUrl(\'' + it.url + '\')">'
+      : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.7rem">📄</div>';
+    return '<div class="chb-cham-thumb"><span class="idx">' + (i + 1) + '</span>' + inner +
+      '<div class="ops">' +
+        '<button title="Sang trái" onclick="chamDoi(\'' + subId + '\',' + i + ',-1)">◀</button>' +
+        '<button title="Xoá" onclick="chamXoa(\'' + subId + '\',' + i + ')">✕</button>' +
+        '<button title="Sang phải" onclick="chamDoi(\'' + subId + '\',' + i + ',1)">▶</button>' +
+      '</div></div>';
+  }).join('');
+}
+function chamXoa(subId, i) { var arr = chamStaged[subId] || []; if (arr[i]) { try { URL.revokeObjectURL(arr[i].url); } catch (e) {} arr.splice(i, 1); } chamRenderStage(subId); }
+function chamDoi(subId, i, dir) { var arr = chamStaged[subId] || []; var j = i + dir; if (j < 0 || j >= arr.length) return; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; chamRenderStage(subId); }
+
+/* Dán ảnh (Ctrl/⌘+V) khi con trỏ trong thẻ chấm bài đang thao tác */
 window.addEventListener('paste', function (e) {
   var ae = document.activeElement;
   var card = ae && ae.closest ? ae.closest('.sub-card') : null;
   if (!card) return;
-  var inp = card.querySelector('input[type=file]');
-  if (!inp) return;
   var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
   if (!cd) return;
   var imgs = [];
@@ -475,18 +565,12 @@ window.addEventListener('paste', function (e) {
   if (!imgs.length && cd.files) for (var j = 0; j < cd.files.length; j++) { var ff = cd.files[j]; if (ff.type && ff.type.indexOf('image') !== -1) imgs.push(ff); }
   if (!imgs.length) return;
   e.preventDefault();
-  var dt = new DataTransfer();
-  if (inp.files) for (var a = 0; a < inp.files.length; a++) dt.items.add(inp.files[a]);
-  for (var k = 0; k < imgs.length; k++) {
-    var src = imgs[k]; var name = src.name;
+  var named = imgs.map(function (src, k) {
+    var name = src.name;
     if (!name || /^image/i.test(name)) { var ext = (src.type.split('/')[1] || 'png'); name = 'cham-dan-' + Date.now() + '-' + k + '.' + ext; }
-    dt.items.add(new File([src], name, { type: src.type }));
-  }
-  inp.files = dt.files;
-  var id = card.id.replace('sub-', '');
-  var st = document.getElementById('danchamtt-' + id);
-  if (st) st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
-  vmRenderFileList('filecham-' + id, 'filelist-' + id);
+    return new File([src], name, { type: src.type });
+  });
+  chamThemFile(card.id.replace('sub-', ''), named);
 });
 
 function vmRenderFileList(inputId, listId) {
