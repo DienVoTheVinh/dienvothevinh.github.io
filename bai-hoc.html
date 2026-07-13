@@ -329,6 +329,16 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
     <div id="lessonNoteContent" style="white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding-left:6px; margin-top:8px; max-height:34vh; overflow-y:auto"></div>
   </div>
 
+  <!-- 📝 Bài kiểm tra được giao (đề từ Khu luyện đề) -->
+  <a id="linkedExamBanner" href="#" style="display:none; text-decoration:none; margin:12px 20px 0; padding:14px 18px; border-radius:16px; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(37,99,235,0.14), rgba(37,99,235,0.04)); border:1px solid rgba(37,99,235,0.35); box-shadow:0 4px 18px rgba(37,99,235,0.10)">
+    <span style="font-size:1.7rem; flex-shrink:0">📝</span>
+    <div style="flex:1; min-width:0">
+      <div style="font-weight:800; color:#2563eb; font-size:1rem">Bài kiểm tra được giao</div>
+      <div id="linkedExamTitle" style="font-size:.9rem; color:var(--ink-2); margin-top:1px">—</div>
+    </div>
+    <span class="btn btn-primary btn-sm" style="background:#2563eb; border-color:#2563eb; white-space:nowrap; flex-shrink:0">Vào làm ngay →</span>
+  </a>
+
   <!-- Ghi chú riêng cho GV — popover (chỉ GV/Admin bấm nút mới hiện, HS không thấy) -->
   <div id="ghiChuGVPopover" style="display:none; position:fixed; top:64px; right:16px; z-index:130; max-width:380px; width:calc(100vw - 32px); background:var(--surface); border:1px solid rgba(37,99,235,0.4); border-radius:14px; box-shadow:0 14px 44px rgba(0,0,0,.3); padding:16px 18px">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px">
@@ -825,7 +835,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, linked_exam_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -1058,6 +1068,25 @@ function renderBaiHoc() {
       }
     } else {
       noteBanner.style.display = 'none';
+    }
+  }
+
+  // 📝 Bài kiểm tra được giao (đề gắn từ Khu luyện đề)
+  var exBanner = $('linkedExamBanner');
+  if (exBanner) {
+    if (details.linked_exam_id) {
+      exBanner.style.display = 'flex';
+      exBanner.href = 'luyen-de?exam_id=' + encodeURIComponent(details.linked_exam_id);
+      var exTitleEl = $('linkedExamTitle');
+      if (exTitleEl) exTitleEl.textContent = 'Đang tải đề…';
+      sb.from('exams').select('title, de_type, duration_minutes').eq('id', details.linked_exam_id).maybeSingle().then(function (er) {
+        if (er.data && exTitleEl) {
+          var lo = er.data.de_type === 'tu_luan' ? 'Tự luận' : 'Trắc nghiệm';
+          exTitleEl.textContent = (er.data.title || 'Đề kiểm tra') + ' · ' + lo + (er.data.duration_minutes ? ' · ' + er.data.duration_minutes + ' phút' : '');
+        } else if (exTitleEl) { exTitleEl.textContent = 'Đề kiểm tra'; }
+      });
+    } else {
+      exBanner.style.display = 'none';
     }
   }
 
