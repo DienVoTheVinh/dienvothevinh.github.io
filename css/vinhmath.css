@@ -1772,3 +1772,20 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
 
 /* Cuộn mượt toàn trang */
 html { scroll-behavior: smooth; }
+
+/* ===== FIX MODAL BỊ ĐẨY LÊN CAO CHE NÚT X (áp dụng mọi trang) ===== */
+/* Modal căn từ trên xuống + chừa khoảng cho thanh điều hướng cố định, cho phép cuộn overlay khi nội dung dài */
+.modal {
+  align-items: flex-start !important;
+  overflow-y: auto !important;
+  padding: 84px 14px 28px !important;
+  -webkit-overflow-scrolling: touch;
+}
+.modal > .modal-content {
+  max-height: none !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+@media (max-width: 640px) {
+  .modal { padding: 70px 10px 24px !important; }
+}
