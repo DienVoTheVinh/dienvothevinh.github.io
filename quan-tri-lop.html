@@ -314,10 +314,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">📋 Buổi điểm danh:</label>
             <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="display:none"></select>
             <div id="ddSessionPick" style="position:relative;">
-              <button type="button" id="ddSessionBtn" onclick="ddToggleSessionPanel(event)" style="display:flex; align-items:center; gap:10px; min-width:230px; padding:7px 12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left; font-size:.85rem; color:var(--ink)">
+              <button type="button" id="ddSessionBtn" onclick="ddToggleSessionPanel(event)" style="display:flex; align-items:center; gap:10px; min-width:230px; padding:7px 12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface-solid, var(--surface)); cursor:pointer; text-align:left; font-size:.85rem; color:var(--ink)">
                 <span style="font-size:1.05rem">🗓️</span><span id="ddSessionBtnLabel" style="flex:1">Chọn buổi…</span><span style="color:var(--ink-3)">▾</span>
               </button>
-              <div id="ddSessionPanel" style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:280px; max-height:320px; overflow-y:auto; background:var(--surface); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.28); padding:6px"></div>
+              <div id="ddSessionPanel" style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:60; min-width:280px; max-height:320px; overflow-y:auto; background:var(--surface-solid, #17171b); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.5); padding:6px"></div>
             </div>
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600; margin-left:10px;">🏠 Bài tập:</label>
             <select id="hwLessonSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:170px;"><option value="">— Không xem BTVN —</option></select>
