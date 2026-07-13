@@ -312,10 +312,12 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <div class="card" style="padding:14px 16px;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600;">📋 Buổi điểm danh:</label>
-            <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:180px;"></select>
-            <div class="chi-gv" style="display:inline-flex; align-items:center; gap:4px;">
-              <input type="date" id="ddSessionDateInput" style="padding:5px 8px; border:1px solid var(--line-2); border-radius:8px; font-size:.82rem; height:32px;">
-              <button class="btn btn-secondary btn-sm" onclick="taoBuoiTheoNgayChon()" style="padding:5px 10px; height:32px; font-size:.82rem">➕ Tạo buổi</button>
+            <select id="ddSessionSel" onchange="veRosterTheoDoi()" style="display:none"></select>
+            <div id="ddSessionPick" style="position:relative;">
+              <button type="button" id="ddSessionBtn" onclick="ddToggleSessionPanel(event)" style="display:flex; align-items:center; gap:10px; min-width:230px; padding:7px 12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left; font-size:.85rem; color:var(--ink)">
+                <span style="font-size:1.05rem">🗓️</span><span id="ddSessionBtnLabel" style="flex:1">Chọn buổi…</span><span style="color:var(--ink-3)">▾</span>
+              </button>
+              <div id="ddSessionPanel" style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:280px; max-height:320px; overflow-y:auto; background:var(--surface); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.28); padding:6px"></div>
             </div>
             <label style="font-size:.82rem; color:var(--ink-2); font-weight:600; margin-left:10px;">🏠 Bài tập:</label>
             <select id="hwLessonSel" onchange="veRosterTheoDoi()" style="padding:6px 10px; border:1px solid var(--line-2); border-radius:8px; font-size:.85rem; min-width:170px;"><option value="">— Không xem BTVN —</option></select>
@@ -1888,10 +1890,44 @@ function ddEsc(s) {
   });
 }
 
+var ddSchedMap = {};
+function ddThuVN(dateStr) {
+  var d = new Date(dateStr + 'T00:00:00');
+  return ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][d.getDay()] || '';
+}
+function ddBuoiGio(dateStr) {
+  var d = new Date(dateStr + 'T00:00:00');
+  var w = d.getDay() === 0 ? 7 : d.getDay();
+  var s = ddSchedMap[w]; if (!s) return '';
+  var a = (s.start || '').slice(0, 5), b = (s.end || '').slice(0, 5);
+  return a ? (a + (b ? '–' + b : '')) : '';
+}
+async function taiLichLop(cid) {
+  ddSchedMap = {};
+  try {
+    var r = await sb.from('schedules').select('weekday, start_time, end_time').eq('class_id', cid);
+    (r.data || []).forEach(function (s) { if (s.weekday != null && !ddSchedMap[s.weekday]) ddSchedMap[s.weekday] = { start: s.start_time, end: s.end_time }; });
+  } catch (e) {}
+}
+function ddCapNhatBtnLabel() {
+  var sel = $('ddSessionSel'), lbl = $('ddSessionBtnLabel'); if (!sel || !lbl) return;
+  var b = ddSessionsMap[sel.value];
+  if (!b) { lbl.textContent = 'Chọn buổi…'; return; }
+  var gio = ddBuoiGio(b.held_on);
+  lbl.innerHTML = '<b>' + ddThuVN(b.held_on) + ' · ' + ddDinhDangNgay(b.held_on) + '</b>' + (gio ? ' <span style="color:var(--ink-3)">· ' + gio + '</span>' : '');
+}
+function ddToggleSessionPanel(e) { if (e) e.stopPropagation(); var p = $('ddSessionPanel'); if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none'; }
+function ddChonBuoi(id) { var sel = $('ddSessionSel'); if (sel) sel.value = id; ddCapNhatBtnLabel(); var p = $('ddSessionPanel'); if (p) p.style.display = 'none'; veRosterTheoDoi(); }
+document.addEventListener('click', function (e) {
+  var pick = document.getElementById('ddSessionPick'); var p = $('ddSessionPanel');
+  if (p && p.style.display === 'block' && pick && !pick.contains(e.target)) p.style.display = 'none';
+});
+
 async function taiBuoiTheoDoi() {
   var sel = $('ddSessionSel');
   if (!sel || !classDangChon) return;
   var cid = classDangChon.id;
+  await taiLichLop(cid);
   var r = await sb.from('class_sessions')
     .select('id, title, held_on, checkin_code, qr_token, qr_expires, attendance_open')
     .eq('class_id', cid)
@@ -1902,14 +1938,27 @@ async function taiBuoiTheoDoi() {
   var ds = r.data || [];
   ddSessionsMap = {};
   ds.forEach(function (b) { ddSessionsMap[b.id] = b; });
+  var pnl = $('ddSessionPanel'), lbl = $('ddSessionBtnLabel');
   if (!ds.length) {
     sel.innerHTML = '<option value="">— Chưa có buổi học nào —</option>';
+    if (lbl) lbl.textContent = 'Chưa có buổi nào';
+    if (pnl) pnl.innerHTML = '<div style="padding:12px; color:var(--ink-3); font-size:.83rem; line-height:1.5">Chưa có buổi học nào.<br>Buổi sẽ tự tạo khi thầy bấm điểm danh ở Trang chủ theo lịch lớp.</div>';
     veRosterTheoDoi();
     return;
   }
   sel.innerHTML = ds.map(function (b) {
-    return '<option value="' + b.id + '">' + ddDinhDangNgay(b.held_on) + ' — ' + (b.title || 'Buổi học') + '</option>';
+    return '<option value="' + b.id + '">' + ddThuVN(b.held_on) + ' · ' + ddDinhDangNgay(b.held_on) + '</option>';
   }).join('');
+  if (pnl) {
+    pnl.innerHTML = ds.map(function (b) {
+      var gio = ddBuoiGio(b.held_on);
+      return '<div onclick="ddChonBuoi(\'' + b.id + '\')" style="padding:9px 11px; border-radius:9px; cursor:pointer" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="font-weight:700; font-size:.88rem">' + ddThuVN(b.held_on) + ' · ' + ddDinhDangNgay(b.held_on) + '</div>' +
+        '<div style="font-size:.76rem; color:var(--ink-3); margin-top:1px">' + (gio ? ('🕐 ' + gio) : 'Buổi học') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  ddCapNhatBtnLabel();
   veRosterTheoDoi();
 }
 
