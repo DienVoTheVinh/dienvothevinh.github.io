@@ -628,6 +628,18 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <input type="number" class="input" id="bhTestDuration" value="15" min="1">
         </div>
 
+        <div class="field" style="background:rgba(224,160,32,.05);border:1px solid rgba(224,160,32,.25);border-radius:10px;padding:12px 14px">
+          <label>⏰ Hạn nộp bài kiểm tra <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
+          <input type="datetime-local" class="input" id="bhTestDue" style="max-width:260px">
+          <div style="margin-top:10px">
+            <label style="font-size:.85rem">Khi quá hạn:</label>
+            <select class="input" id="bhTestLate" style="max-width:320px">
+              <option value="late">Vẫn cho nộp — đánh dấu "Nộp trễ"</option>
+              <option value="lock">Khoá, không cho nộp nữa</option>
+            </select>
+          </div>
+        </div>
+
         <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
           <label>✍️ Hoặc soạn đề kiểm tra trực tiếp bằng LaTeX</label>
           <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn LaTeX đề thi ở đây (sử dụng ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
@@ -661,8 +673,15 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <!-- TAB: BÀI TẬP VỀ NHÀ -->
       <div id="tabFormBTVN" style="display:none">
         <div class="field">
-          <label>⏰ Hạn nộp bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn — quá hạn mà HS chưa nộp sẽ bị đánh dấu "Chưa nộp")</small></label>
+          <label>⏰ Hạn nộp bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
           <input type="datetime-local" class="input" id="bhBtvnDue" style="max-width:260px">
+          <div style="margin-top:10px">
+            <label style="font-size:.85rem">Khi quá hạn:</label>
+            <select class="input" id="bhBtvnLate" style="max-width:320px">
+              <option value="late">Vẫn cho nộp — đánh dấu "Nộp trễ"</option>
+              <option value="lock">Khoá, không cho nộp nữa</option>
+            </select>
+          </div>
         </div>
         <div class="field">
           <label>🏠 Ghi chú cho HS <small style="color:var(--ink-3);font-weight:400">(học sinh xem ghi chú này ở tab Bài tập về nhà, rồi nộp bài riêng)</small></label>
@@ -938,6 +957,20 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
     <div id="aiXemBody"></div>
   </div>
 </div>
+
+<!-- Modal: Xem nhanh bài nộp của học sinh trong bài giảng -->
+<div class="modal" id="modalBaiNop" style="display:none; z-index:10020">
+  <div class="modal-content" style="max-width:760px">
+    <button class="modal-close" onclick="dongBaiNop()">×</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">📥 Bài học sinh đã nộp</h2>
+      <a id="bnChamNgay" class="btn btn-primary btn-sm" href="#" style="text-decoration:none">✏️ Chấm ngay tất cả →</a>
+    </div>
+    <div id="bnTitle" style="font-size:.95rem; color:var(--ink-2); font-weight:600; margin:6px 0 14px"></div>
+    <div id="bnBody"></div>
+  </div>
+</div>
+<div id="bnLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;cursor:zoom-out"></div>
 
 <!-- Modal Quản Lý Chuyên Đề -->
 <div class="modal" id="modalChuyenDe" style="z-index:10010">
@@ -1573,7 +1606,8 @@ function renderLessonAcc(b, mauChuyenDe) {
         '<div class="qla-actg">' +
           '<button class="btn btn-primary btn-sm chi-gv" onclick="moFormSua(\'' + b.id + '\')">✏️ Chỉnh sửa</button>' +
           '<a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + b.id + '" target="_blank">👁 Xem như HS</a>' +
-          '<button class="btn btn-secondary btn-sm chi-gv" onclick="moAiDaXem(\'' + b.id + '\', \'' + (b.title || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">👀 Ai đã xem</button>' +
+          '<button class="btn btn-sm chi-gv" style="background:#2563eb;color:#fff;border:1px solid #2563eb" onclick="moAiDaXem(\'' + b.id + '\', \'' + (b.title || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">👀 Ai đã xem</button>' +
+          '<button class="btn btn-sm chi-gv" style="background:#0e9f6e;color:#fff;border:1px solid #0e9f6e" onclick="moBaiNop(\'' + b.id + '\', \'' + (b.title || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">📥 Bài nộp</button>' +
         '</div>' +
         '<div class="qla-actg">' +
           testBtn +
@@ -1656,6 +1690,59 @@ async function moAiDaXem(lessonId, title) {
   }
 }
 function dongAiXem() { $('modalAiXem').style.display = 'none'; }
+
+/* ----- Xem nhanh bài nộp của HS trong bài giảng + nút chấm ngay ----- */
+function dongBaiNop() { $('modalBaiNop').style.display = 'none'; }
+function bnDriveId(f) {
+  if (f && f.id) return f.id;
+  var u = (f && (f.link || f.url)) || '';
+  var m = String(u).match(/[-\w]{25,}/); return m ? m[0] : '';
+}
+function bnXem(id) {
+  var lb = $('bnLightbox');
+  lb.innerHTML = '<img src="https://drive.google.com/thumbnail?id=' + id + '&sz=w1600" style="max-width:100%;max-height:100%;border-radius:8px">';
+  lb.style.display = 'flex';
+}
+function bnThumbs(files) {
+  files = files || [];
+  if (!files.length) return '<span style="color:var(--ink-3);font-size:.85rem">Không có ảnh</span>';
+  return files.map(function (f, i) {
+    var id = bnDriveId(f);
+    if (!id) return '<a href="' + (f.link || '#') + '" target="_blank" class="btn btn-secondary btn-sm" style="margin:0 6px 6px 0">📄 ' + qlaEsc(f.name || 'Tệp') + '</a>';
+    var t = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w300';
+    return '<div style="position:relative;display:inline-block;margin:0 6px 6px 0">' +
+      '<img src="' + t + '" onclick="bnXem(\'' + id + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in" loading="lazy">' +
+      '<span style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:.65rem;padding:1px 5px;border-radius:6px">' + (i + 1) + '</span></div>';
+  }).join('');
+}
+async function moBaiNop(lessonId, title) {
+  if (!classDangChon) return;
+  $('modalBaiNop').style.display = 'flex';
+  $('bnTitle').textContent = '📘 ' + (title || 'Bài giảng');
+  $('bnChamNgay').href = 'quan-tri-cham-bai?lop=' + encodeURIComponent(classDangChon.id) + '&lesson=' + encodeURIComponent(lessonId);
+  $('bnBody').innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-3)">Đang tải…</div>';
+  try {
+    var r = await sb.from('submissions')
+      .select('id, student_id, kind, files, status, score, is_late, submitted_at, profiles(full_name)')
+      .eq('lesson_id', lessonId).order('submitted_at', { ascending: false });
+    var ds = r.data || [];
+    if (!ds.length) { $('bnBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào nộp bài cho bài giảng này.</div>'; return; }
+    var seen = {}, rows = [];
+    ds.forEach(function (s) { var k = s.student_id + '|' + (s.kind || ''); if (!seen[k]) { seen[k] = 1; rows.push(s); } });
+    $('bnBody').innerHTML =
+      '<div style="font-size:.82rem;color:var(--ink-3);margin-bottom:10px">' + rows.length + ' lượt nộp (mỗi HS lấy bài mới nhất). Bấm ảnh để xem lớn.</div>' +
+      rows.map(function (s) {
+        var nm = s.profiles ? s.profiles.full_name : '?';
+        var kindChip = s.kind === 'test' ? '<span class="badge" style="background:#8b5cf6;color:#fff">Kiểm tra</span>' : '<span class="badge" style="background:#0e9f6e;color:#fff">BTVN</span>';
+        var st = s.status === 'graded' ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>' : '<span class="badge badge-mute">Chờ chấm</span>';
+        var late = s.is_late ? '<span class="badge" style="background:#e74c3c;color:#fff">⏰ Nộp trễ</span>' : '';
+        var ngay = s.submitted_at ? new Date(s.submitted_at).toLocaleString('vi-VN') : '';
+        return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b>' + qlaEsc(nm) + '</b>' + kindChip + st + late + '<span style="color:var(--ink-3);font-size:.78rem;margin-left:auto">' + ngay + '</span></div>' +
+          '<div>' + bnThumbs(s.files) + '</div></div>';
+      }).join('');
+  } catch (e) { $('bnBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải: ' + (e && e.message ? e.message : e) + '</div>'; }
+}
 
 async function moKichHoatTest(lessonId, title) {
   $('khtLessonId').value = lessonId;
@@ -3068,6 +3155,9 @@ async function moFormThemBaiGiang() {
   if ($('bhBtvnText')) $('bhBtvnText').value = '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = '';
   if ($('bhBtvnDue')) $('bhBtvnDue').value = '';
+  if ($('bhTestDue')) $('bhTestDue').value = '';
+  if ($('bhBtvnLate')) $('bhBtvnLate').value = 'late';
+  if ($('bhTestLate')) $('bhTestLate').value = 'late';
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('bhBtvnPdfHienCo')) $('bhBtvnPdfHienCo').style.display = 'none';
@@ -3134,6 +3224,9 @@ async function moFormSua(id) {
   if ($('bhBtvnText')) $('bhBtvnText').value = bh.homework_text || '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = bh.homework_latex_content || '';
   if ($('bhBtvnDue')) $('bhBtvnDue').value = bh.homework_due ? isoToLocalInput(bh.homework_due) : '';
+  if ($('bhTestDue')) $('bhTestDue').value = bh.test_deadline ? isoToLocalInput(bh.test_deadline) : '';
+  if ($('bhBtvnLate')) $('bhBtvnLate').value = bh.homework_late_policy || 'late';
+  if ($('bhTestLate')) $('bhTestLate').value = bh.test_late_policy || 'late';
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('khungXemBtvn')) $('khungXemBtvn').style.display = 'none';
@@ -3225,6 +3318,9 @@ async function luuBaiHoc(e) {
     test_document_id: $('bhTestTaiLieu').value || null,
     test_duration_minutes: parseInt($('bhTestDuration').value) || 15,
     test_latex_content: $('bhTestLatex') ? $('bhTestLatex').value.trim() || null : null,
+    test_deadline: ($('bhTestDue') && $('bhTestDue').value) ? new Date($('bhTestDue').value).toISOString() : null,
+    homework_late_policy: ($('bhBtvnLate') && $('bhBtvnLate').value) || 'late',
+    test_late_policy: ($('bhTestLate') && $('bhTestLate').value) || 'late',
     created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {
       var studentNote = $('bhGhiChu').value.trim();

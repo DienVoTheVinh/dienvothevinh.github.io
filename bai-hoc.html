@@ -24,8 +24,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   background:var(--surface); height:60px; flex-shrink:0;
 }
 .topbar-lesson .left { display:flex; align-items:center; gap:10px; min-width:0; }
-.back-btn { display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; font-size:.9rem; color:var(--ink-2); flex-shrink:0; }
-.back-btn:hover { color:var(--accent); }
+.back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:700; font-size:.9rem; color:#fff; flex-shrink:0;
+  background:var(--accent); border:1px solid var(--accent); padding:8px 14px; border-radius:10px; box-shadow:0 2px 8px rgba(224,160,32,.28); transition:all .15s; }
+.back-btn:hover { filter:brightness(1.08); transform:translateX(-2px); color:#fff; }
+.back-btn span:first-child { font-size:1.05rem; font-weight:800; }
 .lesson-title { font-size:1.02rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .switcher { display:flex; gap:6px; flex-shrink:0; }
 .sw-btn {
@@ -345,6 +347,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
       <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
       <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px" id="nbTenBai"></p>
+      <div id="nbDeadlineBanner" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:10px;font-size:.85rem;line-height:1.5"></div>
       <div id="nbDaNop"></div>
       <div class="field" style="margin-top:14px">
         <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
@@ -507,6 +510,22 @@ function moNopBai(phanloai) {
   var h2 = document.querySelector('#modalNopBai h2');
   if (h2) h2.textContent = nopBaiPhanLoai === 'homework' ? '📤 Nộp bài tập về nhà' : '📤 Nộp bài';
   $('nbThongBao').textContent = '';
+  // Hạn nộp + chính sách quá hạn (khoá / cho nộp trễ)
+  var dl = nopBaiPhanLoai === 'test' ? (details && details.test_deadline) : (details && details.homework_due);
+  var pol = (nopBaiPhanLoai === 'test' ? (details && details.test_late_policy) : (details && details.homework_late_policy)) || 'late';
+  var bn = $('nbDeadlineBanner'), gui = $('nbGui'), inp = $('nbFiles'), khoa = false;
+  if (bn) {
+    if (dl && !laQuanTriBaiHoc()) {
+      var qua = Date.now() > new Date(dl).getTime();
+      var dlStr = new Date(dl).toLocaleString('vi-VN');
+      bn.style.display = 'block';
+      if (!qua) { bn.style.background = 'var(--accent-soft)'; bn.style.color = 'var(--ink)'; bn.innerHTML = '⏰ Hạn nộp: <b>' + dlStr + '</b>'; }
+      else if (pol === 'lock') { khoa = true; bn.style.background = 'rgba(231,76,60,.12)'; bn.style.color = '#c0392b'; bn.innerHTML = '🔒 Đã quá hạn nộp (' + dlStr + '). Bài đã bị khoá — em không nộp được nữa. Hãy liên hệ thầy/cô.'; }
+      else { bn.style.background = 'rgba(231,76,60,.10)'; bn.style.color = '#c0392b'; bn.innerHTML = '⏰ Đã quá hạn (' + dlStr + '). Em vẫn nộp được nhưng bài sẽ bị đánh dấu <b>"Nộp trễ"</b>.'; }
+    } else { bn.style.display = 'none'; }
+  }
+  if (gui) gui.style.display = khoa ? 'none' : '';
+  if (inp) inp.disabled = !!khoa;
   // Mở ô nộp cũng tính là HS đã xem mục BTVN/Kiểm tra (dù vào thẳng nút Nộp)
   if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
     vmDanhDauDaXem(lessonId, nopBaiPhanLoai === 'homework' ? 'btvn' : 'test')
@@ -806,7 +825,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -1514,7 +1533,7 @@ async function layKetQuaChamHtml(kind) {
   var tenLoai = kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận';
   try {
     var r = await sb.from('submissions')
-      .select('id, submitted_at, files, status, score, feedback, graded_files')
+      .select('id, submitted_at, files, status, score, feedback, graded_files, is_late')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
       .eq('kind', kind)
@@ -1532,6 +1551,7 @@ async function layKetQuaChamHtml(kind) {
     }
     
     var ngay = new Date(sub.submitted_at).toLocaleDateString('vi-VN');
+    var lateBadge = sub.is_late ? '<span style="font-size:.75rem;font-weight:800;color:#fff;background:#e74c3c;padding:2px 9px;border-radius:99px;white-space:nowrap">⏰ Nộp trễ</span>' : '';
     if (sub.status === 'graded') {
       var baiThayCham = '';
       if ((sub.graded_files || []).length > 0) {
@@ -1541,7 +1561,7 @@ async function layKetQuaChamHtml(kind) {
       
       return '<div class="card" style="margin:14px; padding:16px 20px; border:1px solid var(--ok); background:linear-gradient(135deg, var(--surface) 0%, var(--ok-soft) 100%)">' +
         '  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">' +
-        '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài!</h4>' +
+        '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài! ' + lateBadge + '</h4>' +
         '    <span style="font-size:1.15rem; font-weight:800; color:var(--ok); background:var(--surface); border:2px solid var(--ok); padding:4px 12px; border-radius:8px">' + (sub.score != null ? sub.score + ' Điểm' : 'Đã chấm') + '</span>' +
         '  </div>' +
         '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + vclEsc(sub.feedback) + '</div></div>' : '') +
@@ -1550,7 +1570,7 @@ async function layKetQuaChamHtml(kind) {
         '</div>';
     } else {
       return '<div class="card" style="margin:14px; padding:16px; border:1px solid var(--warn); background:linear-gradient(135deg, var(--surface) 0%, var(--warn-soft) 100%)">' +
-        '  <h4 style="margin:0 0 6px; color:var(--warn)">📤 Đã nộp bài thành công!</h4>' +
+        '  <h4 style="margin:0 0 6px; color:var(--warn); display:flex; align-items:center; gap:8px">📤 Đã nộp bài thành công! ' + lateBadge + '</h4>' +
         '  <p style="margin:0; font-size:0.88rem; color:var(--ink)">Bài làm của em gửi ngày <b>' + ngay + '</b> đang chờ thầy xem và chấm điểm. Kết quả sẽ hiện ngay tại đây sau khi thầy chấm xong!</p>' +
         '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
         '</div>';

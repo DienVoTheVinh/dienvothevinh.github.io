@@ -678,6 +678,16 @@
     </div>
   </section>
 
+  <!-- Điểm danh bù cho GV/Trợ giảng/Admin: buổi đã qua trong 3 ngày chưa điểm danh -->
+  <div id="khungDiemDanhBu" style="display:none; margin-bottom:24px; padding:18px 20px; border:1px solid rgba(217,119,6,.35); border-radius:14px; background:linear-gradient(135deg, var(--surface) 0%, rgba(217,119,6,.06) 100%)">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
+      <span style="font-size:1.3rem">🗓️</span>
+      <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#b45309">Điểm danh bù — buổi đã qua chưa điểm danh</h3>
+    </div>
+    <p style="margin:0 0 12px; font-size:.85rem; color:var(--ink-2)">Các buổi trong 3 ngày gần nhất đã qua giờ mà chưa có điểm danh. Bấm để mở điểm danh bù (thủ công hoặc QR).</p>
+    <div id="dsDiemDanhBu"></div>
+  </div>
+
   <!-- Checklist Nhiệm vụ Giảng dạy cho Trợ giảng/GV/Admin (Dạng ô thông báo lưu ý) -->
   <div class="card" id="staffChecklistContainer" style="display:none; margin-bottom:24px; padding:20px 24px; border:1px solid var(--line-2); border-radius:var(--r-md, 12px)">
     <h3 style="margin-top:0; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:8px; color:var(--accent)">
@@ -1030,6 +1040,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
 
     await taiSchedulesVaExamsStaff();
     await veLichDayStaff();
+    await taiDiemDanhBu();
   } else {
     // HỌC SINH
     if (!hoSo.class_students || !hoSo.class_students.length) {
@@ -2882,6 +2893,82 @@ function taoToken() {
   var a = new Uint8Array(16);
   crypto.getRandomValues(a);
   return Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+/* ===== ĐIỂM DANH BÙ: buổi đã qua trong 3 ngày chưa điểm danh ===== */
+async function taiDiemDanhBu() {
+  var box = $('khungDiemDanhBu'); if (!box) return;
+  var isStaff = hoSoNguoiDung && hoSoNguoiDung.role !== 'student' && hoSoNguoiDung.role !== 'parent';
+  if (!isStaff) { box.style.display = 'none'; return; }
+  var myId = hoSoNguoiDung.id;
+  var scheds = (tatCaSchedules || []).filter(function (s) {
+    if (!s.classes) return false;
+    var isMine = (s.teacher_id ? s.teacher_id === myId : (s.classes.teacher_id === myId || s.classes.co_teacher_id === myId)) ||
+      (window.myAssistantClassIds && myAssistantClassIds.indexOf(s.class_id) !== -1);
+    if (hoSoNguoiDung.role === 'admin') { var un = !s.teacher_id && !s.classes.teacher_id; return isMine || un; }
+    return isMine;
+  });
+  var now = new Date();
+  var nowHM = now.toTimeString().slice(0, 5);
+  var occ = [];
+  for (var di = 0; di >= -3; di--) {
+    var d = new Date(); d.setDate(d.getDate() + di);
+    var dKey = d.toLocaleDateString('sv');
+    var wdv = d.getDay() === 0 ? 7 : d.getDay();
+    scheds.forEach(function (s) {
+      var isOccur = s.recurrence === 'once' ? (s.date === dKey) : (s.weekday === wdv);
+      if (!isOccur) return;
+      if (di === 0 && s.start_time && s.start_time.slice(0, 5) >= nowHM) return; // hôm nay chưa tới giờ -> để ở "sắp tới"
+      if (window.ovByOrig) { var ov = window.ovByOrig[s.id + '|' + dKey]; if (ov && ov.status === 'cancelled') return; }
+      occ.push({ classId: s.class_id, className: s.classes.name, date: dKey, gio: (s.start_time || '').slice(0, 5), di: di });
+    });
+  }
+  if (!occ.length) { box.style.display = 'none'; return; }
+  var classIds = occ.map(function (o) { return o.classId; });
+  var minD = new Date(); minD.setDate(minD.getDate() - 3);
+  var attSet = {};
+  try {
+    var ra = await sb.from('attendance').select('class_sessions!inner(class_id, held_on)')
+      .in('class_sessions.class_id', classIds).gte('class_sessions.held_on', minD.toLocaleDateString('sv'));
+    (ra.data || []).forEach(function (x) { var cs = x.class_sessions; if (cs) attSet[cs.class_id + '|' + cs.held_on] = true; });
+  } catch (e) {}
+  var seen = {}, rows = [];
+  occ.forEach(function (o) {
+    var k = o.classId + '|' + o.date;
+    if (attSet[k] || seen[k]) return;
+    seen[k] = 1; rows.push(o);
+  });
+  if (!rows.length) { box.style.display = 'none'; return; }
+  rows.sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : (a.gio < b.gio ? 1 : -1)); });
+  var nhan = function (o) { return o.di === 0 ? 'Hôm nay' : (o.di === -1 ? 'Hôm qua' : (o.date.slice(8) + '/' + o.date.slice(5, 7))); };
+  box.style.display = 'block';
+  $('dsDiemDanhBu').innerHTML = rows.map(function (o) {
+    return '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
+      '<div style="flex:1; min-width:180px"><b>' + (o.className || 'Lớp') + '</b>' +
+      '<div style="font-size:.8rem; color:var(--ink-3)">' + nhan(o) + (o.gio ? ' · ' + o.gio : '') + '</div></div>' +
+      '<button class="btn btn-primary btn-sm" style="background:#d97706; border-color:#d97706" onclick="moDiemDanhBu(\'' + o.classId + '\', \'' + (o.className || '').replace(/'/g, "\\'") + '\', \'' + o.date + '\')">📝 Điểm danh bù</button>' +
+      '</div>';
+  }).join('');
+}
+
+async function moDiemDanhBu(classId, className, dateStr) {
+  lopDangXem = classId;
+  var r = await sb.from('class_sessions')
+    .select('id, qr_token, title, attendance_open')
+    .eq('class_id', classId).eq('held_on', dateStr)
+    .order('created_at', { ascending: false }).limit(1);
+  if (r.data && r.data.length > 0) {
+    var b = r.data[0];
+    await sb.from('class_sessions').update({ attendance_open: true, qr_expires: new Date(Date.now() + 15 * 60000).toISOString() }).eq('id', b.id);
+    hienQR(b.id, b.qr_token, b.title || ('Điểm danh bù · ' + dateStr), classId);
+  } else {
+    var ins = await sb.from('class_sessions').insert({
+      class_id: classId, held_on: dateStr, title: 'Điểm danh bù · ' + dateStr,
+      attendance_open: true, qr_expires: new Date(Date.now() + 15 * 60000).toISOString()
+    }).select('id, qr_token, title').single();
+    if (ins.error) { alert('Không thể tạo buổi điểm danh bù: ' + ins.error.message); return; }
+    hienQR(ins.data.id, ins.data.qr_token, ins.data.title, classId);
+  }
 }
 
 async function moDiemDanhNhanh(classId, className) {

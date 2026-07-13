@@ -175,6 +175,14 @@ var hoSoNguoiDung = null;
   }
   
   await taiDanhSach();
+  // Lọc sẵn theo link "Chấm ngay" từ bài giảng (?lop=&lesson=)
+  try {
+    var _p = new URLSearchParams(location.search);
+    var _lop = _p.get('lop'), _bai = _p.get('lesson');
+    if (_lop) { $('selLop').value = _lop; capNhatDropdownBoLoc(); }
+    if (_bai) { $('selBai').value = _bai; }
+    if (_lop || _bai) veDanhSach();
+  } catch (e) {}
 })();
 
 function capNhatDropdownBoLoc() {
@@ -246,7 +254,7 @@ async function taiAttemptsLuyenDe() {
 
 async function taiDanhSach() {
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, lesson_id, lessons(title, class_id), exam_id, exams(title, class_id), profiles(full_name, username, class_students(class_id, classes(name)))')
+    .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, kind, lesson_id, lessons(title, class_id), exam_id, exams(title, class_id), profiles(full_name, username, class_students(class_id, classes(name)))')
     .order('submitted_at', { ascending: false });
   if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
   
@@ -390,10 +398,11 @@ function veDanhSach() {
     var badge = s.status === 'graded'
       ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>'
       : '<span class="badge badge-warn">Chờ chấm</span>';
+    var lateChip = s.is_late ? '<span class="badge" style="background:#e74c3c;color:#fff;margin-left:6px">⏰ Nộp trễ</span>' : '';
     return '<div class="card sub-card" id="sub-' + s.id + '">' +
       '<div class="sub-head">' +
         '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
-        badge +
+        '<div style="display:flex;align-items:center;flex-wrap:wrap">' + badge + lateChip + '</div>' +
       '</div>' +
       '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : (s.exams ? '📝 Đề (tự luận): ' + s.exams.title : 'Bài đã xoá')) + ' · ' + ngay + '</div>' +
       '<div class="chb-label">📎 Ảnh học sinh nộp (' + (s.files || []).length + ') — bấm để xem lớn</div>' +
