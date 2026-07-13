@@ -1033,6 +1033,10 @@ function renderBaiHoc() {
       noteBanner.style.display = 'block';
       $('lessonNoteContent').textContent = publicNote;
       noteBanner.classList.toggle('collapsed', window.innerWidth <= 820); // mobile: thu gọn sẵn cho gọn
+      // Ghi nhận HS đã thấy dặn dò (phục vụ thanh nhiệm vụ / tích điểm)
+      if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
+        vmDanhDauDaXem(lessonId, 'dando');
+      }
     } else {
       noteBanner.style.display = 'none';
     }
