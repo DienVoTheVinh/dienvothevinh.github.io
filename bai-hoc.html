@@ -634,6 +634,19 @@ async function taiBaiDaNop() {
         (s.status === 'graded' ? '<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="dongNopBai();xemKetQua(lessonId,\'' + kindHienTai + '\')">📋 Xem điểm & nhận xét</button></div>' : '') +
       '</div>';
     }).join('');
+
+  // Đã được thầy/cô chấm -> KHÓA nộp lại
+  var daCham = ds.some(function (s) { return s.status === 'graded'; });
+  if (daCham) {
+    if (nutGui) nutGui.style.display = 'none';
+    var inpNb = $('nbFiles');
+    if (inpNb) { inpNb.disabled = true; var fld = inpNb.closest ? inpNb.closest('.field') : null; if (fld) fld.style.display = 'none'; }
+    var bnTb = $('nbThongBao');
+    if (bnTb) { bnTb.style.color = ''; bnTb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(46,213,115,.12);color:#1a7f45;font-weight:700;font-size:.88rem">🔒 Bài này đã được thầy/cô chấm nên em không nộp lại được nữa. Xem điểm & nhận xét ở mục 📋 Kết quả nhé!</div>'; }
+  } else {
+    var inpNb2 = $('nbFiles');
+    if (inpNb2) { inpNb2.disabled = false; var fld2 = inpNb2.closest ? inpNb2.closest('.field') : null; if (fld2) fld2.style.display = ''; }
+  }
 }
 
 async function guiBaiNop() {
@@ -641,7 +654,17 @@ async function guiBaiNop() {
   var tb = $('nbThongBao');
   if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
   var nut = $('nbGui');
+  // Cảnh báo không thoát khi đang gửi (đóng trang giữa chừng có thể mất bài)
+  if (!window._vmUnloadReg) {
+    window.addEventListener('beforeunload', function (e) {
+      if (window._vmDangNop) { e.preventDefault(); e.returnValue = 'Bài đang được gửi lên Drive — thoát bây giờ có thể mất bài. Em chờ chút nhé!'; return e.returnValue; }
+    });
+    window._vmUnloadReg = true;
+  }
+  window._vmDangNop = true;
   nut.disabled = true; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
+  tb.style.color = '';
+  tb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(224,160,32,.14);border:1px solid rgba(224,160,32,.4);color:var(--accent);font-weight:700;font-size:.86rem">⚠️ Đang gửi bài lên Drive của thầy… <b>Em vui lòng KHÔNG tắt/thoát trang</b> cho tới khi thấy thông báo “Nộp bài thành công” để tránh mất bài nhé!</div>';
   try {
     var fd = new FormData();
     fd.append('kind', 'nop');
@@ -663,6 +686,7 @@ async function guiBaiNop() {
     tb.style.color = 'var(--err)';
     nut.textContent = 'Gửi bài cho thầy';
   }
+  window._vmDangNop = false;
   nut.disabled = false;
 }
 
@@ -771,7 +795,7 @@ async function taiMucLuc() {
             // Phát sáng "Nộp bài" khi CHƯA nộp; "Kết quả" khi ĐÃ chấm
             var glowNop = (!daNop && !daCham) ? ' ml-glow' : '';
             var glowKQ = daCham ? ' ml-glow-ok' : '';
-            var nhanNop = daNop ? 'Nộp lại' : 'Nộp bài';
+            var nhanNop = daCham ? 'Đã chấm ✓' : (daNop ? 'Nộp lại' : 'Nộp bài');
             link += '<a class="ml-sub2' + glowNop + '" onclick="mlNop(\'' + b.id + '\',\'' + kind + '\')"><span>📤</span><span>' + nhanNop + '</span></a>' +
                     '<a class="ml-sub2' + glowKQ + '" onclick="xemKetQua(\'' + b.id + '\',\'' + kind + '\')"><span>📋</span><span>Kết quả</span>' + (daCham ? '<span class="tick">✓</span>' : '') + '</a>';
           }
