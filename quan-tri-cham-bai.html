@@ -388,23 +388,28 @@ function veDanhSach() {
     $('dsBaiNop').innerHTML = '<div class="empty card">' + (dangLoc === 'submitted' ? 'Không có bài nào chờ chấm 🎉' : 'Trống.') + '</div>';
     return;
   }
-  $('dsBaiNop').innerHTML = ds.map(function (s) {
-    var hs = s.profiles || {};
-    var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
-    var lop = classNames || '—';
-    var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+  // Gom theo Học sinh + Bài + loại — mỗi HS/1 bài là 1 thẻ, các lần nộp xếp bên trong
+  var groups = {}, order = [];
+  ds.forEach(function (s) {
+    var akey = s.lesson_id || s.exam_id || 'x';
+    var gkey = (s.student_id || s.id) + '|' + akey + '|' + (s.kind || '');
+    if (!groups[gkey]) { groups[gkey] = { subs: [] }; order.push(groups[gkey]); }
+    groups[gkey].subs.push(s);
+  });
+  order.forEach(function (g) { g.subs.sort(function (a, b) { return new Date(b.submitted_at) - new Date(a.submitted_at); }); });
+
+  function chbGradeForm(s) {
     var links = chbThumbs(s.files);
     var linksCham = chbThumbs(s.graded_files);
     var badge = s.status === 'graded'
       ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>'
       : '<span class="badge badge-warn">Chờ chấm</span>';
     var lateChip = s.is_late ? '<span class="badge" style="background:#e74c3c;color:#fff;margin-left:6px">⏰ Nộp trễ</span>' : '';
-    return '<div class="card sub-card" id="sub-' + s.id + '">' +
-      '<div class="sub-head">' +
-        '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
+    var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">' +
+        '<div style="font-size:.82rem;color:var(--ink-3)">🕐 ' + ngay + '</div>' +
         '<div style="display:flex;align-items:center;flex-wrap:wrap">' + badge + lateChip + '</div>' +
       '</div>' +
-      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:4px">' + (s.lessons ? s.lessons.title : (s.exams ? '📝 Đề (tự luận): ' + s.exams.title : 'Bài đã xoá')) + ' · ' + ngay + '</div>' +
       '<div class="chb-label">📎 Ảnh học sinh nộp (' + (s.files || []).length + ') — bấm để xem lớn</div>' +
       '<div class="chb-thumbs">' + links + '</div>' +
       (linksCham ? ('<div class="chb-label">✏️ Ảnh thầy đã chấm trả</div><div class="chb-thumbs">' + linksCham + '</div>') : '') +
@@ -423,7 +428,29 @@ function veDanhSach() {
       '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="display:none" onchange="chamThemFile(\'' + s.id + '\', this.files); this.value=String()">' +
       '<div class="chb-thumbs" id="chamstage-' + s.id + '" style="margin-top:8px"></div>' +
       '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:4px"></div>' +
-      '<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button></div>' +
+      '<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button></div>';
+  }
+
+  $('dsBaiNop').innerHTML = order.map(function (g) {
+    var s0 = g.subs[0];
+    var hs = s0.profiles || {};
+    var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
+    var lop = classNames || '—';
+    var tenBai = s0.lessons ? s0.lessons.title : (s0.exams ? '📝 Đề (tự luận): ' + s0.exams.title : 'Bài đã xoá');
+    var soLan = g.subs.length > 1 ? '<span class="badge" style="background:#7c3aed;color:#fff">📥 ' + g.subs.length + ' lần nộp</span>' : '';
+    var nhieu = g.subs.length > 1;
+    var body = g.subs.map(function (s, i) {
+      var inner = '<div id="sub-' + s.id + '"' + (nhieu ? ' style="border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;margin-top:10px;background:var(--surface-2)"' : '') + '>' +
+        (nhieu ? '<div style="font-weight:800;font-size:.85rem;color:var(--accent);margin-bottom:6px">Lần ' + (g.subs.length - i) + (i === 0 ? ' (mới nhất)' : '') + '</div>' : '') +
+        chbGradeForm(s) + '</div>';
+      return inner;
+    }).join('');
+    return '<div class="card sub-card">' +
+      '<div class="sub-head">' +
+        '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' + soLan +
+      '</div>' +
+      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:2px;margin-bottom:2px">' + tenBai + '</div>' +
+      body +
       '</div>';
   }).join('');
 }
