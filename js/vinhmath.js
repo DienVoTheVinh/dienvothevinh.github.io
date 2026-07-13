@@ -5,6 +5,45 @@
 // File này là JS thuần — không cần build, mở file là chạy.
 // ============================================================
 
+/* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
+(function () {
+  try {
+    var giamHoatAnh = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (giamHoatAnh) return;
+    // Chèn style hiệu ứng
+    var st = document.createElement('style');
+    st.id = 'vmPageTransition';
+    st.textContent =
+      '@keyframes vmPageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}' +
+      '@keyframes vmPageOut{from{opacity:1}to{opacity:0;transform:translateY(-6px)}}' +
+      'body{animation:vmPageIn .36s cubic-bezier(.22,1,.36,1) both}' +
+      'html.vm-leaving body{animation:vmPageOut .2s ease both}';
+    (document.head || document.documentElement).appendChild(st);
+
+    // Fade-out khi bấm sang trang khác cùng site (bubble phase để tôn trọng handler của phần tử)
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      if (a.target === '_blank' || a.hasAttribute('download') || a.getAttribute('rel') === 'external') return;
+      var href = a.getAttribute('href') || '';
+      if (!href || href.charAt(0) === '#' || /^(javascript:|mailto:|tel:)/i.test(href)) return;
+      var url; try { url = new URL(a.href, location.href); } catch (_) { return; }
+      if (url.origin !== location.origin) return;                 // link ngoài site
+      if (url.pathname === location.pathname && url.search === location.search) return; // cùng trang (neo)
+      e.preventDefault();
+      document.documentElement.classList.add('vm-leaving');
+      var dich = a.href;
+      setTimeout(function () { location.href = dich; }, 190);
+    }, false);
+
+    // Quay lại/tiến (bfcache) -> đảm bảo trang hiện rõ, gỡ trạng thái đang rời
+    window.addEventListener('pageshow', function (ev) {
+      if (ev.persisted) document.documentElement.classList.remove('vm-leaving');
+    });
+  } catch (e) { /* im lặng, không chặn trang */ }
+})();
+
 /* ---------- 1. CHẾ ĐỘ SÁNG / TỐI & HỆ THỐNG GIAO DIỆN LIQUID GLASS ---------- */
 function capNhatNutTheme() {
   var btn = document.getElementById('themeBtn');
