@@ -162,8 +162,58 @@ function apdungMauAccent(el, color, isDark) {
 // và web chạy ở "chế độ xem thử" (không đăng nhập được thật).
 var VM = window.VINHMATH_CONFIG || {};
 var sb = null;
+
+// Bộ nhớ phiên ĐĂNG NHẬP THEO TỪNG TAB (cho phép đăng nhập nhiều tài khoản ở các tab khác nhau):
+// - Mỗi tab có storageKey RIÊNG (theo id tab) -> vừa cô lập bộ nhớ, vừa tách kênh đồng bộ
+//   đa-tab của Supabase, nên tab admin không bị "nhảy" sang tài khoản HS khi tab khác đăng nhập.
+// - Vẫn giữ đăng nhập bền: mỗi lần lưu phiên có mirror sang localStorage (khóa chung),
+//   tab mới / mở lại trình duyệt sẽ tự đăng nhập bằng phiên gần nhất; phiên cũ được migrate.
+function vmRefDuAn() { try { return (new URL(VM.SUPABASE_URL)).hostname.split('.')[0]; } catch (e) { return 'app'; } }
+function vmTabId() {
+  var id = null;
+  try { id = window.sessionStorage.getItem('vm-tab-id'); } catch (e) {}
+  if (!id) { id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { window.sessionStorage.setItem('vm-tab-id', id); } catch (e) {} }
+  return id;
+}
+var VM_SHARED_KEY = 'vmauth-shared';
+var VM_OLD_KEY = 'sb-' + vmRefDuAn() + '-auth-token';
+function vmTaoBoNhoPhien() {
+  var LS, SS;
+  try { LS = window.localStorage; } catch (e) { LS = null; }
+  try { SS = window.sessionStorage; } catch (e) { SS = null; }
+  if (!SS) return LS || undefined; // trình duyệt chặn sessionStorage -> quay lại mặc định
+  return {
+    getItem: function (k) {
+      try {
+        var v = SS.getItem(k);
+        if (v !== null && v !== undefined) return v;
+        if (LS) {
+          var lv = LS.getItem(VM_SHARED_KEY);
+          if (lv === null || lv === undefined) lv = LS.getItem(VM_OLD_KEY); // migrate phiên đã đăng nhập từ trước
+          if (lv !== null && lv !== undefined) { try { SS.setItem(k, lv); } catch (e) {} return lv; }
+        }
+        return null;
+      } catch (e) { return null; }
+    },
+    setItem: function (k, val) {
+      try { SS.setItem(k, val); } catch (e) {}
+      try { if (LS) LS.setItem(VM_SHARED_KEY, val); } catch (e) {} // mirror để tab mới / mở lại trình duyệt vẫn đăng nhập
+    },
+    removeItem: function (k) {
+      try { SS.removeItem(k); } catch (e) {}
+      try { if (LS) { LS.removeItem(VM_SHARED_KEY); LS.removeItem(VM_OLD_KEY); } } catch (e) {}
+    }
+  };
+}
+
 if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
-  sb = window.supabase.createClient(VM.SUPABASE_URL, VM.SUPABASE_ANON_KEY);
+  sb = window.supabase.createClient(VM.SUPABASE_URL, VM.SUPABASE_ANON_KEY, {
+    auth: {
+      storage: vmTaoBoNhoPhien(),
+      storageKey: 'vmauth-' + vmTabId(),
+      persistSession: true, autoRefreshToken: true, detectSessionInUrl: true
+    }
+  });
 }
 function daKetNoi() { return sb !== null; }
 
