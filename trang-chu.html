@@ -446,9 +446,6 @@
     </div>
   </section>
 
-  <!-- ===== THANH NHIỆM VỤ / NHÂN VẬT GAME cho học sinh ===== -->
-  <div id="khungNhiemVu" style="display:none; margin-bottom:24px"></div>
-
   <!-- Banner Link Google Meet cho học sinh lớp Online -->
   <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
     <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
@@ -484,6 +481,9 @@
     </div>
   </div>
 
+  <!-- ===== THANH NHIỆM VỤ / NHÂN VẬT GAME cho học sinh (gộp: chỉ số + việc cần làm) ===== -->
+  <div id="khungNhiemVu" style="display:none; margin-bottom:24px"></div>
+
   <!-- Banner Điểm danh cho học sinh -->
   <div id="khungDiemDanhHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--ok); background: linear-gradient(135deg, var(--surface) 0%, var(--ok-soft) 100%); position: relative; overflow: hidden">
     <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(46,160,67,0.15) 0%, rgba(46,160,67,0) 70%); pointer-events: none"></div>
@@ -508,8 +508,10 @@
   <style>
   /* ===== THANH NHIỆM VỤ / NHÂN VẬT GAME ===== */
   .nv-banner { position:relative; border-radius:20px; padding:20px 22px; overflow:hidden;
-    background:linear-gradient(135deg,#241a3a 0%,#3a2560 45%,#5b2e7a 100%); color:#fff;
-    box-shadow:0 10px 30px rgba(50,20,80,.35); border:1px solid rgba(255,255,255,.08); }
+    background:linear-gradient(135deg,#1f1408 0%,#4a2c11 48%,#7a3f16 100%); color:#fff;
+    box-shadow:0 12px 34px rgba(120,55,15,.34); border:1px solid rgba(243,156,18,.30); }
+  .nv-banner::before { content:''; position:absolute; top:-40%; right:-12%; width:280px; height:280px; pointer-events:none;
+    background:radial-gradient(circle, rgba(243,156,18,.22) 0%, rgba(243,156,18,0) 70%); }
   .nv-banner::after { content:''; position:absolute; top:-60%; left:-30%; width:80%; height:220%;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent); transform:rotate(18deg);
     animation:nvShine 6s ease-in-out infinite; pointer-events:none; }
@@ -527,8 +529,27 @@
   .nv-xpwrap { margin-top:9px; }
   .nv-xpbar { position:relative; height:14px; border-radius:99px; background:rgba(0,0,0,.28); overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,.4); }
   .nv-xpfill { position:absolute; inset:0 auto 0 0; width:0%; border-radius:99px;
-    background:linear-gradient(90deg,#7bed9f,#2ed573); box-shadow:0 0 10px rgba(46,213,115,.6);
+    background:linear-gradient(90deg,#ffe08a,#F39C12); box-shadow:0 0 12px rgba(243,156,18,.65);
     transition:width 1.1s cubic-bezier(.22,1,.36,1); }
+  /* Chỉ số nhân vật gộp trong banner */
+  .nv-stats { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; position:relative; z-index:2; }
+  .nv-stat { flex:1; min-width:96px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.10);
+    border-radius:13px; padding:9px 12px; text-align:center; }
+  .nv-stat b { display:block; font-size:1.25rem; font-weight:900; color:#ffd76a; line-height:1.1; }
+  .nv-stat span { font-size:.7rem; opacity:.82; }
+  /* Nhắc nhở của thầy gộp trong banner (có ô tick) */
+  .nv-group-label { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; opacity:.75; margin:14px 0 8px; }
+  .nv-rem { display:flex; align-items:flex-start; gap:11px; padding:10px 13px; border-radius:13px; margin-bottom:8px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09); }
+  .nv-rem.overdue { border-left:4px solid #ff7a6b; }
+  .nv-rem.today { border-left:4px solid #ffd76a; }
+  .nv-rem-check { width:22px; height:22px; flex-shrink:0; border-radius:6px; border:2px solid rgba(255,255,255,.4); cursor:pointer;
+    display:grid; place-items:center; font-size:.9rem; font-weight:800; color:#3a2560; transition:all .15s; margin-top:1px; background:transparent; }
+  .nv-rem-check.checked { background:#2ed573; border-color:#2ed573; color:#fff; }
+  .nv-rem .body { flex:1; min-width:0; }
+  .nv-rem .t { font-weight:700; font-size:.9rem; }
+  .nv-rem.done .t { text-decoration:line-through; opacity:.6; }
+  .nv-rem .m { font-size:.72rem; opacity:.78; margin-top:2px; }
   .nv-xptext { display:flex; justify-content:space-between; font-size:.72rem; opacity:.85; margin-top:4px; font-weight:600; }
   .nv-streak { display:flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0; padding:4px 10px;
     background:rgba(0,0,0,.22); border-radius:14px; border:1px solid rgba(255,255,255,.08); }
@@ -923,7 +944,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     $('tenLop').textContent = 'Lớp 12A1 · VinhMath';
     
     // Thống kê demo
-    $('khungThongKeHocSinh').style.display = 'block';
+    $('khungThongKeHocSinh').style.display = 'none';
     $('tkDiem').textContent = '8.4';
     $('tkChuyenCan').textContent = '92%';
     $('tkBaiHoc').textContent = '14/18';
@@ -1049,14 +1070,13 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     await capNhatMeetLinkTheoLop(savedClassId);
     
     // Thống kê nhanh học sinh (tổng hợp theo lớp đang xem)
-    $('khungThongKeHocSinh').style.display = 'block';
+    $('khungThongKeHocSinh').style.display = 'none';
     await taiThongKeTongHopHS();
     
     // Tải lịch & bài thi học sinh
     await taiSchedulesVaExamsStudent();
 
-    // Việc cần làm hôm nay
-    await taiViecCanLam();
+    // (Việc cần làm đã gộp vào thanh nhiệm vụ ở trên)
     await kiemTraDiemDanhHocSinh();
     await taiRemarksHocSinh();
     await taiThongBaoLopHS();
@@ -1181,6 +1201,31 @@ var NV_BADGE_ALL = [
 ];
 function nvEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
+// Lấy + lọc nhắc nhở thủ công của thầy (gộp vào banner)
+async function nvLayNhacNho() {
+  try {
+    var u = await sb.auth.getUser(); vclMyId = (u && u.data && u.data.user) ? u.data.user.id : null;
+    var r = await sb.rpc('get_my_reminders'); if (r.error) return [];
+    var ds = r.data || [];
+    var activeClassId = localStorage.getItem('vm-active-class-id');
+    var activeClassName = '';
+    if (activeClassId && activeClassId !== 'all' && hoSoNguoiDung && hoSoNguoiDung.class_students) {
+      var clsObj = hoSoNguoiDung.class_students.find(function(c){ return c.class_id === activeClassId; });
+      if (clsObj && clsObj.classes) activeClassName = clsObj.classes.name;
+    }
+    return ds.filter(function (x) {
+      if (activeClassId && activeClassId !== 'all') {
+        if (x.class_id && x.class_id !== activeClassId) return false;
+        if (!x.class_id && x.scope && x.scope !== activeClassName) return false;
+      }
+      var d = vclParseDiff(x.due_date);
+      if (x.done) return d === 0;
+      if (d < 0) return true;
+      return d <= 14;
+    });
+  } catch (e) { return []; }
+}
+
 async function taiNhiemVu() {
   var box = $('khungNhiemVu'); if (!box) return;
   if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'student') { box.style.display='none'; return; }
@@ -1189,11 +1234,32 @@ async function taiNhiemVu() {
   var r;
   try { r = await sb.rpc('hs_nhiem_vu'); } catch(e){ box.style.display='none'; return; }
   if (!r || r.error || !r.data || r.data.error) { box.style.display='none'; return; }
-  nvRender(r.data);
+  var reminders = await nvLayNhacNho();
+  nvRender(r.data, reminders);
 }
 
-function nvRender(d) {
+// Đồng bộ chỉ số (Điểm TB / Chuyên cần / Bài hoàn thành) vào banner
+function nvSyncStats() {
+  var s = window._nvStats; if (!s) return;
+  var a=$('nvSD'), b=$('nvSC'), c=$('nvSB');
+  if (a) a.textContent = s.diem; if (b) b.textContent = s.cc; if (c) c.textContent = s.bai;
+}
+
+function nvRemRow(x) {
+  var d = vclParseDiff(x.due_date);
+  var cls = 'nv-rem ' + (x.done ? 'done' : (d < 0 ? 'overdue' : (d === 0 ? 'today' : '')));
+  var due = x.done ? 'Đã xong' : (d < 0 ? ('Quá hạn ' + (-d) + ' ngày') : (d === 0 ? 'Hôm nay' : (d === 1 ? 'Ngày mai' : 'Còn ' + d + ' ngày')));
+  var icon = (window.VCL_KIND_ICON && VCL_KIND_ICON[x.kind]) || '📌';
+  var scope = nvEsc(x.scope || '') + (x.lesson_title ? ': ' + nvEsc(x.lesson_title) : '');
+  return '<div class="' + cls + '">' +
+    '<div class="nv-rem-check' + (x.done ? ' checked' : '') + '" onclick="toggleViec(this,\'' + x.id + '\',' + (x.done ? 'true' : 'false') + ')">' + (x.done ? '✓' : '') + '</div>' +
+    '<div class="body"><div class="t">' + icon + ' ' + nvEsc(x.content) + '</div><div class="m">' + (scope ? scope + ' · ' : '') + due + '</div></div>' +
+  '</div>';
+}
+
+function nvRender(d, reminders) {
   var box = $('khungNhiemVu');
+  reminders = reminders || [];
   var pct = 0;
   var span = (d.xp_next - d.xp_floor);
   if (span > 0) pct = Math.max(0, Math.min(100, Math.round((d.xp - d.xp_floor) / span * 100)));
@@ -1204,12 +1270,20 @@ function nvRender(d) {
   }).join('');
 
   var tasks = d.tasks || [];
-  var tasksHtml;
-  if (!tasks.length) {
-    tasksHtml = '<div class="nv-empty"><div class="big">🎉</div><div class="txt">Tuyệt vời! Em đã hoàn thành mọi nhiệm vụ.</div><div class="sub">Quay lại sau để nhận nhiệm vụ mới và tích thêm điểm nhé!</div></div>';
-  } else {
+  var remChua = reminders.filter(function(x){ return !x.done; }).length;
+  var tongViec = tasks.length + remChua;
+
+  // Nhóm nhắc nhở của thầy (tích hợp mục "Việc cần làm")
+  var remHtml = '';
+  if (reminders.length) {
+    remHtml = '<div class="nv-group-label">📌 Nhắc nhở từ thầy</div>' + reminders.map(nvRemRow).join('');
+  }
+
+  // Nhóm nhiệm vụ tự động (BTVN / kiểm tra / dặn dò / bài giảng)
+  var autoHtml = '';
+  if (tasks.length) {
     var shown = tasks.slice(0, 6);
-    tasksHtml = shown.map(function(t){
+    autoHtml = (reminders.length ? '<div class="nv-group-label">🎓 Bài tập & bài học</div>' : '') + shown.map(function(t){
       var k = NV_KIND[t.kind] || NV_KIND.lesson;
       var href = 'bai-hoc?id=' + encodeURIComponent(t.lesson_id) + (k.tab ? '&tab='+k.tab : '');
       return '<div class="nv-task">' +
@@ -1219,8 +1293,22 @@ function nvRender(d) {
         '<a class="go" href="'+href+'">'+k.go+' →</a>' +
       '</div>';
     }).join('');
-    if (tasks.length > 6) tasksHtml += '<div style="text-align:center;font-size:.78rem;opacity:.8;margin-top:4px">…và '+(tasks.length-6)+' nhiệm vụ khác</div>';
+    if (tasks.length > 6) autoHtml += '<div style="text-align:center;font-size:.78rem;opacity:.8;margin-top:4px">…và '+(tasks.length-6)+' nhiệm vụ khác</div>';
   }
+
+  var tasksHtml = remHtml + autoHtml;
+  if (!tasksHtml) {
+    tasksHtml = '<div class="nv-empty"><div class="big">🎉</div><div class="txt">Tuyệt vời! Em đã hoàn thành mọi nhiệm vụ.</div><div class="sub">Quay lại sau để nhận nhiệm vụ mới và tích thêm điểm nhé!</div></div>';
+  }
+
+  // Chỉ số nhân vật (gộp Điểm TB / Chuyên cần / Bài hoàn thành)
+  var st = window._nvStats || {};
+  var statsHtml =
+    '<div class="nv-stats">' +
+      '<div class="nv-stat"><b id="nvSD">'+(st.diem||'—')+'</b><span>Điểm trung bình</span></div>' +
+      '<div class="nv-stat"><b id="nvSC">'+(st.cc||'—')+'</b><span>Chuyên cần</span></div>' +
+      '<div class="nv-stat"><b id="nvSB">'+(st.bai!=null?st.bai:'—')+'</b><span>Bài đã hoàn thành</span></div>' +
+    '</div>';
 
   var streakCold = (d.streak||0) < 1;
   box.innerHTML =
@@ -1236,7 +1324,8 @@ function nvRender(d) {
         '<div class="nv-streak'+(streakCold?' cold':'')+'"><span class="fire">🔥</span><span class="num">'+(d.streak||0)+'</span><span class="lbl">ngày liên tục</span></div>' +
       '</div>' +
       '<div class="nv-badges">'+badgesHtml+'</div>' +
-      '<div class="nv-tasks"><div class="nv-tasks-hd"><h3>🎯 Nhiệm vụ của em</h3><span class="cnt">'+(tasks.length?tasks.length+' việc cần làm':'Đã xong hết ✓')+'</span></div>'+tasksHtml+'</div>' +
+      statsHtml +
+      '<div class="nv-tasks"><div class="nv-tasks-hd"><h3>🎯 Nhiệm vụ của em</h3><span class="cnt">'+(tongViec?tongViec+' việc cần làm':'Đã xong hết ✓')+'</span></div>'+tasksHtml+'</div>' +
     '</div>';
 
   // Animate XP bar fill
@@ -1297,35 +1386,10 @@ function nvBadgeToast(icon, name) {
   setTimeout(function(){ t.remove(); }, 3600);
 }
 
+// Đã gộp "Việc cần làm" vào thanh nhiệm vụ (banner) → hàm này chỉ ẩn khung cũ + làm mới banner
 async function taiViecCanLam() {
-  var box = $('khungViecCanLam'); if (!box) return;
-  box.style.display = 'block';
-  box.innerHTML = '<div class="vcl-head"><h2>📌 Việc cần làm hôm nay</h2><span class="vcl-count" id="vclCount"></span></div><div id="vclList"><p style="color:var(--ink-3);font-size:.9rem">Đang tải…</p></div>';
-  try { var u = await sb.auth.getUser(); vclMyId = (u && u.data && u.data.user) ? u.data.user.id : null; } catch (e) {}
-  var r = await sb.rpc('get_my_reminders');
-  if (r.error) { $('vclList').innerHTML = '<div class="vcl-empty">Không tải được danh sách việc cần làm.</div>'; return; }
-  var ds = r.data || [];
-  
-  var activeClassId = localStorage.getItem('vm-active-class-id');
-  var activeClassName = '';
-  if (activeClassId && activeClassId !== 'all' && hoSoNguoiDung && hoSoNguoiDung.class_students) {
-    var clsObj = hoSoNguoiDung.class_students.find(function(c) { return c.class_id === activeClassId; });
-    if (clsObj && clsObj.classes) activeClassName = clsObj.classes.name;
-  }
-
-  var items = ds.filter(function (x) {
-    // Lọc theo lớp hoạt động (nếu có chọn và không chọn "Tất cả")
-    if (activeClassId && activeClassId !== 'all') {
-      if (x.class_id && x.class_id !== activeClassId) return false;
-      if (!x.class_id && x.scope && x.scope !== activeClassName) return false;
-    }
-    
-    var d = vclParseDiff(x.due_date);
-    if (x.done) return d === 0;     // việc đã xong: chỉ hiện nếu hạn hôm nay (để em thấy thành quả)
-    if (d < 0) return true;         // quá hạn chưa xong
-    return d <= 14;                 // hôm nay + 14 ngày tới
-  });
-  vclRenderList(items);
+  var box = $('khungViecCanLam'); if (box) box.style.display = 'none';
+  if (typeof taiNhiemVu === 'function') await taiNhiemVu();
 }
 
 function vclRenderList(items) {
@@ -1690,6 +1754,7 @@ async function taiThongKeTongHopHS() {
   }
   if (!classIds.length) {
     $('tkDiem').textContent = '—'; $('tkBaiHoc').textContent = '0'; $('tkChuyenCan').textContent = '—';
+    window._nvStats = { diem:'—', cc:'—', bai:'0' }; if (typeof nvSyncStats==='function') nvSyncStats();
     return;
   }
 
@@ -1731,6 +1796,10 @@ async function taiThongKeTongHopHS() {
       $('tkChuyenCan').textContent = dd.error ? '—' : '0%';
     }
   } catch (e) { $('tkChuyenCan').textContent = '—'; }
+
+  // Gộp chỉ số vào banner nhiệm vụ
+  window._nvStats = { diem: $('tkDiem').textContent, cc: $('tkChuyenCan').textContent, bai: $('tkBaiHoc').textContent };
+  if (typeof nvSyncStats === 'function') nvSyncStats();
 }
 
 function formatNgayDep(dStr) {
