@@ -1638,7 +1638,7 @@ async function layKetQuaChamHtml(kind) {
   var tenLoai = kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận';
   try {
     var r = await sb.from('submissions')
-      .select('id, submitted_at, files, status, score, feedback, graded_files, is_late')
+      .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, student_reflection, reviewed_at')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
       .eq('kind', kind)
@@ -1673,6 +1673,16 @@ async function layKetQuaChamHtml(kind) {
         '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê của thầy:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + btvnEsc(sub.feedback) + '</div></div>' : '') +
         '  ' + baiThayCham +
         '  ' + anhEmNop +
+        '  <div style="margin-top:14px; padding:12px 14px; border:1px solid var(--accent); border-radius:12px; background:var(--accent-soft)">' +
+        '    <div style="font-weight:800; color:var(--accent); font-size:.92rem; margin-bottom:4px">📝 Rút kinh nghiệm sau khi xem bài chấm <span style="color:#e74c3c">(bắt buộc)</span></div>' +
+        '    <div style="font-size:.8rem; color:var(--ink-2); margin-bottom:8px">Em ghi lại những chỗ đã sai và điều cần nhớ để lần sau làm tốt hơn nhé. Ghi xong nhớ bấm Lưu.</div>' +
+        '    <textarea id="rutKN-' + sub.id + '" rows="4" class="input" style="width:100%; resize:vertical; line-height:1.5" placeholder="Ví dụ: Em quên đổi dấu khi chuyển vế; cần nhớ điều kiện xác định; lần sau đọc kỹ đề…">' + btvnEsc(sub.student_reflection || '') + '</textarea>' +
+        '    <div style="display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap">' +
+        '      <button class="btn btn-primary btn-sm" onclick="luuRutKinhNghiem(\'' + sub.id + '\')">💾 Lưu rút kinh nghiệm</button>' +
+              (sub.reviewed_at ? '<span style="font-size:.8rem; color:var(--ok); font-weight:700">✓ Đã xem lại ngày ' + new Date(sub.reviewed_at).toLocaleDateString('vi-VN') + '</span>' : '<span style="font-size:.8rem; color:#e74c3c; font-weight:700">Chưa hoàn thành — hãy ghi và lưu để xong nhiệm vụ</span>') +
+        '      <span id="rutKNtt-' + sub.id + '" style="font-size:.8rem"></span>' +
+        '    </div>' +
+        '  </div>' +
         '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
         '</div>';
     } else {
@@ -1685,6 +1695,21 @@ async function layKetQuaChamHtml(kind) {
   } catch (e) {
     return '';
   }
+}
+
+async function luuRutKinhNghiem(subId) {
+  var ta = document.getElementById('rutKN-' + subId), tt = document.getElementById('rutKNtt-' + subId);
+  if (!ta) return;
+  var txt = (ta.value || '').trim();
+  if (!txt) { if (tt) { tt.textContent = 'Em cần ghi vài dòng rút kinh nghiệm trước khi lưu.'; tt.style.color = '#e74c3c'; } ta.focus(); return; }
+  if (tt) { tt.textContent = 'Đang lưu…'; tt.style.color = 'var(--ink-3)'; }
+  try {
+    var r = await sb.rpc('hs_luu_rut_kinh_nghiem', { p_submission_id: subId, p_text: txt });
+    if (r.error || (r.data && r.data.error)) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || 'Lỗi');
+    if (tt) { tt.textContent = '✓ Đã lưu! Em giỏi lắm.'; tt.style.color = 'var(--ok)'; }
+    if (typeof bhConfetti === 'function') bhConfetti();
+    if (typeof taiMucLuc === 'function') taiMucLuc(); // tắt nhiệm vụ "xem lại"
+  } catch (e) { if (tt) { tt.textContent = 'Lỗi: ' + e.message; tt.style.color = '#e74c3c'; } }
 }
 
 async function checkDaLamTest() {

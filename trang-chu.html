@@ -570,6 +570,7 @@
     background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.09); transition:all .18s; }
   .nv-task:hover { background:rgba(255,255,255,.13); transform:translateX(3px); }
   .nv-task .ic { width:40px; height:40px; border-radius:11px; display:grid; place-items:center; font-size:1.25rem; flex-shrink:0; }
+  .nv-task .ic.k-review { background:rgba(255,107,107,.28); }
   .nv-task .ic.k-btvn { background:rgba(46,213,115,.2); }
   .nv-task .ic.k-test { background:rgba(255,107,107,.2); }
   .nv-task .ic.k-dando { background:rgba(255,215,106,.22); }
@@ -1205,6 +1206,7 @@ function vclParseDiff(s) {
    THANH NHIỆM VỤ / NHÂN VẬT GAME cho học sinh
    ============================================================ */
 var NV_KIND = {
+  review: { ic:'🔎', cls:'k-review', label:'Xem lại bài thầy chấm', go:'Xem & rút KN', tab:'', xp:15 },
   btvn:   { ic:'🏠', cls:'k-btvn',   label:'Bài tập về nhà', go:'Làm & nộp', tab:'btvn', xp:25 },
   test:   { ic:'📝', cls:'k-test',   label:'Bài kiểm tra',   go:'Vào làm',   tab:'test', xp:40 },
   dando:  { ic:'📌', cls:'k-dando',  label:'Dặn dò của thầy',go:'Đọc ngay',  tab:'',     xp:10 },

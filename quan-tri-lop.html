@@ -1729,7 +1729,7 @@ async function moBaiNop(lessonId, title) {
   $('bnBody').innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-3)">Đang tải…</div>';
   try {
     var r = await sb.from('submissions')
-      .select('id, student_id, kind, files, status, score, is_late, submitted_at, profiles(full_name)')
+      .select('id, student_id, kind, files, status, score, is_late, submitted_at, student_reflection, reviewed_at, profiles(full_name)')
       .eq('lesson_id', lessonId).order('submitted_at', { ascending: false });
     var ds = r.data || [];
     if (!ds.length) { $('bnBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào nộp bài cho bài giảng này.</div>'; return; }
@@ -1743,9 +1743,20 @@ async function moBaiNop(lessonId, title) {
         var st = s.status === 'graded' ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>' : '<span class="badge badge-mute">Chờ chấm</span>';
         var late = s.is_late ? '<span class="badge" style="background:#e74c3c;color:#fff">⏰ Nộp trễ</span>' : '';
         var ngay = s.submitted_at ? new Date(s.submitted_at).toLocaleString('vi-VN') : '';
+        var reviewLine = '';
+        if (s.status === 'graded') {
+          if (s.reviewed_at) {
+            reviewLine = '<div style="margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(46,213,115,.10);border:1px solid rgba(46,213,115,.3)">' +
+              '<div style="font-size:.78rem;font-weight:700;color:#1a9e5c">👁 Đã xem lại bài chấm · ' + new Date(s.reviewed_at).toLocaleString('vi-VN') + '</div>' +
+              (s.student_reflection ? '<div style="font-size:.82rem;color:var(--ink);white-space:pre-wrap;line-height:1.5;margin-top:4px"><b>📝 Rút kinh nghiệm:</b> ' + qlaEsc(s.student_reflection) + '</div>' : '') +
+            '</div>';
+          } else {
+            reviewLine = '<div style="margin-top:8px;font-size:.78rem;font-weight:700;color:#e67e22">⏳ HS chưa xem lại bài chấm / chưa rút kinh nghiệm</div>';
+          }
+        }
         return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b>' + qlaEsc(nm) + '</b>' + kindChip + st + late + '<span style="color:var(--ink-3);font-size:.78rem;margin-left:auto">' + ngay + '</span></div>' +
-          '<div>' + bnThumbs(s.files) + '</div></div>';
+          '<div>' + bnThumbs(s.files) + '</div>' + reviewLine + '</div>';
       }).join('');
   } catch (e) { $('bnBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải: ' + (e && e.message ? e.message : e) + '</div>'; }
 }
