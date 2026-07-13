@@ -507,6 +507,11 @@ function moNopBai(phanloai) {
   var h2 = document.querySelector('#modalNopBai h2');
   if (h2) h2.textContent = nopBaiPhanLoai === 'homework' ? '📤 Nộp bài tập về nhà' : '📤 Nộp bài';
   $('nbThongBao').textContent = '';
+  // Mở ô nộp cũng tính là HS đã xem mục BTVN/Kiểm tra (dù vào thẳng nút Nộp)
+  if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
+    vmDanhDauDaXem(lessonId, nopBaiPhanLoai === 'homework' ? 'btvn' : 'test')
+      .then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
+  }
   taiBaiDaNop();
 }
 function dongNopBai() { $('modalNopBai').style.display = 'none'; }
@@ -1639,8 +1644,9 @@ async function chonNoiDung(loai) {
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
 
-  // Đánh dấu mục "xem" đã hoàn thành + cập nhật vòng % (chỉ học sinh)
-  if (['lythuyet', 'tailieu', 'bang'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
+  // Đánh dấu mục "đã mở/xem" cho HS (video ghi ở nơi khác).
+  // btvn/test: chỉ ghi nhận "đã xem", KHÔNG tính hoàn thành vòng % (vòng % dựa trên bài đã nộp).
+  if (['lythuyet', 'tailieu', 'bang', 'btvn', 'test'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
     vmDanhDauDaXem(lessonId, loai).then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
 }

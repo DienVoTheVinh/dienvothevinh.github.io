@@ -1598,28 +1598,59 @@ async function moAiDaXem(lessonId, title) {
     var rp = await sb.from('lesson_item_progress').select('student_id, item').eq('lesson_id', lessonId);
     var seen = {};
     (rp.data || []).forEach(function (x) { (seen[x.student_id] = seen[x.student_id] || {})[x.item] = true; });
+    // Ai đã NỘP bài (BTVN/Kiểm tra) — nộp thì chắc chắn đã xem
+    var nop = {};
+    try {
+      var rsub = await sb.from('submissions').select('student_id, kind').eq('lesson_id', lessonId);
+      (rsub.data || []).forEach(function (x) { var k = (x.kind === 'homework') ? 'btvn' : 'test'; (nop[x.student_id] = nop[x.student_id] || {})[k] = true; });
+      var ratt = await sb.from('attempts').select('student_id').eq('lesson_id', lessonId).not('submitted_at', 'is', null);
+      (ratt.data || []).forEach(function (x) { (nop[x.student_id] = nop[x.student_id] || {})['test'] = true; });
+    } catch (e2) {}
     var ITEMS = [['video', '🎬 Video'], ['lythuyet', '📖 Lý thuyết'], ['tailieu', '📄 Tài liệu'], ['bang', '🖼️ Ảnh bảng'], ['btvn', '🏠 BTVN'], ['test', '📝 Kiểm tra']];
+    var canNop = { btvn: true, test: true };
     var used = {};
     Object.keys(seen).forEach(function (sid) { Object.keys(seen[sid]).forEach(function (k) { used[k] = true; }); });
+    Object.keys(nop).forEach(function (sid) { Object.keys(nop[sid]).forEach(function (k) { used[k] = true; }); });
     var cols = ITEMS.filter(function (it) { return used[it[0]]; });
     if (!cols.length) {
-      $('aiXemBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào bấm xem mục nào trong bài này.</div>';
+      $('aiXemBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào mở/nộp mục nào trong bài này.</div>';
       return;
     }
-    var counts = {};
-    cols.forEach(function (c) { counts[c[0]] = 0; });
-    students.forEach(function (s) { cols.forEach(function (c) { if (seen[s.id] && seen[s.id][c[0]]) counts[c[0]]++; }); });
+    // Đếm: mục nộp → đếm số đã nộp; mục xem → đếm số đã xem
+    var cntView = {}, cntNop = {};
+    cols.forEach(function (c) { cntView[c[0]] = 0; cntNop[c[0]] = 0; });
+    students.forEach(function (s) {
+      cols.forEach(function (c) {
+        if (seen[s.id] && seen[s.id][c[0]]) cntView[c[0]]++;
+        if (nop[s.id] && nop[s.id][c[0]]) cntNop[c[0]]++;
+      });
+    });
     var head = '<th style="text-align:left;padding:8px;position:sticky;left:0;background:var(--surface-solid)">Học sinh</th>' +
-      cols.map(function (c) { return '<th style="padding:8px;white-space:nowrap;text-align:center">' + c[1] + '<div style="font-size:.7rem;color:var(--ink-3);font-weight:600">' + counts[c[0]] + '/' + students.length + '</div></th>'; }).join('');
+      cols.map(function (c) {
+        var sub = canNop[c[0]]
+          ? '<div style="font-size:.68rem;color:var(--ink-3);font-weight:600">📤 nộp ' + cntNop[c[0]] + ' · 👁 xem ' + cntView[c[0]] + '</div>'
+          : '<div style="font-size:.7rem;color:var(--ink-3);font-weight:600">' + cntView[c[0]] + '/' + students.length + '</div>';
+        return '<th style="padding:8px;white-space:nowrap;text-align:center">' + c[1] + sub + '</th>';
+      }).join('');
     var rows = students.map(function (s) {
       var cells = cols.map(function (c) {
-        var ok = seen[s.id] && seen[s.id][c[0]];
-        return '<td style="text-align:center;padding:6px">' + (ok ? '<span style="color:var(--ok)">✅</span>' : '<span style="color:var(--ink-3)">–</span>') + '</td>';
+        var k = c[0];
+        var daNop = nop[s.id] && nop[s.id][k];
+        var daXem = seen[s.id] && seen[s.id][k];
+        var cell;
+        if (canNop[k]) {
+          if (daNop) cell = '<span style="color:var(--ok)" title="Đã nộp bài">📤</span>';
+          else if (daXem) cell = '<span style="color:#d97706" title="Đã xem, chưa nộp">👁</span>';
+          else cell = '<span style="color:var(--ink-3)">–</span>';
+        } else {
+          cell = daXem ? '<span style="color:var(--ok)">✅</span>' : '<span style="color:var(--ink-3)">–</span>';
+        }
+        return '<td style="text-align:center;padding:6px">' + cell + '</td>';
       }).join('');
       return '<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 8px;position:sticky;left:0;background:var(--surface-solid);white-space:nowrap">' + esc(s.name) + '</td>' + cells + '</tr>';
     }).join('');
     $('aiXemBody').innerHTML = '<div style="overflow-x:auto"><table style="width:100%;font-size:.86rem;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--line-2)">' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px">✅ = đã bấm xem/mở mục đó · – = chưa. Chỉ hiện các mục đã có ít nhất 1 HS xem.</div>';
+      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px;line-height:1.6">✅ = đã mở/xem mục đó · <span style="color:var(--ok)">📤</span> = đã nộp bài · <span style="color:#d97706">👁</span> = đã xem đề nhưng chưa nộp · – = chưa. Chỉ hiện mục đã có ít nhất 1 HS mở hoặc nộp.</div>';
   } catch (e) {
     $('aiXemBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải dữ liệu: ' + (e && e.message ? e.message : e) + '</div>';
   }
