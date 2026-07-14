@@ -29,6 +29,20 @@
 
 /* ---------- CANH POPUP AN TOÀN: overlay fixed thoát khỏi tổ tiên có transform, hiện từ trên, không che nút × ---------- */
 (function () {
+  // Lưu toạ độ click chuột hoặc chạm gần nhất của người dùng
+  window.vmLastClickX = null;
+  window.vmLastClickY = null;
+  window.vmLastClickTime = 0;
+  
+  function ghiNhanToaDo(e) {
+    var touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    window.vmLastClickX = touch ? touch.clientX : e.clientX;
+    window.vmLastClickY = touch ? touch.clientY : e.clientY;
+    window.vmLastClickTime = Date.now();
+  }
+  document.addEventListener('mousedown', ghiNhanToaDo, true);
+  document.addEventListener('touchstart', ghiNhanToaDo, true);
+
   // Overlay phủ toàn màn hình dạng position:fixed inset:0 (kể cả khi bị tổ tiên transform làm lệch)
   function laOverlayFull(el){
     try{ var cs=getComputedStyle(el);
@@ -43,13 +57,48 @@
     if(!laOverlayFull(el)) return;
     // Chỉ xử lý khi đang hiện bằng inline style (tránh phá modal điều khiển bằng class tổ tiên)
     var shown = el.style.display && el.style.display!=='none';
-    if(!shown) return;
+    if(!shown) {
+      el._wasVisible = false;
+      return;
+    }
     // Đưa overlay ra thẳng <body> để thoát tổ tiên có transform/filter (nguyên nhân fixed bị lệch)
     if(el.parentElement && el.parentElement!==document.body){ try{ document.body.appendChild(el); }catch(e){} }
-    try{ var cs=getComputedStyle(el);
-      if(cs.display==='flex' && cs.alignItems==='center') el.style.alignItems='flex-start';
-      if(cs.overflowY!=='auto' && cs.overflowY!=='scroll') el.style.overflowY='auto';
-      var pt=parseInt(cs.paddingTop,10)||0; if(pt < 16){ el.style.paddingTop='40px'; if((parseInt(cs.paddingBottom,10)||0)<16) el.style.paddingBottom='28px'; }
+    try{
+      var content = el.querySelector('.modal-content') || el.firstElementChild;
+      if (content && !el._wasVisible && (Date.now() - window.vmLastClickTime < 1000) && window.vmLastClickY !== null) {
+        el._wasVisible = true;
+        
+        content.style.position = 'absolute';
+        content.style.margin = '0';
+        
+        var modalWidth = content.offsetWidth || 500;
+        var modalHeight = content.offsetHeight || 400;
+        var viewportWidth = window.innerWidth;
+        var viewportHeight = window.innerHeight;
+        
+        // Chiều ngang: Căn giữa theo vị trí click, khống chế lề an toàn 10px
+        var left = window.vmLastClickX - (modalWidth / 2);
+        if (left + modalWidth > viewportWidth - 10) left = viewportWidth - modalWidth - 10;
+        if (left < 10) left = 10;
+        
+        // Chiều dọc: Đưa sát theo vị trí click (chếch lên 40px cho thoáng ngón tay), khống chế lề dọc 16px
+        var top = window.vmLastClickY - 40;
+        if (top + modalHeight > viewportHeight - 16) top = viewportHeight - modalHeight - 16;
+        if (top < 16) top = 16;
+        
+        content.style.left = left + 'px';
+        content.style.top = top + 'px';
+        
+        // An toàn chiều cao trên di động (được cuộn nội bộ nếu quá dài)
+        content.style.maxHeight = 'calc(100vh - 32px)';
+        content.style.overflowY = 'auto';
+      } else if (content && !el._wasVisible) {
+        // Fallback mặc định khi mở không qua click chuột trực tiếp
+        var cs=getComputedStyle(el);
+        if(cs.display==='flex' && cs.alignItems==='center') el.style.alignItems='flex-start';
+        if(cs.overflowY!=='auto' && cs.overflowY!=='scroll') el.style.overflowY='auto';
+        var pt=parseInt(cs.paddingTop,10)||0; if(pt < 16){ el.style.paddingTop='40px'; if((parseInt(cs.paddingBottom,10)||0)<16) el.style.paddingBottom='28px'; }
+      }
       el.scrollTop=0;
     }catch(e){}
   }
