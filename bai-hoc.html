@@ -1530,7 +1530,16 @@ function renderPDFWithJS(pdfUrl, container) {
   }
   
   function startRendering() {
-    container.innerHTML = '<div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
+    window._pdfZoomLevel = 1;
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap">' +
+        '<span style="font-size:.78rem;color:var(--ink-3);font-weight:700">🔍 Thu phóng:</span>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(-1)">−</button>' +
+        '<span id="pdfzLbl" style="min-width:52px;text-align:center;font-weight:800;font-size:.84rem">100%</span>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(1)">+</button>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:.8rem" onclick="pdfZoomJS(0)">↔ Vừa khung</button>' +
+      '</div>' +
+      '<div style="flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
     var canvasContainer = document.getElementById('pdfCanvasContainer');
     
     // Thêm cache-busting cho URL của Supabase để tránh việc trình duyệt cache kết quả request không có CORS
@@ -1544,8 +1553,9 @@ function renderPDFWithJS(pdfUrl, container) {
       for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         (function(num) {
           var canvas = document.createElement('canvas');
-          canvas.style.width = '100%';
-          canvas.style.maxWidth = '800px';
+          canvas.className = 'pdfjs-page';
+          if ((window._pdfZoomLevel || 1) === 1) { canvas.style.width = '100%'; canvas.style.maxWidth = '800px'; }
+          else { canvas.style.width = (800 * window._pdfZoomLevel) + 'px'; canvas.style.maxWidth = 'none'; }
           canvas.style.borderRadius = '8px';
           canvas.style.border = '1px solid var(--line)';
           canvas.style.boxShadow = 'var(--shadow)';
@@ -1573,6 +1583,19 @@ function renderPDFWithJS(pdfUrl, container) {
       fallbackToIframe();
     });
   }
+}
+
+function pdfZoomJS(dir) {
+  var cont = document.getElementById('pdfCanvasContainer'); if (!cont) return;
+  var z = window._pdfZoomLevel || 1;
+  if (dir === 0) z = 1; else z = Math.min(2.5, Math.max(0.6, z + dir * 0.2));
+  z = Math.round(z * 100) / 100;
+  window._pdfZoomLevel = z;
+  cont.querySelectorAll('.pdfjs-page').forEach(function (cv) {
+    if (z === 1) { cv.style.width = '100%'; cv.style.maxWidth = '800px'; }
+    else { cv.style.width = (800 * z) + 'px'; cv.style.maxWidth = 'none'; }
+  });
+  var lbl = document.getElementById('pdfzLbl'); if (lbl) lbl.textContent = Math.round(z * 100) + '%';
 }
 
 function veTaiLieuTex() {

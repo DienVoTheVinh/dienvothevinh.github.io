@@ -231,6 +231,7 @@
 \@addtoreset{bt}{subsection}
 \@addtoreset{ex}{subsection}
 \@addtoreset{vd}{subsection}
+\@addtoreset{vdlt}{subsection}
 \makeatother
 
 % DANG (Type of problem) env
@@ -322,6 +323,7 @@
 % Other environments
 \newtheorem{mydn}{\color{\maudn}\damEX Định nghĩa}[section]
 \newtheorem{vd}{\color{\mauVD}\damEX\iconVD Ví dụ}
+\newtheorem{vdlt}{\color{\mauVD}\damEX Ví dụ}
 \newtheorem{bt}{\color{\mauBT}\damEX\iconVD Bài}
 \newtheorem{ap}{\color{\mauBT}\damEX\iconVD Áp dụng}
 \newtheorem{myvidu}{\color{\mauVD}\damEX\iconVD Ví dụ}
@@ -329,6 +331,7 @@
 \newtheorem{nx}{\color{\maucy}\damEX Nhận xét}
 \newtheorem{phantich}{\color{\maupt}\damEX Phân tích}
 \newtheorem{tc}{\color{\maudl}\damEX Tính chất}
+\listenumerate{dn,vd,vdlt,dl,tc,nx,ex,bt,vidu,ap}
 
 % Helper macros
 \def\khoanhtrondapan{}
@@ -398,3 +401,7 @@
 \def\dotlineEX#1{\par\noindent\dotfill\par}
 \def\mauDC{\mauLG!50}
 \setlength{\parindent}{0pt}
+
+% Thay đổi dấu phân ý (itemize) cấp 2 và 3 thành hình ngôi sao để tránh hiểu lầm thành dấu trừ trong toán học
+\renewcommand{\labelitemii}{\color{\mauitemKN}\ensuremath{\star}}
+\renewcommand{\labelitemiii}{\color{\mauitemCI}\ensuremath{\star}}

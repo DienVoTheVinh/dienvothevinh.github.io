@@ -24,8 +24,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   background:var(--surface); height:60px; flex-shrink:0;
 }
 .topbar-lesson .left { display:flex; align-items:center; gap:10px; min-width:0; }
-.back-btn { display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; font-size:.9rem; color:var(--ink-2); flex-shrink:0; }
-.back-btn:hover { color:var(--accent); }
+.back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:700; font-size:.9rem; color:#fff; flex-shrink:0;
+  background:var(--accent); border:1px solid var(--accent); padding:8px 14px; border-radius:10px; box-shadow:0 2px 8px rgba(224,160,32,.28); transition:all .15s; }
+.back-btn:hover { filter:brightness(1.08); transform:translateX(-2px); color:#fff; }
+.back-btn span:first-child { font-size:1.05rem; font-weight:800; }
 .lesson-title { font-size:1.02rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .switcher { display:flex; gap:6px; flex-shrink:0; }
 .sw-btn {
@@ -36,6 +38,15 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .sw-btn:hover { color:var(--ink); border-color:var(--ink-3); }
 .sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
+/* Bỏ thanh nút tính năng trên đỉnh — mọi tính năng nằm trong mục lục trái */
+#boChuyen { display:none !important; }
+#nutBuoiHS, #nutNopBai { display:none !important; }   /* dời hết vào mục lục */
+.ml-vao-btn { font-size:.66rem; font-weight:800; padding:2px 9px; border-radius:99px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent); cursor:pointer; flex:none; white-space:nowrap; margin-left:6px; }
+.ml-vao-btn:hover { background:var(--accent); color:#fff; }
+/* Mục con cấp 2 (Nộp bài / Kết quả) dưới Bài kiểm tra & Bài tập về nhà */
+.ml-sub a.ml-sub2 { padding-left:62px; font-size:.79rem; color:var(--accent); }
+.ml-sub a.ml-sub2:hover { background:var(--accent-soft); }
+.ml-sub a.ml-sub2 span:first-child { opacity:.85; }
 
 .lesson-dot {
   width: 10px;
@@ -116,8 +127,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .ml-sub a.done .tick { color:var(--ok, #28a745); }
 
 /* Vùng làm việc */
-.workspace { display:flex; flex:1; min-width:0; background:var(--surface-2); }
-.pane { flex:1; display:flex; flex-direction:column; min-width:0; position:relative; background:var(--surface); }
+.workspace { display:flex; flex:1; min-width:0; min-height:0; background:var(--surface-2); }
+.pane { flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; position:relative; background:var(--surface); }
 .pane-video { border-right:1px solid var(--line); }
 .video-wrapper { width:100%; height:100%; background:#000; display:flex; flex-direction:column; }
 .video-wrapper iframe { flex:1; width:100%; border:none; }
@@ -146,14 +157,30 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
   .lesson-title { display:none; }
 }
 @media (max-width:820px) {
-  .workspace { flex-direction:column; }
+  .workspace { flex-direction:column; min-height:0; }
+  .pane, .pane-content, .content-body { min-height:0; }
   .pane-video, .pane-content { display:none !important; }
   .workspace.show-video .pane-video { display:flex !important; }
   .workspace.show-content .pane-content { display:flex !important; }
   .mobile-tabs { display:flex; }
   .pane-control { display:none; }
-  .switcher .sw-text { display:none; }
+  /* Header: xuống hàng gọn gàng, không đè lên nhau */
+  .topbar-lesson { flex-wrap:wrap; height:auto; row-gap:8px; padding:8px 12px; }
+  .topbar-lesson .left { order:1; flex:1 1 auto; min-width:0; }
+  .topbar-lesson > div:last-of-type { order:2; flex-shrink:0; }
+  .topbar-lesson .sw-text { display:none; }        /* các nút chỉ hiện icon cho gọn */
+  .switcher { order:3; flex-basis:100%; width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; justify-content:flex-start; }
+  .switcher::-webkit-scrollbar { display:none; }
+  .sw-btn { flex-shrink:0; padding:7px 12px; }
+  /* Dặn dò gọn hơn trên điện thoại */
+  #lessonNoteBanner { margin:10px 12px 0; padding:10px 14px 11px; }
+  #lessonNoteContent { max-height:26vh; font-size:.9rem; }
+  #ghiChuGVPopover { top:auto; bottom:12px; right:10px; left:10px; width:auto; max-width:none; }
 }
+/* Thu gọn / mở dặn dò */
+#lessonNoteBanner.collapsed #lessonNoteContent { display:none; }
+#lessonNoteBanner.collapsed #danDoCaret { transform:rotate(180deg); }
+#lessonNoteHead:hover #danDoCaret { opacity:.75; }
 
 /* Quiz CSS */
 .quiz-container { padding: 24px; overflow-y: auto; flex: 1; background: var(--surface); display: flex; flex-direction: column; gap: 24px; }
@@ -261,7 +288,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 /* ===== Theme CLB M.A.P ===== */
 body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
 #mapWatermark { display:none; position:fixed; right:1.5vw; bottom:8vh; width:min(300px,30vw); opacity:.05; pointer-events:none; z-index:0; user-select:none; }
-body.theme-map #mapWatermark { display:block; }
+body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây khó nhìn */
 </style>
 </head>
 <body>
@@ -282,22 +309,56 @@ body.theme-map #mapWatermark { display:block; }
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+      <img id="mapHeaderLogo" src="logo/CLB-MAP-logo.png" alt="CLB M.A.P" title="Lớp thuộc CLB M.A.P" style="display:none;width:34px;height:34px;border-radius:50%;background:#fff;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
       <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
       <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
+      <button class="btn btn-secondary btn-sm" id="btnGhiChuGV" style="display:none;background:rgba(37,99,235,0.14);border-color:rgba(37,99,235,0.35);color:var(--ink)" onclick="toggleGhiChuGV()" title="Ghi chú riêng cho giáo viên (học sinh không thấy)">👨‍🏫 <span class="sw-text">Ghi chú GV</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </header>
   
-  <!-- Ghi chú nội bộ dành cho Giáo viên / Trợ giảng -->
-  <div id="teacherNotesBanner" style="display:none; background:rgba(37,99,235,0.07); border-bottom:1px solid rgba(37,99,235,0.18); color:var(--ink); padding:12px 20px; font-size:0.9rem; align-items:center; gap:12px; flex-wrap:wrap; border-left:4px solid var(--accent); z-index: 10;">
-    <div style="flex:1; min-width:300px">
-      <span style="font-weight:700; color:var(--accent); display:inline-flex; align-items:center; gap:6px; margin-bottom:4px"><span style="font-size:1.1rem">👨‍🏫</span> Ghi chú bài giảng của Trợ giảng / GV dành riêng cho thầy:</span>
-      <div id="teacherNotesContent" style="white-space:pre-wrap; line-height:1.45; font-weight:500"></div>
+  <!-- 📌 Dặn dò chung của thầy (hiện cho tất cả, kể cả học sinh) — thu gọn được -->
+  <div id="lessonNoteBanner" style="display:none; margin:12px 20px 0; padding:12px 18px 13px; border-radius:16px; background:linear-gradient(135deg, rgba(224,160,32,0.14), rgba(181,96,52,0.06)); border:1px solid rgba(224,160,32,0.32); box-shadow:0 4px 18px rgba(224,160,32,0.10); position:relative; overflow:hidden">
+    <div style="position:absolute; inset:0 auto 0 0; width:5px; background:linear-gradient(180deg, var(--accent), rgba(181,96,52,0.7))"></div>
+    <div id="lessonNoteHead" onclick="toggleDanDo()" style="display:flex; align-items:center; gap:8px; padding-left:6px; cursor:pointer; user-select:none">
+      <span style="font-size:1.2rem">📌</span>
+      <span style="font-weight:800; color:var(--accent); letter-spacing:.01em; font-size:1rem; flex:1">Dặn dò của thầy</span>
+      <span id="danDoCaret" style="color:var(--accent); font-size:.7rem; transition:transform .2s">▲</span>
     </div>
+    <div id="lessonNoteContent" style="white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding-left:6px; margin-top:8px; max-height:34vh; overflow-y:auto"></div>
+  </div>
+
+  <!-- 📝 Bài kiểm tra được giao (đề từ Khu luyện đề) -->
+  <a id="linkedExamBanner" href="#" style="display:none; text-decoration:none; margin:12px 20px 0; padding:14px 18px; border-radius:16px; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(37,99,235,0.14), rgba(37,99,235,0.04)); border:1px solid rgba(37,99,235,0.35); box-shadow:0 4px 18px rgba(37,99,235,0.10)">
+    <span style="font-size:1.7rem; flex-shrink:0">📝</span>
+    <div style="flex:1; min-width:0">
+      <div style="font-weight:800; color:#2563eb; font-size:1rem">Bài kiểm tra được giao</div>
+      <div id="linkedExamTitle" style="font-size:.9rem; color:var(--ink-2); margin-top:1px">—</div>
+    </div>
+    <span class="btn btn-primary btn-sm" style="background:#2563eb; border-color:#2563eb; white-space:nowrap; flex-shrink:0">Vào làm ngay →</span>
+  </a>
+
+  <!-- Ghi chú riêng cho GV — popover (chỉ GV/Admin bấm nút mới hiện, HS không thấy) -->
+  <div id="ghiChuGVPopover" style="display:none; position:fixed; top:64px; right:16px; z-index:130; max-width:380px; width:calc(100vw - 32px); background:var(--surface); border:1px solid rgba(37,99,235,0.4); border-radius:14px; box-shadow:0 14px 44px rgba(0,0,0,.3); padding:16px 18px">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px">
+      <span style="font-weight:800; color:#2563eb; display:inline-flex; align-items:center; gap:6px; font-size:.92rem"><span style="font-size:1.05rem">👨‍🏫</span> Ghi chú riêng cho GV</span>
+      <button onclick="toggleGhiChuGV(false)" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--ink-3);line-height:1">×</button>
+    </div>
+    <div style="font-size:.74rem; color:var(--ink-3); margin-bottom:8px">Chỉ thầy/trợ giảng thấy — học sinh không nhìn thấy phần này.</div>
+    <div id="teacherNotesContent" style="white-space:pre-wrap; line-height:1.5; font-size:.9rem; color:var(--ink); max-height:50vh; overflow-y:auto"></div>
   </div>
 
   <div id="coTeachBanner" style="display:none; background:rgba(217,119,6,0.08); border-bottom:1px solid rgba(217,119,6,0.2); color:var(--ink); padding:10px 16px; font-size:0.88rem; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap"></div>
+
+  <style>
+    @keyframes bhFall { to { transform: translateY(112vh) rotate(720deg); opacity:.85; } }
+    @keyframes mlGlowAmber { 0%,100%{ box-shadow:0 0 0 rgba(224,160,32,0); } 50%{ box-shadow:0 0 13px 2px rgba(224,160,32,.8); } }
+    @keyframes mlGlowGreen { 0%,100%{ box-shadow:0 0 0 rgba(46,213,115,0); } 50%{ box-shadow:0 0 13px 2px rgba(46,213,115,.8); } }
+    a.ml-sub2.ml-glow { animation: mlGlowAmber 1.4s ease-in-out infinite; border-radius:8px; background:rgba(224,160,32,.12)!important; font-weight:800; color:var(--accent)!important; }
+    a.ml-sub2.ml-glow-ok { animation: mlGlowGreen 1.4s ease-in-out infinite; border-radius:8px; background:rgba(46,213,115,.14)!important; font-weight:800; color:var(--ok,#1a9e5c)!important; }
+  </style>
+  <div id="bhAnhLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;cursor:zoom-out"></div>
 
   <!-- Hộp nộp bài -->
   <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
@@ -305,6 +366,7 @@ body.theme-map #mapWatermark { display:block; }
       <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
       <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
       <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px" id="nbTenBai"></p>
+      <div id="nbDeadlineBanner" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:10px;font-size:.85rem;line-height:1.5"></div>
       <div id="nbDaNop"></div>
       <div class="field" style="margin-top:14px">
         <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
@@ -371,9 +433,7 @@ body.theme-map #mapWatermark { display:block; }
         <div class="pane-control">
           <button class="ctrl-btn" onclick="phongToPane('video')" title="Phóng to Video" id="btnMaxVideo">⛶</button>
         </div>
-        <div class="video-wrapper" id="videoWrapper">
-          <div class="no-content"><div class="ic">🎬</div><h3>Đang tải video bài giảng…</h3></div>
-        </div>
+        <div class="video-wrapper" id="videoWrapper"></div>
       </section>
 
       <div class="resizer" id="workspaceResizer"></div>
@@ -393,7 +453,7 @@ body.theme-map #mapWatermark { display:block; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=5.0"></script>
+<script src="js/vinhmath.js?v=5.2"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -469,6 +529,27 @@ function moNopBai(phanloai) {
   var h2 = document.querySelector('#modalNopBai h2');
   if (h2) h2.textContent = nopBaiPhanLoai === 'homework' ? '📤 Nộp bài tập về nhà' : '📤 Nộp bài';
   $('nbThongBao').textContent = '';
+  // Hạn nộp + chính sách quá hạn (khoá / cho nộp trễ)
+  var dl = nopBaiPhanLoai === 'test' ? (details && details.test_deadline) : (details && details.homework_due);
+  var pol = (nopBaiPhanLoai === 'test' ? (details && details.test_late_policy) : (details && details.homework_late_policy)) || 'late';
+  var bn = $('nbDeadlineBanner'), gui = $('nbGui'), inp = $('nbFiles'), khoa = false;
+  if (bn) {
+    if (dl && !laQuanTriBaiHoc()) {
+      var qua = Date.now() > new Date(dl).getTime();
+      var dlStr = new Date(dl).toLocaleString('vi-VN');
+      bn.style.display = 'block';
+      if (!qua) { bn.style.background = 'var(--accent-soft)'; bn.style.color = 'var(--ink)'; bn.innerHTML = '⏰ Hạn nộp: <b>' + dlStr + '</b>'; }
+      else if (pol === 'lock') { khoa = true; bn.style.background = 'rgba(231,76,60,.12)'; bn.style.color = '#c0392b'; bn.innerHTML = '🔒 Đã quá hạn nộp (' + dlStr + '). Bài đã bị khoá — em không nộp được nữa. Hãy liên hệ thầy/cô.'; }
+      else { bn.style.background = 'rgba(231,76,60,.10)'; bn.style.color = '#c0392b'; bn.innerHTML = '⏰ Đã quá hạn (' + dlStr + '). Em vẫn nộp được nhưng bài sẽ bị đánh dấu <b>"Nộp trễ"</b>.'; }
+    } else { bn.style.display = 'none'; }
+  }
+  if (gui) gui.style.display = khoa ? 'none' : '';
+  if (inp) inp.disabled = !!khoa;
+  // Mở ô nộp cũng tính là HS đã xem mục BTVN/Kiểm tra (dù vào thẳng nút Nộp)
+  if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
+    vmDanhDauDaXem(lessonId, nopBaiPhanLoai === 'homework' ? 'btvn' : 'test')
+      .then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
+  }
   taiBaiDaNop();
 }
 function dongNopBai() { $('modalNopBai').style.display = 'none'; }
@@ -535,25 +616,37 @@ async function taiBaiDaNop() {
     .eq('kind', nopBaiPhanLoai)
     .order('submitted_at', { ascending: false });
   var ds = r.data || [];
-  if (!ds.length) { $('nbDaNop').innerHTML = ''; return; }
-  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;font-weight:600;margin-bottom:8px">Bài em đã nộp:</div>' +
-    ds.map(function (s) {
+  var nutGui = $('nbGui');
+  if (!ds.length) { $('nbDaNop').innerHTML = ''; if (nutGui && nutGui.style.display !== 'none') nutGui.textContent = 'Gửi bài cho thầy'; return; }
+  if (nutGui && nutGui.style.display !== 'none') nutGui.textContent = '🔄 Nộp lại bài khác';
+  var kindHienTai = nopBaiPhanLoai;
+  $('nbDaNop').innerHTML = '<div style="font-size:.85rem;font-weight:600;margin-bottom:8px">📎 Bài em đã nộp (' + ds.length + ' lần):</div>' +
+    ds.map(function (s, idx) {
       var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
-      var links = (s.files || []).map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ');
-      var kq;
-      if (s.status === 'graded') {
-        kq = '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + ' điểm' : '') + '</span>' +
-          (s.feedback ? '<div style="font-size:.85rem;margin-top:6px;color:var(--ink-2)">💬 ' + s.feedback + '</div>' : '') +
-          ((s.graded_files || []).length
-            ? '<div style="font-size:.85rem;margin-top:6px">📄 Bài thầy chấm: ' + s.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank">' + f.name + '</a>'; }).join(' · ') + '</div>'
-            : '');
-      } else {
-        kq = '<span class="badge badge-warn">Chờ thầy chấm</span>';
-      }
+      var badge = s.status === 'graded'
+        ? '<span class="badge badge-ok">✅ Thầy đã chấm — xem ở mục 📋 Kết quả</span>'
+        : '<span class="badge badge-warn">⏳ Đang chờ thầy chấm</span>';
+      var lan = ds.length > 1 ? '<span style="font-size:.75rem;color:var(--ink-3);font-weight:700">Lần ' + (ds.length - idx) + '</span> · ' : '';
       return '<div class="card" style="padding:12px 16px;margin-bottom:10px">' +
-        '<div style="font-size:.8rem;color:var(--ink-3)">' + ngay + '</div>' +
-        '<div style="font-size:.85rem;margin:6px 0">' + links + '</div>' + kq + '</div>';
+        '<div style="font-size:.8rem;color:var(--ink-3)">' + lan + ngay + '</div>' +
+        bhAnhThumbs(s.files) +
+        '<div style="margin-top:8px">' + badge + '</div>' +
+        (s.status === 'graded' ? '<div style="margin-top:8px"><button class="btn btn-secondary btn-sm" onclick="dongNopBai();xemKetQua(lessonId,\'' + kindHienTai + '\')">📋 Xem điểm & nhận xét</button></div>' : '') +
+      '</div>';
     }).join('');
+
+  // Đã được thầy/cô chấm -> KHÓA nộp lại
+  var daCham = ds.some(function (s) { return s.status === 'graded'; });
+  if (daCham) {
+    if (nutGui) nutGui.style.display = 'none';
+    var inpNb = $('nbFiles');
+    if (inpNb) { inpNb.disabled = true; var fld = inpNb.closest ? inpNb.closest('.field') : null; if (fld) fld.style.display = 'none'; }
+    var bnTb = $('nbThongBao');
+    if (bnTb) { bnTb.style.color = ''; bnTb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(46,213,115,.12);color:#1a7f45;font-weight:700;font-size:.88rem">🔒 Bài này đã được thầy/cô chấm nên em không nộp lại được nữa. Xem điểm & nhận xét ở mục 📋 Kết quả nhé!</div>'; }
+  } else {
+    var inpNb2 = $('nbFiles');
+    if (inpNb2) { inpNb2.disabled = false; var fld2 = inpNb2.closest ? inpNb2.closest('.field') : null; if (fld2) fld2.style.display = ''; }
+  }
 }
 
 async function guiBaiNop() {
@@ -561,7 +654,17 @@ async function guiBaiNop() {
   var tb = $('nbThongBao');
   if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
   var nut = $('nbGui');
+  // Cảnh báo không thoát khi đang gửi (đóng trang giữa chừng có thể mất bài)
+  if (!window._vmUnloadReg) {
+    window.addEventListener('beforeunload', function (e) {
+      if (window._vmDangNop) { e.preventDefault(); e.returnValue = 'Bài đang được gửi lên Drive — thoát bây giờ có thể mất bài. Em chờ chút nhé!'; return e.returnValue; }
+    });
+    window._vmUnloadReg = true;
+  }
+  window._vmDangNop = true;
   nut.disabled = true; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
+  tb.style.color = '';
+  tb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(224,160,32,.14);border:1px solid rgba(224,160,32,.4);color:var(--accent);font-weight:700;font-size:.86rem">⚠️ Đang gửi bài lên Drive của thầy… <b>Em vui lòng KHÔNG tắt/thoát trang</b> cho tới khi thấy thông báo “Nộp bài thành công” để tránh mất bài nhé!</div>';
   try {
     var fd = new FormData();
     fd.append('kind', 'nop');
@@ -572,14 +675,19 @@ async function guiBaiNop() {
     if (r.error) throw new Error(r.error.message || 'Trạm nộp bài lỗi');
     if (r.data && r.data.error) throw new Error(r.data.error);
     $('nbFiles').value = '';
-    tb.textContent = '✓ Nộp bài thành công!';
-    tb.style.color = 'var(--ok)';
+    if (typeof vmRenderFileList === 'function') vmRenderFileList('nbFiles', 'nbFileList');
+    tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div><div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô. Cố lên nhé!</div></div>';
+    if (typeof bhConfetti === 'function') bhConfetti();
+    nut.textContent = '🔄 Nộp lại bài khác';   // đổi nhãn để HS biết đã nộp
     taiBaiDaNop();
+    if (typeof taiMucLuc === 'function') taiMucLuc(); // cập nhật glow Nộp bài -> tắt
   } catch (e) {
     tb.textContent = 'Lỗi: ' + e.message;
     tb.style.color = 'var(--err)';
+    nut.textContent = 'Gửi bài cho thầy';
   }
-  nut.disabled = false; nut.textContent = 'Gửi bài cho thầy';
+  window._vmDangNop = false;
+  nut.disabled = false;
 }
 
 /* ===== MỤC LỤC BÊN TRÁI: accordion chuyên đề → bài → mục con + vòng % ===== */
@@ -593,7 +701,7 @@ async function taiMucLuc() {
 
   var q = sb.from('lessons')
     .select('id, title, sort, locked, class_id, youtube_url, latex_content, document_id, images, homework_text, homework_images, test_document_id, test_latex_content, theory_sections, created_at, topics(id, name, color, sort), documents!lessons_document_id_fkey(file_path)')
-    .order('sort', { ascending: false });
+    .order('created_at', { ascending: true });
   if (classIdHienTai) q = q.eq('class_id', classIdHienTai);
   var r = await q;
   var ds = r.data || [];
@@ -614,13 +722,18 @@ async function taiMucLuc() {
 
   // Tiến độ của học sinh
   var viewedByLesson = {}, actionByLesson = {};
+  window.mlGradedByLesson = {};
   if (nguoiDung) {
     var ids = ds.map(function (b) { return b.id; });
     try {
       var rv = await sb.from('lesson_item_progress').select('lesson_id, item').eq('student_id', nguoiDung.id).in('lesson_id', ids);
       (rv.data || []).forEach(function (x) { (viewedByLesson[x.lesson_id] = viewedByLesson[x.lesson_id] || new Set()).add(x.item); });
-      var rs = await sb.from('submissions').select('lesson_id, kind').eq('student_id', nguoiDung.id).in('lesson_id', ids);
-      (rs.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add(x.kind === 'homework' ? 'btvn' : 'test'); });
+      var rs = await sb.from('submissions').select('lesson_id, kind, status').eq('student_id', nguoiDung.id).in('lesson_id', ids);
+      (rs.data || []).forEach(function (x) {
+        var k = x.kind === 'homework' ? 'btvn' : 'test';
+        (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add(k);
+        if (x.status === 'graded') (window.mlGradedByLesson[x.lesson_id] = window.mlGradedByLesson[x.lesson_id] || new Set()).add(k);
+      });
       var ra = await sb.from('attempts').select('lesson_id').eq('student_id', nguoiDung.id).in('lesson_id', ids).not('submitted_at', 'is', null);
       (ra.data || []).forEach(function (x) { (actionByLesson[x.lesson_id] = actionByLesson[x.lesson_id] || new Set()).add('test'); });
     } catch (e) {}
@@ -669,15 +782,31 @@ async function taiMucLuc() {
         var openB = mlBaiMo[b.id] ? ' open' : '';
         var cur = b.id === lessonId ? ' current' : '';
         var khoa = b.locked ? '<span class="lock" title="Đang khoá">🔒</span>' : '';
+        var laHS = nguoiDung && !laQuanTriBaiHoc();
         var subs = td.items.map(function (it) {
-          return '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
+          var link = '<a class="' + (it.done ? 'done' : '') + '" onclick="mlMoMuc(\'' + b.id + '\',\'' + it.tab + '\',\'' + it.key + '\',\'' + it.loai + '\')">' +
             '<span>' + it.icon + '</span><span>' + it.label + '</span>' +
             '<span class="tick">' + (it.done ? '✓' : '○') + '</span></a>';
+          // Bài kiểm tra & Bài tập về nhà: 2 mục con "Nộp bài" + "Kết quả" (chỉ học sinh)
+          if (laHS && (it.key === 'btvn' || it.key === 'test')) {
+            var kind = it.key === 'btvn' ? 'homework' : 'test';
+            var daNop = actionByLesson[b.id] && actionByLesson[b.id].has(it.key);
+            var daCham = window.mlGradedByLesson && window.mlGradedByLesson[b.id] && window.mlGradedByLesson[b.id].has(it.key);
+            // Phát sáng "Nộp bài" khi CHƯA nộp; "Kết quả" khi ĐÃ chấm
+            var glowNop = (!daNop && !daCham) ? ' ml-glow' : '';
+            var glowKQ = daCham ? ' ml-glow-ok' : '';
+            var nhanNop = daCham ? 'Đã chấm ✓' : (daNop ? 'Nộp lại' : 'Nộp bài');
+            link += '<a class="ml-sub2' + glowNop + '" onclick="mlNop(\'' + b.id + '\',\'' + kind + '\')"><span>📤</span><span>' + nhanNop + '</span></a>' +
+                    '<a class="ml-sub2' + glowKQ + '" onclick="xemKetQua(\'' + b.id + '\',\'' + kind + '\')"><span>📋</span><span>Kết quả</span>' + (daCham ? '<span class="tick">✓</span>' : '') + '</a>';
+          }
+          return link;
         }).join('');
-        if (!subs) subs = '<a onclick="window.location.href=\'bai-hoc?id=' + b.id + '\'"><span>📄</span><span>Mở bài giảng</span></a>';
+        if (!subs) subs = '<a onclick="vaoBai(\'' + b.id + '\')"><span>📄</span><span>Mở bài giảng</span></a>';
         return '<div class="ml-bai' + cur + openB + '" id="mlbai_' + b.id + '">' +
           '<div class="ml-bai-hd" onclick="mlToggleBai(\'' + b.id + '\')">' +
-            dotHtml + '<span class="ten">' + mlEsc(b.title) + (isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '') + khoa + '</span><span class="caret2">▶</span>' +
+            dotHtml + '<span class="ten">' + mlEsc(b.title) + (isNew ? ' <span class="new-lesson-badge" title="Mới nhất">MỚI ✨</span>' : '') + khoa + '</span>' +
+            '<button class="ml-vao-btn" title="Mở bài này đầy đủ" onclick="event.stopPropagation();vaoBai(\'' + b.id + '\')">Vào ▸</button>' +
+            '<span class="caret2">▶</span>' +
           '</div>' +
           '<div class="ml-sub">' + subs + '</div>' +
         '</div>';
@@ -697,15 +826,41 @@ function mlToggleBai(id) {
   var el = document.getElementById('mlbai_' + id);
   if (el) el.classList.toggle('open', mlBaiMo[id]);
 }
-async function mlMoMuc(lid, tab, key, loai) {
-  if (lid !== lessonId) {
-    window.location.href = 'bai-hoc?id=' + lid + '&tab=' + tab;
+// Chuyển sang bài khác NGAY TRONG TRANG (không tải lại), mở đúng mục nếu có
+async function switchLesson(lid, tab) {
+  if (lid === lessonId) {
+    if (tab === 'video') { if (window.innerWidth <= 820) hienMobilePane('video'); }
+    else if (tab) chonNoiDung(tab);
     return;
   }
-  if (tab === 'video') {
-    if (window.innerWidth <= 820) hienMobilePane('video');
+  lessonId = lid;
+  mlBaiMo[lid] = true;
+  try { history.replaceState(null, '', 'bai-hoc?id=' + lid + (tab ? '&tab=' + tab : '')); } catch (e) {}
+  var than = $('thanNoiDung'); if (than) than.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang mở bài…</h3></div>';
+  var vc = $('videoWrapper'); if (vc) vc.innerHTML = '';
+  await taiChiTietBaiHoc();   // tự đọc tab từ URL → hiển thị đúng mục
+  taiMucLuc();
+  if (window.innerWidth <= 980) { var sb2 = $('mucLuc'); if (sb2) sb2.classList.remove('open'); }
+}
+function vaoBai(lid) { switchLesson(lid, null); }
+async function mlNop(lid, phanloai) {
+  if (lid !== lessonId) await switchLesson(lid, phanloai === 'homework' ? 'btvn' : 'test');
+  moNopBai(phanloai);
+}
+// Xem kết quả (bài thầy chấm / điểm) của Bài kiểm tra hoặc Bài tập về nhà
+async function xemKetQua(lid, kind) {
+  if (lid !== lessonId) await switchLesson(lid, kind === 'homework' ? 'btvn' : 'test');
+  var than = $('thanNoiDung'); if (!than) return;
+  if (window.innerWidth <= 820) hienMobilePane('content');
+  than.innerHTML = thanhCongCu(kind === 'homework' ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra', null) +
+    '<div style="flex:1;overflow-y:auto;padding-bottom:20px">' + (nguoiDung ? (await layKetQuaChamHtml(kind)) : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>') + '</div>';
+}
+async function mlMoMuc(lid, tab, key, loai) {
+  if (lid !== lessonId) {
+    await switchLesson(lid, tab);
   } else {
-    chonNoiDung(tab);
+    if (tab === 'video') { if (window.innerWidth <= 820) hienMobilePane('video'); }
+    else chonNoiDung(tab);
   }
   if (loai === 'view' && nguoiDung && !laQuanTriBaiHoc()) {
     await vmDanhDauDaXem(lessonId, key);
@@ -727,7 +882,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, homework_bonus, linked_exam_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -809,6 +964,8 @@ function apDungThemeLopBaiHoc(theme) {
   laLopMAP = theme === 'map';
   if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(laLopMAP);
   else document.body.classList.toggle('theme-map', laLopMAP);
+  var mlogo = document.getElementById('mapHeaderLogo');
+  if (mlogo) mlogo.style.display = laLopMAP ? 'block' : 'none';
 }
 
 function extractYoutubeId(url) {
@@ -823,6 +980,35 @@ function extractDriveId(url) {
   var m2 = url.match(/[?&]id=([\w_-]+)/);
   if (m2 && url.includes('drive.google.com')) return m2[1];
   return null;
+}
+// ===== Thumbnail Drive + lightbox (dùng cho ảnh nộp & ảnh thầy chấm trả) =====
+function bhThumbId(f) { if (f && f.id) return f.id; return extractDriveId((f && (f.link || f.url)) || '') || ''; }
+function bhXemAnh(id) {
+  var lb = document.getElementById('bhAnhLightbox'); if (!lb) return;
+  lb.innerHTML = '<img src="https://drive.google.com/thumbnail?id=' + id + '&sz=w1600" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)">';
+  lb.style.display = 'flex';
+}
+function bhAnhThumbs(files) {
+  files = files || [];
+  if (!files.length) return '';
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">' + files.map(function (f, i) {
+    var id = bhThumbId(f);
+    if (!id) return '<a href="' + (f.link || '#') + '" target="_blank" style="font-size:.82rem;color:var(--accent)">📄 ' + btvnEsc(f.name || 'Tệp') + '</a>';
+    var t = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w300';
+    return '<div style="position:relative;display:inline-block">' +
+      '<img src="' + t + '" onclick="bhXemAnh(\'' + id + '\')" style="width:82px;height:82px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in" loading="lazy">' +
+      '<span style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:.62rem;padding:1px 5px;border-radius:6px">' + (i + 1) + '</span></div>';
+  }).join('') + '</div>';
+}
+// ===== Hiệu ứng chúc mừng khi nộp bài =====
+function bhConfetti() {
+  var colors = ['#e0a020', '#2ed573', '#ff6b6b', '#54a0ff', '#a55eea', '#ffd76a'];
+  for (var i = 0; i < 60; i++) {
+    var c = document.createElement('div');
+    c.style.cssText = 'position:fixed;z-index:100001;width:9px;height:14px;top:-5vh;pointer-events:none;border-radius:2px;left:' + (Math.random() * 100) + 'vw;background:' + colors[i % colors.length] + ';animation:bhFall ' + (2 + Math.random() * 1.6) + 's linear ' + (Math.random() * 0.3) + 's forwards';
+    document.body.appendChild(c);
+    (function (el) { setTimeout(function () { el.remove(); }, 4200); })(c);
+  }
 }
 function buildPdfUrl(p) {
   if (!p) return '';
@@ -871,6 +1057,7 @@ function renderBaiHoc() {
       '<a class="btn btn-secondary btn-sm" style="padding:3px 10px" target="_blank" href="https://drive.google.com/file/d/' + driveId + '/view">▶ Mở cửa sổ riêng</a></div>';
   } else {
     window.khongCoVideo = true;
+    if (vc) vc.innerHTML = ''; // Không có video: không hiện hoạt ảnh tải video
   }
   // Bố trí giao diện thuần tài liệu khi không có video (ẩn khung video, không hiện ô "Không có video")
   if (kgVideo) {
@@ -939,19 +1126,74 @@ function renderBaiHoc() {
     $('nutBuoiHS').style.display = '';
   }
 
-  // Hiển thị ghi chú nội bộ của giáo viên
+  // Tách ghi chú: phần công khai (dặn dò chung) + phần nội bộ cho GV
   var noteParts = (details.note || '').split('---TEACHER_NOTE---');
+  var publicNote = (noteParts[0] || '').trim();
   var teacherNote = (noteParts[1] || '').trim();
-  var bannerNotes = $('teacherNotesBanner');
-  if (bannerNotes) {
-    if (laQuanTriBaiHoc() && teacherNote) {
-      bannerNotes.style.display = 'flex';
-      $('teacherNotesContent').textContent = teacherNote;
+
+  // 📌 Dặn dò chung — hiện cho TẤT CẢ (kể cả học sinh)
+  var noteBanner = $('lessonNoteBanner');
+  if (noteBanner) {
+    if (publicNote) {
+      noteBanner.style.display = 'block';
+      $('lessonNoteContent').textContent = publicNote;
+      noteBanner.classList.toggle('collapsed', window.innerWidth <= 820); // mobile: thu gọn sẵn cho gọn
+      // Ghi nhận HS đã thấy dặn dò (phục vụ thanh nhiệm vụ / tích điểm)
+      if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
+        vmDanhDauDaXem(lessonId, 'dando');
+      }
     } else {
-      bannerNotes.style.display = 'none';
+      noteBanner.style.display = 'none';
     }
   }
+
+  // 📝 Bài kiểm tra được giao (đề gắn từ Khu luyện đề)
+  var exBanner = $('linkedExamBanner');
+  if (exBanner) {
+    if (details.linked_exam_id) {
+      exBanner.style.display = 'flex';
+      exBanner.href = 'luyen-de?exam_id=' + encodeURIComponent(details.linked_exam_id);
+      var exTitleEl = $('linkedExamTitle');
+      if (exTitleEl) exTitleEl.textContent = 'Đang tải đề…';
+      sb.from('exams').select('title, de_type, duration_minutes').eq('id', details.linked_exam_id).maybeSingle().then(function (er) {
+        if (er.data && exTitleEl) {
+          var lo = er.data.de_type === 'tu_luan' ? 'Tự luận' : 'Trắc nghiệm';
+          exTitleEl.textContent = (er.data.title || 'Đề kiểm tra') + ' · ' + lo + (er.data.duration_minutes ? ' · ' + er.data.duration_minutes + ' phút' : '');
+        } else if (exTitleEl) { exTitleEl.textContent = 'Đề kiểm tra'; }
+      });
+    } else {
+      exBanner.style.display = 'none';
+    }
+  }
+
+  // 👨‍🏫 Ghi chú riêng cho GV — chỉ hiện nút cho GV/Trợ giảng/Admin (học sinh KHÔNG thấy)
+  var btnGV = $('btnGhiChuGV');
+  if (laQuanTriBaiHoc() && teacherNote) {
+    if (btnGV) btnGV.style.display = '';
+    $('teacherNotesContent').textContent = teacherNote;
+  } else {
+    if (btnGV) btnGV.style.display = 'none';
+    var pop = $('ghiChuGVPopover'); if (pop) pop.style.display = 'none';
+  }
 }
+
+function toggleDanDo() {
+  var b = document.getElementById('lessonNoteBanner');
+  if (b) b.classList.toggle('collapsed');
+}
+function toggleGhiChuGV(force) {
+  var pop = document.getElementById('ghiChuGVPopover');
+  if (!pop) return;
+  var show = (typeof force === 'boolean') ? force : (pop.style.display === 'none' || !pop.style.display);
+  pop.style.display = show ? 'block' : 'none';
+}
+document.addEventListener('click', function (e) {
+  var pop = document.getElementById('ghiChuGVPopover');
+  var btn = document.getElementById('btnGhiChuGV');
+  if (!pop || pop.style.display !== 'block') return;
+  if (pop.contains(e.target) || (btn && btn.contains(e.target))) return;
+  pop.style.display = 'none';
+});
 
 /* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
 var pdfTaiLieuTex = null;
@@ -1288,7 +1530,16 @@ function renderPDFWithJS(pdfUrl, container) {
   }
   
   function startRendering() {
-    container.innerHTML = '<div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
+    window._pdfZoomLevel = 1;
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap">' +
+        '<span style="font-size:.78rem;color:var(--ink-3);font-weight:700">🔍 Thu phóng:</span>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(-1)">−</button>' +
+        '<span id="pdfzLbl" style="min-width:52px;text-align:center;font-weight:800;font-size:.84rem">100%</span>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(1)">+</button>' +
+        '<button class="btn btn-secondary btn-sm" style="padding:2px 12px;font-size:.8rem" onclick="pdfZoomJS(0)">↔ Vừa khung</button>' +
+      '</div>' +
+      '<div style="flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
     var canvasContainer = document.getElementById('pdfCanvasContainer');
     
     // Thêm cache-busting cho URL của Supabase để tránh việc trình duyệt cache kết quả request không có CORS
@@ -1302,8 +1553,9 @@ function renderPDFWithJS(pdfUrl, container) {
       for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         (function(num) {
           var canvas = document.createElement('canvas');
-          canvas.style.width = '100%';
-          canvas.style.maxWidth = '800px';
+          canvas.className = 'pdfjs-page';
+          if ((window._pdfZoomLevel || 1) === 1) { canvas.style.width = '100%'; canvas.style.maxWidth = '800px'; }
+          else { canvas.style.width = (800 * window._pdfZoomLevel) + 'px'; canvas.style.maxWidth = 'none'; }
           canvas.style.borderRadius = '8px';
           canvas.style.border = '1px solid var(--line)';
           canvas.style.boxShadow = 'var(--shadow)';
@@ -1331,6 +1583,19 @@ function renderPDFWithJS(pdfUrl, container) {
       fallbackToIframe();
     });
   }
+}
+
+function pdfZoomJS(dir) {
+  var cont = document.getElementById('pdfCanvasContainer'); if (!cont) return;
+  var z = window._pdfZoomLevel || 1;
+  if (dir === 0) z = 1; else z = Math.min(2.5, Math.max(0.6, z + dir * 0.2));
+  z = Math.round(z * 100) / 100;
+  window._pdfZoomLevel = z;
+  cont.querySelectorAll('.pdfjs-page').forEach(function (cv) {
+    if (z === 1) { cv.style.width = '100%'; cv.style.maxWidth = '800px'; }
+    else { cv.style.width = (800 * z) + 'px'; cv.style.maxWidth = 'none'; }
+  });
+  var lbl = document.getElementById('pdfzLbl'); if (lbl) lbl.textContent = Math.round(z * 100) + '%';
 }
 
 function veTaiLieuTex() {
@@ -1391,53 +1656,83 @@ async function veTestTex() {
   renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
 }
 
-async function layKetQuaChamHtml() {
+async function layKetQuaChamHtml(kind) {
+  kind = kind || 'test';
+  var tenLoai = kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận';
   try {
     var r = await sb.from('submissions')
-      .select('id, submitted_at, files, status, score, feedback, graded_files')
+      .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, student_reflection, reviewed_at')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
-      .eq('kind', 'test')
+      .eq('kind', kind)
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-      
+
     var sub = r.data;
     if (!sub) {
       return '<div class="card" style="margin:14px; padding:16px; border:1px dashed var(--accent); background:var(--accent-soft); text-align:center">' +
-        '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp bài kiểm tra tự luận của bài học này</h4>' +
+        '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp ' + tenLoai + ' của bài học này</h4>' +
         '  <p style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-2)">Hãy làm bài ra giấy, chụp ảnh lại rồi nộp cho thầy chấm điểm nhé.</p>' +
-        '  <button class="btn btn-primary btn-sm" onclick="moNopBai()">📤 Nộp bài làm ngay</button>' +
+        '  <button class="btn btn-primary btn-sm" onclick="moNopBai(\'' + kind + '\')">📤 Nộp bài làm ngay</button>' +
         '</div>';
     }
     
     var ngay = new Date(sub.submitted_at).toLocaleDateString('vi-VN');
+    var lateBadge = sub.is_late ? '<span style="font-size:.75rem;font-weight:800;color:#fff;background:#e74c3c;padding:2px 9px;border-radius:99px;white-space:nowrap">⏰ Nộp trễ</span>' : '';
     if (sub.status === 'graded') {
       var baiThayCham = '';
       if ((sub.graded_files || []).length > 0) {
-        baiThayCham = '<div style="margin-top:8px; font-size:0.9rem"><b>📄 Bài thầy chấm trả:</b> ' + 
-          sub.graded_files.map(function (f) { return '<a href="' + f.link + '" target="_blank" style="color:var(--accent); text-decoration:underline; font-weight:700">' + f.name + '</a>'; }).join(' · ') + '</div>';
+        baiThayCham = '<div style="margin-top:12px; font-size:0.9rem"><b>✏️ Bài thầy sửa & chấm trả:</b> <span style="font-size:.78rem;color:var(--ink-3)">(bấm ảnh để phóng to)</span>' +
+          bhAnhThumbs(sub.graded_files) + '</div>';
       }
-      
+      var anhEmNop = (sub.files || []).length ? '<div style="margin-top:12px; font-size:0.9rem"><b>📎 Bài em đã nộp:</b>' + bhAnhThumbs(sub.files) + '</div>' : '';
+
       return '<div class="card" style="margin:14px; padding:16px 20px; border:1px solid var(--ok); background:linear-gradient(135deg, var(--surface) 0%, var(--ok-soft) 100%)">' +
         '  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">' +
-        '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài!</h4>' +
+        '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài! ' + lateBadge + '</h4>' +
         '    <span style="font-size:1.15rem; font-weight:800; color:var(--ok); background:var(--surface); border:2px solid var(--ok); padding:4px 12px; border-radius:8px">' + (sub.score != null ? sub.score + ' Điểm' : 'Đã chấm') + '</span>' +
         '  </div>' +
-        '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + vclEsc(sub.feedback) + '</div></div>' : '') +
+        '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê của thầy:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + btvnEsc(sub.feedback) + '</div></div>' : '') +
         '  ' + baiThayCham +
-        '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
+        '  ' + anhEmNop +
+        '  <div style="margin-top:14px; padding:12px 14px; border:1px solid var(--accent); border-radius:12px; background:var(--accent-soft)">' +
+        '    <div style="font-weight:800; color:var(--accent); font-size:.92rem; margin-bottom:4px">📝 Rút kinh nghiệm sau khi xem bài chấm <span style="color:#e74c3c">(bắt buộc)</span></div>' +
+        '    <div style="font-size:.8rem; color:var(--ink-2); margin-bottom:8px">Em ghi lại những chỗ đã sai và điều cần nhớ để lần sau làm tốt hơn nhé. Ghi xong nhớ bấm Lưu.</div>' +
+        '    <textarea id="rutKN-' + sub.id + '" rows="4" class="input" style="width:100%; resize:vertical; line-height:1.5" placeholder="Ví dụ: Em quên đổi dấu khi chuyển vế; cần nhớ điều kiện xác định; lần sau đọc kỹ đề…">' + btvnEsc(sub.student_reflection || '') + '</textarea>' +
+        '    <div style="display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap">' +
+        '      <button class="btn btn-primary btn-sm" onclick="luuRutKinhNghiem(\'' + sub.id + '\')">💾 Lưu rút kinh nghiệm</button>' +
+              (sub.reviewed_at ? '<span style="font-size:.8rem; color:var(--ok); font-weight:700">✓ Đã xem lại ngày ' + new Date(sub.reviewed_at).toLocaleDateString('vi-VN') + '</span>' : '<span style="font-size:.8rem; color:#e74c3c; font-weight:700">Chưa hoàn thành — hãy ghi và lưu để xong nhiệm vụ</span>') +
+        '      <span id="rutKNtt-' + sub.id + '" style="font-size:.8rem"></span>' +
+        '    </div>' +
+        '  </div>' +
+        '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
         '</div>';
     } else {
       return '<div class="card" style="margin:14px; padding:16px; border:1px solid var(--warn); background:linear-gradient(135deg, var(--surface) 0%, var(--warn-soft) 100%)">' +
-        '  <h4 style="margin:0 0 6px; color:var(--warn)">📤 Đã nộp bài thành công!</h4>' +
+        '  <h4 style="margin:0 0 6px; color:var(--warn); display:flex; align-items:center; gap:8px">📤 Đã nộp bài thành công! ' + lateBadge + '</h4>' +
         '  <p style="margin:0; font-size:0.88rem; color:var(--ink)">Bài làm của em gửi ngày <b>' + ngay + '</b> đang chờ thầy xem và chấm điểm. Kết quả sẽ hiện ngay tại đây sau khi thầy chấm xong!</p>' +
-        '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai()" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
+        '  <div style="margin-top:10px; font-size:0.78rem; color:var(--ink-3)"><a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Xem file đã nộp / Nộp lại</a></div>' +
         '</div>';
     }
   } catch (e) {
     return '';
   }
+}
+
+async function luuRutKinhNghiem(subId) {
+  var ta = document.getElementById('rutKN-' + subId), tt = document.getElementById('rutKNtt-' + subId);
+  if (!ta) return;
+  var txt = (ta.value || '').trim();
+  if (!txt) { if (tt) { tt.textContent = 'Em cần ghi vài dòng rút kinh nghiệm trước khi lưu.'; tt.style.color = '#e74c3c'; } ta.focus(); return; }
+  if (tt) { tt.textContent = 'Đang lưu…'; tt.style.color = 'var(--ink-3)'; }
+  try {
+    var r = await sb.rpc('hs_luu_rut_kinh_nghiem', { p_submission_id: subId, p_text: txt });
+    if (r.error || (r.data && r.data.error)) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || 'Lỗi');
+    if (tt) { tt.textContent = '✓ Đã lưu! Em giỏi lắm.'; tt.style.color = 'var(--ok)'; }
+    if (typeof bhConfetti === 'function') bhConfetti();
+    if (typeof taiMucLuc === 'function') taiMucLuc(); // tắt nhiệm vụ "xem lại"
+  } catch (e) { if (tt) { tt.textContent = 'Lỗi: ' + e.message; tt.style.color = '#e74c3c'; } }
 }
 
 async function checkDaLamTest() {
@@ -1491,7 +1786,7 @@ async function chonNoiDung(loai) {
       '<div style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)">' +
       dsAnh.map(function (p) {
         var u = urlAnh(p);
-        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>';
   } else if (loai === 'btvn') {
     if ($('swBTVN')) $('swBTVN').classList.add('active');
@@ -1528,8 +1823,9 @@ async function chonNoiDung(loai) {
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
 
-  // Đánh dấu mục "xem" đã hoàn thành + cập nhật vòng % (chỉ học sinh)
-  if (['lythuyet', 'tailieu', 'bang'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
+  // Đánh dấu mục "đã mở/xem" cho HS (video ghi ở nơi khác).
+  // btvn/test: chỉ ghi nhận "đã xem", KHÔNG tính hoàn thành vòng % (vòng % dựa trên bài đã nộp).
+  if (['lythuyet', 'tailieu', 'bang', 'btvn', 'test'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
     vmDanhDauDaXem(lessonId, loai).then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
 }
@@ -1542,13 +1838,23 @@ function btvnEsc(s) {
 
 async function renderBTVN(than) {
   var deBai = details.homework_text || '';
+  var hanHtmlBTVN = '';
+  if (details.homework_due) {
+    var _hd = new Date(details.homework_due);
+    var _qua = _hd.getTime() < Date.now();
+    hanHtmlBTVN = '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-weight:800;font-size:.9rem;margin-bottom:12px;' +
+      (_qua ? 'background:#fef2f2;color:#b91c1c;border:1px solid #fecaca' : 'background:var(--accent-soft);color:var(--accent);border:1px solid rgba(224,160,32,.35)') + '">' +
+      '⏰ Hạn nộp: ' + _hd.toLocaleString('vi-VN') + (_qua ? ' (đã quá hạn)' : '') + '</div>';
+  }
   var dsAnh = Array.isArray(details.homework_images) ? details.homework_images : [];
   var coDoc = !!(details.bai_btvn && details.bai_btvn.file_path);
   var coLatex = !!details.homework_latex_content;
   var laAdmin = laQuanTriBaiHoc();
 
   var deHtml = deBai
-    ? '<div style="white-space:pre-wrap;line-height:1.6;font-size:.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px">' + btvnEsc(deBai) + '</div>'
+    ? '<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(224,160,32,0.3);background:linear-gradient(135deg, rgba(224,160,32,0.10), rgba(181,96,52,0.05))">' +
+      '<div style="display:flex;align-items:center;gap:7px;padding:9px 14px;font-weight:800;color:var(--accent);font-size:.9rem;border-bottom:1px solid rgba(224,160,32,0.2)"><span>📝</span> Ghi chú cho học sinh</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.62;font-size:.95rem;color:var(--ink);padding:13px 16px">' + btvnEsc(deBai) + '</div></div>'
     : '';
   var latexHtml = coLatex
     ? '<div id="btvnLatexBox" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>'
@@ -1562,7 +1868,7 @@ async function renderBTVN(than) {
     ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
       dsAnh.map(function (p) {
         var u = urlAnh(p);
-        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
+        return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>';
       }).join('') + '</div>'
     : '';
 
@@ -1577,6 +1883,7 @@ async function renderBTVN(than) {
   var coDe = deHtml || anhHtml || docHtml || latexHtml;
   than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
     '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
+    hanHtmlBTVN +
     (coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
     actionHtml +
     '</div>';
@@ -1612,6 +1919,9 @@ async function renderBTVN(than) {
       var ds = r.data || [];
       var el = $('btvnTrangThai');
       var hanHtml = '';
+      if (details.homework_bonus) {
+        hanHtml += ' <span class="badge" style="background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800">🎁 Bài thưởng thêm — không bắt buộc, làm sẽ được thưởng xu!</span>';
+      }
       if (details.homework_due) {
         var quaHan = new Date(details.homework_due).getTime() < Date.now();
         hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(details.homework_due).toLocaleString('vi-VN') + (quaHan ? ' (đã quá hạn)' : '') + '</span>';
@@ -1860,7 +2170,8 @@ function kiemTraVaChayTestTimer() {
 
 function dangKyRealtimeTest() {
   try {
-    sb.channel('lesson-test-' + lessonId)
+    if (window._testChannel) { try { sb.removeChannel(window._testChannel); } catch (e) {} window._testChannel = null; }
+    window._testChannel = sb.channel('lesson-test-' + lessonId)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
         if (payload.new) {
           var truocActive = details.test_active;
