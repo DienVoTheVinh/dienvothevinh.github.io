@@ -1815,6 +1815,14 @@ function btvnEsc(s) {
 
 async function renderBTVN(than) {
   var deBai = details.homework_text || '';
+  var hanHtmlBTVN = '';
+  if (details.homework_due) {
+    var _hd = new Date(details.homework_due);
+    var _qua = _hd.getTime() < Date.now();
+    hanHtmlBTVN = '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-weight:800;font-size:.9rem;margin-bottom:12px;' +
+      (_qua ? 'background:#fef2f2;color:#b91c1c;border:1px solid #fecaca' : 'background:var(--accent-soft);color:var(--accent);border:1px solid rgba(224,160,32,.35)') + '">' +
+      '⏰ Hạn nộp: ' + _hd.toLocaleString('vi-VN') + (_qua ? ' (đã quá hạn)' : '') + '</div>';
+  }
   var dsAnh = Array.isArray(details.homework_images) ? details.homework_images : [];
   var coDoc = !!(details.bai_btvn && details.bai_btvn.file_path);
   var coLatex = !!details.homework_latex_content;
@@ -1852,6 +1860,7 @@ async function renderBTVN(than) {
   var coDe = deHtml || anhHtml || docHtml || latexHtml;
   than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
     '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
+    hanHtmlBTVN +
     (coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập về nhà</h3></div>') +
     actionHtml +
     '</div>';
