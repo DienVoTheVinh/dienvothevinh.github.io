@@ -5,6 +5,28 @@
 // File này là JS thuần — không cần build, mở file là chạy.
 // ============================================================
 
+/* ---------- MÀU CÁ NHÂN (mua từ Cửa hàng) — áp cho mọi trang ---------- */
+(function () {
+  function toRgb(hex){ hex=(hex||'').replace('#',''); if(hex.length===3){hex=hex.split('').map(function(c){return c+c;}).join('');}
+    var n=parseInt(hex,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+  function darken(hex,f){ var c=toRgb(hex); function h(x){x=Math.round(x*f);return('0'+x.toString(16)).slice(-2);} return '#'+h(c.r)+h(c.g)+h(c.b); }
+  window.vmApplyThemeColor = function (color) {
+    var root = document.documentElement;
+    var keys = ['--accent','--accent-2','--accent-strong','--accent-gradient','--accent-soft','--gold'];
+    if (!color) { keys.forEach(function(k){ root.style.removeProperty(k); }); return; }
+    try {
+      var c = toRgb(color); var d1 = darken(color,.78), d2 = darken(color,.6);
+      root.style.setProperty('--accent', color);
+      root.style.setProperty('--accent-2', d1);
+      root.style.setProperty('--accent-strong', d2);
+      root.style.setProperty('--gold', color);
+      root.style.setProperty('--accent-gradient', 'linear-gradient(135deg,'+color+','+d2+')');
+      root.style.setProperty('--accent-soft', 'rgba('+c.r+','+c.g+','+c.b+',.12)');
+    } catch(e){}
+  };
+  try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
+})();
+
 /* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
 (function () {
   try {
