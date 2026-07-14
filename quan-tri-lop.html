@@ -1646,24 +1646,38 @@ async function moAiDaXem(lessonId, title) {
       var ratt = await sb.from('attempts').select('student_id').eq('lesson_id', lessonId).not('submitted_at', 'is', null);
       (ratt.data || []).forEach(function (x) { (nop[x.student_id] = nop[x.student_id] || {})['test'] = true; });
     } catch (e2) {}
+    // Đã xem lại BÀI CHẤM + rút kinh nghiệm (chỉ tính bài đã chấm)
+    var cham = {}, coCham = false;
+    try {
+      var rch = await sb.from('submissions').select('student_id, reviewed_at, student_reflection').eq('lesson_id', lessonId).eq('status', 'graded');
+      (rch.data || []).forEach(function (x) {
+        coCham = true;
+        var c = cham[x.student_id] = cham[x.student_id] || { graded: true };
+        if (x.reviewed_at) c.reviewed = true;
+        if (x.student_reflection) c.refl = x.student_reflection;
+      });
+    } catch (e3) {}
     var ITEMS = [['video', '🎬 Video'], ['lythuyet', '📖 Lý thuyết'], ['tailieu', '📄 Tài liệu'], ['bang', '🖼️ Ảnh bảng'], ['btvn', '🏠 BTVN'], ['test', '📝 Kiểm tra']];
     var canNop = { btvn: true, test: true };
     var used = {};
     Object.keys(seen).forEach(function (sid) { Object.keys(seen[sid]).forEach(function (k) { used[k] = true; }); });
     Object.keys(nop).forEach(function (sid) { Object.keys(nop[sid]).forEach(function (k) { used[k] = true; }); });
     var cols = ITEMS.filter(function (it) { return used[it[0]]; });
-    if (!cols.length) {
+    if (!cols.length && !coCham) {
       $('aiXemBody').innerHTML = '<div style="padding:22px;text-align:center;color:var(--ink-3)">Chưa có học sinh nào mở/nộp mục nào trong bài này.</div>';
       return;
     }
     // Đếm: mục nộp → đếm số đã nộp; mục xem → đếm số đã xem
     var cntView = {}, cntNop = {};
     cols.forEach(function (c) { cntView[c[0]] = 0; cntNop[c[0]] = 0; });
+    var cntGraded = 0, cntReviewed = 0;
     students.forEach(function (s) {
       cols.forEach(function (c) {
         if (seen[s.id] && seen[s.id][c[0]]) cntView[c[0]]++;
         if (nop[s.id] && nop[s.id][c[0]]) cntNop[c[0]]++;
       });
+      var cc = cham[s.id];
+      if (cc && cc.graded) { cntGraded++; if (cc.reviewed) cntReviewed++; }
     });
     var head = '<th style="text-align:left;padding:8px;position:sticky;left:0;background:var(--surface-solid)">Học sinh</th>' +
       cols.map(function (c) {
@@ -1671,7 +1685,8 @@ async function moAiDaXem(lessonId, title) {
           ? '<div style="font-size:.68rem;color:var(--ink-3);font-weight:600">📤 nộp ' + cntNop[c[0]] + ' · 👁 xem ' + cntView[c[0]] + '</div>'
           : '<div style="font-size:.7rem;color:var(--ink-3);font-weight:600">' + cntView[c[0]] + '/' + students.length + '</div>';
         return '<th style="padding:8px;white-space:nowrap;text-align:center">' + c[1] + sub + '</th>';
-      }).join('');
+      }).join('') +
+      (coCham ? '<th style="padding:8px;white-space:nowrap;text-align:center">🔎 Xem bài chấm<div style="font-size:.68rem;color:var(--ink-3);font-weight:600">✔ ' + cntReviewed + '/' + cntGraded + '</div></th>' : '');
     var rows = students.map(function (s) {
       var cells = cols.map(function (c) {
         var k = c[0];
@@ -1687,15 +1702,34 @@ async function moAiDaXem(lessonId, title) {
         }
         return '<td style="text-align:center;padding:6px">' + cell + '</td>';
       }).join('');
-      return '<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 8px;position:sticky;left:0;background:var(--surface-solid);white-space:nowrap">' + esc(s.name) + '</td>' + cells + '</tr>';
+      var reviewCell = '';
+      if (coCham) {
+        var rc = cham[s.id];
+        var rv;
+        if (!rc || !rc.graded) rv = '<span style="color:var(--ink-3)">–</span>';
+        else if (rc.reviewed) rv = '<span style="color:var(--ok);cursor:' + (rc.refl ? 'pointer' : 'default') + '"' + (rc.refl ? ' onclick="aiXemRutKN(this)" data-refl="' + qlaEsc(rc.refl) + '" data-name="' + qlaEsc(s.name) + '" title="Bấm xem rút kinh nghiệm"' : ' title="Đã xem lại bài chấm"') + '>✅</span>';
+        else rv = '<span style="color:#e67e22" title="Chưa xem lại bài chấm / chưa rút kinh nghiệm">⏳</span>';
+        reviewCell = '<td style="text-align:center;padding:6px">' + rv + '</td>';
+      }
+      return '<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 8px;position:sticky;left:0;background:var(--surface-solid);white-space:nowrap">' + esc(s.name) + '</td>' + cells + reviewCell + '</tr>';
     }).join('');
     $('aiXemBody').innerHTML = '<div style="overflow-x:auto"><table style="width:100%;font-size:.86rem;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--line-2)">' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px;line-height:1.6">✅ = đã mở/xem mục đó · <span style="color:var(--ok)">📤</span> = đã nộp bài · <span style="color:#d97706">👁</span> = đã xem đề nhưng chưa nộp · – = chưa. Chỉ hiện mục đã có ít nhất 1 HS mở hoặc nộp.</div>';
+      '<div id="aiXemRutKNBox" style="display:none;margin-top:12px;padding:12px 14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-soft)"></div>' +
+      '<div style="font-size:.78rem;color:var(--ink-3);margin-top:10px;line-height:1.6">✅ = đã mở/xem mục đó · <span style="color:var(--ok)">📤</span> = đã nộp bài · <span style="color:#d97706">👁</span> = đã xem đề chưa nộp · <span style="color:var(--ok)">✅</span>(cột Xem bài chấm) = đã xem lại + rút kinh nghiệm (bấm để đọc) · <span style="color:#e67e22">⏳</span> = chưa xem lại · – = chưa.</div>';
   } catch (e) {
     $('aiXemBody').innerHTML = '<div style="padding:16px;color:var(--err)">Lỗi tải dữ liệu: ' + (e && e.message ? e.message : e) + '</div>';
   }
 }
 function dongAiXem() { $('modalAiXem').style.display = 'none'; }
+function aiXemRutKN(el) {
+  var box = $('aiXemRutKNBox'); if (!box) return;
+  var refl = el.getAttribute('data-refl') || '';
+  var nm = el.getAttribute('data-name') || 'Học sinh';
+  box.style.display = 'block';
+  box.innerHTML = '<div style="font-weight:800;color:var(--accent);font-size:.9rem;margin-bottom:4px">📝 Rút kinh nghiệm của ' + qlaEsc(nm) + '</div>' +
+    '<div style="white-space:pre-wrap;line-height:1.55;color:var(--ink);font-size:.9rem">' + qlaEsc(refl) + '</div>';
+  box.scrollIntoView({ block: 'nearest' });
+}
 
 /* ----- Xem nhanh bài nộp của HS trong bài giảng + nút chấm ngay ----- */
 function dongBaiNop() { $('modalBaiNop').style.display = 'none'; }
