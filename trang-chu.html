@@ -607,6 +607,56 @@
   @keyframes nvToastIn { from{ transform:translateX(120%); opacity:0; } to{ transform:translateX(0); opacity:1; } }
   @keyframes nvToastOut { to{ transform:translateX(120%); opacity:0; } }
   @media(max-width:640px){ .nv-tier{ font-size:1.05rem; } .nv-ava{ width:60px; height:60px; font-size:1.6rem; } .nv-task .go{ padding:6px 10px; } }
+  /* ===== XU + ĐIỂM TỔNG QUÁT + CỬA HÀNG ===== */
+  .nv-coins { display:flex; flex-direction:column; align-items:center; gap:1px; flex-shrink:0; padding:5px 12px; cursor:pointer;
+    background:linear-gradient(135deg,rgba(255,215,106,.22),rgba(255,193,7,.12)); border-radius:14px; border:1px solid rgba(255,215,106,.4); transition:transform .15s; }
+  .nv-coins:hover { transform:translateY(-2px) scale(1.04); }
+  .nv-coins .ci { font-size:1.4rem; line-height:1; filter:drop-shadow(0 0 5px rgba(255,193,7,.6)); }
+  .nv-coins .cn { font-weight:900; font-size:1.05rem; color:#ffe08a; }
+  .nv-coins .cl { font-size:.6rem; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
+  .nv-score { display:flex; gap:14px; align-items:stretch; margin-top:14px; position:relative; z-index:2; flex-wrap:wrap; }
+  .nv-score-main { flex-shrink:0; min-width:118px; background:rgba(0,0,0,.24); border:1px solid rgba(255,215,106,.28); border-radius:15px;
+    padding:12px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .nv-score-num { font-size:2.5rem; font-weight:900; line-height:1; color:#ffd76a; text-shadow:0 3px 14px rgba(243,156,18,.5); }
+  .nv-score-lbl { font-size:.72rem; opacity:.85; margin-top:4px; text-align:center; }
+  .nv-pillars { flex:1; min-width:200px; display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; align-content:center; }
+  .nv-pl-hd { display:flex; justify-content:space-between; font-size:.74rem; font-weight:700; margin-bottom:3px; }
+  .nv-pl-hd b { color:#ffe08a; }
+  .nv-pl-bar { height:8px; border-radius:99px; background:rgba(0,0,0,.3); overflow:hidden; }
+  .nv-pl-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#ffe08a,#F39C12); box-shadow:0 0 8px rgba(243,156,18,.5); transition:width 1s cubic-bezier(.22,1,.36,1); }
+  .nv-shopbtn { display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:10px 18px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#ffd76a,#f39c12); color:#3a2560; font-weight:900; font-size:.92rem; border-radius:99px;
+    box-shadow:0 5px 16px rgba(243,156,18,.4); position:relative; z-index:2; transition:transform .15s; }
+  .nv-shopbtn:hover { transform:translateY(-2px) scale(1.03); }
+  /* Hiệu ứng avatar mua từ cửa hàng */
+  .nv-ava.fx-glow { box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 22px 6px rgba(255,215,106,.85); animation:fxGlowPulse 2s ease-in-out infinite; }
+  @keyframes fxGlowPulse { 0%,100%{ box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 18px 4px rgba(255,215,106,.7); } 50%{ box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 30px 10px rgba(255,215,106,1); } }
+  .nv-ava.fx-gold { box-shadow:0 0 0 4px #ffd700,0 0 0 7px #b8860b,0 6px 16px rgba(0,0,0,.3); }
+  .nv-ava.fx-rainbow { animation:fxRainbow 4s linear infinite; }
+  @keyframes fxRainbow { 0%{ box-shadow:0 0 0 4px #ff6b6b; } 25%{ box-shadow:0 0 0 4px #ffd76a; } 50%{ box-shadow:0 0 0 4px #2ed573; } 75%{ box-shadow:0 0 0 4px #54a0ff; } 100%{ box-shadow:0 0 0 4px #ff6b6b; } }
+  /* ===== CỬA HÀNG (modal) ===== */
+  #shopModal .modal-content { max-width:760px; }
+  .shop-hd { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .shop-bal { display:flex; align-items:center; gap:7px; font-weight:900; font-size:1.05rem; color:var(--accent);
+    background:var(--accent-soft); padding:7px 15px; border-radius:99px; }
+  .shop-sec-title { font-size:.95rem; font-weight:800; margin:18px 0 10px; color:var(--ink); display:flex; align-items:center; gap:7px; }
+  .shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .shop-card { border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--surface); text-align:center; display:flex; flex-direction:column; gap:7px; transition:all .18s; }
+  .shop-card:hover { border-color:var(--accent); transform:translateY(-3px); box-shadow:var(--shadow); }
+  .shop-card .ic { font-size:2rem; }
+  .shop-card .nm { font-weight:800; font-size:.9rem; line-height:1.25; }
+  .shop-card .ds { font-size:.72rem; color:var(--ink-3); line-height:1.35; flex:1; }
+  .shop-card .price { font-weight:900; color:#c8860b; font-size:.92rem; }
+  .shop-card button { border:none; cursor:pointer; padding:8px; border-radius:10px; font-weight:800; font-size:.82rem;
+    background:linear-gradient(135deg,#ffd76a,#f39c12); color:#3a2560; transition:transform .15s; }
+  .shop-card button:hover { transform:scale(1.04); }
+  .shop-card button:disabled { background:var(--surface-2); color:var(--ink-3); cursor:default; transform:none; }
+  .shop-card.owned { border-color:var(--ok,#1a9e5c); }
+  .shop-swatches { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .shop-swatch { width:34px; height:34px; border-radius:9px; cursor:pointer; border:2px solid rgba(0,0,0,.15); position:relative; transition:transform .12s; }
+  .shop-swatch:hover { transform:scale(1.12); }
+  .shop-swatch.sel { outline:3px solid var(--accent); outline-offset:2px; }
+  .shop-swatch .own { position:absolute; top:-6px; right:-6px; font-size:.7rem; background:var(--ok,#1a9e5c); color:#fff; border-radius:50%; width:16px; height:16px; display:grid; place-items:center; }
 
   .vcl-card { background: var(--surface); border:1px solid var(--line); border-radius: var(--r-lg, 16px); padding: 20px 22px; box-shadow: var(--shadow); position:relative; overflow:hidden; }
   .vcl-card::before { content:''; position:absolute; top:0; left:0; width:5px; height:100%; background: linear-gradient(180deg,#F39C12,#B5483A); }
@@ -721,6 +771,19 @@
       </div>
       <p style="margin:0 0 14px; font-size:.85rem; color:var(--ink-2)">Các buổi trong 3 ngày gần nhất đã qua giờ mà chưa có điểm danh. Bấm để mở điểm danh bù (thủ công hoặc QR).</p>
       <div id="dsDiemDanhBu"></div>
+    </div>
+  </div>
+
+  <!-- ===== CỬA HÀNG PHẦN THƯỞNG ===== -->
+  <div id="shopModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:10040; align-items:flex-start; justify-content:center; padding:24px; overflow-y:auto">
+    <div class="modal-content" style="background:var(--bg); border:1px solid var(--line); border-radius:18px; max-width:760px; width:100%; padding:24px 26px; position:relative; box-shadow:0 24px 70px rgba(0,0,0,.45)">
+      <button onclick="dongCuaHang()" style="position:absolute; top:14px; right:16px; font-size:1.6rem; background:none; border:none; cursor:pointer; color:var(--ink-3); z-index:2">×</button>
+      <div class="shop-hd">
+        <h2 style="margin:0; font-size:1.2rem; display:flex; align-items:center; gap:8px">🛒 Cửa hàng phần thưởng</h2>
+        <div class="shop-bal">🪙 <span id="shopBal">0</span> xu</div>
+      </div>
+      <p style="margin:8px 0 0; font-size:.82rem; color:var(--ink-2)">Kiếm xu bằng cách <b>nộp bài tập về nhà</b> (thưởng ngay) và đạt <b>từ 8 điểm trở lên</b> (thưởng thêm). Dùng xu đổi lấy phần thưởng bên dưới nhé!</p>
+      <div id="shopBody"><div style="text-align:center; padding:30px; color:var(--ink-3)">Đang tải cửa hàng…</div></div>
     </div>
   </div>
 
@@ -1216,7 +1279,8 @@ var NV_BADGE_ALL = [
   ['first_btvn','🎬','Bài nộp đầu tiên'], ['no_debt','✅','Không nợ bài tập'],
   ['streak_3','🔥','Chuỗi 3 ngày'], ['streak_7','⚡','Chuỗi 7 ngày'],
   ['test_5','🛡️','Chiến binh kiểm tra'], ['explorer_10','🧭','Nhà thám hiểm'],
-  ['level_5','⭐','Ngôi sao Lv.5'], ['level_10','🌟','Bậc thầy Lv.10'], ['diligent','📚','Siêng năng chăm chỉ']
+  ['level_5','⭐','Ngôi sao Lv.5'], ['level_10','🌟','Bậc thầy Lv.10'], ['diligent','📚','Siêng năng chăm chỉ'],
+  ['score_80','🏆','Học lực giỏi (điểm ≥ 80)'], ['coin_300','💰','Triệu phú nhí (kiếm ≥ 300 xu)'], ['perfect10','💯','Điểm 10 tuyệt đối']
 ];
 function nvEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
@@ -1251,7 +1315,7 @@ async function taiNhiemVu() {
   box.style.display='block';
   box.innerHTML = '<div class="nv-banner"><div style="text-align:center;padding:14px;opacity:.85">Đang tải nhiệm vụ của em…</div></div>';
   var r;
-  try { r = await sb.rpc('hs_nhiem_vu'); } catch(e){ box.style.display='none'; return; }
+  try { r = await sb.rpc('hs_ho_so'); } catch(e){ box.style.display='none'; return; }
   if (!r || r.error || !r.data || r.data.error) { box.style.display='none'; return; }
   var reminders = await nvLayNhacNho();
   nvRender(r.data, reminders);
@@ -1320,20 +1384,26 @@ function nvRender(d, reminders) {
     tasksHtml = '<div class="nv-empty"><div class="big">🎉</div><div class="txt">Tuyệt vời! Em đã hoàn thành mọi nhiệm vụ.</div><div class="sub">Quay lại sau để nhận nhiệm vụ mới và tích thêm điểm nhé!</div></div>';
   }
 
-  // Chỉ số nhân vật (gộp Điểm TB / Chuyên cần / Bài hoàn thành)
-  var st = window._nvStats || {};
+  // Điểm tổng quát qua 4 thành tố
+  var P = d.pillars || {};
+  var tong = (d.diem_tong_quat!=null ? d.diem_tong_quat : '—');
+  function nvPillar(icon,label,val){ val=(val==null?0:val); var w=Math.max(0,Math.min(100,val));
+    return '<div class="nv-pl"><div class="nv-pl-hd"><span>'+icon+' '+label+'</span><b>'+Math.round(val)+'</b></div>'+
+      '<div class="nv-pl-bar"><div class="nv-pl-fill" style="width:0%" data-w="'+w+'"></div></div></div>'; }
   var statsHtml =
-    '<div class="nv-stats">' +
-      '<div class="nv-stat"><b id="nvSD">'+(st.diem||'—')+'</b><span>Điểm trung bình</span></div>' +
-      '<div class="nv-stat"><b id="nvSC">'+(st.cc||'—')+'</b><span>Chuyên cần</span></div>' +
-      '<div class="nv-stat"><b id="nvSB">'+(st.bai!=null?st.bai:'—')+'</b><span>Bài đã hoàn thành</span></div>' +
+    '<div class="nv-score">' +
+      '<div class="nv-score-main"><div class="nv-score-num">'+tong+'</div><div class="nv-score-lbl">Điểm tổng quát /100</div></div>' +
+      '<div class="nv-pillars">' +
+        nvPillar('📝','Kiểm tra',P.kiemtra) + nvPillar('🏠','BTVN',P.btvn) +
+        nvPillar('📅','Chuyên cần',P.chuyencan) + nvPillar('💚','Thái độ',P.thaido) +
+      '</div>' +
     '</div>';
 
   var streakCold = (d.streak||0) < 1;
   box.innerHTML =
     '<div class="nv-banner">' +
       '<div class="nv-top">' +
-        '<div class="nv-ava">'+ (d.tier_icon||'🌱') +'<span class="nv-lvbadge">Lv.'+d.level+'</span></div>' +
+        '<div class="nv-ava'+(d.avatar_fx?' fx-'+d.avatar_fx:'')+'">'+ (d.tier_icon||'🌱') +'<span class="nv-lvbadge">Lv.'+d.level+'</span></div>' +
         '<div class="nv-idwrap">' +
           '<div class="nv-tier">'+nvEsc(d.tier||'Tân Binh')+'</div>' +
           '<div class="nv-name">'+ nvEsc((hoSoNguoiDung&&hoSoNguoiDung.full_name)||'Học sinh') +' · '+d.xp+' XP</div>' +
@@ -1341,18 +1411,26 @@ function nvRender(d, reminders) {
             '<div class="nv-xptext"><span>Lv.'+d.level+'</span><span>'+(d.xp - d.xp_floor)+' / '+(d.xp_next - d.xp_floor)+' XP → Lv.'+(d.level+1)+'</span></div></div>' +
         '</div>' +
         '<div class="nv-streak'+(streakCold?' cold':'')+'"><span class="fire">🔥</span><span class="num">'+(d.streak||0)+'</span><span class="lbl">ngày liên tục</span></div>' +
+        '<div class="nv-coins" onclick="moCuaHang()" title="Mở cửa hàng"><span class="ci">🪙</span><span class="cn" id="nvCoinNum">'+(d.coins||0)+'</span><span class="cl">xu</span></div>' +
       '</div>' +
       '<div class="nv-badges">'+badgesHtml+'</div>' +
       statsHtml +
+      '<div style="text-align:center"><button class="nv-shopbtn" onclick="moCuaHang()">🛒 Cửa hàng phần thưởng</button></div>' +
       '<div class="nv-tasks"><div class="nv-tasks-hd"><h3>🎯 Nhiệm vụ của em</h3><span class="cnt">'+(tongViec?tongViec+' việc cần làm':'Đã xong hết ✓')+'</span></div>'+tasksHtml+'</div>' +
     '</div>';
 
-  // Animate XP bar fill
-  setTimeout(function(){ var f=$('nvXpFill'); if(f) f.style.width = pct+'%'; }, 150);
+  // Animate XP bar + pillar bars fill
+  setTimeout(function(){
+    var f=$('nvXpFill'); if(f) f.style.width = pct+'%';
+    box.querySelectorAll('.nv-pl-fill').forEach(function(el){ el.style.width = (el.getAttribute('data-w')||0)+'%'; });
+  }, 150);
+  window._nvCoins = d.coins || 0;
+  window._nvProfile = d;
 
   // Hiệu ứng thưởng khi có tiến bộ (không bắn khi lần đầu tải toàn bộ lịch sử)
   if (!d.first_time) {
     if (d.xp_gained > 0) nvFloatXP(d.xp_gained);
+    if (d.coins_gained > 0) setTimeout(function(){ nvFloatCoins(d.coins_gained); }, 300);
     if (d.leveled_up) setTimeout(function(){ nvLevelUp(d.level, d.tier); }, 500);
   }
   var nb = d.new_badges || [];
@@ -1403,6 +1481,143 @@ function nvBadgeToast(icon, name) {
   t.innerHTML = '<span class="bi">'+icon+'</span><div><div class="bt">🏅 Mở khoá huy hiệu!</div><div class="bs">'+nvEsc(name)+'</div></div>';
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 3600);
+}
+
+function nvFloatCoins(amount) {
+  var chip = $('nvCoinNum'); var rect = chip ? chip.getBoundingClientRect() : {left:window.innerWidth-60, top:120, width:30};
+  var el = document.createElement('div');
+  el.className = 'nv-float'; el.style.color = '#ffc107'; el.textContent = '+' + amount + ' 🪙';
+  el.style.left = (rect.left + rect.width/2 - 20) + 'px';
+  el.style.top = (rect.top - 6) + 'px';
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 1700);
+}
+
+/* ===================== CỬA HÀNG ===================== */
+var SHOP_COLORS = ['#2E7D32','#00897B','#1565C0','#3949AB','#5E35B1','#8E24AA','#C2185B','#D84315','#EF6C00','#00838F','#455A64','#6D4C41'];
+var _shopItems = null;
+
+async function moCuaHang() {
+  var m = $('shopModal'); if (!m) return;
+  m.style.display = 'flex'; m.scrollTop = 0;
+  await renderShop();
+}
+function dongCuaHang() { var m=$('shopModal'); if(m) m.style.display='none'; }
+
+async function renderShop() {
+  var body = $('shopBody'); if (!body) return;
+  var d = window._nvProfile || {};
+  $('shopBal').textContent = (d.coins!=null? d.coins : 0);
+  if (!_shopItems) {
+    try { var r = await sb.from('shop_items').select('*').eq('active',true).order('sort'); _shopItems = r.data || []; }
+    catch(e){ _shopItems = []; }
+  }
+  var owned = {}; (d.owned||[]).forEach(function(o){ owned[o.item_code+'|'+o.variant]=1; });
+  var magic = d.magic || {};
+  var themeItem = _shopItems.find(function(x){ return x.code==='theme_color'; }) || {gia:80};
+  var curColor = d.theme_color || '';
+
+  // 1. Đổi màu
+  var swatches = SHOP_COLORS.map(function(c){
+    var isOwned = owned['theme_color|'+c];
+    var sel = (curColor.toLowerCase()===c.toLowerCase());
+    return '<div class="shop-swatch'+(sel?' sel':'')+'" style="background:'+c+'" title="'+c+(isOwned?' (đã sở hữu)':(' — '+themeItem.gia+' xu'))+'" onclick="shopChonMau(\''+c+'\','+(isOwned?1:0)+')">'+(isOwned?'<span class="own">✓</span>':'')+'</div>';
+  }).join('');
+  var themeSec =
+    '<div class="shop-sec-title">🎨 Màu giao diện cá nhân <span style="font-weight:600;font-size:.72rem;color:var(--ink-3)">('+themeItem.gia+' xu / màu · sở hữu rồi thì bấm để đổi)</span></div>'+
+    '<div class="shop-swatches">'+swatches+
+      '<div class="shop-swatch" style="background:repeating-linear-gradient(45deg,#ccc,#ccc 4px,#fff 4px,#fff 8px);display:grid;place-items:center;font-size:.6rem;color:#333" title="Về màu mặc định" onclick="shopChonMau(\'\',1)">Tắt</div>'+
+    '</div>';
+
+  // 2. Hiệu ứng avatar
+  var fxCards = _shopItems.filter(function(x){ return x.loai==='avatar'; }).map(function(it){
+    var fx = (it.meta&&it.meta.fx)||'';
+    var isOwned = owned[it.code+'|'];
+    var using = (d.avatar_fx===fx);
+    var btn = isOwned
+      ? (using ? '<button disabled>Đang dùng ✓</button>' : '<button onclick="shopDungAvatar(\''+fx+'\')">Sử dụng</button>')
+      : '<button onclick="shopMua(\''+it.code+'\',\'\')">Mua · '+it.gia+' 🪙</button>';
+    return '<div class="shop-card'+(isOwned?' owned':'')+'"><div class="ic">'+nvEsc(it.ten.split(' ')[0])+'</div>'+
+      '<div class="nm">'+nvEsc(it.ten.replace(/^\S+\s/,''))+'</div><div class="ds">'+nvEsc(it.mo_ta||'')+'</div>'+btn+'</div>';
+  }).join('');
+  var fxSec = '<div class="shop-sec-title">✨ Hiệu ứng ảnh đại diện</div><div class="shop-grid">'+fxCards+
+    '<div class="shop-card"><div class="ic">🚫</div><div class="nm">Không hiệu ứng</div><div class="ds">Về ảnh đại diện thường.</div><button onclick="shopDungAvatar(\'\')">Sử dụng</button></div></div>';
+
+  // 3. Phép thuật
+  var magicCards = _shopItems.filter(function(x){ return x.loai==='magic'; }).map(function(it){
+    var have = magic[it.code]||0;
+    var useBtn = '';
+    if (it.code==='magic_deadline' && have>0) useBtn = '<button onclick="shopDungHan()" style="background:var(--accent-soft);color:var(--accent)">Dùng ('+have+')</button>';
+    if (it.code==='magic_plus1' && have>0) useBtn = '<button onclick="shopDungCong()" style="background:var(--accent-soft);color:var(--accent)">Dùng ('+have+')</button>';
+    return '<div class="shop-card"><div class="ic">'+nvEsc(it.ten.split(' ')[0])+'</div>'+
+      '<div class="nm">'+nvEsc(it.ten.replace(/^\S+\s/,''))+'</div><div class="ds">'+nvEsc(it.mo_ta||'')+'</div>'+
+      (have>0?'<div style="font-size:.72rem;font-weight:800;color:var(--ok,#1a9e5c)">Đang có: '+have+'</div>':'')+
+      '<button onclick="shopMua(\''+it.code+'\',\'\')">Mua · '+it.gia+' 🪙</button>'+useBtn+'</div>';
+  }).join('');
+  var magicSec = '<div class="shop-sec-title">🪄 Phép thuật (cần rất nhiều xu)</div><div class="shop-grid">'+magicCards+'</div>';
+
+  body.innerHTML = themeSec + fxSec + magicSec;
+}
+
+async function shopLamMoi() {
+  _shopItems = null; // buộc lấy lại nếu cần
+  if (typeof taiNhiemVu==='function') await taiNhiemVu();
+  await renderShop();
+}
+
+async function shopMua(code, variant) {
+  var r = await sb.rpc('hs_mua', { p_code: code, p_variant: variant||'' });
+  var res = r && r.data ? r.data : {ok:false, msg:(r&&r.error?r.error.message:'Lỗi')};
+  if (res.ok) { nvBadgeToast('🛒', res.msg||'Mua thành công'); await shopLamMoi(); }
+  else alert(res.msg || 'Không mua được');
+}
+
+async function shopChonMau(color, isOwned) {
+  if (!isOwned && color) { await shopMua('theme_color', color); }
+  var r = await sb.rpc('hs_doi_mau', { p_color: color });
+  var res = r && r.data ? r.data : {ok:false};
+  if (res.ok) {
+    try { if (color) localStorage.setItem('vm-theme-color', color); else localStorage.removeItem('vm-theme-color'); } catch(e){}
+    if (window.vmApplyThemeColor) window.vmApplyThemeColor(color);
+    await shopLamMoi();
+  } else if (res.msg) alert(res.msg);
+}
+
+async function shopDungAvatar(fx) {
+  var r = await sb.rpc('hs_doi_avatar', { p_fx: fx });
+  var res = r && r.data ? r.data : {ok:false};
+  if (res.ok) { try{ if(fx) localStorage.setItem('vm-avatar-fx',fx); else localStorage.removeItem('vm-avatar-fx'); }catch(e){} await shopLamMoi(); }
+  else if (res.msg) alert(res.msg);
+}
+
+async function shopDungHan() {
+  var d = window._nvProfile || {};
+  var tasks = (d.tasks||[]).filter(function(t){ return t.kind==='btvn'||t.kind==='test'; });
+  if (!tasks.length) { alert('Hiện em không có bài BTVN/kiểm tra nào đang chờ nộp để dời hạn.'); return; }
+  var lines = tasks.map(function(t,i){ return (i+1)+'. ['+(t.kind==='btvn'?'BTVN':'Kiểm tra')+'] '+t.title; }).join('\n');
+  var pick = prompt('Chọn bài để DỜI HẠN thêm 1 ngày (nhập số thứ tự):\n'+lines);
+  var idx = parseInt(pick,10)-1;
+  if (isNaN(idx) || idx<0 || idx>=tasks.length) return;
+  var t = tasks[idx];
+  var r = await sb.rpc('hs_dung_phep_han', { p_lesson_id: t.lesson_id, p_kind: t.kind });
+  var res = r && r.data ? r.data : {ok:false};
+  alert(res.msg || (res.ok?'Đã dời hạn':'Không dùng được'));
+  if (res.ok) await shopLamMoi();
+}
+
+async function shopDungCong() {
+  var uid = (hoSoNguoiDung && hoSoNguoiDung.id) || vclMyId;
+  var r = await sb.from('submissions').select('id,score,lesson_id,bonus_from_shop,lessons(title)').eq('student_id',uid).eq('kind','test').eq('status','graded');
+  var subs = (r.data||[]).filter(function(s){ return (s.bonus_from_shop||0)===0 && s.score!=null && s.score<10; });
+  if (!subs.length) { alert('Chưa có bài kiểm tra đã chấm nào (dưới 10đ, chưa cộng) để dùng phép.'); return; }
+  var lines = subs.map(function(s,i){ return (i+1)+'. '+((s.lessons&&s.lessons.title)||'Bài KT')+' — '+s.score+'đ'; }).join('\n');
+  var pick = prompt('Chọn bài kiểm tra để CỘNG +1 điểm (nhập số thứ tự):\n'+lines);
+  var idx = parseInt(pick,10)-1;
+  if (isNaN(idx) || idx<0 || idx>=subs.length) return;
+  var r2 = await sb.rpc('hs_dung_phep_cong_diem', { p_submission_id: subs[idx].id });
+  var res = r2 && r2.data ? r2.data : {ok:false};
+  alert(res.msg || (res.ok?'Đã cộng điểm':'Không dùng được'));
+  if (res.ok) await shopLamMoi();
 }
 
 // Đã gộp "Việc cần làm" vào thanh nhiệm vụ (banner) → hàm này chỉ ẩn khung cũ + làm mới banner
