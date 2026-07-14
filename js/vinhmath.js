@@ -27,6 +27,58 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
+/* ---------- THƯỞNG NÓNG (GV/admin cộng xu + XP trực tiếp cho 1 HS) ---------- */
+window.vmThuongNong = function (studentId, studentName) {
+  if (!studentId) return;
+  var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+  var old = document.getElementById('vmThuongModal'); if (old) old.remove();
+  var m = document.createElement('div');
+  m.id = 'vmThuongModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100050;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto';
+  m.innerHTML =
+    '<div style="background:var(--bg,#fff);border:1px solid var(--line,#ddd);border-radius:18px;max-width:440px;width:100%;padding:22px 24px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.45)">' +
+      '<button id="vmTnX" style="position:absolute;top:12px;right:14px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:var(--ink-3,#888)">×</button>' +
+      '<h3 style="margin:0 0 2px;font-size:1.15rem;display:flex;align-items:center;gap:8px">🎁 Thưởng nóng</h3>' +
+      '<div style="font-size:.86rem;color:var(--ink-2,#555);margin-bottom:14px">Cho: <b>'+esc(studentName||'Học sinh')+'</b></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+        '<button type="button" class="vmTnQuick" data-c="10" data-x="5" style="flex:1;min-width:90px;border:1px solid var(--line,#ddd);background:var(--surface-2,#f5f5f5);border-radius:10px;padding:9px;cursor:pointer;font-weight:700;font-size:.82rem">+10🪙 +5⭐</button>' +
+        '<button type="button" class="vmTnQuick" data-c="20" data-x="10" style="flex:1;min-width:90px;border:1px solid var(--line,#ddd);background:var(--surface-2,#f5f5f5);border-radius:10px;padding:9px;cursor:pointer;font-weight:700;font-size:.82rem">+20🪙 +10⭐</button>' +
+        '<button type="button" class="vmTnQuick" data-c="50" data-x="25" style="flex:1;min-width:90px;border:1px solid var(--line,#ddd);background:var(--surface-2,#f5f5f5);border-radius:10px;padding:9px;cursor:pointer;font-weight:700;font-size:.82rem">+50🪙 +25⭐</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;margin-bottom:12px">' +
+        '<label style="flex:1;font-size:.82rem;font-weight:600">🪙 Xu<input id="vmTnCoins" type="number" min="0" value="0" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--line,#ddd);border-radius:8px;box-sizing:border-box"></label>' +
+        '<label style="flex:1;font-size:.82rem;font-weight:600">⭐ XP<input id="vmTnXp" type="number" min="0" value="0" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--line,#ddd);border-radius:8px;box-sizing:border-box"></label>' +
+      '</div>' +
+      '<label style="font-size:.82rem;font-weight:600">Lý do (HS sẽ thấy)</label>' +
+      '<input id="vmTnReason" type="text" placeholder="VD: xung phong giải bài khó trên lớp" style="width:100%;margin:4px 0 16px;padding:9px;border:1px solid var(--line,#ddd);border-radius:8px;box-sizing:border-box">' +
+      '<button id="vmTnGo" style="width:100%;border:none;cursor:pointer;padding:12px;border-radius:11px;font-weight:800;font-size:.95rem;background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560">🎁 Thưởng ngay</button>' +
+      '<div id="vmTnMsg" style="text-align:center;font-size:.82rem;margin-top:10px;min-height:18px"></div>' +
+    '</div>';
+  document.body.appendChild(m);
+  var close = function(){ m.remove(); };
+  m.addEventListener('click', function(e){ if (e.target === m) close(); });
+  document.getElementById('vmTnX').onclick = close;
+  m.querySelectorAll('.vmTnQuick').forEach(function(b){ b.onclick = function(){
+    document.getElementById('vmTnCoins').value = b.getAttribute('data-c');
+    document.getElementById('vmTnXp').value = b.getAttribute('data-x');
+  }; });
+  document.getElementById('vmTnGo').onclick = async function(){
+    var coins = parseInt(document.getElementById('vmTnCoins').value,10) || 0;
+    var xp = parseInt(document.getElementById('vmTnXp').value,10) || 0;
+    var reason = document.getElementById('vmTnReason').value || '';
+    var msg = document.getElementById('vmTnMsg');
+    if (coins<=0 && xp<=0) { msg.style.color='#e74c3c'; msg.textContent='Nhập xu hoặc XP.'; return; }
+    this.disabled = true; msg.style.color='var(--ink-3,#888)'; msg.textContent='Đang thưởng…';
+    try {
+      var client = window.sb || window.supabase;
+      var r = await client.rpc('gv_thuong_nong', { p_student: studentId, p_coins: coins, p_xp: xp, p_reason: reason });
+      var res = r && r.data ? r.data : { ok:false, msg:(r&&r.error?r.error.message:'Lỗi') };
+      if (res.ok) { msg.style.color='var(--ok,#1a9e5c)'; msg.textContent='✓ '+(res.msg||'Đã thưởng'); setTimeout(close, 1100); }
+      else { msg.style.color='#e74c3c'; msg.textContent=res.msg||'Không thưởng được'; document.getElementById('vmTnGo').disabled=false; }
+    } catch(e){ msg.style.color='#e74c3c'; msg.textContent='Lỗi: '+e.message; document.getElementById('vmTnGo').disabled=false; }
+  };
+};
+
 /* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
 (function () {
   try {
