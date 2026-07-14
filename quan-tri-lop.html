@@ -2258,14 +2258,16 @@ async function veRosterTheoDoi() {
 
     var initial = (s.full_name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase();
 
+    var ddPill = on ? (att.status === 'late' ? '<span class="pill pill-amber">🟡 Đi trễ</span> ' : (att.status === 'excused' ? '<span class="pill" style="background:#e0e7ff;color:#3730a3">🟠 Nghỉ có phép</span> ' : '<span class="pill pill-green">🟢 Có mặt</span> ')) : '';
     var ddHtml = sid ? (on
-      ? '<span class="pill ' + (att.status === 'late' ? 'pill-amber' : 'pill-green') + '">' + (att.status === 'late' ? '🟡 Đi trễ' : '🟢 Có mặt') + '</span> ' +
-        (att.status === 'late'
-          ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">🟢 Chuyển Có mặt</button> '
-          : '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Chuyển Trễ</button> ') +
+      ? ddPill +
+        (att.status !== 'present' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">🟢 Có mặt</button> ' : '') +
+        (att.status !== 'late' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button> ' : '') +
+        (att.status !== 'excused' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'excused\')">🟠 Nghỉ có phép</button> ' : '') +
         '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">Bỏ</button>'
       : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">Điểm danh</button> ' +
-        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button>')
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'excused\')">🟠 Nghỉ có phép</button>')
       : '<span style="color:var(--ink-3);font-size:.82rem">Chọn buổi ở trên để điểm danh</span>';
 
     var nxHtml = coNx
@@ -2373,9 +2375,9 @@ async function toggleNopBTVN(studentId, submitted) {
 async function toggleDiemDanhLop(studentId, trangThai) {
   var sid = $('ddSessionSel') ? $('ddSessionSel').value : '';
   if (!sid) { alert('Chưa chọn buổi.'); return; }
-  // trangThai: 'present' | 'late' | true (=present) | false/null (=bỏ điểm danh)
+  // trangThai: 'present' | 'late' | 'excused' | true (=present) | false/null (=bỏ điểm danh)
   var st = (trangThai === true) ? 'present' : trangThai;
-  if (st === 'present' || st === 'late') {
+  if (st === 'present' || st === 'late' || st === 'excused') {
     var r = await sb.from('attendance').upsert(
       { session_id: sid, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });

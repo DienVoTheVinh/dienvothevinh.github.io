@@ -3313,33 +3313,40 @@ async function taiRosterDiemDanh() {
     hs.sort(function (a, b) { return a.full_name.localeCompare(b.full_name, 'vi'); });
     rosterDiemDanhCache = { classId: lopDangXem, hs: hs };
   }
-  var ra = await sb.from('attendance').select('student_id').eq('session_id', buoiDangXem);
-  var coMat = {};
-  (ra.data || []).forEach(function (a) { coMat[a.student_id] = true; });
+  var ra = await sb.from('attendance').select('student_id, status').eq('session_id', buoiDangXem);
+  var ttMap = {};
+  (ra.data || []).forEach(function (a) { ttMap[a.student_id] = a.status || 'present'; });
   var hs = rosterDiemDanhCache.hs;
   if (!hs.length) { box.innerHTML = '<div style="color:var(--ink-3); font-size:.82rem; padding:8px">Lớp chưa có học sinh.</div>'; return; }
-  
-  var absentHs = hs.filter(function (s) { return !coMat[s.id]; });
+
+  var absentHs = hs.filter(function (s) { return !ttMap[s.id]; });
   var head = !absentHs.length
-    ? '<div style="color:var(--ok); font-size:.84rem; padding:8px; font-weight:700; text-align:center">🎉 Tất cả học sinh đã có mặt! (vẫn có thể thưởng nóng bên dưới)</div>'
+    ? '<div style="color:var(--ok); font-size:.84rem; padding:8px; font-weight:700; text-align:center">🎉 Tất cả HS đã được ghi nhận! (vẫn có thể thưởng nóng bên dưới)</div>'
     : '';
   box.innerHTML = head + hs.map(function (s) {
     var tenJs = (s.full_name || '').replace(/'/g, "\\'");
+    var tt = ttMap[s.id];
     var thuong = '<button class="btn btn-sm" style="padding:3px 9px;background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800" onclick="vmThuongNong(\'' + s.id + '\', \'' + tenJs + '\')">🎁</button>';
-    var btn = coMat[s.id]
-      ? '<span class="pill pill-green" style="font-size:.72rem">🟢 Có mặt</span>'
-      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
-        ' <button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>';
+    var pill = tt === 'late' ? '🟡 ' : (tt === 'excused' ? '🟠 ' : (tt ? '🟢 ' : '⚪ '));
+    var btn;
+    if (tt) {
+      var lbl = tt === 'late' ? '<span class="pill pill-amber" style="font-size:.72rem">🟡 Trễ</span>' : (tt === 'excused' ? '<span class="pill" style="font-size:.72rem;background:#e0e7ff;color:#3730a3">🟠 Nghỉ có phép</span>' : '<span class="pill pill-green" style="font-size:.72rem">🟢 Có mặt</span>');
+      btn = lbl + ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', false)">Bỏ</button>';
+    } else {
+      btn = '<button class="btn btn-primary btn-sm" style="padding:3px 9px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
+        ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>' +
+        ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', \'excused\')">🟠 Nghỉ phép</button>';
+    }
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
-      '<span style="font-size:.88rem; color:var(--ink-2)">' + (coMat[s.id] ? '🟢 ' : '⚪ ') + s.full_name + '</span>' +
-      '<span style="display:flex; gap:6px; align-items:center">' + btn + ' ' + thuong + '</span></div>';
+      '<span style="font-size:.88rem; color:var(--ink-2)">' + pill + s.full_name + '</span>' +
+      '<span style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end">' + btn + ' ' + thuong + '</span></div>';
   }).join('');
 }
 
 async function diemDanhHo(studentId, trangThai) {
   if (!buoiDangXem) return;
   var st = (trangThai === true) ? 'present' : trangThai;
-  if (st === 'present' || st === 'late') {
+  if (st === 'present' || st === 'late' || st === 'excused') {
     var r = await sb.from('attendance').upsert(
       { session_id: buoiDangXem, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
