@@ -168,6 +168,40 @@ window.vmThuongNong = function (studentId, studentName) {
     } catch(e){ msg.style.color='#e74c3c'; msg.textContent='Lỗi: '+e.message; document.getElementById('vmTnGo').disabled=false; }
   };
 };
+window.vmChonNghi = function(studentId, studentName, callbackName) {
+  var old = document.getElementById('vmNghiModal'); if (old) old.remove();
+  var m = document.createElement('div');
+  m.id = 'vmNghiModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100080;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML =
+    '<div style="background:var(--bg,#fff);border:1px solid var(--line,#ddd);border-radius:16px;max-width:340px;width:100%;padding:20px;position:relative;box-shadow:0 10px 25px rgba(0,0,0,.2)">' +
+      '<h4 style="margin:0 0 10px;font-size:1rem;color:var(--ink)">Chọn loại nghỉ cho:</h4>' +
+      '<div style="font-weight:700;margin-bottom:16px;font-size:.95rem;color:var(--accent)">' + studentName + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<button id="btnNghiCoPhep" style="padding:10px;background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:10px;font-weight:750;cursor:pointer">🟠 Nghỉ có phép (bỏ qua chuyên cần)</button>' +
+        '<button id="btnNghiKhongPhep" style="padding:10px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:10px;font-weight:750;cursor:pointer">🔴 Nghỉ không phép (trừ điểm)</button>' +
+        '<button id="btnNghiCancel" style="padding:8px;background:none;border:1px solid var(--line,#ddd);color:var(--ink-2);border-radius:10px;cursor:pointer;margin-top:6px">Hủy</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(m);
+  
+  var close = function() { m.remove(); };
+  document.getElementById('btnNghiCancel').onclick = close;
+  m.onclick = function(e) { if (e.target === m) close(); };
+  
+  document.getElementById('btnNghiCoPhep').onclick = function() {
+    if (typeof window[callbackName] === 'function') {
+      window[callbackName](studentId, 'excused');
+    }
+    close();
+  };
+  document.getElementById('btnNghiKhongPhep').onclick = function() {
+    if (typeof window[callbackName] === 'function') {
+      window[callbackName](studentId, 'absent');
+    }
+    close();
+  };
+};
 
 /* ---------- THẺ NHÂN VẬT + CỬA HÀNG DÙNG CHUNG (ca-nhan, staff...) ---------- */
 (function () {

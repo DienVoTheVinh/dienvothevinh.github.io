@@ -4,6 +4,9 @@
 <link rel="icon" type="image/png" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="favicon.png?v=3">
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Theo dõi học tập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -849,7 +852,7 @@ async function renderBaoCaoTuan(startOfWeek, quizScores) {
     return new Date(att.checked_at) >= startOfWeek;
   });
   if (attThisWeek.length > 0) {
-    var statusMap = { present: 'Có mặt', late: 'Đi trễ', absent: 'Vắng', leave: 'Phép' };
+    var statusMap = { present: 'Có mặt', late: 'Đi trễ', absent: 'Vắng', leave: 'Phép', excused: 'Phép' };
     var st = attThisWeek.map(function(x) {
       return statusMap[x.status] || 'Không xác định';
     }).join(', ');
@@ -966,7 +969,7 @@ function renderLichHocThang() {
     var dotHtml = '';
     var statusClass = '';
     if (matchAtt) {
-      var colors = { present: 'status-present', late: 'status-late', absent: 'status-absent', leave: 'status-leave' };
+      var colors = { present: 'status-present', late: 'status-late', absent: 'status-absent', leave: 'status-leave', excused: 'status-leave' };
       statusClass = ' ' + (colors[matchAtt.status] || '');
       dotHtml = '<span class="status-dot ' + (colors[matchAtt.status] || '') + '"></span>';
     }

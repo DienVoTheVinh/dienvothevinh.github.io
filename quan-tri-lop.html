@@ -4,6 +4,9 @@
 <link rel="icon" type="image/png" href="favicon.png?v=3">
 <link rel="apple-touch-icon" href="favicon.png?v=3">
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản lý Lớp học — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2258,16 +2261,16 @@ async function veRosterTheoDoi() {
 
     var initial = (s.full_name || '?').trim().split(/\s+/).pop().charAt(0).toUpperCase();
 
-    var ddPill = on ? (att.status === 'late' ? '<span class="pill pill-amber">🟡 Đi trễ</span> ' : (att.status === 'excused' ? '<span class="pill" style="background:#e0e7ff;color:#3730a3">🟠 Nghỉ có phép</span> ' : '<span class="pill pill-green">🟢 Có mặt</span> ')) : '';
+    var ddPill = on ? (att.status === 'late' ? '<span class="pill pill-amber">🟡 Đi trễ</span> ' : (att.status === 'excused' ? '<span class="pill" style="background:#e0e7ff;color:#3730a3">🟠 Nghỉ có phép</span> ' : (att.status === 'absent' ? '<span class="pill" style="background:#fee2e2;color:#b91c1c">🔴 Nghỉ không phép</span> ' : '<span class="pill pill-green">🟢 Có mặt</span> '))) : '';
     var ddHtml = sid ? (on
       ? ddPill +
         (att.status !== 'present' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">🟢 Có mặt</button> ' : '') +
         (att.status !== 'late' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button> ' : '') +
-        (att.status !== 'excused' ? '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'excused\')">🟠 Nghỉ có phép</button> ' : '') +
+        (att.status !== 'excused' && att.status !== 'absent' ? '<button class="btn btn-secondary btn-sm" onclick="vmChonNghi(\'' + s.id + '\', \'' + tenJs + '\', \'toggleDiemDanhLop\')">🟠 Nghỉ</button> ' : '') +
         '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', false)">Bỏ</button>'
       : '<button class="btn btn-primary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'present\')">Điểm danh</button> ' +
         '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'late\')">🟡 Trễ</button> ' +
-        '<button class="btn btn-secondary btn-sm" onclick="toggleDiemDanhLop(\'' + s.id + '\', \'excused\')">🟠 Nghỉ có phép</button>')
+        '<button class="btn btn-secondary btn-sm" onclick="vmChonNghi(\'' + s.id + '\', \'' + tenJs + '\', \'toggleDiemDanhLop\')">🟠 Nghỉ</button>')
       : '<span style="color:var(--ink-3);font-size:.82rem">Chọn buổi ở trên để điểm danh</span>';
 
     var nxHtml = coNx
@@ -2377,7 +2380,7 @@ async function toggleDiemDanhLop(studentId, trangThai) {
   if (!sid) { alert('Chưa chọn buổi.'); return; }
   // trangThai: 'present' | 'late' | 'excused' | true (=present) | false/null (=bỏ điểm danh)
   var st = (trangThai === true) ? 'present' : trangThai;
-  if (st === 'present' || st === 'late' || st === 'excused') {
+  if (st === 'present' || st === 'late' || st === 'excused' || st === 'absent') {
     var r = await sb.from('attendance').upsert(
       { session_id: sid, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });

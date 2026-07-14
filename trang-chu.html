@@ -3330,15 +3330,18 @@ async function taiRosterDiemDanh() {
   box.innerHTML = head + hs.map(function (s) {
     var tenJs = (s.full_name || '').replace(/'/g, "\\'");
     var tt = ttMap[s.id];
-    var pill = tt === 'late' ? '🟡 ' : (tt === 'excused' ? '🟠 ' : (tt ? '🟢 ' : '⚪ '));
+    var pill = tt === 'late' ? '🟡 ' : (tt === 'excused' ? '🟠 ' : (tt === 'absent' ? '🔴 ' : (tt ? '🟢 ' : '⚪ ')));
     var btn;
     if (tt) {
-      var lbl = tt === 'late' ? '<span class="pill pill-amber" style="font-size:.72rem">🟡 Trễ</span>' : (tt === 'excused' ? '<span class="pill" style="font-size:.72rem;background:#e0e7ff;color:#3730a3">🟠 Nghỉ có phép</span>' : '<span class="pill pill-green" style="font-size:.72rem">🟢 Có mặt</span>');
+      var lbl = tt === 'late' ? '<span class="pill pill-amber" style="font-size:.72rem">🟡 Trễ</span>' :
+                (tt === 'excused' ? '<span class="pill" style="font-size:.72rem;background:#e0e7ff;color:#3730a3">🟠 Nghỉ phép</span>' :
+                (tt === 'absent' ? '<span class="pill" style="font-size:.72rem;background:#fee2e2;color:#b91c1c">🔴 Không phép</span>' :
+                '<span class="pill pill-green" style="font-size:.72rem">🟢 Có mặt</span>'));
       btn = lbl + ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', false)">Bỏ</button>';
     } else {
       btn = '<button class="btn btn-primary btn-sm" style="padding:3px 9px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
         ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>' +
-        ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="diemDanhHo(\'' + s.id + '\', \'excused\')">🟠 Nghỉ phép</button>';
+        ' <button class="btn btn-secondary btn-sm" style="padding:3px 8px" onclick="vmChonNghi(\'' + s.id + '\', \'' + tenJs + '\', \'diemDanhHo\')">🟠 Nghỉ</button>';
     }
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
       '<span style="font-size:.88rem; color:var(--ink-2)">' + pill + s.full_name + '</span>' +
@@ -3349,7 +3352,7 @@ async function taiRosterDiemDanh() {
 async function diemDanhHo(studentId, trangThai) {
   if (!buoiDangXem) return;
   var st = (trangThai === true) ? 'present' : trangThai;
-  if (st === 'present' || st === 'late' || st === 'excused') {
+  if (st === 'present' || st === 'late' || st === 'excused' || st === 'absent') {
     var r = await sb.from('attendance').upsert(
       { session_id: buoiDangXem, student_id: studentId, status: st, checked_at: new Date().toISOString() },
       { onConflict: 'session_id,student_id' });
