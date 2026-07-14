@@ -1815,11 +1815,17 @@ function vmNoiDungXemNhanh(b, item) {
   } else if (item === 'btvn') {
     var t = b.homework_text || '', hi = Array.isArray(b.homework_images) ? b.homework_images : [];
     var hwfp = (b.bai_btvn && b.bai_btvn.file_path) || '';
-    body = (t ? '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>' : '');
+    body = '';
+    if (b.homework_due) {
+      var _hd = new Date(b.homework_due);
+      body += '<div style="display:inline-block;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);font-weight:700;border-radius:10px;padding:7px 12px;margin-bottom:10px;font-size:.9rem">⏰ Hạn nộp: ' + _hd.toLocaleString('vi-VN') + '</div>';
+    }
+    if (t) body += '<div style="font-weight:800;color:var(--accent);font-size:.9rem;margin-bottom:4px">📝 Ghi chú / dặn dò cho học sinh</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>';
     if (b.homework_latex_content) body += '<p style="color:var(--ink-2);margin-bottom:10px">📝 Đề LaTeX — bấm <b>Vào học</b> để xem bản biên dịch đầy đủ.</p>';
     if (hwfp) { var hu = vmStorageUrl('tai-lieu', hwfp); body += pdfFrame(hu); dl = hu; }
     if (hi.length) body += anhList(hi);
-    if (!t && !hi.length && !hwfp && !b.homework_latex_content) body = '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
+    if (!t && !hi.length && !hwfp && !b.homework_latex_content) body += '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
   } else if (item === 'test') {
     var tfp = (b.bai_test && b.bai_test.file_path) || '';
     if (tfp) { var tu = vmStorageUrl('tai-lieu', tfp); body = pdfFrame(tu); dl = tu; }
