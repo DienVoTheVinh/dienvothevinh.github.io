@@ -550,6 +550,7 @@ function chbLightboxEl() {
       '<img id="chbLbImg" alt="" onclick="event.stopPropagation()">' +
       '<button id="chbLbNext" onclick="event.stopPropagation();chbLbNav(1)" style="position:fixed;right:14px;top:50%;transform:translateY(-50%);font-size:2.2rem;color:#fff;background:rgba(0,0,0,.45);border:none;border-radius:50%;width:54px;height:54px;cursor:pointer;line-height:1;display:none">›</button>' +
       '<div id="chbLbCount" style="position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-weight:700;font-size:.9rem;background:rgba(0,0,0,.5);padding:4px 12px;border-radius:99px"></div>' +
+      '<button id="chbLbRot" onclick="event.stopPropagation();chbLbXoay()" title="Xoay ảnh 90°" style="position:fixed;top:12px;right:14px;color:#fff;background:rgba(0,0,0,.5);border:none;border-radius:99px;padding:8px 14px;font-weight:700;font-size:.9rem;cursor:pointer">⟳ Xoay</button>' +
       '<a class="lb-open" id="chbLbOpen" target="_blank">🔗 Mở ảnh gốc trong Drive</a>';
     lb.addEventListener('click', function (e) { if (e.target.id !== 'chbLbOpen') lb.style.display = 'none'; });
     document.body.appendChild(lb);
@@ -562,6 +563,14 @@ function chbLightboxEl() {
   }
   return lb;
 }
+function chbApplyRot() {
+  var img = document.getElementById('chbLbImg'); if (!img) return;
+  var r = window._chbRot || 0;
+  img.style.transform = 'rotate(' + r + 'deg)';
+  if (r % 180 === 90) { img.style.maxWidth = '88vh'; img.style.maxHeight = '88vw'; }
+  else { img.style.maxWidth = '90vw'; img.style.maxHeight = '90vh'; }
+}
+function chbLbXoay() { window._chbRot = ((window._chbRot || 0) + 90) % 360; chbApplyRot(); }
 function chbLbShow() {
   var c = window._chbCur; if (!c) return;
   var g = (window._chbGalleries || {})[c.gid]; if (!g || !g.length) return;
@@ -569,6 +578,7 @@ function chbLbShow() {
   if (c.idx >= g.length) c.idx = 0;
   var it = g[c.idx];
   var lb = chbLightboxEl();
+  window._chbRot = 0;
   document.getElementById('chbLbImg').src = 'https://drive.google.com/thumbnail?id=' + it.id + '&sz=w1600';
   var op = document.getElementById('chbLbOpen'); op.href = 'https://drive.google.com/file/d/' + it.id + '/view'; op.style.display = '';
   var cnt = document.getElementById('chbLbCount'); if (cnt) cnt.textContent = (c.idx + 1) + ' / ' + g.length;
@@ -576,6 +586,7 @@ function chbLbShow() {
   var pv = document.getElementById('chbLbPrev'), nx = document.getElementById('chbLbNext');
   if (pv) pv.style.display = multi ? '' : 'none';
   if (nx) nx.style.display = multi ? '' : 'none';
+  chbApplyRot();
   lb.style.display = 'flex';
 }
 function chbXemGallery(gid, idx) { window._chbCur = { gid: gid, idx: idx }; chbLbShow(); }
@@ -583,6 +594,7 @@ function chbLbNav(dir) { if (!window._chbCur) return; window._chbCur.idx += dir;
 function chbXemDrive(id) { window._chbGalleries = window._chbGalleries || {}; window._chbGalleries['_single'] = [{ id: id }]; window._chbCur = { gid: '_single', idx: 0 }; chbLbShow(); }
 function chbXemUrl(url) {
   var lb = chbLightboxEl();
+  window._chbRot = 0; chbApplyRot();
   document.getElementById('chbLbImg').src = url;
   document.getElementById('chbLbOpen').style.display = 'none';
   var cnt = document.getElementById('chbLbCount'); if (cnt) cnt.textContent = '';
