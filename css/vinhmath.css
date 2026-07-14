@@ -1629,9 +1629,21 @@ tr:last-child td{border-bottom:none}
 /* ============================================================
    BỘ NHẬN DIỆN CLB M.A.P (áp cho lớp có theme = map)
    ============================================================ */
-body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+body.theme-map {
+  --accent:#1B2644; --accent-soft:#EAEFF6;
+  /* Gradient nút/nhấn: đổi vàng -> navy (chữ trắng dễ đọc trên nền sáng) */
+  --accent-gradient: linear-gradient(135deg, #2A3B66 0%, #16213D 100%);
+  --accent-2:#24335C; --accent-strong:#16213D; --gold:#1B2644;
+}
 /* Dark mode: làm xanh navy sáng lên, nổi bật dễ nhìn */
-[data-theme="dark"] body.theme-map { --accent:#8FB3EC; --accent-soft:#233149; }
+[data-theme="dark"] body.theme-map {
+  --accent:#8FB3EC; --accent-soft:#233149;
+  --accent-gradient: linear-gradient(135deg, #3E5EA0 0%, #24335C 100%);
+  --accent-2:#5B7FC0; --accent-strong:#8FB3EC; --gold:#8FB3EC;
+}
+/* Ép các mảng vàng đặc trưng còn sót (badge/gạch chân/vòng %) sang navy trong theme M.A.P */
+body.theme-map .new-lesson-badge,
+body.theme-map .badge-accent { background: var(--accent-gradient) !important; color:#fff !important; }
 
 /* Logo chìm giữa màn hình, mờ, đè lên mọi cửa sổ (không chặn thao tác) */
 #mapWatermarkGlobal {
