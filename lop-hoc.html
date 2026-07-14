@@ -731,7 +731,7 @@ async function taiLessonsHocSinh() {
     ];
   } else {
     var r = await sb.from('lessons')
-      .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, homework_latex_content, homework_document_id, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
+      .select('id, title, youtube_url, note, sort, topic_id, teacher_id, created_at, latex_content, document_id, images, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_document_id, test_latex_content, theory_sections, topics(id, name, color, sort, is_specialized), documents!lessons_document_id_fkey(file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
       .eq('class_id', selectedClassId)
       .eq('published', true);
     ds = r.data || [];
