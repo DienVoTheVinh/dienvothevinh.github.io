@@ -2804,7 +2804,7 @@ async function moThuongNongNhanh(classId, className) {
   document.body.appendChild(m);
   m.onclick = function(e) { if (e.target === m) m.remove(); };
   try {
-    var rs = await sb.from('class_enrollments')
+    var rs = await sb.from('class_students')
       .select('profiles(id, full_name)')
       .eq('class_id', classId);
     var hs = (rs.data || []).map(function (x) { return x.profiles; }).filter(Boolean);
