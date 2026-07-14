@@ -3320,17 +3320,19 @@ async function taiRosterDiemDanh() {
   if (!hs.length) { box.innerHTML = '<div style="color:var(--ink-3); font-size:.82rem; padding:8px">Lớp chưa có học sinh.</div>'; return; }
   
   var absentHs = hs.filter(function (s) { return !coMat[s.id]; });
-  if (!absentHs.length) {
-    box.innerHTML = '<div style="color:var(--ok); font-size:.86rem; padding:12px; font-weight:700; text-align:center">🎉 Tất cả học sinh đã có mặt!</div>';
-    return;
-  }
-  
-  box.innerHTML = absentHs.map(function (s) {
-    var btn = '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
-      ' <button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>';
+  var head = !absentHs.length
+    ? '<div style="color:var(--ok); font-size:.84rem; padding:8px; font-weight:700; text-align:center">🎉 Tất cả học sinh đã có mặt! (vẫn có thể thưởng nóng bên dưới)</div>'
+    : '';
+  box.innerHTML = head + hs.map(function (s) {
+    var tenJs = (s.full_name || '').replace(/'/g, "\\'");
+    var thuong = '<button class="btn btn-sm" style="padding:3px 9px;background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800" onclick="vmThuongNong(\'' + s.id + '\', \'' + tenJs + '\')">🎁</button>';
+    var btn = coMat[s.id]
+      ? '<span class="pill pill-green" style="font-size:.72rem">🟢 Có mặt</span>'
+      : '<button class="btn btn-primary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'present\')">Điểm danh</button>' +
+        ' <button class="btn btn-secondary btn-sm" style="padding:3px 10px" onclick="diemDanhHo(\'' + s.id + '\', \'late\')">🟡 Trễ</button>';
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line-2)">' +
-      '<span style="font-size:.88rem; color:var(--ink-2)">⚪ ' + s.full_name + '</span>' +
-      '<span style="display:flex; gap:6px">' + btn + '</span></div>';
+      '<span style="font-size:.88rem; color:var(--ink-2)">' + (coMat[s.id] ? '🟢 ' : '⚪ ') + s.full_name + '</span>' +
+      '<span style="display:flex; gap:6px; align-items:center">' + btn + ' ' + thuong + '</span></div>';
   }).join('');
 }
 

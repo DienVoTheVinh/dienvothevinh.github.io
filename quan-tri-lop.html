@@ -680,6 +680,13 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <!-- TAB: BÀI TẬP VỀ NHÀ -->
       <div id="tabFormBTVN" style="display:none">
         <div class="field">
+          <label>🎯 Loại bài tập</label>
+          <select class="input" id="bhBtvnBonus" style="max-width:360px">
+            <option value="false">Bắt buộc — không làm sẽ bị trừ điểm</option>
+            <option value="true">Thưởng thêm — không làm không sao, làm thì được thưởng xu</option>
+          </select>
+        </div>
+        <div class="field">
           <label>⏰ Hạn nộp bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
           <input type="datetime-local" class="input" id="bhBtvnDue" style="max-width:260px">
           <div style="margin-top:10px">
@@ -1477,7 +1484,7 @@ async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, homework_bonus, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
 
   var lessons = r.data || [];
@@ -2336,6 +2343,7 @@ async function veRosterTheoDoi() {
         (gradingHtml ? '<div class="hs-row" style="flex-direction:column; align-items:stretch; border-bottom:1px solid var(--line)"><span class="lbl">✏️ Chấm bài học sinh</span><div style="flex:1; width:100%">' + gradingHtml + '</div></div>' : '') +
         '<div class="hs-row"><span class="lbl">📖 Lý thuyết</span><span style="flex:1">' + ltHtml + '</span></div>' +
         '<div class="hs-row" style="border-bottom:none">' +
+          '<button class="btn btn-sm" style="background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800" onclick="vmThuongNong(\'' + s.id + '\', \'' + tenJs + '\')">🎁 Thưởng nóng</button> ' +
           '<button class="btn btn-secondary btn-sm" onclick="moNhacNho(\'student\', \'' + s.id + '\', \'' + tenJs + '\')">🔔 Nhắc</button> ' +
           '<button class="btn btn-ghost btn-sm" style="color:var(--accent)" onclick="moFormNopBaiHo(\'' + s.id + '\', \'' + tenJs + '\')">📥 Nộp hộ</button> ' +
           '<button class="btn btn-ghost btn-sm chi-gv" style="color:var(--err)" onclick="xoaHocSinhKhoiLop(\'' + s.id + '\', \'' + tenJs + '\')">🗑 Xóa khỏi lớp</button>' +
@@ -3259,6 +3267,7 @@ async function moFormThemBaiGiang() {
   if ($('bhTestDue')) $('bhTestDue').value = '';
   if ($('bhBtvnLate')) $('bhBtvnLate').value = 'late';
   if ($('bhTestLate')) $('bhTestLate').value = 'late';
+  if ($('bhBtvnBonus')) $('bhBtvnBonus').value = 'false';
   napDropdownDe('');
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
@@ -3340,6 +3349,7 @@ async function moFormSua(id) {
   hwAnhDaCo = Array.isArray(bh.homework_images) ? bh.homework_images.slice() : []; hwSelectedFiles = []; veBtvnAnh();
   if ($('bhBtvnText')) $('bhBtvnText').value = bh.homework_text || '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = bh.homework_latex_content || '';
+  if ($('bhBtvnBonus')) $('bhBtvnBonus').value = bh.homework_bonus ? 'true' : 'false';
   if ($('bhBtvnDue')) $('bhBtvnDue').value = bh.homework_due ? isoToLocalInput(bh.homework_due) : '';
   if ($('bhTestDue')) $('bhTestDue').value = bh.test_deadline ? isoToLocalInput(bh.test_deadline) : '';
   if ($('bhBtvnLate')) $('bhBtvnLate').value = bh.homework_late_policy || 'late';
@@ -3439,6 +3449,7 @@ async function luuBaiHoc(e) {
     test_deadline: ($('bhTestDue') && $('bhTestDue').value) ? new Date($('bhTestDue').value).toISOString() : null,
     homework_late_policy: ($('bhBtvnLate') && $('bhBtvnLate').value) || 'late',
     test_late_policy: ($('bhTestLate') && $('bhTestLate').value) || 'late',
+    homework_bonus: ($('bhBtvnBonus') && $('bhBtvnBonus').value === 'true') || false,
     linked_exam_id: ($('bhLinkedExam') && $('bhLinkedExam').value) || null,
     created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {

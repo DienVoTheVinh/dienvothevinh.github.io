@@ -882,7 +882,7 @@ function batTatMucLuc() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, linked_exam_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, homework_bonus, linked_exam_id, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -1887,6 +1887,9 @@ async function renderBTVN(than) {
       var ds = r.data || [];
       var el = $('btvnTrangThai');
       var hanHtml = '';
+      if (details.homework_bonus) {
+        hanHtml += ' <span class="badge" style="background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800">🎁 Bài thưởng thêm — không bắt buộc, làm sẽ được thưởng xu!</span>';
+      }
       if (details.homework_due) {
         var quaHan = new Date(details.homework_due).getTime() < Date.now();
         hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(details.homework_due).toLocaleString('vi-VN') + (quaHan ? ' (đã quá hạn)' : '') + '</span>';
