@@ -27,6 +27,40 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
+/* ---------- CANH POPUP AN TOÀN: mọi overlay lớn hiện từ trên, cuộn được, không che nút × ---------- */
+(function () {
+  function laOverlay(el){
+    try{ var cs=getComputedStyle(el);
+      if(cs.position!=='fixed' || cs.display==='none' || cs.visibility==='hidden') return false;
+      if((parseInt(cs.zIndex,10)||0) < 50) return false;
+      var r=el.getBoundingClientRect();
+      return r.width > window.innerWidth*0.6 && r.height > window.innerHeight*0.6 && r.top < 60 && r.left < 60;
+    }catch(e){ return false; }
+  }
+  function canh(el){
+    try{ var cs=getComputedStyle(el);
+      // Chỉ can thiệp overlay canh giữa/không cuộn → dễ bị che nút đóng khi nội dung cao
+      if(cs.display==='flex' && cs.alignItems==='center') el.style.alignItems='flex-start';
+      if(cs.overflowY!=='auto' && cs.overflowY!=='scroll') el.style.overflowY='auto';
+      var pt=parseInt(cs.paddingTop,10)||0; if(pt < 16){ el.style.paddingTop='40px'; if((parseInt(cs.paddingBottom,10)||0)<16) el.style.paddingBottom='28px'; }
+      el.scrollTop=0;
+    }catch(e){}
+  }
+  function quet(node){ if(node && node.nodeType===1 && laOverlay(node)) canh(node); }
+  function start(){
+    try{
+      var obs=new MutationObserver(function(muts){
+        muts.forEach(function(m){
+          quet(m.target);
+          if(m.addedNodes) m.addedNodes.forEach(quet);
+        });
+      });
+      obs.observe(document.body,{attributes:true, attributeFilter:['style','class'], subtree:true, childList:true});
+    }catch(e){}
+  }
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+
 /* ---------- THƯỞNG NÓNG (GV/admin cộng xu + XP trực tiếp cho 1 HS) ---------- */
 window.vmThuongNong = function (studentId, studentName) {
   if (!studentId) return;
