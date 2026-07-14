@@ -266,6 +266,9 @@
       <!-- Panel dành cho Trợ giảng / Giáo viên / Admin (ẩn mặc định) -->
       <div id="staffPanel" style="display:none"></div>
 
+      <!-- Thẻ nhân vật game (HS: của mình · Staff: báo cáo HS đang xem) -->
+      <div id="vgGameCard" style="display:none; margin-bottom:20px"></div>
+
       <!-- Hàng 7 Metric Cards lớn đại diện 7 đầu điểm -->
       <div class="dash-grid" id="studentDashGrid">
         <div class="dash-card" style="border-left: 4px solid var(--accent); background: linear-gradient(to bottom, var(--accent-soft), var(--surface));">
@@ -655,7 +658,25 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
   $('profileClass').textContent = profileData.classes ? 'Lớp: ' + profileData.classes.name : 'Chưa xếp lớp';
   
   hienThiProfileAvatar(profileData.avatar_url, profileData.full_name);
-  
+
+  // ===== Thẻ nhân vật game =====
+  try {
+    var vgEl = $('vgGameCard');
+    if (vgEl && typeof vmRenderGameCard === 'function') {
+      if (targetStudentId && isStaff) {
+        var rgS = await sb.rpc('gv_bao_cao_hs', { p_student: targetStudentId });
+        if (rgS && rgS.data && !rgS.data.error) { vgEl.style.display = 'block'; vmRenderGameCard(vgEl, rgS.data, { mode: 'report', name: profileData.full_name }); }
+      } else if (!isStaff) {
+        var rgH = await sb.rpc('hs_ho_so');
+        if (rgH && rgH.data && !rgH.data.error) {
+          vgEl.style.display = 'block';
+          window.vmOnGameUpdate = function (d) { vmRenderGameCard(vgEl, d, { mode: 'student', showShop: true, name: profileData.full_name }); };
+          vmRenderGameCard(vgEl, rgH.data, { mode: 'student', showShop: true, name: profileData.full_name });
+        }
+      }
+    }
+  } catch (e) { console.error('Thẻ game lỗi:', e); }
+
   // Lời chào ở tiêu đề
   var tenChao = profileData.full_name ? profileData.full_name.split(' ').pop() : '';
   if (profileData.role === 'admin' || profileData.role === 'teacher') {
@@ -746,6 +767,10 @@ async function renderStaffProfile() {
     return '<div class="dash-card" style="border-left:4px solid ' + border + '"><div class="label">' + label + '</div><div class="val" id="' + id + '">—</div><div class="sub">' + sub + '</div></div>';
   };
   panel.innerHTML =
+    '<div class="card" style="margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:linear-gradient(135deg,#fff6e0,var(--surface)); border-left:4px solid #f39c12">' +
+      '<div><div style="font-weight:800; font-size:1rem">🎮 Hệ thống game của học sinh</div><div style="font-size:.82rem; color:var(--ink-2)">Xem thử cửa hàng phần thưởng. Xem báo cáo cấp độ / xu / thành tựu của từng HS ở mục Quản lý học sinh → bấm vào tên HS.</div></div>' +
+      '<button class="btn btn-primary" onclick="vmMoCuaHang(\'preview\')" style="white-space:nowrap">🛒 Xem thử cửa hàng</button>' +
+    '</div>' +
     '<div class="dash-grid">' +
       card('var(--accent)', 'Lớp học 🏫', 'stLop', 'Tổng số lớp') +
       card('var(--ok)', 'Học sinh 👥', 'stHS', 'Đang theo học') +
