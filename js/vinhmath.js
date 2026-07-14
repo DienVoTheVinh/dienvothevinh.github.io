@@ -79,6 +79,120 @@ window.vmThuongNong = function (studentId, studentName) {
   };
 };
 
+/* ---------- THẺ NHÂN VẬT + CỬA HÀNG DÙNG CHUNG (ca-nhan, staff...) ---------- */
+(function () {
+  var VG_COLORS = ['#2E7D32','#00897B','#1565C0','#3949AB','#5E35B1','#8E24AA','#C2185B','#D84315','#EF6C00','#00838F','#455A64','#6D4C41'];
+  var VG_BADGES = [['first_btvn','🎬','Bài nộp đầu tiên'],['no_debt','✅','Không nợ bài tập'],['streak_3','🔥','Chuỗi 3 ngày'],['streak_7','⚡','Chuỗi 7 ngày'],['test_5','🛡️','Chiến binh kiểm tra'],['explorer_10','🧭','Nhà thám hiểm'],['level_5','⭐','Ngôi sao Lv.5'],['level_10','🌟','Bậc thầy Lv.10'],['diligent','📚','Siêng năng chăm chỉ'],['score_80','🏆','Học lực giỏi'],['coin_300','💰','Triệu phú nhí'],['perfect10','💯','Điểm 10 tuyệt đối']];
+  var _items = null;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function client(){ return window.sb || window.supabase; }
+
+  var CSS = '.vg-card{position:relative;border-radius:18px;padding:18px 20px;overflow:hidden;background:linear-gradient(135deg,#1f1408,#4a2c11 48%,#7a3f16);color:#fff;box-shadow:0 12px 30px rgba(120,55,15,.3);border:1px solid rgba(243,156,18,.3)}'+
+    '.vg-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}'+
+    '.vg-ava{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-size:1.9rem;flex-shrink:0;background:radial-gradient(circle at 35% 30%,#ffd76a,#f39c12 70%);box-shadow:0 0 0 4px rgba(255,255,255,.15),0 6px 16px rgba(0,0,0,.3);position:relative}'+
+    '.vg-lv{position:absolute;bottom:-5px;right:-5px;min-width:24px;height:24px;padding:0 5px;border-radius:99px;background:#111827;color:#ffd76a;font-weight:800;font-size:.72rem;display:grid;place-items:center;border:2px solid #ffd76a}'+
+    '.vg-id{flex:1;min-width:150px}.vg-tier{font-size:1.15rem;font-weight:900}.vg-name{font-size:.82rem;opacity:.85;margin-top:1px}'+
+    '.vg-xpbar{height:12px;border-radius:99px;background:rgba(0,0,0,.28);overflow:hidden;margin-top:8px}.vg-xpfill{height:100%;border-radius:99px;background:linear-gradient(90deg,#ffe08a,#F39C12);width:0;transition:width 1s cubic-bezier(.22,1,.36,1)}'+
+    '.vg-xptext{display:flex;justify-content:space-between;font-size:.7rem;opacity:.85;margin-top:3px}'+
+    '.vg-coins{display:flex;flex-direction:column;align-items:center;padding:5px 12px;background:linear-gradient(135deg,rgba(255,215,106,.22),rgba(255,193,7,.12));border-radius:14px;border:1px solid rgba(255,215,106,.4);cursor:pointer}.vg-coins .n{font-weight:900;font-size:1.05rem;color:#ffe08a}.vg-coins .l{font-size:.58rem;opacity:.8;text-transform:uppercase}'+
+    '.vg-score{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}.vg-scoremain{min-width:100px;background:rgba(0,0,0,.24);border:1px solid rgba(255,215,106,.28);border-radius:14px;padding:10px 14px;text-align:center}.vg-scoremain b{font-size:2.1rem;font-weight:900;color:#ffd76a;display:block;line-height:1}.vg-scoremain span{font-size:.66rem;opacity:.85}'+
+    '.vg-pillars{flex:1;min-width:200px;display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;align-content:center}.vg-plhd{display:flex;justify-content:space-between;font-size:.72rem;font-weight:700;margin-bottom:2px}.vg-plhd b{color:#ffe08a}.vg-plbar{height:7px;border-radius:99px;background:rgba(0,0,0,.3);overflow:hidden}.vg-plfill{height:100%;background:linear-gradient(90deg,#ffe08a,#F39C12);width:0;transition:width .9s cubic-bezier(.22,1,.36,1)}'+
+    '.vg-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.vg-badge{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:1.05rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16)}.vg-badge.locked{filter:grayscale(1);opacity:.3}'+
+    '.vg-shopbtn{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 16px;border:none;cursor:pointer;background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:900;border-radius:99px}'+
+    '.vg-ava.fx-glow{animation:vgGlow 2s ease-in-out infinite}@keyframes vgGlow{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 16px 4px rgba(255,215,106,.7)}50%{box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 28px 9px rgba(255,215,106,1)}}'+
+    '.vg-ava.fx-gold{box-shadow:0 0 0 4px #ffd700,0 0 0 7px #b8860b}.vg-ava.fx-rainbow{animation:vgRb 4s linear infinite}@keyframes vgRb{0%{box-shadow:0 0 0 4px #ff6b6b}25%{box-shadow:0 0 0 4px #ffd76a}50%{box-shadow:0 0 0 4px #2ed573}75%{box-shadow:0 0 0 4px #54a0ff}100%{box-shadow:0 0 0 4px #ff6b6b}}'+
+    '#vmShopModal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100060;display:flex;align-items:flex-start;justify-content:center;padding:36px 16px;overflow-y:auto}'+
+    '#vmShopModal .vsh-box{background:var(--bg,#fff);border:1px solid var(--line,#ddd);border-radius:18px;max-width:760px;width:100%;padding:22px 24px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.45)}'+
+    '.vsh-title{font-size:.92rem;font-weight:800;margin:16px 0 9px;color:var(--ink,#111)}.vsh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}'+
+    '.vsh-card{border:1px solid var(--line,#ddd);border-radius:13px;padding:13px;text-align:center;display:flex;flex-direction:column;gap:6px}.vsh-card .ic{font-size:1.9rem}.vsh-card .nm{font-weight:800;font-size:.86rem}.vsh-card .ds{font-size:.7rem;color:var(--ink-3,#888);flex:1}'+
+    '.vsh-card button{border:none;cursor:pointer;padding:8px;border-radius:9px;font-weight:800;font-size:.8rem;background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560}.vsh-card button:disabled{background:var(--surface-2,#eee);color:var(--ink-3,#999);cursor:default}'+
+    '.vsh-sw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.vsh-swatch{width:34px;height:34px;border-radius:9px;cursor:pointer;border:2px solid rgba(0,0,0,.15);position:relative}.vsh-swatch.sel{outline:3px solid var(--accent,#f39c12);outline-offset:2px}.vsh-swatch .o{position:absolute;top:-6px;right:-6px;font-size:.68rem;background:#1a9e5c;color:#fff;border-radius:50%;width:16px;height:16px;display:grid;place-items:center}';
+
+  function ensureCss(){ if(!document.getElementById('vmGameShared')){ var st=document.createElement('style'); st.id='vmGameShared'; st.textContent=CSS; document.head.appendChild(st); } }
+
+  window.vmRenderGameCard = function (el, d, opts) {
+    if (!el) return; opts = opts || {}; ensureCss();
+    var pct = 0, span = (d.xp_next - d.xp_floor); if (span>0) pct = Math.max(0, Math.min(100, Math.round((d.xp - d.xp_floor)/span*100)));
+    var earned = {}; (d.badges||[]).forEach(function(b){ earned[b.code]=1; });
+    var badges = VG_BADGES.map(function(b){ return '<div class="vg-badge'+(earned[b[0]]?'':' locked')+'" title="'+esc(b[2])+(earned[b[0]]?'':' (chưa mở)')+'">'+b[1]+'</div>'; }).join('');
+    var P = d.pillars || {};
+    function pl(ic,lb,v){ v=(v==null?0:v); return '<div class="vg-pl"><div class="vg-plhd"><span>'+ic+' '+lb+'</span><b>'+Math.round(v)+'</b></div><div class="vg-plbar"><div class="vg-plfill" data-w="'+Math.max(0,Math.min(100,v))+'"></div></div></div>'; }
+    var coinsClick = opts.mode==='student' ? ' onclick="vmMoCuaHang(\'student\')" style="cursor:pointer"' : '';
+    el.innerHTML = '<div class="vg-card">'+
+      '<div class="vg-top">'+
+        '<div class="vg-ava'+(d.avatar_fx?' fx-'+d.avatar_fx:'')+'">'+(d.tier_icon||'🌱')+'<span class="vg-lv">Lv.'+d.level+'</span></div>'+
+        '<div class="vg-id"><div class="vg-tier">'+esc(d.tier||'Tân Binh')+'</div>'+
+          '<div class="vg-name">'+esc(opts.name||d.full_name||'Học sinh')+' · '+d.xp+' XP · 🔥 '+(d.streak||0)+' ngày</div>'+
+          '<div class="vg-xpbar"><div class="vg-xpfill" data-w="'+pct+'"></div></div>'+
+          '<div class="vg-xptext"><span>Lv.'+d.level+'</span><span>'+(d.xp-d.xp_floor)+' / '+(d.xp_next-d.xp_floor)+' XP → Lv.'+(d.level+1)+'</span></div>'+
+        '</div>'+
+        '<div class="vg-coins"'+coinsClick+'><span style="font-size:1.3rem">🪙</span><span class="n">'+(d.coins||0)+'</span><span class="l">xu</span></div>'+
+      '</div>'+
+      '<div class="vg-score"><div class="vg-scoremain"><b>'+(d.diem_tong_quat!=null?d.diem_tong_quat:'—')+'</b><span>Điểm tổng quát /100</span></div>'+
+        '<div class="vg-pillars">'+pl('📝','Kiểm tra',P.kiemtra)+pl('🏠','BTVN',P.btvn)+pl('📅','Chuyên cần',P.chuyencan)+pl('💚','Thái độ',P.thaido)+'</div>'+
+      '</div>'+
+      '<div class="vg-badges">'+badges+'</div>'+
+      (opts.showShop?'<button class="vg-shopbtn" onclick="vmMoCuaHang(\'student\')">🛒 Cửa hàng phần thưởng</button>':'')+
+    '</div>';
+    setTimeout(function(){ el.querySelectorAll('.vg-xpfill,.vg-plfill').forEach(function(f){ f.style.width=(f.getAttribute('data-w')||0)+'%'; }); }, 120);
+  };
+
+  var _profile = null, _mode = 'student';
+  window.vmMoCuaHang = async function (mode) {
+    _mode = mode || 'student'; ensureCss();
+    var m = document.getElementById('vmShopModal');
+    if (!m) { m = document.createElement('div'); m.id='vmShopModal'; document.body.appendChild(m); m.addEventListener('click', function(e){ if(e.target===m) m.style.display='none'; }); }
+    m.style.display='flex'; m.scrollTop=0;
+    m.innerHTML = '<div class="vsh-box"><div style="text-align:center;padding:30px;color:var(--ink-3,#888)">Đang tải cửa hàng…</div></div>';
+    if (_mode==='student') { try { var r = await client().rpc('hs_ho_so'); _profile = (r&&r.data)||{}; } catch(e){ _profile={}; } }
+    else _profile = { coins:0, owned:[], magic:{}, theme_color: (function(){try{return localStorage.getItem('vm-theme-color')||''}catch(e){return ''}})(), avatar_fx:'' };
+    await renderShop();
+  };
+
+  async function renderShop() {
+    var m = document.getElementById('vmShopModal'); if(!m) return;
+    var d = _profile || {};
+    if (!_items) { try { var r = await client().from('shop_items').select('*').eq('active',true).order('sort'); _items = r.data||[]; } catch(e){ _items=[]; } }
+    var owned={}; (d.owned||[]).forEach(function(o){ owned[o.item_code+'|'+o.variant]=1; });
+    var magic=d.magic||{}; var preview=(_mode!=='student');
+    var themeItem=_items.find(function(x){return x.code==='theme_color';})||{gia:80};
+    var cur=(d.theme_color||'');
+    var sw = VG_COLORS.map(function(c){ var o=owned['theme_color|'+c]; var sel=(cur.toLowerCase()===c.toLowerCase());
+      return '<div class="vsh-swatch'+(sel?' sel':'')+'" style="background:'+c+'" title="'+c+'" onclick="vmShopColor(\''+c+'\','+(o?1:0)+')">'+(o?'<span class="o">✓</span>':'')+'</div>'; }).join('');
+    var themeSec='<div class="vsh-title">🎨 Màu giao diện cá nhân <span style="font-weight:600;font-size:.7rem;color:var(--ink-3,#888)">('+themeItem.gia+' xu/màu'+(preview?' · xem thử':'')+')</span></div><div class="vsh-sw">'+sw+
+      '<div class="vsh-swatch" style="background:repeating-linear-gradient(45deg,#ccc,#ccc 4px,#fff 4px,#fff 8px);display:grid;place-items:center;font-size:.58rem;color:#333" title="Mặc định" onclick="vmShopColor(\'\',1)">Tắt</div></div>';
+    var fx=_items.filter(function(x){return x.loai==='avatar';}).map(function(it){ var f=(it.meta&&it.meta.fx)||''; var o=owned[it.code+'|']; var use=(d.avatar_fx===f);
+      var btn = preview ? '<button onclick="vmShopAvatar(\''+f+'\')">Xem thử</button>' : (o?(use?'<button disabled>Đang dùng ✓</button>':'<button onclick="vmShopAvatar(\''+f+'\')">Sử dụng</button>'):'<button onclick="vmShopBuy(\''+it.code+'\',\'\')">Mua · '+it.gia+' 🪙</button>');
+      return '<div class="vsh-card"><div class="ic">'+esc(it.ten.split(' ')[0])+'</div><div class="nm">'+esc(it.ten.replace(/^\S+\s/,''))+'</div><div class="ds">'+esc(it.mo_ta||'')+'</div>'+btn+'</div>'; }).join('');
+    var fxSec='<div class="vsh-title">✨ Hiệu ứng ảnh đại diện</div><div class="vsh-grid">'+fx+'<div class="vsh-card"><div class="ic">🚫</div><div class="nm">Không hiệu ứng</div><div class="ds">Về ảnh thường.</div><button onclick="vmShopAvatar(\'\')">'+(preview?'Xem thử':'Sử dụng')+'</button></div></div>';
+    var mg=_items.filter(function(x){return x.loai==='magic';}).map(function(it){ var have=magic[it.code]||0;
+      return '<div class="vsh-card"><div class="ic">'+esc(it.ten.split(' ')[0])+'</div><div class="nm">'+esc(it.ten.replace(/^\S+\s/,''))+'</div><div class="ds">'+esc(it.mo_ta||'')+'</div>'+(have>0?'<div style="font-size:.7rem;font-weight:800;color:#1a9e5c">Đang có: '+have+'</div>':'')+(preview?'<button disabled>Chỉ HS mua</button>':'<button onclick="vmShopBuy(\''+it.code+'\',\'\')">Mua · '+it.gia+' 🪙</button>')+'</div>'; }).join('');
+    var mgSec='<div class="vsh-title">🪄 Phép thuật</div><div class="vsh-grid">'+mg+'</div>';
+    var bal = preview ? '<span style="font-weight:800;color:var(--accent,#f39c12)">Chế độ xem thử</span>' : '🪙 <b>'+(d.coins||0)+'</b> xu';
+    m.innerHTML = '<div class="vsh-box"><button onclick="document.getElementById(\'vmShopModal\').style.display=\'none\'" style="position:absolute;top:12px;right:14px;font-size:1.6rem;background:none;border:none;cursor:pointer;color:var(--ink-3,#888)">×</button>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-size:1.15rem">🛒 Cửa hàng phần thưởng</h2><div style="font-size:1.02rem">'+bal+'</div></div>'+
+      '<p style="margin:8px 0 0;font-size:.8rem;color:var(--ink-2,#555)">'+(preview?'Bạn đang xem thử cửa hàng — có thể áp màu/hiệu ứng lên giao diện của mình để trải nghiệm. Học sinh dùng xu để mua.':'Kiếm xu bằng cách nộp BTVN và đạt điểm cao (≥8). Dùng xu đổi phần thưởng!')+'</p>'+
+      themeSec+fxSec+mgSec+'</div>';
+  }
+
+  window.vmShopBuy = async function(code, variant){ if(_mode!=='student') return;
+    var r = await client().rpc('hs_mua',{p_code:code,p_variant:variant||''}); var res=(r&&r.data)||{ok:false,msg:(r&&r.error?r.error.message:'Lỗi')};
+    if(res.ok){ try{ var rr=await client().rpc('hs_ho_so'); _profile=(rr&&rr.data)||_profile; }catch(e){} if(window.vmOnGameUpdate)window.vmOnGameUpdate(_profile); await renderShop(); }
+    else alert(res.msg||'Không mua được'); };
+  window.vmShopColor = async function(color, isOwned){
+    if(_mode!=='student'){ try{ if(color)localStorage.setItem('vm-theme-color',color); else localStorage.removeItem('vm-theme-color'); }catch(e){} if(window.vmApplyThemeColor)window.vmApplyThemeColor(color); _profile.theme_color=color; await renderShop(); return; }
+    if(!isOwned && color){ await window.vmShopBuy('theme_color',color); }
+    var r = await client().rpc('hs_doi_mau',{p_color:color}); var res=(r&&r.data)||{ok:false};
+    if(res.ok){ try{ if(color)localStorage.setItem('vm-theme-color',color); else localStorage.removeItem('vm-theme-color'); }catch(e){} if(window.vmApplyThemeColor)window.vmApplyThemeColor(color);
+      try{ var rr=await client().rpc('hs_ho_so'); _profile=(rr&&rr.data)||_profile; }catch(e){} if(window.vmOnGameUpdate)window.vmOnGameUpdate(_profile); await renderShop(); }
+    else if(res.msg) alert(res.msg); };
+  window.vmShopAvatar = async function(fx){
+    if(_mode!=='student'){ try{ if(fx)localStorage.setItem('vm-avatar-fx',fx); else localStorage.removeItem('vm-avatar-fx'); }catch(e){} _profile.avatar_fx=fx; if(window.vmOnGameUpdate)window.vmOnGameUpdate(_profile); await renderShop(); return; }
+    var r = await client().rpc('hs_doi_avatar',{p_fx:fx}); var res=(r&&r.data)||{ok:false};
+    if(res.ok){ try{ var rr=await client().rpc('hs_ho_so'); _profile=(rr&&rr.data)||_profile; }catch(e){} if(window.vmOnGameUpdate)window.vmOnGameUpdate(_profile); await renderShop(); }
+    else if(res.msg) alert(res.msg); };
+})();
+
 /* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
 (function () {
   try {
