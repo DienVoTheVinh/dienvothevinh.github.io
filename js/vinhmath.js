@@ -27,26 +27,33 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
-/* ---------- CANH POPUP AN TOÀN: mọi overlay lớn hiện từ trên, cuộn được, không che nút × ---------- */
+/* ---------- CANH POPUP AN TOÀN: overlay fixed thoát khỏi tổ tiên có transform, hiện từ trên, không che nút × ---------- */
 (function () {
-  function laOverlay(el){
+  // Overlay phủ toàn màn hình dạng position:fixed inset:0 (kể cả khi bị tổ tiên transform làm lệch)
+  function laOverlayFull(el){
     try{ var cs=getComputedStyle(el);
-      if(cs.position!=='fixed' || cs.display==='none' || cs.visibility==='hidden') return false;
-      if((parseInt(cs.zIndex,10)||0) < 50) return false;
+      if(cs.position!=='fixed') return false;
+      if(cs.top==='0px' && cs.left==='0px' && cs.right==='0px' && cs.bottom==='0px') return true;
       var r=el.getBoundingClientRect();
-      return r.width > window.innerWidth*0.6 && r.height > window.innerHeight*0.6 && r.top < 60 && r.left < 60;
+      return r.width >= window.innerWidth*0.9 && r.height >= window.innerHeight*0.9;
     }catch(e){ return false; }
   }
   function canh(el){
+    if(!el || el.nodeType!==1 || !el.style) return;
+    if(!laOverlayFull(el)) return;
+    // Chỉ xử lý khi đang hiện bằng inline style (tránh phá modal điều khiển bằng class tổ tiên)
+    var shown = el.style.display && el.style.display!=='none';
+    if(!shown) return;
+    // Đưa overlay ra thẳng <body> để thoát tổ tiên có transform/filter (nguyên nhân fixed bị lệch)
+    if(el.parentElement && el.parentElement!==document.body){ try{ document.body.appendChild(el); }catch(e){} }
     try{ var cs=getComputedStyle(el);
-      // Chỉ can thiệp overlay canh giữa/không cuộn → dễ bị che nút đóng khi nội dung cao
       if(cs.display==='flex' && cs.alignItems==='center') el.style.alignItems='flex-start';
       if(cs.overflowY!=='auto' && cs.overflowY!=='scroll') el.style.overflowY='auto';
       var pt=parseInt(cs.paddingTop,10)||0; if(pt < 16){ el.style.paddingTop='40px'; if((parseInt(cs.paddingBottom,10)||0)<16) el.style.paddingBottom='28px'; }
       el.scrollTop=0;
     }catch(e){}
   }
-  function quet(node){ if(node && node.nodeType===1 && laOverlay(node)) canh(node); }
+  function quet(node){ if(node && node.nodeType===1) canh(node); }
   function start(){
     try{
       var obs=new MutationObserver(function(muts){
