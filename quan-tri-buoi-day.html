@@ -31,9 +31,17 @@ body.dark-theme .cal-event.evchip, body.dark-theme .day-event-row.evchip {
 }
 .cal-event.evchip .time, .cal-event.evchip .title, .cal-event.evchip .teacher-tag { color: inherit; }
 
-/* ===== Thanh lọc: không gãy chữ, gọn gàng ===== */
+/* ===== Thanh lọc: không gãy chữ, control không bị co/cắt, thiếu chỗ thì xuống dòng ===== */
 .month-bar label, .month-bar > div > span, .month-bar button, .month-bar select, .view-btn-group { white-space: nowrap; }
 .month-bar .cal-select { min-width: 190px; }
+/* Không cho các control co lại (tránh bị cắt xén như nhóm Tháng/Tuần/Ngày) */
+.month-bar #gvFilter, .month-bar .class-filter-dropdown, .month-bar #btnExport,
+.month-bar .view-btn-group { flex: 0 0 auto; }
+.month-bar .view-btn-group { overflow: visible; }
+.month-bar .view-btn { flex: 0 0 auto; min-width: 60px; text-align: center; }
+/* Nhóm con (bên trái/phải) tự xuống dòng khi hẹp, không đè/cắt nhau */
+.month-bar .filter-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 20px; width: 100%; }
+.month-bar .filter-row > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .head { padding: 36px 0 18px; }
 .month-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
 .month-bar .mlabel { font-size: 1.15rem; font-weight: 800; text-align: center; }
@@ -344,7 +352,7 @@ body.dark-theme .cal-event.evchip, body.dark-theme .day-event-row.evchip {
     <div style="height: 1px; background: var(--line); width: 100%;"></div>
 
     <!-- Row 2: Filters & Views -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
+    <div class="filter-row">
       <!-- Left Filters -->
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <span style="font-size: .88rem; font-weight: 700; color: var(--ink-2);">Bộ lọc:</span>
