@@ -1103,6 +1103,14 @@ var selectedImageFiles = [];
 var hwAnhDaCo = [];
 var hwSelectedFiles = [];
 var mapGiaoVien = {};
+var mapGioiTinhGV = {};
+/* Thêm danh xưng Thầy/Cô nếu tên chưa có sẵn (theo giới tính, mặc định "Thầy") */
+function danhXungGV(id, name) {
+  name = (name || '').trim();
+  if (!name) return name;
+  if (/^(thầy|cô|thay|co)\b/i.test(name)) return name;
+  return ((mapGioiTinhGV[id] === 'Nữ') ? 'Cô ' : 'Thầy ') + name;
+}
 var dsGiaoVien = [];
 var hoSoNguoiDung = null;
 
@@ -1126,9 +1134,9 @@ var hoSoNguoiDung = null;
   
   console.log("3.5. Đang tải danh sách giáo viên...");
   try {
-    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin']);
+    var rT = await sb.from('profiles').select('id, full_name, role, gender').in('role', ['teacher', 'admin']);
     dsGiaoVien = rT.data || [];
-    dsGiaoVien.forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+    dsGiaoVien.forEach(function(u) { mapGiaoVien[u.id] = u.full_name; mapGioiTinhGV[u.id] = u.gender; });
   } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
   
   console.log("5. Đang tải sidebar...");
@@ -1250,7 +1258,7 @@ function chonLopHoc(id) {
   
   var gvChinh = mapGiaoVien[cl.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var gvHopTac = mapGiaoVien[cl.co_teacher_id];
-  $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + gvChinh + '</b>' + (gvHopTac ? ' & <b>' + gvHopTac + '</b>' : '');
+  $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + danhXungGV(cl.teacher_id, gvChinh) + '</b>' + (gvHopTac ? ' & <b>' + danhXungGV(cl.co_teacher_id, gvHopTac) + '</b>' : '');
 
   $('detMode').textContent = cl.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
   $('detMode').className = 'badge ' + (cl.mode === 'online' ? 'badge-accent' : 'badge-ok');
