@@ -307,24 +307,41 @@
     <p style="margin-top:6px;color:var(--ink-2)" id="moTa">Theo dõi mọi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).</p>
   </div>
 
-  <div class="month-bar" style="justify-content: space-between; margin-bottom: 24px; flex-direction: row;">
+  <div class="month-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; background: var(--surface-2); padding: 14px 20px; border-radius: 12px; border: 1px solid var(--line); flex-direction: row;">
     <!-- Navigation group -->
     <div style="display:flex; align-items:center; gap:8px;">
-      <button onclick="doiThoiGian(-1)" title="Trước">‹</button>
-      <div class="mlabel" id="mlabel" style="min-width: 220px; font-weight:800;">—</div>
-      <button onclick="doiThoiGian(1)" title="Sau">›</button>
-      <button class="today-btn" onclick="veHomNay()">Hôm nay</button>
+      <button onclick="doiThoiGian(-1)" title="Trước" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">‹</button>
+      <div class="mlabel" id="mlabel" style="min-width: 220px; font-weight:800; font-size:1.12rem; text-align:center; color:var(--ink);">—</div>
+      <button onclick="doiThoiGian(1)" title="Sau" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">›</button>
+      <button class="today-btn" onclick="veHomNay()" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; font-size:.88rem;">Hôm nay</button>
     </div>
     
     <!-- Controls group -->
-    <div class="cal-controls">
-      <select id="gvFilter" class="cal-select" onchange="taiGiamSat()"></select>
-      <div class="view-btn-group">
-        <button id="btnViewMonth" class="view-btn active" onclick="chuyenCheDoXem('month')">Tháng</button>
-        <button id="btnViewWeek" class="view-btn" onclick="chuyenCheDoXem('week')">Tuần</button>
-        <button id="btnViewDay" class="view-btn" onclick="chuyenCheDoXem('day')">Ngày</button>
+    <div class="cal-controls" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <select id="gvFilter" class="cal-select" onchange="taiGiamSat()" style="height:40px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:700; outline:none;"></select>
+      
+      <!-- Class Filter Dropdown -->
+      <div class="class-filter-dropdown" style="position:relative; display:inline-block;">
+        <button id="classFilterBtn" onclick="toggleBtnDropdown('classFilterContent')" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:.88rem;">
+          🏫 Lọc lớp (<span id="selectedClassesCount">Tất cả</span>) ▾
+        </button>
+        <div id="classFilterContent" style="display:none; position:absolute; right:0; top:44px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); z-index:100020; min-width:240px; padding:12px; max-height:300px; overflow-y:auto; text-align:left;">
+          <div style="border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:8px; display:flex; justify-content:space-between;">
+            <a href="javascript:void(0)" onclick="chonTatCaLop(true)" style="font-size:.78rem; font-weight:700; color:var(--accent); text-decoration:none;">Chọn tất cả</a>
+            <a href="javascript:void(0)" onclick="chonTatCaLop(false)" style="font-size:.78rem; font-weight:700; color:var(--ink-3); text-decoration:none;">Bỏ chọn hết</a>
+          </div>
+          <div id="classCheckboxList" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- filled dynamically -->
+          </div>
+        </div>
       </div>
-      <button id="btnExport" class="btn btn-primary today-btn" onclick="xuatAnhThongKe()" style="height: 42px; display:inline-flex; align-items:center; gap:6px; border-radius: 8px;">📸 Xuất ảnh</button>
+
+      <div class="view-btn-group" style="height:40px; display:inline-flex; border-radius:8px; border:1px solid var(--line); overflow:hidden; background:var(--surface);">
+        <button id="btnViewMonth" class="view-btn active" onclick="chuyenCheDoXem('month')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tháng</button>
+        <button id="btnViewWeek" class="view-btn" onclick="chuyenCheDoXem('week')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tuần</button>
+        <button id="btnViewDay" class="view-btn" onclick="chuyenCheDoXem('day')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Ngày</button>
+      </div>
+      <button id="btnExport" class="btn btn-primary today-btn" onclick="xuatAnhThongKe()" style="height:40px; display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:0 16px; font-weight:700; font-size:.88rem;">📸 Xuất ảnh</button>
     </div>
   </div>
 
@@ -466,6 +483,11 @@ function esc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (
   taiGiamSat();
 })();
 
+var globalEvents = [];
+var globalFromDate = new Date();
+var globalToDate = new Date();
+var checkedClasses = null;
+
 async function taiGiamSat() {
   var select = document.getElementById('gvFilter');
   var teacherId = select.value === 'all' ? null : select.value;
@@ -506,16 +528,126 @@ async function taiGiamSat() {
     return;
   }
   
-  var events = r.data || [];
-  tinhMetricsVaRender(events, fromDate, toDate);
+  globalEvents = r.data || [];
+  globalFromDate = fromDate;
+  globalToDate = toDate;
+  
+  capNhatBoLocLop(globalEvents);
+  renderCalendarChinh();
 }
 
-function tinhMetricsVaRender(events, fromDate, toDate) {
+function capNhatBoLocLop(events) {
+  var uniqueClasses = [];
+  var seen = {};
+  events.forEach(function(e) {
+    if (!seen[e.class_id]) {
+      seen[e.class_id] = true;
+      uniqueClasses.push({ id: e.class_id, name: e.class_name });
+    }
+  });
+  
+  uniqueClasses.sort(function(a,b) { return a.name.localeCompare(b.name, 'vi'); });
+  
+  if (checkedClasses === null) {
+    checkedClasses = new Set();
+    uniqueClasses.forEach(function(c) { checkedClasses.add(c.id); });
+  } else {
+    var newSet = new Set();
+    uniqueClasses.forEach(function(c) {
+      if (checkedClasses.has(c.id)) {
+        newSet.add(c.id);
+      } else {
+        newSet.add(c.id);
+      }
+    });
+    checkedClasses = newSet;
+  }
+  
+  var list = document.getElementById('classCheckboxList');
+  if (uniqueClasses.length === 0) {
+    list.innerHTML = '<div style="font-size:.8rem; color:var(--ink-3); font-style:italic;">Không có lớp học</div>';
+    document.getElementById('selectedClassesCount').textContent = 'Trống';
+    return;
+  }
+  
+  var html = '';
+  uniqueClasses.forEach(function(c) {
+    var isChecked = checkedClasses.has(c.id) ? 'checked' : '';
+    html += '<label style="display:flex; align-items:center; gap:8px; font-size:.84rem; font-weight:600; color:var(--ink); cursor:pointer; padding:2px 0;">' +
+              '<input type="checkbox" value="' + c.id + '" onchange="onClassCheckboxChange(this)" ' + isChecked + ' style="cursor:pointer;">' +
+              '<span>' + esc(c.name) + '</span>' +
+            '</label>';
+  });
+  list.innerHTML = html;
+  
+  capNhatLabelChonLop(uniqueClasses.length);
+}
+
+function onClassCheckboxChange(cb) {
+  if (cb.checked) {
+    checkedClasses.add(cb.value);
+  } else {
+    checkedClasses.delete(cb.value);
+  }
+  
+  var checkBoxes = document.querySelectorAll('#classCheckboxList input[type="checkbox"]');
+  capNhatLabelChonLop(checkBoxes.length);
+  renderCalendarChinh();
+}
+
+function capNhatLabelChonLop(total) {
+  var count = checkedClasses.size;
+  var label = document.getElementById('selectedClassesCount');
+  if (count === total) {
+    label.textContent = 'Tất cả';
+  } else if (count === 0) {
+    label.textContent = 'Bỏ chọn';
+  } else {
+    label.textContent = count + '/' + total;
+  }
+}
+
+function chonTatCaLop(val) {
+  var checkBoxes = document.querySelectorAll('#classCheckboxList input[type="checkbox"]');
+  checkBoxes.forEach(function(cb) {
+    cb.checked = val;
+    if (val) {
+      checkedClasses.add(cb.value);
+    } else {
+      checkedClasses.delete(cb.value);
+    }
+  });
+  capNhatLabelChonLop(checkBoxes.length);
+  renderCalendarChinh();
+}
+
+function toggleBtnDropdown(id) {
+  var el = document.getElementById(id);
+  if (el.style.display === 'none' || !el.style.display) {
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+window.addEventListener('click', function(e) {
+  var dropdown = document.getElementById('classFilterContent');
+  var btn = document.getElementById('classFilterBtn');
+  if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+    dropdown.style.display = 'none';
+  }
+});
+
+function renderCalendarChinh() {
+  var filteredEvents = globalEvents.filter(function(e) {
+    return checkedClasses && checkedClasses.has(e.class_id);
+  });
+  
   var tongDaDay = 0;
   var tongCanDay = 0;
   var classStats = {};
   
-  events.forEach(function(x) {
+  filteredEvents.forEach(function(x) {
     var cid = x.class_id;
     if (!classStats[cid]) {
       classStats[cid] = { name: x.class_name, expected: 0, actual: 0 };
@@ -547,11 +679,11 @@ function tinhMetricsVaRender(events, fromDate, toDate) {
   
   var html = '';
   if (curView === 'month') {
-    html = renderMonthView(events, fromDate, toDate);
+    html = renderMonthView(filteredEvents, globalFromDate, globalToDate);
   } else if (curView === 'week') {
-    html = renderWeekView(events, fromDate, toDate);
+    html = renderWeekView(filteredEvents, globalFromDate, globalToDate);
   } else {
-    html = renderDayView(events, fromDate, toDate);
+    html = renderDayView(filteredEvents, globalFromDate, globalToDate);
   }
   
   document.getElementById('calendarView').innerHTML = html;
