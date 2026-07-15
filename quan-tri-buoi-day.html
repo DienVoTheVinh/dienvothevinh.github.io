@@ -307,41 +307,55 @@
     <p style="margin-top:6px;color:var(--ink-2)" id="moTa">Theo dõi mọi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).</p>
   </div>
 
-  <div class="month-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; background: var(--surface-2); padding: 14px 20px; border-radius: 12px; border: 1px solid var(--line); flex-direction: row;">
-    <!-- Navigation group -->
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button onclick="doiThoiGian(-1)" title="Trước" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">‹</button>
-      <div class="mlabel" id="mlabel" style="min-width: 220px; font-weight:800; font-size:1.12rem; text-align:center; color:var(--ink);">—</div>
-      <button onclick="doiThoiGian(1)" title="Sau" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">›</button>
-      <button class="today-btn" onclick="veHomNay()" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; font-size:.88rem;">Hôm nay</button>
+  <div class="month-bar" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; background: var(--surface-2); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--line);">
+    <!-- Row 1: Time Navigation & Export -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
+      <!-- Left Navigation -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button onclick="doiThoiGian(-1)" title="Trước" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">‹</button>
+        <div class="mlabel" id="mlabel" style="min-width: 220px; font-weight: 800; font-size: 1.15rem; text-align: center; color: var(--ink);">—</div>
+        <button onclick="doiThoiGian(1)" title="Sau" style="width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:1.2rem; cursor:pointer;">›</button>
+        <button class="today-btn" onclick="veHomNay()" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; font-size:.88rem;">Hôm nay</button>
+      </div>
+      <!-- Right Action -->
+      <button id="btnExport" class="btn btn-primary today-btn" onclick="xuatAnhThongKe()" style="height:40px; display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:0 16px; font-weight:700; font-size:.88rem;">📸 Xuất ảnh thống kê</button>
     </div>
     
-    <!-- Controls group -->
-    <div class="cal-controls" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <select id="gvFilter" class="cal-select" onchange="taiGiamSat()" style="height:40px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:700; outline:none;"></select>
-      
-      <!-- Class Filter Dropdown -->
-      <div class="class-filter-dropdown" style="position:relative; display:inline-block;">
-        <button id="classFilterBtn" onclick="toggleBtnDropdown('classFilterContent')" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:.88rem;">
-          🏫 Lọc lớp (<span id="selectedClassesCount">Tất cả</span>) ▾
-        </button>
-        <div id="classFilterContent" style="display:none; position:absolute; right:0; top:44px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); z-index:100020; min-width:240px; padding:12px; max-height:300px; overflow-y:auto; text-align:left;">
-          <div style="border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:8px; display:flex; justify-content:space-between;">
-            <a href="javascript:void(0)" onclick="chonTatCaLop(true)" style="font-size:.78rem; font-weight:700; color:var(--accent); text-decoration:none;">Chọn tất cả</a>
-            <a href="javascript:void(0)" onclick="chonTatCaLop(false)" style="font-size:.78rem; font-weight:700; color:var(--ink-3); text-decoration:none;">Bỏ chọn hết</a>
-          </div>
-          <div id="classCheckboxList" style="display:flex; flex-direction:column; gap:8px;">
-            <!-- filled dynamically -->
+    <div style="height: 1px; background: var(--line); width: 100%;"></div>
+
+    <!-- Row 2: Filters & Views -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
+      <!-- Left Filters -->
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size: .88rem; font-weight: 700; color: var(--ink-2);">Bộ lọc:</span>
+        <select id="gvFilter" class="cal-select" onchange="taiGiamSat()" style="height:40px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:700; outline:none; min-width: 200px;"></select>
+        
+        <!-- Class Filter Dropdown -->
+        <div class="class-filter-dropdown" style="position:relative; display:inline-block;">
+          <button id="classFilterBtn" onclick="toggleBtnDropdown('classFilterContent')" style="height:40px; padding:0 16px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:.88rem;">
+            🏫 Lọc theo lớp (<span id="selectedClassesCount">Tất cả</span>) ▾
+          </button>
+          <div id="classFilterContent" style="display:none; position:absolute; left:0; top:44px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); z-index:100020; min-width:240px; padding:12px; max-height:300px; overflow-y:auto; text-align:left;">
+            <div style="border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:8px; display:flex; justify-content:space-between;">
+              <a href="javascript:void(0)" onclick="chonTatCaLop(true)" style="font-size:.78rem; font-weight:700; color:var(--accent); text-decoration:none;">Chọn tất cả</a>
+              <a href="javascript:void(0)" onclick="chonTatCaLop(false)" style="font-size:.78rem; font-weight:700; color:var(--ink-3); text-decoration:none;">Bỏ chọn hết</a>
+            </div>
+            <div id="classCheckboxList" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- check boxes -->
+            </div>
           </div>
         </div>
       </div>
-
-      <div class="view-btn-group" style="height:40px; display:inline-flex; border-radius:8px; border:1px solid var(--line); overflow:hidden; background:var(--surface);">
-        <button id="btnViewMonth" class="view-btn active" onclick="chuyenCheDoXem('month')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tháng</button>
-        <button id="btnViewWeek" class="view-btn" onclick="chuyenCheDoXem('week')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tuần</button>
-        <button id="btnViewDay" class="view-btn" onclick="chuyenCheDoXem('day')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Ngày</button>
+      
+      <!-- Right Views -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: .88rem; font-weight: 700; color: var(--ink-2);">Chế độ xem:</span>
+        <div class="view-btn-group" style="height:40px; display:inline-flex; border-radius:8px; border:1px solid var(--line); overflow:hidden; background:var(--surface);">
+          <button id="btnViewMonth" class="view-btn active" onclick="chuyenCheDoXem('month')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tháng</button>
+          <button id="btnViewWeek" class="view-btn" onclick="chuyenCheDoXem('week')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Tuần</button>
+          <button id="btnViewDay" class="view-btn" onclick="chuyenCheDoXem('day')" style="padding:0 16px; border:none; background:none; color:var(--ink-2); font-weight:700; cursor:pointer; font-size:.88rem; height:100%;">Ngày</button>
+        </div>
       </div>
-      <button id="btnExport" class="btn btn-primary today-btn" onclick="xuatAnhThongKe()" style="height:40px; display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:0 16px; font-weight:700; font-size:.88rem;">📸 Xuất ảnh</button>
     </div>
   </div>
 
@@ -695,23 +709,29 @@ function layMauLop(className) {
     hash = className.charCodeAt(i) + ((hash << 5) - hash);
   }
   
-  var HUES = [5, 25, 45, 120, 200, 340];
+  // 14 distinct hues spanning the warm, green, blue and purple spectrums
+  var HUES = [5, 25, 45, 75, 100, 135, 160, 185, 210, 245, 280, 310, 330, 350];
   var h = HUES[Math.abs(hash) % HUES.length];
+  
+  // Slight variation in Saturation (55% - 75%)
+  var s = 55 + (Math.abs(hash >> 2) % 20);
   
   var isDark = document.body.classList.contains('dark-theme') || (document.documentElement.getAttribute('data-theme') === 'dark');
   
   if (isDark) {
-    var s = h === 120 ? 45 : (h === 200 ? 50 : 55);
+    // Dark theme: Lightness 14% to 19%
+    var l = 14 + (Math.abs(hash >> 4) % 6);
     return {
-      bg: 'hsl(' + h + ', ' + s + '%, 18%)',
-      border: 'hsl(' + h + ', ' + s + '%, 33%)',
+      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+      border: 'hsl(' + h + ', ' + s + '%, ' + (l + 14) + '%)',
       text: 'hsl(' + h + ', ' + s + '%, 90%)'
     };
   } else {
-    var s = h === 120 ? 55 : (h === 200 ? 65 : 75);
+    // Light theme: Lightness 90% to 94%
+    var l = 90 + (Math.abs(hash >> 4) % 5);
     return {
-      bg: 'hsl(' + h + ', ' + s + '%, 93%)',
-      border: 'hsl(' + h + ', ' + s + '%, 72%)',
+      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+      border: 'hsl(' + h + ', ' + s + '%, ' + (l - 22) + '%)',
       text: 'hsl(' + h + ', ' + s + '%, 22%)'
     };
   }
