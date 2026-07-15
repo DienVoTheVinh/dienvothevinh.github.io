@@ -351,12 +351,12 @@
     </div>
 
     <div class="cal-container">
-      <!-- Status Legend banner -->
       <div class="legend-banner">
-        <span><span style="color:#10b981">●</span> 🟢 Đã dạy</span>
-        <span><span style="color:#d97706">●</span> 🟡 Chưa dạy</span>
-        <span><span style="color:#ef4444; text-decoration:line-through">●</span> 🔴 Đã hủy</span>
-        <span><span style="color:#8b5cf6">●</span> 🟣 Dạy thêm</span>
+        <span>🟢 Đã dạy đúng lịch</span>
+        <span>🟡 Chưa dạy (Viền đứt nét)</span>
+        <span>🔴 Đã hủy (Gạch ngang)</span>
+        <span>🟣 Dạy thêm / dạy bù</span>
+        <span style="margin-left: 20px; font-style: italic; font-weight: normal; color: var(--ink-3);">* Mỗi lớp được tô một màu sắc riêng biệt</span>
       </div>
       
       <!-- Calendar Area -->
@@ -557,6 +557,32 @@ function tinhMetricsVaRender(events, fromDate, toDate) {
   document.getElementById('calendarView').innerHTML = html;
 }
 
+function layMauLop(className) {
+  var hash = 0;
+  for (var i = 0; i < className.length; i++) {
+    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  var isDark = document.body.classList.contains('dark-theme') || (document.documentElement.getAttribute('data-theme') === 'dark');
+  var h = Math.abs(hash) % 360;
+  var s = 70 + (Math.abs(hash) % 15);
+  
+  if (isDark) {
+    var l = 16 + (Math.abs(hash) % 8);
+    return {
+      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+      border: 'hsl(' + h + ', ' + s + '%, ' + (l + 15) + '%)',
+      text: 'hsl(' + h + ', ' + s + '%, 85%)'
+    };
+  } else {
+    var l = 91 + (Math.abs(hash) % 5);
+    return {
+      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+      border: 'hsl(' + h + ', ' + s + '%, ' + (l - 25) + '%)',
+      text: 'hsl(' + h + ', ' + s + '%, 25%)'
+    };
+  }
+}
+
 function renderMonthView(events, fromDate, toDate) {
   var html = '<div class="month-grid">';
   
@@ -581,33 +607,39 @@ function renderMonthView(events, fromDate, toDate) {
     var dayEvents = events.filter(function(e) { return e.date === curYmd; });
     
     dayEvents.forEach(function(e) {
-      var evtClass = 'cal-event';
-      var statusText = 'Lịch';
+      var icon = '🟢';
+      var statusText = 'Đã dạy';
+      var borderStyle = 'solid';
+      var textDecoration = 'none';
+      var opacity = '1';
       
       if (e.is_cancelled) {
-        evtClass += ' evt-cancelled';
+        icon = '🔴';
         statusText = 'Đã hủy';
+        textDecoration = 'line-through';
+        opacity = '0.55';
       } else if (e.actual_id) {
         if (e.type === 'actual_only') {
-          evtClass += ' evt-extra';
+          icon = '🟣';
           statusText = 'Dạy thêm';
-        } else {
-          evtClass += ' evt-taught';
-          statusText = 'Đã dạy';
         }
       } else {
-        evtClass += ' evt-missing';
+        icon = '🟡';
         statusText = 'Chưa dạy';
+        borderStyle = 'dashed';
       }
       
+      var color = layMauLop(e.class_name);
       var timeStr = e.start_time ? (e.start_time + '-' + (e.end_time || '')) : '';
       var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
       
       var gvShort = (e.teacher_name || '').split(/\s+/).pop();
       if (e.co_teacher_name) gvShort += '+' + (e.co_teacher_name || '').split(/\s+/).pop();
       
-      html += '<div class="' + evtClass + '" ' + clickHandler + ' title="' + esc(e.class_name) + ' (' + statusText + ') - GV: ' + esc(e.teacher_name) + '">';
-      html += '<span class="time">' + timeStr + ' (' + gvShort + ')</span>';
+      var eventStyle = 'background:' + color.bg + '; border:1px ' + borderStyle + ' ' + color.border + '; color:' + color.text + '; text-decoration:' + textDecoration + '; opacity:' + opacity + ';';
+      
+      html += '<div class="cal-event" ' + clickHandler + ' style="' + eventStyle + '" title="' + esc(e.class_name) + ' (' + statusText + ') - GV: ' + esc(e.teacher_name) + '">';
+      html += '<span class="time">' + icon + ' ' + timeStr + ' (' + gvShort + ')</span>';
       html += '<span class="title">' + esc(e.class_name) + '</span>';
       html += '</div>';
     });
@@ -643,25 +675,29 @@ function renderWeekView(events, fromDate, toDate) {
       html += '<div style="text-align:center; color:var(--ink-3); font-size:.78rem; font-style:italic; padding-top:16px;">Không có lớp</div>';
     } else {
       dayEvents.forEach(function(e) {
-        var evtClass = 'cal-event';
-        var statusText = 'Lịch';
+        var icon = '🟢';
+        var statusText = 'Đã dạy';
+        var borderStyle = 'solid';
+        var textDecoration = 'none';
+        var opacity = '1';
         
         if (e.is_cancelled) {
-          evtClass += ' evt-cancelled';
+          icon = '🔴';
           statusText = 'Đã hủy';
+          textDecoration = 'line-through';
+          opacity = '0.55';
         } else if (e.actual_id) {
           if (e.type === 'actual_only') {
-            evtClass += ' evt-extra';
+            icon = '🟣';
             statusText = 'Dạy thêm';
-          } else {
-            evtClass += ' evt-taught';
-            statusText = 'Đã dạy';
           }
         } else {
-          evtClass += ' evt-missing';
+          icon = '🟡';
           statusText = 'Chưa dạy';
+          borderStyle = 'dashed';
         }
         
+        var color = layMauLop(e.class_name);
         var timeStr = e.start_time ? (e.start_time + ' - ' + (e.end_time || '')) : '';
         var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
         
@@ -669,8 +705,10 @@ function renderWeekView(events, fromDate, toDate) {
         if (e.co_teacher_name) gvFull += ' & ' + e.co_teacher_name;
         var modeStr = e.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
         
-        html += '<div class="' + evtClass + '" ' + clickHandler + ' style="padding:10px; gap:4px; font-size:.8rem;">';
-        html += '<span class="time" style="font-size:.78rem;">⏰ ' + timeStr + '</span>';
+        var eventStyle = 'background:' + color.bg + '; border:1px ' + borderStyle + ' ' + color.border + '; color:' + color.text + '; text-decoration:' + textDecoration + '; opacity:' + opacity + '; padding:10px; gap:4px; font-size:.8rem;';
+        
+        html += '<div class="cal-event" ' + clickHandler + ' style="' + eventStyle + '">';
+        html += '<span class="time" style="font-size:.78rem;">' + icon + ' ' + timeStr + '</span>';
         html += '<span class="title" style="font-size:.88rem; font-weight:750;">' + esc(e.class_name) + '</span>';
         html += '<span class="teacher-tag">👨‍🏫 ' + esc(gvFull) + '</span>';
         html += '<span style="font-size:.68rem; margin-top:2px;">' + modeStr + ' • ' + statusText + '</span>';
@@ -698,26 +736,30 @@ function renderDayView(events, fromDate, toDate) {
     dayEvents.forEach(function(e) {
       var badgeClass = '';
       var badgeText = 'Chưa dạy';
-      var style = '';
+      var textDecoration = 'none';
+      var opacity = '1';
+      var borderStyle = 'solid';
       
       if (e.is_cancelled) {
         badgeClass = 'pill low';
-        badgeText = 'Đã hủy';
-        style = 'opacity:0.6; text-decoration:line-through;';
+        badgeText = '🔴 Đã hủy';
+        textDecoration = 'line-through';
+        opacity = '0.55';
       } else if (e.actual_id) {
         if (e.type === 'actual_only') {
           badgeClass = 'pill';
-          style = 'background:rgba(139,92,246,.16); color:#8b5cf6;';
-          badgeText = 'Dạy thêm';
+          badgeText = '🟣 Dạy thêm';
         } else {
           badgeClass = 'pill ok';
-          badgeText = 'Đã dạy';
+          badgeText = '🟢 Đã dạy';
         }
       } else {
         badgeClass = 'pill warn';
-        badgeText = 'Chưa dạy';
+        badgeText = '🟡 Chưa dạy';
+        borderStyle = 'dashed';
       }
       
+      var color = layMauLop(e.class_name);
       var timeStr = e.start_time ? (e.start_time + ' - ' + (e.end_time || '')) : 'Chưa xếp giờ';
       var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
       
@@ -725,13 +767,15 @@ function renderDayView(events, fromDate, toDate) {
       if (e.co_teacher_name) gvFull += ' & ' + e.co_teacher_name;
       var modeStr = e.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
       
-      html += '<div class="day-event-row" ' + clickHandler + ' style="cursor:pointer; ' + style + '">';
-      html += '<div class="day-event-time">' + timeStr + '<small>' + modeStr + '</small></div>';
+      var eventStyle = 'background:' + color.bg + '; border:1px ' + borderStyle + ' ' + color.border + '; color:' + color.text + '; text-decoration:' + textDecoration + '; opacity:' + opacity + '; cursor:pointer;';
+      
+      html += '<div class="day-event-row" ' + clickHandler + ' style="' + eventStyle + '">';
+      html += '<div class="day-event-time" style="color:' + color.text + ';">' + timeStr + '<small style="color:' + color.text + '; opacity:0.8;">' + modeStr + '</small></div>';
       html += '<div class="day-event-details">';
-      html += '<div class="day-event-title">' + esc(e.class_name) + '</div>';
-      html += '<div class="day-event-teacher">Giáo viên: ' + esc(gvFull) + '</div>';
+      html += '<div class="day-event-title" style="color:' + color.text + ';">' + esc(e.class_name) + '</div>';
+      html += '<div class="day-event-teacher" style="color:' + color.text + '; opacity:0.8;">Giáo viên: ' + esc(gvFull) + '</div>';
       html += '</div>';
-      html += '<div><span class="' + badgeClass + '" style="' + style + '">' + badgeText + '</span></div>';
+      html += '<div><span class="' + badgeClass + '">' + badgeText + '</span></div>';
       html += '</div>';
     });
   }
