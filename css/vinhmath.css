@@ -1658,6 +1658,30 @@ body.theme-map #mapWatermarkGlobal { display: block; }
 body.theme-map .topbar .logo img { width:44px; height:44px; border-radius:50%; object-fit:contain; }
 body.theme-map .topbar .logo { font-size:1.3rem; letter-spacing:.08em; }
 
+/* ============================================================
+   BỘ NHẬN DIỆN TRUNG TÂM DUY MINH (áp cho lớp có theme = duyminh)
+   Tông đỏ – trắng. DUY đỏ · MINH trắng.
+   ============================================================ */
+body.theme-duyminh {
+  --accent:#C81E27; --accent-soft:#FCEBEC;
+  --accent-gradient: linear-gradient(135deg, #D42730 0%, #8E1018 100%);
+  --accent-2:#A5161E; --accent-strong:#8E1119; --gold:#C81E27;
+}
+/* Dark mode: đỏ sáng hơn để nổi bật, dễ đọc trên nền tối */
+[data-theme="dark"] body.theme-duyminh {
+  --accent:#F3767B; --accent-soft:#3A1F22;
+  --accent-gradient: linear-gradient(135deg, #E5484D 0%, #B0313A 100%);
+  --accent-2:#E5565C; --accent-strong:#F3767B; --gold:#F3767B;
+}
+body.theme-duyminh .new-lesson-badge,
+body.theme-duyminh .badge-accent { background: var(--accent-gradient) !important; color:#fff !important; }
+body.theme-duyminh .topbar .logo img { width:44px; height:44px; border-radius:50%; object-fit:contain; }
+body.theme-duyminh .topbar .logo { font-size:1.3rem; letter-spacing:.05em; }
+/* Wordmark DUY (đỏ) + MINH (trắng trên nền đỏ) — đọc tốt trên nền sáng lẫn tối */
+.dm-mark { display:inline-flex; align-items:center; font-weight:900; letter-spacing:.02em; }
+.dm-mark .dm-duy { color:var(--accent); }
+.dm-mark .dm-minh { background:var(--accent); color:#fff; padding:0 6px; border-radius:5px; margin-left:3px; }
+
 /* =========================================================================
    LỚP TINH CHỈNH "ANTIGRAVITY × VINHMATH"  (v6.0)
    Cảm hứng antigravity.google: tối giản, nhiều khoảng trắng, chuyển động
