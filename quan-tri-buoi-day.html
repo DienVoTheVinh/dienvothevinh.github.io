@@ -3,6 +3,9 @@
 <head>
 <link rel="icon" type="image/png" href="favicon.png?v=3">
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Giám sát số buổi — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,33 +16,275 @@
 .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 36px 0 18px; }
 .month-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
-.month-bar .mlabel { font-size: 1.15rem; font-weight: 800; min-width: 190px; text-align: center; }
+.month-bar .mlabel { font-size: 1.15rem; font-weight: 800; text-align: center; }
 .month-bar button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-size: 1.1rem; }
 .month-bar button:hover { border-color: var(--accent); color: var(--accent); }
-.month-bar .today-btn { width: auto; padding: 0 16px; font-size: .9rem; font-weight: 700; }
+.month-bar .today-btn { width: auto; padding: 0 16px; font-size: .9rem; font-weight: 700; height: 42px; }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 26px; }
 .metric { display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); }
 .metric .ic { width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; font-size: 1.35rem; flex: none; color: #fff; }
 .metric .val { font-size: 1.9rem; font-weight: 800; line-height: 1.1; color: var(--ink); }
 .metric small { color: var(--ink-3); font-size: .82rem; font-weight: 600; }
-.tbl-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow); }
-.tbl-card h2 { padding: 18px 22px 12px; border-bottom: 1px solid var(--line); font-size: 1.08rem; font-weight: 800; }
-.tbl-wrap { overflow-x: auto; }
-table.gs { width: 100%; border-collapse: collapse; min-width: 640px; }
-table.gs th { text-align: left; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); padding: 11px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-table.gs td { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: .92rem; vertical-align: middle; }
-table.gs tr:last-child td { border-bottom: none; }
-table.gs tbody tr:hover td { background: var(--surface-2); }
-.num { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
-.bar-track { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 5px; min-width: 90px; }
-.bar-fill { height: 100%; border-radius: 99px; }
 .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: .76rem; font-weight: 800; white-space: nowrap; }
 .pill.ok { background: rgba(16,185,129,.16); color: #10b981; }
 .pill.warn { background: rgba(245,158,11,.16); color: #f59e0b; }
 .pill.low { background: rgba(239,68,68,.16); color: #ef4444; }
-.mode-tag { font-size: .72rem; color: var(--ink-3); }
-.grade-row td { background: var(--surface-2); font-weight: 800; font-size: .82rem; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
-.empty { text-align: center; color: var(--ink-3); padding: 30px; }
+
+/* Calendar Layout */
+.cal-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-top: 20px;
+}
+.cal-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cal-select {
+  padding: 8px 12px;
+  border-radius: var(--r-sm, 8px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  outline: none;
+  height: 42px;
+}
+.cal-select:focus {
+  border-color: var(--accent);
+}
+.view-btn-group {
+  display: inline-flex;
+  border-radius: var(--r-sm, 8px);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--surface);
+  height: 42px;
+}
+.view-btn {
+  padding: 0 16px;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: .88rem;
+  transition: all .2s;
+  height: 100%;
+}
+.view-btn.active {
+  background: var(--accent);
+  color: #fff !important;
+}
+.view-btn:not(.active):hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* Month Grid */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--line);
+  gap: 1px;
+}
+.month-day-name {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  text-align: center;
+  font-weight: 800;
+  font-size: .75rem;
+  padding: 12px 6px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.month-cell {
+  background: var(--surface);
+  min-height: 120px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.month-cell.other-month {
+  background: var(--surface-2);
+  opacity: 0.55;
+}
+.month-cell .day-number {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.month-cell.today {
+  background: rgba(245,158,11,.02);
+}
+.month-cell.today .day-number {
+  color: var(--accent);
+  font-weight: 800;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 2px;
+  display: inline-block;
+}
+
+/* Event styles */
+.cal-event {
+  font-size: .73rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-align: left;
+}
+.cal-event:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+.cal-event.evt-taught {
+  background: rgba(16,185,129,.1);
+  border: 1px solid rgba(16,185,129,.3);
+  color: #10b981;
+}
+.cal-event.evt-missing {
+  background: rgba(245,158,11,.08);
+  border: 1px dashed rgba(245,158,11,.4);
+  color: #d97706;
+}
+.cal-event.evt-cancelled {
+  background: rgba(239,68,68,.06);
+  border: 1px solid rgba(239,68,68,.2);
+  color: #ef4444;
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+.cal-event.evt-extra {
+  background: rgba(139,92,246,.08);
+  border: 1px solid rgba(139,92,246,.3);
+  color: #8b5cf6;
+}
+.cal-event .time {
+  font-weight: 800;
+  font-size: .68rem;
+}
+.cal-event .title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-event .teacher-tag {
+  font-size: .65rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* Week View Grid */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--line);
+  gap: 1px;
+}
+.week-col {
+  background: var(--surface);
+  min-height: 380px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.week-day-header {
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.week-day-header .w-day-name {
+  font-size: .75rem;
+  font-weight: 800;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.week-day-header .w-date {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.week-col.today {
+  background: rgba(245,158,11,.02);
+}
+.week-col.today .w-date {
+  color: var(--accent);
+}
+
+/* Day view */
+.day-view-list {
+  background: var(--surface);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.day-event-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 18px;
+  border-radius: var(--r-sm, 8px);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.day-event-time {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink);
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+}
+.day-event-time small {
+  font-size: .75rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.day-event-details {
+  flex: 1;
+  text-align: left;
+}
+.day-event-title {
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--ink);
+}
+.day-event-teacher {
+  font-size: .82rem;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+
+/* Legend banner */
+.legend-banner {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  font-size: .82rem;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -59,56 +304,77 @@ table.gs tbody tr:hover td { background: var(--surface-2); }
   <div class="head">
     <div class="sec-label" style="color:var(--accent);font-weight:800;letter-spacing:.08em;font-size:.8rem">KHU VỰC QUẢN TRỊ</div>
     <h1 style="margin:6px 0 0">GIÁM SÁT SỐ BUỔI DẠY &amp; HỌC</h1>
-    <p style="margin-top:6px;color:var(--ink-2)" id="moTa">Theo dõi mỗi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).</p>
+    <p style="margin-top:6px;color:var(--ink-2)" id="moTa">Theo dõi mọi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).</p>
   </div>
 
-  <div class="month-bar">
-    <button onclick="doiThang(-1)" title="Tháng trước">‹</button>
-    <div class="mlabel" id="mlabel">—</div>
-    <button onclick="doiThang(1)" title="Tháng sau">›</button>
-    <button class="today-btn" onclick="veThangNay()">Tháng này</button>
+  <div class="month-bar" style="justify-content: space-between; margin-bottom: 24px; flex-direction: row;">
+    <!-- Navigation group -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button onclick="doiThoiGian(-1)" title="Trước">‹</button>
+      <div class="mlabel" id="mlabel" style="min-width: 220px; font-weight:800;">—</div>
+      <button onclick="doiThoiGian(1)" title="Sau">›</button>
+      <button class="today-btn" onclick="veHomNay()">Hôm nay</button>
+    </div>
+    
+    <!-- Controls group -->
+    <div class="cal-controls">
+      <select id="gvFilter" class="cal-select" onchange="taiGiamSat()"></select>
+      <div class="view-btn-group">
+        <button id="btnViewMonth" class="view-btn active" onclick="chuyenCheDoXem('month')">Tháng</button>
+        <button id="btnViewWeek" class="view-btn" onclick="chuyenCheDoXem('week')">Tuần</button>
+        <button id="btnViewDay" class="view-btn" onclick="chuyenCheDoXem('day')">Ngày</button>
+      </div>
+      <button id="btnExport" class="btn btn-primary today-btn" onclick="xuatAnhThongKe()" style="height: 42px; display:inline-flex; align-items:center; gap:6px; border-radius: 8px;">📸 Xuất ảnh</button>
+    </div>
   </div>
 
-  <div class="metrics">
-    <div class="metric">
-      <span class="ic" style="background:linear-gradient(135deg,#10b981,#059669)">✅</span>
-      <div><small>Tổng buổi đã dạy</small><div class="val" id="mDaDay">—</div></div>
+  <div id="calendarPrintTarget" style="background:var(--bg,#fff); padding:10px; border-radius:12px;">
+    <!-- Banner header for PDF/Image Export containing title and info -->
+    <div class="print-only-header" style="display:none; margin-bottom:20px; border-bottom:2px solid var(--accent); padding-bottom:12px; text-align:left;">
+      <h2 style="color:var(--ink); margin:0;">BÁO CÁO GIÁM SÁT LỊCH DẠY &amp; HỌC — VINHMATH</h2>
+      <p style="margin:6px 0 0; font-size:.88rem; color:var(--ink-2);" id="printMetaInfo"></p>
     </div>
-    <div class="metric">
-      <span class="ic" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">🎯</span>
-      <div><small>Tổng buổi cần dạy</small><div class="val" id="mCanDay">—</div></div>
-    </div>
-    <div class="metric">
-      <span class="ic" style="background:linear-gradient(135deg,#e0a020,#b56034)">🏫</span>
-      <div><small>Lớp đã đủ buổi</small><div class="val" id="mDuLop">—</div></div>
-    </div>
-  </div>
 
-  <div class="tbl-card">
-    <h2 id="tblTitle">Chi tiết theo lớp</h2>
-    <div class="tbl-wrap">
-      <table class="gs">
-        <thead>
-          <tr>
-            <th>Lớp</th><th>Giáo viên</th>
-            <th class="num">Đã dạy</th><th class="num">Cần dạy</th>
-            <th>Tiến độ</th><th>Trạng thái</th>
-          </tr>
-        </thead>
-        <tbody id="gsBody">
-          <tr><td colspan="6" class="empty">Đang tải…</td></tr>
-        </tbody>
-      </table>
+    <div class="metrics">
+      <div class="metric">
+        <span class="ic" style="background:linear-gradient(135deg,#10b981,#059669)">✅</span>
+        <div><small>Tổng buổi đã dạy</small><div class="val" id="mDaDay">—</div></div>
+      </div>
+      <div class="metric">
+        <span class="ic" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">🎯</span>
+        <div><small>Tổng buổi cần dạy</small><div class="val" id="mCanDay">—</div></div>
+      </div>
+      <div class="metric">
+        <span class="ic" style="background:linear-gradient(135deg,#e0a020,#b56034)">🏫</span>
+        <div><small>Lớp đã đủ buổi</small><div class="val" id="mDuLop">—</div></div>
+      </div>
+    </div>
+
+    <div class="cal-container">
+      <!-- Status Legend banner -->
+      <div class="legend-banner">
+        <span><span style="color:#10b981">●</span> 🟢 Đã dạy</span>
+        <span><span style="color:#d97706">●</span> 🟡 Chưa dạy</span>
+        <span><span style="color:#ef4444; text-decoration:line-through">●</span> 🔴 Đã hủy</span>
+        <span><span style="color:#8b5cf6">●</span> 🟣 Dạy thêm</span>
+      </div>
+      
+      <!-- Calendar Area -->
+      <div id="calendarView">
+        <div style="padding:40px; text-align:center; color:var(--ink-3);">Đang khởi tạo lịch…</div>
+      </div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=4.4"></script>
 <script src="js/menu-v5.js"></script>
 <script>
-var curMonth = new Date(); curMonth.setDate(1);
+var curDate = new Date();
+var curView = 'month'; // 'month' | 'week' | 'day'
 var mapGV = {};
 var laAdmin = false;
 
@@ -118,81 +384,415 @@ function ymd(d) {
   var m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
   return d.getFullYear() + '-' + m + '-' + day;
 }
-function doiThang(delta) { curMonth.setMonth(curMonth.getMonth() + delta); taiGiamSat(); }
-function veThangNay() { curMonth = new Date(); curMonth.setDate(1); taiGiamSat(); }
+
+function layDauTuan(d) {
+  var date = new Date(d);
+  var day = date.getDay();
+  var diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(date.setDate(diff));
+}
+
+function doiThoiGian(delta) {
+  if (curView === 'month') {
+    curDate.setMonth(curDate.getMonth() + delta);
+  } else if (curView === 'week') {
+    curDate.setDate(curDate.getDate() + delta * 7);
+  } else {
+    curDate.setDate(curDate.getDate() + delta);
+  }
+  taiGiamSat();
+}
+
+function veHomNay() {
+  curDate = new Date();
+  taiGiamSat();
+}
+
+function chuyenCheDoXem(cheDo) {
+  curView = cheDo;
+  ['btnViewMonth', 'btnViewWeek', 'btnViewDay'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  if (cheDo === 'month') document.getElementById('btnViewMonth').classList.add('active');
+  if (cheDo === 'week') document.getElementById('btnViewWeek').classList.add('active');
+  if (cheDo === 'day') document.getElementById('btnViewDay').classList.add('active');
+  taiGiamSat();
+}
+
 function esc(s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'; }); }
 
 (async function () {
-  if (typeof daKetNoi === 'function' && !daKetNoi()) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Chưa kết nối dữ liệu.</td></tr>'; return; }
+  if (typeof daKetNoi === 'function' && !daKetNoi()) { document.getElementById('calendarView').innerHTML = '<div style="padding:40px; text-align:center; color:var(--ink-3);">Chưa kết nối dữ liệu.</div>'; return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
   if (['admin', 'teacher'].indexOf(hoSo.role) === -1) { window.location.href = 'lop-hoc'; return; }
   laAdmin = hoSo.role === 'admin';
+  
   document.getElementById('moTa').textContent = laAdmin
     ? 'Theo dõi mọi lớp trong tháng đã dạy đủ buổi hay chưa (so với lịch cố định).'
     : 'Theo dõi các lớp của bạn trong tháng đã dạy đủ buổi hay chưa.';
-  // Bản đồ tên giáo viên
+
+  // Tải danh sách giáo viên
   try {
     var rp = await sb.from('profiles').select('id, full_name').in('role', ['admin', 'teacher']);
-    (rp.data || []).forEach(function (p) { mapGV[p.id] = p.full_name; });
-  } catch (e) {}
+    var select = document.getElementById('gvFilter');
+    select.innerHTML = '';
+    
+    if (laAdmin) {
+      var optAll = document.createElement('option');
+      optAll.value = 'all';
+      optAll.textContent = '👥 Tất cả giáo viên';
+      select.appendChild(optAll);
+    }
+    
+    (rp.data || []).sort(function(a,b) { return a.full_name.localeCompare(b.full_name, 'vi'); }).forEach(function (p) {
+      mapGV[p.id] = p.full_name;
+      var opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = '👨‍🏫 ' + p.full_name;
+      select.appendChild(opt);
+    });
+    
+    if (!laAdmin) {
+      select.value = hoSo.id;
+      select.disabled = true;
+    } else {
+      select.value = 'all';
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
   taiGiamSat();
 })();
 
 async function taiGiamSat() {
-  document.getElementById('mlabel').textContent = THANG_VN[curMonth.getMonth()] + ' / ' + curMonth.getFullYear();
-  var from = new Date(curMonth.getFullYear(), curMonth.getMonth(), 1);
-  var to = new Date(curMonth.getFullYear(), curMonth.getMonth() + 1, 0);
-  document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Đang tải…</td></tr>';
-
-  var r = await sb.rpc('giam_sat_buoi', { p_from: ymd(from), p_to: ymd(to) });
-  if (r.error) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Lỗi tải dữ liệu: ' + esc(r.error.message) + '</td></tr>'; return; }
-  var rows = r.data || [];
-  render(rows);
+  var select = document.getElementById('gvFilter');
+  var teacherId = select.value === 'all' ? null : select.value;
+  
+  var fromDate, toDate;
+  
+  if (curView === 'month') {
+    var firstDay = new Date(curDate.getFullYear(), curDate.getMonth(), 1);
+    var lastDay = new Date(curDate.getFullYear(), curDate.getMonth() + 1, 0);
+    fromDate = layDauTuan(firstDay);
+    toDate = new Date(layDauTuan(lastDay));
+    toDate.setDate(toDate.getDate() + 6);
+    
+    document.getElementById('mlabel').textContent = THANG_VN[curDate.getMonth()] + ' / ' + curDate.getFullYear();
+  } else if (curView === 'week') {
+    fromDate = layDauTuan(curDate);
+    toDate = new Date(fromDate);
+    toDate.setDate(toDate.getDate() + 6);
+    
+    document.getElementById('mlabel').textContent = 'Tuần ' + fromDate.getDate() + '/' + (fromDate.getMonth() + 1) + ' - ' + toDate.getDate() + '/' + (toDate.getMonth() + 1) + '/' + toDate.getFullYear();
+  } else {
+    fromDate = curDate;
+    toDate = curDate;
+    
+    document.getElementById('mlabel').textContent = curDate.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+  
+  document.getElementById('calendarView').innerHTML = '<div style="padding:40px; text-align:center; color:var(--ink-3);">Đang tải lịch…</div>';
+  
+  var r = await sb.rpc('giam_sat_lich', {
+    p_from: ymd(fromDate),
+    p_to: ymd(toDate),
+    p_teacher_id: teacherId
+  });
+  
+  if (r.error) {
+    document.getElementById('calendarView').innerHTML = '<div style="padding:20px; text-align:center; color:var(--err); font-weight:700;">Lỗi tải dữ liệu: ' + esc(r.error.message) + '</div>';
+    return;
+  }
+  
+  var events = r.data || [];
+  tinhMetricsVaRender(events, fromDate, toDate);
 }
 
-function render(rows) {
-  var tongDaDay = 0, tongCanDay = 0, duLop = 0, coBuoi = 0;
-  rows.forEach(function (x) {
-    tongDaDay += x.actual || 0; tongCanDay += x.expected || 0;
-    if ((x.expected || 0) > 0) { coBuoi++; if ((x.actual || 0) >= x.expected) duLop++; }
+function tinhMetricsVaRender(events, fromDate, toDate) {
+  var tongDaDay = 0;
+  var tongCanDay = 0;
+  var classStats = {};
+  
+  events.forEach(function(x) {
+    var cid = x.class_id;
+    if (!classStats[cid]) {
+      classStats[cid] = { name: x.class_name, expected: 0, actual: 0 };
+    }
+    
+    if ((x.type === 'scheduled' || x.type === 'once') && !x.is_cancelled) {
+      tongCanDay++;
+      classStats[cid].expected++;
+    }
+    
+    if (x.actual_id) {
+      tongDaDay++;
+      classStats[cid].actual++;
+    }
   });
+  
+  var duLop = 0;
+  var coBuoi = 0;
+  Object.values(classStats).forEach(function(c) {
+    if (c.expected > 0) {
+      coBuoi++;
+      if (c.actual >= c.expected) duLop++;
+    }
+  });
+  
   document.getElementById('mDaDay').textContent = tongDaDay;
   document.getElementById('mCanDay').textContent = tongCanDay;
   document.getElementById('mDuLop').textContent = duLop + ' / ' + coBuoi;
-
-  if (!rows.length) { document.getElementById('gsBody').innerHTML = '<tr><td colspan="6" class="empty">Chưa có lớp nào trong phạm vi của bạn.</td></tr>'; return; }
-
-  // Nhóm theo khối
-  var byGrade = {};
-  rows.forEach(function (x) { (byGrade[x.grade || 0] = byGrade[x.grade || 0] || []).push(x); });
-  var grades = Object.keys(byGrade).sort(function (a, b) { return a - b; });
-
+  
   var html = '';
-  grades.forEach(function (g) {
-    html += '<tr class="grade-row"><td colspan="6">Khối ' + (g === '0' ? '—' : g) + '</td></tr>';
-    byGrade[g].forEach(function (x) {
-      var exp = x.expected || 0, act = x.actual || 0;
-      var thieu = Math.max(0, exp - act);
-      var pct = exp > 0 ? Math.min(100, Math.round(act / exp * 100)) : 0;
-      var cls = exp === 0 ? 'warn' : (act >= exp ? 'ok' : (pct >= 60 ? 'warn' : 'low'));
-      var barColor = cls === 'ok' ? '#10b981' : (cls === 'warn' ? '#f59e0b' : '#ef4444');
-      var trangThai = exp === 0 ? 'Không có lịch cố định'
-        : (act >= exp ? '✓ Đủ buổi' : ('Thiếu ' + thieu + ' buổi'));
-      var gv = mapGV[x.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-      if (x.co_teacher_id && mapGV[x.co_teacher_id]) gv += ' & ' + mapGV[x.co_teacher_id];
-      var modeTag = x.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
-      html += '<tr>'
-        + '<td><div style="font-weight:700">' + esc(x.name) + (x.is_specialized ? ' <span class="mode-tag">⭐ Chuyên</span>' : '') + '</div><div class="mode-tag">' + modeTag + '</div></td>'
-        + '<td style="color:var(--ink-2)">' + esc(gv) + '</td>'
-        + '<td class="num" style="font-size:1.05rem">' + act + '</td>'
-        + '<td class="num" style="color:var(--ink-2)">' + exp + '</td>'
-        + '<td><div style="font-size:.78rem;color:var(--ink-3)">' + pct + '%</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div></td>'
-        + '<td><span class="pill ' + cls + '">' + trangThai + '</span></td>'
-        + '</tr>';
-    });
+  if (curView === 'month') {
+    html = renderMonthView(events, fromDate, toDate);
+  } else if (curView === 'week') {
+    html = renderWeekView(events, fromDate, toDate);
+  } else {
+    html = renderDayView(events, fromDate, toDate);
+  }
+  
+  document.getElementById('calendarView').innerHTML = html;
+}
+
+function renderMonthView(events, fromDate, toDate) {
+  var html = '<div class="month-grid">';
+  
+  var dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  dayNames.forEach(function(name) {
+    html += '<div class="month-day-name">' + name + '</div>';
   });
-  document.getElementById('gsBody').innerHTML = html;
+  
+  var cur = new Date(fromDate);
+  var todayYmd = ymd(new Date());
+  
+  while (cur <= toDate) {
+    var curYmd = ymd(cur);
+    var isOtherMonth = cur.getMonth() !== curDate.getMonth();
+    var isToday = curYmd === todayYmd;
+    
+    var cellClass = 'month-cell' + (isOtherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+    
+    html += '<div class="' + cellClass + '">';
+    html += '<div class="day-number">' + cur.getDate() + '</div>';
+    
+    var dayEvents = events.filter(function(e) { return e.date === curYmd; });
+    
+    dayEvents.forEach(function(e) {
+      var evtClass = 'cal-event';
+      var statusText = 'Lịch';
+      
+      if (e.is_cancelled) {
+        evtClass += ' evt-cancelled';
+        statusText = 'Đã hủy';
+      } else if (e.actual_id) {
+        if (e.type === 'actual_only') {
+          evtClass += ' evt-extra';
+          statusText = 'Dạy thêm';
+        } else {
+          evtClass += ' evt-taught';
+          statusText = 'Đã dạy';
+        }
+      } else {
+        evtClass += ' evt-missing';
+        statusText = 'Chưa dạy';
+      }
+      
+      var timeStr = e.start_time ? (e.start_time + '-' + (e.end_time || '')) : '';
+      var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
+      
+      var gvShort = (e.teacher_name || '').split(/\s+/).pop();
+      if (e.co_teacher_name) gvShort += '+' + (e.co_teacher_name || '').split(/\s+/).pop();
+      
+      html += '<div class="' + evtClass + '" ' + clickHandler + ' title="' + esc(e.class_name) + ' (' + statusText + ') - GV: ' + esc(e.teacher_name) + '">';
+      html += '<span class="time">' + timeStr + ' (' + gvShort + ')</span>';
+      html += '<span class="title">' + esc(e.class_name) + '</span>';
+      html += '</div>';
+    });
+    
+    html += '</div>';
+    cur.setDate(cur.getDate() + 1);
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function renderWeekView(events, fromDate, toDate) {
+  var html = '<div class="week-grid">';
+  var cur = new Date(fromDate);
+  var todayYmd = ymd(new Date());
+  var dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+  var idx = 0;
+  
+  while (cur <= toDate) {
+    var curYmd = ymd(cur);
+    var isToday = curYmd === todayYmd;
+    var colClass = 'week-col' + (isToday ? ' today' : '');
+    
+    html += '<div class="' + colClass + '">';
+    html += '<div class="week-day-header">';
+    html += '<div class="w-day-name">' + dayNames[idx] + '</div>';
+    html += '<div class="w-date">' + cur.getDate() + '</div>';
+    html += '</div>';
+    
+    var dayEvents = events.filter(function(e) { return e.date === curYmd; });
+    if (dayEvents.length === 0) {
+      html += '<div style="text-align:center; color:var(--ink-3); font-size:.78rem; font-style:italic; padding-top:16px;">Không có lớp</div>';
+    } else {
+      dayEvents.forEach(function(e) {
+        var evtClass = 'cal-event';
+        var statusText = 'Lịch';
+        
+        if (e.is_cancelled) {
+          evtClass += ' evt-cancelled';
+          statusText = 'Đã hủy';
+        } else if (e.actual_id) {
+          if (e.type === 'actual_only') {
+            evtClass += ' evt-extra';
+            statusText = 'Dạy thêm';
+          } else {
+            evtClass += ' evt-taught';
+            statusText = 'Đã dạy';
+          }
+        } else {
+          evtClass += ' evt-missing';
+          statusText = 'Chưa dạy';
+        }
+        
+        var timeStr = e.start_time ? (e.start_time + ' - ' + (e.end_time || '')) : '';
+        var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
+        
+        var gvFull = e.teacher_name;
+        if (e.co_teacher_name) gvFull += ' & ' + e.co_teacher_name;
+        var modeStr = e.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
+        
+        html += '<div class="' + evtClass + '" ' + clickHandler + ' style="padding:10px; gap:4px; font-size:.8rem;">';
+        html += '<span class="time" style="font-size:.78rem;">⏰ ' + timeStr + '</span>';
+        html += '<span class="title" style="font-size:.88rem; font-weight:750;">' + esc(e.class_name) + '</span>';
+        html += '<span class="teacher-tag">👨‍🏫 ' + esc(gvFull) + '</span>';
+        html += '<span style="font-size:.68rem; margin-top:2px;">' + modeStr + ' • ' + statusText + '</span>';
+        html += '</div>';
+      });
+    }
+    
+    html += '</div>';
+    cur.setDate(cur.getDate() + 1);
+    idx++;
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function renderDayView(events, fromDate, toDate) {
+  var curYmd = ymd(fromDate);
+  var dayEvents = events.filter(function(e) { return e.date === curYmd; });
+  
+  var html = '<div class="day-view-list">';
+  if (dayEvents.length === 0) {
+    html += '<div style="text-align:center; color:var(--ink-3); padding:40px; font-style:italic;">Không có lịch dạy hay buổi dạy nào diễn ra trong ngày này.</div>';
+  } else {
+    dayEvents.forEach(function(e) {
+      var badgeClass = '';
+      var badgeText = 'Chưa dạy';
+      var style = '';
+      
+      if (e.is_cancelled) {
+        badgeClass = 'pill low';
+        badgeText = 'Đã hủy';
+        style = 'opacity:0.6; text-decoration:line-through;';
+      } else if (e.actual_id) {
+        if (e.type === 'actual_only') {
+          badgeClass = 'pill';
+          style = 'background:rgba(139,92,246,.16); color:#8b5cf6;';
+          badgeText = 'Dạy thêm';
+        } else {
+          badgeClass = 'pill ok';
+          badgeText = 'Đã dạy';
+        }
+      } else {
+        badgeClass = 'pill warn';
+        badgeText = 'Chưa dạy';
+      }
+      
+      var timeStr = e.start_time ? (e.start_time + ' - ' + (e.end_time || '')) : 'Chưa xếp giờ';
+      var clickHandler = e.actual_id ? 'onclick="xemChiTietBuoi(\'' + e.actual_id + '\', \'' + e.actual_type + '\')"' : '';
+      
+      var gvFull = e.teacher_name;
+      if (e.co_teacher_name) gvFull += ' & ' + e.co_teacher_name;
+      var modeStr = e.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
+      
+      html += '<div class="day-event-row" ' + clickHandler + ' style="cursor:pointer; ' + style + '">';
+      html += '<div class="day-event-time">' + timeStr + '<small>' + modeStr + '</small></div>';
+      html += '<div class="day-event-details">';
+      html += '<div class="day-event-title">' + esc(e.class_name) + '</div>';
+      html += '<div class="day-event-teacher">Giáo viên: ' + esc(gvFull) + '</div>';
+      html += '</div>';
+      html += '<div><span class="' + badgeClass + '" style="' + style + '">' + badgeText + '</span></div>';
+      html += '</div>';
+    });
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+async function xemChiTietBuoi(actualId, actualType) {
+  try {
+    var tbl = actualType === 'class_session' ? 'class_sessions' : 'taught_sessions';
+    var r = await sb.from(tbl).select('*').eq('id', actualId).single();
+    if (r.error) throw r.error;
+    var s = r.data;
+    var heldOnStr = new Date(s.held_on).toLocaleDateString('vi-VN');
+    var msg = 'Chi tiết buổi dạy:\n' +
+              '- Ngày dạy: ' + heldOnStr + '\n' +
+              '- Hình thức: ' + (actualType === 'class_session' ? 'Điểm danh lớp' : 'Ghi nhận tay') + '\n';
+    if (s.title) msg += '- Nội dung: ' + s.title + '\n';
+    if (s.note) msg += '- Ghi chú: ' + s.note + '\n';
+    alert(msg);
+  } catch (e) {
+    alert('Không tải được chi tiết buổi: ' + e.message);
+  }
+}
+
+async function xuatAnhThongKe() {
+  var target = document.getElementById('calendarPrintTarget');
+  if (!target) return;
+  
+  var btn = document.getElementById('btnExport');
+  var oldText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⌛ Đang tạo…';
+  
+  // Show header inside container for print
+  var printHeader = document.querySelector('.print-only-header');
+  printHeader.style.display = 'block';
+  
+  var select = document.getElementById('gvFilter');
+  var gvText = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : '';
+  document.getElementById('printMetaInfo').textContent = 'Báo cáo ngày: ' + new Date().toLocaleDateString('vi-VN') + ' | Khoảng xem: ' + document.getElementById('mlabel').textContent + ' | Giới hạn bộ lọc: ' + gvText;
+  
+  try {
+    var canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#ffffff'
+    });
+    
+    var link = document.createElement('a');
+    link.download = 'VinhMath_GiamSat_BuoiDay_' + ymd(new Date()) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    alert('Không thể xuất ảnh: ' + e.message);
+  } finally {
+    printHeader.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+  }
 }
 </script>
 </body>
