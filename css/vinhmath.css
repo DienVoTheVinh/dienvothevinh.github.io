@@ -1634,12 +1634,14 @@ body.theme-map {
   /* Gradient nút/nhấn: đổi vàng -> navy (chữ trắng dễ đọc trên nền sáng) */
   --accent-gradient: linear-gradient(135deg, #2A3B66 0%, #16213D 100%);
   --accent-2:#24335C; --accent-strong:#16213D; --gold:#1B2644;
+  --topbar-link-active: var(--accent); --topbar-link-hover: var(--accent);
 }
 /* Dark mode: làm xanh navy sáng lên, nổi bật dễ nhìn */
 [data-theme="dark"] body.theme-map {
   --accent:#8FB3EC; --accent-soft:#233149;
   --accent-gradient: linear-gradient(135deg, #3E5EA0 0%, #24335C 100%);
   --accent-2:#5B7FC0; --accent-strong:#8FB3EC; --gold:#8FB3EC;
+  --topbar-link-active: var(--accent); --topbar-link-hover: var(--accent);
 }
 /* Ép các mảng vàng đặc trưng còn sót (badge/gạch chân/vòng %) sang navy trong theme M.A.P */
 body.theme-map .new-lesson-badge,
@@ -1666,12 +1668,14 @@ body.theme-duyminh {
   --accent:#C81E27; --accent-soft:#FCEBEC;
   --accent-gradient: linear-gradient(135deg, #D42730 0%, #8E1018 100%);
   --accent-2:#A5161E; --accent-strong:#8E1119; --gold:#C81E27;
+  --topbar-link-active: var(--accent); --topbar-link-hover: var(--accent);
 }
 /* Dark mode: đỏ sáng hơn để nổi bật, dễ đọc trên nền tối */
 [data-theme="dark"] body.theme-duyminh {
   --accent:#F3767B; --accent-soft:#3A1F22;
   --accent-gradient: linear-gradient(135deg, #E5484D 0%, #B0313A 100%);
   --accent-2:#E5565C; --accent-strong:#F3767B; --gold:#F3767B;
+  --topbar-link-active: var(--accent); --topbar-link-hover: var(--accent);
 }
 body.theme-duyminh .new-lesson-badge,
 body.theme-duyminh .badge-accent { background: var(--accent-gradient) !important; color:#fff !important; }
