@@ -39,6 +39,9 @@ body.dark-theme .cal-event.evchip, body.dark-theme .day-event-row.evchip {
 .month-bar .view-btn-group { flex: 0 0 auto; }
 .month-bar .view-btn-group { overflow: visible; }
 .month-bar .view-btn { flex: 0 0 auto; min-width: 60px; text-align: center; }
+/* Nút "Lọc theo lớp": ép rộng đúng bằng nội dung, không để chữ tràn ra ngoài viền */
+.month-bar .class-filter-dropdown { width: auto; }
+.month-bar #classFilterBtn { width: -moz-max-content; width: max-content; max-width: none; justify-content: center; }
 /* Nhóm con (bên trái/phải) tự xuống dòng khi hẹp, không đè/cắt nhau */
 .month-bar .filter-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 20px; width: 100%; }
 .month-bar .filter-row > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -106,7 +109,7 @@ body.dark-theme .cal-event.evchip, body.dark-theme .day-event-row.evchip {
   height: 100%;
 }
 .view-btn.active {
-  background: var(--accent);
+  background: var(--accent) !important;
   color: #fff !important;
 }
 .view-btn:not(.active):hover {
