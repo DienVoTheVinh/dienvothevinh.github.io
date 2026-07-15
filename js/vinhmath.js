@@ -1996,9 +1996,14 @@ function themNutChupManHinh() {
    BỘ NHẬN DIỆN CLB M.A.P — đổi logo/tên cả web + logo chìm
    Gọi vmApDungThuongHieuMAP(true/false) tuỳ lớp có theme 'map'.
    ============================================================ */
-function vmApDungThuongHieuMAP(isMap) {
+/* Áp thương hiệu theo theme của lớp: 'vinhmath' (mặc định) | 'map' | 'duyminh' */
+function vmApDungThuongHieu(theme) {
   try {
-    document.body.classList.toggle('theme-map', !!isMap);
+    theme = theme || 'vinhmath';
+    var isMap = theme === 'map';
+    var isDM = theme === 'duyminh';
+    document.body.classList.toggle('theme-map', isMap);
+    document.body.classList.toggle('theme-duyminh', isDM);
 
     // Bỏ logo chìm nền (gây khó nhìn) — xoá nếu còn tồn tại từ phiên trước
     var wm = document.getElementById('mapWatermarkGlobal');
@@ -2008,8 +2013,8 @@ function vmApDungThuongHieuMAP(isMap) {
     var logoEl = document.querySelector('.topbar .logo') || document.querySelector('.logo');
     if (logoEl) {
       var img = logoEl.querySelector('img');
-      if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : 'img/logo.png';
-      
+      if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : (isDM ? 'logo/duyminh-logo.png' : 'img/logo.png');
+
       var brandTextEl = logoEl.querySelector('.brand-container-el');
       if (!brandTextEl) {
         var oldSpan = logoEl.querySelector('span[style*="display: inline-flex"]') || logoEl.querySelector('span[style*="display:inline-flex"]');
@@ -2027,14 +2032,25 @@ function vmApDungThuongHieuMAP(isMap) {
           }
         }
       }
-      
+
       if (isMap) {
         brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.P</span>';
+      } else if (isDM) {
+        brandTextEl.innerHTML = '<span class="dm-mark"><span class="dm-duy">DUY</span><span class="dm-minh">MINH</span></span>';
       } else {
         brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span>';
       }
     }
   } catch (e) { /* im lặng */ }
+}
+/* Tương thích ngược: các trang cũ gọi vmApDungThuongHieuMAP(true/false) */
+function vmApDungThuongHieuMAP(isMap) { vmApDungThuongHieu(isMap ? 'map' : 'vinhmath'); }
+/* Wordmark Duy Minh dùng chung cho chip/badge (DUY đỏ · MINH trắng trên nền đỏ) */
+function vmChipDuyMinh(size) {
+  size = size || 16;
+  return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);padding:3px 9px;border-radius:99px;font-size:.72rem;font-weight:800;line-height:1">' +
+    '<img src="logo/duyminh-logo.png" style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:#fff;object-fit:contain;flex-shrink:0">' +
+    '<span class="dm-mark" style="font-size:.72rem"><span class="dm-duy">DUY</span><span class="dm-minh">MINH</span></span></span>';
 }
 
 /* ===== Tiến độ mục con của bài giảng (dùng chung bai-hoc + lop-hoc) ===== */
