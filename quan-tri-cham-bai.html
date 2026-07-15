@@ -886,7 +886,8 @@ function chamDoi(subId, i, dir) { var arr = chamStaged[subId] || []; var j = i +
 /* Dán ảnh (Ctrl/⌘+V) khi con trỏ trong thẻ chấm bài đang thao tác */
 window.addEventListener('paste', function (e) {
   var ae = document.activeElement;
-  var card = ae && ae.closest ? ae.closest('.sub-card') : null;
+  // Mỗi bài nộp được bọc trong <div id="sub-<id>"> — tìm đúng bài đang thao tác
+  var card = ae && ae.closest ? ae.closest('[id^="sub-"]') : null;
   if (!card) return;
   var cd = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
   if (!cd) return;
