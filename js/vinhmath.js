@@ -72,13 +72,13 @@
       el.style.padding = '16px';
       var content = el.querySelector('.modal-content') || el.firstElementChild;
       if (content) {
-        // Xoá mọi định vị tuyệt đối cũ (nếu có) để flexbox canh giữa chuẩn
-        content.style.position = 'static';
+        // relative: giữ nút × (position:absolute) nằm ĐÚNG trong popup, và flexbox vẫn canh giữa
+        content.style.position = 'relative';
         content.style.left = '';
         content.style.top = '';
         content.style.right = '';
         content.style.bottom = '';
-        content.style.margin = '0';
+        content.style.margin = 'auto';
         // Giới hạn cao ≤ viewport để luôn nằm gọn trong màn hình, dài thì cuộn bên trong
         content.style.maxHeight = 'calc(100vh - 32px)';
         content.style.overflowY = 'auto';

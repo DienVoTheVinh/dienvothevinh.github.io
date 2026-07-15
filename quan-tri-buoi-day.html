@@ -562,23 +562,25 @@ function layMauLop(className) {
   for (var i = 0; i < className.length; i++) {
     hash = className.charCodeAt(i) + ((hash << 5) - hash);
   }
+  
+  var HUES = [5, 25, 45, 120, 200, 340];
+  var h = HUES[Math.abs(hash) % HUES.length];
+  
   var isDark = document.body.classList.contains('dark-theme') || (document.documentElement.getAttribute('data-theme') === 'dark');
-  var h = Math.abs(hash) % 360;
-  var s = 70 + (Math.abs(hash) % 15);
   
   if (isDark) {
-    var l = 16 + (Math.abs(hash) % 8);
+    var s = h === 120 ? 45 : (h === 200 ? 50 : 55);
     return {
-      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
-      border: 'hsl(' + h + ', ' + s + '%, ' + (l + 15) + '%)',
-      text: 'hsl(' + h + ', ' + s + '%, 85%)'
+      bg: 'hsl(' + h + ', ' + s + '%, 18%)',
+      border: 'hsl(' + h + ', ' + s + '%, 33%)',
+      text: 'hsl(' + h + ', ' + s + '%, 90%)'
     };
   } else {
-    var l = 91 + (Math.abs(hash) % 5);
+    var s = h === 120 ? 55 : (h === 200 ? 65 : 75);
     return {
-      bg: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
-      border: 'hsl(' + h + ', ' + s + '%, ' + (l - 25) + '%)',
-      text: 'hsl(' + h + ', ' + s + '%, 25%)'
+      bg: 'hsl(' + h + ', ' + s + '%, 93%)',
+      border: 'hsl(' + h + ', ' + s + '%, 72%)',
+      text: 'hsl(' + h + ', ' + s + '%, 22%)'
     };
   }
 }
