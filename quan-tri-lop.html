@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=5.2">
-<link rel="stylesheet" href="css/vinhmath.css?v=6.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.3">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -196,6 +196,8 @@
 }
 /* ===== Theme CLB M.A.P (khu quản trị) ===== */
 body.theme-map { --accent:#1B2644; --accent-soft:#EAEFF6; }
+body.theme-duyminh { --accent:#C81E27; --accent-soft:#FCEBEC; }
+[data-theme="dark"] body.theme-duyminh { --accent:#F3767B; --accent-soft:#3A1F22; }
 .classroom-card-head .badge, #detMapBadge { vertical-align: middle; }
 /* Trợ giảng: ẩn các nút quản trị lớp (tạo/sửa/xoá) */
 body.vai-tro-tg .chi-ql { display: none !important; }
@@ -417,6 +419,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <select class="input" id="classTheme">
           <option value="vinhmath">📘 VinhMath (mặc định)</option>
           <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
+          <option value="duyminh">🔴 Trung tâm Duy Minh</option>
         </select>
         <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">Chọn M.A.P sẽ áp logo &amp; tông màu CLB M.A.P cho giao diện lớp (cả GV lẫn HS).</div>
       </div>
@@ -479,6 +482,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         <select class="input" id="classEditTheme">
           <option value="vinhmath">📘 VinhMath (mặc định)</option>
           <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
+          <option value="duyminh">🔴 Trung tâm Duy Minh</option>
         </select>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
@@ -1084,7 +1088,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=5.3"></script>
+<script src="js/vinhmath.js?v=6.3"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1262,12 +1266,24 @@ function chonLopHoc(id) {
     }
   }
   
-  // Bộ nhận diện CLB M.A.P
-  var isMap = cl.theme === 'map';
-  if (typeof vmApDungThuongHieuMAP === 'function') vmApDungThuongHieuMAP(isMap);
-  else document.body.classList.toggle('theme-map', isMap);
+  // Bộ nhận diện thương hiệu con (M.A.P / Duy Minh)
+  var theme = cl.theme || 'vinhmath';
+  var isMap = theme === 'map';
+  var isDM = theme === 'duyminh';
+  if (typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(theme);
+  else { document.body.classList.toggle('theme-map', isMap); document.body.classList.toggle('theme-duyminh', isDM); }
   var mapBadge = $('detMapBadge');
-  if (mapBadge) mapBadge.style.display = isMap ? 'inline-flex' : 'none';
+  if (mapBadge) {
+    if (isMap) {
+      mapBadge.style.cssText = 'margin-left:6px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; padding:3px 10px; border-radius:99px; font-size:.72rem; font-weight:800';
+      mapBadge.innerHTML = '<img src="logo/CLB-MAP-logo.png" style="width:16px;height:16px;border-radius:50%;background:#fff;vertical-align:middle"> CLB M.A.P';
+    } else if (isDM) {
+      mapBadge.style.cssText = 'margin-left:6px; display:inline-flex; background:none; padding:0';
+      mapBadge.innerHTML = (typeof vmChipDuyMinh === 'function' ? vmChipDuyMinh(16) : '🔴 Duy Minh');
+    } else {
+      mapBadge.style.display = 'none';
+    }
+  }
 
   napNutMeet(cl.id);
   taiBangTinPanel(cl.id);
