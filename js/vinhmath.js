@@ -64,42 +64,26 @@
     // Đưa overlay ra thẳng <body> để thoát tổ tiên có transform/filter (nguyên nhân fixed bị lệch)
     if(el.parentElement && el.parentElement!==document.body){ try{ document.body.appendChild(el); }catch(e){} }
     try{
+      el._wasVisible = true;
+      // Overlay luôn canh giữa viewport, cuộn được — nội dung không bao giờ bị che hay lệch quá cao
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.overflowY = 'auto';
+      el.style.padding = '16px';
       var content = el.querySelector('.modal-content') || el.firstElementChild;
-      if (content && !el._wasVisible && (Date.now() - window.vmLastClickTime < 1000) && window.vmLastClickY !== null) {
-        el._wasVisible = true;
-        
-        content.style.position = 'absolute';
+      if (content) {
+        // Xoá mọi định vị tuyệt đối cũ (nếu có) để flexbox canh giữa chuẩn
+        content.style.position = 'static';
+        content.style.left = '';
+        content.style.top = '';
+        content.style.right = '';
+        content.style.bottom = '';
         content.style.margin = '0';
-        
-        var modalWidth = content.offsetWidth || 500;
-        var modalHeight = content.offsetHeight || 400;
-        var viewportWidth = window.innerWidth;
-        var viewportHeight = window.innerHeight;
-        
-        // Chiều ngang: Căn giữa theo vị trí click, khống chế lề an toàn 10px
-        var left = window.vmLastClickX - (modalWidth / 2);
-        if (left + modalWidth > viewportWidth - 10) left = viewportWidth - modalWidth - 10;
-        if (left < 10) left = 10;
-        
-        // Chiều dọc: Đưa sát theo vị trí click (chếch lên 40px cho thoáng ngón tay), khống chế lề dọc 16px
-        var top = window.vmLastClickY - 40;
-        if (top + modalHeight > viewportHeight - 16) top = viewportHeight - modalHeight - 16;
-        if (top < 16) top = 16;
-        
-        content.style.left = left + 'px';
-        content.style.top = top + 'px';
-        
-        // An toàn chiều cao trên di động (được cuộn nội bộ nếu quá dài)
+        // Giới hạn cao ≤ viewport để luôn nằm gọn trong màn hình, dài thì cuộn bên trong
         content.style.maxHeight = 'calc(100vh - 32px)';
         content.style.overflowY = 'auto';
-      } else if (content && !el._wasVisible) {
-        // Fallback mặc định khi mở không qua click chuột trực tiếp
-        var cs=getComputedStyle(el);
-        if(cs.display==='flex' && cs.alignItems==='center') el.style.alignItems='flex-start';
-        if(cs.overflowY!=='auto' && cs.overflowY!=='scroll') el.style.overflowY='auto';
-        var pt=parseInt(cs.paddingTop,10)||0; if(pt < 16){ el.style.paddingTop='40px'; if((parseInt(cs.paddingBottom,10)||0)<16) el.style.paddingBottom='28px'; }
       }
-      el.scrollTop=0;
+      el.scrollTop = 0;
     }catch(e){}
   }
   function quet(node){ if(node && node.nodeType===1) canh(node); }
