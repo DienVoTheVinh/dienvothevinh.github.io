@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="favicon.png?v=3">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cấu hình phần thưởng — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=5.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=6.2">
+<style>
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+.head { padding: 40px 0 20px; }
+.intro-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px 22px; margin-bottom: 22px; box-shadow: var(--shadow); display:flex; gap:14px; align-items:flex-start; }
+.intro-card .ic { font-size:1.6rem; flex:none }
+.reward-group { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 18px; background: var(--surface); box-shadow: var(--shadow); }
+.reward-group .grp-head { padding: 12px 18px; font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 9px; background: var(--surface-2); border-bottom:1px solid var(--line); }
+.reward-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 18px; }
+.reward-row + .reward-row { border-top: 1px dashed var(--line); }
+.reward-row .lbl { font-size: .95rem; color: var(--ink); font-weight:500; }
+.reward-row input[type=number] { width: 92px; padding: 9px 10px; border: 1px solid var(--line-2); border-radius: 9px; text-align: center; font-weight: 800; font-size: 1rem; background: var(--surface-solid, var(--surface)); color: var(--ink); }
+.reward-row .unit { font-size: .85rem; color: var(--ink-2); font-weight:700; min-width: 26px; }
+.save-bar { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 14px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.save-msg { font-size: .9rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="nav">
+    <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <small>· Quản trị</small></a>
+    <nav class="navlinks">
+      <!-- Sẽ được điền tự động bằng menu.js -->
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="sec-label">Khu vực Admin · Điều khiển toàn hệ thống</div>
+    <h1>Cấu hình phần thưởng</h1>
+    <p style="margin-top:6px">Điều chỉnh lượng <b>XP</b> và <b>Xu</b> thưởng cho từng hoạt động của học sinh trên toàn bộ hệ thống.</p>
+  </div>
+
+  <div class="intro-card">
+    <div class="ic">💡</div>
+    <div style="font-size:.9rem;color:var(--ink-2);line-height:1.5">
+      Thay đổi có hiệu lực <b>ngay lập tức</b> cho các phần thưởng <b>phát sinh mới</b>. Xu/XP mà học sinh đã nhận trước đó được <b>giữ nguyên</b>, không bị cộng hay trừ hồi tố. Riêng phần “thưởng nóng” thủ công vẫn do thầy/cô nhập tay từng lần.
+    </div>
+  </div>
+
+  <div id="rewardBody">
+    <div class="card" style="padding:30px;text-align:center;color:var(--ink-3)">Đang tải cấu hình…</div>
+  </div>
+
+  <div class="save-bar" id="saveBar" style="display:none">
+    <span class="save-msg" id="saveMsg"></span>
+    <button type="button" class="btn btn-primary" id="btnLuu" onclick="luuCauHinh()">💾 Lưu cấu hình</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=4.4"></script>
+<script src="js/menu-v5.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+
+(async function () {
+  if (!daKetNoi()) {
+    $('rewardBody').innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--err)">Chưa kết nối CSDL Supabase.</div>';
+    return;
+  }
+  var hoSo = await yeuCauDangNhap();
+  if (!hoSo) return;
+  if (hoSo.role !== 'admin') {
+    window.location.href = 'lop-hoc';
+    return;
+  }
+  taiCauHinh();
+})();
+
+async function taiCauHinh() {
+  var body = $('rewardBody');
+  var r;
+  try { r = await sb.rpc('admin_reward_list'); } catch (e) { r = { error: e }; }
+  var data = r && r.data;
+  if (!data || data.error) {
+    body.innerHTML = '<div class="card" style="padding:30px;text-align:center;color:var(--err)">Không tải được cấu hình. Bạn cần quyền quản trị.</div>';
+    return;
+  }
+  var groups = {};
+  data.forEach(function (it) { (groups[it.grp] = groups[it.grp] || []).push(it); });
+  var html = '';
+  Object.keys(groups).forEach(function (g) {
+    var isXP = groups[g][0].kind === 'xp';
+    var unit = isXP ? 'XP' : 'xu';
+    var icon = isXP ? '⚡' : '🪙';
+    var accent = isXP ? '#7c3aed' : '#d97706';
+    html += '<div class="reward-group">' +
+      '<div class="grp-head" style="color:' + accent + '">' + icon + ' ' + g + '</div>';
+    groups[g].forEach(function (it) {
+      html += '<div class="reward-row">' +
+          '<span class="lbl">' + it.label + '</span>' +
+          '<span style="display:inline-flex;align-items:center;gap:8px;flex-shrink:0">' +
+            '<input type="number" min="0" step="1" data-code="' + it.code + '" value="' + it.amount + '" style="color:' + accent + '">' +
+            '<b class="unit">' + unit + '</b>' +
+          '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  });
+  body.innerHTML = html;
+  $('saveBar').style.display = 'flex';
+}
+
+async function luuCauHinh() {
+  var inputs = $('rewardBody').querySelectorAll('input[data-code]');
+  if (!inputs.length) return;
+  var items = [];
+  for (var i = 0; i < inputs.length; i++) {
+    var v = parseInt(inputs[i].value, 10);
+    if (isNaN(v) || v < 0) v = 0;
+    items.push({ code: inputs[i].getAttribute('data-code'), amount: v });
+  }
+  var btn = $('btnLuu'); var msg = $('saveMsg');
+  btn.disabled = true; var old = btn.textContent; btn.textContent = 'Đang lưu…';
+  msg.style.color = 'var(--ink-2)'; msg.textContent = '';
+  var r;
+  try { r = await sb.rpc('admin_reward_set', { p_items: items }); } catch (e) { r = { error: e }; }
+  btn.disabled = false; btn.textContent = old;
+  if (r && r.data && r.data.ok) {
+    msg.style.color = 'var(--ok)';
+    msg.textContent = '✓ Đã lưu ' + r.data.updated + ' mục. Áp dụng ngay cho phần thưởng mới.';
+  } else {
+    msg.style.color = 'var(--err)';
+    msg.textContent = '✗ ' + ((r && r.data && r.data.msg) || 'Lưu thất bại — cần quyền quản trị.');
+  }
+}
+</script>
+</body>
+</html>

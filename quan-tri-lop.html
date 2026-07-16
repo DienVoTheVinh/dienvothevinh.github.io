@@ -434,25 +434,6 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
   </div>
 </div>
 
-<!-- Modal Cấu hình phần thưởng (Admin) -->
-<div class="modal" id="modalThuong">
-  <div class="modal-content" style="max-width: 620px">
-    <button class="modal-close" onclick="dongCauHinhThuong()">×</button>
-    <h2 style="display:flex;align-items:center;gap:10px">⚙️ Cấu hình phần thưởng</h2>
-    <p style="margin-top:-8px;color:var(--ink-2);font-size:.9rem">Điều chỉnh lượng <b>XP</b> và <b>Xu</b> thưởng cho từng hoạt động của học sinh. Thay đổi áp dụng ngay cho các phần thưởng <b>phát sinh mới</b>; xu/XP đã thưởng trước đó được giữ nguyên.</p>
-    <div id="thuongBody" style="margin-top:8px">
-      <div style="padding:20px;text-align:center;color:var(--ink-3)">Đang tải cấu hình…</div>
-    </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap">
-      <span id="thuongMsg" style="font-size:.86rem;font-weight:600"></span>
-      <div style="display:flex; gap:12px">
-        <button type="button" class="btn btn-secondary" onclick="dongCauHinhThuong()">Đóng</button>
-        <button type="button" class="btn btn-primary" id="btnLuuThuong" onclick="luuCauHinhThuong()">💾 Lưu cấu hình</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Modal Sửa Lớp Học -->
 <div class="modal" id="modalSuaLop">
   <div class="modal-content" style="max-width: 440px">
@@ -1149,9 +1130,6 @@ var hoSoNguoiDung = null;
   if (!hoSo) return;
   if (hoSo.role === 'assistant') document.body.classList.add('vai-tro-tg');
   if (hoSo.role === 'admin') document.body.classList.add('vai-tro-admin');
-  if (hoSo.role === 'admin' && /[?&]panel=thuong/.test(location.search)) {
-    setTimeout(function () { if (typeof moCauHinhThuong === 'function') moCauHinhThuong(); }, 400);
-  }
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) {
     console.log("4. Vai trò không hợp lệ, chuyển hướng...");
     window.location.href = 'lop-hoc';
@@ -2845,71 +2823,6 @@ async function taiDuLieuDanhMuc() {
 /* ----- Form Lớp Học ----- */
 function moFormLop() { $('modalLop').style.display = 'flex'; }
 function dongFormLop() { $('modalLop').style.display = 'none'; }
-
-// ===== Cấu hình phần thưởng (chỉ admin) =====
-async function moCauHinhThuong() {
-  $('modalThuong').style.display = 'flex';
-  $('thuongMsg').textContent = '';
-  var body = $('thuongBody');
-  body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink-3)">Đang tải cấu hình…</div>';
-  var r;
-  try { r = await sb.rpc('admin_reward_list'); } catch (e) { r = { error: e }; }
-  var data = r && r.data;
-  if (!data || data.error) {
-    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--err)">Không tải được cấu hình. Bạn cần quyền quản trị.</div>';
-    return;
-  }
-  // gom theo nhóm
-  var groups = {};
-  data.forEach(function(it) { (groups[it.grp] = groups[it.grp] || []).push(it); });
-  var order = Object.keys(groups);
-  var html = '';
-  order.forEach(function(g) {
-    var isXP = groups[g][0].kind === 'xp';
-    var unit = isXP ? 'XP' : 'xu';
-    var icon = isXP ? '⚡' : '🪙';
-    var accent = isXP ? '#7c3aed' : '#d97706';
-    html += '<div style="margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden">' +
-      '<div style="background:var(--surface-2);padding:9px 14px;font-weight:800;font-size:.9rem;display:flex;align-items:center;gap:8px;color:' + accent + '">' + icon + ' ' + g + '</div>' +
-      '<div style="padding:6px 14px 12px">';
-    groups[g].forEach(function(it) {
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line)">' +
-        '<span style="font-size:.9rem;color:var(--ink)">' + it.label + '</span>' +
-        '<span style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0">' +
-          '<input type="number" min="0" step="1" data-code="' + it.code + '" value="' + it.amount + '" ' +
-            'style="width:82px;padding:7px 9px;border:1px solid var(--line-2);border-radius:8px;text-align:center;font-weight:800;font-size:.95rem;color:' + accent + '">' +
-          '<b style="font-size:.82rem;color:var(--ink-2);min-width:24px">' + unit + '</b>' +
-        '</span>' +
-      '</div>';
-    });
-    html += '</div></div>';
-  });
-  body.innerHTML = html;
-}
-function dongCauHinhThuong() { $('modalThuong').style.display = 'none'; }
-async function luuCauHinhThuong() {
-  var inputs = $('thuongBody').querySelectorAll('input[data-code]');
-  if (!inputs.length) return;
-  var items = [];
-  for (var i = 0; i < inputs.length; i++) {
-    var v = parseInt(inputs[i].value, 10);
-    if (isNaN(v) || v < 0) v = 0;
-    items.push({ code: inputs[i].getAttribute('data-code'), amount: v });
-  }
-  var btn = $('btnLuuThuong'); var msg = $('thuongMsg');
-  btn.disabled = true; var old = btn.textContent; btn.textContent = 'Đang lưu…';
-  msg.style.color = 'var(--ink-2)'; msg.textContent = '';
-  var r;
-  try { r = await sb.rpc('admin_reward_set', { p_items: items }); } catch (e) { r = { error: e }; }
-  btn.disabled = false; btn.textContent = old;
-  if (r && r.data && r.data.ok) {
-    msg.style.color = 'var(--ok)';
-    msg.textContent = '✓ Đã lưu ' + r.data.updated + ' mục. Áp dụng ngay cho phần thưởng mới.';
-  } else {
-    msg.style.color = 'var(--err)';
-    msg.textContent = '✗ ' + ((r && r.data && r.data.msg) || 'Lưu thất bại — cần quyền quản trị.');
-  }
-}
 async function luuLopHoc(e) {
   e.preventDefault();
   var name = $('className').value.trim();
