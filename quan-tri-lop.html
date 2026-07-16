@@ -689,12 +689,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       
       <!-- TAB: BÀI TẬP VỀ NHÀ -->
       <div id="tabFormBTVN" style="display:none">
-        <div class="field">
-          <label>🎯 Loại bài tập</label>
-          <select class="input" id="bhBtvnBonus" style="max-width:360px">
-            <option value="false">Bắt buộc — không làm sẽ bị trừ điểm</option>
-            <option value="true">Thưởng thêm — không làm không sao, làm thì được thưởng xu</option>
-          </select>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px 12px;border-radius:10px;background:var(--accent-soft);border:1px solid rgba(224,160,32,.35)">
+          <span style="font-size:1.1rem">🏠</span>
+          <b style="color:var(--accent);font-size:.98rem">Bài tập BẮT BUỘC</b>
+          <small style="color:var(--ink-3)">— không làm sẽ bị trừ điểm</small>
         </div>
         <div class="field">
           <label>⏰ Hạn nộp bài tập về nhà <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
@@ -738,6 +736,54 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           </div>
           <input type="file" id="bhBtvnFile" accept="image/*" multiple style="display:none">
           <div id="btvnAnhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+        </div>
+
+        <!-- ===== Ô BÀI TẬP THƯỞNG THÊM (tuỳ chọn) ===== -->
+        <div style="display:flex;align-items:center;gap:8px;margin:24px 0 6px;padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#fff4d9,#ffe1ad);border:1px solid rgba(243,156,18,.4)">
+          <span style="font-size:1.1rem">🎁</span>
+          <b style="color:#b45309;font-size:.98rem">Bài tập THƯỞNG THÊM (tuỳ chọn)</b>
+          <small style="color:#a5701a">— không làm không sao, làm thì được thưởng xu</small>
+        </div>
+        <div style="font-size:.8rem;color:var(--ink-3);margin-bottom:10px">Để trống toàn bộ mục này nếu buổi học không có bài thưởng thêm.</div>
+        <div class="field">
+          <label>⏰ Hạn nộp bài thưởng thêm <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
+          <input type="datetime-local" class="input" id="bhBtvn2Due" style="max-width:260px">
+          <div style="margin-top:10px">
+            <label style="font-size:.85rem">Khi quá hạn:</label>
+            <select class="input" id="bhBtvn2Late" style="max-width:320px">
+              <option value="late">Vẫn cho nộp — đánh dấu "Nộp trễ"</option>
+              <option value="lock">Khoá, không cho nộp nữa</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>🎁 Ghi chú cho HS (bài thưởng thêm)</label>
+          <textarea class="input" id="bhBtvn2Text" rows="3" placeholder="Ghi chú, dặn dò cho bài thưởng thêm… (đề chi tiết dùng PDF / LaTeX / ảnh bên dưới)" style="resize:vertical"></textarea>
+        </div>
+        <div class="field">
+          <label>📄 Đề bài thưởng thêm dạng PDF (tải từ máy)</label>
+          <input type="file" class="input" id="bhBtvn2PdfFile" accept=".pdf,application/pdf" style="padding:8px">
+          <small id="bhBtvn2PdfHienCo" style="color:var(--ok);margin-top:4px;display:none;font-size:0.78rem"></small>
+        </div>
+        <div class="field">
+          <label>Hoặc dán đường dẫn (Link/URL) PDF đề bài thưởng thêm</label>
+          <input type="text" class="input" id="bhBtvn2PdfUrl" placeholder="Ví dụ: https://drive.google.com/file/d/... hoặc link public PDF">
+        </div>
+        <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
+          <label>✍️ Hoặc soạn đề bài thưởng thêm bằng LaTeX</label>
+          <textarea class="input" id="bhBtvn2Latex" rows="8" placeholder="Dán mã nguồn LaTeX đề bài thưởng thêm ở đây. Học sinh sẽ thấy PDF biên dịch tự động." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichBtvn2" onclick="bienDichBtvn2Latex()">⚡ Biên dịch thử</button></div>
+          <div id="khungXemBtvn2" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px"><div id="xemBtvn2Output" style="width:100%; min-height:350px"></div></div>
+        </div>
+        <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
+          <label>📷 Hoặc dán / chọn ảnh đề bài thưởng thêm (⌘/Ctrl + V, kéo-thả) — nhiều ảnh được</label>
+          <div id="bhBtvn2DropZone" tabindex="0" style="border:2px dashed var(--line-2);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--surface-2);transition:border-color .15s,background .15s;color:var(--ink-2)">
+            <div style="font-size:1.6rem;line-height:1">🎁</div>
+            <div style="font-weight:700;margin-top:6px;color:var(--ink)">Dán ảnh đề tại đây — nhấn <kbd style="background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;font-size:.8em">⌘/Ctrl + V</kbd></div>
+            <div style="font-size:.8rem;margin-top:3px">hoặc bấm để chọn tệp · kéo-thả ảnh vào đây</div>
+          </div>
+          <input type="file" id="bhBtvn2File" accept="image/*" multiple style="display:none">
+          <div id="btvn2AnhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
         </div>
       </div>
 
@@ -1105,6 +1151,9 @@ var anhDaCo = [];
 var selectedImageFiles = [];
 var hwAnhDaCo = [];
 var hwSelectedFiles = [];
+var hw2AnhDaCo = [];
+var hw2SelectedFiles = [];
+var btvnPasteTarget = 'slot1';
 var mapGiaoVien = {};
 var mapGioiTinhGV = {};
 /* Thêm danh xưng Thầy/Cô nếu tên chưa có sẵn (theo giới tính, mặc định "Thầy") */
@@ -1515,7 +1564,7 @@ async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, homework_bonus, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
 
   var lessons = r.data || [];
@@ -1601,6 +1650,7 @@ function renderLessonAcc(b, mauChuyenDe) {
   if (b.document_id || b.latex_content) chips.push(chip('tailieu', '📄 Tài liệu'));
   if (b.images && b.images.length) chips.push(chip('bang', '🖼 ' + b.images.length));
   if (b.homework_text || (b.homework_images && b.homework_images.length) || b.homework_latex_content || b.homework_document_id) chips.push(chip('btvn', '🏠 BTVN'));
+  if (b.homework2_text || (b.homework2_images && b.homework2_images.length) || b.homework2_latex_content || b.homework2_document_id) chips.push(chip('btvn', '🎁 BT thưởng'));
   if (b.test_document_id || b.test_latex_content) chips.push(chip('test', '📝 Test'));
   var chipsHtml = chips.join('');
   
@@ -2996,7 +3046,8 @@ if ($('bhBtvnFile')) {
   if (!dz) return;
   function reset() { dz.style.borderColor = 'var(--line-2)'; dz.style.background = 'var(--surface-2)'; }
   function active() { dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-soft)'; }
-  dz.addEventListener('click', function () { if ($('bhBtvnFile')) $('bhBtvnFile').click(); });
+  dz.addEventListener('click', function () { btvnPasteTarget = 'slot1'; if ($('bhBtvnFile')) $('bhBtvnFile').click(); });
+  dz.addEventListener('focus', function () { btvnPasteTarget = 'slot1'; });
   dz.addEventListener('dragover', function (e) { e.preventDefault(); active(); });
   dz.addEventListener('dragleave', reset);
   dz.addEventListener('drop', function (e) {
@@ -3006,6 +3057,73 @@ if ($('bhBtvnFile')) {
       if (files[i].type.indexOf('image') !== -1) hwSelectedFiles.push(files[i]);
     }
     veBtvnAnh();
+  });
+})();
+
+// ===== Ảnh ô BÀI TẬP THƯỞNG THÊM (slot 2) =====
+function veBtvn2Anh() {
+  var box = $('btvn2AnhHienCo');
+  if (!box) return;
+  if (!hw2AnhDaCo.length && !hw2SelectedFiles.length) { box.innerHTML = ''; return; }
+  var combined = hw2AnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hw2SelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+  box.innerHTML = combined.map(function (item, i) {
+    var u = item.type === 'old' ? (VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + item.value) : URL.createObjectURL(item.value);
+    var prevBtn = i > 0 ? '<button type="button" onclick="dichChuyenBtvn2Anh(' + i + ', -1)" style="position:absolute;bottom:4px;left:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem">◀</button>' : '';
+    var nextBtn = i < combined.length - 1 ? '<button type="button" onclick="dichChuyenBtvn2Anh(' + i + ', 1)" style="position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem">▶</button>' : '';
+    return '<div draggable="true" ondragstart="keoBtvn2Anh(event, ' + i + ')" ondragover="event.preventDefault()" ondrop="thaBtvn2Anh(event, ' + i + ')" style="position:relative;width:72px;height:72px;border-radius:8px;cursor:move;overflow:visible">' +
+      '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
+      prevBtn + nextBtn +
+      '<button type="button" onclick="boBtvn2AnhMoi(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center">×</button>' +
+      '</div>';
+  }).join('');
+}
+function _btvn2Rebuild(combined) {
+  hw2AnhDaCo = []; hw2SelectedFiles = [];
+  combined.forEach(function (item) { if (item.type === 'old') hw2AnhDaCo.push(item.value); else hw2SelectedFiles.push(item.value); });
+  veBtvn2Anh();
+}
+function _btvn2Combined() {
+  return hw2AnhDaCo.map(function (p) { return { type: 'old', value: p }; })
+    .concat(hw2SelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
+}
+function dichChuyenBtvn2Anh(index, huong) {
+  var c = _btvn2Combined(); var t = index + huong;
+  if (t < 0 || t >= c.length) return;
+  var tmp = c[index]; c[index] = c[t]; c[t] = tmp; _btvn2Rebuild(c);
+}
+var draggedBtvn2Index = null;
+function keoBtvn2Anh(e, i) { draggedBtvn2Index = i; e.dataTransfer.effectAllowed = 'move'; }
+function thaBtvn2Anh(e, j) {
+  e.preventDefault();
+  if (draggedBtvn2Index === null || draggedBtvn2Index === j) return;
+  var c = _btvn2Combined(); var moved = c.splice(draggedBtvn2Index, 1)[0]; c.splice(j, 0, moved); draggedBtvn2Index = null; _btvn2Rebuild(c);
+}
+function boBtvn2AnhMoi(i) { var c = _btvn2Combined(); c.splice(i, 1); _btvn2Rebuild(c); }
+
+if ($('bhBtvn2File')) {
+  $('bhBtvn2File').addEventListener('change', function () {
+    for (var i = 0; i < this.files.length; i++) hw2SelectedFiles.push(this.files[i]);
+    this.value = '';
+    veBtvn2Anh();
+  });
+}
+(function () {
+  var dz = $('bhBtvn2DropZone');
+  if (!dz) return;
+  function reset() { dz.style.borderColor = 'var(--line-2)'; dz.style.background = 'var(--surface-2)'; }
+  function active() { dz.style.borderColor = '#f39c12'; dz.style.background = 'rgba(243,156,18,.12)'; }
+  dz.addEventListener('click', function () { btvnPasteTarget = 'slot2'; if ($('bhBtvn2File')) $('bhBtvn2File').click(); });
+  dz.addEventListener('focus', function () { btvnPasteTarget = 'slot2'; });
+  dz.addEventListener('dragover', function (e) { e.preventDefault(); active(); });
+  dz.addEventListener('dragleave', reset);
+  dz.addEventListener('drop', function (e) {
+    e.preventDefault(); reset();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files) for (var i = 0; i < files.length; i++) {
+      if (files[i].type.indexOf('image') !== -1) hw2SelectedFiles.push(files[i]);
+    }
+    veBtvn2Anh();
   });
 })();
 
@@ -3080,17 +3198,20 @@ window.addEventListener('paste', function(e) {
     return;
   }
 
-  // Nếu đang ở tab Bài tập về nhà -> ảnh dán trở thành ẢNH ĐỀ BTVN
+  // Nếu đang ở tab Bài tập về nhà -> ảnh dán trở thành ẢNH ĐỀ BTVN (slot đang chọn)
   var _tabBtvn = document.getElementById('tabFormBTVN');
   if (_tabBtvn && _tabBtvn.style.display !== 'none') {
+    var laSlot2 = (btvnPasteTarget === 'slot2');
     for (var b = 0; b < imageFiles.length; b++) {
       var fB = imageFiles[b];
+      var fileB;
       if (!fB.name || fB.name === 'image.png' || fB.name.indexOf('image') === 0) {
         var extB = (fB.type.split('/')[1]) || 'png';
-        hwSelectedFiles.push(new File([fB], 'btvn-' + Date.now() + '-' + b + '.' + extB, { type: fB.type }));
-      } else { hwSelectedFiles.push(fB); }
+        fileB = new File([fB], 'btvn-' + Date.now() + '-' + b + '.' + extB, { type: fB.type });
+      } else { fileB = fB; }
+      if (laSlot2) hw2SelectedFiles.push(fileB); else hwSelectedFiles.push(fileB);
     }
-    veBtvnAnh();
+    if (laSlot2) veBtvn2Anh(); else veBtvnAnh();
     return;
   }
 
@@ -3300,12 +3421,22 @@ async function moFormThemBaiGiang() {
   if ($('bhTestDue')) $('bhTestDue').value = '';
   if ($('bhBtvnLate')) $('bhBtvnLate').value = 'late';
   if ($('bhTestLate')) $('bhTestLate').value = 'late';
-  if ($('bhBtvnBonus')) $('bhBtvnBonus').value = 'false';
   napDropdownDe('');
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('bhBtvnPdfHienCo')) $('bhBtvnPdfHienCo').style.display = 'none';
   if ($('khungXemBtvn')) $('khungXemBtvn').style.display = 'none';
+  // reset ô thưởng thêm
+  btvnPasteTarget = 'slot1';
+  hw2AnhDaCo = []; hw2SelectedFiles = []; veBtvn2Anh();
+  if ($('bhBtvn2Text')) $('bhBtvn2Text').value = '';
+  if ($('bhBtvn2Latex')) $('bhBtvn2Latex').value = '';
+  if ($('bhBtvn2Due')) $('bhBtvn2Due').value = '';
+  if ($('bhBtvn2Late')) $('bhBtvn2Late').value = 'late';
+  if ($('bhBtvn2PdfUrl')) $('bhBtvn2PdfUrl').value = '';
+  if ($('bhBtvn2PdfFile')) $('bhBtvn2PdfFile').value = '';
+  if ($('bhBtvn2PdfHienCo')) $('bhBtvn2PdfHienCo').style.display = 'none';
+  if ($('khungXemBtvn2')) $('khungXemBtvn2').style.display = 'none';
   if ($('khungXemTaiLieu')) $('khungXemTaiLieu').style.display = 'none';
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = '';
@@ -3382,7 +3513,6 @@ async function moFormSua(id) {
   hwAnhDaCo = Array.isArray(bh.homework_images) ? bh.homework_images.slice() : []; hwSelectedFiles = []; veBtvnAnh();
   if ($('bhBtvnText')) $('bhBtvnText').value = bh.homework_text || '';
   if ($('bhBtvnLatex')) $('bhBtvnLatex').value = bh.homework_latex_content || '';
-  if ($('bhBtvnBonus')) $('bhBtvnBonus').value = bh.homework_bonus ? 'true' : 'false';
   if ($('bhBtvnDue')) $('bhBtvnDue').value = bh.homework_due ? isoToLocalInput(bh.homework_due) : '';
   if ($('bhTestDue')) $('bhTestDue').value = bh.test_deadline ? isoToLocalInput(bh.test_deadline) : '';
   if ($('bhBtvnLate')) $('bhBtvnLate').value = bh.homework_late_policy || 'late';
@@ -3396,6 +3526,21 @@ async function moFormSua(id) {
     var hwDoc = tatCaTaiLieu.find(function (t) { return t.id === bh.homework_document_id; });
     if (bh.homework_document_id && hwDoc) { $('bhBtvnPdfHienCo').style.display = 'block'; $('bhBtvnPdfHienCo').textContent = '✓ Đang có PDF đề: ' + (hwDoc.title || 'tệp'); }
     else $('bhBtvnPdfHienCo').style.display = 'none';
+  }
+  // ----- Ô bài tập thưởng thêm (slot 2) -----
+  btvnPasteTarget = 'slot1';
+  hw2AnhDaCo = Array.isArray(bh.homework2_images) ? bh.homework2_images.slice() : []; hw2SelectedFiles = []; veBtvn2Anh();
+  if ($('bhBtvn2Text')) $('bhBtvn2Text').value = bh.homework2_text || '';
+  if ($('bhBtvn2Latex')) $('bhBtvn2Latex').value = bh.homework2_latex_content || '';
+  if ($('bhBtvn2Due')) $('bhBtvn2Due').value = bh.homework2_due ? isoToLocalInput(bh.homework2_due) : '';
+  if ($('bhBtvn2Late')) $('bhBtvn2Late').value = bh.homework2_late_policy || 'late';
+  if ($('bhBtvn2PdfUrl')) $('bhBtvn2PdfUrl').value = '';
+  if ($('bhBtvn2PdfFile')) $('bhBtvn2PdfFile').value = '';
+  if ($('khungXemBtvn2')) $('khungXemBtvn2').style.display = 'none';
+  if ($('bhBtvn2PdfHienCo')) {
+    var hw2Doc = tatCaTaiLieu.find(function (t) { return t.id === bh.homework2_document_id; });
+    if (bh.homework2_document_id && hw2Doc) { $('bhBtvn2PdfHienCo').style.display = 'block'; $('bhBtvn2PdfHienCo').textContent = '✓ Đang có PDF đề: ' + (hw2Doc.title || 'tệp'); }
+    else $('bhBtvn2PdfHienCo').style.display = 'none';
   }
   if ($('nutLuu')) { $('nutLuu').disabled = false; $('nutLuu').textContent = 'Lưu bài giảng'; }
   $('bhId').value = bh.id;
@@ -3482,7 +3627,8 @@ async function luuBaiHoc(e) {
     test_deadline: ($('bhTestDue') && $('bhTestDue').value) ? new Date($('bhTestDue').value).toISOString() : null,
     homework_late_policy: ($('bhBtvnLate') && $('bhBtvnLate').value) || 'late',
     test_late_policy: ($('bhTestLate') && $('bhTestLate').value) || 'late',
-    homework_bonus: ($('bhBtvnBonus') && $('bhBtvnBonus').value === 'true') || false,
+    homework_bonus: false,
+    homework2_late_policy: ($('bhBtvn2Late') && $('bhBtvn2Late').value) || 'late',
     linked_exam_id: ($('bhLinkedExam') && $('bhLinkedExam').value) || null,
     created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {
@@ -3632,6 +3778,40 @@ async function luuBaiHoc(e) {
     var insBtvnU = await sb.from('documents').insert({ title: data.title + ' — Bài tập về nhà (Link)', class_id: classDangChon.id, file_path: urlBtvn }).select('id').single();
     if (insBtvnU.error) { alert('Lỗi ghi CSDL PDF BTVN từ link: ' + insBtvnU.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
     data.homework_document_id = insBtvnU.data.id;
+  }
+
+  // ===== Ô bài tập THƯỞNG THÊM (slot 2) =====
+  if (hw2SelectedFiles.length) {
+    for (var h2i = 0; h2i < hw2SelectedFiles.length; h2i++) {
+      nut.textContent = '⏳ Đang tải ảnh bài thưởng ' + (h2i + 1) + '/' + hw2SelectedFiles.length + '...';
+      var h2f = hw2SelectedFiles[h2i];
+      var h2Ten = h2f.name || ('btvn2-' + Date.now() + '.png');
+      var h2Path = Date.now() + '-hw2-' + h2i + '-' + tenAnToan(h2Ten);
+      var upH2 = await sb.storage.from('hinh-anh').upload(h2Path, h2f, { contentType: h2f.type || 'image/png' });
+      if (upH2.error) { alert('Lỗi tải ảnh bài thưởng: ' + upH2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
+      hw2AnhDaCo.push(h2Path);
+    }
+  }
+  data.homework2_text = $('bhBtvn2Text') ? ($('bhBtvn2Text').value.trim() || null) : null;
+  data.homework2_images = hw2AnhDaCo;
+  data.homework2_latex_content = $('bhBtvn2Latex') ? ($('bhBtvn2Latex').value.trim() || null) : null;
+  var due2Val = $('bhBtvn2Due') ? $('bhBtvn2Due').value : '';
+  data.homework2_due = due2Val ? new Date(due2Val).toISOString() : null;
+
+  var fileBtvn2 = $('bhBtvn2PdfFile') ? $('bhBtvn2PdfFile').files[0] : null;
+  var urlBtvn2 = $('bhBtvn2PdfUrl') ? $('bhBtvn2PdfUrl').value.trim() : '';
+  if (fileBtvn2) {
+    nut.textContent = '⏳ Đang tải PDF bài thưởng...';
+    var pathBtvn2 = Date.now() + '-btvn2-' + tenAnToan(fileBtvn2.name);
+    var upBtvn2 = await sb.storage.from('tai-lieu').upload(pathBtvn2, fileBtvn2, { contentType: 'application/pdf' });
+    if (upBtvn2.error) { alert('Lỗi tải PDF bài thưởng: ' + upBtvn2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
+    var insBtvn2 = await sb.from('documents').insert({ title: data.title + ' — Bài tập thưởng thêm', class_id: classDangChon.id, file_path: pathBtvn2 }).select('id').single();
+    if (insBtvn2.error) { alert('Lỗi ghi CSDL PDF bài thưởng: ' + insBtvn2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
+    data.homework2_document_id = insBtvn2.data.id;
+  } else if (urlBtvn2) {
+    var insBtvn2U = await sb.from('documents').insert({ title: data.title + ' — Bài tập thưởng thêm (Link)', class_id: classDangChon.id, file_path: urlBtvn2 }).select('id').single();
+    if (insBtvn2U.error) { alert('Lỗi ghi CSDL PDF bài thưởng từ link: ' + insBtvn2U.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
+    data.homework2_document_id = insBtvn2U.data.id;
   }
 
   var r, lessonId = id;
@@ -4027,6 +4207,7 @@ async function bienDichLatexXem(srcId, outId, khungId, nutId, luuBlobTest) {
 function bienDichTestLatex() { return bienDichLatexXem('bhTestLatex', 'xemTestOutput', 'khungXemTest', 'btnBienDichTest', true); }
 function bienDichTaiLieuLatex() { return bienDichLatexXem('bhLatexDoc', 'xemTaiLieuOutput', 'khungXemTaiLieu', 'btnBienDichTaiLieu', false); }
 function bienDichBtvnLatex() { return bienDichLatexXem('bhBtvnLatex', 'xemBtvnOutput', 'khungXemBtvn', 'btnBienDichBtvn', false); }
+function bienDichBtvn2Latex() { return bienDichLatexXem('bhBtvn2Latex', 'xemBtvn2Output', 'khungXemBtvn2', 'btnBienDichBtvn2', false); }
 
 var theorySections = [];
 var timeoutTimKiem = null;

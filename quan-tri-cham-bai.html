@@ -660,6 +660,12 @@ function veDanhSach() {
     var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
     var lop = classNames || '—';
     var tenBai = s0.lessons ? s0.lessons.title : (s0.exams ? '📝 Đề (tự luận): ' + s0.exams.title : 'Bài đã xoá');
+    var kindChip = s0.kind === 'homework_bonus'
+      ? '<span class="badge" style="background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;font-weight:800;margin-right:6px">🎁 BT thưởng thêm</span>'
+      : s0.kind === 'homework'
+      ? '<span class="badge" style="background:var(--accent-soft);color:var(--accent);font-weight:700;margin-right:6px">🏠 BTVN bắt buộc</span>'
+      : s0.kind === 'test'
+      ? '<span class="badge" style="background:rgba(124,58,237,.14);color:#7c3aed;font-weight:700;margin-right:6px">📝 Kiểm tra</span>' : '';
     var soLan = g.subs.length > 1 ? '<span class="badge" style="background:#7c3aed;color:#fff">📥 ' + g.subs.length + ' lần nộp</span>' : '';
     var nhieu = g.subs.length > 1;
     var body = g.subs.map(function (s, i) {
@@ -672,7 +678,7 @@ function veDanhSach() {
       '<div class="sub-head">' +
         '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' + soLan +
       '</div>' +
-      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:2px;margin-bottom:2px">' + tenBai + '</div>' +
+      '<div style="font-size:.85rem;color:var(--ink-2);margin-top:2px;margin-bottom:2px">' + kindChip + tenBai + '</div>' +
       body +
       '</div>';
   }).join('');
