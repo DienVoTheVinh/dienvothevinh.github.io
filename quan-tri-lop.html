@@ -233,7 +233,6 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <p style="margin-top:6px">Tạo/xóa khối lớp và các lớp học. Xem danh sách bài giảng, học sinh tương ứng trong từng lớp.</p>
     </div>
     <div style="display:flex; gap:10px">
-      <button class="btn btn-secondary btn-sm chi-admin" onclick="moCauHinhThuong()">⚙️ Phần thưởng</button>
       <button class="btn btn-secondary btn-sm chi-gv chi-ql" onclick="moFormLop()">+ Tạo lớp mới</button>
     </div>
   </div>
@@ -1150,6 +1149,9 @@ var hoSoNguoiDung = null;
   if (!hoSo) return;
   if (hoSo.role === 'assistant') document.body.classList.add('vai-tro-tg');
   if (hoSo.role === 'admin') document.body.classList.add('vai-tro-admin');
+  if (hoSo.role === 'admin' && /[?&]panel=thuong/.test(location.search)) {
+    setTimeout(function () { if (typeof moCauHinhThuong === 'function') moCauHinhThuong(); }, 400);
+  }
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) {
     console.log("4. Vai trò không hợp lệ, chuyển hướng...");
     window.location.href = 'lop-hoc';
