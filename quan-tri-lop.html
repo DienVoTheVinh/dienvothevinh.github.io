@@ -506,7 +506,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <button type="button" class="tab-btn active" id="btnTabChung" onclick="doiTabForm('chung')">⚙️ Thông tin chung</button>
       <button type="button" class="tab-btn" id="btnTabDinhKem" onclick="doiTabForm('dinh-kem')">📄 Tài liệu & Đính kèm</button>
       <button type="button" class="tab-btn" id="btnTabKiemTra" onclick="doiTabForm('kiem-tra')">📝 Bài kiểm tra</button>
-      <button type="button" class="tab-btn" id="btnTabBTVN" onclick="doiTabForm('btvn')">🏠 Bài tập về nhà</button>
+      <button type="button" class="tab-btn" id="btnTabBTVN" onclick="doiTabForm('btvn')">🏠 BT bắt buộc</button>
+      <button type="button" class="tab-btn" id="btnTabBTVN2" onclick="doiTabForm('btvn2')">🎁 BT thưởng thêm</button>
       <button type="button" class="tab-btn" id="btnTabLyThuyet" onclick="doiTabForm('ly-thuyet')">📖 Lý thuyết tương tác</button>
     </div>
     
@@ -737,14 +738,16 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <input type="file" id="bhBtvnFile" accept="image/*" multiple style="display:none">
           <div id="btvnAnhHienCo" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
         </div>
+      </div>
 
-        <!-- ===== Ô BÀI TẬP THƯỞNG THÊM (tuỳ chọn) ===== -->
-        <div style="display:flex;align-items:center;gap:8px;margin:24px 0 6px;padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#fff4d9,#ffe1ad);border:1px solid rgba(243,156,18,.4)">
+      <!-- TAB: BÀI TẬP THƯỞNG THÊM -->
+      <div id="tabFormBTVN2" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px 12px;border-radius:10px;background:linear-gradient(135deg,#fff4d9,#ffe1ad);border:1px solid rgba(243,156,18,.4)">
           <span style="font-size:1.1rem">🎁</span>
           <b style="color:#b45309;font-size:.98rem">Bài tập THƯỞNG THÊM (tuỳ chọn)</b>
           <small style="color:#a5701a">— không làm không sao, làm thì được thưởng xu</small>
         </div>
-        <div style="font-size:.8rem;color:var(--ink-3);margin-bottom:10px">Để trống toàn bộ mục này nếu buổi học không có bài thưởng thêm.</div>
+        <div style="font-size:.8rem;color:var(--ink-3);margin-bottom:10px">Để trống toàn bộ tab này nếu buổi học không có bài thưởng thêm.</div>
         <div class="field">
           <label>⏰ Hạn nộp bài thưởng thêm <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
           <input type="datetime-local" class="input" id="bhBtvn2Due" style="max-width:260px">
@@ -3198,20 +3201,33 @@ window.addEventListener('paste', function(e) {
     return;
   }
 
-  // Nếu đang ở tab Bài tập về nhà -> ảnh dán trở thành ẢNH ĐỀ BTVN (slot đang chọn)
+  // Tab "Bài tập thưởng thêm" -> ảnh dán vào ô thưởng thêm
+  var _tabBtvn2 = document.getElementById('tabFormBTVN2');
+  if (_tabBtvn2 && _tabBtvn2.style.display !== 'none') {
+    for (var b2 = 0; b2 < imageFiles.length; b2++) {
+      var fB2 = imageFiles[b2], fileB2;
+      if (!fB2.name || fB2.name === 'image.png' || fB2.name.indexOf('image') === 0) {
+        var extB2 = (fB2.type.split('/')[1]) || 'png';
+        fileB2 = new File([fB2], 'btvn2-' + Date.now() + '-' + b2 + '.' + extB2, { type: fB2.type });
+      } else { fileB2 = fB2; }
+      hw2SelectedFiles.push(fileB2);
+    }
+    veBtvn2Anh();
+    return;
+  }
+
+  // Tab "Bài tập bắt buộc" -> ảnh dán vào ô bắt buộc
   var _tabBtvn = document.getElementById('tabFormBTVN');
   if (_tabBtvn && _tabBtvn.style.display !== 'none') {
-    var laSlot2 = (btvnPasteTarget === 'slot2');
     for (var b = 0; b < imageFiles.length; b++) {
-      var fB = imageFiles[b];
-      var fileB;
+      var fB = imageFiles[b], fileB;
       if (!fB.name || fB.name === 'image.png' || fB.name.indexOf('image') === 0) {
         var extB = (fB.type.split('/')[1]) || 'png';
         fileB = new File([fB], 'btvn-' + Date.now() + '-' + b + '.' + extB, { type: fB.type });
       } else { fileB = fB; }
-      if (laSlot2) hw2SelectedFiles.push(fileB); else hwSelectedFiles.push(fileB);
+      hwSelectedFiles.push(fileB);
     }
-    if (laSlot2) veBtvn2Anh(); else veBtvnAnh();
+    veBtvnAnh();
     return;
   }
 
@@ -4213,12 +4229,13 @@ var theorySections = [];
 var timeoutTimKiem = null;
 
 function doiTabForm(tab) {
-  var tabs = ['chung', 'dinh-kem', 'kiem-tra', 'btvn', 'ly-thuyet'];
+  var tabs = ['chung', 'dinh-kem', 'kiem-tra', 'btvn', 'btvn2', 'ly-thuyet'];
   var btnMap = {
     'chung': 'btnTabChung',
     'dinh-kem': 'btnTabDinhKem',
     'kiem-tra': 'btnTabKiemTra',
     'btvn': 'btnTabBTVN',
+    'btvn2': 'btnTabBTVN2',
     'ly-thuyet': 'btnTabLyThuyet'
   };
   var containerMap = {
@@ -4226,6 +4243,7 @@ function doiTabForm(tab) {
     'dinh-kem': 'tabFormDinhKem',
     'kiem-tra': 'tabFormKiemTra',
     'btvn': 'tabFormBTVN',
+    'btvn2': 'tabFormBTVN2',
     'ly-thuyet': 'tabFormLyThuyet'
   };
   
