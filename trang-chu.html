@@ -600,6 +600,7 @@
   .nv-levelup .box .lv { font-size:3.2rem; font-weight:900; text-shadow:0 4px 20px rgba(255,215,106,.8); color:#ffd76a; }
   .nv-levelup .box .cap { font-size:1.1rem; font-weight:800; letter-spacing:2px; }
   @keyframes nvPop { 0%{ transform:scale(.3); opacity:0; } 60%{ transform:scale(1.1); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes popIn { 0%{ transform:scale(.85) translateY(10px); opacity:0; } 100%{ transform:scale(1) translateY(0); opacity:1; } }
   .nv-confetti { position:fixed; z-index:100000; width:9px; height:14px; pointer-events:none; animation:nvFall linear forwards; }
   @keyframes nvFall { 0%{ transform:translateY(-10vh) rotate(0); opacity:1; } 100%{ transform:translateY(110vh) rotate(720deg); opacity:.9; } }
   .nv-toast { position:fixed; right:20px; z-index:100002; background:#111827; color:#fff; border:1px solid #ffd76a;
@@ -1320,8 +1321,9 @@ async function taiDiemDanhNgay() {
   var box = $('khungDiemDanh'); if (!box) return;
   if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'student') { box.style.display = 'none'; return; }
   var r; try { r = await sb.rpc('hs_diem_danh_ngay'); } catch (e) { box.style.display = 'none'; return; }
-  if (!r || r.error || !r.data || r.data.error) { box.style.display = 'none'; return; }
+  if (!r || r.error || !r.data || r.data.error) { box.style.display = 'none'; window._checkinData = {}; thuPopupChaoNgay(); return; }
   var d = r.data;
+  window._checkinData = d;
   var streak = d.streak || 0;
   var justWeek = (streak > 0 && streak % 7 === 0);
   var doneInWeek = justWeek ? 7 : (streak % 7);
@@ -1351,6 +1353,120 @@ async function taiDiemDanhNgay() {
     if (typeof nvConfetti === 'function') nvConfetti(70);
     setTimeout(function () { if (typeof nvFloatCoins === 'function') nvFloatCoins(2); }, 400);
   }
+  thuPopupChaoNgay();
+}
+
+// ===== Popup chào mừng — hiện 1 lần khi lần đầu vào web mỗi ngày mới =====
+function thuPopupChaoNgay() {
+  if (window._welcomeShown) return;
+  if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'student') return;
+  // Chờ có đủ dữ liệu điểm danh + nhiệm vụ
+  if (!window._checkinData || !window._nvData) return;
+  var todayStr;
+  try { todayStr = new Date().toLocaleDateString('en-CA'); } catch (e) { todayStr = '' + (new Date().getFullYear()) + (new Date().getMonth()) + (new Date().getDate()); }
+  try { if (localStorage.getItem('vm_daypopup_last') === todayStr) { window._welcomeShown = true; return; } } catch (e) {}
+  window._welcomeShown = true;
+  try { localStorage.setItem('vm_daypopup_last', todayStr); } catch (e) {}
+  moPopupChaoNgay(window._checkinData, window._nvData);
+}
+
+var POPUP_KIND = {
+  review: { icon: '🔎', lbl: 'Xem lại bài chấm' },
+  btvn:   { icon: '✍️', lbl: 'Bài tập về nhà' },
+  test:   { icon: '📝', lbl: 'Bài kiểm tra' },
+  dando:  { icon: '📌', lbl: 'Lời dặn dò' },
+  lesson: { icon: '📖', lbl: 'Bài giảng mới' }
+};
+
+function dongPopupChaoNgay() {
+  var el = $('popupChaoNgay');
+  if (el) { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 200); }
+}
+
+function moPopupChaoNgay(cd, nd) {
+  cd = cd || {}; nd = nd || {};
+  var old = $('popupChaoNgay'); if (old) old.remove();
+
+  var streak = cd.streak || 0;
+  var justWeek = (streak > 0 && streak % 7 === 0);
+  var doneInWeek = justWeek ? 7 : (streak % 7);
+  var dots = '';
+  for (var i = 0; i < 7; i++) {
+    var on = i < doneInWeek;
+    dots += '<span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800;' +
+      (on ? 'background:linear-gradient(135deg,#ffb020,#f39c12);color:#fff;box-shadow:0 2px 6px rgba(243,156,18,.4)'
+          : 'background:rgba(160,120,40,.12);color:#b08a4a;border:1px dashed rgba(224,160,32,.45)') +
+      '">' + (on ? '🔥' : (i + 1)) + '</span>';
+  }
+  var rewardMsg = justWeek
+    ? '🎉 Trọn 1 tuần! Em vừa nhận <b>+2 xu</b>. Giữ lửa nhé!'
+    : 'Còn <b>' + (cd.days_to_reward != null ? cd.days_to_reward : 7) + ' ngày</b> nữa là đủ tuần để nhận <b>+2 xu</b> 🪙';
+
+  // Việc cần làm
+  var tasks = (nd.tasks && nd.tasks.length) ? nd.tasks : [];
+  var pending = (nd.pending_total != null) ? nd.pending_total : tasks.length;
+  var viecHtml;
+  if (pending > 0) {
+    var top = tasks.slice(0, 4);
+    var rows = top.map(function (t) {
+      var k = POPUP_KIND[t.kind] || { icon: '📌', lbl: '' };
+      var cls = t.class_name ? (' · ' + nvEsc(t.class_name)) : '';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">' +
+          '<span style="font-size:1.15rem;flex-shrink:0">' + k.icon + '</span>' +
+          '<div style="min-width:0"><div style="font-weight:700;font-size:.9rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + nvEsc(t.title || k.lbl) + '</div>' +
+          '<div style="font-size:.74rem;color:var(--ink-3)">' + k.lbl + cls + '</div></div>' +
+        '</div>';
+    }).join('');
+    var more = pending > top.length ? '<div style="font-size:.8rem;color:var(--accent);font-weight:700;margin-top:6px">…và ' + (pending - top.length) + ' việc khác</div>' : '';
+    viecHtml =
+      '<div style="margin-top:16px">' +
+        '<div style="font-weight:800;font-size:.95rem;color:var(--ink);margin-bottom:4px">📋 Việc cần làm hôm nay <span style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 9px;font-size:.78rem;margin-left:4px">' + pending + '</span></div>' +
+        rows + more +
+      '</div>';
+  } else {
+    viecHtml =
+      '<div style="margin-top:16px;text-align:center;background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.35);border-radius:12px;padding:14px">' +
+        '<div style="font-size:1.6rem">🎉</div>' +
+        '<div style="font-weight:800;color:#1a9e5c;font-size:.95rem">Tuyệt vời! Em không còn việc nào tồn đọng.</div>' +
+        '<div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Cứ giữ phong độ này nhé!</div>' +
+      '</div>';
+  }
+
+  var greet = (typeof chao === 'function' ? chao() : 'Chào em');
+  var ten = (hoSoNguoiDung && hoSoNguoiDung.full_name) ? hoSoNguoiDung.full_name.split(' ').pop() : 'em';
+
+  var ov = document.createElement('div');
+  ov.id = 'popupChaoNgay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;transition:opacity .2s ease';
+  ov.addEventListener('click', function (e) { if (e.target === ov) dongPopupChaoNgay(); });
+  ov.innerHTML =
+    '<div style="width:100%;max-width:460px;max-height:calc(100vh - 40px);overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.4);position:relative;animation:popIn .28s cubic-bezier(.34,1.56,.64,1)">' +
+      '<button onclick="dongPopupChaoNgay()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--ink-3);line-height:1;z-index:2">×</button>' +
+      // header gold
+      '<div style="background:linear-gradient(135deg,#fff4d9,#ffe1ad);padding:22px 22px 18px;border-radius:20px 20px 0 0;border-bottom:1px solid rgba(243,156,18,.35)">' +
+        '<div style="display:flex;align-items:center;gap:16px">' +
+          '<div style="text-align:center;flex-shrink:0"><div style="font-size:2.4rem;line-height:1">🔥</div><div style="font-weight:900;color:#8a5200;font-size:1.5rem;line-height:1">' + streak + '</div><div style="font-size:.58rem;color:#a5701a;font-weight:800;text-transform:uppercase;letter-spacing:.4px">ngày liên tục</div></div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:900;color:#7a4a00;font-size:1.15rem;line-height:1.2">' + nvEsc(greet) + ', ' + nvEsc(ten) + ' 👋</div>' +
+            '<div style="font-size:.82rem;color:#8a5200;font-weight:600;margin-top:2px">Hôm nay đã điểm danh ✓ — chúc em học vui!</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;justify-content:center">' + dots + '</div>' +
+        '<div style="font-size:.82rem;color:#8a5200;margin-top:10px;font-weight:600;text-align:center">' + rewardMsg + '</div>' +
+      '</div>' +
+      // body
+      '<div style="padding:18px 22px 22px">' +
+        viecHtml +
+        '<div style="display:flex;gap:10px;margin-top:20px">' +
+          (pending > 0
+            ? '<button onclick="dongPopupChaoNgay();var b=$(\'khungNhiemVu\');if(b)b.scrollIntoView({behavior:\'smooth\',block:\'center\'});" class="btn btn-secondary" style="flex:1">📋 Xem việc cần làm</button>'
+            : '') +
+          '<button onclick="dongPopupChaoNgay()" class="btn btn-primary" style="flex:1">Vào học thôi 🚀</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  requestAnimationFrame(function () { ov.style.opacity = '1'; });
 }
 
 async function taiNhiemVu() {
@@ -1360,9 +1476,11 @@ async function taiNhiemVu() {
   box.innerHTML = '<div class="nv-banner"><div style="text-align:center;padding:14px;opacity:.85">Đang tải nhiệm vụ của em…</div></div>';
   var r;
   try { r = await sb.rpc('hs_ho_so'); } catch(e){ box.style.display='none'; return; }
-  if (!r || r.error || !r.data || r.data.error) { box.style.display='none'; return; }
+  if (!r || r.error || !r.data || r.data.error) { box.style.display='none'; window._nvData = {}; thuPopupChaoNgay(); return; }
+  window._nvData = r.data;
   var reminders = await nvLayNhacNho();
   nvRender(r.data, reminders);
+  thuPopupChaoNgay();
 }
 
 // Đồng bộ chỉ số (Điểm TB / Chuyên cần / Bài hoàn thành) vào banner
