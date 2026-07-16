@@ -485,6 +485,7 @@
   </div>
 
   <!-- ===== THANH NHIỆM VỤ / NHÂN VẬT GAME cho học sinh (gộp: chỉ số + việc cần làm) ===== -->
+  <div id="khungDiemDanh" style="display:none; margin-bottom:16px"></div>
   <div id="khungNhiemVu" style="display:none; margin-bottom:24px"></div>
 
   <!-- Banner Điểm danh cho học sinh -->
@@ -1147,6 +1148,9 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     // Vẽ select box chọn lớp
     veSelectorLopHocSinh();
 
+    // Điểm danh mỗi ngày (giữ chuỗi + thưởng xu)
+    taiDiemDanhNgay();
+
     // Thanh nhiệm vụ / nhân vật game (đặt đầu trang)
     taiNhiemVu();
 
@@ -1310,6 +1314,43 @@ async function nvLayNhacNho() {
       return d <= 14;
     });
   } catch (e) { return []; }
+}
+
+async function taiDiemDanhNgay() {
+  var box = $('khungDiemDanh'); if (!box) return;
+  if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'student') { box.style.display = 'none'; return; }
+  var r; try { r = await sb.rpc('hs_diem_danh_ngay'); } catch (e) { box.style.display = 'none'; return; }
+  if (!r || r.error || !r.data || r.data.error) { box.style.display = 'none'; return; }
+  var d = r.data;
+  var streak = d.streak || 0;
+  var justWeek = (streak > 0 && streak % 7 === 0);
+  var doneInWeek = justWeek ? 7 : (streak % 7);
+  var dots = '';
+  for (var i = 0; i < 7; i++) {
+    var on = i < doneInWeek;
+    dots += '<span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.78rem;font-weight:800;' +
+      (on ? 'background:linear-gradient(135deg,#ffb020,#f39c12);color:#fff;box-shadow:0 2px 6px rgba(243,156,18,.4)'
+          : 'background:rgba(0,0,0,.05);color:#b08a4a;border:1px dashed rgba(224,160,32,.4)') +
+      '">' + (on ? '🔥' : (i + 1)) + '</span>';
+  }
+  var msg = justWeek
+    ? '🎉 Trọn 1 tuần! Em vừa nhận <b>+2 xu</b>. Giữ lửa để nhận tiếp tuần sau nhé!'
+    : 'Còn <b>' + (d.days_to_reward) + ' ngày</b> nữa là đủ tuần để nhận <b>+2 xu</b> 🪙. Vào web mỗi ngày để giữ chuỗi & xem việc cần làm!';
+  box.style.display = 'block';
+  box.innerHTML =
+    '<div style="border-radius:16px;padding:14px 18px;background:linear-gradient(135deg,#fff4d9,#ffe1ad);border:1px solid rgba(243,156,18,.4);display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 6px 18px rgba(243,156,18,.15)">' +
+      '<div style="text-align:center;flex-shrink:0"><div style="font-size:2rem;line-height:1">🔥</div><div style="font-weight:900;color:#8a5200;font-size:1.2rem;line-height:1.1">' + streak + '</div><div style="font-size:.6rem;color:#a5701a;font-weight:700;text-transform:uppercase;letter-spacing:.4px">ngày liên tục</div></div>' +
+      '<div style="flex:1;min-width:210px">' +
+        '<div style="font-weight:900;color:#7a4a00;font-size:1rem;margin-bottom:8px">📅 Điểm danh mỗi ngày <span style="color:#1a9e5c;font-weight:800">· hôm nay đã điểm danh ✓</span></div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + dots + '</div>' +
+        '<div style="font-size:.82rem;color:#8a5200;margin-top:8px;font-weight:600">' + msg + '</div>' +
+      '</div>' +
+      '<div style="text-align:center;background:#fff;border:1px solid rgba(243,156,18,.4);border-radius:12px;padding:9px 15px;flex-shrink:0"><div style="font-size:1.5rem;line-height:1">🪙</div><div style="font-size:.7rem;font-weight:800;color:#b45309;margin-top:2px">+2 xu / tuần</div></div>' +
+    '</div>';
+  if (d.checked_new && d.coins_awarded > 0) {
+    if (typeof nvConfetti === 'function') nvConfetti(70);
+    setTimeout(function () { if (typeof nvFloatCoins === 'function') nvFloatCoins(2); }, 400);
+  }
 }
 
 async function taiNhiemVu() {
