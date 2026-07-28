@@ -1138,9 +1138,13 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
   </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=6.5"></script>
+<script src="js/vinhmath.js?v=7.0"></script>
+<script src="js/latex-view.js?v=7.0"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -3658,7 +3662,13 @@ async function luuBaiHoc(e) {
     sort: parseInt($('bhSapXep').value) || 0,
     published: $('bhXuatBan').checked,
     theory_sections: theorySections.filter(function (sec) {
-      return sec.content_latex.trim() !== '';
+      return (sec.content_latex || '').trim() !== '' || (sec.block_question_latex || '').trim() !== '' || sec.question_id;
+    }).map(function (sec) {
+      return {
+        content_latex: (sec.content_latex || '').trim(),
+        block_question_latex: (sec.block_question_latex || '').trim() || null,
+        question_id: sec.question_id || null
+      };
     })
   };
 
@@ -4261,8 +4271,12 @@ function doiTabForm(tab) {
   });
 }
 
+function escAttr(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function themDoanLyThuyet() {
-  theorySections.push({ content_latex: '', question_id: '' });
+  theorySections.push({ content_latex: '', block_question_latex: '', question_id: '' });
   renderTheorySections();
 }
 
@@ -4282,10 +4296,85 @@ function diChuyenDoan(idx, dir) {
 
 function capNhatDoanContent(idx, val) {
   theorySections[idx].content_latex = val;
+  capNhatXemThuDoan(idx);
+}
+
+function capNhatDoanBlockQuestionLatex(idx, val) {
+  theorySections[idx].block_question_latex = val;
+  capNhatXemThuDoan(idx);
 }
 
 function capNhatDoanQuestion(idx, val) {
   theorySections[idx].question_id = val || null;
+  capNhatXemThuDoan(idx);
+}
+
+function xemThuDoanLyThuyet(idx) {
+  var box = $('previewSec-' + idx);
+  if (!box) return;
+  if (box.style.display === 'none') {
+    box.style.display = 'block';
+    capNhatXemThuDoan(idx);
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function capNhatXemThuDoan(idx) {
+  var box = $('previewSec-' + idx);
+  if (!box || box.style.display === 'none') return;
+  var sec = theorySections[idx];
+  if (!sec) return;
+  
+  var contentHTML = typeof latexRaHTML === 'function' ? latexRaHTML(sec.content_latex || '') : (sec.content_latex || '');
+  
+  var gateHTML = '';
+  var blockLatex = (sec.block_question_latex || '').trim();
+  if (blockLatex) {
+    var qParsed = typeof parseSingleQuestionLatex === 'function' ? parseSingleQuestionLatex(blockLatex) : null;
+    if (qParsed) {
+      var qBody = typeof latexRaHTML === 'function' ? latexRaHTML(qParsed.content_latex || '') : qParsed.content_latex;
+      var choicesHTML = '';
+      if (qParsed.choices && qParsed.choices.length > 0) {
+        choicesHTML = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">';
+        qParsed.choices.forEach(function (c) {
+          var correctBadge = c.correct ? ' <b style="color:var(--ok)">(Đáp án đúng)</b>' : '';
+          var cText = typeof latexRaHTML === 'function' ? latexRaHTML(c.latex || '') : c.latex;
+          choicesHTML += '<div style="padding:8px 12px; border:1px solid var(--line-2); border-radius:6px; background:var(--surface);">' +
+            '<b>' + c.key + '.</b> ' + cText + correctBadge + '</div>';
+        });
+        choicesHTML += '</div>';
+      }
+      var solHTML = qParsed.solution_latex ? '<div style="margin-top:10px; font-size:0.85rem; color:var(--ink-2); background:var(--surface-3); padding:8px; border-radius:6px;"><b>Lời giải:</b> ' + (typeof latexRaHTML === 'function' ? latexRaHTML(qParsed.solution_latex) : qParsed.solution_latex) + '</div>' : '';
+      
+      gateHTML = '<div style="margin-top:16px; padding:12px; border:1px solid var(--accent); border-radius:8px; background:var(--accent-soft);">' +
+        '<div style="font-weight:700; color:var(--accent); margin-bottom:8px;">🔒 Câu hỏi chặn (Tự dán LaTeX):</div>' +
+        '<div>' + qBody + '</div>' +
+        choicesHTML +
+        solHTML +
+        '</div>';
+    }
+  } else if (sec.question_id) {
+    gateHTML = '<div style="margin-top:16px; padding:12px; border:1px dashed var(--line-2); border-radius:8px; color:var(--ink-2); font-size:0.85rem;">🔒 Câu hỏi chặn đã chọn từ ngân hàng (ID: ' + sec.question_id + ')</div>';
+  }
+  
+  box.innerHTML = '<div style="font-weight:700; color:var(--accent); font-size:0.85rem; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">👁️ Xem thử biên dịch giao diện học sinh (Đoạn #' + (idx + 1) + ')</div>' +
+    '<div class="theory-content-view" style="line-height:1.7; font-size:0.95rem;">' + (contentHTML || '<i style="color:var(--ink-3)">Chưa có nội dung lý thuyết</i>') + '</div>' +
+    gateHTML;
+    
+  if (typeof renderToanTrong === 'function') {
+    renderToanTrong(box);
+  } else if (typeof renderMathInElement === 'function') {
+    renderMathInElement(box, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  }
 }
 
 async function taiChiTietCauHoiChan(qId, idx) {
@@ -4338,35 +4427,49 @@ function renderTheorySections() {
   container.innerHTML = theorySections.map(function (sec, idx) {
     var optHTML = sec.question_id 
       ? '<option value="' + sec.question_id + '" selected>Đang tải thông tin câu hỏi...</option>'
-      : '<option value="">-- Không có câu hỏi chặn --</option>';
+      : '<option value="">-- Chọn từ ngân hàng (không bắt buộc) --</option>';
       
     return '<div class="card" style="padding:16px; border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; position:relative; background:var(--surface);">' +
-      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-        '<b>Đoạn lý thuyết #' + (idx + 1) + '</b>' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line-2); padding-bottom:8px;">' +
+        '<b style="color:var(--accent)">Đoạn lý thuyết #' + (idx + 1) + '</b>' +
         '<div style="display:flex; gap:6px;">' +
           '<button type="button" class="btn btn-ghost btn-sm" onclick="diChuyenDoan(' + idx + ', -1)" ' + (idx === 0 ? 'disabled' : '') + '>▲ Lên</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" onclick="diChuyenDoan(' + idx + ', 1)" ' + (idx === theorySections.length - 1 ? 'disabled' : '') + '>▼ Xuống</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm" onclick="xemThuDoanLyThuyet(' + idx + ')" style="color:var(--accent)">👁️ Xem thử biên dịch</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" onclick="xoaDoanLyThuyet(' + idx + ')" style="color:var(--err)">Xóa</button>' +
         '</div>' +
       '</div>' +
       
       '<div class="field" style="margin:0">' +
         '<label>Nội dung lý thuyết (LaTeX / Hỗ trợ KaTeX)</label>' +
-        '<textarea class="input" rows="4" placeholder="Nhập lý thuyết bằng LaTeX... Ví dụ: Cho hàm số $y=f(x)$ liên tục..." onchange="capNhatDoanContent(' + idx + ', this.value)">' + sec.content_latex + '</textarea>' +
+        '<textarea class="input" rows="5" placeholder="Nhập lý thuyết bằng LaTeX... Ví dụ: Cho hàm số $y=f(x)$ liên tục..." oninput="capNhatDoanContent(' + idx + ', this.value)">' + escAttr(sec.content_latex || '') + '</textarea>' +
       '</div>' +
       
-      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:flex-end;">' +
-        '<div class="field" style="margin:0">' +
-          '<label>Tìm câu hỏi chặn (gõ từ khóa)</label>' +
-          '<input type="text" class="input" placeholder="Tìm câu hỏi..." oninput="timKiemCauHoiChan(' + idx + ', this.value)">' +
-        '</div>' +
-        '<div class="field" style="margin:0">' +
-          '<label>Câu hỏi chặn được chọn</label>' +
-          '<select class="input" id="selQ-' + idx + '" onchange="capNhatDoanQuestion(' + idx + ', this.value)">' +
-            optHTML +
-          '</select>' +
-        '</div>' +
+      '<div class="field" style="margin:0">' +
+        '<label style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<span>🔒 Câu hỏi chặn (Dán trực tiếp LaTeX) <b style="color:var(--accent); font-weight:normal">(Khuyên dùng)</b></span>' +
+          '<small style="color:var(--ink-3)">Gõ/Dán trực tiếp LaTeX câu hỏi vào đây, không cần chọn từ kho</small>' +
+        '</label>' +
+        '<textarea class="input" rows="3" placeholder="Paste trực tiếp mã LaTeX câu hỏi vào đây...\nVí dụ:\n\\begin{ex}\n Cho tập hợp $A = \\{1; 2\\}$...\n \\choice {$1 \\in A$} {$3 \\in A$} {\\True $2 \\in A$} {$A = \\varnothing$}\n\\end{ex}" oninput="capNhatDoanBlockQuestionLatex(' + idx + ', this.value)">' + escAttr(sec.block_question_latex || '') + '</textarea>' +
       '</div>' +
+
+      '<details style="font-size:0.85rem; color:var(--ink-2); margin-top:4px;">' +
+        '<summary style="cursor:pointer; font-weight:600; color:var(--ink-3)">Hoặc chọn từ Ngân hàng câu hỏi đã có sẵn (Tùy chọn)</summary>' +
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:flex-end; margin-top:8px;">' +
+          '<div class="field" style="margin:0">' +
+            '<label>Tìm câu hỏi từ kho</label>' +
+            '<input type="text" class="input" placeholder="Tìm từ khóa..." oninput="timKiemCauHoiChan(' + idx + ', this.value)">' +
+          '</div>' +
+          '<div class="field" style="margin:0">' +
+            '<label>Câu hỏi chặn được chọn</label>' +
+            '<select class="input" id="selQ-' + idx + '" onchange="capNhatDoanQuestion(' + idx + ', this.value)">' +
+              optHTML +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<div id="previewSec-' + idx + '" style="display:none; margin-top:8px; padding:16px; border:1px dashed var(--accent); border-radius:8px; background:var(--surface-2); text-align:left;"></div>' +
     '</div>';
   }).join('');
   
