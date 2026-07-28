@@ -3162,7 +3162,7 @@ async function moFormSua(id) {
     if (rv.data) { $('bhViecCanLam').value = rv.data.content || ''; if ($('bhViecNgay')) $('bhViecNgay').value = rv.data.due_date || ''; }
   }
 
-  theorySections = Array.isArray(bh.theory_sections) ? JSON.parse(JSON.stringify(bh.theory_sections)) : [];
+  theorySections = getTheorySections(bh.theory_sections);
   renderTheorySections();
   doiTabForm('chung');
   

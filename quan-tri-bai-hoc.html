@@ -1742,7 +1742,7 @@ async function moFormSua(id) {
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
   testImgFiles = []; pdfBlobTest = null; if (typeof veAnhTest === 'function') veAnhTest();
  
-  theorySections = Array.isArray(bh.theory_sections) ? JSON.parse(JSON.stringify(bh.theory_sections)) : [];
+  theorySections = getTheorySections(bh.theory_sections);
   renderTheorySections();
   doiTabForm('chung');
 

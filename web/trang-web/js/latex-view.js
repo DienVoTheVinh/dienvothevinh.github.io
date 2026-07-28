@@ -8,6 +8,18 @@
 // Trang nào dùng: nạp file này SAU katex + auto-render.
 // ============================================================
 
+function getTheorySections(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      var parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+  }
+  return [];
+}
+
 // Bỏ chú thích % (giữ \% là ký hiệu phần trăm thật)
 function lamSachLatex(src) {
   if (!src) return '';

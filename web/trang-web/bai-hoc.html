@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=7.2"></script>
+<script src="js/latex-view.js?v=7.3"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; }
@@ -1077,8 +1077,8 @@ function renderBaiHoc() {
     }
   }
 
-  // ---- Khung phải: các loại nội dung ----
-  var coLyThuyet = (Array.isArray(details.theory_sections) && details.theory_sections.length > 0) || !!(details.latex_content && details.latex_content.trim());
+  var theorySecList = getTheorySections(details.theory_sections);
+  var coLyThuyet = theorySecList.length > 0 || !!(details.latex_content && details.latex_content.trim());
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
   var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0) || !!details.homework_latex_content || !!(details.bai_btvn && details.bai_btvn.file_path);
@@ -2447,7 +2447,8 @@ async function luuTienTrinhDoc() {
 }
 
 async function taiCauHoiChanData() {
-  var qIds = (details.theory_sections || [])
+  var sections = getTheorySections(details.theory_sections);
+  var qIds = sections
     .map(function (s) { return s.question_id; })
     .filter(Boolean);
     
@@ -2469,10 +2470,11 @@ async function taiCauHoiChanData() {
 
 async function autoUnlockProgress() {
   var unlocked = currentProgress.unlocked_section || 0;
-  var total = (details.theory_sections || []).length;
+  var sections = getTheorySections(details.theory_sections);
+  var total = sections.length;
   
   while (unlocked < total) {
-    var currentSec = details.theory_sections[unlocked];
+    var currentSec = sections[unlocked];
     var hasGate = (currentSec.block_question_latex && currentSec.block_question_latex.trim()) || currentSec.question_id;
     if (!hasGate) {
       unlocked++;
@@ -2513,7 +2515,8 @@ function capNhatGateShortValue(qId, val) {
 }
 
 async function kiemTraDapAnGate(qKey, idx) {
-  var sec = (details.theory_sections || [])[idx];
+  var sections = getTheorySections(details.theory_sections);
+  var sec = sections[idx];
   if (!sec) return;
   
   var q = null;
@@ -2552,7 +2555,7 @@ async function kiemTraDapAnGate(qKey, idx) {
   if (isCorrect) {
     currentProgress.answers[qKey] = studentAns;
     currentProgress.unlocked_section = idx + 1;
-    if (idx + 1 === details.theory_sections.length) {
+    if (idx + 1 === sections.length) {
       currentProgress.completed_at = new Date().toISOString();
     }
     
@@ -2573,7 +2576,7 @@ async function kiemTraDapAnGate(qKey, idx) {
 
 function renderTheoryReading() {
   var than = $('thanNoiDung');
-  var sections = details.theory_sections || [];
+  var sections = getTheorySections(details.theory_sections);
   
   var html = thanhCongCu('📖 Đọc lý thuyết bài học', null) +
     '<div class="theory-reading-container" id="readingContainer" style="max-width:860px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:20px;">';
