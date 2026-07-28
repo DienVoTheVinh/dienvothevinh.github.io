@@ -291,3 +291,52 @@ function parseLatexQuestions(latexText) {
   }
   return questions;
 }
+
+// Phân tích 1 câu hỏi chặn bằng LaTeX (hỗ trợ \begin{ex}, \choice, \choiceTF hoặc dạng text A., B., C., D.)
+function parseSingleQuestionLatex(latexText) {
+  if (!latexText || !latexText.trim()) return null;
+  var text = latexText.trim();
+  
+  if (text.includes('\\begin{ex}') || text.includes('\\begin{bt}')) {
+    var qs = parseLatexQuestions(text);
+    if (qs && qs.length > 0) return qs[0];
+  }
+  
+  var wrapped = '\\begin{ex}\n' + text + '\n\\end{ex}';
+  var qsWrapped = parseLatexQuestions(wrapped);
+  if (qsWrapped && qsWrapped.length > 0 && qsWrapped[0].choices && qsWrapped[0].choices.length > 0) {
+    return qsWrapped[0];
+  }
+  
+  var choices = [];
+  var body = text;
+  
+  var optionRegex = /(?:^|\n|\s*)([A-Da-d])[\.\)]\s*([\s\S]*?)(?=(?:[A-Da-d][\.\)]|$))/g;
+  var matches = [];
+  var m;
+  while ((m = optionRegex.exec(text)) !== null) {
+    matches.push(m);
+  }
+  
+  if (matches.length === 4) {
+    var firstOptIndex = text.indexOf(matches[0][0]);
+    if (firstOptIndex > 0) body = text.substring(0, firstOptIndex).trim();
+    
+    matches.forEach(function(match) {
+      var key = match[1].toUpperCase();
+      var optText = match[2].trim();
+      var isCorrect = false;
+      if (optText.includes('*') || optText.includes('\\True') || optText.includes('\\true')) {
+        isCorrect = true;
+        optText = optText.replace(/\*/g, '').replace(/\\True\s*/g, '').replace(/\\true\s*/g, '');
+      }
+      choices.push({ key: key, latex: optText.trim(), correct: isCorrect });
+    });
+  }
+  
+  return {
+    content_latex: body.trim(),
+    choices: choices,
+    solution_latex: ''
+  };
+}
