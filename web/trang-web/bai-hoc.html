@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=7.0"></script>
+<script src="js/latex-view.js?v=7.1"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; }
@@ -1078,7 +1078,7 @@ function renderBaiHoc() {
   }
 
   // ---- Khung phải: các loại nội dung ----
-  var coLyThuyet = Array.isArray(details.theory_sections) && details.theory_sections.length > 0;
+  var coLyThuyet = (Array.isArray(details.theory_sections) && details.theory_sections.length > 0) || !!(details.latex_content && details.latex_content.trim());
   var coTaiLieu = !!(details.latex_content) || !!(details.documents && details.documents.file_path);
   var dsAnh = Array.isArray(details.images) ? details.images : [];
   var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0) || !!details.homework_latex_content || !!(details.bai_btvn && details.bai_btvn.file_path);
@@ -2587,100 +2587,115 @@ function renderTheoryReading() {
       'Đã ghi nhận chuyên cần lúc: ' + dt +
       '</div>';
   }
-  
-  sections.forEach(function (sec, idx) {
-    var secContentHTML = typeof latexRaHTML === 'function' ? latexRaHTML(sec.content_latex || '') : (sec.content_latex || '');
-    
-    var q = null;
-    var qKey = 'gate-' + idx;
-    var blockLatex = (sec.block_question_latex || '').trim();
-    if (blockLatex) {
-      q = typeof parseSingleQuestionLatex === 'function' ? parseSingleQuestionLatex(blockLatex) : null;
-    } else if (sec.question_id) {
-      q = gatedQuestionsMap[sec.question_id];
-      if (q) qKey = q.id;
-    }
 
-    if (idx < unlocked) {
-      var gateHTML = '';
-      if (q || sec.question_id || blockLatex) {
-        gateHTML = '<div class="gate-box correct" style="margin-top:16px; padding:12px; border:1px solid var(--ok); border-radius:8px; background:var(--ok-soft); color:var(--ok); font-weight:600;">' +
-          '✓ Đã vượt qua câu hỏi chặn' +
-          '</div>';
-      }
-      html += '<div class="theory-section-card card" id="secCard-' + idx + '" style="padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
-        '<div class="theory-content">' + secContentHTML + '</div>' +
-        gateHTML +
-        '</div>';
-    } else if (idx === unlocked) {
-      var gateHTML = '';
-      if (q) {
-        var isPartI = q.choices && q.choices.length === 4 && ['A', 'B', 'C', 'D'].includes(q.choices[0].key);
-        var isPartII = q.choices && q.choices.length === 4 && ['a', 'b', 'c', 'd'].includes(q.choices[0].key);
-        var isPartIII = !q.choices || q.choices.length === 1 || q.choices[0].key === 'short';
-        
-        var qBodyHTML = typeof latexRaHTML === 'function' ? latexRaHTML(q.content_latex || '') : q.content_latex;
-        var questionChoicesHTML = '';
-        if (isPartI) {
-          var selected = currentGateSelection[qKey];
-          questionChoicesHTML = '<div class="quiz-choices" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">';
-          q.choices.forEach(function (c) {
-            var activeClass = (selected === c.key) ? ' selected' : '';
-            var cLatex = typeof latexRaHTML === 'function' ? latexRaHTML(c.latex || '') : c.latex;
-            questionChoicesHTML += '<div class="quiz-choice' + activeClass + '" onclick="chonDapAnGate(\'' + qKey + '\', \'' + c.key + '\')" style="padding:10px 14px; border:1px solid var(--line-2); border-radius:8px; cursor:pointer; background:var(--bg); transition:all 0.15s; display:flex; align-items:center; gap:8px;">' +
-              '<span class="quiz-choice-key" style="font-weight:700; color:var(--accent); min-width:20px;">' + c.key + '.</span>' +
-              '<span>' + cLatex + '</span>' +
-              '</div>';
-          });
-          questionChoicesHTML += '</div>';
-        } else if (isPartII) {
-          var tfAns = currentGateSelection[qKey] || {};
-          questionChoicesHTML = '<div class="tf-container" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">';
-          q.choices.forEach(function (c) {
-            var studentChoice = tfAns[c.key] || '';
-            var btnTrueClass = 'tf-btn' + (studentChoice === 'D' ? ' selected-true' : '');
-            var btnFalseClass = 'tf-btn' + (studentChoice === 'S' ? ' selected-false' : '');
-            var cLatex = typeof latexRaHTML === 'function' ? latexRaHTML(c.latex || '') : c.latex;
-            
-            questionChoicesHTML += '<div class="tf-row" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--bg);">' +
-              '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + cLatex + '</div>' +
-              '<div class="tf-btns" style="display:flex; gap:6px;">' +
-                '<button class="' + btnTrueClass + '" onclick="chonDapAnGateTF(\'' + qKey + '\', \'' + c.key + '\', \'D\')">Đúng</button>' +
-                '<button class="' + btnFalseClass + '" onclick="chonDapAnGateTF(\'' + qKey + '\', \'' + c.key + '\', \'S\')">Sai</button>' +
-              '</div>' +
-            '</div>';
-          });
-          questionChoicesHTML += '</div>';
-        } else if (isPartIII) {
-          var textVal = currentGateSelection[qKey] || '';
-          questionChoicesHTML = '<div class="short-input-container" style="margin-top:12px;">' +
-            '<span>Nhập câu trả lời: </span>' +
-            '<input type="text" class="short-input" value="' + textVal + '" placeholder="Đáp số..." onchange="capNhatGateShortValue(\'' + qKey + '\', this.value)" oninput="capNhatGateShortValue(\'' + qKey + '\', this.value)" style="padding:8px 12px; border:1px solid var(--line-2); border-radius:6px;">' +
-          '</div>';
-        }
-        
-        gateHTML = '<div class="gate-box" style="margin-top:18px; padding:16px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft);">' +
-          '<div class="gate-title" style="font-weight:700; color:var(--accent); margin-bottom:10px;">🔒 Câu hỏi chặn: Trả lời đúng để đọc tiếp</div>' +
-          '<div style="font-weight: 600; margin-bottom: 12px;">' + qBodyHTML + '</div>' +
-          questionChoicesHTML +
-          '<button class="btn btn-primary btn-sm" onclick="kiemTraDapAnGate(\'' + qKey + '\', ' + idx + ')" style="margin-top: 14px;">Xác nhận câu trả lời</button>' +
-          '</div>';
-      } else if (sec.question_id && !gatedQuestionsMap[sec.question_id]) {
-        gateHTML = '<div class="gate-box" style="margin-top:16px; padding:12px; border:1px dashed var(--line-2); border-radius:8px; color:var(--ink-3);">Đang tải câu hỏi chặn...</div>';
-      }
-      
-      html += '<div class="theory-section-card card" id="secCard-' + idx + '" style="padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
-        '<div class="theory-content">' + secContentHTML + '</div>' +
-        gateHTML +
+  if (!sections || sections.length === 0) {
+    if (details.latex_content && details.latex_content.trim()) {
+      var fullLatexHTML = typeof latexRaHTML === 'function' ? latexRaHTML(details.latex_content) : details.latex_content;
+      html += '<div class="theory-section-card card" style="padding:24px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
+        '<div class="theory-content">' + fullLatexHTML + '</div>' +
         '</div>';
     } else {
-      if (idx === unlocked + 1) {
-        html += '<div class="theory-section-card locked card" id="secCard-' + idx + '" style="text-align:center; padding:20px; border:1px dashed var(--line); border-radius:12px; color:var(--ink-3); font-size:.9rem; background:var(--surface-2);">' +
-          '🔒 Đoạn lý thuyết tiếp theo đang được khóa. Hãy hoàn thành câu hỏi chặn phía trên để mở khóa.' +
-          '</div>';
-      }
+      html += '<div class="card" style="padding:40px 24px; text-align:center; color:var(--ink-3); background:var(--surface); border:1px solid var(--line); border-radius:12px;">' +
+        '<div style="font-size:2.4rem; margin-bottom:8px;">📖</div>' +
+        '<div style="font-weight:600; font-size:1.05rem; color:var(--ink);">Chưa có nội dung lý thuyết tương tác</div>' +
+        '<div style="font-size:0.88rem; margin-top:6px;">Thầy/cô chưa bổ sung nội dung lý thuyết tương tác cho bài học này. Em hãy kiểm tra mục <b>Tài liệu</b> hoặc quay lại sau nhé!</div>' +
+        '</div>';
     }
-  });
+  } else {
+    sections.forEach(function (sec, idx) {
+      var secContentHTML = typeof latexRaHTML === 'function' ? latexRaHTML(sec.content_latex || '') : (sec.content_latex || '');
+      
+      var q = null;
+      var qKey = 'gate-' + idx;
+      var blockLatex = (sec.block_question_latex || '').trim();
+      if (blockLatex) {
+        q = typeof parseSingleQuestionLatex === 'function' ? parseSingleQuestionLatex(blockLatex) : null;
+      } else if (sec.question_id) {
+        q = gatedQuestionsMap[sec.question_id];
+        if (q) qKey = q.id;
+      }
+
+      if (idx < unlocked) {
+        var gateHTML = '';
+        if (q || sec.question_id || blockLatex) {
+          gateHTML = '<div class="gate-box correct" style="margin-top:16px; padding:12px; border:1px solid var(--ok); border-radius:8px; background:var(--ok-soft); color:var(--ok); font-weight:600;">' +
+            '✓ Đã vượt qua câu hỏi chặn' +
+            '</div>';
+        }
+        html += '<div class="theory-section-card card" id="secCard-' + idx + '" style="padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
+          '<div class="theory-content">' + secContentHTML + '</div>' +
+          gateHTML +
+          '</div>';
+      } else if (idx === unlocked) {
+        var gateHTML = '';
+        if (q) {
+          var isPartI = q.choices && q.choices.length === 4 && ['A', 'B', 'C', 'D'].includes(q.choices[0].key);
+          var isPartII = q.choices && q.choices.length === 4 && ['a', 'b', 'c', 'd'].includes(q.choices[0].key);
+          var isPartIII = !q.choices || q.choices.length === 1 || q.choices[0].key === 'short';
+          
+          var qBodyHTML = typeof latexRaHTML === 'function' ? latexRaHTML(q.content_latex || '') : q.content_latex;
+          var questionChoicesHTML = '';
+          if (isPartI) {
+            var selected = currentGateSelection[qKey];
+            questionChoicesHTML = '<div class="quiz-choices" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">';
+            q.choices.forEach(function (c) {
+              var activeClass = (selected === c.key) ? ' selected' : '';
+              var cLatex = typeof latexRaHTML === 'function' ? latexRaHTML(c.latex || '') : c.latex;
+              questionChoicesHTML += '<div class="quiz-choice' + activeClass + '" onclick="chonDapAnGate(\'' + qKey + '\', \'' + c.key + '\')" style="padding:10px 14px; border:1px solid var(--line-2); border-radius:8px; cursor:pointer; background:var(--bg); transition:all 0.15s; display:flex; align-items:center; gap:8px;">' +
+                '<span class="quiz-choice-key" style="font-weight:700; color:var(--accent); min-width:20px;">' + c.key + '.</span>' +
+                '<span>' + cLatex + '</span>' +
+                '</div>';
+            });
+            questionChoicesHTML += '</div>';
+          } else if (isPartII) {
+            var tfAns = currentGateSelection[qKey] || {};
+            questionChoicesHTML = '<div class="tf-container" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">';
+            q.choices.forEach(function (c) {
+              var studentChoice = tfAns[c.key] || '';
+              var btnTrueClass = 'tf-btn' + (studentChoice === 'D' ? ' selected-true' : '');
+              var btnFalseClass = 'tf-btn' + (studentChoice === 'S' ? ' selected-false' : '');
+              var cLatex = typeof latexRaHTML === 'function' ? latexRaHTML(c.latex || '') : c.latex;
+              
+              questionChoicesHTML += '<div class="tf-row" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--bg);">' +
+                '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + cLatex + '</div>' +
+                '<div class="tf-btns" style="display:flex; gap:6px;">' +
+                  '<button class="' + btnTrueClass + '" onclick="chonDapAnGateTF(\'' + qKey + '\', \'' + c.key + '\', \'D\')">Đúng</button>' +
+                  '<button class="' + btnFalseClass + '" onclick="chonDapAnGateTF(\'' + qKey + '\', \'' + c.key + '\', \'S\')">Sai</button>' +
+                '</div>' +
+              '</div>';
+            });
+            questionChoicesHTML += '</div>';
+          } else if (isPartIII) {
+            var textVal = currentGateSelection[qKey] || '';
+            questionChoicesHTML = '<div class="short-input-container" style="margin-top:12px;">' +
+              '<span>Nhập câu trả lời: </span>' +
+              '<input type="text" class="short-input" value="' + textVal + '" placeholder="Đáp số..." onchange="capNhatGateShortValue(\'' + qKey + '\', this.value)" oninput="capNhatGateShortValue(\'' + qKey + '\', this.value)" style="padding:8px 12px; border:1px solid var(--line-2); border-radius:6px;">' +
+            '</div>';
+          }
+          
+          gateHTML = '<div class="gate-box" style="margin-top:18px; padding:16px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-soft);">' +
+            '<div class="gate-title" style="font-weight:700; color:var(--accent); margin-bottom:10px;">🔒 Câu hỏi chặn: Trả lời đúng để đọc tiếp</div>' +
+            '<div style="font-weight: 600; margin-bottom: 12px;">' + qBodyHTML + '</div>' +
+            questionChoicesHTML +
+            '<button class="btn btn-primary btn-sm" onclick="kiemTraDapAnGate(\'' + qKey + '\', ' + idx + ')" style="margin-top: 14px;">Xác nhận câu trả lời</button>' +
+            '</div>';
+        } else if (sec.question_id && !gatedQuestionsMap[sec.question_id]) {
+          gateHTML = '<div class="gate-box" style="margin-top:16px; padding:12px; border:1px dashed var(--line-2); border-radius:8px; color:var(--ink-3);">Đang tải câu hỏi chặn...</div>';
+        }
+        
+        html += '<div class="theory-section-card card" id="secCard-' + idx + '" style="padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
+          '<div class="theory-content">' + secContentHTML + '</div>' +
+          gateHTML +
+          '</div>';
+      } else {
+        if (idx === unlocked + 1) {
+          html += '<div class="theory-section-card locked card" id="secCard-' + idx + '" style="text-align:center; padding:20px; border:1px dashed var(--line); border-radius:12px; color:var(--ink-3); font-size:.9rem; background:var(--surface-2);">' +
+            '🔒 Đoạn lý thuyết tiếp theo đang được khóa. Hãy hoàn thành câu hỏi chặn phía trên để mở khóa.' +
+            '</div>';
+        }
+      }
+    });
+  }
   
   html += '</div>';
   than.innerHTML = html;
