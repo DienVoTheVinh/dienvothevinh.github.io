@@ -19,6 +19,8 @@ require(common, "controller.abort()", "Client chưa có giới hạn thời gian
 require(lesson, 'id="hnopLoai"', "Hub bài học chưa bắt buộc chọn loại bài")
 require(lesson, "fd.append('phanloai',loai)", "Hub bài học chưa gửi loại bài lên máy chủ")
 require(lesson, 'id="hnopDich"', "Hub bài học chưa hiển thị đích ghi nhận")
+require(lesson, 'id="hnopTestBtn"', "Hub bài học chưa có nút kiểm tra tải an toàn")
+require(lesson, "fd.append('dry_run','1')", "Nút kiểm tra chưa gọi chế độ không ghi bài")
 
 require(classroom, 'id="nbhLoaiSelect"', "Màn hình lớp chưa có bước chọn loại bài")
 require(classroom, 'id="nbhDichLuu"', "Màn hình lớp chưa hiển thị đích ghi nhận")

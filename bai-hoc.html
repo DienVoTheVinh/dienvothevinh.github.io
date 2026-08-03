@@ -3046,7 +3046,10 @@ async function hubRenderNop(){
       '<input type="file" class="input" id="hnopFile" accept="image/*,application/pdf" multiple onchange="vmRenderFileList(\'hnopFile\',\'hnopList\')" style="width:100%">'+
       '<div style="font-size:.76rem;color:var(--ink-3);margin-top:3px">📋 Có thể dán ảnh (Ctrl/⌘+V) vào ô này.</div>'+
       '<div id="hnopList"></div></div>'+
-    '<button class="btn btn-primary" id="hnopBtn" onclick="hubNopHo()" style="width:100%;justify-content:center;margin-top:12px">📤 Nộp bài hộ</button>'+
+    '<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:12px">'+
+      '<button class="btn btn-primary" id="hnopBtn" onclick="hubNopHo(false)" style="width:100%;justify-content:center">📤 Nộp bài hộ</button>'+
+      '<button class="btn" id="hnopTestBtn" onclick="hubNopHo(true)" style="width:100%;justify-content:center">🧪 Kiểm tra tải (không ghi bài)</button>'+
+    '</div>'+
     '<div id="hnopTT" style="font-size:.84rem;margin-top:8px"></div>'+
     '</div>';
 }
@@ -3057,25 +3060,35 @@ function hubCapNhatDichNopHo(){
   var loaiTen=loai.options[loai.selectedIndex].textContent;
   box.innerHTML='<b>Đích ghi nhận:</b> '+hubEsc(loaiTen)+' của <b>'+hubEsc(hsTen)+'</b><br><span style="color:var(--ink-3)">Bài sẽ xuất hiện trong mục Chấm bài của “'+hubEsc(details.title)+'” và thư mục Drive cùng loại.</span>';
 }
-async function hubNopHo(){
+async function hubNopHo(chiKiemTra){
+  var dryRun=!!chiKiemTra;
   var hsId=$('hnopHS').value; var loai=$('hnopLoai')?$('hnopLoai').value:''; var tt=$('hnopTT'); var inp=$('hnopFile');
   if(!hsId){tt.textContent='Thầy chưa chọn học sinh.';tt.style.color='var(--warn)';return;}
   if(!loai){tt.textContent='Thầy chưa chọn loại bài sẽ ghi nhận.';tt.style.color='var(--warn)';return;}
   if(!inp.files.length){tt.textContent='Thầy chưa chọn file bài làm.';tt.style.color='var(--warn)';return;}
-  var btn=$('hnopBtn'); btn.disabled=true; btn.textContent='⏳ Đang nộp…';
+  var btn=$('hnopBtn'), testBtn=$('hnopTestBtn');
+  btn.disabled=true; testBtn.disabled=true;
+  (dryRun?testBtn:btn).textContent=dryRun?'⏳ Đang kiểm tra…':'⏳ Đang nộp…';
   var batDau=Date.now();
   tt.textContent='Đang chuẩn bị và tải '+inp.files.length+' tệp lên Drive…'; tt.style.color='var(--accent)';
   var dem=setInterval(function(){tt.textContent='Đang tải '+inp.files.length+' tệp lên Drive… '+Math.floor((Date.now()-batDau)/1000)+' giây';},1000);
   try{
     var fd=new FormData(); fd.append('kind','nop'); fd.append('student_id',hsId); fd.append('lesson_id',lessonId); fd.append('phanloai',loai);
+    if(dryRun) fd.append('dry_run','1');
     for(var i=0;i<inp.files.length;i++) fd.append('files',inp.files[i]);
     var data=await vmGoiHamFormData('nop-bai',fd,{timeoutMs:120000});
-    tt.textContent='✓ Đã nộp hộ thành công vào '+($('hnopLoai').options[$('hnopLoai').selectedIndex].textContent)+'!'; tt.style.color='var(--ok)';
-    inp.value=''; $('hnopList').innerHTML=''; $('hnopHS').value='';
-    $('hnopLoai').value=''; hubCapNhatDichNopHo();
+    if(dryRun){
+      tt.textContent='✓ Tải thử thành công: '+data.uploaded_count+' tệp đã lên Drive và được tự động xóa; chưa ghi thành bài nộp.';
+    }else{
+      tt.textContent='✓ Đã nộp hộ thành công vào '+($('hnopLoai').options[$('hnopLoai').selectedIndex].textContent)+'!';
+      inp.value=''; $('hnopList').innerHTML=''; $('hnopHS').value='';
+      $('hnopLoai').value=''; hubCapNhatDichNopHo();
+    }
+    tt.style.color='var(--ok)';
   }catch(e){ tt.textContent='Lỗi: '+e.message; tt.style.color='var(--err)'; }
   clearInterval(dem);
-  btn.disabled=false; btn.textContent='📤 Nộp bài hộ';
+  btn.disabled=false; testBtn.disabled=false;
+  btn.textContent='📤 Nộp bài hộ'; testBtn.textContent='🧪 Kiểm tra tải (không ghi bài)';
 }
 
 /* ---- Tab Điểm danh & nhận xét (bài giảng này) ---- */
