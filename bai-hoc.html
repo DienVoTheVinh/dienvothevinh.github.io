@@ -500,7 +500,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
   <div id="bhAnhLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;cursor:zoom-out"></div>
 
   <!-- Hộp nộp bài -->
-  <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
+  <div id="modalNopBai" data-vm-popup-position="native" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;position:relative">
       <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
       <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
@@ -592,7 +592,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=6.3"></script>
+<script src="js/vinhmath.js?v=7.1"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
