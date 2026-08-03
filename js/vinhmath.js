@@ -27,78 +27,230 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
-/* ---------- CANH POPUP AN TOÀN: overlay fixed thoát khỏi tổ tiên có transform, hiện từ trên, không che nút × ---------- */
+/* ---------- POPUP THEO VỊ TRÍ BẤM: luôn nằm trong viewport, không trôi theo chiều dài trang ---------- */
 (function () {
-  // Lưu toạ độ click chuột hoặc chạm gần nhất của người dùng
+  var KHOANG_CACH = 12;
+  var CLICK_CON_HIEU_LUC = 2200;
+  var trangThai = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+  var popupDangMo = [];
+  var dangCho = [];
+
+  // Giữ các biến cũ để những trang đang dùng chung file không bị mất tương thích.
   window.vmLastClickX = null;
   window.vmLastClickY = null;
   window.vmLastClickTime = 0;
-  
+
   function ghiNhanToaDo(e) {
     var touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-    window.vmLastClickX = touch ? touch.clientX : e.clientX;
-    window.vmLastClickY = touch ? touch.clientY : e.clientY;
+    var x = touch ? touch.clientX : e.clientX;
+    var y = touch ? touch.clientY : e.clientY;
+    if (typeof x !== 'number' || typeof y !== 'number') return;
+    window.vmLastClickX = x;
+    window.vmLastClickY = y;
     window.vmLastClickTime = Date.now();
   }
-  document.addEventListener('mousedown', ghiNhanToaDo, true);
-  document.addEventListener('touchstart', ghiNhanToaDo, true);
-
-  // Overlay phủ toàn màn hình dạng position:fixed inset:0 (kể cả khi bị tổ tiên transform làm lệch)
-  function laOverlayFull(el){
-    try{ var cs=getComputedStyle(el);
-      if(cs.position!=='fixed') return false;
-      if(cs.top==='0px' && cs.left==='0px' && cs.right==='0px' && cs.bottom==='0px') return true;
-      var r=el.getBoundingClientRect();
-      return r.width >= window.innerWidth*0.9 && r.height >= window.innerHeight*0.9;
-    }catch(e){ return false; }
+  if (window.PointerEvent) document.addEventListener('pointerdown', ghiNhanToaDo, true);
+  else {
+    document.addEventListener('mousedown', ghiNhanToaDo, true);
+    document.addEventListener('touchstart', ghiNhanToaDo, true);
   }
-  function canh(el){
-    if(!el || el.nodeType!==1 || !el.style) return;
-    if(!laOverlayFull(el)) return;
-    // Chỉ xử lý khi đang hiện bằng inline style (tránh phá modal điều khiển bằng class tổ tiên)
-    var shown = el.style.display && el.style.display!=='none';
-    if(!shown) {
-      el._wasVisible = false;
+  document.addEventListener('keydown', function (e) {
+    // Popup mở từ bàn phím phải canh giữa, không dùng nhầm vị trí click cũ.
+    if (e.key === 'Enter' || e.key === ' ') window.vmLastClickTime = 0;
+  }, true);
+
+  function viewport() {
+    var vv = window.visualViewport;
+    return {
+      left: vv ? vv.offsetLeft : 0,
+      top: vv ? vv.offsetTop : 0,
+      width: vv ? vv.width : window.innerWidth,
+      height: vv ? vv.height : window.innerHeight
+    };
+  }
+  function laOverlayFull(el) {
+    try {
+      if (!el || el.nodeType !== 1 || !el.style) return false;
+      var cs = getComputedStyle(el);
+      if (cs.position !== 'fixed') return false;
+      if (cs.top === '0px' && cs.left === '0px' && cs.right === '0px' && cs.bottom === '0px') return true;
+      var r = el.getBoundingClientRect(), vp = viewport();
+      return r.width >= vp.width * 0.88 && r.height >= vp.height * 0.88;
+    } catch (e) { return false; }
+  }
+  function dangHien(el) {
+    try {
+      var cs = getComputedStyle(el);
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity || '1') > 0 && el.getClientRects().length > 0;
+    } catch (e) { return false; }
+  }
+  function noiDungCua(el) {
+    return el.querySelector('[data-vm-popup-content],.modal-content,.lb-modal,.sam-inner') || el.firstElementChild;
+  }
+  function trongMang(arr, el) { return arr.indexOf(el) !== -1; }
+  function themPopupMo(el) { if (!trongMang(popupDangMo, el)) popupDangMo.push(el); }
+  function boPopupMo(el) { var i = popupDangMo.indexOf(el); if (i !== -1) popupDangMo.splice(i, 1); }
+  function capNhatKhoaCuon() {
+    if (!document.documentElement) return;
+    if (popupDangMo.length) document.documentElement.classList.add('vm-popup-open');
+    else document.documentElement.classList.remove('vm-popup-open');
+  }
+  function taoTrangThai(el, content) {
+    var cs = getComputedStyle(content);
+    var state = {
+      visible: false,
+      anchor: null,
+      content: content,
+      maxWidth: cs.maxWidth,
+      maxHeight: cs.maxHeight,
+      overflowY: cs.overflowY,
+      resizeObserver: null
+    };
+    if (trangThai) trangThai.set(el, state); else el._vmPopupState = state;
+    return state;
+  }
+  function layTrangThai(el, content) {
+    var state = trangThai ? trangThai.get(el) : el._vmPopupState;
+    if (!state || state.content !== content) state = taoTrangThai(el, content);
+    return state;
+  }
+  function giaTriGioiHan(goc, viewportLimit) {
+    if (!goc || goc === 'none' || goc === '0px') return viewportLimit;
+    return 'min(' + goc + ', ' + viewportLimit + ')';
+  }
+  function layDiemNeo(el) {
+    var vp = viewport();
+    var mode = el.getAttribute('data-vm-popup-position') || 'click';
+    var fresh = Date.now() - window.vmLastClickTime <= CLICK_CON_HIEU_LUC;
+    if (mode === 'center' || !fresh || window.vmLastClickX == null || window.vmLastClickY == null) {
+      return { x: vp.left + vp.width / 2, y: vp.top + vp.height / 2, mode: 'center' };
+    }
+    return {
+      x: Math.max(vp.left, Math.min(vp.left + vp.width, window.vmLastClickX + vp.left)),
+      y: Math.max(vp.top, Math.min(vp.top + vp.height, window.vmLastClickY + vp.top)),
+      mode: 'click'
+    };
+  }
+  function datViTri(el, state) {
+    if (!state || !state.content || !state.anchor || !dangHien(el)) return;
+    var vp = viewport(), content = state.content;
+    var r = content.getBoundingClientRect();
+    var maxW = Math.max(0, vp.width - KHOANG_CACH * 2);
+    var maxH = Math.max(0, vp.height - KHOANG_CACH * 2);
+    var w = Math.min(r.width, maxW), h = Math.min(r.height, maxH);
+    var left = state.anchor.x - w / 2;
+    var top = state.anchor.y - h / 2;
+    left = Math.max(vp.left + KHOANG_CACH, Math.min(left, vp.left + vp.width - w - KHOANG_CACH));
+    top = Math.max(vp.top + KHOANG_CACH, Math.min(top, vp.top + vp.height - h - KHOANG_CACH));
+    var newLeft = Math.round(left) + 'px', newTop = Math.round(top) + 'px';
+    if (content.style.left !== newLeft) content.style.left = newLeft;
+    if (content.style.top !== newTop) content.style.top = newTop;
+  }
+  function canh(el, forceNewAnchor) {
+    if (!laOverlayFull(el)) return;
+    // Thoát khỏi card/section có transform, filter hoặc overflow tạo containing block.
+    // Đây cũng là hành vi tương thích với bộ canh popup cũ của VinhMath.
+    if (el.parentElement && el.parentElement !== document.body) {
+      try { document.body.appendChild(el); } catch (e) {}
+    }
+    var content = noiDungCua(el);
+    if (!content) return;
+    var state = layTrangThai(el, content);
+    if (!dangHien(el)) {
+      state.visible = false;
+      state.anchor = null;
+      boPopupMo(el);
+      capNhatKhoaCuon();
       return;
     }
-    // Đưa overlay ra thẳng <body> để thoát tổ tiên có transform/filter (nguyên nhân fixed bị lệch)
-    if(el.parentElement && el.parentElement!==document.body){ try{ document.body.appendChild(el); }catch(e){} }
-    try{
-      el._wasVisible = true;
-      // Overlay luôn canh giữa viewport, cuộn được — nội dung không bao giờ bị che hay lệch quá cao
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      el.style.overflowY = 'auto';
-      el.style.padding = '16px';
-      var content = el.querySelector('.modal-content') || el.firstElementChild;
-      if (content) {
-        // relative: giữ nút × (position:absolute) nằm ĐÚNG trong popup, và flexbox vẫn canh giữa
-        content.style.position = 'relative';
-        content.style.left = '';
-        content.style.top = '';
-        content.style.right = '';
-        content.style.bottom = '';
-        content.style.margin = 'auto';
-        // Giới hạn cao ≤ viewport để luôn nằm gọn trong màn hình, dài thì cuộn bên trong
-        content.style.maxHeight = 'calc(100vh - 32px)';
-        content.style.overflowY = 'auto';
-      }
-      el.scrollTop = 0;
-    }catch(e){}
+
+    // Chế độ native dành cho bottom-sheet có bố cục riêng trên điện thoại.
+    if (el.getAttribute('data-vm-popup-position') === 'native') {
+      state.visible = true;
+      themPopupMo(el);
+      capNhatKhoaCuon();
+      return;
+    }
+
+    if (!state.visible || forceNewAnchor) state.anchor = layDiemNeo(el);
+    state.visible = true;
+    themPopupMo(el);
+    capNhatKhoaCuon();
+
+    // Fixed trực tiếp theo viewport: không còn phụ thuộc scrollTop hay tổ tiên có transform.
+    if (content.style.position !== 'fixed') content.style.position = 'fixed';
+    if (content.style.right !== 'auto') content.style.right = 'auto';
+    if (content.style.bottom !== 'auto') content.style.bottom = 'auto';
+    if (content.style.margin !== '0px') content.style.margin = '0px';
+    if (content.style.boxSizing !== 'border-box') content.style.boxSizing = 'border-box';
+    var mw = giaTriGioiHan(state.maxWidth, 'calc(100vw - ' + (KHOANG_CACH * 2) + 'px)');
+    var mh = giaTriGioiHan(state.maxHeight, 'calc(100dvh - ' + (KHOANG_CACH * 2) + 'px)');
+    if (content.style.maxWidth !== mw) content.style.maxWidth = mw;
+    if (content.style.maxHeight !== mh) content.style.maxHeight = mh;
+    if (state.overflowY === 'visible' && content.style.overflowY !== 'auto') content.style.overflowY = 'auto';
+    datViTri(el, state);
+
+    if (!state.resizeObserver && window.ResizeObserver) {
+      state.resizeObserver = new ResizeObserver(function () { datViTri(el, state); });
+      state.resizeObserver.observe(content);
+    }
   }
-  function quet(node){ if(node && node.nodeType===1) canh(node); }
-  function start(){
-    try{
-      var obs=new MutationObserver(function(muts){
-        muts.forEach(function(m){
-          quet(m.target);
-          if(m.addedNodes) m.addedNodes.forEach(quet);
-        });
+  function schedule(el, forceNewAnchor) {
+    if (!el || el.nodeType !== 1 || trongMang(dangCho, el)) return;
+    dangCho.push(el);
+    requestAnimationFrame(function () {
+      var i = dangCho.indexOf(el); if (i !== -1) dangCho.splice(i, 1);
+      canh(el, forceNewAnchor);
+    });
+  }
+  function quetLen(node) {
+    var el = node && node.nodeType === 1 ? node : node && node.parentElement;
+    var limit = 0;
+    while (el && el !== document.documentElement && limit++ < 12) {
+      if (laOverlayFull(el)) { schedule(el, false); return; }
+      el = el.parentElement;
+    }
+  }
+  function quetThem(node) {
+    if (!node || node.nodeType !== 1) return;
+    if (laOverlayFull(node)) schedule(node, false);
+    var list = node.querySelectorAll ? node.querySelectorAll('.modal,[id*="Modal"],[id*="Lightbox"],[style*="position:fixed"],[style*="position: fixed"]') : [];
+    for (var i = 0; i < list.length; i++) if (laOverlayFull(list[i])) schedule(list[i], false);
+  }
+  function canhLaiTatCa() {
+    for (var i = 0; i < popupDangMo.length; i++) {
+      var el = popupDangMo[i], state = trangThai ? trangThai.get(el) : el._vmPopupState;
+      datViTri(el, state);
+    }
+  }
+  function start() {
+    try {
+      var style = document.createElement('style');
+      style.id = 'vmPopupViewportStyle';
+      style.textContent = 'html.vm-popup-open,html.vm-popup-open body{overflow:hidden!important;overscroll-behavior:none!important}';
+      (document.head || document.documentElement).appendChild(style);
+      quetThem(document.body);
+      var obs = new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var m = muts[i];
+          quetLen(m.target);
+          for (var j = 0; m.addedNodes && j < m.addedNodes.length; j++) quetThem(m.addedNodes[j]);
+        }
       });
-      obs.observe(document.body,{attributes:true, attributeFilter:['style','class'], subtree:true, childList:true});
-    }catch(e){}
+      obs.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], subtree: true, childList: true });
+    } catch (e) {}
   }
-  if(document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+
+  // Trang có thể gọi ngay sau khi đổi display để popup hiện đúng ngay frame đầu tiên.
+  window.vmCanhPopup = function (el, options) {
+    if (typeof el === 'string') el = document.querySelector(el);
+    if (!el) return;
+    if (options && options.position) el.setAttribute('data-vm-popup-position', options.position);
+    schedule(el, true);
+  };
+  window.addEventListener('resize', canhLaiTatCa, { passive: true });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', canhLaiTatCa, { passive: true });
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
 
 /* ---------- THƯỞNG NÓNG (GV/admin cộng xu + XP trực tiếp cho 1 HS) ---------- */
@@ -310,8 +462,10 @@ window.vmChonNghi = function(studentId, studentName, callbackName) {
     var st = document.createElement('style');
     st.id = 'vmPageTransition';
     st.textContent =
-      '@keyframes vmPageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}' +
-      '@keyframes vmPageOut{from{opacity:1}to{opacity:0;transform:translateY(-6px)}}' +
+      // Không transform <body>: transform dù bằng ma trận đơn vị vẫn biến body thành
+      // containing block, khiến mọi position:fixed bị neo theo chiều cao tài liệu.
+      '@keyframes vmPageIn{from{opacity:0}to{opacity:1}}' +
+      '@keyframes vmPageOut{from{opacity:1}to{opacity:0}}' +
       'body{animation:vmPageIn .36s cubic-bezier(.22,1,.36,1) both}' +
       'html.vm-leaving body{animation:vmPageOut .2s ease both}';
     (document.head || document.documentElement).appendChild(st);
