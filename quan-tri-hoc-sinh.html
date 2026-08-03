@@ -427,7 +427,8 @@ function veBang() {
     
     var buttonsHtml = '';
     if (s.role === 'student') {
-      buttonsHtml = '<a class="btn btn-primary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Báo cáo</a>' +
+      buttonsHtml = '<a class="btn btn-primary btn-sm" href="quan-tri-bao-cao-hoc-sinh?studentId=' + s.id + '" style="text-decoration:none; font-weight:700; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">📊 Báo cáo tuần/tháng</a>' +
+        '<a class="btn btn-secondary btn-sm" href="ca-nhan?studentId=' + s.id + '" style="text-decoration:none; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Hồ sơ học lực</a>' +
         '<button class="btn btn-secondary btn-sm" onclick="moNhanXetPH(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">💬 Nhận xét & PH</button>' +
         '<button class="btn btn-secondary btn-sm" onclick="moChiTiet(\'' + s.id + '\')" style="height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 12px; box-sizing:border-box;">Nhật ký Web</button>';
     } else {
