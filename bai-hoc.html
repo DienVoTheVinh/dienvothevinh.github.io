@@ -592,7 +592,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.1"></script>
+<script src="js/vinhmath.js?v=7.2"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -841,9 +841,7 @@ async function guiBaiNop() {
     fd.append('phanloai', nopBaiPhanLoai);
     fd.append('lesson_id', lessonId);
     for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
-    var r = await sb.functions.invoke('nop-bai', { body: fd });
-    if (r.error) throw new Error(r.error.message || 'Trạm nộp bài lỗi');
-    if (r.data && r.data.error) throw new Error(r.data.error);
+    await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
     $('nbFiles').value = '';
     if (typeof vmRenderFileList === 'function') vmRenderFileList('nbFiles', 'nbFileList');
     tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div><div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô. Cố lên nhé!</div></div>';
@@ -3011,9 +3009,7 @@ async function hubLuuCham(id){
       nut.textContent='⏳ Đang tải file chấm…';
       var fd=new FormData(); fd.append('kind','cham'); fd.append('submission_id',id);
       for(var i=0;i<fs.length;i++) fd.append('files',fs[i]);
-      var r1=await sb.functions.invoke('nop-bai',{body:fd});
-      if(r1.error) throw new Error(r1.error.message||'Trạm lỗi');
-      if(r1.data&&r1.data.error) throw new Error(r1.data.error);
+      await vmGoiHamFormData('nop-bai',fd,{timeoutMs:120000});
     }
     var diem=$('hdiem-'+id).value;
     var r2=await sb.from('submissions').update({score:diem===''?null:parseFloat(diem),feedback:$('hphe-'+id).value.trim()||null,status:'graded',graded_at:new Date().toISOString()}).eq('id',id);
@@ -3027,13 +3023,25 @@ async function hubRenderNop(){
   var box=$('hubPaneNop');
   box.innerHTML='<div class="no-content" style="padding:16px"><div class="spinner"></div></div>';
   await hubTaiRoster();
+  var loaiOptions=[];
+  var coBtvn=!!(details&&(details.homework_text||(details.homework_images&&details.homework_images.length)||details.homework_latex_content||details.homework_document_id));
+  var coBonus=!!(details&&(details.homework2_text||(details.homework2_images&&details.homework2_images.length)||details.homework2_latex_content||details.homework2_document_id));
+  var coTest=!!(details&&(details.test_document_id||details.test_latex_content||details.linked_exam_id));
+  if(coBtvn) loaiOptions.push('<option value="homework">🏠 Bài tập về nhà bắt buộc</option>');
+  if(coBonus) loaiOptions.push('<option value="homework_bonus">🎁 Bài tập thưởng thêm</option>');
+  if(coTest) loaiOptions.push('<option value="test">📝 Bài kiểm tra của bài giảng</option>');
   box.innerHTML=
     '<div class="hub-card">'+
-    '<p style="margin:0 0 10px;font-size:.88rem;color:var(--ink-2)">Nộp bài hộ học sinh vào bài giảng <b>'+hubEsc(details.title)+'</b>. Bài lưu đúng tên em đó (cả trên Google Drive).</p>'+
+    '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-2)">Nộp hộ cho học sinh trong bài giảng <b>'+hubEsc(details.title)+'</b>. Hãy chọn đúng loại bài; hệ thống sẽ ghi vào đúng mục chấm bài và thư mục Google Drive tương ứng.</p>'+
     '<div class="field" style="margin-bottom:10px"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px">Chọn học sinh</label>'+
-      '<select class="input" id="hnopHS" style="width:100%"><option value="">-- Chọn học sinh --</option>'+
+      '<select class="input" id="hnopHS" onchange="hubCapNhatDichNopHo()" style="width:100%"><option value="">-- Chọn học sinh --</option>'+
         hubRoster.map(function(s){return '<option value="'+s.id+'">'+hubEsc(s.full_name)+' ('+hubEsc(s.username||'')+')</option>';}).join('')+
       '</select></div>'+
+    '<div class="field" style="margin-bottom:10px"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px">Loại bài sẽ ghi nhận <b style="color:var(--err)">*</b></label>'+
+      '<select class="input" id="hnopLoai" onchange="hubCapNhatDichNopHo()" style="width:100%"><option value="">-- Chọn rõ loại bài --</option>'+loaiOptions.join('')+'</select>'+
+      (!loaiOptions.length?'<div style="font-size:.78rem;color:var(--warn);margin-top:5px">Bài giảng này chưa có BTVN, bài thưởng hoặc bài kiểm tra để nhận bài nộp.</div>':'')+
+      '</div>'+
+    '<div id="hnopDich" style="padding:10px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:.82rem;line-height:1.5;color:var(--ink-2)">📍 Chọn học sinh và loại bài để xem đích lưu.</div>'+
     '<div class="field"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px">Ảnh/PDF bài làm (chọn nhiều)</label>'+
       '<input type="file" class="input" id="hnopFile" accept="image/*,application/pdf" multiple onchange="vmRenderFileList(\'hnopFile\',\'hnopList\')" style="width:100%">'+
       '<div style="font-size:.76rem;color:var(--ink-3);margin-top:3px">📋 Có thể dán ảnh (Ctrl/⌘+V) vào ô này.</div>'+
@@ -3042,21 +3050,31 @@ async function hubRenderNop(){
     '<div id="hnopTT" style="font-size:.84rem;margin-top:8px"></div>'+
     '</div>';
 }
+function hubCapNhatDichNopHo(){
+  var hs=$('hnopHS'),loai=$('hnopLoai'),box=$('hnopDich'); if(!box)return;
+  if(!hs||!hs.value||!loai||!loai.value){box.textContent='📍 Chọn học sinh và loại bài để xem đích lưu.';return;}
+  var hsTen=hs.options[hs.selectedIndex].textContent;
+  var loaiTen=loai.options[loai.selectedIndex].textContent;
+  box.innerHTML='<b>Đích ghi nhận:</b> '+hubEsc(loaiTen)+' của <b>'+hubEsc(hsTen)+'</b><br><span style="color:var(--ink-3)">Bài sẽ xuất hiện trong mục Chấm bài của “'+hubEsc(details.title)+'” và thư mục Drive cùng loại.</span>';
+}
 async function hubNopHo(){
-  var hsId=$('hnopHS').value; var tt=$('hnopTT'); var inp=$('hnopFile');
+  var hsId=$('hnopHS').value; var loai=$('hnopLoai')?$('hnopLoai').value:''; var tt=$('hnopTT'); var inp=$('hnopFile');
   if(!hsId){tt.textContent='Thầy chưa chọn học sinh.';tt.style.color='var(--warn)';return;}
+  if(!loai){tt.textContent='Thầy chưa chọn loại bài sẽ ghi nhận.';tt.style.color='var(--warn)';return;}
   if(!inp.files.length){tt.textContent='Thầy chưa chọn file bài làm.';tt.style.color='var(--warn)';return;}
   var btn=$('hnopBtn'); btn.disabled=true; btn.textContent='⏳ Đang nộp…';
-  tt.textContent='Đang tải lên Drive…'; tt.style.color='var(--accent)';
+  var batDau=Date.now();
+  tt.textContent='Đang chuẩn bị và tải '+inp.files.length+' tệp lên Drive…'; tt.style.color='var(--accent)';
+  var dem=setInterval(function(){tt.textContent='Đang tải '+inp.files.length+' tệp lên Drive… '+Math.floor((Date.now()-batDau)/1000)+' giây';},1000);
   try{
-    var fd=new FormData(); fd.append('kind','nop'); fd.append('student_id',hsId); fd.append('lesson_id',lessonId);
+    var fd=new FormData(); fd.append('kind','nop'); fd.append('student_id',hsId); fd.append('lesson_id',lessonId); fd.append('phanloai',loai);
     for(var i=0;i<inp.files.length;i++) fd.append('files',inp.files[i]);
-    var r=await sb.functions.invoke('nop-bai',{body:fd});
-    if(r.error) throw new Error(r.error.message||'Lỗi nộp bài');
-    if(r.data&&r.data.error) throw new Error(r.data.error);
-    tt.textContent='✓ Đã nộp hộ thành công!'; tt.style.color='var(--ok)';
+    var data=await vmGoiHamFormData('nop-bai',fd,{timeoutMs:120000});
+    tt.textContent='✓ Đã nộp hộ thành công vào '+($('hnopLoai').options[$('hnopLoai').selectedIndex].textContent)+'!'; tt.style.color='var(--ok)';
     inp.value=''; $('hnopList').innerHTML=''; $('hnopHS').value='';
+    $('hnopLoai').value=''; hubCapNhatDichNopHo();
   }catch(e){ tt.textContent='Lỗi: '+e.message; tt.style.color='var(--err)'; }
+  clearInterval(dem);
   btn.disabled=false; btn.textContent='📤 Nộp bài hộ';
 }
 

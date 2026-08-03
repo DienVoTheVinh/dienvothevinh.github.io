@@ -1143,7 +1143,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.1"></script>
+<script src="js/vinhmath.js?v=7.2"></script>
 <script src="js/latex-view.js?v=7.0"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
@@ -4707,33 +4707,59 @@ async function moFormNopBaiHo(studentId, studentName) {
   $('nbhTrangThai').textContent = '';
   
   var sel = $('nbhTargetSelect');
-  sel.innerHTML = '<option value="">-- Đang tải danh sách bài học/đề thi --</option>';
+  var loaiSel = $('nbhLoaiSelect');
+  if (loaiSel) loaiSel.value = '';
+  sel.innerHTML = '<option value="">-- Chọn loại bài trước --</option>';
+  nbhCapNhatDich();
   
   try {
-    var rL = await sb.from('lessons').select('id, title').eq('class_id', classDangChon.id).order('sort', { ascending: false });
+    var rL = await sb.from('lessons').select('id, title, homework_text, homework_images, homework_latex_content, homework_document_id, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, test_document_id, test_latex_content, linked_exam_id').eq('class_id', classDangChon.id).order('sort', { ascending: false });
     var rE = await sb.from('exams').select('id, title, de_type').eq('class_id', classDangChon.id).order('created_at', { ascending: false });
-    
-    var options = ['<option value="">-- Chọn bài kiểm tra/luyện đề --</option>'];
-    if (rL.data && rL.data.length > 0) {
-      options.push('<optgroup label="📝 Bài giảng (Kiểm tra)">');
-      rL.data.forEach(function(l) {
-        options.push('<option value="lesson:' + l.id + '">' + l.title + '</option>');
-      });
-      options.push('</optgroup>');
-    }
-    
-    if (rE.data && rE.data.length > 0) {
-      options.push('<optgroup label="✍️ Luyện đề (Tự luận)">');
-      rE.data.forEach(function(e) {
-        options.push('<option value="exam:' + e.id + '">' + e.title + '</option>');
-      });
-      options.push('</optgroup>');
-    }
-    
-    sel.innerHTML = options.join('');
+    if (rL.error) throw rL.error;
+    if (rE.error) throw rE.error;
+    window.nbhLessons = rL.data || [];
+    window.nbhExams = rE.data || [];
+    nbhCapNhatDanhSach();
   } catch(e) {
     sel.innerHTML = '<option value="">❌ Lỗi tải danh sách</option>';
+    $('nbhTrangThai').textContent = 'Lỗi tải danh sách bài: ' + (e.message || e);
+    $('nbhTrangThai').style.color = 'var(--err)';
   }
+}
+
+function nbhLessonCoLoai(l, loai) {
+  if (loai === 'homework') return !!(l.homework_text || (l.homework_images && l.homework_images.length) || l.homework_latex_content || l.homework_document_id);
+  if (loai === 'homework_bonus') return !!(l.homework2_text || (l.homework2_images && l.homework2_images.length) || l.homework2_latex_content || l.homework2_document_id);
+  return !!(l.test_document_id || l.test_latex_content || l.linked_exam_id);
+}
+
+function nbhCapNhatDanhSach() {
+  var loai = $('nbhLoaiSelect') ? $('nbhLoaiSelect').value : '';
+  var sel = $('nbhTargetSelect'); if (!sel) return;
+  if (!loai) { sel.innerHTML = '<option value="">-- Chọn loại bài trước --</option>'; nbhCapNhatDich(); return; }
+  var lessons = (window.nbhLessons || []).filter(function (l) { return nbhLessonCoLoai(l, loai); });
+  var options = ['<option value="">-- Chọn bài cụ thể --</option>'];
+  if (lessons.length) {
+    options.push('<optgroup label="📚 Bài giảng của lớp">');
+    lessons.forEach(function (l) { options.push('<option value="lesson:' + l.id + '">' + ddEsc(l.title) + '</option>'); });
+    options.push('</optgroup>');
+  }
+  if (loai === 'test' && (window.nbhExams || []).length) {
+    options.push('<optgroup label="✍️ Đề tự luận / luyện đề">');
+    window.nbhExams.forEach(function (e) { options.push('<option value="exam:' + e.id + '">' + ddEsc(e.title) + '</option>'); });
+    options.push('</optgroup>');
+  }
+  if (options.length === 1) options.push('<option value="" disabled>Không có bài phù hợp trong lớp này</option>');
+  sel.innerHTML = options.join('');
+  nbhCapNhatDich();
+}
+
+function nbhCapNhatDich() {
+  var box = $('nbhDichLuu'), loai = $('nbhLoaiSelect'), target = $('nbhTargetSelect'); if (!box) return;
+  if (!loai || !loai.value || !target || !target.value) { box.textContent = '📍 Chọn loại bài và bài cụ thể để xem đích ghi nhận.'; return; }
+  var loaiTen = loai.options[loai.selectedIndex].textContent;
+  var baiTen = target.options[target.selectedIndex].textContent;
+  box.innerHTML = '<b>Đích ghi nhận:</b> ' + ddEsc(loaiTen) + ' — <b>' + ddEsc(baiTen) + '</b><br><span style="color:var(--ink-3)">Bài sẽ vào đúng hàng chấm bài của học sinh và thư mục Google Drive cùng loại.</span>';
 }
 
 function dongFormNopBaiHo() {
@@ -4794,9 +4820,16 @@ function vmXoaFile(inputId, idx, listId) {
 }
 
 async function nopBaiHoChoHocSinh() {
+  var phanloai = $('nbhLoaiSelect') ? $('nbhLoaiSelect').value : '';
+  if (!phanloai) {
+    $('nbhTrangThai').textContent = 'Vui lòng chọn loại bài sẽ ghi nhận.';
+    $('nbhTrangThai').style.color = 'var(--warn)';
+    return;
+  }
   var target = $('nbhTargetSelect').value;
   if (!target) {
-    alert('Vui lòng chọn bài học hoặc đề thi.');
+    $('nbhTrangThai').textContent = 'Vui lòng chọn bài cụ thể.';
+    $('nbhTrangThai').style.color = 'var(--warn)';
     return;
   }
   
@@ -4818,16 +4851,21 @@ async function nopBaiHoChoHocSinh() {
   nut.disabled = true;
   var originalText = nut.textContent;
   nut.textContent = '⏳ Đang nộp bài hộ...';
+  var batDau = Date.now();
   
   if (tt) {
-    tt.textContent = 'Đang tải file lên Drive của thầy...';
+    tt.textContent = 'Đang chuẩn bị và tải ' + inp.files.length + ' tệp lên Drive...';
     tt.style.color = 'var(--accent)';
   }
+  var dem = setInterval(function () {
+    if (tt) tt.textContent = 'Đang tải ' + inp.files.length + ' tệp lên Drive… ' + Math.floor((Date.now() - batDau) / 1000) + ' giây';
+  }, 1000);
   
   try {
     var fd = new FormData();
     fd.append('kind', 'nop');
     fd.append('student_id', window.nbhTargetStudentId);
+    fd.append('phanloai', phanloai);
     
     if (type === 'lesson') {
       fd.append('lesson_id', id);
@@ -4839,19 +4877,15 @@ async function nopBaiHoChoHocSinh() {
       fd.append('files', inp.files[i]);
     }
     
-    var r = await sb.functions.invoke('nop-bai', { body: fd });
-    if (r.error) throw new Error(r.error.message || 'Lỗi nộp bài');
-    if (r.data && r.data.error) throw new Error(r.data.error);
+    await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
     
     if (tt) {
-      tt.textContent = '✓ Đã nộp bài hộ học sinh thành công!';
+      tt.textContent = '✓ Đã nộp hộ thành công vào ' + $('nbhLoaiSelect').options[$('nbhLoaiSelect').selectedIndex].textContent + ' — ' + $('nbhTargetSelect').options[$('nbhTargetSelect').selectedIndex].textContent + '!';
       tt.style.color = 'var(--ok)';
     }
     
     inp.value = '';
-    setTimeout(function() {
-      dongFormNopBaiHo();
-    }, 1500);
+    vmRenderFileList('nbhFileInp', 'nbhFileList');
     
   } catch (e) {
     if (tt) {
@@ -4859,6 +4893,7 @@ async function nopBaiHoChoHocSinh() {
       tt.style.color = 'var(--err)';
     }
   } finally {
+    clearInterval(dem);
     nut.disabled = false;
     nut.textContent = originalText;
   }
@@ -4887,9 +4922,7 @@ async function luuChamBaiDocLap(id) {
       for (var i = 0; i < fs.length; i++) {
         fd.append('files', fs[i]);
       }
-      var r1 = await sb.functions.invoke('nop-bai', { body: fd });
-      if (r1.error) throw new Error(r1.error.message || 'Lỗi trạm tải file');
-      if (r1.data && r1.data.error) throw new Error(r1.data.error);
+      await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
     }
     
     var diem = $('sdiem-' + id).value;
@@ -5179,13 +5212,23 @@ async function luuTailieuLop(e) {
       Học sinh: <b id="nbhTenHocSinh" style="color: var(--accent)">...</b>
     </p>
     <div class="field" style="margin-top: 15px;">
-      <label>Chọn bài giảng hoặc đề thi tự luận <b style="color:var(--accent)">*</b></label>
-      <select class="input" id="nbhTargetSelect" style="width: 100%;">
-        <option value="">-- Đang tải danh sách bài học/đề thi --</option>
+      <label>1. Loại bài sẽ ghi nhận <b style="color:var(--err)">*</b></label>
+      <select class="input" id="nbhLoaiSelect" onchange="nbhCapNhatDanhSach()" style="width: 100%;">
+        <option value="">-- Chọn rõ loại bài --</option>
+        <option value="homework">🏠 Bài tập về nhà bắt buộc</option>
+        <option value="homework_bonus">🎁 Bài tập thưởng thêm</option>
+        <option value="test">📝 Bài kiểm tra / đề tự luận</option>
       </select>
     </div>
     <div class="field">
-      <label>Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--accent)">*</b></label>
+      <label>2. Bài cụ thể <b style="color:var(--err)">*</b></label>
+      <select class="input" id="nbhTargetSelect" onchange="nbhCapNhatDich()" style="width: 100%;">
+        <option value="">-- Chọn loại bài trước --</option>
+      </select>
+    </div>
+    <div id="nbhDichLuu" style="padding:10px 12px;margin:4px 0 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:.82rem;line-height:1.5;color:var(--ink-2)">📍 Chọn loại bài và bài cụ thể để xem đích ghi nhận.</div>
+    <div class="field">
+      <label>3. Chọn file bài làm (Ảnh hoặc PDF, có thể chọn nhiều) <b style="color:var(--err)">*</b></label>
       <input type="file" id="nbhFileInp" class="input" accept="image/*,application/pdf" multiple onchange="vmRenderFileList('nbhFileInp','nbhFileList')" style="padding: 8px;">
       <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Mẹo: có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
       <div id="nbhFileList"></div>

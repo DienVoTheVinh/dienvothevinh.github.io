@@ -667,6 +667,46 @@ if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
 }
 function daKetNoi() { return sb !== null; }
 
+/* Gọi Edge Function với FormData và giữ nguyên thông báo lỗi JSON từ máy chủ.
+   supabase.functions.invoke() chỉ trả thông báo HTTP chung cho một số lỗi 4xx/5xx,
+   khiến người dùng không biết Google Drive, phân loại bài hay phiên đăng nhập đang lỗi. */
+async function vmGoiHamFormData(tenHam, formData, tuyChon) {
+  tuyChon = tuyChon || {};
+  if (!sb) throw new Error('Chưa kết nối được máy chủ VinhMath.');
+  var phien = await sb.auth.getSession();
+  var accessToken = phien && phien.data && phien.data.session && phien.data.session.access_token;
+  if (!accessToken) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang và đăng nhập lại.');
+
+  var controller = new AbortController();
+  var timeoutMs = Number(tuyChon.timeoutMs) || 120000;
+  var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+  try {
+    var response = await fetch(VM.SUPABASE_URL + '/functions/v1/' + encodeURIComponent(tenHam), {
+      method: 'POST',
+      headers: {
+        apikey: VM.SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + accessToken
+      },
+      body: formData,
+      signal: controller.signal
+    });
+    var raw = await response.text();
+    var data = null;
+    try { data = raw ? JSON.parse(raw) : {}; } catch (e) { data = { error: raw }; }
+    if (!response.ok || (data && data.error)) {
+      var msg = data && data.error ? data.error : ('Máy chủ trả lỗi HTTP ' + response.status + '.');
+      if (response.status === 503 || response.status === 504) msg = 'Máy chủ lưu bài xử lý quá lâu. Hãy thử lại với ít tệp hơn hoặc kiểm tra kết nối mạng.';
+      throw new Error(msg);
+    }
+    return data || {};
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Quá thời gian chờ tải bài. Bài chưa được ghi nhận; vui lòng thử lại.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /* ---------- 3. ĐĂNG NHẬP / ĐĂNG XUẤT ---------- */
 // HS dùng "tên đăng nhập" (vd DienVoTheVinh@ad.vinhmath). Supabase cần email,
 // nên ta tự ghép đuôi cố định ngầm (.com) — HS không cần biết điều này.
