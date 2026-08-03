@@ -145,6 +145,139 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; background:var(-
 .no-content .ic { font-size:3rem; margin-bottom:14px; }
 .no-content h3 { color:var(--ink); margin-bottom:8px; }
 
+/* Bài tập về nhà / bài thưởng: giữ thao tác nộp luôn dễ thấy trên nội dung dài. */
+.btvn-scroll {
+  flex:1;
+  overflow-y:auto;
+  padding:clamp(12px, 2vw, 22px);
+  display:flex;
+  flex-direction:column;
+  background:var(--surface-2);
+  scroll-padding-top:112px;
+}
+.btvn-block { width:100%; margin:0 auto 18px; }
+.btvn-block.is-bonus { margin-bottom:4px; }
+.btvn-heading {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:10px;
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid rgba(224,160,32,.35);
+  background:var(--accent-soft);
+}
+.btvn-heading.is-bonus {
+  background:linear-gradient(135deg,#fff4d9,#ffe1ad);
+  border-color:rgba(243,156,18,.4);
+}
+.btvn-heading-icon { font-size:1.15rem; }
+.btvn-heading-title { color:var(--accent); font-weight:800; }
+.btvn-heading.is-bonus .btvn-heading-title { color:#b45309; }
+.btvn-heading small { color:var(--ink-3); }
+.btvn-heading.is-bonus small { color:#8a5b10; }
+.btvn-deadline {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:800;
+  font-size:.9rem;
+  margin-bottom:12px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  border:1px solid rgba(224,160,32,.35);
+}
+.btvn-deadline.is-overdue {
+  background:#fef2f2;
+  color:#b91c1c;
+  border-color:#fecaca;
+}
+.btvn-action-panel {
+  position:sticky;
+  top:0;
+  z-index:8;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 14px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--surface);
+  background:color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow:0 8px 24px rgba(15,23,42,.10);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.btvn-action-panel.is-bonus { border-color:rgba(243,156,18,.45); }
+.btvn-action-status { min-width:0; flex:1; font-size:.86rem; color:var(--ink-3); line-height:1.5; }
+.btvn-submit-btn { flex:0 0 auto; min-height:44px; white-space:nowrap; justify-content:center; }
+.btvn-submit-btn.is-bonus {
+  background:linear-gradient(135deg,#ffd76a,#f39c12);
+  color:#3a2560;
+  border-color:#f39c12;
+  font-weight:800;
+}
+.btvn-submit-btn:disabled { opacity:.72; cursor:not-allowed; filter:saturate(.7); }
+.btvn-admin-preview { align-items:flex-start; background:var(--surface); }
+.btvn-admin-preview-note { font-size:.82rem; color:var(--ink-3); line-height:1.5; }
+.btvn-note-card {
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(224,160,32,.3);
+  background:linear-gradient(135deg,rgba(224,160,32,.10),rgba(181,96,52,.05));
+}
+.btvn-note-card-head { display:flex; align-items:center; gap:7px; padding:9px 14px; font-weight:800; color:var(--accent); font-size:.9rem; border-bottom:1px solid rgba(224,160,32,.2); }
+.btvn-note-card-body { white-space:pre-wrap; line-height:1.62; font-size:.95rem; color:var(--ink); padding:13px 16px; }
+.btvn-media { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+.btvn-media a { display:flex; justify-content:center; border-radius:12px; }
+.btvn-media img {
+  display:block;
+  width:auto;
+  max-width:100%;
+  height:auto;
+  max-height:86vh;
+  object-fit:contain;
+  border-radius:10px;
+  border:1px solid var(--line);
+  box-shadow:0 5px 18px rgba(15,23,42,.08);
+}
+.btvn-document { margin-top:12px; }
+.btvn-document iframe { width:100%; height:clamp(420px,70vh,900px); border:1px solid var(--line); border-radius:10px; background:#fff; }
+.btvn-divider { border-top:1px dashed var(--line-2); margin:10px 0 16px; }
+
+@media (max-width:820px) {
+  .btvn-scroll { padding:10px; scroll-padding-top:148px; }
+  .btvn-block { margin-bottom:14px; }
+  .btvn-heading { padding:9px 11px; align-items:flex-start; }
+  .btvn-heading small { flex-basis:100%; padding-left:28px; line-height:1.4; }
+  .btvn-deadline { align-items:flex-start; padding:9px 11px; font-size:.84rem; line-height:1.45; }
+  .btvn-action-panel {
+    top:0;
+    flex-direction:column;
+    align-items:stretch;
+    gap:9px;
+    margin-bottom:12px;
+    padding:11px;
+    border-radius:12px;
+  }
+  .btvn-action-status { font-size:.82rem; }
+  .btvn-submit-btn { width:100%; min-height:48px; white-space:normal; }
+  .btvn-document iframe { height:min(62vh,560px); min-height:360px; }
+  .btvn-media img { width:100%; max-height:none; }
+  #modalNopBai { align-items:flex-end !important; padding:0 !important; }
+  #modalNopBai > div {
+    max-width:none !important;
+    max-height:92dvh !important;
+    border-radius:18px 18px 0 0 !important;
+    padding:22px 16px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
 /* Chế độ không có video: chỉ hiển thị nội dung (tài liệu/bài tập/kiểm tra) toàn khung */
 .workspace.no-video .pane-video { display:none !important; }
 .workspace.no-video #workspaceResizer { display:none !important; }
@@ -367,7 +500,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
   <div id="bhAnhLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;cursor:zoom-out"></div>
 
   <!-- Hộp nộp bài -->
-  <div id="modalNopBai" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
+  <div id="modalNopBai" data-vm-popup-position="native" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;position:relative">
       <button onclick="dongNopBai()" style="position:absolute;top:14px;right:16px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
       <h2 style="margin-bottom:4px">📤 Nộp bài</h2>
@@ -459,7 +592,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=6.3"></script>
+<script src="js/vinhmath.js?v=7.1"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -541,6 +674,18 @@ function moNopBai(phanloai) {
   var dl = laBonus ? (details && details.homework2_due) : nopBaiPhanLoai === 'test' ? (details && details.test_deadline) : (details && details.homework_due);
   var pol = (laBonus ? (details && details.homework2_late_policy) : nopBaiPhanLoai === 'test' ? (details && details.test_late_policy) : (details && details.homework_late_policy)) || 'late';
   var bn = $('nbDeadlineBanner'), gui = $('nbGui'), inp = $('nbFiles'), khoa = false;
+  // Modal được dùng chung cho nhiều loại bài. Luôn khôi phục trạng thái trước khi
+  // tải bài đã nộp để trạng thái "đã chấm/đã khóa" của bài trước không làm mất nút bài sau.
+  if (gui) {
+    gui.disabled = false;
+    gui.style.display = '';
+    gui.textContent = 'Gửi bài cho thầy';
+  }
+  if (inp) {
+    inp.disabled = false;
+    var fieldNop = inp.closest ? inp.closest('.field') : null;
+    if (fieldNop) fieldNop.style.display = '';
+  }
   if (bn) {
     if (dl && !laQuanTriBaiHoc()) {
       var qua = Date.now() > new Date(dl).getTime();
@@ -551,11 +696,16 @@ function moNopBai(phanloai) {
       else { bn.style.background = 'rgba(231,76,60,.10)'; bn.style.color = '#c0392b'; bn.innerHTML = '⏰ Đã quá hạn (' + dlStr + '). Em vẫn nộp được nhưng bài sẽ bị đánh dấu <b>"Nộp trễ"</b>.'; }
     } else { bn.style.display = 'none'; }
   }
+  window._vmNopBaiKhoaHan = khoa;
   if (gui) gui.style.display = khoa ? 'none' : '';
   if (inp) inp.disabled = !!khoa;
+  if (inp) {
+    var fieldTheoHan = inp.closest ? inp.closest('.field') : null;
+    if (fieldTheoHan) fieldTheoHan.style.display = khoa ? 'none' : '';
+  }
   // Mở ô nộp cũng tính là HS đã xem mục BTVN/Kiểm tra (dù vào thẳng nút Nộp)
   if (nguoiDung && !laQuanTriBaiHoc() && typeof vmDanhDauDaXem === 'function') {
-    vmDanhDauDaXem(lessonId, nopBaiPhanLoai === 'homework' ? 'btvn' : 'test')
+    vmDanhDauDaXem(lessonId, laBtvn ? 'btvn' : 'test')
       .then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
   taiBaiDaNop();
@@ -625,7 +775,14 @@ async function taiBaiDaNop() {
     .order('submitted_at', { ascending: false });
   var ds = r.data || [];
   var nutGui = $('nbGui');
-  if (!ds.length) { $('nbDaNop').innerHTML = ''; if (nutGui && nutGui.style.display !== 'none') nutGui.textContent = 'Gửi bài cho thầy'; return; }
+  if (!ds.length) {
+    $('nbDaNop').innerHTML = '';
+    if (nutGui) {
+      nutGui.style.display = window._vmNopBaiKhoaHan ? 'none' : '';
+      if (!window._vmNopBaiKhoaHan) nutGui.textContent = 'Gửi bài cho thầy';
+    }
+    return;
+  }
   if (nutGui && nutGui.style.display !== 'none') nutGui.textContent = '🔄 Nộp lại bài khác';
   var kindHienTai = nopBaiPhanLoai;
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;font-weight:600;margin-bottom:8px">📎 Bài em đã nộp (' + ds.length + ' lần):</div>' +
@@ -653,7 +810,12 @@ async function taiBaiDaNop() {
     if (bnTb) { bnTb.style.color = ''; bnTb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(46,213,115,.12);color:#1a7f45;font-weight:700;font-size:.88rem">🔒 Bài này đã được thầy/cô chấm nên em không nộp lại được nữa. Xem điểm & nhận xét ở mục 📋 Kết quả nhé!</div>'; }
   } else {
     var inpNb2 = $('nbFiles');
-    if (inpNb2) { inpNb2.disabled = false; var fld2 = inpNb2.closest ? inpNb2.closest('.field') : null; if (fld2) fld2.style.display = ''; }
+    if (nutGui) nutGui.style.display = window._vmNopBaiKhoaHan ? 'none' : '';
+    if (inpNb2) {
+      inpNb2.disabled = !!window._vmNopBaiKhoaHan;
+      var fld2 = inpNb2.closest ? inpNb2.closest('.field') : null;
+      if (fld2) fld2.style.display = window._vmNopBaiKhoaHan ? 'none' : '';
+    }
   }
 }
 
@@ -1859,11 +2021,13 @@ async function renderBTVN(than) {
     { sfx: '', bonus: false, phanloai: 'homework', kind: 'homework',
       text: details.homework_text, images: details.homework_images,
       docPath: (details.bai_btvn && details.bai_btvn.file_path) || '',
-      latex: details.homework_latex_content, due: details.homework_due },
+      latex: details.homework_latex_content, due: details.homework_due,
+      latePolicy: details.homework_late_policy || 'late' },
     { sfx: '2', bonus: true, phanloai: 'homework_bonus', kind: 'homework_bonus',
       text: details.homework2_text, images: details.homework2_images,
       docPath: (details.bai_btvn2 && details.bai_btvn2.file_path) || '',
-      latex: details.homework2_latex_content, due: details.homework2_due }
+      latex: details.homework2_latex_content, due: details.homework2_due,
+      latePolicy: details.homework2_late_policy || 'late' }
   ];
 
   function blockHtml(b) {
@@ -1872,40 +2036,50 @@ async function renderBTVN(than) {
     var coDe = coText || dsAnh.length || coDoc || coLatex;
     if (b.bonus && !coDe) return '';   // buổi không có bài thưởng thêm -> ẩn hẳn
     var head = b.bonus
-      ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:9px 14px;border-radius:12px;background:linear-gradient(135deg,#fff4d9,#ffe1ad);border:1px solid rgba(243,156,18,.4)"><span style="font-size:1.15rem">🎁</span><b style="color:#b45309">Bài tập thưởng thêm</b><small style="color:#a5701a">— tuỳ chọn, làm thì được thưởng xu!</small></div>'
-      : '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:9px 14px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(224,160,32,.35)"><span style="font-size:1.15rem">🏠</span><b style="color:var(--accent)">Bài tập bắt buộc</b></div>';
+      ? '<div class="btvn-heading is-bonus"><span class="btvn-heading-icon">🎁</span><b class="btvn-heading-title">Bài tập thưởng thêm</b><small>— tuỳ chọn, làm thì được thưởng xu!</small></div>'
+      : '<div class="btvn-heading"><span class="btvn-heading-icon">🏠</span><b class="btvn-heading-title">Bài tập bắt buộc</b></div>';
     var hanHtml = '';
+    var quaHan = false;
+    var biKhoa = false;
     if (b.due) {
-      var _hd = new Date(b.due), _qua = _hd.getTime() < Date.now();
-      hanHtml = '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-weight:800;font-size:.9rem;margin-bottom:12px;' +
-        (_qua ? 'background:#fef2f2;color:#b91c1c;border:1px solid #fecaca' : 'background:var(--accent-soft);color:var(--accent);border:1px solid rgba(224,160,32,.35)') + '">' +
-        '⏰ Hạn nộp: ' + _hd.toLocaleString('vi-VN') + (_qua ? ' (đã quá hạn)' : '') + '</div>';
+      var _hd = new Date(b.due);
+      quaHan = _hd.getTime() < Date.now();
+      biKhoa = quaHan && b.latePolicy === 'lock';
+      hanHtml = '<div class="btvn-deadline' + (quaHan ? ' is-overdue' : '') + '">⏰ <span>Hạn nộp: ' + _hd.toLocaleString('vi-VN') +
+        (biKhoa ? ' · Đã khóa nhận bài' : quaHan ? ' · Vẫn được nộp trễ' : '') + '</span></div>';
     }
     var deHtml = coText
-      ? '<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(224,160,32,0.3);background:linear-gradient(135deg, rgba(224,160,32,0.10), rgba(181,96,52,0.05))">' +
-        '<div style="display:flex;align-items:center;gap:7px;padding:9px 14px;font-weight:800;color:var(--accent);font-size:.9rem;border-bottom:1px solid rgba(224,160,32,0.2)"><span>📝</span> Ghi chú cho học sinh</div>' +
-        '<div style="white-space:pre-wrap;line-height:1.62;font-size:.95rem;color:var(--ink);padding:13px 16px">' + btvnEsc(b.text) + '</div></div>' : '';
+      ? '<div class="btvn-note-card"><div class="btvn-note-card-head"><span>📝</span> Ghi chú cho học sinh</div>' +
+        '<div class="btvn-note-card-body">' + btvnEsc(b.text) + '</div></div>' : '';
     var latexHtml = coLatex ? '<div id="btvnLatexBox' + b.sfx + '" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>' : '';
     var pdfUrl = coDoc ? buildPdfUrl(b.docPath) : '';
-    var docHtml = coDoc ? '<div style="margin-top:12px">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<iframe src="' + pdfUrl + '#toolbar=1" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe></div>' : '';
-    var anhHtml = dsAnh.length ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
-      dsAnh.map(function (p) { var u = urlAnh(p); return '<a href="' + u + '" target="_blank" title="Xem ảnh gốc"><img src="' + u + '" style="max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block" loading="lazy"></a>'; }).join('') + '</div>' : '';
+    var docHtml = coDoc ? '<div class="btvn-document">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<iframe src="' + pdfUrl + '#toolbar=1" title="Đề bài tập PDF"></iframe></div>' : '';
+    var anhHtml = dsAnh.length ? '<div class="btvn-media">' +
+      dsAnh.map(function (p, idx) { var u = urlAnh(p); return '<a href="' + btvnEsc(u) + '" target="_blank" rel="noopener" title="Xem ảnh gốc"><img src="' + btvnEsc(u) + '" alt="Trang ' + (idx + 1) + ' của đề bài ' + (b.bonus ? 'thưởng thêm' : 'về nhà') + '" loading="lazy"></a>'; }).join('') + '</div>' : '';
     var actionHtml = '';
     if (!laAdmin && nguoiDung) {
-      actionHtml = '<div id="btvnTrangThai' + b.sfx + '" style="margin:14px 0;font-size:.86rem;color:var(--ink-3)">Đang kiểm tra bài đã nộp…</div>' +
-        '<button class="btn ' + (b.bonus ? 'btn-secondary' : 'btn-primary') + '" onclick="moNopBai(\'' + b.phanloai + '\')" style="align-self:flex-start' + (b.bonus ? ';background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;border-color:#f39c12;font-weight:700' : '') + '">📤 Nộp ' + (b.bonus ? 'bài thưởng thêm' : 'bài tập về nhà') + '</button>';
+      var nutNhan = biKhoa ? '🔒 Đã hết hạn nộp ' : (quaHan ? '📤 Nộp trễ ' : '📤 Nộp ');
+      actionHtml = '<div class="btvn-action-panel' + (b.bonus ? ' is-bonus' : '') + '">' +
+        '<div id="btvnTrangThai' + b.sfx + '" class="btvn-action-status">Đang kiểm tra bài đã nộp…</div>' +
+        '<button type="button" class="btn ' + (b.bonus ? 'btn-secondary is-bonus' : 'btn-primary') + ' btvn-submit-btn" ' +
+          (biKhoa ? 'disabled aria-disabled="true" title="Bài đã bị khóa theo chính sách quá hạn"' : 'onclick="moNopBai(\'' + b.phanloai + '\')"') + '>' +
+          nutNhan + (b.bonus ? 'bài thưởng thêm' : 'bài tập về nhà') + '</button></div>';
     } else if (laAdmin) {
-      actionHtml = '<div style="margin-top:14px;font-size:.85rem;color:var(--ink-3);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px">👀 Học sinh sẽ thấy nút <b>Nộp ' + (b.bonus ? 'bài thưởng thêm' : 'bài tập về nhà') + '</b> ở đây.</div>';
+      actionHtml = '<div class="btvn-action-panel btvn-admin-preview' + (b.bonus ? ' is-bonus' : '') + '">' +
+        '<div class="btvn-admin-preview-note"><b>👀 Bản xem trước cho giáo viên</b><br>Học sinh nhìn thấy thao tác nộp bài tại vị trí này.' +
+          (biKhoa ? '<br><span style="color:var(--err);font-weight:700">Hiện đang khóa nộp sau hạn.</span>' : quaHan ? '<br><span style="color:var(--warn);font-weight:700">Hiện vẫn cho phép nộp trễ.</span>' : '') + '</div>' +
+        '<button type="button" class="btn ' + (b.bonus ? 'btn-secondary is-bonus' : 'btn-primary') + ' btvn-submit-btn" disabled aria-disabled="true">' +
+          (biKhoa ? '🔒 Đã hết hạn nộp ' : quaHan ? '📤 Nộp trễ ' : '📤 Nộp ') + (b.bonus ? 'bài thưởng thêm' : 'bài tập về nhà') + '</button></div>';
     }
     var deInner = coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập bắt buộc</h3></div>';
-    return '<div style="margin-bottom:' + (b.bonus ? '4' : '18') + 'px">' + head + hanHtml + deInner + actionHtml + '</div>';
+    return '<section class="btvn-block' + (b.bonus ? ' is-bonus' : '') + '">' + head + hanHtml + actionHtml + deInner + '</section>';
   }
 
   var html1 = blockHtml(blocks[0]);
   var html2 = blockHtml(blocks[1]);
   than.innerHTML = thanhCongCu('🏠 Bài tập về nhà', null) +
-    '<div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;background:var(--surface-2)">' +
-    html1 + (html2 ? ('<div style="border-top:1px dashed var(--line-2);margin:10px 0 4px"></div>' + html2) : '') +
+    '<div class="btvn-scroll">' +
+    html1 + (html2 ? ('<div class="btvn-divider"></div>' + html2) : '') +
     '</div>';
 
   blocks.forEach(function (b) {
@@ -1919,7 +2093,7 @@ async function renderBTVN(than) {
           if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
           if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
             var u = URL.createObjectURL(r.data);
-            box.innerHTML = thanhCongCu('📝 Đề bài tập (LaTeX)', u) + '<iframe src="' + u + '" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>';
+            box.innerHTML = '<div class="btvn-document">' + thanhCongCu('📝 Đề bài tập (LaTeX)', u) + '<iframe src="' + u + '" title="Đề bài tập LaTeX"></iframe></div>';
           } else { box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Đề LaTeX chưa biên dịch được</h3></div>'; }
         } catch (e) { box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề LaTeX</h3></div>'; }
       })();
@@ -1936,11 +2110,16 @@ async function renderBTVN(than) {
           var hanHtml = '';
           if (b.due) {
             var quaHan = new Date(b.due).getTime() < Date.now();
-            hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(b.due).toLocaleString('vi-VN') + (quaHan ? ' (đã quá hạn)' : '') + '</span>';
+            hanHtml = ' <span class="badge ' + (quaHan ? 'badge-warn' : '') + '" style="' + (quaHan ? '' : 'background:var(--accent-soft);color:var(--accent)') + '">⏰ Hạn nộp: ' + new Date(b.due).toLocaleString('vi-VN') + (quaHan ? (b.latePolicy === 'lock' ? ' · đã khóa' : ' · được nộp trễ') : '') + '</span>';
           }
           if (!ds.length) {
             var quaHan2 = b.due && new Date(b.due).getTime() < Date.now();
-            el.innerHTML = (quaHan2 ? '⚠️ <b style="color:var(--err)">Chưa nộp — đã quá hạn.</b>' : (b.bonus ? '📌 Em chưa nộp bài thưởng thêm.' : '📌 Em chưa nộp bài tập về nhà cho buổi này.')) + hanHtml;
+            var khoaHan2 = quaHan2 && b.latePolicy === 'lock';
+            el.innerHTML = (khoaHan2
+              ? '🔒 <b style="color:var(--err)">Chưa nộp — đã khóa nhận bài.</b>'
+              : quaHan2
+                ? '⚠️ <b style="color:var(--warn)">Chưa nộp — em vẫn có thể nộp trễ.</b>'
+                : (b.bonus ? '📌 Em chưa nộp bài thưởng thêm.' : '📌 Em chưa nộp bài tập về nhà cho buổi này.')) + hanHtml;
           } else {
             var s0 = ds[0];
             var tt = s0.status === 'graded'
