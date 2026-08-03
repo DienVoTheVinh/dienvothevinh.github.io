@@ -1,0 +1,13 @@
+project_id = "nrnokgciogxqzjqjeuwi"
+
+[functions.latex]
+verify_jwt = true
+
+[functions.nop-bai]
+verify_jwt = true
+
+[functions.gemini-chat]
+verify_jwt = true
+
+[functions.tao-tai-khoan]
+verify_jwt = true

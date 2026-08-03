@@ -19,7 +19,7 @@ if not os.path.exists(dotenv_path):
 load_dotenv(dotenv_path)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SECRET_KEY = os.environ.get("SUPABASE_SECRET_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 def clean_name(name):
     name = name.lower().strip()
@@ -50,8 +50,8 @@ def generate_password():
     return f"vm{digits}"
 
 def create_user(full_name, class_name=None, role='student'):
-    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-        print("Error: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured in .env file.")
+    if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
+        print("Error: configure SUPABASE_URL and SUPABASE_SECRET_KEY in a local server-only .env file.")
         sys.exit(1)
         
     import urllib.request
@@ -97,21 +97,18 @@ def create_user(full_name, class_name=None, role='student'):
     }
     
     headers = {
-        "apikey": SUPABASE_SERVICE_ROLE_KEY,
-        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "apikey": SUPABASE_SECRET_KEY,
+        "Authorization": f"Bearer {SUPABASE_SECRET_KEY}",
         "Content-Type": "application/json"
     }
     
     url = f"{SUPABASE_URL.rstrip('/')}/auth/v1/admin/users"
     
-    import ssl
-    context = ssl._create_unverified_context()
-    
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data, headers=headers, method='POST')
     
     try:
-        with urllib.request.urlopen(req, context=context) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             status_code = response.getcode()
             response_text = response.read().decode('utf-8')
             user_data = json.loads(response_text)
