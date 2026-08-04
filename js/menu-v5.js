@@ -216,7 +216,12 @@ function khoiDongChuong(uid) {
     e.stopPropagation();
     var p = document.getElementById('bangThongBao');
     var mo = p.style.display === 'none';
-    p.style.display = mo ? 'block' : 'none';
+    if (mo && window.innerWidth <= 768) {
+      var topbar = document.querySelector('.topbar');
+      var topbarBottom = topbar ? Math.ceil(topbar.getBoundingClientRect().bottom) : 64;
+      p.style.setProperty('--vm-bell-panel-top', Math.max(8, topbarBottom + 6) + 'px');
+    }
+    p.style.display = mo ? 'flex' : 'none';
     if (mo) veDanhSachThongBao();
   };
   document.getElementById('nutDocHet').onclick = async function (e) {

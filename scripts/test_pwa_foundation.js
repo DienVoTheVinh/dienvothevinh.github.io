@@ -106,12 +106,12 @@ for (const file of htmlFiles) {
   const html = read(file);
   expect(html.includes('rel="manifest" href="/manifest.webmanifest"'), `${file}: missing manifest link`);
   expect(html.includes('rel="apple-touch-icon" href="/icons/vinhmath-192.png"'), `${file}: stale Apple app icon`);
-  expect(!/css\/vinhmath\.css\?v=(?!7\.8)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/vinhmath\.css\?v=(?!7\.9)/.test(html), `${file}: stale shared CSS version`);
   if (html.includes('js/vinhmath.js')) {
     expect(html.includes('js/vinhmath.js?v=7.8'), `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=7.8'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=7.9'), `${file}: stale shared menu version`);
   }
 }
 
