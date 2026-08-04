@@ -2506,40 +2506,121 @@ function layEmojiGiaoVien(fullName) {
   }
 
   function vmLaIOS() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+    var ua = navigator.userAgent || '';
+    return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
   }
 
-  function vmDongBangCaiDat() {
-    var sheet = document.getElementById('vmInstallSheet');
-    if (sheet) sheet.classList.remove('is-open');
-    document.body.classList.remove('vm-modal-open');
+  function vmLaSafariApple() {
+    var ua = navigator.userAgent || '';
+    var vendor = navigator.vendor || '';
+    return /applewebkit/i.test(ua) && /safari/i.test(ua) && /apple/i.test(vendor) &&
+      !/crios|fxios|edgios|opios|duckduckgo|gsa/i.test(ua);
   }
 
-  function vmTaoBangCaiDat() {
-    var old = document.getElementById('vmInstallSheet');
+  function vmLaSafariIOS() {
+    return vmLaIOS() && vmLaSafariApple();
+  }
+
+  function vmLaSafariMac() {
+    var ua = navigator.userAgent || '';
+    return !vmLaIOS() && /macintosh|mac os x/i.test(ua) && vmLaSafariApple();
+  }
+
+  function vmDongHuongDanApple() {
+    var guide = document.getElementById('vmInstallAppleGuide');
+    if (guide) guide.classList.remove('is-open', 'is-mac', 'is-ios');
+  }
+
+  function vmTaoHuongDanApple() {
+    var old = document.getElementById('vmInstallAppleGuide');
     if (old) return old;
-    var sheet = document.createElement('div');
-    sheet.id = 'vmInstallSheet';
-    sheet.className = 'vm-install-sheet';
-    sheet.setAttribute('role', 'dialog');
-    sheet.setAttribute('aria-modal', 'true');
-    sheet.setAttribute('aria-labelledby', 'vmInstallTitle');
-    sheet.innerHTML =
-      '<div class="vm-install-card vm-modal-panel">' +
-        '<button type="button" class="vm-modal-close" id="vmInstallClose" aria-label="Dong" style="position:absolute;right:18px;top:14px;border:0;background:transparent;color:var(--ink-3);font-size:1.5rem;cursor:pointer">×</button>' +
-        '<h3 id="vmInstallTitle">Cài VinhMath như ứng dụng</h3>' +
-        '<p id="vmInstallGuide">Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.</p>' +
-        '<div class="vm-install-actions">' +
-          '<button type="button" class="btn btn-primary" id="vmInstallConfirm">Cài ứng dụng</button>' +
-          '<button type="button" class="btn btn-secondary" id="vmInstallLater">Để sau</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(sheet);
-    sheet.addEventListener('click', function (event) { if (event.target === sheet) vmDongBangCaiDat(); });
-    document.getElementById('vmInstallClose').addEventListener('click', vmDongBangCaiDat);
-    document.getElementById('vmInstallLater').addEventListener('click', vmDongBangCaiDat);
-    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') vmDongBangCaiDat(); });
-    return sheet;
+
+    var guide = document.createElement('aside');
+    guide.id = 'vmInstallAppleGuide';
+    guide.className = 'vm-install-apple-guide';
+    guide.setAttribute('role', 'dialog');
+    guide.setAttribute('aria-modal', 'false');
+    guide.setAttribute('aria-labelledby', 'vmInstallAppleTitle');
+    guide.innerHTML =
+      '<button type="button" class="vm-install-guide-close" id="vmInstallAppleClose" aria-label="Đóng hướng dẫn">×</button>' +
+      '<div class="vm-install-guide-kicker" id="vmInstallAppleKicker"> SAFARI</div>' +
+      '<h3 id="vmInstallAppleTitle">Cài VinhMath</h3>' +
+      '<ol class="vm-install-guide-steps" id="vmInstallAppleSteps"></ol>' +
+      '<p class="vm-install-guide-note" id="vmInstallAppleNote"></p>' +
+      '<button type="button" class="vm-install-guide-done" id="vmInstallAppleDone">Đã hiểu</button>';
+    document.body.appendChild(guide);
+    document.getElementById('vmInstallAppleClose').addEventListener('click', vmDongHuongDanApple);
+    document.getElementById('vmInstallAppleDone').addEventListener('click', vmDongHuongDanApple);
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') vmDongHuongDanApple();
+    });
+    return guide;
+  }
+
+  function vmBuocCaiDat(so, noiDung) {
+    return '<li><span class="vm-install-step-number">' + so + '</span><span>' + noiDung + '</span></li>';
+  }
+
+  function vmMoHuongDanApple(loai) {
+    var guide = vmTaoHuongDanApple();
+    var kicker = document.getElementById('vmInstallAppleKicker');
+    var title = document.getElementById('vmInstallAppleTitle');
+    var steps = document.getElementById('vmInstallAppleSteps');
+    var note = document.getElementById('vmInstallAppleNote');
+
+    guide.classList.remove('is-mac', 'is-ios');
+    if (loai === 'mac') {
+      guide.classList.add('is-mac');
+      kicker.textContent = ' SAFARI · macOS Sonoma 14+';
+      title.textContent = 'Cài VinhMath vào Dock';
+      steps.innerHTML =
+        vmBuocCaiDat('1', 'Nhấn nút <b>Chia sẻ</b> ở góc trên bên phải Safari.') +
+        vmBuocCaiDat('2', 'Chọn <b>Thêm vào Dock (Add to Dock)</b>.') +
+        vmBuocCaiDat('3', 'Giữ tên <b>VinhMath</b>, sau đó nhấn <b>Thêm (Add)</b>.');
+      note.innerHTML = 'Cách khác: trên thanh menu chọn <b>File → Add to Dock</b>. Nếu không thấy mục này, hãy cập nhật lên macOS Sonoma 14 trở lên.';
+    } else {
+      guide.classList.add('is-ios');
+      kicker.textContent = ' SAFARI · iPhone/iPad';
+      title.textContent = vmLaSafariIOS() ? 'Cài VinhMath lên Màn hình chính' : 'Mở bằng Safari để cài VinhMath';
+      steps.innerHTML =
+        (vmLaSafariIOS() ? '' : vmBuocCaiDat('1', 'Mở <b>vinhmath.com</b> bằng ứng dụng <b>Safari</b>.')) +
+        vmBuocCaiDat(vmLaSafariIOS() ? '1' : '2', 'Nhấn <b>Chia sẻ</b> trong Safari.') +
+        vmBuocCaiDat(vmLaSafariIOS() ? '2' : '3', 'Chọn <b>Thêm vào Màn hình chính</b>.') +
+        vmBuocCaiDat(vmLaSafariIOS() ? '3' : '4', 'Bật <b>Mở dưới dạng ứng dụng web (Open as Web App)</b>, rồi nhấn <b>Thêm</b>.');
+      note.innerHTML = 'Không thấy “Thêm vào Màn hình chính”? Kéo xuống cuối bảng Chia sẻ, chọn <b>Sửa tác vụ</b> và thêm mục này.';
+    }
+
+    guide.classList.add('is-open');
+    var heroNote = document.getElementById('vmInstallHeroNote');
+    if (heroNote) {
+      heroNote.textContent = loai === 'mac'
+        ? 'Safari: Chia sẻ → Thêm vào Dock → Thêm'
+        : 'Safari: Chia sẻ → Thêm vào Màn hình chính → Mở dưới dạng ứng dụng web';
+    }
+  }
+
+  function vmThongBaoCaiDat(message) {
+    var heroNote = document.getElementById('vmInstallHeroNote');
+    if (heroNote) {
+      heroNote.textContent = message;
+      heroNote.classList.remove('vm-install-note-flash');
+      void heroNote.offsetWidth;
+      heroNote.classList.add('vm-install-note-flash');
+    }
+
+    var toast = document.getElementById('vmInstallToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'vmInstallToast';
+      toast.className = 'vm-install-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    clearTimeout(window._vmInstallToastTimer);
+    window._vmInstallToastTimer = setTimeout(function () { toast.classList.remove('is-visible'); }, 6500);
   }
 
   async function vmCaiPwa() {
@@ -2548,27 +2629,31 @@ function layEmojiGiaoVien(fullName) {
     vmInstallPrompt = null;
     await prompt.prompt();
     try { await prompt.userChoice; } catch (_) {}
-    vmDongBangCaiDat();
     vmCapNhatNutCaiDat();
   }
 
-  function vmMoBangCaiDat() {
-    var sheet = vmTaoBangCaiDat();
-    var guide = document.getElementById('vmInstallGuide');
-    var confirm = document.getElementById('vmInstallConfirm');
-    if (vmLaIOS() && !vmInstallPrompt) {
-      guide.innerHTML = 'Trên iPhone/iPad: bấm nút <b>Chia sẻ</b> trong Safari, sau đó chọn <b>Thêm vào Màn hình chính</b>.';
-      confirm.style.display = 'none';
-    } else if (!vmInstallPrompt) {
-      guide.innerHTML = 'Trong Chrome hoặc Edge, mở trình đơn <b>⋮</b> rồi chọn <b>Cài đặt VinhMath</b> hoặc <b>Thêm vào màn hình chính</b>. Nếu tùy chọn chưa xuất hiện, hãy tải lại trang và thử lại.';
-      confirm.style.display = 'none';
-    } else {
-      guide.textContent = 'Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.';
-      confirm.style.display = '';
-      confirm.onclick = vmCaiPwa;
+  async function vmBatDauCaiPwa() {
+    if (vmDaCaiPwa()) return;
+
+    /* Chrome/Edge/Android: bỏ hộp trung gian, mở thẳng install prompt hệ thống. */
+    if (vmInstallPrompt) {
+      await vmCaiPwa();
+      return;
     }
-    sheet.classList.add('is-open');
-    document.body.classList.add('vm-modal-open');
+
+    /* iOS/iPadOS không có beforeinstallprompt và Web Share không thể mở tác vụ Add to Home Screen. */
+    if (vmLaIOS()) {
+      vmMoHuongDanApple('ios');
+      return;
+    }
+
+    /* Safari macOS không cung cấp API cài đặt; chỉ dẫn đúng nút Add to Dock của Apple. */
+    if (vmLaSafariMac()) {
+      vmMoHuongDanApple('mac');
+      return;
+    }
+
+    vmThongBaoCaiDat('Chrome/Edge: mở trình đơn ⋮ rồi chọn “Cài đặt VinhMath”. Trình duyệt chưa cấp hộp cài tự động cho lần mở này.');
   }
 
   function vmLayNutCaiDat() {
@@ -2582,7 +2667,7 @@ function layEmojiGiaoVien(fullName) {
     btn.className = 'vm-install-btn';
     btn.setAttribute('aria-label', 'Cài VinhMath như ứng dụng');
     btn.innerHTML = '<span class="vm-install-icon" aria-hidden="true">⇩</span><span class="vm-install-label">Cài ứng dụng</span>';
-    btn.addEventListener('click', vmMoBangCaiDat);
+    btn.addEventListener('click', vmBatDauCaiPwa);
     navlinks.appendChild(btn);
     return btn;
   }
@@ -2590,7 +2675,7 @@ function layEmojiGiaoVien(fullName) {
   function vmCapNhatNutCaiDat() {
     var btn = vmLayNutCaiDat();
     var daCai = vmDaCaiPwa();
-    if (btn) btn.classList.toggle('is-available', !daCai && (!!vmInstallPrompt || vmLaIOS()));
+    if (btn) btn.classList.toggle('is-available', !daCai && (!!vmInstallPrompt || vmLaIOS() || vmLaSafariMac()));
 
     var hero = document.getElementById('vmInstallHero');
     var heroBtn = document.getElementById('vmInstallHeroBtn');
@@ -2598,12 +2683,17 @@ function layEmojiGiaoVien(fullName) {
     if (hero) hero.classList.toggle('is-visible', !daCai);
     if (heroBtn && !heroBtn.dataset.vmInstallBound) {
       heroBtn.dataset.vmInstallBound = '1';
-      heroBtn.addEventListener('click', vmMoBangCaiDat);
+      heroBtn.addEventListener('click', vmBatDauCaiPwa);
     }
+    var laAppleThuCong = !vmInstallPrompt && (vmLaIOS() || vmLaSafariMac());
+    var navLabel = btn ? btn.querySelector('.vm-install-label') : null;
+    if (navLabel) navLabel.textContent = laAppleThuCong ? 'Cài trên Safari' : 'Cài ứng dụng';
+    if (heroBtn) heroBtn.textContent = laAppleThuCong ? ' Cài trên Safari' : '⇩ Cài ứng dụng';
     if (heroNote) {
-      if (vmInstallPrompt) heroNote.textContent = 'Sẵn sàng cài đặt · Chỉ mất vài giây';
-      else if (vmLaIOS()) heroNote.textContent = 'iPhone/iPad: cài nhanh qua nút Chia sẻ của Safari';
-      else heroNote.textContent = 'Hoàn toàn miễn phí · Có hướng dẫn theo thiết bị';
+      if (vmInstallPrompt) heroNote.textContent = 'Bấm một lần để mở thẳng cài đặt của trình duyệt';
+      else if (vmLaIOS()) heroNote.textContent = 'iPhone/iPad: Safari → Chia sẻ → Thêm vào Màn hình chính';
+      else if (vmLaSafariMac()) heroNote.textContent = 'Safari trên Mac: Chia sẻ → Thêm vào Dock';
+      else heroNote.textContent = 'Bấm để cài đặt · Không qua cửa sổ trung gian';
     }
   }
 
@@ -2614,7 +2704,9 @@ function layEmojiGiaoVien(fullName) {
   });
   window.addEventListener('appinstalled', function () {
     vmInstallPrompt = null;
-    vmDongBangCaiDat();
+    vmDongHuongDanApple();
+    var toast = document.getElementById('vmInstallToast');
+    if (toast) toast.classList.remove('is-visible');
     vmCapNhatNutCaiDat();
   });
 
@@ -2636,6 +2728,6 @@ function layEmojiGiaoVien(fullName) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vmKhoiDongPwa);
   else vmKhoiDongPwa();
 
-  window.vmMoCaiDatUngDung = vmMoBangCaiDat;
+  window.vmMoCaiDatUngDung = vmBatDauCaiPwa;
   window.vmCapNhatNutCaiDatPwa = vmCapNhatNutCaiDat;
 })();

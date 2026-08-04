@@ -1920,37 +1920,113 @@ iframe, video, canvas, svg, table { max-width: 100%; }
   background: var(--topbar-btn-hover-bg);
 }
 .vm-install-icon { font-size: 1rem; line-height: 1; }
-.vm-install-sheet {
+.vm-install-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  z-index: 100002;
+  width: min(520px, calc(100vw - 28px));
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 212, 102, .55);
+  border-radius: 12px;
+  background: rgba(43, 25, 6, .96);
+  color: #fff7df;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+  font-size: .86rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.vm-install-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.vm-install-note-flash { animation: vmInstallNoteFlash .55s ease; }
+@keyframes vmInstallNoteFlash {
+  0%, 100% { opacity: 1; }
+  45% { opacity: .45; }
+}
+.vm-install-apple-guide {
   display: none;
   position: fixed;
-  inset: 0;
   z-index: 120000;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 20px max(14px, var(--vm-safe-right)) max(20px, var(--vm-safe-bottom)) max(14px, var(--vm-safe-left));
-  background: rgba(0, 0, 0, .5);
-  backdrop-filter: blur(5px);
-}
-.vm-install-sheet.is-open { display: flex; }
-.vm-install-card {
-  position: relative;
-  width: min(100%, 520px);
-  max-height: calc(100dvh - 40px);
+  width: min(420px, calc(100vw - 28px));
+  max-height: calc(100dvh - 32px);
   overflow: auto;
-  padding: 22px;
+  padding: 20px;
   border: 1px solid var(--line-2);
-  border-radius: var(--r-lg);
+  border-radius: 18px;
   background: var(--surface-solid);
   color: var(--ink);
   box-shadow: var(--shadow-lift, var(--shadow));
-  animation: vmSheetIn .28s var(--ease-out, ease-out);
+  animation: vmAppleGuideIn .22s var(--ease-out, ease-out);
 }
-.vm-install-card h3 { margin: 0 42px 8px 0; }
-.vm-install-card p { color: var(--ink-3); font-size: .9rem; }
-.vm-install-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-@keyframes vmSheetIn {
-  from { opacity: 0; transform: translateY(18px) scale(.98); }
+.vm-install-apple-guide.is-open { display: block; }
+.vm-install-apple-guide.is-mac {
+  top: max(14px, calc(var(--vm-safe-top) + 8px));
+  right: max(14px, calc(var(--vm-safe-right) + 8px));
+}
+.vm-install-apple-guide.is-ios {
+  left: 50%;
+  bottom: max(18px, calc(var(--vm-safe-bottom) + 12px));
+  transform: translateX(-50%);
+}
+.vm-install-apple-guide::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line-2);
+  transform: rotate(45deg);
+}
+.vm-install-apple-guide.is-mac::before {
+  top: -10px;
+  right: 42px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.vm-install-apple-guide.is-ios::before {
+  bottom: -10px;
+  left: calc(50% - 9px);
+  border-left: 0;
+  border-top: 0;
+}
+.vm-install-guide-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+.vm-install-guide-kicker {
+  margin: 0 46px 7px 0;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.vm-install-apple-guide h3 { margin: 0 46px 14px 0; font-size: 1.12rem; line-height: 1.35; }
+.vm-install-guide-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.vm-install-guide-steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; font-size: .88rem; line-height: 1.5; }
+.vm-install-step-number { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: .78rem; font-weight: 800; }
+.vm-install-guide-note { margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); font-size: .78rem; line-height: 1.5; }
+.vm-install-guide-done { width: 100%; min-height: 44px; margin-top: 14px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent); color: #fff; font: 800 .86rem/1 var(--font-sans); cursor: pointer; }
+@keyframes vmAppleGuideIn {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
   to { opacity: 1; transform: none; }
+}
+.vm-install-apple-guide.is-ios.is-open { animation-name: vmAppleGuideInIOS; }
+@keyframes vmAppleGuideInIOS {
+  from { opacity: 0; transform: translate(-50%, 12px) scale(.98); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2049,8 +2125,8 @@ iframe, video, canvas, svg, table { max-width: 100%; }
     height: 36px !important;
     min-height: 36px !important;
   }
-  .vm-install-card { padding: 18px; }
-  .vm-install-actions .btn { width: 100%; }
+  .vm-install-apple-guide { width: calc(100vw - 24px); padding: 18px; }
+  .vm-install-guide-steps li { font-size: .84rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
