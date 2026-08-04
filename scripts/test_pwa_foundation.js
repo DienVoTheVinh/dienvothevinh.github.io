@@ -16,7 +16,11 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v9"), 'Service worker cache version must refresh the mobile layout polish');
+expect(worker.includes("vinhmath-shell-v10"), 'Service worker cache version must evict the broken lesson editor');
+expect(worker.includes("VM_PREVIOUS_BROKEN_EDITOR_CACHE = 'vinhmath-shell-v9'"), 'Service worker must detect the stale editor cache');
+expect(worker.includes("target.searchParams.set('vm_refresh', '10')"), 'Open lesson management apps must reload once after the hotfix activates');
+expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
+expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
 expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the offline fallback');
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
@@ -84,6 +88,7 @@ expect(pushShared.includes('npm:web-push@3.6.7'), 'Web Push dependency must be p
 expect(pushShared.includes('statusCode === 404 || statusCode === 410'), 'Expired push endpoints must be removed');
 
 const sharedCss = read('css/vinhmath.css');
+expect(sharedCss.includes('#lessonEditorLoading'), 'Cached lesson editor loaders must be disabled globally');
 expect(sharedCss.includes('--vm-safe-top: env(safe-area-inset-top'), 'Safe-area support is required');
 expect(sharedCss.includes('height: 100dvh !important'), 'Modal must be pinned to the dynamic viewport');
 expect(sharedCss.includes('@media (prefers-reduced-motion: reduce)'), 'Reduced-motion support is required');

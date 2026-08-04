@@ -1895,6 +1895,13 @@ body {
 
 body.vm-modal-open { overflow: hidden !important; }
 
+/* Tương thích với bản trình soạn bài cũ có thể còn nằm trong cache của PWA.
+   Lớp tải cũ phủ toàn bộ form và chặn mọi thao tác khi truy vấn mạng chậm. */
+#lessonEditorLoading {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 main, .wrap, .card, .topbar .nav, .navlinks,
 .grid, .grid-2, .grid-3, .form-row, .form-grid {
   min-width: 0;
