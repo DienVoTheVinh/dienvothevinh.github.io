@@ -972,7 +972,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.1"></script>
+<script src="js/vinhmath.js?v=7.3"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1984,7 +1984,7 @@ async function capNhatMeetLinkTheoLop(classId) {
 
   // Các buổi học của lớp liên quan
   var rs = await sb.from('schedules')
-    .select('id, class_id, weekday, start_time, teacher_id, meet_link, recurrence, date, start_date, end_date')
+    .select('id, class_id, weekday, start_time, end_time, teacher_id, meet_link, recurrence, date, start_date, end_date')
     .in('class_id', relevantIds);
   
   var tzOffset = (new Date()).getTimezoneOffset() * 60000;
@@ -2023,12 +2023,12 @@ async function capNhatMeetLinkTheoLop(classId) {
       if (!isOccur) return;
       var ov = ovByOrig[s.id + '|' + dKey];
       if (ov && (ov.status === 'cancelled' || ov.status === 'moved')) return; // buổi gốc đã nghỉ/dời
-      occ.push({ s: s, delta: di, weekday: wdv, gio: s.start_time });
+      occ.push({ s: s, delta: di, weekday: wdv, gio: s.start_time, start_time: s.start_time, end_time: s.end_time });
     });
     (ovMakeupByDate[dKey] || []).forEach(function (o) {
       var s = sessions.find(function (x) { return x.id === o.schedule_id; });
       if (!s) return;
-      occ.push({ s: s, delta: di, weekday: wdv, gio: o.new_start || s.start_time, makeup: true });
+      occ.push({ s: s, delta: di, weekday: wdv, gio: o.new_start || s.start_time, start_time: o.new_start || s.start_time, end_time: o.new_end || s.end_time, makeup: true });
     });
   }
   occ.sort(function (a, b) { return a.delta - b.delta || (a.gio || '').localeCompare(b.gio || ''); });
@@ -2038,7 +2038,7 @@ async function capNhatMeetLinkTheoLop(classId) {
   var meetLink = '';
   var subText = '';
   if (todayOcc.length) {
-    var oToday = todayOcc[0];
+    var oToday = vmChonBuoiMeetTheoGio(todayOcc, new Date()) || todayOcc[0];
     meetLink = linkCuaBuoi(oToday.s);
     var gioT = oToday.gio ? oToday.gio.slice(0, 5) : '';
     subText = '🟢 Buổi hôm nay' + (gioT ? (' lúc ' + gioT) : '') + (oToday.makeup ? ' (buổi bù)' : '') + ' — ' + (moTaBuoi(oToday.s) || 'Lớp học trực tuyến');

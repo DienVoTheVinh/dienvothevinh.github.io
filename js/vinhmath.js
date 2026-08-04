@@ -27,6 +27,50 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
+/* ---------- CHỌN ĐÚNG CA GOOGLE MEET THEO NGÀY/GIỜ ---------- */
+function vmGioThanhPhut(value) {
+  if (!value) return null;
+  var parts = String(value).split(':');
+  var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null;
+}
+
+function vmLichDienRaNgay(schedule, dateValue) {
+  if (!schedule || schedule.visible === false) return false;
+  var d = dateValue instanceof Date ? new Date(dateValue) : new Date();
+  d.setHours(0, 0, 0, 0);
+  var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  var weekday = d.getDay() === 0 ? 7 : d.getDay();
+  if (schedule.recurrence === 'once') return schedule.date === key;
+  if (schedule.start_date && schedule.start_date > key) return false;
+  if (schedule.end_date && schedule.end_date < key) return false;
+  if (Number(schedule.weekday) !== weekday) return false;
+  if (schedule.recurrence === 'biweekly' && schedule.start_date) {
+    var start = new Date(schedule.start_date + 'T00:00:00');
+    var weeks = Math.floor((d.getTime() - start.getTime()) / (7 * 86400000));
+    if (weeks >= 0 && weeks % 2 !== 0) return false;
+  }
+  return true;
+}
+
+function vmChonBuoiMeetTheoGio(schedules, nowValue) {
+  var rows = (schedules || []).filter(Boolean).slice().sort(function (a, b) {
+    var am = vmGioThanhPhut(a.start_time), bm = vmGioThanhPhut(b.start_time);
+    return (am == null ? 9999 : am) - (bm == null ? 9999 : bm);
+  });
+  if (!rows.length) return null;
+  var now = nowValue instanceof Date ? nowValue : new Date();
+  var current = now.getHours() * 60 + now.getMinutes();
+  for (var i = 0; i < rows.length; i++) {
+    var end = vmGioThanhPhut(rows[i].end_time);
+    var start = vmGioThanhPhut(rows[i].start_time);
+    // Giữ phòng vừa kết thúc thêm 15 phút cho học sinh vào muộn; sau đó chuyển sang ca kế tiếp.
+    if (end != null && current <= end + 15) return rows[i];
+    if (end == null && start != null && current <= start) return rows[i];
+  }
+  return rows[rows.length - 1];
+}
+
 /* ---------- POPUP THEO VỊ TRÍ BẤM: luôn nằm trong viewport, không trôi theo chiều dài trang ---------- */
 (function () {
   var KHOANG_CACH = 12;
