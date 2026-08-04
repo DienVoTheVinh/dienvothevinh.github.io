@@ -1790,7 +1790,7 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
 /* =========================================================================
    SCROLL REVEAL — hiện dần khi cuộn tới (JS gắn .is-visible)
    ========================================================================= */
-.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); animation: revealFailsafe 0s linear 3s forwards; }
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); animation: revealFailsafe 0s linear 1.2s forwards; }
 .reveal.is-visible, .reveal.active { opacity: 1; transform: none; }
 /* Failsafe: nếu JS lỗi/không chạy, vẫn hiện nội dung sau 1.5s (không khoá màn đăng nhập) */
 @keyframes revealFailsafe { to { opacity: 1; transform: none; } }
@@ -1828,4 +1828,227 @@ html { scroll-behavior: smooth; }
 }
 @media (max-width: 640px) {
   .modal { padding: 70px 10px 24px !important; }
+}
+
+/* =========================================================================
+   VINHMATH UX 7.4 — responsive, touch, modal va PWA
+   Lop nay chi tinh chinh cac thanh phan dung chung, giu nguyen nhan dien goc.
+   ========================================================================= */
+:root {
+  --vm-safe-top: env(safe-area-inset-top, 0px);
+  --vm-safe-right: env(safe-area-inset-right, 0px);
+  --vm-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --vm-safe-left: env(safe-area-inset-left, 0px);
+  --vm-touch: 44px;
+}
+
+html {
+  min-width: 0;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(74px + var(--vm-safe-top));
+}
+
+body {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+body.vm-modal-open { overflow: hidden !important; }
+
+main, .wrap, .card, .topbar .nav, .navlinks,
+.grid, .grid-2, .grid-3, .form-row, .form-grid {
+  min-width: 0;
+}
+
+iframe, video, canvas, svg, table { max-width: 100%; }
+
+/* Modal luon bam theo viewport hien tai; noi dung dai cuon ben trong thay vi day
+   cua so xuong giua mot trang rat dai. */
+.modal {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.modal > .modal-content,
+.modal > .modal-inner,
+.vm-modal-panel {
+  width: min(100%, 860px);
+  max-height: calc(100dvh - 112px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-close, .vm-modal-close, [class*="modal"] button[aria-label="Dong"] {
+  min-width: var(--vm-touch);
+  min-height: var(--vm-touch);
+  display: inline-grid;
+  place-items: center;
+}
+
+/* Bang rong cuon trong khung rieng va khong lam trang bi crop. */
+.table-scroll, .responsive-table, .card:has(> table) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Nut cai PWA chi xuat hien khi trinh duyet ho tro hoac tren iOS chua cai. */
+.vm-install-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: var(--topbar-btn-border);
+  border-radius: var(--r-sm);
+  background: var(--topbar-btn-bg);
+  color: var(--topbar-btn-text);
+  font: 700 .78rem/1 var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vm-install-btn.is-available { display: inline-flex; }
+.vm-install-btn:hover {
+  color: var(--topbar-link-hover);
+  border-color: var(--topbar-link-hover);
+  background: var(--topbar-btn-hover-bg);
+}
+.vm-install-icon { font-size: 1rem; line-height: 1; }
+.vm-install-sheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 120000;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px max(14px, var(--vm-safe-right)) max(20px, var(--vm-safe-bottom)) max(14px, var(--vm-safe-left));
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(5px);
+}
+.vm-install-sheet.is-open { display: flex; }
+.vm-install-card {
+  position: relative;
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow-lift, var(--shadow));
+  animation: vmSheetIn .28s var(--ease-out, ease-out);
+}
+.vm-install-card h3 { margin: 0 42px 8px 0; }
+.vm-install-card p { color: var(--ink-3); font-size: .9rem; }
+.vm-install-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+@keyframes vmSheetIn {
+  from { opacity: 0; transform: translateY(18px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-2px); }
+}
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+    padding-left: var(--vm-safe-left);
+    padding-right: var(--vm-safe-right);
+  }
+  body::before, body::after, .vm-aurora span {
+    filter: blur(70px);
+    animation: none !important;
+  }
+  .topbar { padding-top: var(--vm-safe-top); }
+  .topbar .nav { min-height: 58px; }
+  .navlinks {
+    left: var(--vm-safe-left);
+    right: var(--vm-safe-right);
+    max-height: calc(100dvh - 58px - var(--vm-safe-top));
+    padding-bottom: max(14px, var(--vm-safe-bottom));
+  }
+  .navlinks a, .nav-dropdown-btn { min-height: var(--vm-touch); }
+  .bell-panel {
+    position: fixed;
+    top: calc(58px + var(--vm-safe-top));
+    left: max(10px, var(--vm-safe-left));
+    right: max(10px, var(--vm-safe-right));
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 72px - var(--vm-safe-top) - var(--vm-safe-bottom));
+  }
+  .bell-list { max-height: calc(100dvh - 132px - var(--vm-safe-top) - var(--vm-safe-bottom)); }
+  .vm-install-label { display: inline; }
+  .navlinks .vm-install-btn {
+    width: 100%;
+    min-height: var(--vm-touch);
+    padding: 0 14px;
+    justify-content: flex-start;
+    font-size: .95rem;
+  }
+  .modal {
+    padding: calc(64px + var(--vm-safe-top)) max(10px, var(--vm-safe-right)) max(18px, var(--vm-safe-bottom)) max(10px, var(--vm-safe-left)) !important;
+  }
+  .modal > .modal-content,
+  .modal > .modal-inner,
+  .vm-modal-panel {
+    max-height: calc(100dvh - 82px - var(--vm-safe-top) - var(--vm-safe-bottom)) !important;
+    border-radius: 14px !important;
+  }
+  .modal-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
+  }
+  .modal-tabs > * { flex: 0 0 auto; scroll-snap-align: start; }
+  .card:hover { transform: none; }
+  input, select, textarea { max-width: 100%; }
+  input, select, textarea, button, .btn { min-height: var(--vm-touch); }
+  input[type="checkbox"], input[type="radio"], input[type="file"] { min-height: 0; }
+  .grid-2, .grid-3, .form-row, .form-grid { min-width: 0; }
+  .ai-chat-bubble {
+    right: max(14px, var(--vm-safe-right));
+    bottom: max(14px, var(--vm-safe-bottom));
+    width: 52px;
+    height: 52px;
+  }
+  #aiChatBox, .ai-chat-box {
+    left: max(10px, var(--vm-safe-left)) !important;
+    right: max(10px, var(--vm-safe-right)) !important;
+    bottom: calc(74px + var(--vm-safe-bottom)) !important;
+    width: auto !important;
+    height: min(620px, calc(100dvh - 150px - var(--vm-safe-top) - var(--vm-safe-bottom))) !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar .nav { padding-left: 8px !important; padding-right: 8px !important; }
+  .logo { max-width: 132px; overflow: hidden; }
+  .logo .brand-container-el { min-width: 0; }
+  .nav-bell, .nav-burger, .topbar #themeBtn {
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+  .vm-install-card { padding: 18px; }
+  .vm-install-actions .btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
