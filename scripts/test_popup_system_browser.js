@@ -41,48 +41,55 @@ function extractPopupManager(source) {
   try {
     let renderedModalCount = 0;
     const renderFailures = [];
-    for (const modalPage of modalPages) {
-      const scanPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
-      try {
-        const markup = modalPage.html
-          .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-          .replace(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi, '');
-        await scanPage.setContent(markup, { waitUntil: 'domcontentloaded' });
-        await scanPage.addStyleTag({ content: sharedCss });
-        await scanPage.evaluate((manager) => { (0, eval)(manager); }, popupManager);
-        const results = await scanPage.evaluate(async () => {
-          const overlays = Array.from(document.querySelectorAll('.modal,.inline-modal')).filter((element) => {
-            const classes = Array.from(element.classList);
-            return classes.includes('modal') || classes.includes('inline-modal');
-          });
-          overlays.forEach((element) => { element.style.display = 'none'; });
-          const rows = [];
-          for (const overlay of overlays) {
-            overlay.style.display = 'flex';
-            window.vmCanhPopup(overlay);
-            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-            const content = overlay.querySelector('[data-vm-popup-content],.modal-content,.lb-modal,.sam-inner') || overlay.firstElementChild;
-            const rect = content ? content.getBoundingClientRect() : null;
-            rows.push({
-              id: overlay.id || '(không có id)',
-              mode: overlay.getAttribute('data-vm-popup-position') || 'native-default',
-              visible: !!(rect && rect.width > 0 && rect.height > 0 && rect.top < innerHeight && rect.bottom > 0 && rect.left < innerWidth && rect.right > 0),
+    const scanViewports = [
+      { label: 'mobile', width: 390, height: 844 },
+      { label: 'desktop', width: 1440, height: 900 },
+    ];
+    for (const viewport of scanViewports) {
+      for (const modalPage of modalPages) {
+        const scanPage = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+        try {
+          const markup = modalPage.html
+            .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi, '');
+          await scanPage.setContent(markup, { waitUntil: 'domcontentloaded' });
+          await scanPage.addStyleTag({ content: sharedCss });
+          await scanPage.evaluate((manager) => { (0, eval)(manager); }, popupManager);
+          const results = await scanPage.evaluate(async () => {
+            const overlays = Array.from(document.querySelectorAll('.modal,.inline-modal')).filter((element) => {
+              const classes = Array.from(element.classList);
+              return classes.includes('modal') || classes.includes('inline-modal');
             });
-            overlay.style.display = 'none';
-            await new Promise((resolve) => requestAnimationFrame(resolve));
+            overlays.forEach((element) => { element.style.display = 'none'; });
+            const rows = [];
+            for (const overlay of overlays) {
+              overlay.style.display = 'flex';
+              window.vmCanhPopup(overlay);
+              await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+              const content = overlay.querySelector('[data-vm-popup-content],.modal-content,.lb-modal,.sam-inner') || overlay.firstElementChild;
+              const rect = content ? content.getBoundingClientRect() : null;
+              rows.push({
+                id: overlay.id || '(không có id)',
+                mode: overlay.getAttribute('data-vm-popup-position') || 'native-default',
+                visible: !!(rect && rect.width > 0 && rect.height > 0 && rect.top < innerHeight && rect.bottom > 0 && rect.left < innerWidth && rect.right > 0),
+              });
+              overlay.style.display = 'none';
+              await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+            return rows;
+          });
+          renderedModalCount += results.length;
+          for (const result of results) {
+            if (!result.visible || result.mode === 'click') renderFailures.push(`${viewport.label}:${modalPage.file}#${result.id}`);
           }
-          return rows;
-        });
-        renderedModalCount += results.length;
-        for (const result of results) {
-          if (!result.visible || result.mode === 'click') renderFailures.push(`${modalPage.file}#${result.id}`);
+        } finally {
+          await scanPage.close();
         }
-      } finally {
-        await scanPage.close();
       }
     }
-    if (renderedModalCount !== modalCount) {
-      throw new Error(`Rendered ${renderedModalCount}/${modalCount} discovered modal overlays`);
+    const expectedRenderCount = modalCount * scanViewports.length;
+    if (renderedModalCount !== expectedRenderCount) {
+      throw new Error(`Rendered ${renderedModalCount}/${expectedRenderCount} modal viewport cases`);
     }
     if (renderFailures.length) throw new Error(`Modal overlays outside the viewport: ${renderFailures.join(', ')}`);
 
@@ -177,7 +184,7 @@ function extractPopupManager(source) {
     const unlocked = await page.evaluate(() => !document.documentElement.classList.contains('vm-popup-open'));
     if (!unlocked) throw new Error('Popup scroll lock remained after every overlay closed');
 
-    console.log(`PASS shared popup system: ${modalCount} modal overlays rendered across ${modalPages.length} pages; ${htmlFiles.length} pages scanned`);
+    console.log(`PASS shared popup system: ${modalCount} modal overlays rendered on mobile + desktop across ${modalPages.length} pages; ${htmlFiles.length} pages scanned`);
   } finally {
     await browser.close();
   }
