@@ -251,7 +251,7 @@ function vmTaiWebPushChoThietBi(uid) {
   }
   var script = document.createElement('script');
   script.id = 'vmPushClientScript';
-  script.src = 'js/push-notifications.js?v=1';
+  script.src = 'js/push-notifications.js?v=2';
   script.defer = true;
   script.onload = function () {
     if (window.vmKhoiDongWebPush) window.vmKhoiDongWebPush(uid);
