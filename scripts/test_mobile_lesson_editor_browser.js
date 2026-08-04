@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
 
 (async () => {
   const source = fs.readFileSync('quan-tri-lop.html', 'utf8');
+  const sharedCss = fs.readFileSync('css/vinhmath.css', 'utf8');
   const styleMatch = source.match(/<style>([\s\S]*?)<\/style>/i);
   const helperMatch = source.match(/var lessonEditorTrigger = null;([\s\S]*?)async function moFormThemBaiGiang/);
   if (!styleMatch || !helperMatch) throw new Error('Lesson editor styles or open helper are missing');
@@ -13,7 +14,8 @@ const { chromium } = require('playwright');
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await page.setContent(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-      <style>:root{--bg:#fff;--surface:#fff;--surface-solid:#fff;--surface-2:#f7f5f1;--line:#ddd;--line-2:#ccc;--accent:#d97706;--ink:#211;--ink-2:#433;--ink-3:#766;--err:#b22;--shadow:none}${styleMatch[1]}</style>
+      <style>:root{--bg:#fff;--surface:#fff;--surface-solid:#fff;--surface-2:#f7f5f1;--line:#ddd;--line-2:#ccc;--accent:#d97706;--ink:#211;--ink-2:#433;--ink-3:#766;--err:#b22;--shadow:none}${sharedCss}</style>
+      <style>${styleMatch[1]}</style>
       <button id="trigger">Chỉnh sửa</button>
       <div class="modal lesson-editor-modal" id="modalForm" style="display:none">
         <div class="modal-content lesson-editor-content">
@@ -43,13 +45,15 @@ const { chromium } = require('playwright');
       const row = document.querySelector('.form-row');
       const actions = document.querySelector('.lesson-editor-actions');
       scroll.scrollTop = scroll.scrollHeight;
+      content.scrollTop = content.scrollHeight;
       window.hienFormBaiGiang('Thêm bài giảng mới', false);
       const contentRect = content.getBoundingClientRect();
       const actionRect = actions.getBoundingClientRect();
       return {
         contentTopVisible: contentRect.top >= 0 && contentRect.top < 24,
         contentFits: contentRect.bottom <= innerHeight + 1,
-        resetToTop: scroll.scrollTop === 0 && modal.scrollTop === 0,
+        resetToTop: scroll.scrollTop === 0 && content.scrollTop === 0 && modal.scrollTop === 0,
+        editorOwnsScrolling: getComputedStyle(content).overflow === 'hidden' && getComputedStyle(scroll).overflowY === 'auto',
         tabsSingleLine: getComputedStyle(tabs).flexWrap === 'nowrap',
         tabsScrollable: tabs.scrollWidth > tabs.clientWidth,
         mobileSingleColumn: getComputedStyle(row).gridTemplateColumns.split(' ').length === 1,
