@@ -97,5 +97,7 @@ require(insights_sql, "coalesce(public.can_manage_class", "RLS nhận định ch
 require(insights_sql, "coalesce(public.is_admin", "RLS nhận định chưa cho phép quản trị viên đúng cách")
 require(insights_sql, "from public.class_students", "RLS nhận định chưa xác nhận học sinh thuộc lớp")
 require(insights_sql, "edited_by = (select auth.uid())", "RLS nhận định chưa khóa người chỉnh theo phiên đăng nhập")
+require(insights_sql, "teacher_report_insights_class_id_idx", "Bảng nhận định chưa có chỉ mục cho lớp")
+require(insights_sql, "teacher_report_insights_edited_by_idx", "Bảng nhận định chưa có chỉ mục cho giáo viên chỉnh sửa")
 
 print("PASS teacher student period report regression checks")

@@ -38,6 +38,12 @@ create table if not exists public.teacher_report_insights (
 comment on table public.teacher_report_insights is
   'Nhận định do giáo viên điều chỉnh cho báo cáo tuần hoặc tháng của một học sinh.';
 
+create index if not exists teacher_report_insights_class_id_idx
+  on public.teacher_report_insights (class_id);
+
+create index if not exists teacher_report_insights_edited_by_idx
+  on public.teacher_report_insights (edited_by);
+
 alter table public.teacher_report_insights enable row level security;
 
 revoke all on table public.teacher_report_insights from anon;
