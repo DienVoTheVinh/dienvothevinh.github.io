@@ -2477,3 +2477,148 @@ function layEmojiGiaoVien(fullName) {
     initReveal();
   }
 })();
+
+/* =========================================================================
+   PWA + TOI UU TAI NGUYEN (v7.4)
+   - Khong xin quyen thong bao tu dong.
+   - Nut cai dat chi hien khi trinh duyet ho tro, hoac tren iOS chua Add to Home.
+   ========================================================================= */
+(function () {
+  var vmInstallPrompt = null;
+
+  function vmThemMeta(selector, tag, attrs) {
+    if (document.head.querySelector(selector)) return;
+    var el = document.createElement(tag);
+    Object.keys(attrs).forEach(function (key) { el.setAttribute(key, attrs[key]); });
+    document.head.appendChild(el);
+  }
+
+  vmThemMeta('link[rel="manifest"]', 'link', { rel: 'manifest', href: '/manifest.webmanifest' });
+  vmThemMeta('meta[name="theme-color"]', 'meta', { name: 'theme-color', content: '#9e6100' });
+  vmThemMeta('meta[name="mobile-web-app-capable"]', 'meta', { name: 'mobile-web-app-capable', content: 'yes' });
+  vmThemMeta('meta[name="apple-mobile-web-app-capable"]', 'meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+  vmThemMeta('meta[name="apple-mobile-web-app-status-bar-style"]', 'meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'default' });
+  vmThemMeta('meta[name="apple-mobile-web-app-title"]', 'meta', { name: 'apple-mobile-web-app-title', content: 'VinhMath' });
+  vmThemMeta('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: '/favicon.png' });
+
+  function vmDaCaiPwa() {
+    return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function vmLaIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+  }
+
+  function vmDongBangCaiDat() {
+    var sheet = document.getElementById('vmInstallSheet');
+    if (sheet) sheet.classList.remove('is-open');
+    document.body.classList.remove('vm-modal-open');
+  }
+
+  function vmTaoBangCaiDat() {
+    var old = document.getElementById('vmInstallSheet');
+    if (old) return old;
+    var sheet = document.createElement('div');
+    sheet.id = 'vmInstallSheet';
+    sheet.className = 'vm-install-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-labelledby', 'vmInstallTitle');
+    sheet.innerHTML =
+      '<div class="vm-install-card vm-modal-panel">' +
+        '<button type="button" class="vm-modal-close" id="vmInstallClose" aria-label="Dong" style="position:absolute;right:18px;top:14px;border:0;background:transparent;color:var(--ink-3);font-size:1.5rem;cursor:pointer">×</button>' +
+        '<h3 id="vmInstallTitle">Cài VinhMath như ứng dụng</h3>' +
+        '<p id="vmInstallGuide">Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.</p>' +
+        '<div class="vm-install-actions">' +
+          '<button type="button" class="btn btn-primary" id="vmInstallConfirm">Cài ứng dụng</button>' +
+          '<button type="button" class="btn btn-secondary" id="vmInstallLater">Để sau</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(sheet);
+    sheet.addEventListener('click', function (event) { if (event.target === sheet) vmDongBangCaiDat(); });
+    document.getElementById('vmInstallClose').addEventListener('click', vmDongBangCaiDat);
+    document.getElementById('vmInstallLater').addEventListener('click', vmDongBangCaiDat);
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') vmDongBangCaiDat(); });
+    return sheet;
+  }
+
+  async function vmCaiPwa() {
+    if (!vmInstallPrompt) return;
+    var prompt = vmInstallPrompt;
+    vmInstallPrompt = null;
+    await prompt.prompt();
+    try { await prompt.userChoice; } catch (_) {}
+    vmDongBangCaiDat();
+    vmCapNhatNutCaiDat();
+  }
+
+  function vmMoBangCaiDat() {
+    var sheet = vmTaoBangCaiDat();
+    var guide = document.getElementById('vmInstallGuide');
+    var confirm = document.getElementById('vmInstallConfirm');
+    if (vmLaIOS() && !vmInstallPrompt) {
+      guide.innerHTML = 'Trên iPhone/iPad: bấm nút <b>Chia sẻ</b> trong Safari, sau đó chọn <b>Thêm vào Màn hình chính</b>.';
+      confirm.style.display = 'none';
+    } else {
+      guide.textContent = 'Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.';
+      confirm.style.display = '';
+      confirm.onclick = vmCaiPwa;
+    }
+    sheet.classList.add('is-open');
+    document.body.classList.add('vm-modal-open');
+  }
+
+  function vmLayNutCaiDat() {
+    var btn = document.getElementById('vmInstallBtn');
+    if (btn) return btn;
+    var navlinks = document.querySelector('.topbar .navlinks');
+    if (!navlinks) return null;
+    btn = document.createElement('button');
+    btn.id = 'vmInstallBtn';
+    btn.type = 'button';
+    btn.className = 'vm-install-btn';
+    btn.setAttribute('aria-label', 'Cài VinhMath như ứng dụng');
+    btn.innerHTML = '<span class="vm-install-icon" aria-hidden="true">⇩</span><span class="vm-install-label">Cài ứng dụng</span>';
+    btn.addEventListener('click', vmMoBangCaiDat);
+    navlinks.appendChild(btn);
+    return btn;
+  }
+
+  function vmCapNhatNutCaiDat() {
+    var btn = vmLayNutCaiDat();
+    if (!btn) return;
+    btn.classList.toggle('is-available', !vmDaCaiPwa() && (!!vmInstallPrompt || vmLaIOS()));
+  }
+
+  window.addEventListener('beforeinstallprompt', function (event) {
+    event.preventDefault();
+    vmInstallPrompt = event;
+    vmCapNhatNutCaiDat();
+  });
+  window.addEventListener('appinstalled', function () {
+    vmInstallPrompt = null;
+    vmDongBangCaiDat();
+    vmCapNhatNutCaiDat();
+  });
+
+  function vmKhoiDongPwa() {
+    vmCapNhatNutCaiDat();
+    var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+    }
+
+    /* Anh ngoai man hinh duoc tai tre, anh dau trang van duoc uu tien. */
+    var imgs = document.querySelectorAll('img');
+    imgs.forEach(function (img, index) {
+      if (!img.hasAttribute('decoding')) img.decoding = 'async';
+      if (!img.hasAttribute('loading') && index > 2) img.loading = 'lazy';
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vmKhoiDongPwa);
+  else vmKhoiDongPwa();
+
+  window.vmMoCaiDatUngDung = vmMoBangCaiDat;
+  window.vmCapNhatNutCaiDatPwa = vmCapNhatNutCaiDat;
+})();

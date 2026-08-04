@@ -109,6 +109,7 @@ function apDungMenu(role) {
     }
     return '';
   }).join('');
+  if (typeof window.vmCapNhatNutCaiDatPwa === 'function') window.vmCapNhatNutCaiDatPwa();
 }
 
 // Nút ☰ cho màn hình hẹp: tự chèn vào thanh đầu trang (mọi trang dùng menu.js)
@@ -247,6 +248,10 @@ async function demThongBao() {
     if (!b) return;
     b.textContent = n > 9 ? '9+' : n;
     b.style.display = n > 0 ? 'grid' : 'none';
+    try {
+      if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n);
+      else if (!n && navigator.clearAppBadge) navigator.clearAppBadge();
+    } catch (e) {}
   } catch (e) {}
 }
 

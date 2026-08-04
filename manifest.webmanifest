@@ -1,0 +1,50 @@
+{
+  "id": "/",
+  "name": "VinhMath - Lớp Toán Thầy Vinh",
+  "short_name": "VinhMath",
+  "description": "Học tập, lịch học, bài tập và theo dõi tiến độ tại VinhMath.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "/trang-chu",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#faf8f5",
+  "theme_color": "#9e6100",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/vinhmath-app.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo/VinhMath_logo.png",
+      "sizes": "2048x2048",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lớp học",
+      "short_name": "Lớp học",
+      "url": "/lop-hoc",
+      "icons": [{ "src": "/icons/vinhmath-app.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Lịch học",
+      "short_name": "Lịch học",
+      "url": "/lich-hoc",
+      "icons": [{ "src": "/icons/vinhmath-app.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Theo dõi con",
+      "short_name": "Phụ huynh",
+      "url": "/phu-huynh",
+      "icons": [{ "src": "/icons/vinhmath-app.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
