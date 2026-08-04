@@ -16,9 +16,9 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v10"), 'Service worker cache version must evict the broken lesson editor');
-expect(worker.includes("VM_PREVIOUS_BROKEN_EDITOR_CACHE = 'vinhmath-shell-v9'"), 'Service worker must detect the stale editor cache');
-expect(worker.includes("target.searchParams.set('vm_refresh', '10')"), 'Open lesson management apps must reload once after the hotfix activates');
+expect(worker.includes("vinhmath-shell-v11"), 'Service worker cache version must evict the broken popup behavior');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v10'"), 'Service worker must detect the stale popup cache');
+expect(worker.includes("target.searchParams.set('vm_refresh', '11')"), 'Open apps must reload once after the popup hotfix activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');

@@ -112,7 +112,7 @@
 </div>
 
 <!-- Modal Form Thêm/Sửa Bài Học -->
-<div class="modal" id="modalForm">
+<div class="modal" id="modalForm" data-vm-popup-position="native">
   <div class="modal-content" style="max-width: 800px;">
     <button class="modal-close" onclick="dongForm()">×</button>
     <h2 id="modalTieuDe">Thêm bài giảng mới</h2>
@@ -301,7 +301,7 @@
 </div>
 
 <!-- Modal Quản Lý Chuyên Đề -->
-<div class="modal" id="modalChuyenDe" style="z-index:10010">
+<div class="modal" id="modalChuyenDe" data-vm-popup-position="native" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
     <button class="modal-close" onclick="dongQuanLyChuyenDe()">×</button>
     <h2>Quản lý chuyên đề</h2>
@@ -591,7 +591,9 @@ if (location.hash === '#chuyende') {
 function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = 'all';
-  $('modalChuyenDe').style.display = 'flex';
+  var modal = $('modalChuyenDe');
+  modal.style.display = 'flex';
+  if (typeof window.vmCanhPopup === 'function') window.vmCanhPopup(modal, { position: 'native' });
   taiBangChuyenDe();
 }
 
