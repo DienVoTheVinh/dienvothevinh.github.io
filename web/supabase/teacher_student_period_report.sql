@@ -143,12 +143,16 @@ begin
     ), '[]'::jsonb),
     'submissions', coalesce((
       select jsonb_agg(jsonb_build_object(
+        'id', s.id,
         'lesson_id', s.lesson_id,
         'kind', s.kind,
         'submitted_at', s.submitted_at,
         'is_late', s.is_late,
         'status', s.status,
-        'score', s.score
+        'score', s.score,
+        'feedback', s.feedback,
+        'graded_at', s.graded_at,
+        'reviewed_at', s.reviewed_at
       ) order by s.submitted_at)
       from public.submissions s
       join public.lessons l on l.id = s.lesson_id
