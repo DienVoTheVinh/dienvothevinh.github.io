@@ -1,5 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v9';
+const VM_CACHE = 'vinhmath-shell-v10';
+const VM_PREVIOUS_BROKEN_EDITOR_CACHE = 'vinhmath-shell-v9';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -29,16 +30,41 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys()
       .then(function (keys) {
+        var needsEditorRefresh = keys.indexOf(VM_PREVIOUS_BROKEN_EDITOR_CACHE) !== -1;
         return Promise.all(keys.filter(function (key) {
           return key.indexOf('vinhmath-') === 0 && key !== VM_CACHE;
-        }).map(function (key) { return caches.delete(key); }));
+        }).map(function (key) { return caches.delete(key); }))
+          .then(function () { return needsEditorRefresh; });
       })
-      .then(function () { return self.clients.claim(); })
+      .then(function (needsEditorRefresh) {
+        return self.clients.claim().then(function () { return needsEditorRefresh; });
+      })
+      .then(function (needsEditorRefresh) {
+        if (!needsEditorRefresh) return;
+        /* Một lần duy nhất khi lên v10: tải lại riêng trang quản trị lớp để
+           đẩy bản HTML có lớp phủ lỗi ra khỏi PWA đang mở. */
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+          .then(function (windows) {
+            return Promise.all(windows.map(function (client) {
+              try {
+                var target = new URL(client.url);
+                if (!/^\/quan-tri-lop(?:\.html)?\/?$/.test(target.pathname)) return null;
+                if (target.searchParams.get('vm_refresh') === '10') return null;
+                target.searchParams.set('vm_refresh', '10');
+                return client.navigate(target.href);
+              } catch (_) { return null; }
+            }));
+          });
+      })
   );
 });
 
 function vmLaTaiNguyenTinh(url) {
   return /\.(?:css|js|png|jpe?g|webp|svg|gif|woff2?)$/i.test(url.pathname);
+}
+
+function vmLaMaNguonGiaoDien(url) {
+  return /\.(?:css|js)$/i.test(url.pathname);
 }
 
 self.addEventListener('fetch', function (event) {
@@ -65,17 +91,29 @@ self.addEventListener('fetch', function (event) {
   }
 
   if (vmLaTaiNguyenTinh(url)) {
+    if (!vmLaMaNguonGiaoDien(url)) {
+      event.respondWith(
+        caches.match(request).then(function (cached) {
+          var fresh = fetch(request).then(function (response) {
+            if (response && response.ok) {
+              var copy = response.clone();
+              caches.open(VM_CACHE).then(function (cache) { cache.put(request, copy); });
+            }
+            return response;
+          }).catch(function () { return cached; });
+          return cached || fresh;
+        })
+      );
+      return;
+    }
     event.respondWith(
-      caches.match(request).then(function (cached) {
-        var fresh = fetch(request).then(function (response) {
+      fetch(request).then(function (response) {
           if (response && response.ok) {
             var copy = response.clone();
             caches.open(VM_CACHE).then(function (cache) { cache.put(request, copy); });
           }
           return response;
-        }).catch(function () { return cached; });
-        return cached || fresh;
-      })
+        }).catch(function () { return caches.match(request); })
     );
   }
 });
