@@ -212,15 +212,25 @@ function khoiDongChuong(uid) {
   var burger = document.getElementById('navBurger');
   if (burger) nav.insertBefore(wrap, burger); else nav.appendChild(wrap);
 
+  function vmDatBangThongBaoTheoManHinh(p) {
+    if (window.innerWidth <= 768) {
+      /* backdrop-filter tren topbar tao containing block cho position:fixed.
+         Dua panel ra body de no bam dung viewport thay vi co lai theo header. */
+      if (p.parentNode !== document.body) document.body.appendChild(p);
+      var topbar = document.querySelector('.topbar');
+      var topbarBottom = topbar ? Math.ceil(topbar.getBoundingClientRect().bottom) : 64;
+      p.style.setProperty('--vm-bell-panel-top', Math.max(8, topbarBottom + 6) + 'px');
+    } else if (p.parentNode !== wrap) {
+      wrap.appendChild(p);
+      p.style.removeProperty('--vm-bell-panel-top');
+    }
+  }
+
   document.getElementById('nutChuong').onclick = function (e) {
     e.stopPropagation();
     var p = document.getElementById('bangThongBao');
     var mo = p.style.display === 'none';
-    if (mo && window.innerWidth <= 768) {
-      var topbar = document.querySelector('.topbar');
-      var topbarBottom = topbar ? Math.ceil(topbar.getBoundingClientRect().bottom) : 64;
-      p.style.setProperty('--vm-bell-panel-top', Math.max(8, topbarBottom + 6) + 'px');
-    }
+    if (mo) vmDatBangThongBaoTheoManHinh(p);
     p.style.display = mo ? 'flex' : 'none';
     if (mo) veDanhSachThongBao();
   };
@@ -231,7 +241,12 @@ function khoiDongChuong(uid) {
     demThongBao(); veDanhSachThongBao();
   };
   document.addEventListener('click', function (ev) {
-    if (!wrap.contains(ev.target)) document.getElementById('bangThongBao').style.display = 'none';
+    var p = document.getElementById('bangThongBao');
+    if (p && !wrap.contains(ev.target) && !p.contains(ev.target)) p.style.display = 'none';
+  });
+  window.addEventListener('resize', function () {
+    var p = document.getElementById('bangThongBao');
+    if (p && p.style.display !== 'none') vmDatBangThongBaoTheoManHinh(p);
   });
 
   demThongBao();
