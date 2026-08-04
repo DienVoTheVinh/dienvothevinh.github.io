@@ -139,6 +139,31 @@ function extractFunction(source, name) {
     if (mobileExportLayout.titleSize < 22 || !mobileExportLayout.lowerSameRow || mobileExportLayout.metricRows !== 1) throw new Error(`Export typography or grids changed under mobile media rules: ${JSON.stringify(mobileExportLayout)}`);
 
     await page.evaluate(() => { document.querySelector('.report-sheet.exporting').classList.remove('exporting'); });
+    const darkTheme = await page.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      const report = document.querySelector('.report-sheet');
+      const editor = document.querySelector('#insightEditor');
+      editor.hidden = false;
+      const colors = {
+        sheet: getComputedStyle(report).backgroundColor,
+        sheetText: getComputedStyle(report).color,
+        cover: getComputedStyle(report.querySelector('.report-cover')).backgroundImage,
+        metric: getComputedStyle(report.querySelector('.metric')).backgroundColor,
+        panel: getComputedStyle(report.querySelector('.report-panel')).backgroundColor,
+        detailGroup: getComputedStyle(report.querySelector('.detail-group')).backgroundColor,
+        textarea: getComputedStyle(editor.querySelector('textarea')).backgroundColor,
+      };
+      report.classList.add('exporting');
+      colors.exportSheet = getComputedStyle(report).backgroundColor;
+      colors.exportText = getComputedStyle(report).color;
+      report.classList.remove('exporting');
+      editor.hidden = true;
+      return colors;
+    });
+    const darkSurfaces = [darkTheme.sheet, darkTheme.metric, darkTheme.panel, darkTheme.detailGroup, darkTheme.textarea];
+    if (darkSurfaces.some((color) => color === 'rgb(255, 255, 255)')) throw new Error(`Dark theme leaves a white report surface: ${JSON.stringify(darkTheme)}`);
+    if (darkTheme.sheetText === 'rgb(39, 48, 63)' || !darkTheme.cover.includes('linear-gradient')) throw new Error(`Dark report text or cover did not switch theme: ${JSON.stringify(darkTheme)}`);
+    if (darkTheme.exportSheet !== 'rgb(255, 255, 255)' || darkTheme.exportText !== 'rgb(39, 48, 63)') throw new Error(`PNG export no longer keeps its print-friendly light palette: ${JSON.stringify(darkTheme)}`);
     const mobileLayout = await page.evaluate(() => {
       const controls = document.querySelector('.report-controls').getBoundingClientRect();
       const picker = document.querySelector('#reportPeriodPicker').getBoundingClientRect();
