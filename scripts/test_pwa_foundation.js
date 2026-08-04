@@ -16,7 +16,7 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v5"), 'Service worker cache version must refresh the Web Push flow');
+expect(worker.includes("vinhmath-shell-v6"), 'Service worker cache version must refresh the Web Push flow');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
 expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the offline fallback');
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
@@ -50,7 +50,7 @@ expect(!/Notification\.requestPermission\s*\(/.test(sharedJs), 'Notification per
 const menuJs = read('js/menu-v5.js');
 expect(menuJs.includes('vmCapNhatNutCaiDatPwa'), 'Role-based menu must restore the install action');
 expect(menuJs.includes('navigator.setAppBadge'), 'Installed app badge must mirror unread notifications');
-expect(menuJs.includes("script.src = 'js/push-notifications.js?v=1'"), 'Signed-in notification menu must load the Web Push client');
+expect(menuJs.includes("script.src = 'js/push-notifications.js?v=2'"), 'Signed-in notification menu must load the current Web Push client');
 
 const pushClient = read('js/push-notifications.js');
 expect(pushClient.includes("Notification.requestPermission()"), 'Permission must be requested from the device opt-in action');
@@ -59,6 +59,8 @@ expect(pushClient.includes("action: 'subscribe'"), 'Device subscriptions must be
 expect(pushClient.includes("action: 'unsubscribe'"), 'Users must be able to disable an individual device');
 expect(pushClient.includes("action: 'test'"), 'Users need an end-to-end test notification');
 expect(pushClient.includes("isIOS() && !isStandalone()"), 'iPhone and iPad must require an installed Home Screen app');
+expect(pushClient.includes('await sb.auth.refreshSession()'), 'An expired Safari session must refresh once before Web Push registration fails');
+expect(pushClient.includes("result.response.status === 401"), 'Web Push registration must handle authorization expiry explicitly');
 
 const pushSql = read('web/supabase/create_web_push_subscriptions.sql');
 expect(pushSql.includes('alter table public.push_subscriptions enable row level security'), 'Push subscriptions require RLS');
@@ -67,7 +69,7 @@ expect(pushSql.includes('(select auth.uid()) = user_id'), 'Every subscription po
 expect(!/VAPID_PRIVATE_KEY\s*=/.test(pushSql), 'Private VAPID material must never be stored in SQL');
 
 const subscribeFunction = read('supabase/functions/web-push-subscribe/index.ts');
-expect(subscribeFunction.includes('userClient.auth.getUser()'), 'Subscription function must verify the caller');
+expect(subscribeFunction.includes('userClient.auth.getUser(tokenMatch[1])'), 'Subscription function must verify the exact bearer token');
 expect(subscribeFunction.includes('existing.user_id !== user.id'), 'A device endpoint cannot be reassigned across accounts');
 expect(subscribeFunction.includes('jsr:@supabase/supabase-js@2.95.0'), 'Supabase Edge dependency must be pinned');
 
@@ -106,12 +108,12 @@ for (const file of htmlFiles) {
   const html = read(file);
   expect(html.includes('rel="manifest" href="/manifest.webmanifest"'), `${file}: missing manifest link`);
   expect(html.includes('rel="apple-touch-icon" href="/icons/vinhmath-192.png"'), `${file}: stale Apple app icon`);
-  expect(!/css\/vinhmath\.css\?v=(?!7\.8)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/vinhmath\.css\?v=(?!7\.9)/.test(html), `${file}: stale shared CSS version`);
   if (html.includes('js/vinhmath.js')) {
     expect(html.includes('js/vinhmath.js?v=7.8'), `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=7.8'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=7.9'), `${file}: stale shared menu version`);
   }
 }
 

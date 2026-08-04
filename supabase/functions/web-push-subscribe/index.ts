@@ -46,9 +46,11 @@ Deno.serve(async (req: Request) => {
     if (!supabaseUrl || !publishableKey || !secretKey) return json({ error: "Server configuration is incomplete" }, 503);
 
     const authorization = req.headers.get("Authorization") || "";
+    const tokenMatch = authorization.match(/^Bearer\s+(.+)$/i);
+    if (!tokenMatch) return json({ error: "Vui lòng đăng nhập để bật thông báo" }, 401);
     const userClient = createClient(supabaseUrl, publishableKey, { global: { headers: { Authorization: authorization } } });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return json({ error: "Phiên đăng nhập không hợp lệ" }, 401);
+    const { data: { user }, error: authError } = await userClient.auth.getUser(tokenMatch[1]);
+    if (authError || !user) return json({ error: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại" }, 401);
 
     const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json().catch(() => ({}));

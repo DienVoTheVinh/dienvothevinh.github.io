@@ -52,6 +52,22 @@
     });
   }
 
+  async function requestSubscription(body, accessToken) {
+    var response = await fetch(VM.SUPABASE_URL + '/functions/v1/web-push-subscribe', {
+      method: 'POST',
+      headers: {
+        apikey: VM.SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body || {})
+    });
+    var raw = await response.text();
+    var data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_) { data = { error: raw }; }
+    return { response: response, data: data };
+  }
+
   async function invoke(body) {
     if (!window.sb || !window.VM || !VM.SUPABASE_URL || !VM.SUPABASE_ANON_KEY) {
       throw new Error('Chưa kết nối được máy chủ VinhMath.');
@@ -60,20 +76,25 @@
     var session = sessionResult && sessionResult.data && sessionResult.data.session;
     if (!session || !session.access_token) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
 
-    var response = await fetch(VM.SUPABASE_URL + '/functions/v1/web-push-subscribe', {
-      method: 'POST',
-      headers: {
-        apikey: VM.SUPABASE_ANON_KEY,
-        Authorization: 'Bearer ' + session.access_token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body || {})
-    });
-    var raw = await response.text();
-    var data = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch (_) { data = { error: raw }; }
-    if (!response.ok || data.error) throw new Error(data.error || ('Máy chủ trả lỗi HTTP ' + response.status + '.'));
-    return data;
+    var result = await requestSubscription(body, session.access_token);
+    if (result.response.status === 401) {
+      var refreshed;
+      try { refreshed = await sb.auth.refreshSession(); } catch (_) {
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi bật thông báo.');
+      }
+      var freshSession = refreshed && refreshed.data && refreshed.data.session;
+      if ((refreshed && refreshed.error) || !freshSession || !freshSession.access_token) {
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi bật thông báo.');
+      }
+      result = await requestSubscription(body, freshSession.access_token);
+    }
+    if (!result.response.ok || result.data.error) {
+      if (result.response.status === 401) {
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi bật thông báo.');
+      }
+      throw new Error(result.data.error || ('Máy chủ trả lỗi HTTP ' + result.response.status + '.'));
+    }
+    return result.data;
   }
 
   function decodeApplicationServerKey(value) {
