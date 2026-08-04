@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v1';
+const VM_CACHE = 'vinhmath-shell-v2';
 const VM_SHELL = [
   '/',
   '/index.html',
