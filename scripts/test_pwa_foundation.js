@@ -32,11 +32,17 @@ expect(sharedJs.includes('vm-install-btn'), 'Install action must be rendered');
 expect(sharedJs.includes("document.getElementById('vmInstallHero')"), 'Prominent homepage install action must be synchronized');
 expect(sharedJs.includes('Thêm vào Màn hình chính'), 'iOS installation guidance must exist');
 expect(sharedJs.includes('await prompt.prompt()'), 'Supported browsers must open their native install prompt directly');
-expect(sharedJs.includes('await navigator.share({'), 'iOS must open the native Share Sheet directly when available');
+expect(sharedJs.includes('function vmLaSafariApple()'), 'Apple Safari detection must use a dedicated browser check');
+expect(sharedJs.includes("vmMoHuongDanApple('ios')"), 'iOS must open its Safari-specific installation guide');
+expect(sharedJs.includes("vmMoHuongDanApple('mac')"), 'macOS Safari must open its Add to Dock guide');
+expect(!sharedJs.includes('await navigator.share({'), 'Web Share must not be presented as Add to Home Screen because Safari does not expose that action to websites');
 expect(sharedJs.includes("heroBtn.addEventListener('click', vmBatDauCaiPwa)"), 'Homepage install button must skip the old intermediary modal');
 expect(sharedJs.includes("btn.addEventListener('click', vmBatDauCaiPwa)"), 'Navigation install button must use the direct install flow');
 expect(!sharedJs.includes("heroBtn.addEventListener('click', vmMoBangCaiDat)"), 'Homepage must not open the old intermediary modal');
 expect(sharedJs.includes('File → Add to Dock'), 'Safari on macOS needs the official Add to Dock fallback');
+expect(sharedJs.includes('macOS Sonoma 14+'), 'Safari on macOS must state the minimum Add to Dock version');
+expect(sharedJs.includes('Mở dưới dạng ứng dụng web (Open as Web App)'), 'Current iOS guidance must include the Open as Web App switch');
+expect(sharedJs.includes('Sửa tác vụ'), 'iOS guidance must explain how to restore a missing Add to Home Screen action');
 expect(sharedJs.includes("href: '/icons/vinhmath-192.png'"), 'Apple install metadata must use the website VinhMath logo');
 expect(!/Notification\.requestPermission\s*\(/.test(sharedJs), 'Notification permission must not be requested automatically');
 
@@ -49,6 +55,9 @@ expect(sharedCss.includes('--vm-safe-top: env(safe-area-inset-top'), 'Safe-area 
 expect(sharedCss.includes('height: 100dvh !important'), 'Modal must be pinned to the dynamic viewport');
 expect(sharedCss.includes('@media (prefers-reduced-motion: reduce)'), 'Reduced-motion support is required');
 expect(sharedCss.includes('.vm-install-toast.is-visible'), 'Install fallback must be non-blocking instead of a secondary modal');
+expect(sharedCss.includes('.vm-install-apple-guide.is-mac'), 'macOS Safari guidance must point to the top-right Share control');
+expect(sharedCss.includes('.vm-install-apple-guide.is-ios'), 'iOS Safari guidance must use the mobile safe area');
+expect(!sharedCss.includes('.vm-install-sheet'), 'The obsolete blocking install modal must be removed');
 
 const home = read('trang-chu.html');
 expect(home.includes('id="vmInstallHero"'), 'Homepage must include a prominent install panel');
