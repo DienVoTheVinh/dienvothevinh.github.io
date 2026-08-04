@@ -22,7 +22,8 @@ expect(lesson.includes('pdf-zoom-toolbar') && lesson.includes('pdf-fit-btn'), 'P
 expect(css.includes('top:var(--vm-bell-panel-top'), 'Mobile notification panel must use the measured topbar boundary');
 expect(css.includes('bottom:max(8px,var(--vm-safe-bottom))'), 'Mobile notification panel must stay inside the safe viewport');
 expect(css.includes('.bell-list{flex:1;min-height:0;max-height:none;overflow-y:auto}'), 'Notification items must scroll below the fixed controls');
-expect(css.includes('.vm-push-settings-button{grid-column:1/-1'), 'Enable-notifications control must occupy a full visible mobile row');
+expect(css.includes('.vm-push-state{display:inline-flex'), 'Notification permission state must be embedded inside its device card');
+expect(css.includes('.vm-push-privacy{display:none}'), 'Mobile notification controls must remain compact');
 expect(menu.includes("document.body.appendChild(p)"), 'Mobile notification panel must escape the filtered topbar containing block');
 expect(menu.includes("topbar.getBoundingClientRect().bottom"), 'Notification panel must measure the real mobile header height');
 expect(menu.includes("!p.contains(ev.target)"), 'Clicks inside the body-level notification panel must not close it');

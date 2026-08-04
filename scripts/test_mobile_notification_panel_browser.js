@@ -17,6 +17,11 @@ const { chromium } = require('playwright');
         <button class="nav-bell" id="nutChuong">B</button>
         <div class="bell-panel" id="bangThongBao" style="display:none">
           <div class="bell-head"><b>Thông báo</b><button class="bell-readall">Đọc hết</button></div>
+          <section class="vm-push-panel" id="vmPushPanel">
+            <div class="vm-push-panel-title"><span>📲</span><div><b>Thông báo trên thiết bị</b><small>Bật để nhận thông báo kể cả khi ứng dụng đóng.</small></div><span class="vm-push-state" id="vmPushState"><span class="vm-push-dot"></span><span>Chưa bật</span></span></div>
+            <div class="vm-push-actions"><button class="vm-push-primary">Bật thông báo nổi</button></div>
+            <p class="vm-push-privacy">Thông tin quyền thông báo.</p>
+          </section>
           <div class="bell-list"><div class="bell-item">Nội dung thông báo</div></div>
         </div>
       </div></div></div><main style="height:1200px">Trang quản trị</main>`);
@@ -34,12 +39,17 @@ const { chromium } = require('playwright');
         bottom: rect.bottom,
         viewportHeight: window.innerHeight,
         headerBottom: topbar.getBoundingClientRect().bottom,
+        stateInsidePanel: panel.querySelector('#vmPushPanel #vmPushState') !== null,
+        stateInsideHeader: panel.querySelector('.bell-head #vmPushState') !== null,
+        privacyVisible: getComputedStyle(panel.querySelector('.vm-push-privacy')).display !== 'none',
       };
     });
 
     if (metrics.height < metrics.viewportHeight * 0.6) throw new Error(`Panel collapsed to ${metrics.height}px`);
     if (metrics.top < metrics.headerBottom) throw new Error('Panel overlaps the mobile header');
     if (metrics.bottom > metrics.viewportHeight + 1) throw new Error('Panel escapes the mobile viewport');
+    if (!metrics.stateInsidePanel || metrics.stateInsideHeader) throw new Error('Push state is not embedded in its device card');
+    if (metrics.privacyVisible) throw new Error('Secondary push privacy copy should stay hidden on mobile');
     console.log('PASS mobile notification panel browser geometry');
   } finally {
     await browser.close();
