@@ -37,7 +37,7 @@ function extractFunction(name) {
 
 const context = { Date, Set, Array, Math, Number };
 vm.createContext(context);
-['bcDate', 'bcDateKey', 'bcHasArray', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'bcShiftPeriod', 'tinhBaoCao', 'taoNhanDinhHeThong']
+['bcDate', 'bcDateKey', 'bcHasArray', 'bcNormalizeInsightItems', 'bcNormalizeInsight', 'bcSameInsight', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'bcShiftPeriod', 'tinhBaoCao', 'taoNhanDinhHeThong']
   .forEach((name) => vm.runInContext(extractFunction(name), context));
 
 function periodKeys(type, date) {
@@ -59,6 +59,15 @@ deepEqual(periodKeys('month', '2024-02-15T12:00:00+07:00'), ['2024-02-01', '2024
 deepEqual(periodKeys('month', '2025-02-15T12:00:00+07:00'), ['2025-02-01', '2025-02-28'], 'regular February');
 deepEqual(periodKeys('month', context.bcShiftPeriod('month', new Date('2026-08-04T12:00:00+07:00'), -1)), ['2026-07-01', '2026-07-31'], 'previous month navigation');
 deepEqual(periodKeys('week', context.bcShiftPeriod('week', new Date('2026-08-04T12:00:00+07:00'), -1)), ['2026-07-27', '2026-08-02'], 'previous week navigation');
+deepEqual(
+  context.bcNormalizeInsightItems('• Tiến bộ rõ\n-  Nộp bài đều  \n\nTiến bộ rõ'),
+  ['Tiến bộ rõ', 'Nộp bài đều', 'Tiến bộ rõ'],
+  'line-based teacher insight editor normalization',
+);
+if (!context.bcSameInsight(
+  { strengths: ['Học tốt'], limitations: ['Cần đều hơn'], improvements: ['Ôn mỗi ngày'] },
+  { strengths: 'Học tốt', limitations: 'Cần đều hơn', improvements: 'Ôn mỗi ngày' },
+)) throw new Error('saved array insights and editor text are not compared consistently');
 
 const start = new Date('2025-08-01T00:00:00+07:00');
 const end = new Date('2025-08-07T23:59:59.999+07:00');
