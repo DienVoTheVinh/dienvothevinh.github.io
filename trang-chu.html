@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <link rel="icon" type="image/png" href="favicon.png?v=3">
-<link rel="apple-touch-icon" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=7.5">
+<link rel="stylesheet" href="css/vinhmath.css?v=7.6">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -777,7 +777,8 @@
   .gcal-dh .dd { font-size:1.05rem; font-weight:800; margin-top:3px; color:var(--ink); }
   .gcal-dh.today .dd { background:var(--accent); color:#fff; width:30px; height:30px; line-height:30px; border-radius:50%; margin:3px auto 0; }
   .gcal-grid { display:grid; grid-template-columns:54px repeat(7,minmax(82px,1fr)); }
-  .gcal-hours { display:flex; flex-direction:column; }
+  .gcal-hours { display:flex; flex-direction:column; position:relative; }
+  .gcal-hours::after { content:'00:00'; position:absolute; right:6px; bottom:0; transform:translateY(45%); font-size:.66rem; color:var(--ink-3); }
   .gcal-hour-label { height:48px; font-size:.66rem; color:var(--ink-3); text-align:right; padding-right:6px; box-sizing:border-box; }
   .gcal-col { position:relative; border-left:1px solid var(--line); }
   .gcal-col.today-col { background:var(--accent-soft); }
@@ -792,6 +793,23 @@
   .gcal-now { position:absolute; left:0; right:0; height:2px; background:#e74c3c; z-index:5; }
   .gcal-now::before { content:''; position:absolute; left:-3px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e74c3c; }
   .gcal-empty { padding:30px; text-align:center; color:var(--ink-3); font-size:.9rem; }
+  @media (max-width: 640px) {
+    .gcal { border-radius:14px; }
+    .gcal-head { padding:11px 12px; gap:8px; }
+    .gcal-title { width:100%; font-size:.9rem; line-height:1.35; }
+    .gcal-nav { width:100%; display:grid; grid-template-columns:42px minmax(92px,1fr) 42px; gap:6px; }
+    .gcal-nav button { width:100%; min-width:0; height:40px; border-radius:10px; }
+    .gcal-nav .gcal-today { padding:0 8px; font-size:.78rem; }
+    .gcal-nav .gcal-export { grid-column:1 / -1; min-height:42px; }
+    .gcal-scroll { max-height:min(68dvh, 720px); scrollbar-gutter:stable both-edges; }
+    .gcal-days, .gcal-grid { grid-template-columns:46px repeat(7,minmax(90px,1fr)); }
+    .gcal-dh { padding:6px 2px; }
+    .gcal-dh .dd { font-size:.96rem; }
+    .gcal-hour-label, .gcal-hours::after { font-size:.61rem; padding-right:4px; }
+    .gcal-ev { left:3px; right:3px; padding:4px 5px; border-radius:6px; font-size:.66rem; line-height:1.18; }
+    .gcal-ev b { white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+    .gcal-ev .evt { display:block; margin-top:2px; font-size:.61rem; }
+  }
   </style>
 
   <!-- VIỆC CẦN LÀM HÔM NAY (học sinh) -->
@@ -1044,8 +1062,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.5"></script>
-<script src="js/menu-v5.js?v=7.5"></script>
+<script src="js/vinhmath.js?v=7.6"></script>
+<script src="js/menu-v5.js?v=7.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----
@@ -2719,7 +2737,7 @@ function chonNgayLich(nam, thang, ngay) {
 
 // ===== LỊCH TUẦN KIỂU GOOGLE CALENDAR =====
 var tuanOffset = 0;
-var GCAL_GIO_DAU = 6, GCAL_GIO_CUOI = 22, GCAL_HH = 48;
+var GCAL_GIO_DAU = 6, GCAL_GIO_CUOI = 24, GCAL_HH = 48;
 
 function gcalThu2(offset) {
   var d = new Date(); d.setHours(0, 0, 0, 0);
@@ -2732,6 +2750,11 @@ function gcalKey(dt) {
   return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
 }
 function gcalToMin(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
+function gcalKhoangMin(ev) {
+  var start = gcalToMin(ev.start), end = gcalToMin(ev.end);
+  if (end <= start) end += 24 * 60;
+  return { start: start, end: end };
+}
 
 var MAU_LOP_PALETTE = [
   'linear-gradient(135deg, #42587A, #2F415C)', // Muted Indigo
@@ -2903,7 +2926,7 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
   }
 
   var exportBtn = (isStaff && filterPersonal)
-    ? '<button class="gcal-today" onclick="xuatLichTuanAnh()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700" title="Xuất ảnh thời khoá biểu đầy đủ để đăng tuyển sinh">🖼 Xuất ảnh TKB</button>'
+    ? '<button class="gcal-today gcal-export" onclick="xuatLichTuanAnh()" style="background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700" title="Xuất ảnh thời khoá biểu đầy đủ để đăng tuyển sinh">🖼 Xuất ảnh TKB</button>'
     : '';
   var head = '<div class="gcal-head"><div class="gcal-title">' + calendarTitle + '</div>' +
     '<div class="gcal-nav">' + exportBtn + '<button onclick="prevTuan()" aria-label="Tuần trước">‹</button>' +
@@ -2930,22 +2953,24 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
     for (var h = GCAL_GIO_DAU; h < GCAL_GIO_CUOI; h++) cells += '<div class="gcal-hcell"></div>';
     var evHtml = '';
     var visibleEvents = gcalEventsForDay(dt, filterPersonal, teacherFilter).filter(function (ev) {
-      var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
-      return !(eM <= GCAL_GIO_DAU * 60 || sM >= GCAL_GIO_CUOI * 60);
+      var range = gcalKhoangMin(ev);
+      return !(range.end <= GCAL_GIO_DAU * 60 || range.start >= GCAL_GIO_CUOI * 60);
     });
 
     // Group into clusters to resolve overlaps
     var clusters = [];
     visibleEvents.forEach(function (ev) {
-      var sM = gcalToMin(ev.start);
-      var eM = gcalToMin(ev.end);
+      var range = gcalKhoangMin(ev);
+      var sM = range.start;
+      var eM = range.end;
       var foundCluster = null;
       for (var i = 0; i < clusters.length; i++) {
         var overlap = false;
         for (var j = 0; j < clusters[i].length; j++) {
           var other = clusters[i][j];
-          var oStart = gcalToMin(other.start);
-          var oEnd = gcalToMin(other.end);
+          var otherRange = gcalKhoangMin(other);
+          var oStart = otherRange.start;
+          var oEnd = otherRange.end;
           if (sM < oEnd && eM > oStart) {
             overlap = true;
             break;
@@ -2969,11 +2994,11 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
       });
       var colsList = [];
       cluster.forEach(function (ev) {
-        var sM = gcalToMin(ev.start);
+        var sM = gcalKhoangMin(ev).start;
         var placed = false;
         for (var c = 0; c < colsList.length; c++) {
           var lastEv = colsList[c][colsList[c].length - 1];
-          if (sM >= gcalToMin(lastEv.end)) {
+          if (sM >= gcalKhoangMin(lastEv).end) {
             colsList[c].push(ev);
             ev.colIndex = c;
             placed = true;
@@ -2991,7 +3016,7 @@ function renderCalendarGrid(targetId, filterPersonal, teacherFilter) {
     });
 
     visibleEvents.forEach(function (ev) {
-      var sM = gcalToMin(ev.start), eM = gcalToMin(ev.end);
+      var range = gcalKhoangMin(ev), sM = range.start, eM = range.end;
       var top = ((Math.max(sM, GCAL_GIO_DAU * 60) - GCAL_GIO_DAU * 60) / 60) * GCAL_HH;
       var height = Math.max(22, ((Math.min(eM, GCAL_GIO_CUOI * 60) - Math.max(sM, GCAL_GIO_DAU * 60)) / 60) * GCAL_HH - 2);
       

@@ -2499,7 +2499,7 @@ function layEmojiGiaoVien(fullName) {
   vmThemMeta('meta[name="apple-mobile-web-app-capable"]', 'meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
   vmThemMeta('meta[name="apple-mobile-web-app-status-bar-style"]', 'meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'default' });
   vmThemMeta('meta[name="apple-mobile-web-app-title"]', 'meta', { name: 'apple-mobile-web-app-title', content: 'VinhMath' });
-  vmThemMeta('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: '/favicon.png' });
+  vmThemMeta('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: '/icons/vinhmath-192.png' });
 
   function vmDaCaiPwa() {
     return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

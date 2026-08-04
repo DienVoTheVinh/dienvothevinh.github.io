@@ -2015,6 +2015,15 @@ iframe, video, canvas, svg, table { max-width: 100%; }
   input, select, textarea, button, .btn { min-height: var(--vm-touch); }
   input[type="checkbox"], input[type="radio"], input[type="file"] { min-height: 0; }
   .grid-2, .grid-3, .form-row, .form-grid { min-width: 0; }
+  .wrap {
+    padding-left: max(14px, var(--vm-safe-left)) !important;
+    padding-right: max(14px, var(--vm-safe-right)) !important;
+  }
+  .head { padding-top: 28px !important; }
+  .head h1 { font-size: clamp(1.35rem, 6vw, 1.7rem) !important; line-height: 1.24; }
+  .head p { font-size: .88rem; line-height: 1.55; }
+  .card { border-radius: 14px; }
+  .btn, .tab-btn { border-radius: 10px; font-size: min(.9rem, 3.8vw); }
   .ai-chat-bubble {
     right: max(14px, var(--vm-safe-right));
     bottom: max(14px, var(--vm-safe-bottom));
