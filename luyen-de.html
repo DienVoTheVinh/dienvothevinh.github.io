@@ -20,17 +20,24 @@
 <style>
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 44px 0 20px; }
-.exam-card { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; margin-bottom: 14px; transition: all .2s; }
+.exam-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 20px; align-items: center; padding: 18px 24px; margin-bottom: 14px; transition: all .2s; }
 .exam-card:hover { border-color: var(--accent); transform: translateY(-1px); }
-.exam-info h3 { font-size: 1.1rem; }
-.exam-meta { font-size: .84rem; color: var(--ink-2); margin-top: 4px; display: flex; gap: 14px; }
+.exam-info { min-width: 0; }
+.exam-card-head { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.exam-card-head h3 { flex: 1 1 240px; min-width: 0; font-size: 1.1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.exam-card-head .badge { flex: 0 0 auto; margin-top: 1px; }
+.exam-meta { font-size: .84rem; color: var(--ink-2); margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.exam-meta span { min-width: 0; line-height: 1.45; }
+.exam-card-action { min-height: 42px; justify-content: center; text-align: center; white-space: normal; line-height: 1.3; }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 
 /* Workspace thi thử */
-.exam-workspace { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
-.exam-header { height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; padding: 0 24px; flex-shrink: 0; }
-.exam-title { font-weight: 700; font-size: 1.1rem; max-width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.exam-timer { font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: monospace; }
+.exam-workspace { display: none; position: fixed; inset: 0 !important; width: 100% !important; height: 100vh !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
+.exam-header { position: relative !important; inset: auto !important; width: 100% !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; box-sizing: border-box; min-height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 10px 24px; flex-shrink: 0; }
+.exam-title { min-width: 0; max-width: 100%; font-weight: 700; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exam-timer { min-width: 8ch; font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: monospace; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: center; }
+.exam-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.exam-actions .btn { margin: 0 !important; }
 .exam-body { flex: 1; display: grid; grid-template-columns: 1fr 280px; min-height: 0; transition: grid-template-columns 0.3s ease; }
 #wkPdfPanel { display: none; flex-direction: column; border-left: 1px solid var(--line); background: var(--surface); overflow: hidden; height: 100%; }
 @media(max-width: 900px) {
@@ -123,6 +130,47 @@
 .pdf-preview-frame { width: 100%; height: 500px; border: 1px solid var(--line); border-radius: var(--r-md); background: #f4f4f4; margin-top: 16px; }
 .short-input.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
 .short-input.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); }
+
+@media (max-width: 700px) {
+  .wrap { padding: 0 14px calc(82px + env(safe-area-inset-bottom)); }
+  .head { padding: 28px 4px 18px; }
+  .head h1 { font-size: clamp(1.65rem, 8vw, 2.15rem); line-height: 1.12; }
+  .head p { font-size: .94rem; line-height: 1.55; }
+
+  .exam-card { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; border-radius: 14px; }
+  .exam-card-head { gap: 7px 9px; }
+  .exam-card-head h3 { flex-basis: 190px; font-size: 1rem; line-height: 1.45; }
+  .exam-card-head .badge { font-size: .72rem; padding: 4px 8px; }
+  .exam-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; margin-top: 8px; font-size: .78rem; }
+  .exam-meta span { overflow-wrap: anywhere; }
+  .exam-card-action { width: 100%; min-height: 44px; }
+
+  .exam-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "title timer" "actions actions";
+    gap: 8px 12px;
+    min-height: 0;
+    padding: max(9px, env(safe-area-inset-top)) 12px 10px;
+  }
+  .exam-title { grid-area: title; max-width: none; font-size: .92rem; line-height: 1.3; }
+  .exam-timer { grid-area: timer; min-width: 8ch; font-size: 1.08rem; text-align: right; }
+  .exam-actions { grid-area: actions; display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 7px; width: 100%; }
+  .exam-actions .btn { min-width: 0; min-height: 42px; padding: 8px 10px; justify-content: center; white-space: normal; font-size: .76rem; line-height: 1.25; }
+  .exam-body { min-height: 0; }
+  .exam-questions { padding: 20px 14px calc(28px + env(safe-area-inset-bottom)); gap: 24px; scroll-padding-top: 12px; overscroll-behavior-y: contain; }
+  .part-header { margin-top: 16px; margin-bottom: 12px; font-size: 1rem; line-height: 1.45; letter-spacing: 0; overflow-wrap: anywhere; }
+  .q-box { min-width: 0; padding-bottom: 20px; }
+  .q-title { font-size: .98rem; line-height: 1.55; margin-bottom: 13px; overflow-wrap: anywhere; }
+  .choice-row { min-width: 0; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; font-size: .91rem; line-height: 1.5; }
+  .choice-row > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+  .choice-key { flex: 0 0 28px; width: 28px; height: 28px; margin-top: 1px; }
+  .tf-row { align-items: stretch; flex-direction: column; }
+  .tf-btns { display: grid; grid-template-columns: 1fr 1fr; }
+  .tf-btn { min-height: 42px; }
+  .short-input-container { align-items: stretch; flex-direction: column; }
+  .short-input { width: 100%; box-sizing: border-box; }
+  .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
+}
 </style>
 </head>
 <body>
@@ -167,11 +215,11 @@
 </div>
 
 <!-- Giao diện làm bài thi trực tuyến -->
-<div class="exam-workspace" id="viewWorkspace">
+<div class="exam-workspace" id="viewWorkspace" data-vm-popup-position="native">
   <header class="exam-header">
     <div class="exam-title" id="wkTitle">Đề thi</div>
     <div class="exam-timer" id="wkTimer">00:00:00</div>
-    <div>
+    <div class="exam-actions">
       <button class="btn btn-ghost btn-sm" id="wkCancelBtn" onclick="huyLamBai()" style="display:none; color:var(--err); margin-right:8px">Hủy làm bài</button>
       <button class="btn btn-primary btn-sm" id="wkSubmitBtn" onclick="nopBaiExam()">Nộp bài thi</button>
       <button class="btn btn-secondary btn-sm" id="wkRetryBtn" onclick="lamLuotMoi()" style="display:none">🔄 Làm lượt mới</button>
@@ -683,7 +731,7 @@ async function taiDanhSachDe(classIds) {
     
     return '<div class="card exam-card">' +
       '<div class="exam-info">' +
-        '<div style="display:flex; gap:10px; align-items:center">' +
+        '<div class="exam-card-head">' +
           '<h3>' + e.title + '</h3>' +
           badgeHTML +
         '</div>' +
@@ -694,7 +742,7 @@ async function taiDanhSachDe(classIds) {
           (e.closes_at ? '<span>⏳ Hạn: ' + dinhDangThoiGian(new Date(e.closes_at)) + '</span>' : '') +
         '</div>' +
       '</div>' +
-      '<button class="btn btn-primary btn-sm" onclick="startExam(\'' + e.id + '\')" ' + disabledAttr + '>' + actionBtnText + '</button>' +
+      '<button class="btn btn-primary btn-sm exam-card-action" onclick="startExam(\'' + e.id + '\')" ' + disabledAttr + '>' + actionBtnText + '</button>' +
       '</div>';
   }).join('');
 }
@@ -851,9 +899,9 @@ function runTimer() {
     var m = Math.floor((timeLeftSeconds % 3600) / 60);
     var s = timeLeftSeconds % 60;
     
-    $('wkTimer').textContent = 
-      (h ? h.toString().padStart(2, '0') + ':' : '') + 
-      m.toString().padStart(2, '0') + ':' + 
+    $('wkTimer').textContent =
+      h.toString().padStart(2, '0') + ':' +
+      m.toString().padStart(2, '0') + ':' +
       s.toString().padStart(2, '0');
       
     timeLeftSeconds--;
