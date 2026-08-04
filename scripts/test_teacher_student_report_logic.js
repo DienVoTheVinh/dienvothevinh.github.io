@@ -63,11 +63,11 @@ deepEqual(periodKeys('week', context.bcShiftPeriod('week', new Date('2026-08-04T
 const start = new Date('2025-08-01T00:00:00+07:00');
 const end = new Date('2025-08-07T23:59:59.999+07:00');
 const lessons = [
-  { id: 'l1', title: 'BTVN đã nộp', created_at: '2025-07-01T00:00:00Z', homework_text: 'Bài 1', homework_due: '2025-08-02T20:00:00+07:00' },
-  { id: 'l2', title: 'BTVN còn thiếu', created_at: '2025-07-01T00:00:00Z', homework_text: 'Bài 2', homework_due: '2025-08-03T20:00:00+07:00' },
-  { id: 'l3', title: 'Bài thưởng', created_at: '2025-07-01T00:00:00Z', homework2_text: 'Thưởng', homework2_due: '2025-08-04T20:00:00+07:00' },
-  { id: 'l4', title: 'Kiểm tra', created_at: '2025-07-01T00:00:00Z', linked_exam_id: 'e4', test_deadline: '2025-08-05T20:00:00+07:00' },
-  { id: 'l5', title: 'Nội dung đã xem', created_at: '2025-07-01T00:00:00Z' },
+  { id: 'l1', title: 'BTVN đã nộp', created_at: '2025-08-01T00:00:00Z', homework_text: 'Bài 1', homework_due: '2025-08-02T20:00:00+07:00' },
+  { id: 'l2', title: 'BTVN còn thiếu', created_at: '2025-08-02T00:00:00Z', homework_text: 'Bài 2', homework_due: '2025-08-03T20:00:00+07:00' },
+  { id: 'l3', title: 'Bài thưởng', created_at: '2025-08-03T00:00:00Z', homework2_text: 'Thưởng', homework2_due: '2025-08-04T20:00:00+07:00' },
+  { id: 'l4', title: 'Kiểm tra', created_at: '2025-08-04T00:00:00Z', linked_exam_id: 'e4', test_deadline: '2025-08-05T20:00:00+07:00' },
+  { id: 'l5', title: 'Nội dung đã xem', created_at: '2025-08-05T00:00:00Z' },
   { id: 'l6', title: 'Bài cũ được xem lại', created_at: '2025-06-01T00:00:00Z' },
 ];
 
@@ -112,10 +112,10 @@ function equal(actual, expected, label) {
 equal(result.attendanceRate, 100, 'attendance rate');
 equal(result.late, 1, 'late sessions');
 equal(result.tasks.length, 3, 'required task denominator');
-equal(result.submitted.length, 2, 'required submitted tasks');
-equal(result.onTime.length, 2, 'on-time tasks');
-equal(result.submitRate, 67, 'submission rate');
-equal(result.onTimeRate, 67, 'on-time rate');
+equal(result.submitted.length, 1, 'submitted metric counts mandatory homework only');
+equal(result.onTime.length, 1, 'on-time metric counts mandatory homework only');
+equal(result.submitRate, 50, 'mandatory homework submission rate');
+equal(result.onTimeRate, 50, 'mandatory homework on-time rate');
 equal(result.homeworkTasks.length, 2, 'homework denominator');
 equal(result.homeworkSubmitted.length, 1, 'submitted homework numerator');
 equal(result.homeworkOnTime.length, 1, 'earliest submission keeps on-time credit after late resubmission');
@@ -123,6 +123,7 @@ equal(result.testTasks.length, 1, 'test denominator');
 equal(result.testSubmitted.length, 1, 'completed test numerator');
 equal(result.bonusTasks.length, 1, 'bonus task denominator');
 equal(result.bonusDone.length, 1, 'bonus submitted tasks');
+equal(result.bonusOnTime.length, 0, 'late bonus task is not counted on time');
 equal(result.viewed, 2, 'viewed lessons including reviewed older lessons');
 equal(result.viewItems, 2, 'viewed content items');
 equal(result.hours, 1, 'study hours without double counting');
@@ -133,15 +134,39 @@ equal(result.reviewRate, 100, 'reviewed graded submission rate');
 
 const insight = context.taoNhanDinhHeThong(result);
 if (!insight.strengths.some((item) => item.includes('Giáo viên ghi nhận'))) throw new Error('teacher positive remark is not reflected in strengths');
-if (!insight.limitations.some((item) => item.includes('Giáo viên lưu ý'))) throw new Error('teacher concern is not reflected in limitations');
-if (!insight.improvements.some((item) => item.includes('góp ý của giáo viên'))) throw new Error('teacher concern is not converted into an improvement action');
+if (insight.limitations.some((item) => item.includes('Giáo viên lưu ý'))) throw new Error('generic teacher-note limitation must not outrank measurable findings');
+if (insight.improvements.some((item) => item.includes('góp ý của giáo viên'))) throw new Error('generic teacher-note action must not outrank concrete improvements');
+
+const julyAssignment = context.tinhBaoCao({
+  start: new Date('2026-07-01T00:00:00+07:00'),
+  end: new Date('2026-07-31T23:59:59.999+07:00'),
+  lop: { id: 'q5', name: 'Toán 7 - Q5' },
+  sessions: [], attendance: [], progress: [], attempts: [], analytics: [], study: [], remarks: [],
+  lessons: Array.from({ length: 7 }, (_, index) => ({
+    id: `j${index + 1}`,
+    title: `BTVN tháng 7 số ${index + 1}`,
+    created_at: `2026-07-${String(5 + index * 4).padStart(2, '0')}T05:00:00Z`,
+    homework_text: 'Bài tập',
+    homework_due: index < 5 ? `2026-07-${String(10 + index * 4).padStart(2, '0')}T16:59:00Z` : `2026-08-0${index - 4}T16:59:00Z`,
+  })),
+  submissions: [
+    { lesson_id: 'j1', kind: 'homework', submitted_at: '2026-07-09T10:00:00Z', is_late: false },
+    { lesson_id: 'j2', kind: 'homework', submitted_at: '2026-07-13T10:00:00Z', is_late: false },
+    { lesson_id: 'j3', kind: 'homework', submitted_at: '2026-07-17T10:00:00Z', is_late: false },
+    { lesson_id: 'j6', kind: 'homework', submitted_at: '2026-07-31T10:00:00Z', is_late: false },
+    { lesson_id: 'j7', kind: 'homework', submitted_at: '2026-08-04T10:00:00Z', is_late: true },
+  ],
+});
+equal(julyAssignment.homeworkTasks.length, 5, 'July report excludes homework whose due date belongs to August');
+equal(julyAssignment.homeworkSubmitted.length, 3, 'July completion state stops at the end of the reporting month');
+equal(julyAssignment.homeworkOnTime.length, 3, 'July on-time rate uses only homework due inside July');
 
 const gradedWithoutNumericScore = context.tinhBaoCao({
   start,
   end,
   lop: { id: 'c1', name: 'Lớp 7' },
   sessions: [], attendance: [], progress: [], attempts: [], analytics: [], study: [], remarks: [],
-  lessons: [{ id: 'g1', title: 'Bài đã chấm bằng lời phê', created_at: '2025-07-01T00:00:00Z', homework_text: 'Bài tập', homework_due: '2025-08-02T20:00:00+07:00' }],
+  lessons: [{ id: 'g1', title: 'Bài đã chấm bằng lời phê', created_at: '2025-08-01T00:00:00Z', homework_text: 'Bài tập', homework_due: '2025-08-02T20:00:00+07:00' }],
   submissions: [{ lesson_id: 'g1', kind: 'homework', submitted_at: '2025-08-02T19:00:00+07:00', status: 'graded', graded_at: '2025-08-03T08:00:00+07:00', feedback: 'Đã chấm', score: null }],
 });
 equal(gradedWithoutNumericScore.avg, null, 'written feedback must not be fabricated into a numeric score');

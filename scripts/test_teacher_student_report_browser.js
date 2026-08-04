@@ -49,21 +49,42 @@ const { chromium } = require('playwright');
           const box = metric.getBoundingClientRect();
           return { top: Math.round(box.top), detailBottom: detail.bottom, barTop: bar.top };
         }),
+        detailValueRights: [...document.querySelectorAll('.detail-row b')].map((item) => Math.round(item.getBoundingClientRect().right * 10) / 10),
       };
     });
     if (exportLayout.width !== 1120) throw new Error(`Export width drifted to ${exportLayout.width}px`);
     if (exportLayout.avatarCenterDelta.x > 1 || exportLayout.avatarCenterDelta.y > 1.5) throw new Error(`Student initials are not centered in export avatar: ${JSON.stringify(exportLayout.avatarCenterDelta)}`);
     if (new Set(exportLayout.metrics.map((metric) => metric.top)).size !== 1) throw new Error('Export metrics are not aligned in one row');
     if (exportLayout.metrics.some((metric) => metric.detailBottom > metric.barTop)) throw new Error('Metric detail overlaps its progress bar');
+    if (Math.max(...exportLayout.detailValueRights) - Math.min(...exportLayout.detailValueRights) > 1) throw new Error(`Grouped detail values are not right-aligned: ${JSON.stringify(exportLayout.detailValueRights)}`);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileExportLayout = await page.evaluate(() => {
+      const card = document.querySelector('.report-sheet.exporting');
+      const avatar = card.querySelector('.student-avatar').getBoundingClientRect();
+      const title = getComputedStyle(card.querySelector('.student-id h2'));
+      const lower = [...card.querySelectorAll('.report-lower > .report-panel')].map((panel) => panel.getBoundingClientRect());
+      const metricTops = [...card.querySelectorAll('.metric')].map((metric) => Math.round(metric.getBoundingClientRect().top));
+      return {
+        width: Math.round(card.getBoundingClientRect().width),
+        avatarWidth: Math.round(avatar.width),
+        avatarHeight: Math.round(avatar.height),
+        titleSize: parseFloat(title.fontSize),
+        lowerSameRow: Math.abs(lower[0].top - lower[1].top) < 1,
+        metricRows: new Set(metricTops).size,
+      };
+    });
+    if (mobileExportLayout.width !== 1120 || mobileExportLayout.avatarWidth !== 58 || mobileExportLayout.avatarHeight !== 58) throw new Error(`Mobile viewport leaks into fixed export layout: ${JSON.stringify(mobileExportLayout)}`);
+    if (mobileExportLayout.titleSize < 22 || !mobileExportLayout.lowerSameRow || mobileExportLayout.metricRows !== 1) throw new Error(`Export typography or grids changed under mobile media rules: ${JSON.stringify(mobileExportLayout)}`);
 
     await page.evaluate(() => { document.querySelector('.report-sheet.exporting').classList.remove('exporting'); });
-    await page.setViewportSize({ width: 390, height: 844 });
     const mobileLayout = await page.evaluate(() => {
       const controls = document.querySelector('.report-controls').getBoundingClientRect();
       const picker = document.querySelector('#reportPeriodPicker').getBoundingClientRect();
       const report = document.querySelector('.report-sheet').getBoundingClientRect();
       const insightCards = [...document.querySelectorAll('.insight-card')].map((item) => item.getBoundingClientRect());
-      return { bodyOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, controls, picker, report, insightCards };
+      const detailGroups = [...document.querySelectorAll('.detail-group')].map((item) => item.getBoundingClientRect());
+      return { bodyOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, controls, picker, report, insightCards, detailGroups };
     });
     if (mobileLayout.bodyOverflow) throw new Error('Historical period controls overflow the mobile viewport');
     if (mobileLayout.picker.right > mobileLayout.controls.right + 1 || mobileLayout.picker.left < mobileLayout.controls.left - 1) {
@@ -71,6 +92,7 @@ const { chromium } = require('playwright');
     }
     if (mobileLayout.report.right > 390 || mobileLayout.report.left < 0) throw new Error('Student report escapes the mobile viewport');
     if (mobileLayout.insightCards.some((item) => item.right > mobileLayout.report.right || item.left < mobileLayout.report.left)) throw new Error('Insight cards escape the mobile report');
+    if (mobileLayout.detailGroups.length !== 3 || mobileLayout.detailGroups.some((item) => item.right > mobileLayout.report.right || item.left < mobileLayout.report.left)) throw new Error('Grouped report details are incomplete or escape the mobile report');
 
     console.log('PASS teacher student report browser layout checks');
   } finally {
