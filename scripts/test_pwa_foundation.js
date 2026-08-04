@@ -16,11 +16,12 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v4"), 'Service worker cache version must refresh the direct-install flow');
+expect(worker.includes("vinhmath-shell-v5"), 'Service worker cache version must refresh the Web Push flow');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
 expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the offline fallback');
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
 expect(worker.includes("self.addEventListener('push'"), 'Push display foundation must exist');
+expect(worker.includes("'/js/push-notifications.js'"), 'Web Push client must be available offline after installation');
 expect(worker.includes("'/icons/vinhmath-192.png'"), 'Service worker must cache the 192px VinhMath logo');
 expect(worker.includes("'/icons/vinhmath-512.png'"), 'Service worker must cache the 512px VinhMath logo');
 expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase traffic');
@@ -49,6 +50,34 @@ expect(!/Notification\.requestPermission\s*\(/.test(sharedJs), 'Notification per
 const menuJs = read('js/menu-v5.js');
 expect(menuJs.includes('vmCapNhatNutCaiDatPwa'), 'Role-based menu must restore the install action');
 expect(menuJs.includes('navigator.setAppBadge'), 'Installed app badge must mirror unread notifications');
+expect(menuJs.includes("script.src = 'js/push-notifications.js?v=1'"), 'Signed-in notification menu must load the Web Push client');
+
+const pushClient = read('js/push-notifications.js');
+expect(pushClient.includes("Notification.requestPermission()"), 'Permission must be requested from the device opt-in action');
+expect(pushClient.includes("applicationServerKey: decodeApplicationServerKey"), 'Push subscription must use the VAPID public key');
+expect(pushClient.includes("action: 'subscribe'"), 'Device subscriptions must be registered server-side');
+expect(pushClient.includes("action: 'unsubscribe'"), 'Users must be able to disable an individual device');
+expect(pushClient.includes("action: 'test'"), 'Users need an end-to-end test notification');
+expect(pushClient.includes("isIOS() && !isStandalone()"), 'iPhone and iPad must require an installed Home Screen app');
+
+const pushSql = read('web/supabase/create_web_push_subscriptions.sql');
+expect(pushSql.includes('alter table public.push_subscriptions enable row level security'), 'Push subscriptions require RLS');
+expect(pushSql.includes('to authenticated'), 'Push subscription policies must target authenticated users');
+expect(pushSql.includes('(select auth.uid()) = user_id'), 'Every subscription policy must enforce ownership');
+expect(!/VAPID_PRIVATE_KEY\s*=/.test(pushSql), 'Private VAPID material must never be stored in SQL');
+
+const subscribeFunction = read('supabase/functions/web-push-subscribe/index.ts');
+expect(subscribeFunction.includes('userClient.auth.getUser()'), 'Subscription function must verify the caller');
+expect(subscribeFunction.includes('existing.user_id !== user.id'), 'A device endpoint cannot be reassigned across accounts');
+expect(subscribeFunction.includes('jsr:@supabase/supabase-js@2.95.0'), 'Supabase Edge dependency must be pinned');
+
+const dispatchFunction = read('supabase/functions/web-push-dispatch/index.ts');
+expect(dispatchFunction.includes('constantTimeEqual'), 'Webhook secret must use constant-time comparison');
+expect(dispatchFunction.includes('WEB_PUSH_WEBHOOK_SECRET'), 'Notification dispatch must require a separate webhook secret');
+
+const pushShared = read('supabase/functions/_shared/web_push.ts');
+expect(pushShared.includes('npm:web-push@3.6.7'), 'Web Push dependency must be pinned');
+expect(pushShared.includes('statusCode === 404 || statusCode === 410'), 'Expired push endpoints must be removed');
 
 const sharedCss = read('css/vinhmath.css');
 expect(sharedCss.includes('--vm-safe-top: env(safe-area-inset-top'), 'Safe-area support is required');
@@ -58,6 +87,7 @@ expect(sharedCss.includes('.vm-install-toast.is-visible'), 'Install fallback mus
 expect(sharedCss.includes('.vm-install-apple-guide.is-mac'), 'macOS Safari guidance must point to the top-right Share control');
 expect(sharedCss.includes('.vm-install-apple-guide.is-ios'), 'iOS Safari guidance must use the mobile safe area');
 expect(!sharedCss.includes('.vm-install-sheet'), 'The obsolete blocking install modal must be removed');
+expect(sharedCss.includes('.vm-push-panel'), 'Notification bell needs a responsive device settings panel');
 
 const home = read('trang-chu.html');
 expect(home.includes('id="vmInstallHero"'), 'Homepage must include a prominent install panel');
@@ -76,12 +106,12 @@ for (const file of htmlFiles) {
   const html = read(file);
   expect(html.includes('rel="manifest" href="/manifest.webmanifest"'), `${file}: missing manifest link`);
   expect(html.includes('rel="apple-touch-icon" href="/icons/vinhmath-192.png"'), `${file}: stale Apple app icon`);
-  expect(!/css\/vinhmath\.css\?v=(?!7\.7)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/vinhmath\.css\?v=(?!7\.8)/.test(html), `${file}: stale shared CSS version`);
   if (html.includes('js/vinhmath.js')) {
-    expect(html.includes('js/vinhmath.js?v=7.7'), `${file}: stale shared JS version`);
+    expect(html.includes('js/vinhmath.js?v=7.8'), `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=7.7'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=7.8'), `${file}: stale shared menu version`);
   }
 }
 
