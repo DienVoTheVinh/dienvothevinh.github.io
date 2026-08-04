@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <link rel="icon" type="image/png" href="favicon.png?v=3">
-<link rel="apple-touch-icon" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=7.5">
+<link rel="stylesheet" href="css/vinhmath.css?v=7.6">
 <!-- KaTeX for math rendering in quiz viewer -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -60,6 +60,9 @@
   justify-content: center;
   padding: 20px;
   cursor: default;
+  box-sizing: border-box;
+  height: 100dvh;
+  overscroll-behavior: contain;
 }
 /* Modal window container */
 #chbLightbox .lb-modal {
@@ -75,6 +78,8 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   position: relative;
+  min-width: 0;
+  min-height: 0;
   animation: lbZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes lbZoomIn {
@@ -89,11 +94,18 @@
   padding: 14px 20px;
   border-bottom: 1px solid var(--line, #e4e4e7);
   background: var(--surface, #f4f4f5);
+  flex: none;
+  gap: 10px;
+  min-width: 0;
 }
 #chbLightbox .lb-title {
   font-weight: 800;
   font-size: 0.95rem;
   color: var(--ink, #18181b);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 #chbLightbox #chbLbCount {
   font-weight: 700;
@@ -132,6 +144,8 @@
   background: var(--surface-2, #fafafa);
   overflow: hidden;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 /* Image wrapper with auto overflow when rotated */
 #chbLightbox .lb-img-container {
@@ -142,6 +156,9 @@
   justify-content: center;
   overflow: auto;
   position: relative;
+  min-width: 0;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 #chbLightbox img {
   max-width: 100%;
@@ -150,6 +167,7 @@
   border-radius: 6px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   transition: transform 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
+  flex: none;
 }
 /* Arrow buttons */
 #chbLightbox .lb-arrow {
@@ -191,6 +209,7 @@
   padding: 14px 20px;
   border-top: 1px solid var(--line, #e4e4e7);
   background: var(--surface, #f4f4f5);
+  flex: none;
 }
 #chbLightbox .lb-btn {
   background: var(--bg, #fff);
@@ -248,30 +267,41 @@
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
   #chbLightbox {
-    padding: 8px;
+    padding: max(6px, var(--vm-safe-top, 0px)) max(6px, var(--vm-safe-right, 0px)) max(6px, var(--vm-safe-bottom, 0px)) max(6px, var(--vm-safe-left, 0px));
   }
   #chbLightbox .lb-modal {
-    width: 100vw;
-    height: 100vh;
-    max-height: 100%;
-    border-radius: 0;
-    border: none;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    border-radius: 14px;
   }
   #chbLightbox .lb-arrow {
     display: none !important;
   }
   #chbLightbox .lb-body {
-    padding: 8px;
+    padding: 6px;
   }
   #chbLightbox .lb-footer {
-    padding: 10px;
-    gap: 8px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1.18fr 1fr;
+    padding: 8px;
+    gap: 6px;
   }
   #chbLightbox .lb-btn {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    padding: 8px 7px;
+    border-radius: 11px;
+    font-size: 0.76rem;
   }
+  #chbLightbox .lb-btn-drive { grid-column: 1 / -1; }
+  #chbLightbox .lb-header { padding: 10px 12px; }
+  #chbLightbox .lb-title { font-size: .86rem; }
+  #chbLightbox #chbLbCount { font-size: .78rem; padding: 2px 8px; }
+  #chbLightbox .lb-close-btn { min-width: 44px; min-height: 44px; padding: 0; }
   #chbLightbox .lb-divider {
     display: none;
   }
@@ -332,8 +362,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.5"></script>
-<script src="js/menu-v5.js?v=7.5"></script>
+<script src="js/vinhmath.js?v=7.6"></script>
+<script src="js/menu-v5.js?v=7.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
@@ -778,13 +808,13 @@ function chbLightboxEl() {
   var lb = document.getElementById('chbLightbox');
   if (!lb) {
     lb = document.createElement('div'); lb.id = 'chbLightbox';
-    lb.setAttribute('data-vm-popup-position', 'click');
+    lb.setAttribute('data-vm-popup-position', 'native');
     lb.innerHTML =
       '<div class="lb-modal" data-vm-popup-content onclick="event.stopPropagation()">' +
         '<div class="lb-header">' +
           '<span class="lb-title">🖼️ Chi tiết ảnh bài làm</span>' +
           '<span id="chbLbCount"></span>' +
-          '<button class="lb-close-btn" onclick="document.getElementById(\'chbLightbox\').style.display=\'none\'" title="Đóng (Esc)">✕</button>' +
+          '<button class="lb-close-btn" onclick="chbDongLightbox()" title="Đóng (Esc)">✕</button>' +
         '</div>' +
         '<div class="lb-body">' +
           '<button id="chbLbPrev" class="lb-arrow" onclick="chbLbNav(-1)" title="Ảnh trước">‹</button>' +
@@ -801,16 +831,20 @@ function chbLightboxEl() {
           '<a id="chbLbOpen" target="_blank" class="lb-btn lb-btn-drive" title="Mở ảnh gốc trong Drive">📂 Drive gốc</a>' +
         '</div>' +
       '</div>';
-    lb.addEventListener('click', function (e) { lb.style.display = 'none'; });
+    lb.addEventListener('click', function () { chbDongLightbox(); });
     document.body.appendChild(lb);
     document.addEventListener('keydown', function (e) {
       if (!lb.style.display || lb.style.display === 'none') return;
-      if (e.key === 'Escape') lb.style.display = 'none';
+      if (e.key === 'Escape') chbDongLightbox();
       else if (e.key === 'ArrowLeft') chbLbNav(-1);
       else if (e.key === 'ArrowRight') chbLbNav(1);
     });
   }
   return lb;
+}
+function chbDongLightbox() {
+  var lb = document.getElementById('chbLightbox');
+  if (lb) lb.style.display = 'none';
 }
 function chbApplyRot() {
   var img = document.getElementById('chbLbImg'); if (!img) return;
@@ -834,6 +868,8 @@ function chbLbShow() {
   var lb = chbLightboxEl();
   window._chbRot = 0;
   document.getElementById('chbLbImg').src = 'https://drive.google.com/thumbnail?id=' + it.id + '&sz=w1600';
+  var imgBox = document.querySelector('#chbLightbox .lb-img-container');
+  if (imgBox) { imgBox.scrollTop = 0; imgBox.scrollLeft = 0; }
   var op = document.getElementById('chbLbOpen'); op.href = 'https://drive.google.com/file/d/' + it.id + '/view'; op.style.display = '';
   var cnt = document.getElementById('chbLbCount'); if (cnt) cnt.textContent = (c.idx + 1) + ' / ' + g.length;
   var multi = g.length > 1;
@@ -846,7 +882,7 @@ function chbLbShow() {
   chbApplyRot();
   var dangAn = !lb.style.display || lb.style.display === 'none';
   lb.style.display = 'flex';
-  if (dangAn && window.vmCanhPopup) window.vmCanhPopup(lb, { position: 'click' });
+  if (dangAn && window.vmCanhPopup) window.vmCanhPopup(lb, { position: 'native' });
 }
 function chbXemGallery(gid, idx) { window._chbCur = { gid: gid, idx: idx }; chbLbShow(); }
 function chbLbNav(dir) { if (!window._chbCur) return; window._chbCur.idx += dir; chbLbShow(); }
