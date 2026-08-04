@@ -163,6 +163,11 @@
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+#modalForm { backdrop-filter: none; background: rgba(0,0,0,.62); }
+@media (max-width: 700px) {
+  #modalForm .form-row { grid-template-columns: minmax(0, 1fr) !important; }
+  #modalForm .modal-tabs { flex-wrap: nowrap !important; overflow-x: auto; }
+}
 .empty { text-align: center; padding: 48px 24px; color: var(--ink-3); }
 .switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .switch-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent); }
@@ -3393,8 +3398,23 @@ async function buildTestPdfFromImages() {
   });
 })();
 
+function moFormBaiGiangTrenManHinh(tieuDe) {
+  var modal = $('modalForm');
+  var content = modal.querySelector('.modal-content');
+  $('modalTieuDe').textContent = tieuDe;
+  modal.style.display = 'flex';
+  document.body.classList.add('vm-modal-open');
+  modal.scrollTop = 0;
+  if (content) content.scrollTop = 0;
+  requestAnimationFrame(function () {
+    modal.scrollTop = 0;
+    if (content) content.scrollTop = 0;
+  });
+}
+
 async function moFormThemBaiGiang() {
   if (!classDangChon) return;
+  moFormBaiGiangTrenManHinh('Thêm bài giảng mới');
   await napChuyenDeSelect();
   
   // Populate teacher options
@@ -3480,7 +3500,7 @@ async function moFormThemBaiGiang() {
   pdfBlobTest = null;
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
   
-  $('modalForm').style.display = 'flex';
+  moFormBaiGiangTrenManHinh('Thêm bài giảng mới');
 }
 
 async function napDropdownDe(selectedId) {
@@ -3499,8 +3519,13 @@ async function napDropdownDe(selectedId) {
 }
 
 async function moFormSua(id) {
+  moFormBaiGiangTrenManHinh('Chỉnh sửa bài giảng');
   var r = await sb.from('lessons').select('*').eq('id', id).single();
-  if (r.error || !r.data) return;
+  if (r.error || !r.data) {
+    dongForm();
+    alert('Không thể tải dữ liệu bài giảng. Vui lòng thử lại.');
+    return;
+  }
   var bh = r.data;
   
   await napChuyenDeSelect(bh.topic_id);
@@ -3619,10 +3644,13 @@ async function moFormSua(id) {
   
   $('modalTieuDe').textContent = 'Chỉnh sửa bài giảng';
   $('nutXoa').style.display = 'block';
-  $('modalForm').style.display = 'flex';
+  moFormBaiGiangTrenManHinh('Chỉnh sửa bài giảng');
 }
 
-function dongForm() { $('modalForm').style.display = 'none'; }
+function dongForm() {
+  $('modalForm').style.display = 'none';
+  document.body.classList.remove('vm-modal-open');
+}
 
 async function toggleKhoaBai(id, dangKhoa) {
   var moi = !dangKhoa;
