@@ -143,6 +143,7 @@
 .hs-hd .nm { font-weight:700; font-size:.92rem; color:var(--ink); flex:1; min-width:0; }
 .hs-hd .st { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 .hs-hd .pill { font-size:.72rem; padding:2px 9px; border-radius:20px; white-space:nowrap; }
+.hs-report-link { text-decoration:none; flex:none; color:var(--accent); border-color:var(--accent-soft); }.hs-report-link b{display:none}
 .hs-hd .car { color:var(--ink-3); font-size:.68rem; transition:transform .2s; }
 .hs-item.open > .hs-hd .car { transform:rotate(90deg); }
 .hs-body { display:none; padding:2px 14px 14px 14px; background:var(--surface-2); border-top:1px solid var(--line); }
@@ -152,6 +153,7 @@
 .hs-row .lbl { font-size:.8rem; font-weight:700; color:var(--ink-2); min-width:120px; }
 .hs-info { font-size:.78rem; color:var(--ink-3); display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; }
 .pill-green{background:rgba(40,167,69,.14);color:var(--ok,#28a745)} .pill-gray{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line)} .pill-red{background:rgba(231,76,60,.14);color:var(--err)} .pill-purple{background:rgba(124,58,237,.14);color:#7c3aed} .pill-amber{background:rgba(217,119,6,.14);color:#d97706}
+@media(max-width:640px){.hs-hd{padding:9px 10px;gap:8px}.hs-hd .st{display:none}.hs-report-link{width:34px;height:34px;padding:0;justify-content:center}.hs-report-link span{display:none}.hs-report-link b{display:inline}}
 
 /* Modals */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: flex-start; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; overflow-y: auto; padding: 84px 14px 28px; -webkit-overflow-scrolling: touch; }
@@ -2436,6 +2438,7 @@ async function veRosterTheoDoi() {
         '<span class="hs-av" style="background:' + mauTuTen(s.full_name) + '">' + initial + '</span>' +
         '<span class="nm">' + ddEsc(s.full_name) + '</span>' +
         '<span class="st">' + pills + '</span>' +
+        '<a class="btn btn-ghost btn-sm hs-report-link" href="quan-tri-bao-cao-hoc-sinh?classId=' + encodeURIComponent(classDangChon.id) + '&studentId=' + encodeURIComponent(s.id) + '" onclick="event.stopPropagation()" title="Xem báo cáo tuần/tháng"><span>📊 Báo cáo</span><b aria-hidden="true">📊</b></a>' +
         '<span class="car">▶</span>' +
       '</div>' +
       '<div class="hs-body">' +

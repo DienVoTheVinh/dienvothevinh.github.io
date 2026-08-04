@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 report = (ROOT / "quan-tri-bao-cao-hoc-sinh.html").read_text(encoding="utf-8")
 students = (ROOT / "quan-tri-hoc-sinh.html").read_text(encoding="utf-8")
+classes = (ROOT / "quan-tri-lop.html").read_text(encoding="utf-8")
 sql = (ROOT / "web" / "supabase" / "teacher_student_period_report.sql").read_text(encoding="utf-8")
 
 
@@ -16,8 +17,17 @@ require(students, "quan-tri-bao-cao-hoc-sinh?studentId=", "Danh sách học sinh
 require(report, "gv_bao_cao_hs", "Báo cáo chưa kiểm tra quyền quản lý học sinh")
 require(report, "gv_bao_cao_hoc_tap", "Báo cáo chưa dùng truy vấn tổng hợp có phân quyền")
 require(report, "['admin','teacher']", "Báo cáo chưa giới hạn đúng tài khoản giáo viên/quản trị viên")
-require(report, "data-days=\"7\"", "Thiếu báo cáo 7 ngày")
-require(report, "data-days=\"30\"", "Thiếu báo cáo 30 ngày")
+require(report, 'id="reportGrade"', "Bộ lọc báo cáo chưa có bước chọn khối")
+require(report, 'id="reportClass"', "Bộ lọc báo cáo chưa có bước chọn lớp")
+require(report, 'id="reportStudent"', "Bộ lọc báo cáo chưa có bước chọn học sinh")
+require(report, 'data-period="week"', "Thiếu báo cáo theo tuần lịch")
+require(report, 'data-period="month"', "Thiếu báo cáo theo tháng lịch")
+require(report, "new Date(year,month+1,0)", "Tháng chưa kết thúc đúng ngày cuối cùng")
+require(report, "mondayOffset", "Tuần chưa bắt đầu từ thứ Hai")
+require(report, "data-export-exclude", "Chưa đánh dấu nội dung loại khỏi ảnh xuất")
+require(report, "onclone", "Xuất ảnh chưa loại nội dung riêng của giáo viên")
+require(classes, "quan-tri-bao-cao-hoc-sinh?classId=", "Danh sách lớp chưa có phím tắt báo cáo cho từng học sinh")
+require(classes, "studentId=", "Phím tắt trong lớp chưa truyền đúng học sinh")
 require(sql, "lesson_item_progress", "Thiếu chỉ số xem bài")
 require(sql, "homework_due", "Bài nộp chưa dùng hạn BTVN thực tế")
 require(sql, "homework2_due", "Bài thưởng chưa được phân luồng riêng")
