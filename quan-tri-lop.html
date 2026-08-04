@@ -166,15 +166,15 @@
 
 /* Trình soạn bài giảng: vùng cuộn riêng, luôn mở đúng đầu form */
 body.vm-lesson-editor-open { overflow: hidden; }
-.lesson-editor-modal { align-items: center !important; padding: 24px 14px !important; }
-.lesson-editor-modal > .lesson-editor-content {
+.lesson-editor-modal { align-items: center; padding: 24px 14px; }
+.lesson-editor-content {
   display: flex;
   flex-direction: column;
   width: min(780px, 100%);
   max-width: 780px;
-  max-height: calc(100dvh - 48px) !important;
+  max-height: calc(100dvh - 48px);
   padding: 0;
-  overflow: hidden !important;
+  overflow: hidden;
   border-radius: 20px;
   background: var(--surface-solid, var(--bg));
 }
@@ -266,13 +266,13 @@ body.vm-lesson-editor-open { overflow: hidden; }
 @keyframes lessonEditorSpin { to { transform: rotate(360deg); } }
 
 @media (max-width: 700px) {
-  .lesson-editor-modal { align-items: flex-end !important; padding: max(8px, env(safe-area-inset-top)) 0 0 !important; }
-  .lesson-editor-modal > .lesson-editor-content {
+  .lesson-editor-modal { align-items: flex-end; padding: max(8px, env(safe-area-inset-top)) 0 0; }
+  .lesson-editor-content {
     width: 100%;
-    max-height: calc(100dvh - max(8px, env(safe-area-inset-top))) !important;
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
     height: calc(100dvh - max(8px, env(safe-area-inset-top)));
     border-width: 1px 0 0;
-    border-radius: 22px 22px 0 0 !important;
+    border-radius: 22px 22px 0 0;
   }
   .lesson-editor-head { padding: 18px 54px 13px 18px; }
   .lesson-editor-head h2 { font-size: 1.15rem; line-height: 1.35; }
@@ -3536,14 +3536,11 @@ function hienFormBaiGiang(tieuDe, dangTai) {
   modal.style.display = 'flex';
   document.body.classList.add('vm-lesson-editor-open');
   modal.scrollTop = 0;
-  var content = modal.querySelector('.lesson-editor-content');
-  if (content) content.scrollTop = 0;
   if ($('lessonEditorScroll')) $('lessonEditorScroll').scrollTop = 0;
   var tabs = modal.querySelector('.lesson-editor-tabs');
   if (tabs) tabs.scrollLeft = 0;
   requestAnimationFrame(function () {
     modal.scrollTop = 0;
-    if (content) content.scrollTop = 0;
     if ($('lessonEditorScroll')) $('lessonEditorScroll').scrollTop = 0;
   });
 }
