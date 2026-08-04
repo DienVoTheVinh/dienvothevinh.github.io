@@ -27,12 +27,22 @@ const { chromium } = require('playwright');
       const details = ['8/8 buổi có mặt', '6/6 bài bắt buộc', '3/6 bài đúng hạn', '12/16 bài đã mở', '12.4h web · 5.0h tập trung', '8 lượt có điểm'];
       document.querySelectorAll('.metric .value').forEach((el, index) => { el.textContent = values[index]; });
       document.querySelectorAll('.metric .detail').forEach((el, index) => { el.textContent = details[index]; });
+      document.querySelector('#reportAvatar').textContent = 'HP';
     });
 
     const exportLayout = await page.evaluate(() => {
       const card = document.querySelector('.report-sheet.exporting');
+      const avatar = document.querySelector('.student-avatar');
+      const avatarBox = avatar.getBoundingClientRect();
+      const textRange = document.createRange();
+      textRange.selectNodeContents(avatar);
+      const textBox = textRange.getBoundingClientRect();
       return {
         width: Math.round(card.getBoundingClientRect().width),
+        avatarCenterDelta: {
+          x: Math.abs((avatarBox.left + avatarBox.width / 2) - (textBox.left + textBox.width / 2)),
+          y: Math.abs((avatarBox.top + avatarBox.height / 2) - (textBox.top + textBox.height / 2)),
+        },
         metrics: [...document.querySelectorAll('.metric')].map((metric) => {
           const detail = metric.querySelector('.detail').getBoundingClientRect();
           const bar = metric.querySelector('.metric-bar').getBoundingClientRect();
@@ -42,20 +52,25 @@ const { chromium } = require('playwright');
       };
     });
     if (exportLayout.width !== 1120) throw new Error(`Export width drifted to ${exportLayout.width}px`);
+    if (exportLayout.avatarCenterDelta.x > 1 || exportLayout.avatarCenterDelta.y > 1.5) throw new Error(`Student initials are not centered in export avatar: ${JSON.stringify(exportLayout.avatarCenterDelta)}`);
     if (new Set(exportLayout.metrics.map((metric) => metric.top)).size !== 1) throw new Error('Export metrics are not aligned in one row');
     if (exportLayout.metrics.some((metric) => metric.detailBottom > metric.barTop)) throw new Error('Metric detail overlaps its progress bar');
 
-    await page.evaluate(() => { document.querySelector('.report-sheet.exporting').style.display = 'none'; });
+    await page.evaluate(() => { document.querySelector('.report-sheet.exporting').classList.remove('exporting'); });
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileLayout = await page.evaluate(() => {
       const controls = document.querySelector('.report-controls').getBoundingClientRect();
       const picker = document.querySelector('#reportPeriodPicker').getBoundingClientRect();
-      return { bodyOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, controls, picker };
+      const report = document.querySelector('.report-sheet').getBoundingClientRect();
+      const insightCards = [...document.querySelectorAll('.insight-card')].map((item) => item.getBoundingClientRect());
+      return { bodyOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, controls, picker, report, insightCards };
     });
     if (mobileLayout.bodyOverflow) throw new Error('Historical period controls overflow the mobile viewport');
     if (mobileLayout.picker.right > mobileLayout.controls.right + 1 || mobileLayout.picker.left < mobileLayout.controls.left - 1) {
       throw new Error('Historical period picker escapes its mobile control card');
     }
+    if (mobileLayout.report.right > 390 || mobileLayout.report.left < 0) throw new Error('Student report escapes the mobile viewport');
+    if (mobileLayout.insightCards.some((item) => item.right > mobileLayout.report.right || item.left < mobileLayout.report.left)) throw new Error('Insight cards escape the mobile report');
 
     console.log('PASS teacher student report browser layout checks');
   } finally {

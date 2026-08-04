@@ -37,7 +37,7 @@ function extractFunction(name) {
 
 const context = { Date, Set, Array, Math, Number };
 vm.createContext(context);
-['bcDate', 'bcDateKey', 'bcHasArray', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'bcShiftPeriod', 'tinhBaoCao']
+['bcDate', 'bcDateKey', 'bcHasArray', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'bcShiftPeriod', 'tinhBaoCao', 'taoNhanDinhHeThong']
   .forEach((name) => vm.runInContext(extractFunction(name), context));
 
 function periodKeys(type, date) {
@@ -89,7 +89,8 @@ const result = context.tinhBaoCao({
     { lesson_id: 'l6', item: 'video', done_at: '2025-08-07T08:00:00+07:00' },
   ],
   submissions: [
-    { lesson_id: 'l1', kind: 'homework', submitted_at: '2025-08-02T19:00:00+07:00', is_late: false, score: 9 },
+    { lesson_id: 'l1', kind: 'homework', submitted_at: '2025-08-02T19:00:00+07:00', is_late: false, status: 'submitted', score: null },
+    { lesson_id: 'l1', kind: 'homework', submitted_at: '2025-08-03T19:00:00+07:00', is_late: true, status: 'graded', graded_at: '2025-08-04T08:00:00+07:00', reviewed_at: '2025-08-05T08:00:00+07:00', feedback: 'Trình bày tốt', score: 9 },
     { lesson_id: 'l3', kind: 'homework_bonus', submitted_at: '2025-08-04T21:00:00+07:00', is_late: true },
   ],
   attempts: [
@@ -98,7 +99,10 @@ const result = context.tinhBaoCao({
   ],
   analytics: [{ duration_seconds: 3600 }],
   study: [{ focus_seconds: 1800 }],
-  remarks: [],
+  remarks: [
+    { ngay: '2025-08-06', attitude_score: 8, remark: 'Em học tốt và có tiến bộ.' },
+    { ngay: '2025-08-01', attitude_score: 6, remark: 'Cần xem lại bài đã chấm.' },
+  ],
 });
 
 function equal(actual, expected, label) {
@@ -112,11 +116,35 @@ equal(result.submitted.length, 2, 'required submitted tasks');
 equal(result.onTime.length, 2, 'on-time tasks');
 equal(result.submitRate, 67, 'submission rate');
 equal(result.onTimeRate, 67, 'on-time rate');
+equal(result.homeworkTasks.length, 2, 'homework denominator');
+equal(result.homeworkSubmitted.length, 1, 'submitted homework numerator');
+equal(result.homeworkOnTime.length, 1, 'earliest submission keeps on-time credit after late resubmission');
+equal(result.testTasks.length, 1, 'test denominator');
+equal(result.testSubmitted.length, 1, 'completed test numerator');
 equal(result.bonusTasks.length, 1, 'bonus task denominator');
 equal(result.bonusDone.length, 1, 'bonus submitted tasks');
 equal(result.viewed, 2, 'viewed lessons including reviewed older lessons');
 equal(result.viewItems, 2, 'viewed content items');
 equal(result.hours, 1, 'study hours without double counting');
 equal(result.avg, 8.5, 'score average only within period');
+equal(result.gradedTasks.length, 1, 'graded submission denominator excludes online attempts without review flow');
+equal(result.reviewedTasks.length, 1, 'reviewed graded submissions');
+equal(result.reviewRate, 100, 'reviewed graded submission rate');
+
+const insight = context.taoNhanDinhHeThong(result);
+if (!insight.strengths.some((item) => item.includes('Giáo viên ghi nhận'))) throw new Error('teacher positive remark is not reflected in strengths');
+if (!insight.limitations.some((item) => item.includes('Giáo viên lưu ý'))) throw new Error('teacher concern is not reflected in limitations');
+if (!insight.improvements.some((item) => item.includes('góp ý của giáo viên'))) throw new Error('teacher concern is not converted into an improvement action');
+
+const gradedWithoutNumericScore = context.tinhBaoCao({
+  start,
+  end,
+  lop: { id: 'c1', name: 'Lớp 7' },
+  sessions: [], attendance: [], progress: [], attempts: [], analytics: [], study: [], remarks: [],
+  lessons: [{ id: 'g1', title: 'Bài đã chấm bằng lời phê', created_at: '2025-07-01T00:00:00Z', homework_text: 'Bài tập', homework_due: '2025-08-02T20:00:00+07:00' }],
+  submissions: [{ lesson_id: 'g1', kind: 'homework', submitted_at: '2025-08-02T19:00:00+07:00', status: 'graded', graded_at: '2025-08-03T08:00:00+07:00', feedback: 'Đã chấm', score: null }],
+});
+equal(gradedWithoutNumericScore.avg, null, 'written feedback must not be fabricated into a numeric score');
+equal(gradedWithoutNumericScore.gradedWithoutScore.length, 1, 'graded work without numeric score is explained separately');
 
 console.log('PASS teacher student report calculation checks');
