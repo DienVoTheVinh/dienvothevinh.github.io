@@ -258,8 +258,8 @@ function taoNhanDinhHeThong(r){
   if(attitudeAvg!=null&&attitudeAvg>=8)add(strengths,'Giáo viên ghi nhận thái độ học tập tích cực (trung bình '+attitudeAvg.toFixed(1)+'/10).');else if(attitudeAvg!=null&&attitudeAvg<6.5){add(limitations,'Thái độ học tập theo ghi nhận của giáo viên còn cần cải thiện (trung bình '+attitudeAvg.toFixed(1)+'/10).');add(improvements,'Tập trung hơn trong giờ, chuẩn bị đủ dụng cụ và thực hiện đúng dặn dò của giáo viên.');}
   var positivePattern=/(tốt|chăm|tích cực|tiến bộ|tập trung|phát huy|nghiêm túc|hoàn thành|chủ động)/i,concernPattern=/(chưa|quên|mất tập trung|thiếu|chậm|vắng|muộn|cẩu thả|ẩu|yếu|hạn chế|cần (?:rèn|cải thiện|xem lại|chú ý|tập trung|khắc phục|hoàn thành))/i,positiveRemark='',concernRemark='';
   r.remarks.forEach(function(x){var text=String(x.remark||'').replace(/\s+/g,' ').trim();if(!text)return;if(text.length>150)text=text.slice(0,147)+'…';var hasConcern=concernPattern.test(text);if(!concernRemark&&hasConcern)concernRemark=text;if(!positiveRemark&&!hasConcern&&positivePattern.test(text))positiveRemark=text;});
-  if(positiveRemark)addFirst(strengths,'Giáo viên ghi nhận: “'+positiveRemark+'”');
-  if(concernRemark){addFirst(limitations,'Giáo viên lưu ý: “'+concernRemark+'”');addFirst(improvements,'Thực hiện góp ý của giáo viên trong buổi gần nhất và tự kiểm tra lại vào cuối tuần.');}
+  if(positiveRemark)addFirst(strengths,'Giáo viên ghi nhận thái độ học tập tích cực hoặc sự tiến bộ trong các nhận xét theo buổi.');
+  if(concernRemark){addFirst(limitations,'Giáo viên lưu ý vẫn còn điểm cần điều chỉnh trong quá trình học.');addFirst(improvements,'Thực hiện góp ý của giáo viên trong buổi gần nhất và tự kiểm tra lại vào cuối tuần.');}
   if(!strengths.length)add(strengths,'Chưa có đủ dữ liệu nổi bật để kết luận; tiếp tục theo dõi ở kỳ kế tiếp.');
   if(!limitations.length)add(limitations,'Chưa ghi nhận hạn chế nổi bật trong dữ liệu của kỳ này.');
   if(!improvements.length)add(improvements,'Tiếp tục duy trì lịch học, xem bài và nộp bài đều đặn trong kỳ tới.');
