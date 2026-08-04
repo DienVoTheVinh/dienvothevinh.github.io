@@ -17,7 +17,15 @@ expect(lesson.includes('class="back-icon"') && lesson.includes('<svg viewBox="0 
 expect(lesson.includes("sidebar.classList.toggle('open', shouldOpen)"), 'Mobile sidebar must support deterministic open and close actions');
 expect(lesson.includes("e.key === 'Escape'"), 'Mobile sidebar must close with Escape');
 expect(lesson.includes('submission-empty-card'), 'Empty submission state must retain its compact mobile styling hook');
+expect(lesson.includes('class="lesson-action-shell"') && lesson.includes('vmToggleLessonAction(this,true)'), 'Mobile lesson actions must support compact focus mode');
+expect(lesson.includes("localStorage.setItem('vm-lesson-action:' + lessonId"), 'Collapsed lesson actions must remember their per-lesson state');
+expect(lesson.includes('class="lesson-action-restore"'), 'Collapsed lesson actions must leave a clear restore control');
 expect(lesson.includes('pdf-zoom-toolbar') && lesson.includes('pdf-fit-btn'), 'PDF controls must expose stable mobile layout hooks');
+expect(lesson.includes('width:min(76vw,290px)'), 'Mobile table of contents must leave reading context visible');
+expect(lesson.includes('class="sb-close"'), 'Mobile table of contents must provide a direct close control');
+expect(lesson.includes('.ml-bai-hd { min-height:42px'), 'Mobile table of contents rows must stay compact but touchable');
+expect(!lesson.includes('id="mapHeaderLogo"'), 'Partner logo must not float as a separate overlapping header control');
+expect(lesson.includes('lesson-partner-chip') && lesson.includes('.lesson-partner-chip { display:none !important; }'), 'Partner identity must stay in the teacher badge and hide cleanly on mobile');
 
 expect(css.includes('top:var(--vm-bell-panel-top'), 'Mobile notification panel must use the measured topbar boundary');
 expect(css.includes('bottom:max(8px,var(--vm-safe-bottom))'), 'Mobile notification panel must stay inside the safe viewport');
