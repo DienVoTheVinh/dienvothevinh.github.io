@@ -133,16 +133,13 @@
     var permission = supported() ? Notification.permission : 'unsupported';
     try { state.subscription = await currentSubscription(); } catch (_) { state.subscription = null; }
     var enabled = permission === 'granted' && !!state.subscription;
-    var settingsButton = document.getElementById('vmPushSettingsButton');
+    var stateBadge = document.getElementById('vmPushState');
     var primary = document.getElementById('vmPushPrimary');
     var test = document.getElementById('vmPushTest');
     var dot = document.getElementById('vmPushDot');
 
-    if (settingsButton) {
-      settingsButton.classList.toggle('is-enabled', enabled);
-      settingsButton.title = enabled ? 'Thông báo nổi đang bật trên thiết bị này' : 'Bật thông báo nổi trên thiết bị này';
-      setText('vmPushSettingsLabel', enabled ? 'Đã bật' : 'Bật thông báo');
-    }
+    if (stateBadge) stateBadge.classList.toggle('is-enabled', enabled);
+    setText('vmPushSettingsLabel', enabled ? 'Đã bật' : 'Chưa bật');
     if (dot) dot.classList.toggle('is-enabled', enabled);
     if (test) test.hidden = !enabled;
 
@@ -247,38 +244,18 @@
     }
   }
 
-  function togglePanel() {
-    var panel = document.getElementById('vmPushPanel');
-    var button = document.getElementById('vmPushSettingsButton');
-    if (!panel || !button) return;
-    var open = panel.hidden;
-    panel.hidden = !open;
-    button.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) refreshUI();
-  }
-
   function buildUI() {
     var bellPanel = document.getElementById('bangThongBao');
     var head = bellPanel && bellPanel.querySelector('.bell-head');
-    if (!bellPanel || !head || document.getElementById('vmPushSettingsButton')) return;
-
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.id = 'vmPushSettingsButton';
-    button.className = 'vm-push-settings-button';
-    button.setAttribute('aria-controls', 'vmPushPanel');
-    button.setAttribute('aria-expanded', 'false');
-    button.innerHTML = '<span class="vm-push-dot" id="vmPushDot" aria-hidden="true"></span><span id="vmPushSettingsLabel">Bật thông báo</span>';
-    var readAll = document.getElementById('nutDocHet');
-    head.insertBefore(button, readAll || null);
+    if (!bellPanel || !head || document.getElementById('vmPushPanel')) return;
 
     var panel = document.createElement('section');
     panel.id = 'vmPushPanel';
     panel.className = 'vm-push-panel';
-    panel.hidden = true;
     panel.setAttribute('aria-label', 'Thông báo nổi trên thiết bị');
     panel.innerHTML =
-      '<div class="vm-push-panel-title"><span aria-hidden="true">📲</span><div><b>Thông báo trên thiết bị</b><small id="vmPushStatus">Đang kiểm tra…</small></div></div>' +
+      '<div class="vm-push-panel-title"><span aria-hidden="true">📲</span><div><b>Thông báo trên thiết bị</b><small id="vmPushStatus">Đang kiểm tra…</small></div>' +
+        '<span class="vm-push-state" id="vmPushState"><span class="vm-push-dot" id="vmPushDot" aria-hidden="true"></span><span id="vmPushSettingsLabel">Chưa bật</span></span></div>' +
       '<div class="vm-push-actions">' +
         '<button type="button" class="vm-push-primary" id="vmPushPrimary">Bật thông báo nổi</button>' +
         '<button type="button" class="vm-push-test" id="vmPushTest" hidden>Gửi thử</button>' +
@@ -287,7 +264,6 @@
       '<p class="vm-push-privacy">Chỉ thiết bị đã được bạn cho phép mới nhận thông báo. Bạn có thể tắt riêng từng thiết bị bất cứ lúc nào.</p>';
     head.insertAdjacentElement('afterend', panel);
 
-    button.addEventListener('click', function (event) { event.stopPropagation(); togglePanel(); });
     panel.addEventListener('click', function (event) { event.stopPropagation(); });
     document.getElementById('vmPushPrimary').addEventListener('click', toggleEnabled);
     document.getElementById('vmPushTest').addEventListener('click', sendTest);

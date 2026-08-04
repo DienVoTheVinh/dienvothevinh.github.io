@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=7.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.0">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -111,7 +111,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   overflow-y:auto; overscroll-behavior:contain; padding:14px 0 24px;
 }
 .sidebar-scrim { display:none; }
-.sidebar .sb-head { padding:4px 18px 10px; font-size:.78rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+.sidebar-inner { width:267px; overflow:hidden; }
+.sidebar .sb-head { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 18px 10px;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3); }
+.sb-close { display:none;border:0;background:var(--surface-2);color:var(--ink-2);width:34px;height:34px;border-radius:9px;font-size:1.1rem;cursor:pointer; }
 .sb-group { padding:10px 18px 4px; font-size:.76rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
 .sb-item {
   display:block; padding:8px 18px; font-size:.86rem; color:var(--ink-2);
@@ -300,6 +302,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .mobile-tab-btn { flex:1; border:none; background:transparent; font-family:inherit; font-size:.86rem; font-weight:600; color:var(--ink-2); cursor:pointer; border-bottom:2px solid transparent; }
 .mobile-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
 
+/* Thao tác phụ có thể thu gọn để ưu tiên không gian đọc tài liệu trên mobile. */
+.lesson-action-shell { position:relative; }
+.lesson-action-collapse,.lesson-action-restore { display:none; }
+
 @media (max-width:980px) {
   .sidebar {
     position:fixed; left:0; top:60px; bottom:0; z-index:50; width:min(86vw,340px);
@@ -338,11 +344,25 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   .mobile-tab-btn { font-size:.82rem; }
   .sidebar { top:60px; padding-top:10px; }
   .sidebar-scrim { inset:60px 0 0; }
-  .sidebar .sb-head { padding:8px 18px 12px; font-size:.76rem; }
-  .ml-topic-hd { padding:12px 16px; }
-  .ml-bai-hd { min-height:48px; padding:9px 12px 9px 16px; font-size:.84rem; }
-  .ml-vao-btn { min-width:48px; min-height:34px; display:inline-grid; place-items:center; padding:4px 9px; }
-  .ml-sub a { min-height:42px; }
+  .sidebar { width:min(76vw,290px); }
+  .sidebar-inner { width:100%; }
+  .sidebar .sb-head { position:sticky;top:0;z-index:2;padding:6px 10px 8px 14px;font-size:.69rem;background:var(--surface-solid);border-bottom:1px solid var(--line); }
+  .sb-close { display:grid;place-items:center;flex:none; }
+  .ml-topic-hd { padding:9px 12px; font-size:.69rem; }
+  .ml-bai-hd { min-height:42px; padding:7px 9px 7px 12px; font-size:.78rem; gap:7px; }
+  .ml-vao-btn { min-width:42px; min-height:32px; display:inline-grid; place-items:center; padding:3px 7px; font-size:.72rem; }
+  .ml-sub a { min-height:38px; padding:5px 10px 5px 34px; font-size:.76rem; }
+  .lesson-partner-chip { display:none !important; }
+  .lesson-action-shell { margin:8px 10px 0 !important; }
+  .lesson-action-shell .submission-empty-card { margin:0 !important; }
+  .submission-action-shell .submission-empty-card { padding:42px 14px 16px !important; }
+  .lesson-action-collapse { position:absolute;display:grid;place-items:center;top:8px;right:8px;z-index:3;width:32px;height:32px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface-solid);color:var(--ink-2);font:800 1rem/1 var(--font-sans);cursor:pointer; }
+  .lesson-action-shell.is-collapsed > :not(.lesson-action-restore) { display:none !important; }
+  .lesson-action-shell.is-collapsed .lesson-action-restore { display:flex;width:100%;min-height:42px;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-solid);color:var(--ink);font:800 .78rem/1.2 var(--font-sans);cursor:pointer;box-shadow:0 4px 14px rgba(15,23,42,.07); }
+  .lesson-action-restore small { color:var(--accent);font-size:.72rem; }
+  #linkedExamBanner { margin:0 !important;padding:11px 46px 11px 12px !important;gap:9px !important;border-radius:13px !important; }
+  #linkedExamBanner > span:first-child { font-size:1.25rem !important; }
+  #linkedExamBanner .btn { padding:7px 9px !important;font-size:.74rem !important; }
   /* Dặn dò gọn hơn trên điện thoại */
   #lessonNoteBanner { margin:10px 12px 0; padding:10px 14px 11px; }
   #lessonNoteContent { max-height:26vh; font-size:.9rem; }
@@ -363,7 +383,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   #badgeGiaoVien .badge { font-size:.7rem !important; padding:3px 7px !important; }
   .pdf-zoom-toolbar > span:first-child { display:none; }
   .pdf-zoom-toolbar .pdf-fit-btn { font-size:.76rem !important; }
-  .sidebar { width:min(90vw,350px); }
+  .sidebar { width:min(78vw,286px); }
 }
 /* Thu gọn / mở dặn dò */
 #lessonNoteBanner.collapsed #lessonNoteContent { display:none; }
@@ -499,7 +519,6 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
-      <img id="mapHeaderLogo" src="logo/CLB-MAP-logo.png" alt="CLB M.A.P" title="Lớp thuộc CLB M.A.P" style="display:none;width:34px;height:34px;border-radius:50%;background:#fff;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
       <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
       <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
@@ -520,14 +539,15 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
   </div>
 
   <!-- 📝 Bài kiểm tra được giao (đề từ Khu luyện đề) -->
-  <a id="linkedExamBanner" href="#" style="display:none; text-decoration:none; margin:12px 20px 0; padding:14px 18px; border-radius:16px; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(37,99,235,0.14), rgba(37,99,235,0.04)); border:1px solid rgba(37,99,235,0.35); box-shadow:0 4px 18px rgba(37,99,235,0.10)">
-    <span style="font-size:1.7rem; flex-shrink:0">📝</span>
-    <div style="flex:1; min-width:0">
-      <div style="font-weight:800; color:#2563eb; font-size:1rem">Bài kiểm tra được giao</div>
-      <div id="linkedExamTitle" style="font-size:.9rem; color:var(--ink-2); margin-top:1px">—</div>
-    </div>
-    <span class="btn btn-primary btn-sm" style="background:#2563eb; border-color:#2563eb; white-space:nowrap; flex-shrink:0">Vào làm ngay →</span>
-  </a>
+  <div id="linkedExamShell" class="lesson-action-shell" data-action-key="linked-exam" style="display:none; margin:12px 20px 0">
+    <a id="linkedExamBanner" href="#" style="display:flex; text-decoration:none; padding:14px 18px; border-radius:16px; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(37,99,235,0.14), rgba(37,99,235,0.04)); border:1px solid rgba(37,99,235,0.35); box-shadow:0 4px 18px rgba(37,99,235,0.10)">
+      <span style="font-size:1.7rem; flex-shrink:0">📝</span>
+      <div style="flex:1; min-width:0"><div style="font-weight:800; color:#2563eb; font-size:1rem">Bài kiểm tra được giao</div><div id="linkedExamTitle" style="font-size:.9rem; color:var(--ink-2); margin-top:1px">—</div></div>
+      <span class="btn btn-primary btn-sm" style="background:#2563eb; border-color:#2563eb; white-space:nowrap; flex-shrink:0">Vào làm ngay →</span>
+    </a>
+    <button class="lesson-action-collapse" type="button" onclick="vmToggleLessonAction(this,true)" aria-label="Thu gọn bài kiểm tra" title="Thu gọn">−</button>
+    <button class="lesson-action-restore" type="button" onclick="vmToggleLessonAction(this,false)"><span>📝 Bài kiểm tra được giao</span><small>Mở lại →</small></button>
+  </div>
 
   <!-- Ghi chú riêng cho GV — popover (chỉ GV/Admin bấm nút mới hiện, HS không thấy) -->
   <div id="ghiChuGVPopover" style="display:none; position:fixed; top:64px; right:16px; z-index:130; max-width:380px; width:calc(100vw - 32px); background:var(--surface); border:1px solid rgba(37,99,235,0.4); border-radius:14px; box-shadow:0 14px 44px rgba(0,0,0,.3); padding:16px 18px">
@@ -611,8 +631,8 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
   <div class="layout">
     <!-- Mục lục bên trái -->
     <nav class="sidebar" id="mucLuc">
-      <div style="width:267px; overflow:hidden">
-        <div class="sb-head">Mục lục bài giảng</div>
+      <div class="sidebar-inner">
+        <div class="sb-head"><span>Mục lục bài giảng</span><button class="sb-close" type="button" onclick="batTatMucLuc(false)" aria-label="Đóng mục lục">×</button></div>
         <div id="dsMucLuc"><div style="padding:8px 18px;color:var(--ink-3);font-size:.85rem">Đang tải…</div></div>
       </div>
     </nav>
@@ -1105,6 +1125,28 @@ function batTatMucLuc(forceOpen) {
   }
 }
 
+function vmToggleLessonAction(control, collapsed) {
+  var shell = control && control.closest ? control.closest('.lesson-action-shell') : null;
+  if (!shell) return;
+  shell.classList.toggle('is-collapsed', !!collapsed);
+  var actionKey = shell.getAttribute('data-action-key') || 'action';
+  try { localStorage.setItem('vm-lesson-action:' + lessonId + ':' + actionKey, collapsed ? '1' : '0'); } catch (_) {}
+}
+
+function vmApplyLessonActionState(root) {
+  if (window.innerWidth > 820) return;
+  var scope = root || document;
+  var shells = [];
+  if (scope.matches && scope.matches('.lesson-action-shell[data-action-key]')) shells.push(scope);
+  scope.querySelectorAll('.lesson-action-shell[data-action-key]').forEach(function(shell) { shells.push(shell); });
+  shells.forEach(function(shell) {
+    var actionKey = shell.getAttribute('data-action-key') || 'action';
+    var collapsed = false;
+    try { collapsed = localStorage.getItem('vm-lesson-action:' + lessonId + ':' + actionKey) === '1'; } catch (_) {}
+    shell.classList.toggle('is-collapsed', collapsed);
+  });
+}
+
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && window.innerWidth <= 980) batTatMucLuc(false);
 });
@@ -1270,8 +1312,8 @@ function renderBaiHoc() {
   var badgeGv = $('badgeGiaoVien');
   if (badgeGv) {
     var gvName = mapGiaoVien[details.teacher_id] || 'Thầy Điền Võ Thế Vinh';
-    var mapChip = laLopMAP ? '<span class="badge" style="background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:4px; font-weight:700; margin-left:6px; display:inline-flex; align-items:center; gap:4px"><img src="logo/CLB-MAP-logo.png" style="width:14px;height:14px;border-radius:50%;background:#fff">CLB M.A.P</span>' : '';
-    if (laLopDuyMinh) mapChip = '<span style="margin-left:6px;display:inline-flex">' + (typeof vmChipDuyMinh === 'function' ? vmChipDuyMinh(14) : '') + '</span>';
+    var mapChip = laLopMAP ? '<span class="badge lesson-partner-chip" style="background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; font-size:0.72rem; padding:3px 8px; border-radius:4px; font-weight:700; margin-left:6px; display:inline-flex; align-items:center; gap:4px"><img src="logo/CLB-MAP-logo.png" style="width:14px;height:14px;border-radius:50%;background:#fff">CLB M.A.P</span>' : '';
+    if (laLopDuyMinh) mapChip = '<span class="lesson-partner-chip" style="margin-left:6px;display:inline-flex">' + (typeof vmChipDuyMinh === 'function' ? vmChipDuyMinh(14) : '') + '</span>';
     badgeGv.innerHTML = '<span class="badge" style="background:rgba(217, 119, 6, 0.1); border:1px solid rgba(217, 119, 6, 0.3); color:#D97706; font-size:0.75rem; padding:3px 8px; border-radius:4px; font-weight:500; display:inline-flex; align-items:center; gap:4px">' + layEmojiGiaoVien(gvName) + ' ' + gvName + '</span>' + mapChip;
   }
 
@@ -1396,9 +1438,10 @@ function renderBaiHoc() {
 
   // 📝 Bài kiểm tra được giao (đề gắn từ Khu luyện đề)
   var exBanner = $('linkedExamBanner');
+  var exShell = $('linkedExamShell');
   if (exBanner) {
     if (details.linked_exam_id) {
-      exBanner.style.display = 'flex';
+      if (exShell) exShell.style.display = 'block';
       exBanner.href = 'luyen-de?exam_id=' + encodeURIComponent(details.linked_exam_id);
       var exTitleEl = $('linkedExamTitle');
       if (exTitleEl) exTitleEl.textContent = 'Đang tải đề…';
@@ -1408,8 +1451,9 @@ function renderBaiHoc() {
           exTitleEl.textContent = (er.data.title || 'Đề kiểm tra') + ' · ' + lo + (er.data.duration_minutes ? ' · ' + er.data.duration_minutes + ' phút' : '');
         } else if (exTitleEl) { exTitleEl.textContent = 'Đề kiểm tra'; }
       });
+      if (exShell) vmApplyLessonActionState(exShell);
     } else {
-      exBanner.style.display = 'none';
+      if (exShell) exShell.style.display = 'none';
     }
   }
 
@@ -1918,10 +1962,14 @@ async function layKetQuaChamHtml(kind) {
 
     var sub = r.data;
     if (!sub) {
-      return '<div class="card submission-empty-card" style="margin:14px; padding:16px; border:1px dashed var(--accent); background:var(--accent-soft); text-align:center">' +
+      return '<div class="lesson-action-shell submission-action-shell" data-action-key="submit-' + kind + '">' +
+        '<button class="lesson-action-collapse" type="button" onclick="vmToggleLessonAction(this,true)" aria-label="Thu gọn khu vực nộp bài" title="Thu gọn">−</button>' +
+        '<div class="card submission-empty-card" style="margin:14px; padding:16px; border:1px dashed var(--accent); background:var(--accent-soft); text-align:center">' +
         '  <h4 style="margin:0 0 6px; color:var(--accent)">Em chưa nộp ' + tenLoai + ' của bài học này</h4>' +
         '  <p style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-2)">Hãy làm bài ra giấy, chụp ảnh lại rồi nộp cho thầy chấm điểm nhé.</p>' +
         '  <button class="btn btn-primary btn-sm" onclick="moNopBai(\'' + kind + '\')">📤 Nộp bài làm ngay</button>' +
+        '</div>' +
+        '<button class="lesson-action-restore" type="button" onclick="vmToggleLessonAction(this,false)"><span>📤 Khu vực nộp bài</span><small>Mở lại →</small></button>' +
         '</div>';
     }
     
@@ -2067,6 +2115,7 @@ async function chonNoiDung(loai) {
     }
   }
   if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }
+  vmApplyLessonActionState(than);
   // Trên di động: chuyển sang tab nội dung
   if (window.innerWidth <= 820) hienMobilePane('content');
 
