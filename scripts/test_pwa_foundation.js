@@ -42,6 +42,12 @@ expect(home.includes('id="vmInstallHero"'), 'Homepage must include a prominent i
 expect(home.includes('id="vmInstallHeroBtn"'), 'Homepage install panel needs an action button');
 expect(home.includes('@media (max-width: 700px)'), 'Homepage install panel needs a mobile layout');
 
+const publicLanding = read('index.html');
+expect(publicLanding.includes('id="vmInstallHero"'), 'Public landing page must expose install as a first-screen action');
+expect(publicLanding.includes('class="home-install-first"'), 'Public landing install action needs its dedicated first-screen layout');
+expect(publicLanding.indexOf('id="vmInstallHero"') < publicLanding.indexOf('<section class="hero">'), 'Install action must appear before the public hero content');
+expect(publicLanding.includes('home-install-first-action'), 'Public landing install action needs a mobile full-width button');
+
 const htmlFiles = fs.readdirSync(root).filter((file) => file.endsWith('.html') && file !== 'offline.html');
 expect(htmlFiles.length > 20, 'Expected the canonical root HTML pages');
 for (const file of htmlFiles) {
