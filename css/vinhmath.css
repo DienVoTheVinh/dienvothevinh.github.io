@@ -1920,6 +1920,33 @@ iframe, video, canvas, svg, table { max-width: 100%; }
   background: var(--topbar-btn-hover-bg);
 }
 .vm-install-icon { font-size: 1rem; line-height: 1; }
+.vm-install-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  z-index: 100002;
+  width: min(520px, calc(100vw - 28px));
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 212, 102, .55);
+  border-radius: 12px;
+  background: rgba(43, 25, 6, .96);
+  color: #fff7df;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+  font-size: .86rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.vm-install-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.vm-install-note-flash { animation: vmInstallNoteFlash .55s ease; }
+@keyframes vmInstallNoteFlash {
+  0%, 100% { opacity: 1; }
+  45% { opacity: .45; }
+}
 .vm-install-sheet {
   display: none;
   position: fixed;

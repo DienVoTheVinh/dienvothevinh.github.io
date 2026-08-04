@@ -2506,40 +2506,37 @@ function layEmojiGiaoVien(fullName) {
   }
 
   function vmLaIOS() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+    var ua = navigator.userAgent || '';
+    return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
   }
 
-  function vmDongBangCaiDat() {
-    var sheet = document.getElementById('vmInstallSheet');
-    if (sheet) sheet.classList.remove('is-open');
-    document.body.classList.remove('vm-modal-open');
+  function vmLaSafariMac() {
+    var ua = navigator.userAgent || '';
+    return !vmLaIOS() && /macintosh|mac os x/i.test(ua) && /safari/i.test(ua) && !/chrome|crios|chromium|edg|opr|firefox|fxios/i.test(ua);
   }
 
-  function vmTaoBangCaiDat() {
-    var old = document.getElementById('vmInstallSheet');
-    if (old) return old;
-    var sheet = document.createElement('div');
-    sheet.id = 'vmInstallSheet';
-    sheet.className = 'vm-install-sheet';
-    sheet.setAttribute('role', 'dialog');
-    sheet.setAttribute('aria-modal', 'true');
-    sheet.setAttribute('aria-labelledby', 'vmInstallTitle');
-    sheet.innerHTML =
-      '<div class="vm-install-card vm-modal-panel">' +
-        '<button type="button" class="vm-modal-close" id="vmInstallClose" aria-label="Dong" style="position:absolute;right:18px;top:14px;border:0;background:transparent;color:var(--ink-3);font-size:1.5rem;cursor:pointer">×</button>' +
-        '<h3 id="vmInstallTitle">Cài VinhMath như ứng dụng</h3>' +
-        '<p id="vmInstallGuide">Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.</p>' +
-        '<div class="vm-install-actions">' +
-          '<button type="button" class="btn btn-primary" id="vmInstallConfirm">Cài ứng dụng</button>' +
-          '<button type="button" class="btn btn-secondary" id="vmInstallLater">Để sau</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(sheet);
-    sheet.addEventListener('click', function (event) { if (event.target === sheet) vmDongBangCaiDat(); });
-    document.getElementById('vmInstallClose').addEventListener('click', vmDongBangCaiDat);
-    document.getElementById('vmInstallLater').addEventListener('click', vmDongBangCaiDat);
-    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') vmDongBangCaiDat(); });
-    return sheet;
+  function vmThongBaoCaiDat(message) {
+    var heroNote = document.getElementById('vmInstallHeroNote');
+    if (heroNote) {
+      heroNote.textContent = message;
+      heroNote.classList.remove('vm-install-note-flash');
+      void heroNote.offsetWidth;
+      heroNote.classList.add('vm-install-note-flash');
+    }
+
+    var toast = document.getElementById('vmInstallToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'vmInstallToast';
+      toast.className = 'vm-install-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    clearTimeout(window._vmInstallToastTimer);
+    window._vmInstallToastTimer = setTimeout(function () { toast.classList.remove('is-visible'); }, 6500);
   }
 
   async function vmCaiPwa() {
@@ -2548,27 +2545,45 @@ function layEmojiGiaoVien(fullName) {
     vmInstallPrompt = null;
     await prompt.prompt();
     try { await prompt.userChoice; } catch (_) {}
-    vmDongBangCaiDat();
     vmCapNhatNutCaiDat();
   }
 
-  function vmMoBangCaiDat() {
-    var sheet = vmTaoBangCaiDat();
-    var guide = document.getElementById('vmInstallGuide');
-    var confirm = document.getElementById('vmInstallConfirm');
-    if (vmLaIOS() && !vmInstallPrompt) {
-      guide.innerHTML = 'Trên iPhone/iPad: bấm nút <b>Chia sẻ</b> trong Safari, sau đó chọn <b>Thêm vào Màn hình chính</b>.';
-      confirm.style.display = 'none';
-    } else if (!vmInstallPrompt) {
-      guide.innerHTML = 'Trong Chrome hoặc Edge, mở trình đơn <b>⋮</b> rồi chọn <b>Cài đặt VinhMath</b> hoặc <b>Thêm vào màn hình chính</b>. Nếu tùy chọn chưa xuất hiện, hãy tải lại trang và thử lại.';
-      confirm.style.display = 'none';
-    } else {
-      guide.textContent = 'Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.';
-      confirm.style.display = '';
-      confirm.onclick = vmCaiPwa;
+  async function vmBatDauCaiPwa() {
+    if (vmDaCaiPwa()) return;
+
+    /* Chrome/Edge/Android: bỏ hộp trung gian, mở thẳng install prompt hệ thống. */
+    if (vmInstallPrompt) {
+      await vmCaiPwa();
+      return;
     }
-    sheet.classList.add('is-open');
-    document.body.classList.add('vm-modal-open');
+
+    /* iOS/iPadOS không có beforeinstallprompt. Mở thẳng Share Sheet nếu WebKit cho phép. */
+    if (vmLaIOS()) {
+      var iosMessage = 'Trong bảng Chia sẻ, chọn “Thêm vào Màn hình chính” rồi bấm “Thêm”.';
+      vmThongBaoCaiDat(iosMessage);
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'VinhMath',
+            text: 'Cài VinhMath lên Màn hình chính',
+            url: location.origin + '/trang-chu'
+          });
+          return;
+        } catch (error) {
+          if (error && error.name === 'AbortError') return;
+        }
+      }
+      vmThongBaoCaiDat('Safari: bấm Chia sẻ → Thêm vào Màn hình chính → Thêm.');
+      return;
+    }
+
+    /* Safari macOS không cung cấp API cài đặt; hướng dẫn ngay trên trang, không mở modal phụ. */
+    if (vmLaSafariMac()) {
+      vmThongBaoCaiDat('Safari trên Mac: chọn File → Add to Dock (hoặc Chia sẻ → Add to Dock), rồi bấm Add.');
+      return;
+    }
+
+    vmThongBaoCaiDat('Chrome/Edge: mở trình đơn ⋮ rồi chọn “Cài đặt VinhMath”. Trình duyệt chưa cấp hộp cài tự động cho lần mở này.');
   }
 
   function vmLayNutCaiDat() {
@@ -2582,7 +2597,7 @@ function layEmojiGiaoVien(fullName) {
     btn.className = 'vm-install-btn';
     btn.setAttribute('aria-label', 'Cài VinhMath như ứng dụng');
     btn.innerHTML = '<span class="vm-install-icon" aria-hidden="true">⇩</span><span class="vm-install-label">Cài ứng dụng</span>';
-    btn.addEventListener('click', vmMoBangCaiDat);
+    btn.addEventListener('click', vmBatDauCaiPwa);
     navlinks.appendChild(btn);
     return btn;
   }
@@ -2590,7 +2605,7 @@ function layEmojiGiaoVien(fullName) {
   function vmCapNhatNutCaiDat() {
     var btn = vmLayNutCaiDat();
     var daCai = vmDaCaiPwa();
-    if (btn) btn.classList.toggle('is-available', !daCai && (!!vmInstallPrompt || vmLaIOS()));
+    if (btn) btn.classList.toggle('is-available', !daCai && (!!vmInstallPrompt || vmLaIOS() || vmLaSafariMac()));
 
     var hero = document.getElementById('vmInstallHero');
     var heroBtn = document.getElementById('vmInstallHeroBtn');
@@ -2598,12 +2613,13 @@ function layEmojiGiaoVien(fullName) {
     if (hero) hero.classList.toggle('is-visible', !daCai);
     if (heroBtn && !heroBtn.dataset.vmInstallBound) {
       heroBtn.dataset.vmInstallBound = '1';
-      heroBtn.addEventListener('click', vmMoBangCaiDat);
+      heroBtn.addEventListener('click', vmBatDauCaiPwa);
     }
     if (heroNote) {
-      if (vmInstallPrompt) heroNote.textContent = 'Sẵn sàng cài đặt · Chỉ mất vài giây';
-      else if (vmLaIOS()) heroNote.textContent = 'iPhone/iPad: cài nhanh qua nút Chia sẻ của Safari';
-      else heroNote.textContent = 'Hoàn toàn miễn phí · Có hướng dẫn theo thiết bị';
+      if (vmInstallPrompt) heroNote.textContent = 'Bấm một lần để mở thẳng cài đặt của trình duyệt';
+      else if (vmLaIOS()) heroNote.textContent = 'iPhone/iPad: bấm để mở thẳng bảng Chia sẻ';
+      else if (vmLaSafariMac()) heroNote.textContent = 'Safari trên Mac: hướng dẫn Add to Dock ngay tại đây';
+      else heroNote.textContent = 'Bấm để cài đặt · Không qua cửa sổ trung gian';
     }
   }
 
@@ -2614,7 +2630,8 @@ function layEmojiGiaoVien(fullName) {
   });
   window.addEventListener('appinstalled', function () {
     vmInstallPrompt = null;
-    vmDongBangCaiDat();
+    var toast = document.getElementById('vmInstallToast');
+    if (toast) toast.classList.remove('is-visible');
     vmCapNhatNutCaiDat();
   });
 
@@ -2636,6 +2653,6 @@ function layEmojiGiaoVien(fullName) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vmKhoiDongPwa);
   else vmKhoiDongPwa();
 
-  window.vmMoCaiDatUngDung = vmMoBangCaiDat;
+  window.vmMoCaiDatUngDung = vmBatDauCaiPwa;
   window.vmCapNhatNutCaiDatPwa = vmCapNhatNutCaiDat;
 })();
