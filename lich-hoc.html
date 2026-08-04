@@ -300,7 +300,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.1"></script>
+<script src="js/vinhmath.js?v=7.3"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -375,7 +375,7 @@ function veSliderTuan(schedules) {
   container.style.display = 'flex';
 }
 
-function veDanhSachBuoiHoc(schedules, meetLink) {
+function veDanhSachBuoiHoc(schedules) {
   var container = $('danhSachBuoiHoc');
   if (!container) return;
   
@@ -430,13 +430,14 @@ function veDanhSachBuoiHoc(schedules, meetLink) {
     
     var diaDiem = '';
     var meetButton = '';
+    var meetLinkCuaBuoi = s.meet_link || meetLinkGlobal || '';
     if (s.mode === 'online') {
-      diaDiem = meetLink 
-        ? '<a href="' + meetLink + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline">🎥 Vào Google Meet</a>'
+      diaDiem = meetLinkCuaBuoi
+        ? '<a href="' + meetLinkCuaBuoi + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline">🎥 Vào Google Meet</a>'
         : '🎥 Link Google Meet';
       
-      if (isOngoing && meetLink) {
-        meetButton = '<a href="' + meetLink + '" target="_blank" class="btn btn-primary btn-sm pulse-btn">VÀO LỚP NGAY</a>';
+      if (isOngoing && meetLinkCuaBuoi) {
+        meetButton = '<a href="' + meetLinkCuaBuoi + '" target="_blank" class="btn btn-primary btn-sm pulse-btn">VÀO LỚP NGAY</a>';
       }
     } else {
       diaDiem = '🏫 ' + (s.location || 'Tại lớp học');
@@ -475,7 +476,7 @@ function locTheoThu(weekday) {
     selectedDayFilter = weekday;
   }
   veSliderTuan(listSchedules);
-  veDanhSachBuoiHoc(listSchedules, meetLinkGlobal);
+  veDanhSachBuoiHoc(listSchedules);
 }
 
 async function taiLichVaMeetLinkHocSinh() {
@@ -491,7 +492,7 @@ async function taiLichVaMeetLinkHocSinh() {
   // 1. Tải thời khóa biểu lớp được chọn
   var classIds = [selectedClassId];
   var r = await sb.from('schedules')
-    .select('id, weekday, start_time, end_time, mode, location, note, recurrence')
+    .select('id, class_id, weekday, start_time, end_time, mode, location, note, meet_link, recurrence, date, start_date, end_date, visible')
     .in('class_id', classIds)
     .order('weekday').order('start_time');
   
@@ -511,8 +512,11 @@ async function taiLichVaMeetLinkHocSinh() {
   // Reset hiển thị Meet link
   $('nutVaoMeet').style.display = 'none';
   $('chuaCoLink').style.display = 'none';
-  if (meetLinkGlobal) {
-    $('nutVaoMeet').href = meetLinkGlobal;
+  var todaySchedulesForMeet = listSchedules.filter(function (s) { return vmLichDienRaNgay(s, new Date()); });
+  var selectedTodaySchedule = vmChonBuoiMeetTheoGio(todaySchedulesForMeet, new Date());
+  var primaryMeetLink = (selectedTodaySchedule && selectedTodaySchedule.meet_link) || meetLinkGlobal;
+  if (primaryMeetLink) {
+    $('nutVaoMeet').href = primaryMeetLink;
     $('nutVaoMeet').style.display = 'inline-flex';
   } else {
     $('chuaCoLink').style.display = 'block';
@@ -520,7 +524,7 @@ async function taiLichVaMeetLinkHocSinh() {
 
   // 3. Vẽ Slider và danh sách buổi học
   veSliderTuan(listSchedules);
-  veDanhSachBuoiHoc(listSchedules, meetLinkGlobal);
+  veDanhSachBuoiHoc(listSchedules);
   
   if (!listSchedules.length) {
     $('thongBaoHomNay').innerHTML = 'Lớp chưa được thầy cấu hình thời khóa biểu.';
@@ -531,14 +535,13 @@ async function taiLichVaMeetLinkHocSinh() {
   }
 
   // 4. Kiểm tra buổi học hôm nay
-  var jsThu = new Date().getDay();
-  var homNay = jsThu === 0 ? 7 : jsThu;
-  var buoiHocHomNay = listSchedules.filter(function (s) { return s.weekday === homNay; });
+  var buoiHocHomNay = listSchedules.filter(function (s) { return vmLichDienRaNgay(s, new Date()); });
 
   if (buoiHocHomNay.length > 0) {
     var str = buoiHocHomNay.map(function (s) {
-      var meetUrlHTML = (s.mode === 'online' && meetLinkGlobal) 
-        ? ' (Link Meet: <a href="' + meetLinkGlobal + '" target="_blank" style="color:#fff; text-decoration:underline; font-weight:700">Tại đây</a>)'
+      var meetLinkCuaBuoi = s.meet_link || meetLinkGlobal || '';
+      var meetUrlHTML = (s.mode === 'online' && meetLinkCuaBuoi)
+        ? ' (Link Meet: <a href="' + meetLinkCuaBuoi + '" target="_blank" style="color:#fff; text-decoration:underline; font-weight:700">Tại đây</a>)'
         : '';
       return '<b>' + gioDep(s.start_time) + ' – ' + gioDep(s.end_time) + '</b> [' + (s.mode === 'online' ? 'Online' : 'Offline') + ']' + meetUrlHTML;
     }).join(', ');

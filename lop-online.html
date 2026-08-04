@@ -90,7 +90,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.1"></script>
+<script src="js/vinhmath.js?v=7.3"></script>
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -113,16 +113,18 @@ function gioDep(t) { return t ? t.slice(0, 5) : ''; }
     var jsThu = new Date().getDay();
     var homNay = jsThu === 0 ? 7 : jsThu;
     var rToday = await sb.from('schedules')
-      .select('class_id, meet_link')
+      .select('class_id, weekday, start_time, end_time, meet_link, recurrence, date, start_date, end_date, visible')
       .in('class_id', classIds)
-      .eq('weekday', homNay);
-    var todayRows = rToday.data || [];
+      .eq('weekday', homNay)
+      .order('start_time');
+    var todayRows = (rToday.data || []).filter(function (s) { return vmLichDienRaNgay(s, new Date()); });
     // 1. Ưu tiên link Meet riêng của buổi hôm nay (đúng GV phụ trách → là chủ phòng)
-    var buoiCoLink = todayRows.find(function (s) { return s.meet_link; });
+    var buoiDungGio = vmChonBuoiMeetTheoGio(todayRows, new Date());
+    var buoiCoLink = buoiDungGio && buoiDungGio.meet_link ? buoiDungGio : null;
     if (buoiCoLink) meet = buoiCoLink.meet_link;
     // 2. Link chung của lớp hôm nay
     if (!meet) {
-      var targetClassId = todayRows.length > 0 ? todayRows[0].class_id : classIds[0];
+      var targetClassId = buoiDungGio ? buoiDungGio.class_id : (todayRows.length > 0 ? todayRows[0].class_id : classIds[0]);
       var lr = await sb.from('class_links').select('meet_link').eq('class_id', targetClassId).maybeSingle();
       if (lr.data && lr.data.meet_link) meet = lr.data.meet_link;
     }
