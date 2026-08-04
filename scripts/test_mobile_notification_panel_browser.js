@@ -10,8 +10,9 @@ const { chromium } = require('playwright');
 
   const browser = await chromium.launch({ executablePath, headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    await page.setContent(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+    for (const width of [390, 591]) {
+      const page = await browser.newPage({ viewport: { width, height: 844 } });
+      await page.setContent(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
       <style>${css}</style>
       <div class="topbar"><div class="nav"><div class="bell-wrap" id="wrap">
         <button class="nav-bell" id="nutChuong">B</button>
@@ -26,14 +27,17 @@ const { chromium } = require('playwright');
         </div>
       </div></div></div><main style="height:1200px">Trang quản trị</main>`);
 
-    const metrics = await page.evaluate(() => {
+      const metrics = await page.evaluate(() => {
       const panel = document.getElementById('bangThongBao');
       const topbar = document.querySelector('.topbar');
       document.body.appendChild(panel);
       panel.style.setProperty('--vm-bell-panel-top', Math.ceil(topbar.getBoundingClientRect().bottom + 6) + 'px');
       panel.style.display = 'flex';
       const rect = panel.getBoundingClientRect();
-      return {
+        const pushRect = panel.querySelector('#vmPushPanel').getBoundingClientRect();
+        const stateRect = panel.querySelector('#vmPushState').getBoundingClientRect();
+        const primaryRect = panel.querySelector('.vm-push-primary').getBoundingClientRect();
+        return {
         height: rect.height,
         top: rect.top,
         bottom: rect.bottom,
@@ -41,15 +45,23 @@ const { chromium } = require('playwright');
         headerBottom: topbar.getBoundingClientRect().bottom,
         stateInsidePanel: panel.querySelector('#vmPushPanel #vmPushState') !== null,
         stateInsideHeader: panel.querySelector('.bell-head #vmPushState') !== null,
-        privacyVisible: getComputedStyle(panel.querySelector('.vm-push-privacy')).display !== 'none',
-      };
-    });
+          privacyVisible: getComputedStyle(panel.querySelector('.vm-push-privacy')).display !== 'none',
+          stateFits: stateRect.left >= pushRect.left && stateRect.right <= pushRect.right,
+          stateCompact: stateRect.width < pushRect.width * 0.55 && stateRect.height < 40,
+          primaryFits: primaryRect.left >= pushRect.left && primaryRect.right <= pushRect.right,
+          pushRounded: parseFloat(getComputedStyle(panel.querySelector('#vmPushPanel')).borderRadius) >= 12,
+        };
+      });
 
-    if (metrics.height < metrics.viewportHeight * 0.6) throw new Error(`Panel collapsed to ${metrics.height}px`);
-    if (metrics.top < metrics.headerBottom) throw new Error('Panel overlaps the mobile header');
-    if (metrics.bottom > metrics.viewportHeight + 1) throw new Error('Panel escapes the mobile viewport');
-    if (!metrics.stateInsidePanel || metrics.stateInsideHeader) throw new Error('Push state is not embedded in its device card');
-    if (metrics.privacyVisible) throw new Error('Secondary push privacy copy should stay hidden on mobile');
+      if (metrics.height < metrics.viewportHeight * 0.6) throw new Error(`${width}px: panel collapsed to ${metrics.height}px`);
+      if (metrics.top < metrics.headerBottom) throw new Error(`${width}px: panel overlaps the mobile header`);
+      if (metrics.bottom > metrics.viewportHeight + 1) throw new Error(`${width}px: panel escapes the mobile viewport`);
+      if (!metrics.stateInsidePanel || metrics.stateInsideHeader) throw new Error(`${width}px: push state is not embedded in its device card`);
+      if (!metrics.stateFits || !metrics.stateCompact || !metrics.primaryFits) throw new Error(`${width}px: device controls overflow or lose their compact shape`);
+      if (!metrics.pushRounded) throw new Error(`${width}px: device settings card is not visually contained`);
+      if (metrics.privacyVisible) throw new Error(`${width}px: secondary push privacy copy should stay hidden on mobile`);
+      await page.close();
+    }
     console.log('PASS mobile notification panel browser geometry');
   } finally {
     await browser.close();

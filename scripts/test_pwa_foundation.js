@@ -16,7 +16,7 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v8"), 'Service worker cache version must refresh the embedded notification controls');
+expect(worker.includes("vinhmath-shell-v9"), 'Service worker cache version must refresh the mobile layout polish');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
 expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the offline fallback');
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
@@ -110,7 +110,7 @@ for (const file of htmlFiles) {
   const html = read(file);
   expect(html.includes('rel="manifest" href="/manifest.webmanifest"'), `${file}: missing manifest link`);
   expect(html.includes('rel="apple-touch-icon" href="/icons/vinhmath-192.png"'), `${file}: stale Apple app icon`);
-  expect(!/css\/vinhmath\.css\?v=(?!8\.0)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/vinhmath\.css\?v=(?!8\.1)/.test(html), `${file}: stale shared CSS version`);
   if (html.includes('js/vinhmath.js')) {
     expect(html.includes('js/vinhmath.js?v=7.8'), `${file}: stale shared JS version`);
   }
