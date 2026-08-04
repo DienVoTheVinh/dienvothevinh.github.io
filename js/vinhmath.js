@@ -132,8 +132,32 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
     return el.querySelector('[data-vm-popup-content],.modal-content,.lb-modal,.sam-inner') || el.firstElementChild;
   }
   function trongMang(arr, el) { return arr.indexOf(el) !== -1; }
-  function themPopupMo(el) { if (!trongMang(popupDangMo, el)) popupDangMo.push(el); }
-  function boPopupMo(el) { var i = popupDangMo.indexOf(el); if (i !== -1) popupDangMo.splice(i, 1); }
+  function soZIndex(el) {
+    var value = parseInt(getComputedStyle(el).zIndex, 10);
+    return isFinite(value) ? value : 0;
+  }
+  function capNhatChongPopup() {
+    for (var i = 0; i < popupDangMo.length; i++) {
+      popupDangMo[i].classList.toggle('vm-popup-underlay', i < popupDangMo.length - 1);
+    }
+  }
+  function themPopupMo(el) {
+    if (trongMang(popupDangMo, el)) return;
+    var maxZ = 0;
+    for (var i = 0; i < popupDangMo.length; i++) maxZ = Math.max(maxZ, soZIndex(popupDangMo[i]));
+    var state = trangThai ? trangThai.get(el) : el._vmPopupState;
+    if (state && soZIndex(el) <= maxZ) el.style.zIndex = String(maxZ + 10);
+    popupDangMo.push(el);
+    capNhatChongPopup();
+  }
+  function boPopupMo(el) {
+    var i = popupDangMo.indexOf(el);
+    if (i !== -1) popupDangMo.splice(i, 1);
+    el.classList.remove('vm-popup-underlay');
+    var state = trangThai ? trangThai.get(el) : el._vmPopupState;
+    if (state && typeof state.overlayZIndex === 'string') el.style.zIndex = state.overlayZIndex;
+    capNhatChongPopup();
+  }
   function capNhatKhoaCuon() {
     if (!document.documentElement) return;
     if (popupDangMo.length) document.documentElement.classList.add('vm-popup-open');
@@ -148,6 +172,19 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
       maxWidth: cs.maxWidth,
       maxHeight: cs.maxHeight,
       overflowY: cs.overflowY,
+      overlayZIndex: el.style.zIndex,
+      inlineStyle: {
+        position: content.style.position,
+        left: content.style.left,
+        top: content.style.top,
+        right: content.style.right,
+        bottom: content.style.bottom,
+        margin: content.style.margin,
+        boxSizing: content.style.boxSizing,
+        maxWidth: content.style.maxWidth,
+        maxHeight: content.style.maxHeight,
+        overflowY: content.style.overflowY
+      },
       resizeObserver: null
     };
     if (trangThai) trangThai.set(el, state); else el._vmPopupState = state;
@@ -162,9 +199,26 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
     if (!goc || goc === 'none' || goc === '0px') return viewportLimit;
     return 'min(' + goc + ', ' + viewportLimit + ')';
   }
+  function cheDoViTriPopup(el) {
+    // Overlay toàn màn hình phải giữ bố cục flex/grid do từng trang định nghĩa.
+    // Chỉ popup nào chủ động khai báo "click" mới được neo theo điểm bấm.
+    return el.getAttribute('data-vm-popup-position') || 'native';
+  }
+  function khoiPhucNoiDungNative(state) {
+    if (!state || !state.content || !state.inlineStyle) return;
+    var content = state.content;
+    Object.keys(state.inlineStyle).forEach(function (prop) {
+      if (content.style[prop] !== state.inlineStyle[prop]) content.style[prop] = state.inlineStyle[prop];
+    });
+    if (state.resizeObserver) {
+      try { state.resizeObserver.disconnect(); } catch (_) {}
+      state.resizeObserver = null;
+    }
+    state.anchor = null;
+  }
   function layDiemNeo(el) {
     var vp = viewport();
-    var mode = el.getAttribute('data-vm-popup-position') || 'click';
+    var mode = cheDoViTriPopup(el);
     var fresh = Date.now() - window.vmLastClickTime <= CLICK_CON_HIEU_LUC;
     if (mode === 'center' || !fresh || window.vmLastClickX == null || window.vmLastClickY == null) {
       return { x: vp.left + vp.width / 2, y: vp.top + vp.height / 2, mode: 'center' };
@@ -208,8 +262,10 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
       return;
     }
 
-    // Chế độ native dành cho bottom-sheet có bố cục riêng trên điện thoại.
-    if (el.getAttribute('data-vm-popup-position') === 'native') {
+    // Mặc định giữ nguyên bố cục native của mọi overlay toàn màn hình. Cách này
+    // an toàn cả khi một modal được mở từ bên trong modal khác.
+    if (cheDoViTriPopup(el) === 'native') {
+      khoiPhucNoiDungNative(state);
       state.visible = true;
       themPopupMo(el);
       capNhatKhoaCuon();

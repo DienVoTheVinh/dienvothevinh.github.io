@@ -989,7 +989,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 </div>
 
 <!-- Inline Modal để tạo nhanh chuyên đề -->
-<div id="quickTopicModal" class="inline-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10050; align-items:center; justify-content:center; backdrop-filter:blur(3px)">
+<div id="quickTopicModal" class="inline-modal" data-vm-popup-position="native" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10050; align-items:center; justify-content:center; backdrop-filter:blur(3px)">
   <div class="modal-content" style="max-width:400px; padding:20px; border-radius:var(--r-md); background:var(--surface); box-shadow:0 10px 30px rgba(0,0,0,0.2)">
     <h3 style="margin-bottom:16px; font-size:1.1rem; font-weight:700">Tạo chuyên đề nhanh</h3>
     
@@ -1058,7 +1058,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <div id="bnLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;padding:20px;cursor:zoom-out"></div>
 
 <!-- Modal Quản Lý Chuyên Đề -->
-<div class="modal" id="modalChuyenDe" style="z-index:10010">
+<div class="modal" id="modalChuyenDe" data-vm-popup-position="native" style="z-index:10010">
   <div class="modal-content" style="max-width:650px">
     <button class="modal-close" onclick="dongQuanLyChuyenDe()">×</button>
     <h2>Quản lý chuyên đề</h2>
@@ -4526,7 +4526,9 @@ function moQuanLyChuyenDe() {
   resetCdForm();
   $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
   if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
-  $('modalChuyenDe').style.display = 'flex';
+  var modal = $('modalChuyenDe');
+  modal.style.display = 'flex';
+  if (typeof window.vmCanhPopup === 'function') window.vmCanhPopup(modal, { position: 'native' });
   taiBangChuyenDe();
 }
 
@@ -4536,7 +4538,9 @@ async function suaChuyenDeNhanh(id) {
   resetCdForm();
   $('locCdGrade').value = classDangChon ? classDangChon.grade : 'all';
   if ($('locCdType')) $('locCdType').value = classDangChon ? (classDangChon.is_specialized ? 'ch' : 'dt') : 'all';
-  $('modalChuyenDe').style.display = 'flex';
+  var modal = $('modalChuyenDe');
+  modal.style.display = 'flex';
+  if (typeof window.vmCanhPopup === 'function') window.vmCanhPopup(modal, { position: 'native' });
   await taiBangChuyenDe();
   await suaChuyenDe(id);
   var modalC = $('modalChuyenDe') ? $('modalChuyenDe').querySelector('.modal-content') : null;
@@ -4675,7 +4679,9 @@ function moQuickTopicModal() {
     $('qtGrade').value = '10';
     $('qtIsSpecialized').value = 'false';
   }
-  $('quickTopicModal').style.display = 'flex';
+  var modal = $('quickTopicModal');
+  modal.style.display = 'flex';
+  if (typeof window.vmCanhPopup === 'function') window.vmCanhPopup(modal, { position: 'native' });
 }
 
 function dongQuickTopicModal() {
