@@ -16,12 +16,70 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=7.4">
+<link rel="stylesheet" href="css/vinhmath.css?v=7.5">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .greet h1 { font-size: 1.8rem; font-weight: 800; }
 .greet p { margin-top: 4px; color: var(--ink-2); }
+
+/* --- INSTALL APP HERO --- */
+.vm-install-hero {
+  display: none;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 24px;
+  padding: 20px 22px;
+  color: #fff;
+  border: 1px solid rgba(255, 215, 106, .5);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(255, 222, 124, .28), transparent 34%),
+    linear-gradient(135deg, #432408 0%, #8b4d0d 52%, #b96b12 100%);
+  box-shadow: 0 16px 38px rgba(111, 57, 7, .24);
+  position: relative;
+  overflow: hidden;
+}
+.vm-install-hero.is-visible { display: grid; }
+.vm-install-hero-icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.22);
+  font-size: 1.8rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+}
+.vm-install-hero-copy h2 { margin: 0; font-size: 1.18rem; font-weight: 800; color: #fff; }
+.vm-install-hero-copy p { margin: 5px 0 0; color: rgba(255,255,255,.88); font-size: .9rem; line-height: 1.55; }
+.vm-install-hero-note { display: block; margin-top: 5px; color: #ffe7a8; font-size: .76rem; font-weight: 600; }
+.vm-install-hero-action {
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+  background: #fff;
+  color: #7b4307;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 9px 24px rgba(38, 19, 2, .22);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.vm-install-hero-action:hover { transform: translateY(-2px); box-shadow: 0 13px 28px rgba(38, 19, 2, .28); }
+.vm-install-hero-action:focus-visible { outline: 3px solid #ffe08a; outline-offset: 3px; }
+@media (max-width: 700px) {
+  .vm-install-hero { grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 17px; border-radius: 18px; }
+  .vm-install-hero-icon { width: 52px; height: 52px; border-radius: 15px; font-size: 1.5rem; }
+  .vm-install-hero-copy h2 { font-size: 1.02rem; }
+  .vm-install-hero-copy p { font-size: .82rem; }
+  .vm-install-hero-action { grid-column: 1 / -1; width: 100%; min-height: 50px; }
+}
 
 /* --- GRID DASHBOARD --- */
 .dashboard-grid {
@@ -451,6 +509,16 @@
       <h1 id="loiChao">Chào em 👋</h1>
       <p id="loiChaoSub">Chào mừng em quay trở lại học tập hôm nay!</p>
     </div>
+  </section>
+
+  <section id="vmInstallHero" class="vm-install-hero" aria-labelledby="vmInstallHeroTitle">
+    <div class="vm-install-hero-icon" aria-hidden="true">📲</div>
+    <div class="vm-install-hero-copy">
+      <h2 id="vmInstallHeroTitle">Cài VinhMath trên thiết bị của bạn</h2>
+      <p>Mở lớp học nhanh hơn, dùng toàn màn hình và truy cập thuận tiện như một ứng dụng.</p>
+      <span class="vm-install-hero-note" id="vmInstallHeroNote">Chỉ mất vài giây · Hoàn toàn miễn phí</span>
+    </div>
+    <button type="button" class="vm-install-hero-action" id="vmInstallHeroBtn">⇩ Cài ứng dụng</button>
   </section>
 
   <!-- Banner Link Google Meet cho học sinh lớp Online -->
@@ -976,8 +1044,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.4"></script>
-<script src="js/menu-v5.js?v=7.4"></script>
+<script src="js/vinhmath.js?v=7.5"></script>
+<script src="js/menu-v5.js?v=7.5"></script>
 <script src="js/analytics.js"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----

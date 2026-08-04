@@ -2559,6 +2559,9 @@ function layEmojiGiaoVien(fullName) {
     if (vmLaIOS() && !vmInstallPrompt) {
       guide.innerHTML = 'Trên iPhone/iPad: bấm nút <b>Chia sẻ</b> trong Safari, sau đó chọn <b>Thêm vào Màn hình chính</b>.';
       confirm.style.display = 'none';
+    } else if (!vmInstallPrompt) {
+      guide.innerHTML = 'Trong Chrome hoặc Edge, mở trình đơn <b>⋮</b> rồi chọn <b>Cài đặt VinhMath</b> hoặc <b>Thêm vào màn hình chính</b>. Nếu tùy chọn chưa xuất hiện, hãy tải lại trang và thử lại.';
+      confirm.style.display = 'none';
     } else {
       guide.textContent = 'Mở nhanh từ màn hình chính, dùng giao diện toàn màn hình và nhận các nâng cấp ứng dụng tự động.';
       confirm.style.display = '';
@@ -2586,8 +2589,22 @@ function layEmojiGiaoVien(fullName) {
 
   function vmCapNhatNutCaiDat() {
     var btn = vmLayNutCaiDat();
-    if (!btn) return;
-    btn.classList.toggle('is-available', !vmDaCaiPwa() && (!!vmInstallPrompt || vmLaIOS()));
+    var daCai = vmDaCaiPwa();
+    if (btn) btn.classList.toggle('is-available', !daCai && (!!vmInstallPrompt || vmLaIOS()));
+
+    var hero = document.getElementById('vmInstallHero');
+    var heroBtn = document.getElementById('vmInstallHeroBtn');
+    var heroNote = document.getElementById('vmInstallHeroNote');
+    if (hero) hero.classList.toggle('is-visible', !daCai);
+    if (heroBtn && !heroBtn.dataset.vmInstallBound) {
+      heroBtn.dataset.vmInstallBound = '1';
+      heroBtn.addEventListener('click', vmMoBangCaiDat);
+    }
+    if (heroNote) {
+      if (vmInstallPrompt) heroNote.textContent = 'Sẵn sàng cài đặt · Chỉ mất vài giây';
+      else if (vmLaIOS()) heroNote.textContent = 'iPhone/iPad: cài nhanh qua nút Chia sẻ của Safari';
+      else heroNote.textContent = 'Hoàn toàn miễn phí · Có hướng dẫn theo thiết bị';
+    }
   }
 
   window.addEventListener('beforeinstallprompt', function (event) {
