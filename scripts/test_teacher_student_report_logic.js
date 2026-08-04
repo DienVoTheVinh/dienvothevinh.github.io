@@ -37,7 +37,7 @@ function extractFunction(name) {
 
 const context = { Date, Set, Array, Math, Number };
 vm.createContext(context);
-['bcDateKey', 'bcHasArray', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'tinhBaoCao']
+['bcDate', 'bcDateKey', 'bcHasArray', 'bcInPeriod', 'bcPercent', 'bcCalendarPeriod', 'bcShiftPeriod', 'tinhBaoCao']
   .forEach((name) => vm.runInContext(extractFunction(name), context));
 
 function periodKeys(type, date) {
@@ -53,9 +53,12 @@ function deepEqual(actual, expected, label) {
 
 deepEqual(periodKeys('week', '2026-08-04T12:00:00+07:00'), ['2026-08-03', '2026-08-09'], 'calendar week Monday to Sunday');
 deepEqual(periodKeys('month', '2026-08-04T12:00:00+07:00'), ['2026-08-01', '2026-08-31'], 'August calendar month');
+deepEqual(periodKeys('month', '2026-07-15T12:00:00+07:00'), ['2026-07-01', '2026-07-31'], 'selectable July calendar month');
 deepEqual(periodKeys('month', '2026-04-15T12:00:00+07:00'), ['2026-04-01', '2026-04-30'], '30-day calendar month');
 deepEqual(periodKeys('month', '2024-02-15T12:00:00+07:00'), ['2024-02-01', '2024-02-29'], 'leap-year February');
 deepEqual(periodKeys('month', '2025-02-15T12:00:00+07:00'), ['2025-02-01', '2025-02-28'], 'regular February');
+deepEqual(periodKeys('month', context.bcShiftPeriod('month', new Date('2026-08-04T12:00:00+07:00'), -1)), ['2026-07-01', '2026-07-31'], 'previous month navigation');
+deepEqual(periodKeys('week', context.bcShiftPeriod('week', new Date('2026-08-04T12:00:00+07:00'), -1)), ['2026-07-27', '2026-08-02'], 'previous week navigation');
 
 const start = new Date('2025-08-01T00:00:00+07:00');
 const end = new Date('2025-08-07T23:59:59.999+07:00');
