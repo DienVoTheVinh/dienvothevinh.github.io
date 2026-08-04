@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v4';
+const VM_CACHE = 'vinhmath-shell-v5';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -11,6 +11,7 @@ const VM_SHELL = [
   '/js/config.js',
   '/js/vinhmath.js',
   '/js/menu-v5.js',
+  '/js/push-notifications.js',
   '/icons/vinhmath-192.png',
   '/icons/vinhmath-512.png',
   '/favicon.png'
@@ -79,19 +80,30 @@ self.addEventListener('fetch', function (event) {
   }
 });
 
-/* San sang hien Web Push khi backend duoc bat o giai doan tiep theo. */
+/* Standards-based Web Push for installed VinhMath apps and supported browsers. */
 self.addEventListener('push', function (event) {
   var data = {};
   try { data = event.data ? event.data.json() : {}; } catch (_) {
     data = { body: event.data ? event.data.text() : '' };
   }
-  event.waitUntil(self.registration.showNotification(data.title || 'VinhMath', {
-    body: data.body || 'Ban co thong bao moi.',
+  var options = {
+    body: data.body || 'Bạn có thông báo mới.',
     icon: '/icons/vinhmath-192.png',
     badge: '/favicon.png',
-    data: { url: data.url || '/trang-chu' },
-    tag: data.tag || 'vinhmath-notification'
-  }));
+    data: {
+      url: data.url || '/trang-chu',
+      notificationId: data.notificationId || null,
+      kind: data.kind || 'info'
+    },
+    tag: data.tag || 'vinhmath-notification',
+    renotify: true,
+    timestamp: Date.now()
+  };
+  var tasks = [self.registration.showNotification(data.title || 'VinhMath', options)];
+  if (typeof self.navigator.setAppBadge === 'function' && Number(data.badgeCount) > 0) {
+    tasks.push(self.navigator.setAppBadge(Number(data.badgeCount)));
+  }
+  event.waitUntil(Promise.all(tasks));
 });
 
 self.addEventListener('notificationclick', function (event) {

@@ -239,7 +239,23 @@ function khoiDongChuong(uid) {
   } catch (e) { /* không có realtime thì dùng vòng đếm 60s */ }
 }
 
+function vmTaiWebPushChoThietBi(uid) {
+  if (!uid || document.getElementById('vmPushClientScript')) {
+    if (window.vmKhoiDongWebPush) window.vmKhoiDongWebPush(uid);
+    return;
+  }
+  var script = document.createElement('script');
+  script.id = 'vmPushClientScript';
+  script.src = 'js/push-notifications.js?v=1';
+  script.defer = true;
+  script.onload = function () {
+    if (window.vmKhoiDongWebPush) window.vmKhoiDongWebPush(uid);
+  };
+  document.head.appendChild(script);
+}
+
 async function demThongBao() {
+  vmTaiWebPushChoThietBi(chuongUserId);
   try {
     var r = await sb.from('notifications').select('id', { count: 'exact', head: true })
       .eq('user_id', chuongUserId).is('read_at', null);
