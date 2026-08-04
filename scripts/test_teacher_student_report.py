@@ -78,6 +78,8 @@ require(sql, "a.submitted_at < v_end_at", "Lượt làm bài sau kỳ vẫn có 
 require(report, "html2canvas", "Thiếu chức năng xuất ảnh")
 require(report, "windowWidth:1200", "Xuất ảnh chưa khóa khung dựng độc lập với màn hình thiết bị")
 require(report, ".report-sheet.exporting *{animation:none!important", "Xuất ảnh chưa vô hiệu hóa hiệu ứng làm lệch thời điểm chụp")
+require(report, '[data-theme="dark"] .report-sheet:not(.exporting)', "Báo cáo chưa có giao diện tối theo hệ thống")
+require(report, '[data-theme="dark"] .report-sheet:not(.exporting) .insight-editor-field textarea', "Trình sửa nhận định chưa hỗ trợ giao diện tối")
 require(report, "navigator.share", "Thiếu chức năng chia sẻ ảnh trên điện thoại")
 require(report, "@media(max-width:620px)", "Báo cáo chưa tối ưu giao diện điện thoại")
 require(sql, "security definer", "RPC báo cáo chưa khai báo ngữ cảnh bảo mật")
