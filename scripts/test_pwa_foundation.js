@@ -16,7 +16,7 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v6"), 'Service worker cache version must refresh the Web Push flow');
+expect(worker.includes("vinhmath-shell-v7"), 'Service worker cache version must refresh the mobile notification panel');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
 expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the offline fallback');
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
@@ -113,7 +113,7 @@ for (const file of htmlFiles) {
     expect(html.includes('js/vinhmath.js?v=7.8'), `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=7.9'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=8.0'), `${file}: stale shared menu version`);
   }
 }
 
