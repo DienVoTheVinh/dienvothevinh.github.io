@@ -221,6 +221,21 @@ body.vai-tro-admin .chi-admin { display: inline-flex !important; }
 #mapWatermark { display:none; position:fixed; right:2vw; bottom:4vh; width:min(400px,40vw); max-width:400px; opacity:.05; pointer-events:none; z-index:0; user-select:none; }
 body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây khó nhìn */
 body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
+.vm-tex-upload-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0; padding:10px; border:1px dashed var(--line-2); border-radius:10px; background:var(--surface-2); }
+.vm-tex-upload-row input[type="file"] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.vm-tex-upload-row span { min-width:0; flex:1; color:var(--ink-3); font-size:.76rem; line-height:1.4; }
+.vm-tex-preview { max-height:60vh; overflow:auto; padding:14px; background:var(--surface-2); border-radius:10px; }
+.vm-tex-preview .vm-tex-reader { width:100%; margin:0; padding:24px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); line-height:1.65; }
+.vm-tex-preview .vm-tex-reader-head { margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.vm-tex-preview .vm-tex-reader-kicker { display:block; color:var(--accent); font-size:.66rem; font-weight:800; letter-spacing:.08em; }
+.vm-tex-preview .vm-tex-reader-head h2 { margin:5px 0 0; font-size:1.25rem; }
+.vm-tex-preview .vm-tex-block { margin:14px 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.vm-tex-preview .vm-tex-block-title { padding:8px 12px; background:var(--accent-soft); color:var(--accent); font-weight:800; }
+.vm-tex-preview .vm-tex-block-body { padding:12px; }
+.vm-tex-preview .vm-tex-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.vm-tex-preview .vm-tex-choice { display:flex; gap:8px; padding:9px; border:1px solid var(--line); border-radius:8px; }
+.vm-tex-preview .vm-tex-choice-key { color:var(--accent); font-weight:800; }
+@media(max-width:640px){.vm-tex-upload-row{align-items:stretch}.vm-tex-upload-row label{width:100%;justify-content:center}.vm-tex-preview{padding:8px}.vm-tex-preview .vm-tex-reader{padding:18px 12px}.vm-tex-preview .vm-tex-choices{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -596,10 +611,11 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
 
         <div class="field">
-          <label>📄 Tài liệu LaTeX của bài (tự biên dịch trên màn hình học sinh)</label>
-          <textarea class="input" id="bhLatexDoc" rows="5" placeholder="Dán code LaTeX (ex_test)… Học sinh mở tab Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
-          <small style="color:var(--ink-3);margin-top:4px;display:block;font-size:0.75rem">Nếu điền ô này, nó được <b>ưu tiên</b> hiển thị thay cho PDF chọn từ kho bên dưới.</small>
-          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTaiLieu" onclick="bienDichTaiLieuLatex()">⚡ Biên dịch thử</button></div>
+          <label>📄 Tài liệu LaTeX của bài — ưu tiên đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhLatexDocFile">📥 Nạp tệp .tex</label><input type="file" id="bhLatexDocFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhLatexDoc','bhLatexDocFileStatus')"><span id="bhLatexDocFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhLatexDoc" rows="5" placeholder="Dán code LaTeX hoặc nạp nguyên tệp .tex… Học sinh đọc trực tiếp trên web; PDF chỉ tạo khi bấm tải." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <small style="color:var(--ink-3);margin-top:4px;display:block;font-size:0.75rem">Nguồn LaTeX được ưu tiên. Hệ thống tự tách preamble, dàn nội dung responsive và giữ nút tạo PDF.</small>
+          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTaiLieu" onclick="bienDichTaiLieuLatex()">👁 Xem trước trên web</button></div>
           <div id="khungXemTaiLieu" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px"><div id="xemTaiLieuOutput" style="width:100%; min-height:350px"></div></div>
         </div>
 
@@ -673,15 +689,16 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
 
         <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
-          <label>✍️ Hoặc soạn đề kiểm tra trực tiếp bằng LaTeX</label>
-          <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn LaTeX đề thi ở đây (sử dụng ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
+          <label>✍️ Đề kiểm tra LaTeX — đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhTestLatexFile">📥 Nạp tệp .tex</label><input type="file" id="bhTestLatexFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhTestLatex','bhTestLatexFileStatus')"><span id="bhTestLatexFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn hoặc nạp nguyên tệp .tex (ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
           <small style="color:var(--ink-3); margin-top:4px; display:block">
-            Nếu nhập ở đây, hệ thống sẽ tự động biên dịch đề kiểm tra và hiển thị cho học sinh.
+            Học sinh đọc đề trực tiếp trên web; đáp án/lời giải trong nguồn được ẩn. Các em vẫn có thể tạo và tải PDF khi cần.
           </small>
         </div>
         
         <div style="margin-bottom: 12px">
-          <button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTest" onclick="bienDichTestLatex()">⚡ Biên dịch thử</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTest" onclick="bienDichTestLatex()">👁 Xem trước trên web</button>
         </div>
 
         <div id="khungXemTest" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px; margin-bottom:16px">
@@ -736,9 +753,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
 
         <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
-          <label>✍️ Hoặc soạn đề bài tập trực tiếp bằng LaTeX (tự luận, trắc nghiệm…)</label>
-          <textarea class="input" id="bhBtvnLatex" rows="8" placeholder="Dán mã nguồn LaTeX đề bài tập ở đây (dùng ex_test, exam…). Học sinh sẽ thấy PDF biên dịch tự động." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
-          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichBtvn" onclick="bienDichBtvnLatex()">⚡ Biên dịch thử</button></div>
+          <label>✍️ Đề bài tập LaTeX — đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhBtvnLatexFile">📥 Nạp tệp .tex</label><input type="file" id="bhBtvnLatexFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhBtvnLatex','bhBtvnLatexFileStatus')"><span id="bhBtvnLatexFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhBtvnLatex" rows="8" placeholder="Dán mã nguồn hoặc nạp nguyên tệp .tex (tự luận, trắc nghiệm…)" style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichBtvn" onclick="bienDichBtvnLatex()">👁 Xem trước trên web</button></div>
           <div id="khungXemBtvn" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px"><div id="xemBtvnOutput" style="width:100%; min-height:350px"></div></div>
         </div>
 
@@ -787,9 +805,10 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
           <input type="text" class="input" id="bhBtvn2PdfUrl" placeholder="Ví dụ: https://drive.google.com/file/d/... hoặc link public PDF">
         </div>
         <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
-          <label>✍️ Hoặc soạn đề bài thưởng thêm bằng LaTeX</label>
-          <textarea class="input" id="bhBtvn2Latex" rows="8" placeholder="Dán mã nguồn LaTeX đề bài thưởng thêm ở đây. Học sinh sẽ thấy PDF biên dịch tự động." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
-          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichBtvn2" onclick="bienDichBtvn2Latex()">⚡ Biên dịch thử</button></div>
+          <label>✍️ Đề bài thưởng thêm LaTeX — đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhBtvn2LatexFile">📥 Nạp tệp .tex</label><input type="file" id="bhBtvn2LatexFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhBtvn2Latex','bhBtvn2LatexFileStatus')"><span id="bhBtvn2LatexFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhBtvn2Latex" rows="8" placeholder="Dán mã nguồn hoặc nạp nguyên tệp .tex cho bài thưởng thêm" style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <div style="margin-top:8px"><button type="button" class="btn btn-secondary btn-sm" id="btnBienDichBtvn2" onclick="bienDichBtvn2Latex()">👁 Xem trước trên web</button></div>
           <div id="khungXemBtvn2" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px"><div id="xemBtvn2Output" style="width:100%; min-height:350px"></div></div>
         </div>
         <div class="field" style="border-top:1px dashed var(--line-2); padding-top:16px">
@@ -1158,7 +1177,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.8"></script>
-<script src="js/latex-view.js?v=7.0"></script>
+<script src="js/latex-view.js?v=8.0"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4246,31 +4265,25 @@ async function chuanHoaTexTestLatex(rawCode) {
   return preamble;
 }
 
-// Biên dịch LaTeX xem trước — dùng chung cho Tài liệu / Bài kiểm tra / Bài tập về nhà
+// Xem trước đúng giao diện học sinh; PDF chỉ được tạo khi học sinh chủ động tải.
 async function bienDichLatexXem(srcId, outId, khungId, nutId, luuBlobTest) {
   var rawTex = ($(srcId).value || '').trim();
   if (!rawTex) { alert('Vui lòng nhập code LaTeX trước!'); return; }
   var nut = $(nutId), khung = $(khungId), output = $(outId);
   var oldTxt = nut ? nut.textContent : '';
-  if (nut) { nut.disabled = true; nut.textContent = '⏳ Đang biên dịch…'; }
+  if (nut) { nut.disabled = true; nut.textContent = '⏳ Đang dựng bản đọc…'; }
   if (luuBlobTest) pdfBlobTest = null;
   if (khung) khung.style.display = 'block';
-  output.innerHTML = '<div style="padding:20px; color:var(--ink-3)">Đang biên dịch — có thể mất 10–30 giây…</div>';
   try {
-    var tex = await chuanHoaTexTestLatex(rawTex);
-    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
-    if (r.error) throw new Error(r.error.message || 'Edge Function lỗi');
-    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
-      if (luuBlobTest) pdfBlobTest = r.data;
-      output.innerHTML = '<iframe src="' + URL.createObjectURL(r.data) + '" style="width:100%; height:350px; border:none"></iframe>';
-    } else {
-      var log = typeof r.data === 'string' ? r.data : await r.data.text();
-      var dong = log.split('\n').filter(function (l) { return l.indexOf('!') === 0 || l.indexOf('Error') !== -1; }).slice(0, 8).join('\n');
-      output.innerHTML = '<div style="padding:10px; color:var(--err); font-family:monospace; font-size:0.8rem; overflow:auto; height:350px; border-radius:4px; background:rgba(231,76,60,0.05)">' +
-        '<b>Biên dịch LỖI:</b><br><pre style="white-space:pre-wrap; margin-top:8px">' + (dong || log.slice(-1500)) + '</pre></div>';
-    }
+    var kind = srcId === 'bhTestLatex' ? 'test' : (srcId === 'bhBtvnLatex' ? 'homework' : (srcId === 'bhBtvn2Latex' ? 'homework_bonus' : 'document'));
+    var title = ($('bhTieuDe') && $('bhTieuDe').value.trim()) || 'Bản xem trước tài liệu';
+    output.classList.add('vm-tex-preview');
+    output.innerHTML = typeof latexTaiLieuRaHTML === 'function'
+      ? latexTaiLieuRaHTML(rawTex, { title: title, kind: kind, showSolutions: false })
+      : '<div style="padding:10px;color:var(--err)">Bộ đọc LaTeX chưa tải được.</div>';
+    if (typeof renderToanTrong === 'function') renderToanTrong(output);
   } catch (e) {
-    output.innerHTML = '<div style="padding:10px; color:var(--err)">Không biên dịch được: ' + e.message + '</div>';
+    output.innerHTML = '<div style="padding:10px; color:var(--err)">Không dựng được bản đọc: ' + e.message + '</div>';
   }
   if (nut) { nut.disabled = false; nut.textContent = oldTxt; }
 }

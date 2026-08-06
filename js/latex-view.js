@@ -108,6 +108,150 @@ function latexRaHTML(src) {
   return s;
 }
 
+// Lấy phần nội dung có thể đọc từ một tệp .tex hoàn chỉnh. Giáo viên có thể
+// tải nguyên tệp có \documentclass/\begin{document}; phần preamble vẫn được
+// giữ ở CSDL để biên dịch PDF, nhưng không đưa lên màn hình học sinh.
+function tachNoiDungTaiLieuLatex(src) {
+  var s = lamSachLatex(src || '');
+  var begin = s.indexOf('\\begin{document}');
+  var end = s.lastIndexOf('\\end{document}');
+  if (begin !== -1) s = s.slice(begin + '\\begin{document}'.length, end > begin ? end : undefined);
+  s = s.replace(/^\s*\\(?:documentclass|usepackage|RequirePackage)(?:\[[^\]]*\])?\{[^\n]*\}\s*$/gm, '');
+  s = s.replace(/^\s*\\(?:input|include)\{[^}]+\}\s*$/gm, '');
+  s = s.replace(/^\s*\\(?:newcommand|renewcommand|providecommand|def)\b[^\n]*$/gm, '');
+  s = s.replace(/\\(?:maketitle|tableofcontents|frontmatter|mainmatter|backmatter|clearpage|pagebreak)\b/g, '');
+  s = s.replace(/\\(?:thispagestyle|pagestyle|setcounter|addtocounter|label)\s*\{[^}]*\}(?:\s*\{[^}]*\})?/g, '');
+  return s.trim();
+}
+
+// Xóa một lệnh có đối số {...} bằng bộ đếm ngoặc, để không lộ lời giải/đáp án
+// khi nguồn LaTeX có các khối lồng nhau.
+function xoaLenhKhoiLatex(src, command) {
+  var token = '\\' + command;
+  var out = String(src || '');
+  var from = 0;
+  while (from < out.length) {
+    var at = out.indexOf(token, from);
+    if (at === -1) break;
+    var brace = at + token.length;
+    while (/\s/.test(out.charAt(brace))) brace++;
+    if (out.charAt(brace) !== '{') { from = brace; continue; }
+    var depth = 1, i = brace + 1;
+    while (i < out.length && depth > 0) {
+      if (out.charAt(i) === '{' && out.charAt(i - 1) !== '\\') depth++;
+      else if (out.charAt(i) === '}' && out.charAt(i - 1) !== '\\') depth--;
+      i++;
+    }
+    out = out.slice(0, at) + out.slice(i);
+    from = at;
+  }
+  return out;
+}
+
+function dinhDangVanBanTaiLieuLatex(src) {
+  var html = latexRaHTML(src || '');
+  html = html.replace(/\\part\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
+  html = html.replace(/\\chapter\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
+  html = html.replace(/\\section\*?\{([^{}]*)\}/g, '<h2 class="vm-tex-h2">$1</h2>');
+  html = html.replace(/\\subsection\*?\{([^{}]*)\}/g, '<h3 class="vm-tex-h3">$1</h3>');
+  html = html.replace(/\\subsubsection\*?\{([^{}]*)\}/g, '<h4 class="vm-tex-h4">$1</h4>');
+  html = html.replace(/\\(?:emph)\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<em>$1</em>');
+  html = html.replace(/\\underline\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<u>$1</u>');
+  html = html.replace(/\\textcolor\{[^}]*\}\{((?:[^{}]|\{[^{}]*\})*)\}/g, '$1');
+  html = html.replace(/\\includegraphics(?:\[[^\]]*\])?\{[^}]*\}/g, '<div class="vm-tex-media-note">Hình minh họa có trong bản PDF tải về</div>');
+  html = html.replace(/\\(?:noindent|centering|raggedright|raggedleft|small|normalsize|large|Large|LARGE|bfseries|itshape)\b/g, '');
+  html = html.replace(/\\(?:vfill|medskip|bigskip|smallskip)\b/g, '<div class="vm-tex-gap"></div>');
+  html = html.replace(/\n\s*\n+/g, '<div class="vm-tex-gap"></div>');
+  html = html.replace(/\n/g, ' ');
+  return html.trim();
+}
+
+// Bộ đọc tài liệu dùng chung cho lý thuyết thường, đề kiểm tra, BTVN và bài
+// thưởng. Mặc định không hiển thị \loigiai/\solution để tránh lộ đáp án.
+function latexTaiLieuRaHTML(src, options) {
+  options = options || {};
+  var kind = options.kind || 'document';
+  var title = options.title || 'Tài liệu học tập';
+  var body = tachNoiDungTaiLieuLatex(src || '');
+  if (!options.showSolutions) {
+    body = xoaLenhKhoiLatex(body, 'loigiai');
+    body = xoaLenhKhoiLatex(body, 'solution');
+    body = xoaLenhKhoiLatex(body, 'answer');
+  }
+
+  var labels = {
+    document: 'Nội dung tài liệu', theory: 'Lý thuyết', test: 'Câu',
+    homework: 'Bài', homework_bonus: 'Bài thưởng', example: 'Ví dụ',
+    definition: 'Định nghĩa', theorem: 'Định lý', note: 'Lưu ý'
+  };
+  var envLabels = { ex: kind === 'test' ? labels.test : labels.homework, bt: labels.homework, vd: labels.example, dl: labels.theorem, dn: labels.definition, hq: 'Hệ quả', nx: 'Nhận xét', note: labels.note, remark: 'Nhận xét' };
+  var envRe = /\\begin\{(ex|bt|vd|dl|dn|hq|nx|note|remark)\}([\s\S]*?)\\end\{\1\}/g;
+  var html = '', last = 0, match, count = 0;
+
+  function renderQuestion(env, content) {
+    count++;
+    var parsed = (env === 'ex' || env === 'bt') && typeof parseSingleQuestionLatex === 'function'
+      ? parseSingleQuestionLatex('\\begin{' + env + '}' + content + '\\end{' + env + '}') : null;
+    var questionBody = parsed ? parsed.content_latex : content;
+    var inner = dinhDangVanBanTaiLieuLatex(questionBody);
+    var choices = '';
+    if (parsed && parsed.choices && parsed.choices.length > 1) {
+      choices = '<div class="vm-tex-choices">' + parsed.choices.map(function (choice) {
+        return '<div class="vm-tex-choice"><span class="vm-tex-choice-key">' + choice.key + '</span><div>' + dinhDangVanBanTaiLieuLatex(choice.latex || '') + '</div></div>';
+      }).join('') + '</div>';
+    }
+    var numbered = ['ex', 'bt', 'vd'].indexOf(env) !== -1;
+    return '<section class="vm-tex-block vm-tex-block-' + env + '">' +
+      '<div class="vm-tex-block-title"><span>' + (envLabels[env] || labels.document) + (numbered ? ' ' + count : '') + '</span></div>' +
+      '<div class="vm-tex-block-body">' + inner + choices + '</div></section>';
+  }
+
+  while ((match = envRe.exec(body)) !== null) {
+    var prose = dinhDangVanBanTaiLieuLatex(body.slice(last, match.index));
+    if (prose) html += '<div class="vm-tex-prose">' + prose + '</div>';
+    html += renderQuestion(match[1], match[2]);
+    last = envRe.lastIndex;
+  }
+  var tail = dinhDangVanBanTaiLieuLatex(body.slice(last));
+  if (tail) html += '<div class="vm-tex-prose">' + tail + '</div>';
+  if (!html.trim()) html = '<div class="vm-tex-empty">Tệp LaTeX chưa có nội dung có thể hiển thị.</div>';
+
+  return '<article class="vm-tex-reader" data-document-kind="' + kind + '">' +
+    '<header class="vm-tex-reader-head"><span class="vm-tex-reader-kicker">ĐỌC TRỰC TIẾP TRÊN VINHMATH</span><h2>' +
+    String(title).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</h2></header>' + html + '</article>';
+}
+
+async function napFileTexVaoO(input, textareaId, statusId) {
+  var file = input && input.files ? input.files[0] : null;
+  var textarea = document.getElementById(textareaId);
+  var status = statusId ? document.getElementById(statusId) : null;
+  if (!file || !textarea) return;
+  if (!/\.tex$/i.test(file.name)) {
+    if (status) status.textContent = 'Vui lòng chọn đúng tệp .tex';
+    input.value = '';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    if (status) status.textContent = 'Tệp .tex vượt quá 5 MB';
+    input.value = '';
+    return;
+  }
+  try {
+    var content = typeof file.text === 'function' ? await file.text() : await new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsText(file, 'UTF-8');
+    });
+    textarea.value = String(content || '').replace(/^\uFEFF/, '');
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    if (status) status.textContent = '✓ Đã nạp ' + file.name + ' · ' + Math.max(1, Math.round(file.size / 1024)) + ' KB';
+  } catch (e) {
+    if (status) status.textContent = 'Không đọc được tệp .tex';
+  }
+}
+
 function parseItems(text) {
   var parts = text.split(/\\item\s*/);
   var first = parts.shift().trim();
