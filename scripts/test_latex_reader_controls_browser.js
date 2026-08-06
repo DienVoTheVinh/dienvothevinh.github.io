@@ -13,6 +13,7 @@ function between(source, from, to) {
   const reader = fs.readFileSync('js/latex-view.js', 'utf8');
   const css = [...lesson.matchAll(/<style>([\s\S]*?)<\/style>/gi)].map((match) => match[1]).join('\n');
   const controls = between(lesson, 'var pdfTaiLieuTex = null;', 'async function processVirtualFiles');
+  const pdfViewer = between(lesson, 'var vmPdfViewerSeq = 0;', 'function veTaiLieuTex()');
   const executablePath = process.env.VM_CHROME_PATH;
   if (!executablePath || !fs.existsSync(executablePath)) throw new Error('VM_CHROME_PATH must point to Chrome');
 
@@ -34,6 +35,7 @@ function between(source, from, to) {
     await page.addScriptTag({ content: 'window.$ = function(id){ return document.getElementById(id); }; window.renderToanTrong=function(){};' });
     await page.addScriptTag({ content: reader });
     await page.addScriptTag({ content: controls });
+    await page.addScriptTag({ content: pdfViewer });
     const tikz = await page.evaluate(() => vmTexTikzDoc({
       preamble: String.raw`\definecolor{vmGold}{RGB}{220,150,0}
 \tikzset{
@@ -77,6 +79,41 @@ function between(source, from, to) {
       original: document.querySelector('[data-preset="original"]').classList.contains('active'),
     }));
     if (state.modal !== 'flex' || state.answers !== 'show' || !state.dots || !state.original) throw new Error(`PDF configuration popup failed: ${JSON.stringify(state)}`);
+
+    await page.evaluate(() => {
+      const preview = document.createElement('div');
+      preview.id = 'pdf-preview-test';
+      preview.className = 'vm-pdf-preview';
+      document.body.appendChild(preview);
+      window.pdfjsLib = {
+        getDocument() {
+          return { promise: Promise.resolve({
+            numPages: 3,
+            getPage() {
+              return Promise.resolve({
+                getViewport() { return { width: 800, height: 1120 }; },
+                render() { return { promise: Promise.resolve() }; },
+              });
+            },
+          }) };
+        },
+      };
+      renderPDFWithJS('blob:pdf-preview-test', preview);
+    });
+    await page.waitForFunction(() => document.querySelectorAll('#pdf-preview-test .pdfjs-page').length === 3);
+    state = await page.evaluate(() => {
+      const preview = document.getElementById('pdf-preview-test');
+      const pages = preview.querySelector('[id^="pdfCanvasContainer-"]');
+      pages.scrollTop = 500;
+      return {
+        pageCount: preview.querySelectorAll('.pdfjs-page').length,
+        previewDisplay: getComputedStyle(preview).display,
+        previewOverflow: getComputedStyle(preview).overflow,
+        pagesOverflow: getComputedStyle(pages).overflowY,
+        canScroll: pages.scrollHeight > pages.clientHeight && pages.scrollTop > 0,
+      };
+    });
+    if (state.pageCount !== 3 || state.previewDisplay !== 'flex' || state.previewOverflow !== 'hidden' || state.pagesOverflow !== 'auto' || !state.canScroll) throw new Error(`Multi-page PDF preview is not vertically scrollable: ${JSON.stringify(state)}`);
     if (lesson.includes('id="btnMaxContent"')) throw new Error('Legacy content fullscreen button still exists');
     if (process.env.VM_SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.VM_SCREENSHOT_DIR, { recursive: true });

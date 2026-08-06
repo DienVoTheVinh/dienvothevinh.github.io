@@ -353,7 +353,9 @@ body.vm-reader-locked { overflow:hidden !important; }
 .vm-pdf-options label { display:flex; flex-direction:column; gap:6px; color:var(--ink-2); font-size:.8rem; font-weight:700; }
 .vm-pdf-options select { width:100%; min-height:44px; }
 .vm-pdf-status { min-height:240px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; }
-.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:#525659; }
+.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:12px; background:#525659; }
+.vm-pdf-preview > .pdf-zoom-toolbar { flex:0 0 auto; }
+.vm-pdf-preview > [id^="pdfCanvasContainer-"] { min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
 .btvn-latex-native { margin-top:12px; }
 .btvn-latex-native .vm-tex-reader { width:100%; padding:clamp(18px,3vw,34px); box-shadow:none; border-radius:14px; }
 .btvn-latex-native .vm-tex-actions { border:1px solid var(--line); border-bottom:0; border-radius:14px 14px 0 0; }
@@ -2147,6 +2149,34 @@ function vmSuaXungDotGeometry(tex, preferredOptions) {
   return tex;
 }
 
+function vmBienDoiLoiGiaiPdf(tex, config) {
+  tex = String(tex || '');
+  if (config.answers === 'show') {
+    tex = tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{ex_test\}/g, function (_, options) {
+      var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+      if (opts.indexOf('loigiai') === -1) opts.push('loigiai');
+      return '\\usepackage' + (opts.length ? '[' + opts.join(',') + ']' : '') + '{ex_test}';
+    });
+    return tex.replace(/^\s*\\exitdapso\s*$/gm, '').replace(/^\s*\\renewcommand\{\\indapan\}\[2\]\{\}\s*$/gm, '');
+  }
+
+  tex = tex.replace(/\\True\s*/g, '');
+  var dottedBlock = function () {
+    var line = '\\par\\noindent\\dotfill\\par\\medskip\n';
+    return Array(config.dotLines + 1).join(line);
+  };
+  ['loigiai', 'solution', 'answer'].forEach(function (command) {
+    tex = config.answers === 'dots' ? thayLenhKhoiLatex(tex, command, dottedBlock) : xoaLenhKhoiLatex(tex, command);
+  });
+  ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+    tex = thayMoiTruongKhoiLatex(tex, environment, config.answers === 'dots' ? dottedBlock : '');
+  });
+  return tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{ex_test\}/g, function (_, options) {
+    var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x && x !== 'loigiai'; });
+    return '\\usepackage' + (opts.length ? '[' + opts.join(',') + ']' : '') + '{ex_test}';
+  });
+}
+
 function vmCauHinhNoiDungPdf(tex, config) {
   tex = String(tex || '').replace(/\\documentclass(?:\[([^\]]*)\])?\{([^}]+)\}/, function (_, options, cls) {
     var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) {
@@ -2159,29 +2189,7 @@ function vmCauHinhNoiDungPdf(tex, config) {
     (config.margins === 'loose' ? 'top=2.2cm,bottom=2cm,left=2cm,right=2cm' : 'top=1.7cm,bottom=1.6cm,left=1.7cm,right=1.7cm');
   tex = vmSuaXungDotGeometry(tex, geometry);
 
-  if (config.answers === 'show') {
-    tex = tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{ex_test\}/g, function (_, options) {
-      var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-      if (opts.indexOf('loigiai') === -1) opts.push('loigiai');
-      return '\\usepackage' + (opts.length ? '[' + opts.join(',') + ']' : '') + '{ex_test}';
-    });
-    tex = tex.replace(/^\s*\\exitdapso\s*$/gm, '').replace(/^\s*\\renewcommand\{\\indapan\}\[2\]\{\}\s*$/gm, '');
-  } else {
-    tex = tex.replace(/\\True\s*/g, '');
-    ['loigiai', 'solution', 'answer'].forEach(function (command) {
-      if (config.answers === 'dots') {
-        tex = thayLenhKhoiLatex(tex, command, function () {
-          var line = '\\par\\noindent\\dotfill\\par\\medskip\n';
-          return Array(config.dotLines + 1).join(line);
-        });
-      } else tex = xoaLenhKhoiLatex(tex, command);
-    });
-    tex = tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{ex_test\}/g, function (_, options) {
-      var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x && x !== 'loigiai'; });
-      return '\\usepackage' + (opts.length ? '[' + opts.join(',') + ']' : '') + '{ex_test}';
-    });
-  }
-  return tex;
+  return vmBienDoiLoiGiaiPdf(tex, config);
 }
 
 async function vmBienDichPdfTex(tex) {
@@ -2218,6 +2226,7 @@ async function vmBatDauXuatPdf() {
       : 'Đang áp dụng cấu hình nâng cao và gửi tài liệu đến TeXLive.';
     var pdfBlob;
     var fallbackUsed = false;
+    var answerSafeFallback = false;
     var geometryRepaired = false;
     try {
       pdfBlob = await vmBienDichPdfTex(tex);
@@ -2233,9 +2242,13 @@ async function vmBatDauXuatPdf() {
       } else {
         if (preserveSource) throw advancedError;
         fallbackUsed = true;
-        $('vmPdfProgressTitle').textContent = 'Đang thử lại bằng bản TeX gốc…';
-        $('vmPdfProgressText').textContent = 'Cấu hình nâng cao không tương thích với mẫu tài liệu này. VinhMath đang tự khôi phục đường biên dịch ổn định.';
-        pdfBlob = await vmBienDichPdfTex(originalTex);
+        answerSafeFallback = config.answers !== 'show';
+        $('vmPdfProgressTitle').textContent = answerSafeFallback ? 'Đang thử lại và vẫn giữ chế độ ẩn lời giải…' : 'Đang thử lại bằng bản TeX gốc…';
+        $('vmPdfProgressText').textContent = answerSafeFallback
+          ? 'Bố cục nâng cao không tương thích. VinhMath chỉ khôi phục định dạng gốc, còn lời giải vẫn được ẩn đúng như đã chọn.'
+          : 'Cấu hình nâng cao không tương thích với mẫu tài liệu này. VinhMath đang tự khôi phục đường biên dịch ổn định.';
+        var fallbackTex = answerSafeFallback ? vmBienDoiLoiGiaiPdf(originalTex, config) : originalTex;
+        pdfBlob = await vmBienDichPdfTex(fallbackTex);
       }
     }
     vmPdfExportBlob = pdfBlob;
@@ -2248,7 +2261,9 @@ async function vmBatDauXuatPdf() {
       resultNote.innerHTML = geometryRepaired
         ? '<b>Đã tự sửa xung đột geometry.</b> Các khai báo lề trang bị lặp đã được hợp nhất trước khi biên dịch.'
         : (fallbackUsed
-          ? '<b>Đã tạo PDF bằng bản TeX gốc.</b> Cấu hình nâng cao không phù hợp với mẫu này nên hệ thống đã tự quay về nguồn ổn định.'
+          ? (answerSafeFallback
+            ? '<b>Đã giữ đúng chế độ ẩn lời giải.</b> Hệ thống chỉ quay về bố cục gốc để bảo đảm biên dịch thành công; đáp án đầy đủ không bị đưa trở lại.'
+            : '<b>Đã tạo PDF bằng bản TeX gốc.</b> Cấu hình nâng cao không phù hợp với mẫu này nên hệ thống đã tự quay về nguồn ổn định.')
           : (preserveSource ? '<b>Đã giữ nguyên nguồn TeX.</b> Không có lệnh định dạng nào bị thay đổi trước khi biên dịch.' : '<b>Đã áp dụng cấu hình đã chọn.</b>'));
     }
     renderPDFWithJS(vmPdfExportUrl, $('vmPdfPreviewArea'));
