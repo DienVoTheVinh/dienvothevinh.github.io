@@ -59,8 +59,6 @@ jobs:
             fi
           done
           du -sh _site
-          find _site -type f -printf '%s %p
-' | sort -nr | head -20
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
@@ -77,4 +75,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          timeout: 1200000
+          timeout: '1200000'
