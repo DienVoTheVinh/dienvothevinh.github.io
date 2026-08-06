@@ -31,6 +31,16 @@
 .lesson-card .actions { display: flex; justify-content: space-between; align-items: center; }
 .lesson-card .yt-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; font-size: .82rem; }
 .lesson-card .pdf-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--ok); font-weight: 500; font-size: .82rem; }
+.vm-tex-upload-row { display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:10px;border:1px dashed var(--line-2);border-radius:10px;background:var(--surface-2) }
+.vm-tex-upload-row input[type="file"] { position:absolute;width:1px;height:1px;opacity:0;pointer-events:none }
+.vm-tex-upload-row span { min-width:0;flex:1;color:var(--ink-3);font-size:.76rem }
+.vm-tex-preview { max-height:60vh;overflow:auto;padding:14px;background:var(--surface-2);border-radius:10px }
+.vm-tex-preview .vm-tex-reader { padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);line-height:1.65 }
+.vm-tex-preview .vm-tex-reader-kicker { color:var(--accent);font-size:.66rem;font-weight:800;letter-spacing:.08em }
+.vm-tex-preview .vm-tex-block { margin:14px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden }
+.vm-tex-preview .vm-tex-block-title { padding:8px 12px;background:var(--accent-soft);color:var(--accent);font-weight:800 }
+.vm-tex-preview .vm-tex-block-body { padding:12px }.vm-tex-preview .vm-tex-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.vm-tex-preview .vm-tex-choice{display:flex;gap:8px;padding:9px;border:1px solid var(--line);border-radius:8px}.vm-tex-preview .vm-tex-choice-key{color:var(--accent);font-weight:800}
+@media(max-width:640px){.vm-tex-preview{padding:8px}.vm-tex-preview .vm-tex-reader{padding:18px 12px}.vm-tex-preview .vm-tex-choices{grid-template-columns:1fr}}
 /* Modal Form */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
@@ -199,9 +209,10 @@
         </div>
 
         <div class="field">
-          <label>📄 Tài liệu LaTeX của bài (tự biên dịch trên màn hình học sinh)</label>
-          <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code LaTeX (ex_test)… Học sinh mở mục Tài liệu trong bài học sẽ thấy PDF được biên dịch tự động, kèm nút tải về." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
-          <small style="color:var(--ink-3);margin-top:4px;display:block">If fill this box, it takes priority over selected PDF above.</small>
+          <label>📄 Tài liệu LaTeX — ưu tiên đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhLatexDocFile">📥 Nạp tệp .tex</label><input type="file" id="bhLatexDocFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhLatexDoc','bhLatexDocFileStatus')"><span id="bhLatexDocFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhLatexDoc" rows="6" placeholder="Dán code hoặc nạp nguyên tệp .tex… Học sinh đọc trực tiếp trên web và có nút tải PDF." style="font-family:Menlo,monospace;font-size:.82rem;resize:vertical"></textarea>
+          <small style="color:var(--ink-3);margin-top:4px;display:block">Nguồn LaTeX được ưu tiên thay cho PDF chọn từ kho.</small>
         </div>
 
         <div class="field">
@@ -249,15 +260,16 @@
         </div>
 
         <div class="field" style="border-top: 1px dashed var(--line-2); padding-top: 16px">
-          <label>✍️ Hoặc soạn đề kiểm tra trực tiếp bằng LaTeX</label>
-          <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn LaTeX đề thi ở đây (sử dụng ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
+          <label>✍️ Đề kiểm tra LaTeX — đọc trực tiếp trên web</label>
+          <div class="vm-tex-upload-row"><label class="btn btn-secondary btn-sm" for="bhTestLatexFile">📥 Nạp tệp .tex</label><input type="file" id="bhTestLatexFile" accept=".tex,text/x-tex,text/plain" onchange="napFileTexVaoO(this,'bhTestLatex','bhTestLatexFileStatus')"><span id="bhTestLatexFileStatus">Hoặc dán mã nguồn vào ô bên dưới</span></div>
+          <textarea class="input" id="bhTestLatex" rows="10" placeholder="Dán mã nguồn hoặc nạp nguyên tệp .tex (ex_test, exam...)" style="font-family:Menlo,monospace; font-size:0.82rem; resize:vertical"></textarea>
           <small style="color:var(--ink-3); margin-top:4px; display:block">
-            Nếu nhập ở đây, hệ thống sẽ tự động biên dịch đề kiểm tra và hiển thị cho học sinh.
+            Học sinh đọc trực tiếp trên web; đáp án/lời giải trong nguồn được ẩn. PDF vẫn có thể tạo khi cần.
           </small>
         </div>
         
         <div style="margin-bottom: 12px">
-          <button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTest" onclick="bienDichTestLatex()">⚡ Biên dịch thử</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnBienDichTest" onclick="bienDichTestLatex()">👁 Xem trước trên web</button>
         </div>
 
         <div id="khungXemTest" style="display:none; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); padding:10px; margin-top:10px; margin-bottom:16px">
@@ -389,7 +401,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.8"></script>
-<script src="js/latex-view.js?v=7.0"></script>
+<script src="js/latex-view.js?v=8.0"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -775,7 +787,7 @@ function resetCdForm() {
 
 async function taiDanhSachBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, theory_sections, latex_content, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
+    .select('id, class_id, topic_id, title, youtube_url, note, sort, published, images, locked, document_id, test_document_id, theory_sections, latex_content, test_latex_content, classes(name), topics(name), documents!lessons_document_id_fkey(title, file_path)')
     .order('sort', { ascending: false })
     .order('created_at', { ascending: false });
   
@@ -1394,33 +1406,21 @@ async function bienDichTestLatex() {
   var output = $('xemTestOutput');
   
   nut.disabled = true;
-  nut.textContent = '⏳ Đang biên dịch…';
+  nut.textContent = '⏳ Đang dựng bản đọc…';
   pdfBlobTest = null;
   
   khung.style.display = 'block';
-  output.innerHTML = '<div style="padding:20px; color:var(--ink-3)">Đang gửi lên texlive.net — có thể mất 10–30 giây…</div>';
-  
   try {
-    var tex = await chuanHoaTexTestLatex(rawTex);
-    var r = await sb.functions.invoke('latex', {
-      body: { tex: tex, engine: 'pdflatex' }
-    });
-    if (r.error) throw new Error(r.error.message || 'Edge Function lỗi');
-    
-    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
-      pdfBlobTest = r.data;
-      output.innerHTML = '<iframe src="' + URL.createObjectURL(r.data) + '" style="width:100%; height:350px; border:none"></iframe>';
-    } else {
-      var log = typeof r.data === 'string' ? r.data : await r.data.text();
-      var dong = log.split('\n').filter(function (l) { return l.indexOf('!') === 0 || l.indexOf('Error') !== -1; }).slice(0, 8).join('\n');
-      output.innerHTML = '<div style="padding:10px; color:var(--err); font-family:monospace; font-size:0.8rem; overflow:auto; height:350px; border:1px solid var(--err-soft); border-radius:4px; background:rgba(231,76,60,0.05)">' +
-        '<b>Biên dịch LỖI:</b><br><pre style="white-space:pre-wrap; margin-top:8px">' + (dong || log.slice(-1500)) + '</pre></div>';
-    }
+    output.classList.add('vm-tex-preview');
+    output.innerHTML = typeof latexTaiLieuRaHTML === 'function'
+      ? latexTaiLieuRaHTML(rawTex, { title: $('bhTieuDe').value.trim() || 'Đề kiểm tra', kind: 'test', showSolutions: false })
+      : '<div style="padding:10px;color:var(--err)">Bộ đọc LaTeX chưa tải được.</div>';
+    if (typeof renderToanTrong === 'function') renderToanTrong(output);
   } catch (e) {
-    output.innerHTML = '<div style="padding:10px; color:var(--err)">Không biên dịch được: ' + e.message + '</div>';
+    output.innerHTML = '<div style="padding:10px; color:var(--err)">Không dựng được bản đọc: ' + e.message + '</div>';
   }
   nut.disabled = false;
-  nut.textContent = '⚡ Biên dịch thử';
+  nut.textContent = '👁 Xem trước trên web';
 }
 
 var theorySections = [];
