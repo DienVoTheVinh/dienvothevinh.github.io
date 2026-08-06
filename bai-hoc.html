@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=8.0"></script>
+<script src="js/latex-view.js?v=9.0"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -272,38 +272,72 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 }
 .vm-tex-actions-copy { min-width:0; color:var(--ink-3); font-size:.8rem; line-height:1.45; }
 .vm-tex-actions-copy b { color:var(--ink); }
-.vm-tex-download { min-height:40px; flex:none; }
+.vm-tex-action-tools { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+.vm-tex-zoom { display:inline-flex; align-items:center; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.vm-tex-zoom button { width:38px; height:38px; padding:0; border:0; border-right:1px solid var(--line); background:transparent; color:var(--ink); font:800 1rem/1 inherit; cursor:pointer; }
+.vm-tex-zoom button:last-child { border-right:0; border-left:1px solid var(--line); }
+.vm-tex-zoom button:hover { background:var(--accent-soft); color:var(--accent); }
+.vm-tex-zoom-label { min-width:52px; text-align:center; color:var(--ink-2); font-size:.76rem; font-weight:800; }
+.vm-tex-fullscreen { min-height:40px; border-color:var(--accent) !important; color:var(--accent) !important; font-weight:800; }
+.vm-tex-download { min-height:40px; flex:none; font-weight:800; }
 .vm-tex-download[disabled] { opacity:.7; cursor:wait; }
-.vm-tex-scroll { flex:1; min-height:0; overflow:auto; padding:clamp(12px,2.6vw,30px); scroll-behavior:smooth; }
+.vm-tex-scroll { flex:1; min-width:0; min-height:0; overflow:auto; overflow-x:hidden; padding:clamp(12px,2.6vw,30px); scroll-behavior:smooth; }
 .vm-tex-reader {
   width:min(920px,100%); margin:0 auto; padding:clamp(22px,4vw,48px);
   box-sizing:border-box;
   border:1px solid var(--line); border-radius:18px; background:var(--surface);
   box-shadow:0 14px 38px rgba(15,23,42,.08); color:var(--ink); line-height:1.72;
-  overflow-wrap:anywhere;
+  min-width:0; overflow:hidden; overflow-wrap:break-word; word-break:normal;
+  font-size:calc(1rem * var(--vm-reader-scale, 1));
 }
 .vm-tex-reader-head { margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--line); }
 .vm-tex-reader-kicker { display:block; margin-bottom:7px; color:var(--accent); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
 .vm-tex-reader-head h2 { margin:0; font-family:var(--font-display,Georgia,serif); font-size:clamp(1.35rem,3vw,2rem); line-height:1.25; }
-.vm-tex-prose { font-size:clamp(.96rem,1.2vw,1.04rem); }
+.vm-tex-prose { min-width:0; font-size:1em; }
 .vm-tex-prose + .vm-tex-prose { margin-top:14px; }
 .vm-tex-h1,.vm-tex-h2,.vm-tex-h3,.vm-tex-h4 { color:var(--ink); line-height:1.35; scroll-margin-top:80px; }
-.vm-tex-h1 { margin:28px 0 16px; font-size:1.55rem; }
-.vm-tex-h2 { margin:26px 0 14px; font-size:1.3rem; color:var(--accent); }
-.vm-tex-h3 { margin:22px 0 10px; font-size:1.12rem; }
-.vm-tex-h4 { margin:18px 0 8px; font-size:1rem; }
+.vm-tex-h1 { margin:28px 0 16px; font-size:1.55em; }
+.vm-tex-h2 { margin:26px 0 14px; font-size:1.3em; color:var(--accent); }
+.vm-tex-h3 { margin:22px 0 10px; font-size:1.12em; }
+.vm-tex-h4 { margin:18px 0 8px; font-size:1em; }
 .vm-tex-gap { height:12px; }
 .vm-tex-media-note { margin:12px 0; padding:12px 14px; border:1px dashed var(--line-2); border-radius:10px; color:var(--ink-3); font-size:.84rem; text-align:center; }
 .vm-tex-block { margin:20px 0; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface-solid); }
 .vm-tex-block-title { padding:9px 15px; background:var(--accent-soft); color:var(--accent); font-weight:800; font-size:.86rem; letter-spacing:.02em; }
-.vm-tex-block-body { padding:16px 18px; font-size:clamp(.95rem,1.15vw,1.03rem); }
+.vm-tex-block-body { min-width:0; padding:16px 18px; font-size:1em; }
 .vm-tex-block-dn .vm-tex-block-title,.vm-tex-block-dl .vm-tex-block-title,.vm-tex-block-hq .vm-tex-block-title { background:var(--ok-soft); color:var(--ok); }
 .vm-tex-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:16px; }
 .vm-tex-choice { display:flex; align-items:flex-start; gap:10px; min-width:0; padding:12px; border:1px solid var(--line-2); border-radius:11px; background:var(--surface); }
 .vm-tex-choice-key { display:grid; place-items:center; width:28px; height:28px; flex:none; border:1px solid var(--accent); border-radius:50%; color:var(--accent); font-weight:800; font-size:.82rem; }
-.vm-tex-reader .katex-display { max-width:100%; overflow-x:auto; overflow-y:hidden; padding:6px 0; }
+.vm-tex-reader .katex-display { width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; padding:8px 2px; -webkit-overflow-scrolling:touch; }
+.vm-tex-reader .katex-display > .katex { min-width:max-content; text-align:center; }
+.vm-tex-reader .katex { max-width:100%; }
 .vm-tex-reader table { max-width:100%; display:block; overflow-x:auto; }
 .vm-tex-empty { padding:36px 16px; text-align:center; color:var(--ink-3); }
+.vm-tex-solution { margin-top:16px; padding:14px 16px; border:1px solid rgba(22,134,90,.35); border-radius:12px; background:var(--ok-soft); color:var(--ink); }
+.vm-tex-solution-title { margin-bottom:7px; color:var(--ok); font-weight:850; }
+.vm-tex-tikz { width:100%; min-height:120px; margin:18px auto; display:grid; place-items:center; overflow:auto; border:1px dashed var(--line-2); border-radius:14px; background:var(--surface-2); }
+.vm-tex-tikz-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:24px 16px; color:var(--ink-3); font-size:.84rem; text-align:center; }
+.vm-tex-tikz-spinner { width:20px; height:20px; flex:none; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+.vm-tex-tikz canvas { display:block; width:auto; max-width:100%; height:auto; margin:auto; background:#fff; }
+.vm-tex-tikz-error { color:var(--err); }
+.vm-tex-tikz-retry { margin-top:10px; }
+[data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:100005 !important; width:100vw !important; height:100dvh !important; max-width:none !important; overflow:auto !important; background:var(--bg); }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { position:sticky; top:0; z-index:3; box-shadow:0 8px 24px rgba(15,23,42,.12); }
+body.vm-reader-locked { overflow:hidden !important; }
+.vm-pdf-export-card { width:min(720px,100%); max-height:min(92dvh,820px); overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+.vm-pdf-export-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line); background:var(--surface-solid); }
+.vm-pdf-export-body { padding:18px 20px 20px; }
+.vm-pdf-presets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.vm-pdf-preset { min-width:0; padding:13px; border:1px solid var(--line); border-radius:13px; background:var(--surface); color:var(--ink); text-align:left; cursor:pointer; }
+.vm-pdf-preset b { display:block; margin-bottom:4px; }
+.vm-pdf-preset small { display:block; color:var(--ink-3); line-height:1.4; }
+.vm-pdf-preset.active { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent); }
+.vm-pdf-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.vm-pdf-options label { display:flex; flex-direction:column; gap:6px; color:var(--ink-2); font-size:.8rem; font-weight:700; }
+.vm-pdf-options select { width:100%; min-height:44px; }
+.vm-pdf-status { min-height:240px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; }
+.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:#525659; }
 .btvn-latex-native { margin-top:12px; }
 .btvn-latex-native .vm-tex-reader { width:100%; padding:clamp(18px,3vw,34px); box-shadow:none; border-radius:14px; }
 .btvn-latex-native .vm-tex-actions { border:1px solid var(--line); border-bottom:0; border-radius:14px 14px 0 0; }
@@ -329,16 +363,26 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   .btvn-document iframe { height:min(62vh,560px); min-height:360px; }
   .btvn-media img { width:100%; max-height:none; }
   .vm-tex-actions { align-items:stretch; padding:9px 10px; }
-  .vm-tex-actions-copy { flex:1 1 150px; }
-  .vm-tex-download { min-height:44px; padding:8px 12px !important; }
+  .vm-tex-actions-copy { flex:1 1 100%; }
+  .vm-tex-action-tools { width:100%; justify-content:stretch; display:grid; grid-template-columns:auto 1fr 1fr; }
+  .vm-tex-zoom { min-width:0; }
+  .vm-tex-zoom button { width:40px; height:42px; }
+  .vm-tex-fullscreen,.vm-tex-download { min-width:0; min-height:44px; padding:8px 10px !important; white-space:normal; }
   .vm-tex-scroll { padding:8px; }
-  .vm-tex-reader { padding:20px 16px 28px; border-radius:12px; box-shadow:none; }
+  .vm-tex-reader { width:100%; padding:18px 12px 26px; border-radius:12px; box-shadow:none; }
   .vm-tex-reader-head { margin-bottom:20px; padding-bottom:14px; }
   .vm-tex-reader-kicker { font-size:.64rem; letter-spacing:.09em; }
   .vm-tex-reader-head h2 { font-size:1.3rem; }
   .vm-tex-choices { grid-template-columns:1fr; gap:8px; }
   .vm-tex-block { margin:14px 0; border-radius:11px; }
   .vm-tex-block-body { padding:14px 12px; }
+  .vm-tex-reader .katex-display { margin:.75em 0; padding-bottom:10px; }
+  .vm-tex-tikz { border-radius:10px; }
+  .vm-pdf-presets,.vm-pdf-options { grid-template-columns:1fr; }
+  .vm-pdf-export-card { width:100%; max-height:94dvh; border-radius:18px 18px 0 0; }
+  #vmPdfExportModal { align-items:flex-end !important; padding:0 !important; }
+  .vm-pdf-export-head { padding:15px 16px; }
+  .vm-pdf-export-body { padding:14px 16px calc(16px + env(safe-area-inset-bottom)); }
   .btvn-latex-native .vm-tex-reader { padding:18px 12px 24px; }
   #modalNopBai { align-items:flex-end !important; padding:0 !important; }
   #modalNopBai > div {
@@ -644,6 +688,58 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       </div>
       <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
       <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
+    </div>
+  </div>
+
+  <!-- Cấu hình và xem trước PDF LaTeX. Dùng một popup duy nhất để tránh chồng lớp phủ. -->
+  <div id="vmPdfExportModal" data-vm-popup-position="native" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:100020;align-items:center;justify-content:center;padding:16px" onclick="vmDongPdfExport(event)">
+    <div class="vm-pdf-export-card" role="dialog" aria-modal="true" aria-labelledby="vmPdfExportTitle" onclick="event.stopPropagation()">
+      <div class="vm-pdf-export-head">
+        <div><div style="font-size:.72rem;font-weight:850;letter-spacing:.08em;color:var(--accent)">XUẤT TÀI LIỆU</div><h2 id="vmPdfExportTitle" style="margin:2px 0 0;font-size:1.2rem">Tạo PDF theo nhu cầu</h2></div>
+        <button type="button" class="btn btn-ghost" onclick="vmDongPdfExport()" aria-label="Đóng cửa sổ xuất PDF" style="width:42px;height:42px;padding:0;font-size:1.45rem">×</button>
+      </div>
+      <div class="vm-pdf-export-body">
+        <div id="vmPdfConfigPane">
+          <p style="margin:0 0 14px;color:var(--ink-2);font-size:.88rem;line-height:1.55">Chọn nhanh một kiểu tài liệu hoặc điều chỉnh sâu hơn trước khi kết xuất.</p>
+          <div class="vm-pdf-presets">
+            <button type="button" class="vm-pdf-preset active" data-preset="study" onclick="vmApDungPdfPreset('study')"><b>📘 Bản học đầy đủ</b><small>Hiện đáp án và lời giải, bố cục dễ đọc.</small></button>
+            <button type="button" class="vm-pdf-preset" data-preset="worksheet" onclick="vmApDungPdfPreset('worksheet')"><b>📝 Phiếu làm bài</b><small>Ẩn lời giải và thay bằng dòng chấm.</small></button>
+            <button type="button" class="vm-pdf-preset" data-preset="compact" onclick="vmApDungPdfPreset('compact')"><b>📄 Tiết kiệm giấy</b><small>Hai cột, chữ gọn và không hiện đáp án.</small></button>
+          </div>
+          <div class="vm-pdf-options">
+            <label>Đáp án và lời giải
+              <select class="input" id="vmPdfAnswers" onchange="vmDongBoDongCham()"><option value="show">Hiện đầy đủ</option><option value="hide">Ẩn hoàn toàn</option><option value="dots">Thay lời giải bằng dòng chấm</option></select>
+            </label>
+            <label>Số dòng chấm sau mỗi bài
+              <select class="input" id="vmPdfDotLines"><option value="2">2 dòng</option><option value="4" selected>4 dòng</option><option value="6">6 dòng</option><option value="8">8 dòng</option></select>
+            </label>
+            <label>Bố cục trang
+              <select class="input" id="vmPdfLayout"><option value="one">Một cột</option><option value="two">Hai cột</option></select>
+            </label>
+            <label>Mật độ lề
+              <select class="input" id="vmPdfMargins"><option value="normal">Cân bằng</option><option value="loose">Thoáng, dễ ghi chú</option><option value="tight">Gọn, ít trang</option></select>
+            </label>
+            <label>Cỡ chữ
+              <select class="input" id="vmPdfFontSize"><option value="12">12pt</option><option value="11">11pt</option><option value="10">10pt</option></select>
+            </label>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:15px;border-top:1px solid var(--line)">
+            <button type="button" class="btn btn-secondary" onclick="vmDongPdfExport()">Hủy</button>
+            <button type="button" class="btn btn-primary" id="vmPdfCreateBtn" onclick="vmBatDauXuatPdf()">⚙️ Tạo bản PDF</button>
+          </div>
+        </div>
+        <div id="vmPdfProgressPane" class="vm-pdf-status" style="display:none">
+          <div class="spinner"></div><h3 id="vmPdfProgressTitle" style="margin:0">Đang chuẩn hóa tài liệu…</h3>
+          <p id="vmPdfProgressText" style="max-width:460px;margin:0;color:var(--ink-2);line-height:1.55">Hệ thống đang áp dụng cấu hình và gửi LaTeX đến máy chủ kết xuất.</p>
+        </div>
+        <div id="vmPdfResultPane" style="display:none">
+          <div id="vmPdfPreviewArea" class="vm-pdf-preview"></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <button type="button" class="btn btn-secondary" onclick="vmQuayLaiPdfConfig()">← Chỉnh lại</button>
+            <button type="button" class="btn btn-primary" id="vmPdfDownloadReady" onclick="vmTaiPdfDaTao()">⬇️ Tải PDF về máy</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1577,6 +1673,13 @@ document.addEventListener('click', function (e) {
 var pdfTaiLieuTex = null;
 var dangBienDichTex = false;
 var vmLatexDownloads = {};
+var vmReaderZoomLevels = {};
+var vmPdfExportKey = '';
+var vmPdfExportBlob = null;
+var vmPdfExportUrl = '';
+var vmTikzQueue = [];
+var vmTikzActive = 0;
+var vmTikzObserver = null;
 
 function vmTenTepPdf(name) {
   return String(name || 'tai-lieu').toLowerCase()
@@ -1584,52 +1687,335 @@ function vmTenTepPdf(name) {
     .replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '.pdf';
 }
 
-function vmLatexActionHTML(key, rawTex, fileName) {
-  vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf' };
+function vmEscHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+  });
+}
+
+function vmLatexActionHTML(key, rawTex, fileName, kind) {
+  vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf', kind: kind || 'document' };
+  vmReaderZoomLevels[key] = vmReaderZoomLevels[key] || 1;
   return '<div class="vm-tex-actions">' +
     '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.</div>' +
-    '<button type="button" class="btn btn-secondary btn-sm vm-tex-download" onclick="vmTaiPdfLatex(\'' + key + '\',this)">⬇ Tạo &amp; tải PDF</button></div>';
+    '<div class="vm-tex-action-tools">' +
+      '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" onclick="vmDoiZoomReader(\'' + key + '\',-.1)" aria-label="Thu nhỏ">−</button><span class="vm-tex-zoom-label" data-vm-zoom-label="' + key + '">100%</span><button type="button" onclick="vmDoiZoomReader(\'' + key + '\',.1)" aria-label="Phóng to">+</button></div>' +
+      '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-fullscreen-btn="' + key + '" onclick="vmToggleReaderFullscreen(\'' + key + '\')">⛶ Toàn màn hình</button>' +
+      '<button type="button" class="btn btn-primary btn-sm vm-tex-download" onclick="vmMoPdfExport(\'' + key + '\')">⚙️ Tạo &amp; tải PDF</button>' +
+    '</div></div>';
 }
 
 function vmLatexNativeHTML(title, rawTex, key, fileName, kind, inline) {
+  kind = kind || 'document';
+  var teacherView = typeof laQuanTriBaiHoc === 'function' && laQuanTriBaiHoc();
+  var showSolutions = teacherView || kind === 'document' || kind === 'theory';
   var reader = typeof latexTaiLieuRaHTML === 'function'
-    ? latexTaiLieuRaHTML(rawTex || '', { title: title, kind: kind || 'document', showSolutions: false })
+    ? latexTaiLieuRaHTML(rawTex || '', { title: title, kind: kind, showSolutions: showSolutions })
     : '<div class="no-content"><h3>Chưa tải được bộ đọc LaTeX</h3></div>';
-  return '<div class="' + (inline ? 'btvn-latex-native' : 'vm-tex-shell') + '">' +
-    vmLatexActionHTML(key, rawTex, fileName) +
+  return '<div class="' + (inline ? 'btvn-latex-native' : 'vm-tex-shell') + '" data-reader-key="' + key + '">' +
+    vmLatexActionHTML(key, rawTex, fileName, kind) +
     (inline ? reader : '<div class="vm-tex-scroll">' + reader + '</div>') + '</div>';
 }
 
 function vmRenderMathTaiLieu(root) {
   if (typeof renderToanTrong === 'function') renderToanTrong(root);
   else if (typeof renderLatex === 'function') renderLatex(root);
+  vmRenderTikzTrong(root);
 }
 
-async function vmTaiPdfLatex(key, button) {
+function vmDoiZoomReader(key, delta) {
+  var shell = document.querySelector('[data-reader-key="' + key + '"]');
+  if (!shell) return;
+  var next = delta === 0 ? 1 : Math.min(1.6, Math.max(.75, (vmReaderZoomLevels[key] || 1) + delta));
+  next = Math.round(next * 10) / 10;
+  vmReaderZoomLevels[key] = next;
+  var reader = shell.querySelector('.vm-tex-reader');
+  if (reader) reader.style.setProperty('--vm-reader-scale', next);
+  var label = shell.querySelector('[data-vm-zoom-label="' + key + '"]');
+  if (label) label.textContent = Math.round(next * 100) + '%';
+}
+
+function vmCapNhatNutFullscreen(shell, active) {
+  if (!shell) return;
+  var key = shell.getAttribute('data-reader-key');
+  var btn = shell.querySelector('[data-vm-fullscreen-btn="' + key + '"]');
+  if (btn) {
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.textContent = active ? '✕ Thoát' : '⛶ Toàn màn hình';
+  }
+}
+
+async function vmToggleReaderFullscreen(key) {
+  var shell = document.querySelector('[data-reader-key="' + key + '"]');
+  if (!shell) return;
+  var fallback = shell.classList.contains('vm-tex-fullscreen-active');
+  if (document.fullscreenElement === shell) {
+    try { await document.exitFullscreen(); } catch (e) {}
+    return;
+  }
+  if (fallback) {
+    shell.classList.remove('vm-tex-fullscreen-active');
+    document.body.classList.remove('vm-reader-locked');
+    vmCapNhatNutFullscreen(shell, false);
+    return;
+  }
+  var isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+  if (!isiOS && shell.requestFullscreen) {
+    try { await shell.requestFullscreen(); return; } catch (e) {}
+  }
+  shell.classList.add('vm-tex-fullscreen-active');
+  document.body.classList.add('vm-reader-locked');
+  vmCapNhatNutFullscreen(shell, true);
+}
+
+document.addEventListener('fullscreenchange', function () {
+  document.querySelectorAll('[data-reader-key]').forEach(function (shell) {
+    vmCapNhatNutFullscreen(shell, document.fullscreenElement === shell || shell.classList.contains('vm-tex-fullscreen-active'));
+  });
+});
+document.addEventListener('keydown', function (event) {
+  if (event.key !== 'Escape') return;
+  var shell = document.querySelector('.vm-tex-fullscreen-active');
+  if (shell) {
+    shell.classList.remove('vm-tex-fullscreen-active');
+    document.body.classList.remove('vm-reader-locked');
+    vmCapNhatNutFullscreen(shell, false);
+  }
+});
+
+function vmRenderTikzTrong(root) {
+  if (!root || !window.vmLatexTikzRegistry) return;
+  var figures = root.querySelectorAll('.vm-tex-tikz:not([data-vm-tikz-ready])');
+  if (!('IntersectionObserver' in window)) {
+    figures.forEach(vmXepHangTikz);
+    return;
+  }
+  if (!vmTikzObserver) {
+    vmTikzObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        vmTikzObserver.unobserve(entry.target);
+        vmXepHangTikz(entry.target);
+      });
+    }, { rootMargin: '320px 0px' });
+  }
+  figures.forEach(function (figure) {
+    figure.setAttribute('data-vm-tikz-ready', 'observed');
+    vmTikzObserver.observe(figure);
+  });
+}
+
+function vmXepHangTikz(figure) {
+  if (!figure || figure.getAttribute('data-vm-tikz-ready') === 'queued' || figure.getAttribute('data-vm-tikz-ready') === 'done') return;
+  figure.setAttribute('data-vm-tikz-ready', 'queued');
+  vmTikzQueue.push(figure);
+  vmChayHangTikz();
+}
+
+function vmChayHangTikz() {
+  while (vmTikzActive < 2 && vmTikzQueue.length) {
+    var figure = vmTikzQueue.shift();
+    vmTikzActive++;
+    vmBienDichMotTikz(figure).finally(function () { vmTikzActive--; vmChayHangTikz(); });
+  }
+}
+
+function vmLayKhaiBaoTikz(preamble) {
+  var lines = String(preamble || '').split(/\r?\n/);
+  var out = [];
+  var collecting = false, depth = 0;
+  var allowed = /^\s*\\(?:newcommand|renewcommand|providecommand|DeclareMathOperator|definecolor|colorlet|tikzset|pgfplotsset|tikzstyle|usetikzlibrary|usepgfplotslibrary|def)\b/;
+  function braceDelta(line) {
+    var clean = String(line || '').replace(/\\[{}]/g, '');
+    return (clean.match(/\{/g) || []).length - (clean.match(/\}/g) || []).length;
+  }
+  lines.forEach(function (line) {
+    if (!collecting && allowed.test(line)) {
+      collecting = true; depth = braceDelta(line); out.push(line);
+      if (depth <= 0) collecting = false;
+    } else if (collecting) {
+      out.push(line); depth += braceDelta(line);
+      if (depth <= 0) collecting = false;
+    }
+  });
+  return out.join('\n');
+}
+
+function vmTexTikzDoc(item) {
+  var preamble = String(item && item.preamble || '');
+  var source = String(item && item.source || '');
+  var declarations = vmLayKhaiBaoTikz(preamble);
+  var optionalPackages = '';
+  if (/\\tkzTab/.test(source)) optionalPackages += '\\usepackage{tkz-tab}\n';
+  if (/\\begin\{forest\}/.test(source)) optionalPackages += '\\usepackage{forest}\n';
+  if (/\\begin\{circuitikz\}/.test(source)) optionalPackages += '\\usepackage{circuitikz}\n';
+  return '\\documentclass[tikz,border=6pt]{standalone}\n' +
+    '\\usepackage[T5]{fontenc}\n\\usepackage[utf8]{inputenc}\n\\usepackage{xcolor}\n' +
+    '\\usepackage{amsmath,amssymb,mathtools}\n' +
+    '\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optionalPackages + '\\pgfplotsset{compat=1.18}\n' +
+    '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.markings,backgrounds,fit,matrix}\n' +
+    declarations + '\n\\begin{document}\n' + source + '\n\\end{document}';
+}
+
+async function vmBienDichMotTikz(figure) {
+  var token = figure.getAttribute('data-vm-tikz');
+  var item = window.vmLatexTikzRegistry[token];
+  if (!item) return;
+  try {
+    var tex = vmTexTikzDoc(item);
+    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+    if (r.error) throw new Error(r.error.message || 'Trạm kết xuất đang bận');
+    if (!(r.data instanceof Blob) || r.data.type.indexOf('pdf') === -1) {
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
+      var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
+      throw new Error(firstError || 'Không nhận được hình hợp lệ');
+    }
+    var pdf = await vmTaiPdfJs().then(function (lib) { return r.data.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; }); });
+    var page = await pdf.getPage(1);
+    var viewport = page.getViewport({ scale: Math.min(3, Math.max(2, window.devicePixelRatio || 1)) });
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
+    await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: viewport }).promise;
+    figure.innerHTML = '';
+    figure.appendChild(canvas);
+    figure.setAttribute('data-vm-tikz-ready', 'done');
+  } catch (e) {
+    figure.setAttribute('data-vm-tikz-ready', 'error');
+    figure.innerHTML = '<div class="vm-tex-tikz-state vm-tex-tikz-error"><div><b>Chưa kết xuất được hình TikZ.</b><br><span style="color:var(--ink-3)">' + vmEscHtml(String(e.message || 'Lỗi không xác định').slice(0, 180)) + '</span><br><button class="btn btn-secondary btn-sm vm-tex-tikz-retry" onclick="vmThuLaiTikz(this)">Thử lại</button></div></div>';
+  }
+}
+
+function vmThuLaiTikz(button) {
+  var figure = button && button.closest('.vm-tex-tikz');
+  if (!figure) return;
+  figure.innerHTML = '<div class="vm-tex-tikz-state"><span class="vm-tex-tikz-spinner"></span><span>Đang kết xuất lại hình TikZ...</span></div>';
+  figure.removeAttribute('data-vm-tikz-ready');
+  vmXepHangTikz(figure);
+}
+
+function vmMoPdfExport(key) {
   var item = vmLatexDownloads[key];
   if (!item || !item.tex) return;
-  var oldText = button ? button.innerHTML : '';
-  if (button) { button.disabled = true; button.textContent = '⏳ Đang tạo PDF…'; }
+  vmPdfExportKey = key;
+  vmQuayLaiPdfConfig();
+  vmApDungPdfPreset(item.kind === 'document' || item.kind === 'theory' ? 'study' : 'worksheet');
+  var modal = $('vmPdfExportModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function vmTaiPdfLatex(key) { vmMoPdfExport(key); }
+
+function vmDongPdfExport(event) {
+  if (event && event.target !== event.currentTarget) return;
+  var modal = $('vmPdfExportModal');
+  if (modal) modal.style.display = 'none';
+  if (vmPdfExportUrl) { URL.revokeObjectURL(vmPdfExportUrl); vmPdfExportUrl = ''; }
+  vmPdfExportBlob = null;
+}
+
+function vmQuayLaiPdfConfig() {
+  if ($('vmPdfConfigPane')) $('vmPdfConfigPane').style.display = 'block';
+  if ($('vmPdfProgressPane')) $('vmPdfProgressPane').style.display = 'none';
+  if ($('vmPdfResultPane')) $('vmPdfResultPane').style.display = 'none';
+}
+
+function vmApDungPdfPreset(name) {
+  document.querySelectorAll('.vm-pdf-preset').forEach(function (card) { card.classList.toggle('active', card.getAttribute('data-preset') === name); });
+  var presets = {
+    study: { answers: 'show', dots: '4', layout: 'one', margins: 'normal', font: '12' },
+    worksheet: { answers: 'dots', dots: '4', layout: 'one', margins: 'loose', font: '12' },
+    compact: { answers: 'hide', dots: '2', layout: 'two', margins: 'tight', font: '10' }
+  };
+  var value = presets[name] || presets.study;
+  $('vmPdfAnswers').value = value.answers; $('vmPdfDotLines').value = value.dots;
+  $('vmPdfLayout').value = value.layout; $('vmPdfMargins').value = value.margins; $('vmPdfFontSize').value = value.font;
+  vmDongBoDongCham();
+}
+
+function vmDongBoDongCham() {
+  var enabled = $('vmPdfAnswers') && $('vmPdfAnswers').value === 'dots';
+  if ($('vmPdfDotLines')) $('vmPdfDotLines').disabled = !enabled;
+}
+
+function vmChenTruocDocument(tex, code) {
+  var at = tex.indexOf('\\begin{document}');
+  return at === -1 ? code + '\n' + tex : tex.slice(0, at) + code + '\n' + tex.slice(at);
+}
+
+function vmCauHinhNoiDungPdf(tex, config) {
+  tex = String(tex || '').replace(/\\documentclass(?:\[([^\]]*)\])?\{([^}]+)\}/, function (_, options, cls) {
+    var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) {
+      return x && !/^(10pt|11pt|12pt|onecolumn|twocolumn)$/.test(x);
+    });
+    opts.unshift(config.fontSize + 'pt', config.layout === 'two' ? 'twocolumn' : 'onecolumn');
+    return '\\documentclass[' + opts.join(',') + ']{' + cls + '}';
+  });
+  var geometry = config.margins === 'tight' ? 'top=1.2cm,bottom=1.2cm,left=1cm,right=1cm' :
+    (config.margins === 'loose' ? 'top=2.2cm,bottom=2cm,left=2cm,right=2cm' : 'top=1.7cm,bottom=1.6cm,left=1.7cm,right=1.7cm');
+  if (/\\usepackage(?:\[[^\]]*\])?\{geometry\}/.test(tex)) tex = vmChenTruocDocument(tex, '\\geometry{' + geometry + '}');
+  else tex = vmChenTruocDocument(tex, '\\usepackage[' + geometry + ']{geometry}');
+
+  if (config.answers === 'show') {
+    tex = tex.replace(/\\usepackage(?:\[[^\]]*\])?\{ex_test\}/g, '\\usepackage[loigiai]{ex_test}');
+    tex = tex.replace(/^\s*\\exitdapso\s*$/gm, '').replace(/^\s*\\renewcommand\{\\indapan\}\[2\]\{\}\s*$/gm, '');
+  } else {
+    tex = tex.replace(/\\True\s*/g, '');
+    ['loigiai', 'solution', 'answer'].forEach(function (command) {
+      if (config.answers === 'dots') {
+        tex = thayLenhKhoiLatex(tex, command, function () {
+          var line = '\\par\\noindent\\dotfill\\par\\medskip\n';
+          return Array(config.dotLines + 1).join(line);
+        });
+      } else tex = xoaLenhKhoiLatex(tex, command);
+    });
+    tex = tex.replace(/\\usepackage(?:\[[^\]]*\])?\{ex_test\}/g, '\\usepackage{ex_test}');
+  }
+  return tex;
+}
+
+async function vmBatDauXuatPdf() {
+  var item = vmLatexDownloads[vmPdfExportKey];
+  if (!item) return;
+  var config = {
+    answers: $('vmPdfAnswers').value,
+    dotLines: parseInt($('vmPdfDotLines').value, 10) || 4,
+    layout: $('vmPdfLayout').value,
+    margins: $('vmPdfMargins').value,
+    fontSize: $('vmPdfFontSize').value
+  };
+  $('vmPdfConfigPane').style.display = 'none'; $('vmPdfResultPane').style.display = 'none'; $('vmPdfProgressPane').style.display = 'flex';
+  $('vmPdfProgressTitle').textContent = 'Đang chuẩn hóa cấu trúc LaTeX…';
+  $('vmPdfProgressText').textContent = 'Đáp án, dòng chấm, bố cục và lề trang đang được áp dụng.';
   try {
     var tex = await chuanHoaTexBaiHoc(item.tex);
+    tex = vmCauHinhNoiDungPdf(tex, config);
+    $('vmPdfProgressTitle').textContent = 'Đang biên dịch PDF…';
+    $('vmPdfProgressText').textContent = 'Tài liệu đang được gửi đến TeXLive. Quá trình này thường mất khoảng 10–30 giây.';
     var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
     if (r.error) throw new Error(r.error.message || 'Trạm biên dịch đang bận');
     if (!(r.data instanceof Blob) || r.data.type.indexOf('pdf') === -1) {
       var log = typeof r.data === 'string' ? r.data : await r.data.text();
-      var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
+      var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0 || /error/i.test(line); }).slice(0, 3).join(' ');
       throw new Error(firstError || 'Không nhận được tệp PDF hợp lệ');
     }
-    var url = URL.createObjectURL(r.data);
-    var a = document.createElement('a');
-    a.href = url; a.download = item.fileName; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
-    if (button) button.textContent = '✓ Đã tải PDF';
-    setTimeout(function () { if (button) { button.disabled = false; button.innerHTML = oldText; } }, 1800);
+    vmPdfExportBlob = r.data;
+    if (vmPdfExportUrl) URL.revokeObjectURL(vmPdfExportUrl);
+    vmPdfExportUrl = URL.createObjectURL(r.data);
+    $('vmPdfProgressPane').style.display = 'none'; $('vmPdfResultPane').style.display = 'block';
+    renderPDFWithJS(vmPdfExportUrl, $('vmPdfPreviewArea'));
   } catch (e) {
-    if (button) { button.disabled = false; button.innerHTML = oldText; }
-    alert('Chưa tạo được PDF: ' + e.message + '. Em vẫn có thể đọc đầy đủ trực tiếp trên web.');
+    $('vmPdfProgressTitle').textContent = 'Chưa tạo được PDF';
+    $('vmPdfProgressText').innerHTML = '<span style="color:var(--err)">' + vmEscHtml(String(e.message || 'Lỗi không xác định').slice(0, 360)) + '</span><br><button class="btn btn-secondary" style="margin-top:14px" onclick="vmQuayLaiPdfConfig()">← Quay lại điều chỉnh</button>';
   }
+}
+
+function vmTaiPdfDaTao() {
+  var item = vmLatexDownloads[vmPdfExportKey];
+  if (!vmPdfExportBlob || !item) return;
+  var url = URL.createObjectURL(vmPdfExportBlob);
+  var a = document.createElement('a'); a.href = url; a.download = item.fileName; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
 }
 
 
@@ -1707,7 +2093,7 @@ async function processVirtualFiles(tex) {
 async function chuanHoaTexBaiHoc(rawCode) {
   var trimmed = (rawCode || '').trim();
   if (/\\documentclass/.test(trimmed)) {
-    return trimmed;
+    return await processVirtualFiles(trimmed);
   }
   
   var styExTest = '';
@@ -2979,7 +3365,7 @@ function renderTheoryReading() {
   var sections = getTheorySections(details.theory_sections);
   
   var html = thanhCongCu('📖 Đọc lý thuyết bài học', null) +
-    (details.latex_content ? vmLatexActionHTML('lesson-theory', details.latex_content, vmTenTepPdf(details.title + '-ly-thuyet')) : '') +
+    (details.latex_content ? vmLatexActionHTML('lesson-theory', details.latex_content, vmTenTepPdf(details.title + '-ly-thuyet'), 'theory') : '') +
     '<div class="theory-reading-container" id="readingContainer" style="max-width:860px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:20px;">';
     
   var unlocked = currentProgress.unlocked_section || 0;
@@ -2995,7 +3381,7 @@ function renderTheoryReading() {
   if (!sections || sections.length === 0) {
     if (details.latex_content && details.latex_content.trim()) {
       html += typeof latexTaiLieuRaHTML === 'function'
-        ? latexTaiLieuRaHTML(details.latex_content, { title: details.title || 'Lý thuyết bài học', kind: 'theory', showSolutions: false })
+        ? latexTaiLieuRaHTML(details.latex_content, { title: details.title || 'Lý thuyết bài học', kind: 'theory', showSolutions: true })
         : '<div class="theory-section-card card"><div class="theory-content">' + latexRaHTML(details.latex_content) + '</div></div>';
     } else {
       html += '<div class="card" style="padding:40px 24px; text-align:center; color:var(--ink-3); background:var(--surface); border:1px solid var(--line); border-radius:12px;">' +
@@ -3103,11 +3489,7 @@ function renderTheoryReading() {
   html += '</div>';
   than.innerHTML = html;
   
-  if (typeof renderToanTrong === 'function') {
-    renderToanTrong(than);
-  } else if (typeof renderLatex === 'function') {
-    renderLatex(than);
-  }
+  vmRenderMathTaiLieu(than);
 }
 
 /* ========================================================================

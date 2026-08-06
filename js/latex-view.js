@@ -20,6 +20,41 @@ function getTheorySections(val) {
   return [];
 }
 
+var vmLatexTikzSeq = 0;
+var vmLatexTikzRegistry = window.vmLatexTikzRegistry || {};
+window.vmLatexTikzRegistry = vmLatexTikzRegistry;
+
+function vmEscapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function vmLayPreambleLatex(src) {
+  var text = String(src || '');
+  var at = text.indexOf('\\begin{document}');
+  return at === -1 ? '' : text.slice(0, at);
+}
+
+// KaTeX does not support TikZ. Preserve each block so the lesson page can
+// compile it separately and place the rendered canvas at the correct position.
+function vmBaoVeKhoiTikz(src, fullSource) {
+  var preamble = vmLayPreambleLatex(fullSource || src);
+  return String(src || '').replace(/\\begin\{tikzpicture\}(?:\[[^\]]*\])?[\s\S]*?\\end\{tikzpicture\}/g, function (tikz) {
+    var token = 'VMTIKZ' + (++vmLatexTikzSeq);
+    vmLatexTikzRegistry[token] = { source: tikz, preamble: preamble };
+    return '\n___' + token + '___\n';
+  });
+}
+
+function vmKhoiTikzSangHtml(html) {
+  return String(html || '').replace(/___(VMTIKZ\d+)___/g, function (_, token) {
+    return '<figure class="vm-tex-tikz" data-vm-tikz="' + token + '">' +
+      '<div class="vm-tex-tikz-state"><span class="vm-tex-tikz-spinner" aria-hidden="true"></span>' +
+      '<span>Đang kết xuất hình TikZ...</span></div></figure>';
+  });
+}
+
 // Bỏ chú thích % (giữ \% là ký hiệu phần trăm thật)
 function lamSachLatex(src) {
   if (!src) return '';
@@ -46,7 +81,7 @@ function tabularSangBangHTML(s) {
 
 // LaTeX -> chuỗi HTML an toàn (công thức $...$ giữ nguyên chờ KaTeX)
 function latexRaHTML(src) {
-  var s = lamSachLatex(src || '');
+  var s = vmBaoVeKhoiTikz(lamSachLatex(src || ''), src || '');
   s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   
   // Bảo vệ các khối công thức toán học tránh bị biên dịch sai ký tự (như \\ thành <br>)
@@ -75,6 +110,14 @@ function latexRaHTML(src) {
     mathBlocks.push('\\(' + math + '\\)');
     return placeholder;
   });
+
+  // Common display environments are often written without \[...\]. Wrap
+  // them so KaTeX auto-render treats the whole environment as one formula.
+  s = s.replace(/\\begin\{(equation\*?|align\*?|aligned|gather\*?|multline\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('\\[\\begin{' + env + '}' + math + '\\end{' + env + '}\\]');
+    return placeholder;
+  });
   
   // 3. Biên dịch các môi trường định dạng LaTeX sang HTML
   s = tabularSangBangHTML(s);
@@ -82,11 +125,13 @@ function latexRaHTML(src) {
   // Bold & Italic
   s = s.replace(/\\textbf\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<b>$1</b>');
   s = s.replace(/\\textit\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<i>$1</i>');
+  s = s.replace(/\\text\{((?:[^{}]|\{[^{}]*\})*)\}/g, '$1');
   
   // Môi trường listEX (gói ex_test) -> hiển thị như danh sách trên web.
   // Tham số [n] của listEX là SỐ CỘT khi in PDF, web bỏ qua và xếp dọc cho dễ đọc.
   s = s.replace(/\\begin\{listEX\}(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
   s = s.replace(/\\end\{listEX\}/g, '\\end{enumerate}');
+  s = s.replace(/\\begin\{multicols\}\{[^}]*\}|\\end\{multicols\}|\\columnbreak/g, ' ');
 
   // Đệ quy xử lý danh sách lồng nhau (enumerate, itemize)
   s = dichMoiTruongDanhSach(s);
@@ -94,6 +139,7 @@ function latexRaHTML(src) {
   // Khối tiêu đề \boxde và xuống trang \newpage
   s = s.replace(/\\boxde\{([^{}]+)\}/g, '<div class="part-header" style="margin-top:24px;text-align:center;font-size:1.1rem;background:var(--accent-soft);color:var(--accent);padding:8px 16px;border-radius:var(--r-sm)">$1</div>');
   s = s.replace(/\\newpage/g, '<hr style="border-top:1px dashed var(--line-2);margin:24px 0;clear:both">');
+  s = s.replace(/\\(?:par|noindent)\b/g, '<br>');
   
   // \hfill và xuống dòng \\
   s = s.replace(/\\hfill\s*(\([^\n]*\))/g, '<span style="float:right; color:var(--ink-2); font-weight:600; font-size:0.85rem">$1</span>');
@@ -105,7 +151,7 @@ function latexRaHTML(src) {
     s = s.split('___MATHBLOCK_' + i + '___').join(mathBlocks[i]);
   }
   
-  return s;
+  return vmKhoiTikzSangHtml(s);
 }
 
 // Lấy phần nội dung có thể đọc từ một tệp .tex hoàn chỉnh. Giáo viên có thể
@@ -127,6 +173,10 @@ function tachNoiDungTaiLieuLatex(src) {
 // Xóa một lệnh có đối số {...} bằng bộ đếm ngoặc, để không lộ lời giải/đáp án
 // khi nguồn LaTeX có các khối lồng nhau.
 function xoaLenhKhoiLatex(src, command) {
+  return thayLenhKhoiLatex(src, command, function () { return ''; });
+}
+
+function thayLenhKhoiLatex(src, command, replacer) {
   var token = '\\' + command;
   var out = String(src || '');
   var from = 0;
@@ -142,14 +192,25 @@ function xoaLenhKhoiLatex(src, command) {
       else if (out.charAt(i) === '}' && out.charAt(i - 1) !== '\\') depth--;
       i++;
     }
-    out = out.slice(0, at) + out.slice(i);
-    from = at;
+    var content = depth === 0 ? out.slice(brace + 1, i - 1) : out.slice(brace + 1);
+    var replacement = typeof replacer === 'function' ? replacer(content) : String(replacer || '');
+    out = out.slice(0, at) + replacement + out.slice(i);
+    from = at + replacement.length;
   }
   return out;
 }
 
 function dinhDangVanBanTaiLieuLatex(src) {
-  var html = latexRaHTML(src || '');
+  var solutionBlocks = [];
+  var text = String(src || '');
+  ['loigiai', 'solution', 'answer'].forEach(function (command) {
+    text = thayLenhKhoiLatex(text, command, function (content) {
+      var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
+      solutionBlocks.push(content);
+      return token;
+    });
+  });
+  var html = latexRaHTML(text);
   html = html.replace(/\\part\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
   html = html.replace(/\\chapter\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
   html = html.replace(/\\section\*?\{([^{}]*)\}/g, '<h2 class="vm-tex-h2">$1</h2>');
@@ -163,6 +224,11 @@ function dinhDangVanBanTaiLieuLatex(src) {
   html = html.replace(/\\(?:vfill|medskip|bigskip|smallskip)\b/g, '<div class="vm-tex-gap"></div>');
   html = html.replace(/\n\s*\n+/g, '<div class="vm-tex-gap"></div>');
   html = html.replace(/\n/g, ' ');
+  solutionBlocks.forEach(function (content, index) {
+    var box = '<aside class="vm-tex-solution"><div class="vm-tex-solution-title">Lời giải</div><div>' +
+      dinhDangVanBanTaiLieuLatex(content) + '</div></aside>';
+    html = html.split('___VMSOLUTION_' + index + '___').join(box);
+  });
   return html.trim();
 }
 
@@ -178,6 +244,7 @@ function latexTaiLieuRaHTML(src, options) {
     body = xoaLenhKhoiLatex(body, 'solution');
     body = xoaLenhKhoiLatex(body, 'answer');
   }
+  body = vmBaoVeKhoiTikz(body, src || '');
 
   var labels = {
     document: 'Nội dung tài liệu', theory: 'Lý thuyết', test: 'Câu',
@@ -200,10 +267,15 @@ function latexTaiLieuRaHTML(src, options) {
         return '<div class="vm-tex-choice"><span class="vm-tex-choice-key">' + choice.key + '</span><div>' + dinhDangVanBanTaiLieuLatex(choice.latex || '') + '</div></div>';
       }).join('') + '</div>';
     }
+    var solution = '';
+    if (options.showSolutions && parsed && parsed.solution_latex) {
+      solution = '<aside class="vm-tex-solution"><div class="vm-tex-solution-title">Lời giải</div><div>' +
+        dinhDangVanBanTaiLieuLatex(parsed.solution_latex) + '</div></aside>';
+    }
     var numbered = ['ex', 'bt', 'vd'].indexOf(env) !== -1;
     return '<section class="vm-tex-block vm-tex-block-' + env + '">' +
       '<div class="vm-tex-block-title"><span>' + (envLabels[env] || labels.document) + (numbered ? ' ' + count : '') + '</span></div>' +
-      '<div class="vm-tex-block-body">' + inner + choices + '</div></section>';
+      '<div class="vm-tex-block-body">' + inner + choices + solution + '</div></section>';
   }
 
   while ((match = envRe.exec(body)) !== null) {
@@ -215,6 +287,7 @@ function latexTaiLieuRaHTML(src, options) {
   var tail = dinhDangVanBanTaiLieuLatex(body.slice(last));
   if (tail) html += '<div class="vm-tex-prose">' + tail + '</div>';
   if (!html.trim()) html = '<div class="vm-tex-empty">Tệp LaTeX chưa có nội dung có thể hiển thị.</div>';
+  html = vmKhoiTikzSangHtml(html);
 
   return '<article class="vm-tex-reader" data-document-kind="' + kind + '">' +
     '<header class="vm-tex-reader-head"><span class="vm-tex-reader-kicker">ĐỌC TRỰC TIẾP TRÊN VINHMATH</span><h2>' +
@@ -264,7 +337,7 @@ function parseItems(text) {
 // Xử lý các môi trường danh sách lồng nhau từ trong ra ngoài (innermost first)
 function dichMoiTruongDanhSach(s) {
   var regexEnumerate = /\\begin\{enumerate\}(?:\[([^\]]*)\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{enumerate\}/g;
-  var regexItemize = /\\begin\{itemize\}((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{itemize\}/g;
+  var regexItemize = /\\begin\{itemize\}(?:\[[^\]]*\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{itemize\}/g;
 
   var changed = true;
   var limit = 10;
@@ -318,9 +391,14 @@ function renderToanTrong(el) {
       ],
       macros: {
         "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right.",
-        "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right."
+        "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+        "\\N": "\\mathbb{N}", "\\Z": "\\mathbb{Z}", "\\Q": "\\mathbb{Q}",
+        "\\R": "\\mathbb{R}", "\\C": "\\mathbb{C}",
+        "\\vect": "\\overrightarrow{#1}"
       },
-      throwOnError: false
+      throwOnError: false,
+      strict: 'ignore',
+      trust: false
     });
   }
 }

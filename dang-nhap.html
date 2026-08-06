@@ -204,18 +204,51 @@ body {
 
 .show-pass {
   position: absolute;
-  right: 14px;
+  right: 7px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1.1rem;
   color: var(--ink-3);
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
-.show-pass:hover {
+.show-pass svg { width: 20px; height: 20px; pointer-events: none; }
+.show-pass:hover, .show-pass:focus-visible {
   color: var(--ink-2);
+  background: var(--surface-2);
+  border-color: var(--line);
+  outline: none;
+}
+.remember-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: -6px 0 20px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: rgba(var(--surface-2-rgb), 0.34);
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+.remember-row:hover { border-color: var(--line-2); background: var(--surface-2); }
+.remember-row input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+.remember-copy { min-width: 0; line-height: 1.35; }
+.remember-copy strong { display: block; color: var(--ink); font-size: .84rem; font-weight: 700; }
+.remember-copy small { display: block; margin-top: 3px; color: var(--ink-3); font-size: .72rem; }
 }
 
 .btn-primary {
@@ -303,6 +336,12 @@ body {
 @keyframes blink {
   50% { opacity: 0; }
 }
+@media(max-width: 520px) {
+  .main { padding: 24px 16px; }
+  .box { max-width: 100%; padding: 30px 22px; }
+  .box h1 { font-size: 1.28rem; }
+  .remember-row { padding: 10px; }
+}
 </style>
 </head>
 <body>
@@ -331,18 +370,25 @@ body {
 
     <div class="alert" id="thongBao"></div>
 
-    <form id="formDangNhap">
+    <form id="formDangNhap" autocomplete="on">
       <div class="field">
         <label for="user">USER_NAME</label>
-        <input class="input" id="user" placeholder="vd: NguyenVanA@hs.vinhmath" autocomplete="username" required>
+        <input class="input" id="user" name="username" placeholder="vd: NguyenVanA@hs.vinhmath" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       </div>
       <div class="field">
         <label for="pass">PASSWORD</label>
         <div style="position:relative">
-          <input class="input" type="password" id="pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px" required>
-          <button type="button" class="show-pass" onclick="togglePass()" id="eyeBtn">👁</button>
+          <input class="input" type="password" id="pass" name="password" placeholder="••••••••" autocomplete="current-password" style="padding-right:52px" required>
+          <button type="button" class="show-pass" onclick="togglePass()" id="eyeBtn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" aria-pressed="false"></button>
         </div>
       </div>
+      <label class="remember-row" for="rememberLogin">
+        <input type="checkbox" id="rememberLogin" checked>
+        <span class="remember-copy">
+          <strong>Ghi nhớ đăng nhập trên thiết bị này</strong>
+          <small>Duy trì phiên sau khi đóng trình duyệt. Mật khẩu được trình duyệt quản lý an toàn, VinhMath không tự lưu.</small>
+        </span>
+      </label>
       <button class="btn btn-primary" type="submit" id="nutVao" style="width:100%; margin-top: 10px;">AUTH_SIGN_IN</button>
     </form>
 
@@ -550,9 +596,41 @@ draw();
 // --- LOGIN LOGIC ---
 function togglePass() {
   var p = $('pass');
-  p.type = p.type === 'password' ? 'text' : 'password';
-  $('eyeBtn').textContent = p.type === 'password' ? '👁' : '🙈';
+  var seHien = p.type === 'password';
+  p.type = seHien ? 'text' : 'password';
+  capNhatNutMat(seHien);
 }
+
+function capNhatNutMat(dangHien) {
+  var btn = $('eyeBtn');
+  var nhan = dangHien ? 'Ẩn mật khẩu' : 'Hiện mật khẩu';
+  btn.setAttribute('aria-label', nhan);
+  btn.setAttribute('title', nhan);
+  btn.setAttribute('aria-pressed', dangHien ? 'true' : 'false');
+  btn.innerHTML = dangHien
+    ? '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3l18 18M10.6 10.7a2 2 0 002.7 2.7M9.9 4.2A10.7 10.7 0 0112 4c5.2 0 8.8 4.7 9.7 6.1a3.4 3.4 0 010 3.8 17.5 17.5 0 01-2.3 2.8M6.2 6.2a17.8 17.8 0 00-3.9 3.9 3.4 3.4 0 000 3.8C3.2 15.3 6.8 20 12 20a10.5 10.5 0 005-1.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.3 10.1C3.2 8.7 6.8 4 12 4s8.8 4.7 9.7 6.1a3.4 3.4 0 010 3.8C20.8 15.3 17.2 20 12 20S3.2 15.3 2.3 13.9a3.4 3.4 0 010-3.8z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
+}
+
+var VM_SAVED_USERNAME_KEY = 'vm-remembered-username';
+function khoiTaoNhoDangNhap() {
+  var remember = $('rememberLogin');
+  var enabled = typeof vmCoNhoDangNhap === 'function' ? vmCoNhoDangNhap() : true;
+  remember.checked = enabled;
+  if (enabled) {
+    try { $('user').value = window.localStorage.getItem(VM_SAVED_USERNAME_KEY) || ''; } catch (e) {}
+  }
+}
+function luuLuaChonDangNhap(username, enabled) {
+  if (typeof vmDatNhoDangNhap === 'function') vmDatNhoDangNhap(enabled);
+  try {
+    if (enabled) window.localStorage.setItem(VM_SAVED_USERNAME_KEY, String(username || '').trim());
+    else window.localStorage.removeItem(VM_SAVED_USERNAME_KEY);
+  } catch (e) {}
+}
+
+capNhatNutMat(false);
+khoiTaoNhoDangNhap();
 
 function baoLoi(msg, loai) {
   var el = $('thongBao');
@@ -587,11 +665,15 @@ $('formDangNhap').addEventListener('submit', async function (e) {
   e.preventDefault();
   var nut = $('nutVao');
   nut.disabled = true; nut.textContent = 'CHECKING_CREDENTIALS…';
-  var r = await dangNhap($('user').value, $('pass').value);
+  var username = $('user').value;
+  var remember = $('rememberLogin').checked;
+  if (typeof vmDatNhoDangNhap === 'function') vmDatNhoDangNhap(remember);
+  var r = await dangNhap(username, $('pass').value);
   if (r.error) {
     baoLoi(r.error);
     nut.disabled = false; nut.textContent = 'AUTH_SIGN_IN';
   } else {
+    luuLuaChonDangNhap(username, remember);
     try {
       var s = await sb.auth.getSession();
       if (s.data.session) {
