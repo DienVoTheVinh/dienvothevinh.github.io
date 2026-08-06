@@ -24,7 +24,7 @@ function between(source, from, to) {
       <main id="root"></main>
       <div id="vmPdfExportModal" style="display:none">
         <div id="vmPdfConfigPane"></div><div id="vmPdfProgressPane"></div><div id="vmPdfResultPane"></div>
-        <button class="vm-pdf-preset" data-preset="study"></button><button class="vm-pdf-preset" data-preset="worksheet"></button><button class="vm-pdf-preset" data-preset="compact"></button>
+        <button class="vm-pdf-preset" data-preset="original"></button><button class="vm-pdf-preset" data-preset="study"></button><button class="vm-pdf-preset" data-preset="worksheet"></button><button class="vm-pdf-preset" data-preset="compact"></button>
         <select id="vmPdfAnswers"><option value="show">show</option><option value="hide">hide</option><option value="dots">dots</option></select>
         <select id="vmPdfDotLines"><option value="2">2</option><option value="4">4</option></select>
         <select id="vmPdfLayout"><option value="one">one</option><option value="two">two</option></select>
@@ -69,8 +69,10 @@ function between(source, from, to) {
       modal: document.getElementById('vmPdfExportModal').style.display,
       answers: document.getElementById('vmPdfAnswers').value,
       dots: document.getElementById('vmPdfDotLines').disabled,
+      original: document.querySelector('[data-preset="original"]').classList.contains('active'),
     }));
-    if (state.modal !== 'flex' || state.answers !== 'dots' || state.dots) throw new Error(`PDF configuration popup failed: ${JSON.stringify(state)}`);
+    if (state.modal !== 'flex' || state.answers !== 'show' || !state.dots || !state.original) throw new Error(`PDF configuration popup failed: ${JSON.stringify(state)}`);
+    if (lesson.includes('id="btnMaxContent"')) throw new Error('Legacy content fullscreen button still exists');
     if (process.env.VM_SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.VM_SCREENSHOT_DIR, { recursive: true });
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-popup.png`, fullPage: true });

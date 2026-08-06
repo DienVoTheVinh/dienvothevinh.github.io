@@ -55,6 +55,33 @@ function vmKhoiTikzSangHtml(html) {
   });
 }
 
+// LaTeX cho phep chen $...$ ben trong \text{...} cua align, nhung KaTeX
+// dang o math mode se coi dau $ do la loi. Tach phan toan ra khoi \text.
+function vmChuanHoaTextTrongToan(src) {
+  var text = String(src || '');
+  var out = '', from = 0;
+  while (from < text.length) {
+    var at = text.indexOf('\\text{', from);
+    if (at === -1) { out += text.slice(from); break; }
+    out += text.slice(from, at);
+    var brace = at + '\\text'.length;
+    var depth = 1, i = brace + 1;
+    while (i < text.length && depth > 0) {
+      if (text.charAt(i) === '{' && text.charAt(i - 1) !== '\\') depth++;
+      else if (text.charAt(i) === '}' && text.charAt(i - 1) !== '\\') depth--;
+      i++;
+    }
+    if (depth !== 0) { out += text.slice(at); break; }
+    var content = text.slice(brace + 1, i - 1);
+    content = content.replace(/(^|[^\\])\$([^$]+)\$/g, function (_, prefix, math) {
+      return prefix + '}' + math + '\\text{';
+    });
+    out += '\\text{' + content + '}';
+    from = i;
+  }
+  return out;
+}
+
 // Bỏ chú thích % (giữ \% là ký hiệu phần trăm thật)
 function lamSachLatex(src) {
   if (!src) return '';
@@ -87,19 +114,32 @@ function latexRaHTML(src) {
   // Bảo vệ các khối công thức toán học tránh bị biên dịch sai ký tự (như \\ thành <br>)
   var mathBlocks = [];
   
-  // 1. Bảo vệ $$...$$ và \[...\]
+  // 1. Bao ve cac moi truong display truoc. Neu lam sau $...$, mot cong
+  // thuc nam trong \text{...} se tao placeholder long nhau va bi "undefined".
+  s = s.replace(/\\begin\{(equation\*?|align\*?|aligned|gather\*?|multline\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    var katexBody = vmChuanHoaTextTrongToan(math);
+    if (/^align/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
+    else if (/^gather/.test(env)) katexBody = '\\begin{gathered}' + katexBody + '\\end{gathered}';
+    else if (/^multline/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
+    else if (env === 'cases' || env === 'aligned') katexBody = '\\begin{' + env + '}' + katexBody + '\\end{' + env + '}';
+    mathBlocks.push('\\[' + katexBody + '\\]');
+    return placeholder;
+  });
+
+  // 2. Bảo vệ $$...$$ và \[...\]
   s = s.replace(/\$\$([\s\S]*?)\$\$/g, function (match, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    mathBlocks.push('$$' + math + '$$');
+    mathBlocks.push('$$' + vmChuanHoaTextTrongToan(math) + '$$');
     return placeholder;
   });
   s = s.replace(/\\\[([\s\S]*?)\\\]/g, function (match, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    mathBlocks.push('\\[' + math + '\\]');
+    mathBlocks.push('\\[' + vmChuanHoaTextTrongToan(math) + '\\]');
     return placeholder;
   });
   
-  // 2. Bảo vệ $...$ và \(...\) (tránh ký tự \$ bị escape)
+  // 3. Bảo vệ $...$ và \(...\) (tránh ký tự \$ bị escape)
   s = s.replace(/(^|[^\\])\$([\s\S]*?)\$/g, function (match, prefix, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
     mathBlocks.push('$' + math + '$');
@@ -111,15 +151,7 @@ function latexRaHTML(src) {
     return placeholder;
   });
 
-  // Common display environments are often written without \[...\]. Wrap
-  // them so KaTeX auto-render treats the whole environment as one formula.
-  s = s.replace(/\\begin\{(equation\*?|align\*?|aligned|gather\*?|multline\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
-    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    mathBlocks.push('\\[\\begin{' + env + '}' + math + '\\end{' + env + '}\\]');
-    return placeholder;
-  });
-  
-  // 3. Biên dịch các môi trường định dạng LaTeX sang HTML
+  // 4. Biên dịch các môi trường định dạng LaTeX sang HTML
   s = tabularSangBangHTML(s);
   
   // Bold & Italic
@@ -129,7 +161,7 @@ function latexRaHTML(src) {
   
   // Môi trường listEX (gói ex_test) -> hiển thị như danh sách trên web.
   // Tham số [n] của listEX là SỐ CỘT khi in PDF, web bỏ qua và xếp dọc cho dễ đọc.
-  s = s.replace(/\\begin\{listEX\}(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
+  s = s.replace(/\\begin\{listEX\}\s*(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
   s = s.replace(/\\end\{listEX\}/g, '\\end{enumerate}');
   s = s.replace(/\\begin\{multicols\}\{[^}]*\}|\\end\{multicols\}|\\columnbreak/g, ' ');
 
@@ -147,7 +179,7 @@ function latexRaHTML(src) {
   s = s.replace(/\\\\/g, '<br>');
   
   // Phục hồi các khối công thức toán học (Dùng split-join thay thế replace để tránh lỗi mất ký tự $)
-  for (var i = 0; i < mathBlocks.length; i++) {
+  for (var i = mathBlocks.length - 1; i >= 0; i--) {
     s = s.split('___MATHBLOCK_' + i + '___').join(mathBlocks[i]);
   }
   
@@ -184,7 +216,21 @@ function thayLenhKhoiLatex(src, command, replacer) {
     var at = out.indexOf(token, from);
     if (at === -1) break;
     var brace = at + token.length;
+    // Khong nhan nham \answerbox... la lenh \answer.
+    if (/[A-Za-z@]/.test(out.charAt(brace))) { from = brace; continue; }
+    if (out.charAt(brace) === '*') brace++;
     while (/\s/.test(out.charAt(brace))) brace++;
+    // Mot so goi LaTeX cho phep \loigiai[tuy-chon]{...}.
+    if (out.charAt(brace) === '[') {
+      var bracketDepth = 1;
+      brace++;
+      while (brace < out.length && bracketDepth > 0) {
+        if (out.charAt(brace) === '[' && out.charAt(brace - 1) !== '\\') bracketDepth++;
+        else if (out.charAt(brace) === ']' && out.charAt(brace - 1) !== '\\') bracketDepth--;
+        brace++;
+      }
+      while (/\s/.test(out.charAt(brace))) brace++;
+    }
     if (out.charAt(brace) !== '{') { from = brace; continue; }
     var depth = 1, i = brace + 1;
     while (i < out.length && depth > 0) {
@@ -200,11 +246,43 @@ function thayLenhKhoiLatex(src, command, replacer) {
   return out;
 }
 
+function thayMoiTruongKhoiLatex(src, environment, replacer) {
+  var pattern = new RegExp('\\\\begin\\{' + environment + '\\}([\\s\\S]*?)\\\\end\\{' + environment + '\\}', 'gi');
+  return String(src || '').replace(pattern, function (_, content) {
+    return typeof replacer === 'function' ? replacer(content) : String(replacer || '');
+  });
+}
+
+function tachLoiGiaiKhoiNoiDung(src) {
+  var text = String(src || '');
+  var solutions = [];
+  ['loigiai', 'solution', 'answer'].forEach(function (command) {
+    text = thayLenhKhoiLatex(text, command, function (content) {
+      solutions.push(content);
+      return '';
+    });
+  });
+  ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+    text = thayMoiTruongKhoiLatex(text, environment, function (content) {
+      solutions.push(content);
+      return '';
+    });
+  });
+  return { content: text, solution: solutions.join('\n\n').trim() };
+}
+
 function dinhDangVanBanTaiLieuLatex(src) {
   var solutionBlocks = [];
   var text = String(src || '');
   ['loigiai', 'solution', 'answer'].forEach(function (command) {
     text = thayLenhKhoiLatex(text, command, function (content) {
+      var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
+      solutionBlocks.push(content);
+      return token;
+    });
+  });
+  ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+    text = thayMoiTruongKhoiLatex(text, environment, function (content) {
       var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
       solutionBlocks.push(content);
       return token;
@@ -243,6 +321,9 @@ function latexTaiLieuRaHTML(src, options) {
     body = xoaLenhKhoiLatex(body, 'loigiai');
     body = xoaLenhKhoiLatex(body, 'solution');
     body = xoaLenhKhoiLatex(body, 'answer');
+    ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+      body = thayMoiTruongKhoiLatex(body, environment, '');
+    });
   }
   body = vmBaoVeKhoiTikz(body, src || '');
 
@@ -326,7 +407,7 @@ async function napFileTexVaoO(input, textareaId, statusId) {
 }
 
 function parseItems(text) {
-  var parts = text.split(/\\item\s*/);
+  var parts = text.split(/\\item(?:\s*\[[^\]]*\])?\s*/);
   var first = parts.shift().trim();
   var html = parts.map(function (p) {
     return '<li style="margin-bottom:6px; line-height:1.6">' + p.trim() + '</li>';
@@ -336,8 +417,8 @@ function parseItems(text) {
 
 // Xử lý các môi trường danh sách lồng nhau từ trong ra ngoài (innermost first)
 function dichMoiTruongDanhSach(s) {
-  var regexEnumerate = /\\begin\{enumerate\}(?:\[([^\]]*)\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{enumerate\}/g;
-  var regexItemize = /\\begin\{itemize\}(?:\[[^\]]*\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{itemize\}/g;
+  var regexEnumerate = /\\begin\{enumerate\}\s*(?:\[([^\]]*)\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{enumerate\}/g;
+  var regexItemize = /\\begin\{itemize\}\s*(?:\[[^\]]*\])?((?:(?!\\begin\{enumerate\}|\\begin\{itemize\})[\s\S])*?)\\end\{itemize\}/g;
 
   var changed = true;
   var limit = 10;
@@ -433,22 +514,9 @@ function parseLatexQuestions(latexText) {
     var envType = match[1];
     var content = match[2];
     
-    var solution = "";
-    var solIndex = content.indexOf('\\loigiai');
-    if (solIndex !== -1) {
-      var braceStart = content.indexOf('{', solIndex);
-      if (braceStart !== -1) {
-        var braceCount = 1;
-        var i = braceStart + 1;
-        while (i < content.length && braceCount > 0) {
-          if (content[i] === '{') braceCount++;
-          else if (content[i] === '}') braceCount--;
-          i++;
-        }
-        solution = content.substring(braceStart + 1, i - 1);
-        content = content.substring(0, solIndex) + content.substring(i);
-      }
-    }
+    var extractedSolution = tachLoiGiaiKhoiNoiDung(content);
+    var solution = extractedSolution.solution;
+    content = extractedSolution.content;
     
     var choices = [];
     var choiceTFIndex = content.indexOf('\\choiceTF');

@@ -39,18 +39,23 @@ Nội dung \textbf{trọng tâm} với công thức $A\subset B$.
 \begin{ex}
 Cho $A=\{1;2\}$. Khẳng định nào đúng?
 \choice{$3\in A$}{\True $2\in A$}{$A=\varnothing$}{$1\notin A$}
-\loigiai{NỘI DUNG BÍ MẬT KHÔNG ĐƯỢC HIỆN}
+\loigiai{NỘI DUNG BÍ MẬT KHÔNG ĐƯỢC HIỆN
+\begin{align*}
+x &= 1+1 \\
+  &= 2\quad \text{(thế $x=1$ vào biểu thức)}.
+\end{align*}}
 \end{ex}
 
 \begin{bt}
 Tính $1+2+3$.
 \loigiai{Đáp số 6}
 \end{bt}
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
+[leftmargin=*]
 \item Danh sach khong duoc lo tham so. \text{(HDT 1.1)}
 \end{itemize}
 \begin{tikzpicture}
-\draw (0,0)--(1,1);
+\draw[brandGold] (0,0)--(1,1);
 \end{tikzpicture}
 \end{document}`;
 
@@ -89,6 +94,7 @@ Tính $1+2+3$.
       solutions: document.querySelectorAll('#theoryRoot .vm-tex-solution').length,
     }));
     if (!theory.text.includes('Đáp số 6') || theory.solutions < 2) throw new Error(`Theory solutions disappeared: ${JSON.stringify(theory)}`);
+    if (theory.text.includes('undefined') || /\\begin\{align\*?\}/.test(theory.text)) throw new Error(`Aligned solution leaked raw LaTeX: ${JSON.stringify(theory)}`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await page.evaluate(() => {
@@ -114,6 +120,10 @@ Tính $1+2+3$.
     if (!lesson.includes('vmMoPdfExport') || !lesson.includes('vmPdfExportModal') || !lesson.includes('vmCauHinhNoiDungPdf')) throw new Error('Configurable on-demand PDF export is missing');
     if (!lesson.includes('vmDoiZoomReader') || !lesson.includes('vmToggleReaderFullscreen')) throw new Error('Reader zoom/fullscreen controls are missing');
     if (!lesson.includes('vmLayKhaiBaoTikz') || !lesson.includes('tkz-euclide,pgfplots')) throw new Error('TikZ compiler preamble support is missing');
+    if (!lesson.includes('vmMauDuPhongTikz') || !lesson.includes('providecolor')) throw new Error('TikZ custom-color fallback is missing');
+    if (!/\.vm-tex-reader\s*\{[\s\S]*?flex:0 0 auto;[\s\S]*?overflow:visible;/.test(inlineCss)) throw new Error('Long reader content can still be clipped by flex sizing');
+    if (lesson.includes('id="btnMaxContent"')) throw new Error('Legacy transparent content fullscreen button still exists');
+    if (!lesson.includes('vmReaderLoadingHTML') || !lesson.includes('Đang dựng nội dung lý thuyết')) throw new Error('Visible reader build state is missing');
     if (!lesson.includes("renderPDFWithJS(buildPdfUrl(b.docPath), pdfBox)")) throw new Error('PDF-only homework does not use the web viewer');
     console.log('PASS native LaTeX reader, upload, solution safety, PDF fallback, desktop and mobile checks');
   } finally {
