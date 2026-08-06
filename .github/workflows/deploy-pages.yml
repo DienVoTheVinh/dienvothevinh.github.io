@@ -28,12 +28,10 @@ jobs:
         run: |
           rm -rf _site
           mkdir -p _site
-          find . -maxdepth 1 -type f \
-            ( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' \
-               -o -name '*.xml' -o -name '*.webmanifest' -o -name '*.txt' \
-               -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.svg' \
-               -o -name '*.ico' -o -name '*.sty' -o -name 'CNAME' \
-            ) -exec cp '{}' _site/ ;
+          shopt -s nullglob
+          for file in *.html *.css *.js *.json *.xml *.webmanifest *.txt *.png *.jpg *.jpeg *.svg *.ico *.sty CNAME; do
+            cp "$file" _site/
+          done
           for dir in assets css icons img js logo; do
             if [ -d "$dir" ]; then
               cp -R "$dir" "_site/$dir"
