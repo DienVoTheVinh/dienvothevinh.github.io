@@ -46,15 +46,20 @@ function between(source, from, to) {
       Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
       const tex = String.raw`\documentclass{article}\begin{document}\section{Noi dung dai}\begin{ex}Tinh $1+1$.\loigiai{2}\end{ex}\end{document}`;
       document.getElementById('root').innerHTML = vmLatexNativeHTML('Tai lieu mau', tex, 'reader-test', 'test.pdf', 'test', false);
+      document.querySelector('.vm-tex-reader').insertAdjacentHTML('beforeend', '<div class="katex-display"><span class="katex" style="display:inline-block;width:520px;height:56px">Công thức rất dài</span></div>');
+      vmFitLongMath(document.getElementById('root'));
     });
 
     await page.click('[data-vm-zoom-label="reader-test"] + button');
     let state = await page.evaluate(() => ({
       zoom: document.querySelector('[data-vm-zoom-label="reader-test"]').textContent,
       scale: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
+      computedSize: getComputedStyle(document.querySelector('.vm-tex-reader')).fontSize,
+      fitted: document.querySelector('.katex-display').classList.contains('vm-math-fitted'),
+      fittedTransform: document.querySelector('.katex-display > .katex').style.transform,
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
     }));
-    if (state.zoom !== '110%' || state.scale !== '1.1' || state.overflow) throw new Error(`Zoom/mobile layout failed: ${JSON.stringify(state)}`);
+    if (state.zoom !== '110%' || state.scale !== '1.1' || parseFloat(state.computedSize) < 16 || !state.fitted || !state.fittedTransform.includes('scale(') || state.overflow) throw new Error(`Zoom/mobile formula fitting failed: ${JSON.stringify(state)}`);
 
     await page.click('[data-vm-fullscreen-btn="reader-test"]');
     state = await page.evaluate(() => ({
