@@ -46,15 +46,22 @@ Cho $A=\{1;2\}$. Khẳng định nào đúng?
 Tính $1+2+3$.
 \loigiai{Đáp số 6}
 \end{bt}
+\begin{itemize}[leftmargin=*]
+\item Danh sach khong duoc lo tham so. \text{(HDT 1.1)}
+\end{itemize}
+\begin{tikzpicture}
+\draw (0,0)--(1,1);
+\end{tikzpicture}
 \end{document}`;
 
   const browser = await chromium.launch({ executablePath, headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    await page.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--bg:#fafafa;--surface:#fff;--surface-solid:#fff;--surface-2:#f6f4ef;--line:#ddd;--line-2:#ccc;--accent:#d97706;--accent-soft:#fff4dc;--ink:#171717;--ink-3:#666;--ok:#16865a;--ok-soft:#e9f8f1}${inlineCss}</style><main id="root" class="vm-tex-scroll"></main><input id="texFile" type="file"><textarea id="texSource"></textarea><span id="texStatus"></span>`);
+    await page.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--bg:#fafafa;--surface:#fff;--surface-solid:#fff;--surface-2:#f6f4ef;--line:#ddd;--line-2:#ccc;--accent:#d97706;--accent-soft:#fff4dc;--ink:#171717;--ink-3:#666;--ok:#16865a;--ok-soft:#e9f8f1}${inlineCss}</style><main id="root" class="vm-tex-scroll"></main><main id="theoryRoot" class="vm-tex-scroll"></main><input id="texFile" type="file"><textarea id="texSource"></textarea><span id="texStatus"></span>`);
     await page.addScriptTag({ content: reader });
     await page.evaluate((tex) => {
       document.getElementById('root').innerHTML = latexTaiLieuRaHTML(tex, { title: 'Đề mẫu', kind: 'test', showSolutions: false });
+      document.getElementById('theoryRoot').innerHTML = latexTaiLieuRaHTML(tex, { title: 'Ly thuyet mau', kind: 'theory', showSolutions: true });
     }, sample);
 
     const desktop = await page.evaluate(() => {
@@ -67,13 +74,21 @@ Tính $1+2+3$.
         choiceColumns: getComputedStyle(root.querySelector('.vm-tex-choices')).gridTemplateColumns.split(' ').length,
         readerWidth: readerEl.getBoundingClientRect().width,
         overflow: readerEl.scrollWidth > readerEl.clientWidth + 1,
+        tikzCount: root.querySelectorAll('.vm-tex-tikz').length,
+        leakedListOption: root.textContent.includes('leftmargin=*') || root.textContent.includes('\\text{'),
       };
     });
     if (!desktop.text.includes('Tập hợp và phép toán') || !desktop.text.includes('Đề mẫu')) throw new Error('Document title or section is missing');
     if (desktop.text.includes('documentclass') || desktop.text.includes('usepackage')) throw new Error('LaTeX preamble leaked into the reader');
     if (desktop.text.includes('NỘI DUNG BÍ MẬT') || desktop.text.includes('Đáp số 6') || desktop.text.includes('True')) throw new Error('Solutions or answer markers leaked to students');
     if (desktop.blockCount !== 2 || desktop.choiceCount !== 4 || desktop.choiceColumns !== 2) throw new Error(`Desktop document structure is wrong: ${JSON.stringify(desktop)}`);
+    if (desktop.tikzCount !== 1 || desktop.leakedListOption) throw new Error(`TikZ/list conversion is wrong: ${JSON.stringify(desktop)}`);
     if (desktop.readerWidth > 921 || desktop.overflow) throw new Error(`Desktop reader overflows: ${JSON.stringify(desktop)}`);
+    const theory = await page.evaluate(() => ({
+      text: document.getElementById('theoryRoot').textContent,
+      solutions: document.querySelectorAll('#theoryRoot .vm-tex-solution').length,
+    }));
+    if (!theory.text.includes('Đáp số 6') || theory.solutions < 2) throw new Error(`Theory solutions disappeared: ${JSON.stringify(theory)}`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await page.evaluate(() => {
@@ -96,7 +111,9 @@ Tính $1+2+3$.
     const docFn = extractFunction(lesson, 'hienTaiLieuTex');
     const testFn = extractFunction(lesson, 'hienTestTex');
     if (/functions\.invoke\(['"]latex/.test(docFn) || /functions\.invoke\(['"]latex/.test(testFn)) throw new Error('Opening a LaTeX document still compiles PDF automatically');
-    if (!lesson.includes("vmTaiPdfLatex") || !lesson.includes("⬇ Tạo &amp; tải PDF")) throw new Error('On-demand PDF download action is missing');
+    if (!lesson.includes('vmMoPdfExport') || !lesson.includes('vmPdfExportModal') || !lesson.includes('vmCauHinhNoiDungPdf')) throw new Error('Configurable on-demand PDF export is missing');
+    if (!lesson.includes('vmDoiZoomReader') || !lesson.includes('vmToggleReaderFullscreen')) throw new Error('Reader zoom/fullscreen controls are missing');
+    if (!lesson.includes('vmLayKhaiBaoTikz') || !lesson.includes('tkz-euclide,pgfplots')) throw new Error('TikZ compiler preamble support is missing');
     if (!lesson.includes("renderPDFWithJS(buildPdfUrl(b.docPath), pdfBox)")) throw new Error('PDF-only homework does not use the web viewer');
     console.log('PASS native LaTeX reader, upload, solution safety, PDF fallback, desktop and mobile checks');
   } finally {
