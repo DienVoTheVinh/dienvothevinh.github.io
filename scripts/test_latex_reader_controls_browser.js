@@ -46,6 +46,10 @@ function between(source, from, to) {
     if (!tikz.includes('definecolor{vmGold}') || !tikz.includes('vm node/.style') || !tikz.includes('tkz-euclide,pgfplots')) throw new Error('TikZ preamble declarations were lost');
     await page.evaluate(() => {
       Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
+      const chrome = document.createElement('header');
+      chrome.id = 'site-chrome';
+      chrome.textContent = 'Thanh dieu huong';
+      document.body.prepend(chrome);
       const tex = String.raw`\documentclass{article}\begin{document}\section{Noi dung dai}\begin{ex}Tinh $1+1$.\loigiai{2}\end{ex}\end{document}`;
       document.getElementById('root').innerHTML = vmLatexNativeHTML('Tai lieu mau', tex, 'reader-test', 'test.pdf', 'test', false);
       document.querySelector('.vm-tex-reader').insertAdjacentHTML('beforeend', '<div class="katex-display"><span class="katex" style="display:inline-block;width:520px;height:56px">Công thức rất dài</span></div>');
@@ -57,19 +61,42 @@ function between(source, from, to) {
       zoom: document.querySelector('[data-vm-zoom-label="reader-test"]').textContent,
       scale: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
       computedSize: getComputedStyle(document.querySelector('.vm-tex-reader')).fontSize,
-      fitted: document.querySelector('.katex-display').classList.contains('vm-math-fitted'),
+      scrollable: document.querySelector('.katex-display').classList.contains('vm-math-scrollable'),
       fittedTransform: document.querySelector('.katex-display > .katex').style.transform,
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
     }));
-    if (state.zoom !== '110%' || state.scale !== '1.1' || parseFloat(state.computedSize) < 16 || !state.fitted || !state.fittedTransform.includes('scale(') || state.overflow) throw new Error(`Zoom/mobile formula fitting failed: ${JSON.stringify(state)}`);
+    if (state.zoom !== '110%' || state.scale !== '1.1' || parseFloat(state.computedSize) < 16 || !state.scrollable || state.fittedTransform || state.overflow) throw new Error(`Zoom/uniform formula scrolling failed: ${JSON.stringify(state)}`);
+
+    await page.click('[data-vm-zoom-label="reader-test"]');
+    state = await page.evaluate(() => ({
+      zoom: document.querySelector('[data-vm-zoom-label="reader-test"]').textContent,
+      scale: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
+    }));
+    if (state.zoom !== '100%' || state.scale !== '1') throw new Error(`Zoom reset failed: ${JSON.stringify(state)}`);
 
     await page.click('[data-vm-fullscreen-btn="reader-test"]');
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
       text: document.querySelector('[data-vm-fullscreen-btn="reader-test"]').textContent,
+      directChild: document.querySelector('[data-reader-key="reader-test"]').parentElement === document.body,
+      chromeHidden: getComputedStyle(document.getElementById('site-chrome')).visibility === 'hidden',
+      copyHidden: getComputedStyle(document.querySelector('.vm-tex-actions-copy')).display === 'none',
+      downloadHidden: getComputedStyle(document.querySelector('.vm-tex-download')).display === 'none',
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát')) throw new Error(`Fullscreen fallback failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadHidden) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (process.env.VM_SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.VM_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
+    }
+
+    await page.click('[data-vm-fullscreen-btn="reader-test"]');
+    state = await page.evaluate(() => ({
+      active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
+      locked: document.body.classList.contains('vm-reader-locked'),
+      restored: document.querySelector('[data-reader-key="reader-test"]').parentElement.id === 'root',
+    }));
+    if (state.active || state.locked || !state.restored) throw new Error(`Fullscreen restore failed: ${JSON.stringify(state)}`);
 
     await page.click('.vm-tex-download');
     state = await page.evaluate(() => ({
