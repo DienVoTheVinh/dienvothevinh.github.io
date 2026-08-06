@@ -73,9 +73,17 @@ const repaired = helpers.repair(conflictingGeometry, 'top=1.5cm,left=1.5cm');
 if ((repaired.match(/\\usepackage\{geometry\}/g) || []).length !== 1 || /\\usepackage\[[^\]]+\]\{geometry\}/.test(repaired)) throw new Error('Duplicate geometry packages were not collapsed');
 if (repaired.indexOf('\\PassOptionsToPackage{top=1.5cm,left=1.5cm}{geometry}') > repaired.indexOf('\\documentclass')) throw new Error('Geometry options must be passed before documentclass');
 
+const spacedGeometry = String.raw`\documentclass{article}
+\usepackage [top=2cm] { geometry }
+\RequirePackage[left=1cm]{ geometry }
+\begin{document}A\end{document}`;
+const repairedSpaced = helpers.repair(spacedGeometry, 'top=1.5cm,left=1.5cm');
+if ((repairedSpaced.match(/\\usepackage\{geometry\}/g) || []).length !== 1 || /\\(?:usepackage|RequirePackage)\s*\[[^\]]+\]\s*\{\s*geometry\s*\}/.test(repairedSpaced)) throw new Error('Spaced or RequirePackage geometry declarations were not collapsed');
+
 if (!lesson.includes('id="vmPdfExportModal"') || !lesson.includes('id="vmPdfProgressPane"') || !lesson.includes('id="vmPdfResultPane"')) throw new Error('Single-state export modal is incomplete');
 if (!lesson.includes('data-preset="original"') || !lesson.includes("vmPdfPresetName = 'original'")) throw new Error('Stable original-source PDF preset is missing');
 if (!lesson.includes('vmBienDoiLoiGiaiPdf(originalTex, config)') || !lesson.includes('Đang thử lại và vẫn giữ chế độ ẩn lời giải')) throw new Error('Advanced PDF fallback does not preserve the selected answer mode');
 if (!lesson.includes('Option clash for package geometry') || !lesson.includes('Đang tự sửa xung đột lề trang')) throw new Error('Geometry clash auto-repair is missing');
+if (!/if \(\/\\\\documentclass\/\.test\(trimmed\)\) \{[\s\S]{0,240}?return trimmed;\s*\}/.test(lesson)) throw new Error('Complete TeX documents must keep the stable unmodified PDF source path');
 if (!lesson.includes('.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; display:flex; flex-direction:column;') || !lesson.includes('min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch')) throw new Error('Exported PDF preview cannot scroll through all rendered pages');
 console.log('PASS configurable PDF export presets and single popup flow');
