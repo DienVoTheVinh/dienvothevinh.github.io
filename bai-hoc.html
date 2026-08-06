@@ -281,7 +281,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-zoom button { position:relative; z-index:1; width:38px; height:38px; padding:0; border:0; border-right:1px solid var(--line); background:transparent; color:var(--ink); font:800 1rem/1 inherit; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .vm-tex-zoom button:last-child { border-right:0; border-left:1px solid var(--line); }
 .vm-tex-zoom button:hover { background:var(--accent-soft); color:var(--accent); }
-.vm-tex-zoom-label { min-width:52px; text-align:center; color:var(--ink-2); font-size:.76rem; font-weight:800; }
+.vm-tex-zoom .vm-tex-zoom-label { width:auto; min-width:58px; padding:0 8px; border-right:0; color:var(--ink-2); font-size:.76rem; font-weight:800; }
 .vm-tex-fullscreen { position:relative; z-index:1; min-height:40px; border-color:var(--accent) !important; color:var(--accent) !important; font-weight:800; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .vm-tex-download { min-height:40px; flex:none; font-weight:800; }
 .vm-tex-download[disabled] { opacity:.7; cursor:wait; }
@@ -292,7 +292,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   border:1px solid var(--line); border-radius:18px; background:var(--surface);
   box-shadow:0 14px 38px rgba(15,23,42,.08); color:var(--ink); line-height:1.72;
   min-width:0; max-width:100%; overflow:visible; overflow-wrap:break-word; word-break:normal;
-  font-size:calc(1rem * var(--vm-reader-scale, 1));
+  --vm-reader-base-size:1rem;
+  font-size:calc(var(--vm-reader-base-size) * var(--vm-reader-scale, 1));
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
 }
 .vm-tex-reader-head { margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--line); }
 .vm-tex-reader-kicker { display:block; margin-bottom:7px; color:var(--accent); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
@@ -313,10 +315,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:16px; }
 .vm-tex-choice { display:flex; align-items:flex-start; gap:10px; min-width:0; padding:12px; border:1px solid var(--line-2); border-radius:11px; background:var(--surface); }
 .vm-tex-choice-key { display:grid; place-items:center; width:28px; height:28px; flex:none; border:1px solid var(--accent); border-radius:50%; color:var(--accent); font-weight:800; font-size:.82rem; }
-.vm-tex-reader .katex-display { box-sizing:border-box; width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; padding:8px 2px; -webkit-overflow-scrolling:touch; }
-.vm-tex-reader .katex-display > .katex { width:max-content; max-width:none; text-align:center; transition:transform .16s ease; }
-.vm-tex-reader .katex-display.vm-math-fitted { overflow-x:hidden; }
-.vm-tex-reader .katex-display.vm-math-fitted > .katex { transform-origin:left top; }
+.vm-tex-reader .katex-display { position:relative; box-sizing:border-box; width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; padding:8px 2px; overscroll-behavior-x:contain; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+.vm-tex-reader .katex-display > .katex { width:max-content; max-width:none; text-align:center; }
+.vm-tex-reader .katex-display.vm-math-scrollable { padding:10px 8px 14px; border:1px solid var(--line); border-radius:10px; background:linear-gradient(90deg,var(--surface-2) 0,var(--surface-2) calc(100% - 28px),color-mix(in srgb,var(--accent) 14%,var(--surface-2)) 100%); }
 .vm-tex-reader .katex { max-width:100%; }
 .vm-tex-reader table { max-width:100%; display:block; overflow-x:auto; }
 .vm-tex-empty { padding:36px 16px; text-align:center; color:var(--ink-3); }
@@ -336,11 +337,13 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-reader-loading-line { position:relative; width:min(290px,82%); height:5px; margin:18px auto 0; overflow:hidden; border-radius:99px; background:var(--line); }
 .vm-reader-loading-line::after { content:""; position:absolute; inset:0 auto 0 0; width:42%; border-radius:inherit; background:linear-gradient(90deg,var(--accent),#f5bd3a); animation:vmReaderLoading 1.15s ease-in-out infinite alternate; }
 @keyframes vmReaderLoading { from { transform:translateX(-20%); } to { transform:translateX(160%); } }
-[data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:100005 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; background:var(--bg); }
+[data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:2147483000 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; background:var(--bg); }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { position:sticky; top:0; z-index:3; box-shadow:0 8px 24px rgba(15,23,42,.12); }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { flex:1 1 auto; min-height:0; overflow:auto; }
 [data-reader-key].vm-tex-fullscreen-active.btvn-latex-native > .vm-tex-reader { flex:1 1 auto; overflow:auto; }
 body.vm-reader-locked { overflow:hidden !important; }
+body.vm-reader-locked > * { visibility:hidden !important; }
+body.vm-reader-locked > [data-reader-key].vm-tex-fullscreen-active { visibility:visible !important; }
 .vm-pdf-export-card { width:min(720px,100%); max-height:min(92dvh,820px); overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
 .vm-pdf-export-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line); background:var(--surface-solid); }
 .vm-pdf-export-body { padding:18px 20px 20px; }
@@ -389,7 +392,7 @@ body.vm-reader-locked { overflow:hidden !important; }
   .vm-tex-fullscreen,.vm-tex-download { min-width:0; min-height:44px; padding:8px 10px !important; white-space:normal; }
   .vm-tex-download { grid-column:1 / -1; }
   .vm-tex-scroll { padding:8px; }
-  .vm-tex-reader { width:100%; padding:16px 10px 24px; border-radius:12px; box-shadow:none; font-size:calc(.96rem * var(--vm-reader-scale, 1)); line-height:1.64; }
+  .vm-tex-reader { --vm-reader-base-size:.96rem; width:100%; padding:16px 10px 24px; border-radius:12px; box-shadow:none; line-height:1.64; }
   .vm-tex-reader-head { margin-bottom:20px; padding-bottom:14px; }
   .vm-tex-reader-kicker { font-size:.64rem; letter-spacing:.09em; }
   .vm-tex-reader-head h2 { font-size:1.3rem; }
@@ -398,6 +401,7 @@ body.vm-reader-locked { overflow:hidden !important; }
   .vm-tex-block-body { padding:13px 10px; }
   .vm-tex-reader .katex-display { margin:.75em 0; padding-bottom:10px; }
   .vm-tex-reader .katex-display > .katex { text-align:left; }
+  .vm-tex-reader .katex-display.vm-math-scrollable { scroll-snap-type:x proximity; }
   .vm-tex-prose > .katex,.vm-tex-block-body > .katex,.theory-content > .katex { display:inline-flex; max-width:100%; overflow-x:auto; overflow-y:hidden; vertical-align:middle; -webkit-overflow-scrolling:touch; }
   .vm-tex-tikz { border-radius:10px; }
   .vm-reader-loading { min-height:220px; padding:12px 8px; }
@@ -408,6 +412,12 @@ body.vm-reader-locked { overflow:hidden !important; }
   .vm-pdf-export-head { padding:15px 16px; }
   .vm-pdf-export-body { padding:14px 16px calc(16px + env(safe-area-inset-bottom)); }
   .btvn-latex-native .vm-tex-reader { padding:18px 12px 24px; }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { flex:none; padding:calc(7px + env(safe-area-inset-top)) 10px 7px; }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy,
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-download { display:none !important; }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-action-tools { grid-template-columns:minmax(150px,1fr) minmax(138px,1fr); }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { padding:0; }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-reader { border:0; border-radius:0; box-shadow:none; }
   #modalNopBai { align-items:flex-end !important; padding:0 !important; }
   #modalNopBai > div {
     max-width:none !important;
@@ -1717,6 +1727,7 @@ var vmTikzActive = 0;
 var vmTikzObserver = null;
 var vmReaderBuildSeq = 0;
 var vmReaderResizeTimer = 0;
+var vmReaderFullscreenState = null;
 
 function vmTenTepPdf(name) {
   return String(name || 'tai-lieu').toLowerCase()
@@ -1764,8 +1775,8 @@ function vmLatexActionHTML(key, rawTex, fileName, kind) {
     '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.' +
       '<br><span class="vm-tex-build-status" data-vm-reader-status="' + key + '"><span class="vm-tex-build-dot"></span><span>Nội dung đã sẵn sàng</span></span></div>' +
     '<div class="vm-tex-action-tools">' +
-      '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" onclick="vmDoiZoomReader(\'' + key + '\',-.1)" aria-label="Thu nhỏ">−</button><span class="vm-tex-zoom-label" data-vm-zoom-label="' + key + '">100%</span><button type="button" onclick="vmDoiZoomReader(\'' + key + '\',.1)" aria-label="Phóng to">+</button></div>' +
-      '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-fullscreen-btn="' + key + '" onclick="vmToggleReaderFullscreen(\'' + key + '\')">⛶ Toàn màn hình</button>' +
+      '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="-.1" aria-label="Thu nhỏ">−</button><button type="button" class="vm-tex-zoom-label" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="0" data-vm-zoom-label="' + key + '" aria-label="Đặt lại mức thu phóng 100%">100%</button><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta=".1" aria-label="Phóng to">+</button></div>' +
+      '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-reader-control="fullscreen" data-vm-reader-key="' + key + '" data-vm-fullscreen-btn="' + key + '">⛶ Toàn màn hình</button>' +
       '<button type="button" class="btn btn-primary btn-sm vm-tex-download" onclick="vmMoPdfExport(\'' + key + '\')">⚙️ Tạo &amp; tải PDF</button>' +
     '</div></div>';
 }
@@ -1794,26 +1805,24 @@ function vmRenderMathTaiLieu(root) {
 
 function vmFitLongMath(root) {
   if (!root || !root.querySelectorAll) return;
-  var mobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-  var minScale = mobile ? .62 : .72;
   root.querySelectorAll('.vm-tex-reader .katex-display').forEach(function (display) {
     var math = display.querySelector(':scope > .katex') || display.querySelector('.katex');
     if (!math) return;
-    display.classList.remove('vm-math-fitted');
+    display.classList.remove('vm-math-fitted', 'vm-math-scrollable');
     display.style.removeProperty('height');
     display.style.removeProperty('overflow-x');
     math.style.removeProperty('transform');
     math.style.removeProperty('transform-origin');
     var available = Math.max(0, display.clientWidth - 4);
     var naturalWidth = Math.max(math.scrollWidth || 0, math.getBoundingClientRect().width || 0);
-    var naturalHeight = Math.max(math.scrollHeight || 0, math.getBoundingClientRect().height || 0);
-    if (!available || naturalWidth <= available + 2) return;
-    var scale = Math.max(minScale, Math.min(1, available / naturalWidth));
-    math.style.transformOrigin = 'left top';
-    math.style.transform = 'scale(' + scale.toFixed(4) + ')';
-    display.style.height = Math.ceil(naturalHeight * scale + 16) + 'px';
-    if (naturalWidth * scale <= available + 2) display.classList.add('vm-math-fitted');
-    else display.style.overflowX = 'auto';
+    if (!available || naturalWidth <= available + 2) {
+      display.removeAttribute('tabindex');
+      display.removeAttribute('aria-label');
+      return;
+    }
+    display.classList.add('vm-math-scrollable');
+    display.setAttribute('tabindex', '0');
+    display.setAttribute('aria-label', 'Công thức dài, vuốt ngang để xem trọn vẹn');
   });
 }
 
@@ -1846,9 +1855,10 @@ function vmCapNhatTrangThaiReader(shell) {
 function vmDoiZoomReader(key, delta) {
   var shell = document.querySelector('[data-reader-key="' + key + '"]');
   if (!shell) return;
-  var next = delta === 0 ? 1 : Math.min(1.6, Math.max(.75, (vmReaderZoomLevels[key] || 1) + delta));
+  var next = delta === 0 ? 1 : Math.min(1.6, Math.max(.8, (vmReaderZoomLevels[key] || 1) + delta));
   next = Math.round(next * 10) / 10;
   vmReaderZoomLevels[key] = next;
+  shell.style.setProperty('--vm-reader-scale', next);
   var reader = shell.querySelector('.vm-tex-reader');
   if (reader) reader.style.setProperty('--vm-reader-scale', next);
   var label = shell.querySelector('[data-vm-zoom-label="' + key + '"]');
@@ -1856,6 +1866,20 @@ function vmDoiZoomReader(key, delta) {
   shell.setAttribute('data-vm-reader-zoom', String(Math.round(next * 100)));
   vmHenFitLongMath(shell);
 }
+
+document.addEventListener('click', function (event) {
+  var control = event.target && event.target.closest ? event.target.closest('[data-vm-reader-control]') : null;
+  if (!control) return;
+  var key = control.getAttribute('data-vm-reader-key');
+  if (!key) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (control.getAttribute('data-vm-reader-control') === 'zoom') {
+    vmDoiZoomReader(key, Number(control.getAttribute('data-vm-reader-delta') || 0));
+  } else if (control.getAttribute('data-vm-reader-control') === 'fullscreen') {
+    vmToggleReaderFullscreen(key);
+  }
+}, true);
 
 function vmCapNhatNutFullscreen(shell, active) {
   if (!shell) return;
@@ -1876,18 +1900,40 @@ async function vmToggleReaderFullscreen(key) {
     return;
   }
   if (fallback) {
-    shell.classList.remove('vm-tex-fullscreen-active');
-    document.body.classList.remove('vm-reader-locked');
-    vmCapNhatNutFullscreen(shell, false);
+    vmThoatReaderFullscreen(shell);
     return;
   }
   var mobile = (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) || /iPad|iPhone|iPod|Android/i.test(navigator.userAgent || '') || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (!mobile && shell.requestFullscreen) {
     try { await shell.requestFullscreen(); return; } catch (e) {}
   }
+  if (vmReaderFullscreenState && vmReaderFullscreenState.shell !== shell) vmThoatReaderFullscreen(vmReaderFullscreenState.shell);
+  var placeholder = document.createComment('vm-reader-placeholder');
+  var scrollY = window.scrollY || window.pageYOffset || 0;
+  if (shell.parentNode) shell.parentNode.insertBefore(placeholder, shell);
+  vmReaderFullscreenState = { shell: shell, placeholder: placeholder, scrollY: scrollY };
+  document.body.appendChild(shell);
   shell.classList.add('vm-tex-fullscreen-active');
   document.body.classList.add('vm-reader-locked');
   vmCapNhatNutFullscreen(shell, true);
+  var scrollTarget = shell.querySelector('.vm-tex-scroll') || (shell.classList.contains('btvn-latex-native') ? shell.querySelector('.vm-tex-reader') : null);
+  if (scrollTarget) scrollTarget.scrollTop = 0;
+  vmHenFitLongMath(shell);
+}
+
+function vmThoatReaderFullscreen(shell) {
+  shell = shell || (vmReaderFullscreenState && vmReaderFullscreenState.shell);
+  if (!shell) return;
+  shell.classList.remove('vm-tex-fullscreen-active');
+  document.body.classList.remove('vm-reader-locked');
+  vmCapNhatNutFullscreen(shell, false);
+  var state = vmReaderFullscreenState;
+  if (state && state.shell === shell) {
+    if (state.placeholder && state.placeholder.parentNode) state.placeholder.parentNode.insertBefore(shell, state.placeholder);
+    if (state.placeholder && state.placeholder.parentNode) state.placeholder.parentNode.removeChild(state.placeholder);
+    vmReaderFullscreenState = null;
+    window.scrollTo(0, state.scrollY || 0);
+  }
   vmHenFitLongMath(shell);
 }
 
@@ -1899,11 +1945,7 @@ document.addEventListener('fullscreenchange', function () {
 document.addEventListener('keydown', function (event) {
   if (event.key !== 'Escape') return;
   var shell = document.querySelector('.vm-tex-fullscreen-active');
-  if (shell) {
-    shell.classList.remove('vm-tex-fullscreen-active');
-    document.body.classList.remove('vm-reader-locked');
-    vmCapNhatNutFullscreen(shell, false);
-  }
+  if (shell) vmThoatReaderFullscreen(shell);
 });
 window.addEventListener('resize', function () {
   clearTimeout(vmReaderResizeTimer);
@@ -4122,4 +4164,3 @@ function dongBuoiHocHS(){ $('modalBuoiHS').style.display='none'; }
 </script>
 </body>
 </html>
-<!-- GitHub Pages deploy retry: 2026-08-06 -->
