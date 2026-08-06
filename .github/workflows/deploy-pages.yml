@@ -23,6 +23,26 @@ jobs:
         uses: actions/checkout@v6
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Cancel superseded Pages deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for deployment in \
+            395e8e6c247a2f7567b85cda69db5035fd725049 \
+            ef27603cc09692b6bb85a8e9c020f086a1ec8c72 \
+            e29d58255dbe77b6e8ab0474c938570a79ed4153 \
+            dc587d2cfe57a57ab13688f381367a34d31bac6a \
+            a7da88dc43748af20aca53a74d768bb17af40ca7 \
+            a0b35a1ff680b06487045db53cbfe21eac3e341a
+          do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/deployments/${deployment}/cancel")"
+            echo "Cancel ${deployment}: HTTP ${code}"
+          done
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
