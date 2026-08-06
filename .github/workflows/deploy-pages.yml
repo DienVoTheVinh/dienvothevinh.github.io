@@ -32,7 +32,9 @@ jobs:
           for file in *.html *.css *.js *.json *.xml *.webmanifest *.txt *.png *.jpg *.jpeg *.svg *.ico *.sty CNAME; do
             cp "$file" _site/
           done
-          for dir in assets css icons img js logo; do
+          # LaTeX fragments are compiled in the browser after these shared
+          # structure files are fetched. Keep both directories in production.
+          for dir in assets bia13 cautruc13 css icons img js logo; do
             if [ -d "$dir" ]; then
               cp -R "$dir" "_site/$dir"
             fi
@@ -61,6 +63,13 @@ jobs:
           done
           du -sh _site
           find _site -type f -exec du -h {} + | sort -hr | head -20
+      - name: Verify runtime LaTeX assets
+        shell: bash
+        run: |
+          test -s _site/cautruc13/mausac-minimal.tex
+          test -s _site/cautruc13/Khai-bao-minimal.tex
+          test -s _site/cautruc13/BosungK.tex
+          test -s _site/cautruc13/LT-3.tex
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
