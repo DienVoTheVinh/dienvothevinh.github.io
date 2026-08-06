@@ -33,9 +33,10 @@ const reader = fs.readFileSync('js/latex-view.js', 'utf8');
 const source = [
   extractRange(reader, 'function xoaLenhKhoiLatex', 'function dinhDangVanBanTaiLieuLatex'),
   extractRange(lesson, 'function vmChenTruocDocument', 'async function vmBatDauXuatPdf'),
-  'return vmCauHinhNoiDungPdf;',
+  'return { configure: vmCauHinhNoiDungPdf, repair: vmSuaXungDotGeometry };',
 ].join('\n');
-const configure = new Function(source)();
+const helpers = new Function(source)();
+const configure = helpers.configure;
 
 const sample = String.raw`\documentclass[12pt,a4paper]{article}
 \usepackage[dethi]{ex_test}
@@ -52,9 +53,18 @@ if (worksheet.includes('Vi $1+1=2$') || worksheet.includes('Ket qua la 4') || (w
 
 const compact = configure(sample, { answers: 'hide', dotLines: 2, layout: 'two', margins: 'tight', fontSize: '10' });
 if (compact.includes('Vi $1+1=2$') || compact.includes('Ket qua la 4') || !/10pt,twocolumn/.test(compact)) throw new Error('Compact preset is wrong');
-if (!/\\usepackage\[top=1\.2cm,bottom=1\.2cm,left=1cm,right=1cm\]\{geometry\}/.test(compact)) throw new Error('Compact margins are missing');
+if (!/\\PassOptionsToPackage\{top=1\.2cm,bottom=1\.2cm,left=1cm,right=1cm\}\{geometry\}/.test(compact) || !compact.includes('\\usepackage{geometry}')) throw new Error('Compact margins are not conflict-safe');
+
+const conflictingGeometry = String.raw`\documentclass{article}
+\usepackage[top=2cm]{geometry}
+\usepackage[left=1cm]{geometry}
+\begin{document}A\end{document}`;
+const repaired = helpers.repair(conflictingGeometry, 'top=1.5cm,left=1.5cm');
+if ((repaired.match(/\\usepackage\{geometry\}/g) || []).length !== 1 || /\\usepackage\[[^\]]+\]\{geometry\}/.test(repaired)) throw new Error('Duplicate geometry packages were not collapsed');
+if (repaired.indexOf('\\PassOptionsToPackage{top=1.5cm,left=1.5cm}{geometry}') > repaired.indexOf('\\documentclass')) throw new Error('Geometry options must be passed before documentclass');
 
 if (!lesson.includes('id="vmPdfExportModal"') || !lesson.includes('id="vmPdfProgressPane"') || !lesson.includes('id="vmPdfResultPane"')) throw new Error('Single-state export modal is incomplete');
 if (!lesson.includes('data-preset="original"') || !lesson.includes("vmPdfPresetName = 'original'")) throw new Error('Stable original-source PDF preset is missing');
 if (!lesson.includes('vmBienDichPdfTex(originalTex)') || !lesson.includes('Đang thử lại bằng bản TeX gốc')) throw new Error('Advanced PDF configuration has no original-source fallback');
+if (!lesson.includes('Option clash for package geometry') || !lesson.includes('Đang tự sửa xung đột lề trang')) throw new Error('Geometry clash auto-repair is missing');
 console.log('PASS configurable PDF export presets and single popup flow');
