@@ -37,6 +37,7 @@ jobs:
               cp -R "$dir" "_site/$dir"
             fi
           done
+          rm -f _site/img/math_learning_methods.png _site/img/vinhmath_platform.png
           touch _site/.nojekyll
       - name: Optimize production images
         shell: bash
@@ -54,7 +55,7 @@ jobs:
                 mogrify -auto-orient -resize '1280x1280>' -strip -quality 72 "$image"
               done < <(find "$dir" -type f -iname '*.jpeg' -print0)
               while IFS= read -r -d '' image; do
-                mogrify -resize '1280x1280>' -strip -quality 82 "$image"
+                mogrify -resize '1024x1024>' -colors 256 -depth 8 -strip -define png:compression-level=9 "$image"
               done < <(find "$dir" -type f -iname '*.png' -print0)
             fi
           done
