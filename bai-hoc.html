@@ -1089,11 +1089,28 @@ async function mlNop(lid, phanloai) {
 }
 // Xem kết quả (bài thầy chấm / điểm) của Bài kiểm tra hoặc Bài tập về nhà
 async function xemKetQua(lid, kind) {
-  if (lid !== lessonId) await switchLesson(lid, (kind === 'homework' || kind === 'homework_bonus') ? 'btvn' : 'test');
-  var than = $('thanNoiDung'); if (!than) return;
-  if (window.innerWidth <= 820) hienMobilePane('content');
-  than.innerHTML = thanhCongCu((kind === 'homework' || kind === 'homework_bonus') ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra', null) +
-    '<div style="flex:1;overflow-y:auto;padding-bottom:20px">' + (nguoiDung ? (await layKetQuaChamHtml(kind)) : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>') + '</div>';
+  kind = kind || 'homework';
+  var tenTieuDe = (kind === 'homework' || kind === 'homework_bonus') ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra';
+  var than = $('thanNoiDung');
+  try {
+    if (lid !== lessonId) await switchLesson(lid, (kind === 'homework' || kind === 'homework_bonus') ? 'btvn' : 'test');
+    than = $('thanNoiDung'); if (!than) return;
+    if (window.innerWidth <= 980 && typeof batTatMucLuc === 'function') batTatMucLuc(false);
+    if (window.innerWidth <= 820) hienMobilePane('content');
+    than.innerHTML = thanhCongCu(tenTieuDe, null) +
+      '<div class="no-content" style="flex:1"><div class="spinner"></div><h3>Đang tải bài thầy đã chấm…</h3><p>Em chờ một chút nhé.</p></div>';
+    var noiDungKetQua = nguoiDung
+      ? await layKetQuaChamHtml(kind)
+      : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>';
+    than.innerHTML = thanhCongCu(tenTieuDe, null) +
+      '<div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px">' + noiDungKetQua + '</div>';
+  } catch (e) {
+    console.error('Không mở được kết quả bài đã chấm:', e);
+    if (than) than.innerHTML = thanhCongCu(tenTieuDe, null) +
+      '<div class="no-content" role="alert"><div class="ic">⚠️</div><h3>Chưa tải được bài đã chấm</h3>' +
+      '<p>Kết nối có thể đang gián đoạn. Em thử tải lại; nếu vẫn lỗi hãy báo thầy nhé.</p>' +
+      '<button class="btn btn-primary" onclick="xemKetQua(lessonId,\'' + btvnEsc(kind) + '\')">↻ Tải lại kết quả</button></div>';
+  }
 }
 async function mlMoMuc(lid, tab, key, loai) {
   if (lid !== lessonId) {
@@ -1272,8 +1289,20 @@ function extractDriveId(url) {
 function bhThumbId(f) { if (f && f.id) return f.id; return extractDriveId((f && (f.link || f.url)) || '') || ''; }
 function bhXemAnh(id) {
   var lb = document.getElementById('bhAnhLightbox'); if (!lb) return;
-  lb.innerHTML = '<img src="https://drive.google.com/thumbnail?id=' + id + '&sz=w1600" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)">';
+  var driveView = 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view';
+  lb.innerHTML = '<img src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w1600" onerror="bhAnhLightboxLoi(this)" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)">' +
+    '<a href="' + driveView + '" target="_blank" rel="noopener" style="display:none;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:10px;background:#fff;color:#7a4d00;font-weight:800;text-decoration:none">↗ Mở ảnh chấm trong Google Drive</a>';
   lb.style.display = 'flex';
+}
+function bhAnhLightboxLoi(img) {
+  if (img) img.style.display = 'none';
+  var link = img && img.nextElementSibling;
+  if (link) link.style.display = 'inline-flex';
+}
+function bhAnhThumbLoi(img) {
+  if (img) img.style.display = 'none';
+  var link = img && img.parentNode ? img.parentNode.querySelector('.bh-thumb-fallback') : null;
+  if (link) link.style.display = 'inline-flex';
 }
 function bhAnhThumbs(files) {
   files = files || [];
@@ -1282,8 +1311,9 @@ function bhAnhThumbs(files) {
     var id = bhThumbId(f);
     if (!id) return '<a href="' + (f.link || '#') + '" target="_blank" style="font-size:.82rem;color:var(--accent)">📄 ' + btvnEsc(f.name || 'Tệp') + '</a>';
     var t = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w300';
-    return '<div style="position:relative;display:inline-block">' +
-      '<img src="' + t + '" onclick="bhXemAnh(\'' + id + '\')" style="width:82px;height:82px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in" loading="lazy">' +
+    return '<div style="position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:82px;min-height:82px">' +
+      '<img src="' + t + '" onclick="bhXemAnh(\'' + id + '\')" onerror="bhAnhThumbLoi(this)" alt="' + btvnEsc(f.name || ('Ảnh ' + (i + 1))) + '" style="width:82px;height:82px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in" loading="lazy">' +
+      '<a class="bh-thumb-fallback" href="' + btvnEsc(f.link || ('https://drive.google.com/file/d/' + id + '/view')) + '" target="_blank" rel="noopener" style="display:none;width:82px;min-height:82px;align-items:center;justify-content:center;padding:8px;border:1px dashed var(--accent);border-radius:8px;color:var(--accent);font-size:.72rem;font-weight:800;text-align:center;text-decoration:none">↗ Mở ảnh</a>' +
       '<span style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:.62rem;padding:1px 5px;border-radius:6px">' + (i + 1) + '</span></div>';
   }).join('') + '</div>';
 }
@@ -1949,7 +1979,7 @@ async function veTestTex() {
 
 async function layKetQuaChamHtml(kind) {
   kind = kind || 'test';
-  var tenLoai = kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận';
+  var tenLoai = kind === 'homework_bonus' ? 'bài tập thưởng thêm' : (kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận');
   try {
     var r = await sb.from('submissions')
       .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, student_reflection, reviewed_at')
@@ -1960,6 +1990,7 @@ async function layKetQuaChamHtml(kind) {
       .limit(1)
       .maybeSingle();
 
+    if (r.error) throw new Error(r.error.message || 'Không tải được dữ liệu bài đã chấm');
     var sub = r.data;
     if (!sub) {
       return '<div class="lesson-action-shell submission-action-shell" data-action-key="submit-' + kind + '">' +
@@ -2011,7 +2042,11 @@ async function layKetQuaChamHtml(kind) {
         '</div>';
     }
   } catch (e) {
-    return '';
+    console.error('Không tải được dữ liệu bài đã chấm:', e);
+    return '<div class="card" role="alert" style="margin:14px;padding:20px;text-align:center;border:1px solid var(--err);background:var(--err-soft)">' +
+      '<div style="font-size:2rem;margin-bottom:8px">⚠️</div><h4 style="margin:0 0 6px;color:var(--err)">Chưa tải được bài đã chấm</h4>' +
+      '<p style="margin:0 0 12px;color:var(--ink-2);font-size:.86rem">Kết nối có thể đang gián đoạn. Em thử lại; nếu vẫn chưa thấy bài hãy báo thầy nhé.</p>' +
+      '<button class="btn btn-primary btn-sm" onclick="xemKetQua(lessonId,\'' + btvnEsc(kind) + '\')">↻ Tải lại kết quả</button></div>';
   }
 }
 
