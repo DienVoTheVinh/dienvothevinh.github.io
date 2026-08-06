@@ -33,7 +33,7 @@ const reader = fs.readFileSync('js/latex-view.js', 'utf8');
 const source = [
   extractRange(reader, 'function xoaLenhKhoiLatex', 'function dinhDangVanBanTaiLieuLatex'),
   extractRange(lesson, 'function vmChenTruocDocument', 'async function vmBatDauXuatPdf'),
-  'return { configure: vmCauHinhNoiDungPdf, repair: vmSuaXungDotGeometry };',
+  'return { configure: vmCauHinhNoiDungPdf, answers: vmBienDoiLoiGiaiPdf, repair: vmSuaXungDotGeometry };',
 ].join('\n');
 const helpers = new Function(source)();
 const configure = helpers.configure;
@@ -51,6 +51,16 @@ if (!/\\usepackage\[dethi,loigiai\]\{ex_test\}/.test(study) || !study.includes('
 const worksheet = configure(sample, { answers: 'dots', dotLines: 4, layout: 'one', margins: 'loose', fontSize: '12' });
 if (worksheet.includes('Vi $1+1=2$') || worksheet.includes('Ket qua la 4') || (worksheet.match(/\\dotfill/g) || []).length !== 8) throw new Error('Worksheet preset does not replace two solutions with four dotted lines each');
 
+const environmentSample = String.raw`\documentclass{article}
+\begin{document}
+\begin{bt}Bai 1.\begin{loigiai}LOI GIAI MOI TRUONG\end{loigiai}\end{bt}
+\begin{bt}Bai 2.\begin{sol}DAP AN MOI TRUONG\end{sol}\end{bt}
+\end{document}`;
+const environmentDots = configure(environmentSample, { answers: 'dots', dotLines: 3, layout: 'one', margins: 'normal', fontSize: '12' });
+if (environmentDots.includes('LOI GIAI MOI TRUONG') || environmentDots.includes('DAP AN MOI TRUONG') || (environmentDots.match(/\\dotfill/g) || []).length !== 6) throw new Error('Worksheet preset does not replace solution environments with dotted lines');
+const safeFallback = helpers.answers(sample, { answers: 'dots', dotLines: 4 });
+if (safeFallback.includes('Vi $1+1=2$') || safeFallback.includes('Ket qua la 4') || (safeFallback.match(/\\dotfill/g) || []).length !== 8) throw new Error('Answer-safe fallback leaks original solutions');
+
 const compact = configure(sample, { answers: 'hide', dotLines: 2, layout: 'two', margins: 'tight', fontSize: '10' });
 if (compact.includes('Vi $1+1=2$') || compact.includes('Ket qua la 4') || !/10pt,twocolumn/.test(compact)) throw new Error('Compact preset is wrong');
 if (!/\\PassOptionsToPackage\{top=1\.2cm,bottom=1\.2cm,left=1cm,right=1cm\}\{geometry\}/.test(compact) || !compact.includes('\\usepackage{geometry}')) throw new Error('Compact margins are not conflict-safe');
@@ -65,6 +75,7 @@ if (repaired.indexOf('\\PassOptionsToPackage{top=1.5cm,left=1.5cm}{geometry}') >
 
 if (!lesson.includes('id="vmPdfExportModal"') || !lesson.includes('id="vmPdfProgressPane"') || !lesson.includes('id="vmPdfResultPane"')) throw new Error('Single-state export modal is incomplete');
 if (!lesson.includes('data-preset="original"') || !lesson.includes("vmPdfPresetName = 'original'")) throw new Error('Stable original-source PDF preset is missing');
-if (!lesson.includes('vmBienDichPdfTex(originalTex)') || !lesson.includes('Đang thử lại bằng bản TeX gốc')) throw new Error('Advanced PDF configuration has no original-source fallback');
+if (!lesson.includes('vmBienDoiLoiGiaiPdf(originalTex, config)') || !lesson.includes('Đang thử lại và vẫn giữ chế độ ẩn lời giải')) throw new Error('Advanced PDF fallback does not preserve the selected answer mode');
 if (!lesson.includes('Option clash for package geometry') || !lesson.includes('Đang tự sửa xung đột lề trang')) throw new Error('Geometry clash auto-repair is missing');
+if (!lesson.includes('.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; display:flex; flex-direction:column;') || !lesson.includes('min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch')) throw new Error('Exported PDF preview cannot scroll through all rendered pages');
 console.log('PASS configurable PDF export presets and single popup flow');
