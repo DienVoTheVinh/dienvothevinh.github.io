@@ -727,6 +727,21 @@ function vmTabId() {
 }
 var VM_SHARED_KEY = 'vmauth-shared';
 var VM_OLD_KEY = 'sb-' + vmRefDuAn() + '-auth-token';
+var VM_REMEMBER_KEY = 'vm-auth-remember';
+function vmCoNhoDangNhap() {
+  try { return window.localStorage.getItem(VM_REMEMBER_KEY) !== '0'; }
+  catch (e) { return true; }
+}
+function vmDatNhoDangNhap(coNho) {
+  try {
+    window.localStorage.setItem(VM_REMEMBER_KEY, coNho ? '1' : '0');
+    if (!coNho) {
+      window.localStorage.removeItem(VM_SHARED_KEY);
+      window.localStorage.removeItem(VM_OLD_KEY);
+    }
+  } catch (e) {}
+  return !!coNho;
+}
 function vmTaoBoNhoPhien() {
   var LS, SS;
   try { LS = window.localStorage; } catch (e) { LS = null; }
@@ -737,7 +752,7 @@ function vmTaoBoNhoPhien() {
       try {
         var v = SS.getItem(k);
         if (v !== null && v !== undefined) return v;
-        if (LS) {
+        if (LS && vmCoNhoDangNhap()) {
           var lv = LS.getItem(VM_SHARED_KEY);
           if (lv === null || lv === undefined) lv = LS.getItem(VM_OLD_KEY); // migrate phiên đã đăng nhập từ trước
           if (lv !== null && lv !== undefined) { try { SS.setItem(k, lv); } catch (e) {} return lv; }
@@ -747,7 +762,10 @@ function vmTaoBoNhoPhien() {
     },
     setItem: function (k, val) {
       try { SS.setItem(k, val); } catch (e) {}
-      try { if (LS) LS.setItem(VM_SHARED_KEY, val); } catch (e) {} // mirror để tab mới / mở lại trình duyệt vẫn đăng nhập
+      try {
+        if (LS && vmCoNhoDangNhap()) LS.setItem(VM_SHARED_KEY, val);
+        else if (LS) { LS.removeItem(VM_SHARED_KEY); LS.removeItem(VM_OLD_KEY); }
+      } catch (e) {} // chỉ mirror khi người dùng chọn ghi nhớ đăng nhập
     },
     removeItem: function (k) {
       try { SS.removeItem(k); } catch (e) {}
