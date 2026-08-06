@@ -2170,7 +2170,7 @@ function vmSuaXungDotGeometry(tex, preferredOptions) {
   tex = String(tex || '');
   var options = [];
   var foundPackage = false;
-  tex = tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{geometry\}/g, function (whole, found) {
+  tex = tex.replace(/\\(?:usepackage|RequirePackage)\s*(?:\[([^\]]*)\])?\s*\{\s*geometry\s*\}/g, function (whole, found) {
     foundPackage = true;
     String(found || '').split(',').forEach(function (part) {
       part = part.trim();
@@ -2337,6 +2337,7 @@ async function processVirtualFiles(tex) {
   var match;
   var virtualFiles = '';
   var processedPaths = new Set();
+  var missingFiles = [];
 
   var matches = [];
   while ((match = inputRegex.exec(tex)) !== null) {
@@ -2354,7 +2355,8 @@ async function processVirtualFiles(tex) {
       }
       
       try {
-        var res = await fetch(urlPath);
+        var assetUrl = '/' + urlPath.replace(/^\/+/, '');
+        var res = await fetch(assetUrl, { cache: 'no-store' });
         if (res.ok) {
           var content = await res.text();
           var baseName = importPath.substring(importPath.lastIndexOf('/') + 1);
@@ -2382,11 +2384,17 @@ async function processVirtualFiles(tex) {
           tex = tex.replace(replacer, '\\input{' + baseName + '}');
         } else {
           console.warn('Không thể tải file phụ thuộc: ' + urlPath);
+          missingFiles.push(urlPath);
         }
       } catch (e) {
         console.error('Lỗi khi tải file phụ thuộc ' + urlPath + ':', e);
+        missingFiles.push(urlPath);
       }
     }
+  }
+
+  if (missingFiles.length) {
+    throw new Error('Thiếu tài nguyên LaTeX trên máy chủ: ' + Array.from(new Set(missingFiles)).join(', '));
   }
 
   if (virtualFiles) {
@@ -2399,7 +2407,9 @@ async function processVirtualFiles(tex) {
 async function chuanHoaTexBaiHoc(rawCode) {
   var trimmed = (rawCode || '').trim();
   if (/\\documentclass/.test(trimmed)) {
-    return await processVirtualFiles(trimmed);
+    // Keep complete documents byte-for-byte stable on the primary PDF path.
+    // Rewriting their preamble can duplicate packages and break valid sources.
+    return trimmed;
   }
   
   var styExTest = '';
