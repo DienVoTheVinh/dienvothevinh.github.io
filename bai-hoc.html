@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=7.4"></script>
+<script src="js/latex-view.js?v=8.0"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -264,6 +264,51 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .btvn-document iframe { width:100%; height:clamp(420px,70vh,900px); border:1px solid var(--line); border-radius:10px; background:#fff; }
 .btvn-divider { border-top:1px dashed var(--line-2); margin:10px 0 16px; }
 
+/* ===== Bộ đọc LaTeX trực tiếp trên web ===== */
+.vm-tex-shell { flex:1; min-height:0; display:flex; flex-direction:column; background:var(--surface-2); }
+.vm-tex-actions {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  padding:9px 14px; border-bottom:1px solid var(--line); background:var(--surface-solid);
+}
+.vm-tex-actions-copy { min-width:0; color:var(--ink-3); font-size:.8rem; line-height:1.45; }
+.vm-tex-actions-copy b { color:var(--ink); }
+.vm-tex-download { min-height:40px; flex:none; }
+.vm-tex-download[disabled] { opacity:.7; cursor:wait; }
+.vm-tex-scroll { flex:1; min-height:0; overflow:auto; padding:clamp(12px,2.6vw,30px); scroll-behavior:smooth; }
+.vm-tex-reader {
+  width:min(920px,100%); margin:0 auto; padding:clamp(22px,4vw,48px);
+  box-sizing:border-box;
+  border:1px solid var(--line); border-radius:18px; background:var(--surface);
+  box-shadow:0 14px 38px rgba(15,23,42,.08); color:var(--ink); line-height:1.72;
+  overflow-wrap:anywhere;
+}
+.vm-tex-reader-head { margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--line); }
+.vm-tex-reader-kicker { display:block; margin-bottom:7px; color:var(--accent); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
+.vm-tex-reader-head h2 { margin:0; font-family:var(--font-display,Georgia,serif); font-size:clamp(1.35rem,3vw,2rem); line-height:1.25; }
+.vm-tex-prose { font-size:clamp(.96rem,1.2vw,1.04rem); }
+.vm-tex-prose + .vm-tex-prose { margin-top:14px; }
+.vm-tex-h1,.vm-tex-h2,.vm-tex-h3,.vm-tex-h4 { color:var(--ink); line-height:1.35; scroll-margin-top:80px; }
+.vm-tex-h1 { margin:28px 0 16px; font-size:1.55rem; }
+.vm-tex-h2 { margin:26px 0 14px; font-size:1.3rem; color:var(--accent); }
+.vm-tex-h3 { margin:22px 0 10px; font-size:1.12rem; }
+.vm-tex-h4 { margin:18px 0 8px; font-size:1rem; }
+.vm-tex-gap { height:12px; }
+.vm-tex-media-note { margin:12px 0; padding:12px 14px; border:1px dashed var(--line-2); border-radius:10px; color:var(--ink-3); font-size:.84rem; text-align:center; }
+.vm-tex-block { margin:20px 0; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface-solid); }
+.vm-tex-block-title { padding:9px 15px; background:var(--accent-soft); color:var(--accent); font-weight:800; font-size:.86rem; letter-spacing:.02em; }
+.vm-tex-block-body { padding:16px 18px; font-size:clamp(.95rem,1.15vw,1.03rem); }
+.vm-tex-block-dn .vm-tex-block-title,.vm-tex-block-dl .vm-tex-block-title,.vm-tex-block-hq .vm-tex-block-title { background:var(--ok-soft); color:var(--ok); }
+.vm-tex-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:16px; }
+.vm-tex-choice { display:flex; align-items:flex-start; gap:10px; min-width:0; padding:12px; border:1px solid var(--line-2); border-radius:11px; background:var(--surface); }
+.vm-tex-choice-key { display:grid; place-items:center; width:28px; height:28px; flex:none; border:1px solid var(--accent); border-radius:50%; color:var(--accent); font-weight:800; font-size:.82rem; }
+.vm-tex-reader .katex-display { max-width:100%; overflow-x:auto; overflow-y:hidden; padding:6px 0; }
+.vm-tex-reader table { max-width:100%; display:block; overflow-x:auto; }
+.vm-tex-empty { padding:36px 16px; text-align:center; color:var(--ink-3); }
+.btvn-latex-native { margin-top:12px; }
+.btvn-latex-native .vm-tex-reader { width:100%; padding:clamp(18px,3vw,34px); box-shadow:none; border-radius:14px; }
+.btvn-latex-native .vm-tex-actions { border:1px solid var(--line); border-bottom:0; border-radius:14px 14px 0 0; }
+.btvn-latex-native .vm-tex-reader { border-radius:0 0 14px 14px; }
+
 @media (max-width:820px) {
   .btvn-scroll { padding:10px; scroll-padding-top:148px; }
   .btvn-block { margin-bottom:14px; }
@@ -283,6 +328,18 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   .btvn-submit-btn { width:100%; min-height:48px; white-space:normal; }
   .btvn-document iframe { height:min(62vh,560px); min-height:360px; }
   .btvn-media img { width:100%; max-height:none; }
+  .vm-tex-actions { align-items:stretch; padding:9px 10px; }
+  .vm-tex-actions-copy { flex:1 1 150px; }
+  .vm-tex-download { min-height:44px; padding:8px 12px !important; }
+  .vm-tex-scroll { padding:8px; }
+  .vm-tex-reader { padding:20px 16px 28px; border-radius:12px; box-shadow:none; }
+  .vm-tex-reader-head { margin-bottom:20px; padding-bottom:14px; }
+  .vm-tex-reader-kicker { font-size:.64rem; letter-spacing:.09em; }
+  .vm-tex-reader-head h2 { font-size:1.3rem; }
+  .vm-tex-choices { grid-template-columns:1fr; gap:8px; }
+  .vm-tex-block { margin:14px 0; border-radius:11px; }
+  .vm-tex-block-body { padding:14px 12px; }
+  .btvn-latex-native .vm-tex-reader { padding:18px 12px 24px; }
   #modalNopBai { align-items:flex-end !important; padding:0 !important; }
   #modalNopBai > div {
     max-width:none !important;
@@ -1397,7 +1454,7 @@ function renderBaiHoc() {
   var dsAnh = Array.isArray(details.images) ? details.images : [];
   var coBTVN = !!(details.homework_text) || (Array.isArray(details.homework_images) && details.homework_images.length > 0) || !!details.homework_latex_content || !!(details.bai_btvn && details.bai_btvn.file_path)
     || !!(details.homework2_text) || (Array.isArray(details.homework2_images) && details.homework2_images.length > 0) || !!details.homework2_latex_content || !!(details.bai_btvn2 && details.bai_btvn2.file_path);
-  coTest = !!(details.bai_test && details.bai_test.file_path) || (interactiveQuestions.length > 0);
+  coTest = !!(details.bai_test && details.bai_test.file_path) || !!(details.test_latex_content && details.test_latex_content.trim()) || (interactiveQuestions.length > 0);
 
   // Bật/tắt các nút chuyển
   $('boChuyen').style.display = 'flex';
@@ -1519,6 +1576,61 @@ document.addEventListener('click', function (e) {
 /* ===== Tài liệu LaTeX của bài: tự biên dịch cho học sinh ===== */
 var pdfTaiLieuTex = null;
 var dangBienDichTex = false;
+var vmLatexDownloads = {};
+
+function vmTenTepPdf(name) {
+  return String(name || 'tai-lieu').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '.pdf';
+}
+
+function vmLatexActionHTML(key, rawTex, fileName) {
+  vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf' };
+  return '<div class="vm-tex-actions">' +
+    '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.</div>' +
+    '<button type="button" class="btn btn-secondary btn-sm vm-tex-download" onclick="vmTaiPdfLatex(\'' + key + '\',this)">⬇ Tạo &amp; tải PDF</button></div>';
+}
+
+function vmLatexNativeHTML(title, rawTex, key, fileName, kind, inline) {
+  var reader = typeof latexTaiLieuRaHTML === 'function'
+    ? latexTaiLieuRaHTML(rawTex || '', { title: title, kind: kind || 'document', showSolutions: false })
+    : '<div class="no-content"><h3>Chưa tải được bộ đọc LaTeX</h3></div>';
+  return '<div class="' + (inline ? 'btvn-latex-native' : 'vm-tex-shell') + '">' +
+    vmLatexActionHTML(key, rawTex, fileName) +
+    (inline ? reader : '<div class="vm-tex-scroll">' + reader + '</div>') + '</div>';
+}
+
+function vmRenderMathTaiLieu(root) {
+  if (typeof renderToanTrong === 'function') renderToanTrong(root);
+  else if (typeof renderLatex === 'function') renderLatex(root);
+}
+
+async function vmTaiPdfLatex(key, button) {
+  var item = vmLatexDownloads[key];
+  if (!item || !item.tex) return;
+  var oldText = button ? button.innerHTML : '';
+  if (button) { button.disabled = true; button.textContent = '⏳ Đang tạo PDF…'; }
+  try {
+    var tex = await chuanHoaTexBaiHoc(item.tex);
+    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+    if (r.error) throw new Error(r.error.message || 'Trạm biên dịch đang bận');
+    if (!(r.data instanceof Blob) || r.data.type.indexOf('pdf') === -1) {
+      var log = typeof r.data === 'string' ? r.data : await r.data.text();
+      var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
+      throw new Error(firstError || 'Không nhận được tệp PDF hợp lệ');
+    }
+    var url = URL.createObjectURL(r.data);
+    var a = document.createElement('a');
+    a.href = url; a.download = item.fileName; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+    if (button) button.textContent = '✓ Đã tải PDF';
+    setTimeout(function () { if (button) { button.disabled = false; button.innerHTML = oldText; } }, 1800);
+  } catch (e) {
+    if (button) { button.disabled = false; button.innerHTML = oldText; }
+    alert('Chưa tạo được PDF: ' + e.message + '. Em vẫn có thể đọc đầy đủ trực tiếp trên web.');
+  }
+}
 
 
 // Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
@@ -1794,74 +1906,57 @@ async function chuanHoaTexBaiHoc(rawCode) {
 
 async function hienTaiLieuTex() {
   var than = $('thanNoiDung');
-  if (pdfTaiLieuTex) { veTaiLieuTex(); return; }
+  var title = (details.documents && details.documents.title) || details.title || 'Tài liệu bài học';
   than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
-    '<div class="no-content"><div class="ic">⏳</div><h3>Đang biên dịch tài liệu…</h3><p>Khoảng 5–20 giây, em chờ chút nhé.</p></div>';
-  if (dangBienDichTex) return;
-  dangBienDichTex = true;
-  try {
-    var rawTex = details.latex_content;
-    var tex = await chuanHoaTexBaiHoc(rawTex);
-    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
-    if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
-    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
-      pdfTaiLieuTex = r.data;
-      veTaiLieuTex();
-    } else {
-      var log = typeof r.data === 'string' ? r.data : await r.data.text();
-      var dongLoi = log.split('\n').filter(function (l) { return l.indexOf('!') === 0; }).slice(0, 4).join('\n');
-      than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
-        '<div class="no-content"><div class="ic">⚠️</div><h3>Tài liệu chưa biên dịch được</h3><p style="font-family:monospace;font-size:.78rem;white-space:pre-wrap;max-width:480px">' + (dongLoi || 'Em báo thầy kiểm tra lại nhé.') + '</p></div>';
-    }
-  } catch (e) {
-    than.innerHTML = thanhCongCu('📄 Tài liệu bài học', null) +
-      '<div class="no-content"><div class="ic">⚠️</div><h3>Lỗi biên dịch</h3><p>' + e.message + '</p></div>';
-  }
-  dangBienDichTex = false;
+    vmLatexNativeHTML(title, details.latex_content, 'lesson-document', vmTenTepPdf(title), 'document', false);
+  vmRenderMathTaiLieu(than);
 }
 
-function renderPDFWithJS(pdfUrl, container) {
-  container.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang chuẩn bị tài liệu...</h3></div>';
-  
-  if (!window.pdfjsLib) {
+var vmPdfViewerSeq = 0;
+var vmPdfZoomLevels = {};
+function vmTaiPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (window._vmPdfJsPromise) return window._vmPdfJsPromise;
+  window._vmPdfJsPromise = new Promise(function (resolve, reject) {
     var script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
-    script.id = 'pdfjs-script';
-    script.onload = function() {
-      // Tạo Blob URL cho worker để vượt qua chính sách Same-Origin đối với Web Worker của trình duyệt
+    script.onload = function () {
       var workerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
       try {
         var blob = new Blob(['importScripts("' + workerUrl + '");'], { type: 'application/javascript' });
         pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
-      } catch (e) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-      }
-      startRendering();
+      } catch (e) { pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl; }
+      resolve(window.pdfjsLib);
     };
-    script.onerror = function() {
-      fallbackToIframe();
-    };
+    script.onerror = reject;
     document.head.appendChild(script);
-  } else {
-    startRendering();
-  }
+  });
+  return window._vmPdfJsPromise;
+}
+
+function renderPDFWithJS(pdfUrl, container) {
+  container.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang chuẩn bị tài liệu...</h3></div>';
+  var seq = ++vmPdfViewerSeq;
+  var canvasId = 'pdfCanvasContainer-' + seq;
+  var labelId = 'pdfzLbl-' + seq;
+  vmTaiPdfJs().then(startRendering).catch(fallbackToIframe);
   
   function fallbackToIframe() {
     container.innerHTML = '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
   }
   
   function startRendering() {
-    window._pdfZoomLevel = 1;
+    vmPdfZoomLevels[canvasId] = 1;
     container.innerHTML =
       '<div class="pdf-zoom-toolbar" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface-solid);border-bottom:1px solid var(--line);flex-wrap:wrap">' +
         '<span style="font-size:.78rem;color:var(--ink-3);font-weight:700">🔍 Thu phóng:</span>' +
-        '<button class="btn btn-secondary btn-sm pdf-zoom-btn" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(-1)" aria-label="Thu nhỏ tài liệu">−</button>' +
-        '<span class="pdf-zoom-label" id="pdfzLbl" style="min-width:52px;text-align:center;font-weight:800;font-size:.84rem">100%</span>' +
-        '<button class="btn btn-secondary btn-sm pdf-zoom-btn" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(1)" aria-label="Phóng to tài liệu">+</button>' +
-        '<button class="btn btn-secondary btn-sm pdf-fit-btn" style="padding:2px 12px;font-size:.8rem" onclick="pdfZoomJS(0)">↔ Vừa khung</button>' +
+        '<button class="btn btn-secondary btn-sm pdf-zoom-btn" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(-1,\'' + canvasId + '\',\'' + labelId + '\')" aria-label="Thu nhỏ tài liệu">−</button>' +
+        '<span class="pdf-zoom-label" id="' + labelId + '" style="min-width:52px;text-align:center;font-weight:800;font-size:.84rem">100%</span>' +
+        '<button class="btn btn-secondary btn-sm pdf-zoom-btn" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(1,\'' + canvasId + '\',\'' + labelId + '\')" aria-label="Phóng to tài liệu">+</button>' +
+        '<button class="btn btn-secondary btn-sm pdf-fit-btn" style="padding:2px 12px;font-size:.8rem" onclick="pdfZoomJS(0,\'' + canvasId + '\',\'' + labelId + '\')">↔ Vừa khung</button>' +
       '</div>' +
-      '<div style="flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="pdfCanvasContainer"></div>';
-    var canvasContainer = document.getElementById('pdfCanvasContainer');
+      '<div style="flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="' + canvasId + '"></div>';
+    var canvasContainer = document.getElementById(canvasId);
     
     // Thêm cache-busting cho URL của Supabase để tránh việc trình duyệt cache kết quả request không có CORS
     var fetchUrl = pdfUrl;
@@ -1875,8 +1970,7 @@ function renderPDFWithJS(pdfUrl, container) {
         (function(num) {
           var canvas = document.createElement('canvas');
           canvas.className = 'pdfjs-page';
-          if ((window._pdfZoomLevel || 1) === 1) { canvas.style.width = '100%'; canvas.style.maxWidth = '800px'; }
-          else { canvas.style.width = (800 * window._pdfZoomLevel) + 'px'; canvas.style.maxWidth = 'none'; }
+          canvas.style.width = '100%'; canvas.style.maxWidth = '800px';
           canvas.style.borderRadius = '8px';
           canvas.style.border = '1px solid var(--line)';
           canvas.style.boxShadow = 'var(--shadow)';
@@ -1906,17 +2000,19 @@ function renderPDFWithJS(pdfUrl, container) {
   }
 }
 
-function pdfZoomJS(dir) {
-  var cont = document.getElementById('pdfCanvasContainer'); if (!cont) return;
-  var z = window._pdfZoomLevel || 1;
+function pdfZoomJS(dir, containerId, labelId) {
+  containerId = containerId || 'pdfCanvasContainer';
+  labelId = labelId || 'pdfzLbl';
+  var cont = document.getElementById(containerId); if (!cont) return;
+  var z = vmPdfZoomLevels[containerId] || 1;
   if (dir === 0) z = 1; else z = Math.min(2.5, Math.max(0.6, z + dir * 0.2));
   z = Math.round(z * 100) / 100;
-  window._pdfZoomLevel = z;
+  vmPdfZoomLevels[containerId] = z;
   cont.querySelectorAll('.pdfjs-page').forEach(function (cv) {
     if (z === 1) { cv.style.width = '100%'; cv.style.maxWidth = '800px'; }
     else { cv.style.width = (800 * z) + 'px'; cv.style.maxWidth = 'none'; }
   });
-  var lbl = document.getElementById('pdfzLbl'); if (lbl) lbl.textContent = Math.round(z * 100) + '%';
+  var lbl = document.getElementById(labelId); if (lbl) lbl.textContent = Math.round(z * 100) + '%';
 }
 
 function veTaiLieuTex() {
@@ -1934,36 +2030,11 @@ var dangBienDichTestTex = false;
 
 async function hienTestTex() {
   var than = $('thanNoiDung');
-  if (pdfTestTex) { veTestTex(); return; }
-  
   var ketQuaChamHtml = await layKetQuaChamHtml();
   than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
     ketQuaChamHtml +
-    '<div class="no-content"><div class="ic">⏳</div><h3>Đang biên dịch đề kiểm tra…</h3><p>Khoảng 5–20 giây, em chờ chút nhé.</p></div>';
-    
-  if (dangBienDichTestTex) return;
-  dangBienDichTestTex = true;
-  try {
-    var rawTex = details.test_latex_content;
-    var tex = await chuanHoaTexBaiHoc(rawTex);
-    var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
-    if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
-    if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
-      pdfTestTex = r.data;
-      await veTestTex();
-    } else {
-      var log = typeof r.data === 'string' ? r.data : await r.data.text();
-      var dongLoi = log.split('\n').filter(function (l) { return l.indexOf('!') === 0; }).slice(0, 4).join('\n');
-      than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
-        ketQuaChamHtml +
-        '<div class="no-content"><div class="ic">⚠️</div><h3>Đề thi chưa biên dịch được</h3><p style="font-family:monospace;font-size:.78rem;white-space:pre-wrap;max-width:480px">' + (dongLoi || 'Em báo thầy kiểm tra lại nhé.') + '</p></div>';
-    }
-  } catch (e) {
-    than.innerHTML = thanhCongCu('📝 Đề kiểm tra cuối giờ', null) +
-      ketQuaChamHtml +
-      '<div class="no-content"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề thi</h3><p>' + e.message + '</p></div>';
-  }
-  dangBienDichTestTex = false;
+    vmLatexNativeHTML(details.title + ' — Đề kiểm tra', details.test_latex_content, 'lesson-test', vmTenTepPdf(details.title + '-de-kiem-tra'), 'test', false);
+  vmRenderMathTaiLieu(than);
 }
 
 async function veTestTex() {
@@ -2203,9 +2274,10 @@ async function renderBTVN(than) {
     var deHtml = coText
       ? '<div class="btvn-note-card"><div class="btvn-note-card-head"><span>📝</span> Ghi chú cho học sinh</div>' +
         '<div class="btvn-note-card-body">' + btvnEsc(b.text) + '</div></div>' : '';
-    var latexHtml = coLatex ? '<div id="btvnLatexBox' + b.sfx + '" style="margin-top:12px"><div class="no-content" style="padding:24px"><div class="spinner"></div><h3>Đang biên dịch đề LaTeX…</h3></div></div>' : '';
+    var latexTitle = b.bonus ? 'Bài tập thưởng thêm' : 'Bài tập về nhà bắt buộc';
+    var latexHtml = coLatex ? vmLatexNativeHTML(latexTitle, b.latex, 'lesson-homework' + b.sfx, vmTenTepPdf(details.title + '-' + latexTitle), b.kind, true) : '';
     var pdfUrl = coDoc ? buildPdfUrl(b.docPath) : '';
-    var docHtml = coDoc ? '<div class="btvn-document">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<iframe src="' + pdfUrl + '#toolbar=1" title="Đề bài tập PDF"></iframe></div>' : '';
+    var docHtml = coDoc ? '<div class="btvn-document">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<div id="btvnPdfBox' + b.sfx + '" style="height:clamp(420px,70vh,900px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:10px"></div></div>' : '';
     var anhHtml = dsAnh.length ? '<div class="btvn-media">' +
       dsAnh.map(function (p, idx) { var u = urlAnh(p); return '<a href="' + btvnEsc(u) + '" target="_blank" rel="noopener" title="Xem ảnh gốc"><img src="' + btvnEsc(u) + '" alt="Trang ' + (idx + 1) + ' của đề bài ' + (b.bonus ? 'thưởng thêm' : 'về nhà') + '" loading="lazy"></a>'; }).join('') + '</div>' : '';
     var actionHtml = '';
@@ -2234,21 +2306,11 @@ async function renderBTVN(than) {
     html1 + (html2 ? ('<div class="btvn-divider"></div>' + html2) : '') +
     '</div>';
 
+  vmRenderMathTaiLieu(than);
   blocks.forEach(function (b) {
-    if (b.latex) {
-      (async function () {
-        var box = document.getElementById('btvnLatexBox' + b.sfx);
-        if (!box) return;
-        try {
-          var tex = await chuanHoaTexBaiHoc(b.latex);
-          var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
-          if (r.error) throw new Error(r.error.message || 'Trạm biên dịch lỗi');
-          if (r.data instanceof Blob && r.data.type.indexOf('pdf') !== -1) {
-            var u = URL.createObjectURL(r.data);
-            box.innerHTML = '<div class="btvn-document">' + thanhCongCu('📝 Đề bài tập (LaTeX)', u) + '<iframe src="' + u + '" title="Đề bài tập LaTeX"></iframe></div>';
-          } else { box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Đề LaTeX chưa biên dịch được</h3></div>'; }
-        } catch (e) { box.innerHTML = '<div class="no-content" style="padding:20px"><div class="ic">⚠️</div><h3>Lỗi biên dịch đề LaTeX</h3></div>'; }
-      })();
+    if (b.docPath) {
+      var pdfBox = document.getElementById('btvnPdfBox' + b.sfx);
+      if (pdfBox) renderPDFWithJS(buildPdfUrl(b.docPath), pdfBox);
     }
     if (!laAdmin && nguoiDung) {
       (async function () {
@@ -2917,6 +2979,7 @@ function renderTheoryReading() {
   var sections = getTheorySections(details.theory_sections);
   
   var html = thanhCongCu('📖 Đọc lý thuyết bài học', null) +
+    (details.latex_content ? vmLatexActionHTML('lesson-theory', details.latex_content, vmTenTepPdf(details.title + '-ly-thuyet')) : '') +
     '<div class="theory-reading-container" id="readingContainer" style="max-width:860px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:20px;">';
     
   var unlocked = currentProgress.unlocked_section || 0;
@@ -2931,10 +2994,9 @@ function renderTheoryReading() {
 
   if (!sections || sections.length === 0) {
     if (details.latex_content && details.latex_content.trim()) {
-      var fullLatexHTML = typeof latexRaHTML === 'function' ? latexRaHTML(details.latex_content) : details.latex_content;
-      html += '<div class="theory-section-card card" style="padding:24px; border:1px solid var(--line); border-radius:12px; background:var(--surface); line-height:1.7;">' +
-        '<div class="theory-content">' + fullLatexHTML + '</div>' +
-        '</div>';
+      html += typeof latexTaiLieuRaHTML === 'function'
+        ? latexTaiLieuRaHTML(details.latex_content, { title: details.title || 'Lý thuyết bài học', kind: 'theory', showSolutions: false })
+        : '<div class="theory-section-card card"><div class="theory-content">' + latexRaHTML(details.latex_content) + '</div></div>';
     } else {
       html += '<div class="card" style="padding:40px 24px; text-align:center; color:var(--ink-3); background:var(--surface); border:1px solid var(--line); border-radius:12px;">' +
         '<div style="font-size:2.4rem; margin-bottom:8px;">📖</div>' +
