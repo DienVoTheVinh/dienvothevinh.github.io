@@ -68,6 +68,28 @@
 .tab-header-btn:hover { background: var(--surface-2); color: var(--ink); }
 .tab-header-btn.active { background: var(--accent-soft); color: var(--accent); }
 
+/* Bộ chọn tài khoản Giáo viên / Trợ giảng */
+.tg-picker-row { display:flex; gap:8px; margin-top:12px; align-items:flex-start; }
+.tg-picker-wrap { position:relative; flex:1; min-width:220px; }
+.tg-picker-input { width:100%; font-size:.88rem; padding-right:38px; }
+.tg-picker-input.is-valid { border-color:var(--ok) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 14%, transparent); }
+.tg-picker-input.is-invalid { border-color:var(--err) !important; }
+.tg-picker-check { display:none; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--ok); font-weight:900; pointer-events:none; }
+.tg-picker-input.is-valid + .tg-picker-check { display:block; }
+.tg-suggestions { display:none; position:absolute; z-index:90; top:calc(100% + 7px); left:0; right:0; max-height:280px; overflow:auto; padding:6px; border:1px solid var(--line-2); border-radius:12px; background:var(--surface-solid, var(--surface)); box-shadow:0 18px 44px rgba(15,23,42,.2); }
+.tg-suggestions.is-open { display:block; }
+.tg-suggestion { display:flex; align-items:center; gap:10px; width:100%; border:0; border-radius:9px; padding:9px 10px; background:transparent; color:var(--ink); text-align:left; cursor:pointer; }
+.tg-suggestion:hover, .tg-suggestion:focus-visible { background:var(--accent-soft); outline:none; }
+.tg-suggestion-avatar { width:34px; height:34px; flex:0 0 34px; display:grid; place-items:center; border-radius:50%; background:var(--surface-2); color:var(--accent); font-size:.78rem; font-weight:800; border:1px solid var(--line); }
+.tg-suggestion-main { min-width:0; flex:1; }
+.tg-suggestion-name { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:.86rem; font-weight:750; }
+.tg-suggestion-meta { display:block; margin-top:2px; color:var(--ink-3); font-size:.75rem; }
+.tg-role-badge { display:inline-flex; align-items:center; border-radius:99px; padding:2px 7px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); font-size:.7rem; font-weight:700; }
+@media(max-width:640px) {
+  .tg-picker-row { flex-direction:column; }
+  .tg-picker-wrap, .tg-add-btn { width:100%; }
+}
+
 .lesson-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); transition: all .2s; }
 .lesson-row:hover { border-color: var(--line-2); transform: translateY(-1px); box-shadow: var(--shadow); }
 .lesson-info { display: flex; flex-direction: column; gap: 4px; }
@@ -1205,6 +1227,10 @@ function danhXungGV(id, name) {
 }
 var dsGiaoVien = [];
 var hoSoNguoiDung = null;
+var tgDanhSachUngVien = [];
+var tgAssistantIds = [];
+var tgUngVienDaChon = null;
+var tgGoiYTimer = null;
 
 (async function () {
   console.log("1. Khởi tạo trang: Bắt đầu");
@@ -1408,6 +1434,123 @@ function laQuanLyLop() {
   var me = hoSoNguoiDung;
   return me && (me.role === 'admin' || (classDangChon && (classDangChon.teacher_id === me.id || classDangChon.co_teacher_id === me.id)));
 }
+function tgEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>\"']/g, function (ch) {
+    return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;' })[ch];
+  });
+}
+function tgChuanHoa(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+function tgNhanVaiTro(role) {
+  return role === 'teacher' ? 'Giáo viên' : 'Trợ giảng';
+}
+function tgVietTat(name) {
+  return String(name || '?').trim().split(/\s+/).slice(-2).map(function (part) { return part.charAt(0); }).join('').toUpperCase() || '?';
+}
+function tgDatTrangThai(message, tone) {
+  var tt = $('tgTrangThai');
+  var input = $('tgUsername');
+  if (tt) {
+    tt.textContent = message || '';
+    tt.style.color = tone === 'ok' ? 'var(--ok)' : tone === 'err' ? 'var(--err)' : tone === 'warn' ? 'var(--warn)' : 'var(--ink-3)';
+  }
+  if (input) {
+    input.classList.toggle('is-valid', tone === 'ok');
+    input.classList.toggle('is-invalid', tone === 'err');
+    input.setAttribute('aria-invalid', tone === 'err' ? 'true' : 'false');
+  }
+}
+async function tgTaiDanhSachUngVien(force) {
+  if (tgDanhSachUngVien.length && !force) return tgDanhSachUngVien;
+  var r = await sb.from('profiles')
+    .select('id, full_name, username, role')
+    .in('role', ['assistant', 'teacher'])
+    .order('full_name', { ascending: true })
+    .limit(250);
+  if (r.error) throw new Error(r.error.message);
+  tgDanhSachUngVien = r.data || [];
+  return tgDanhSachUngVien;
+}
+function tgDongGoiY() {
+  var list = $('tgGoiY');
+  if (list) {
+    list.classList.remove('is-open');
+    list.innerHTML = '';
+  }
+  var input = $('tgUsername');
+  if (input) input.setAttribute('aria-expanded', 'false');
+}
+function tgChonUngVien(id) {
+  var p = tgDanhSachUngVien.find(function (item) { return item.id === id; });
+  if (!p) return;
+  tgUngVienDaChon = p;
+  var input = $('tgUsername');
+  if (input) input.value = '@' + (p.username || '');
+  tgDatTrangThai('✓ Đã chọn ' + (p.full_name || p.username) + ' · ' + tgNhanVaiTro(p.role), 'ok');
+  tgDongGoiY();
+}
+async function tgCapNhatGoiY(value, showWhenEmpty) {
+  var input = $('tgUsername');
+  var list = $('tgGoiY');
+  if (!input || !list) return;
+  var raw = String(value || '').replace(/^@/, '').trim();
+  var needle = tgChuanHoa(raw);
+  if (!needle && !showWhenEmpty) { tgDongGoiY(); return; }
+  try {
+    await tgTaiDanhSachUngVien(false);
+    if (!input || input.value.replace(/^@/, '').trim() !== raw) return;
+    var excluded = tgAssistantIds.slice();
+    if (classDangChon) {
+      excluded.push(classDangChon.teacher_id);
+      excluded.push(classDangChon.co_teacher_id);
+    }
+    var matches = tgDanhSachUngVien.filter(function (p) {
+      if (excluded.indexOf(p.id) !== -1) return false;
+      if (!needle) return true;
+      return tgChuanHoa(p.full_name).indexOf(needle) !== -1 || tgChuanHoa(p.username).indexOf(needle) !== -1;
+    }).slice(0, 10);
+    var exact = matches.find(function (p) { return tgChuanHoa(p.username) === needle; });
+    if (exact) {
+      tgUngVienDaChon = exact;
+      tgDatTrangThai('✓ Đã nhận diện ' + (exact.full_name || exact.username) + ' · ' + tgNhanVaiTro(exact.role), 'ok');
+    } else {
+      tgUngVienDaChon = null;
+      if (raw) tgDatTrangThai(matches.length ? 'Chọn đúng tài khoản trong danh sách bên dưới.' : 'Không tìm thấy Giáo viên hoặc Trợ giảng phù hợp.', matches.length ? '' : 'err');
+      else tgDatTrangThai('Gõ tên hoặc username để tìm tài khoản.', '');
+    }
+    if (!matches.length) { tgDongGoiY(); return; }
+    list.innerHTML = matches.length ? matches.map(function (p) {
+      return '<button type="button" class="tg-suggestion" role="option" data-id="' + tgEsc(p.id) + '" onclick="tgChonUngVien(this.dataset.id)">' +
+        '<span class="tg-suggestion-avatar">' + tgEsc(tgVietTat(p.full_name)) + '</span>' +
+        '<span class="tg-suggestion-main"><span class="tg-suggestion-name">' + tgEsc(p.full_name || p.username || '?') + '</span>' +
+        '<span class="tg-suggestion-meta">@' + tgEsc(p.username || '') + '</span></span>' +
+        '<span class="tg-role-badge">' + tgEsc(tgNhanVaiTro(p.role)) + '</span>' +
+      '</button>';
+    }).join('') : '';
+    list.classList.add('is-open');
+    input.setAttribute('aria-expanded', 'true');
+  } catch (e) {
+    tgUngVienDaChon = null;
+    tgDongGoiY();
+    tgDatTrangThai('Không tải được danh sách tài khoản: ' + e.message, 'err');
+  }
+}
+function tgLenLichGoiY(value) {
+  tgUngVienDaChon = null;
+  tgDatTrangThai(value.trim() ? 'Đang tìm tài khoản…' : 'Gõ tên hoặc username để tìm tài khoản.', '');
+  clearTimeout(tgGoiYTimer);
+  tgGoiYTimer = setTimeout(function () { tgCapNhatGoiY(value, false); }, 180);
+}
+function tgXuLyPhim(event) {
+  if (event.key === 'Escape') { tgDongGoiY(); return; }
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  if (tgUngVienDaChon) { themTroGiang(); return; }
+  var first = document.querySelector('#tgGoiY .tg-suggestion');
+  if (first) tgChonUngVien(first.dataset.id);
+  else tgDatTrangThai('Hãy chọn một tài khoản Giáo viên hoặc Trợ giảng hợp lệ.', 'err');
+}
 async function taiTroGiang(classId) {
   var box = $('troGiangCard');
   if (!box) return;
@@ -1415,6 +1558,8 @@ async function taiTroGiang(classId) {
   var r = await sb.from('class_assistants').select('assistant_id').eq('class_id', classId);
   if (!classDangChon || classDangChon.id !== classId) return;
   var ids = (r.data || []).map(function (x) { return x.assistant_id; });
+  tgAssistantIds = ids.slice();
+  tgUngVienDaChon = null;
   var profs = {};
   if (ids.length) {
     var rp = await sb.from('profiles').select('id, full_name, username, role').in('id', ids);
@@ -1425,15 +1570,20 @@ async function taiTroGiang(classId) {
     var p = profs[id] || {};
     return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:4px 6px 4px 12px;font-size:.85rem;margin:0 6px 6px 0">' +
       '🤝 <b>' + esc(p.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.78rem">@' + esc(p.username || '') + '</span>' +
+      (p.role ? '<span class="tg-role-badge">' + esc(tgNhanVaiTro(p.role)) + '</span>' : '') +
       (canManage ? '<button title="Gỡ khỏi lớp" onclick="xoaTroGiang(\'' + id + '\')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-weight:800;font-size:1.05rem;line-height:1;padding:0 2px">×</button>' : '') +
       '</span>';
   }).join('') : '<span style="color:var(--ink-3);font-size:.86rem">Chưa có trợ giảng nào cho lớp này.</span>';
-  var addHtml = canManage ? '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">' +
-      '<input class="input" id="tgUsername" placeholder="Nhập username tài khoản trợ giảng…" style="flex:1;min-width:220px;font-size:.88rem" onkeydown="if(event.key===\'Enter\')themTroGiang()">' +
-      '<button class="btn btn-primary btn-sm" id="tgAddBtn" onclick="themTroGiang()">+ Thêm trợ giảng</button>' +
+  var addHtml = canManage ? '<div class="tg-picker-row">' +
+      '<div class="tg-picker-wrap">' +
+        '<input class="input tg-picker-input" id="tgUsername" placeholder="Nhập tên hoặc username GV / Trợ giảng…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="tgGoiY" aria-expanded="false" oninput="tgLenLichGoiY(this.value)" onfocus="tgCapNhatGoiY(this.value, true)" onblur="setTimeout(tgDongGoiY, 180)" onkeydown="tgXuLyPhim(event)">' +
+        '<span class="tg-picker-check" aria-hidden="true">✓</span>' +
+        '<div class="tg-suggestions" id="tgGoiY" role="listbox"></div>' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm tg-add-btn" id="tgAddBtn" onclick="themTroGiang()">+ Thêm trợ giảng</button>' +
     '</div>' +
-    '<div id="tgTrangThai" style="font-size:.82rem;margin-top:6px"></div>' +
-    '<div style="font-size:.76rem;color:var(--ink-3);margin-top:4px">Trợ giảng được giúp <b>điểm danh, nhận xét, chấm điểm</b> cho lớp này. Nhập username tài khoản đã có — hệ thống sẽ tự cấp quyền Trợ giảng.</div>'
+    '<div id="tgTrangThai" aria-live="polite" style="font-size:.82rem;margin-top:7px;color:var(--ink-3)">Gõ tên hoặc username để tìm tài khoản.</div>' +
+    '<div style="font-size:.76rem;color:var(--ink-3);margin-top:5px">Có thể chọn tài khoản <b>Giáo viên</b> hoặc <b>Trợ giảng</b>. Người được thêm có thể điểm danh, nhận xét và chấm điểm cho lớp; hệ thống không thay đổi vai trò tài khoản.</div>'
     : '';
   box.innerHTML = '<div class="card" style="padding:16px 18px">' +
     '<h3 style="font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:6px">🤝 Trợ giảng của lớp</h3>' +
@@ -1448,21 +1598,19 @@ async function themTroGiang() {
   if (!laQuanLyLop()) { tt.textContent = 'Bạn không có quyền thêm trợ giảng cho lớp này.'; tt.style.color = 'var(--err)'; return; }
   var btn = $('tgAddBtn'); btn.disabled = true; var old = btn.textContent; btn.textContent = '⏳ Đang thêm…';
   try {
-    var rp = await sb.from('profiles').select('id, full_name, username, role').eq('username', u).maybeSingle();
-    if (rp.error) throw new Error(rp.error.message);
-    if (!rp.data) throw new Error('Không tìm thấy tài khoản @' + u);
-    var prof = rp.data;
+    await tgTaiDanhSachUngVien(false);
+    var prof = tgUngVienDaChon || tgDanhSachUngVien.find(function (p) { return tgChuanHoa(p.username) === tgChuanHoa(u); });
+    if (!prof) throw new Error('Hãy chọn đúng một tài khoản trong danh sách gợi ý.');
+    if (['assistant', 'teacher'].indexOf(prof.role) === -1) throw new Error('Chỉ tài khoản Giáo viên hoặc Trợ giảng mới được thêm.');
     if (prof.id === classDangChon.teacher_id || prof.id === classDangChon.co_teacher_id) throw new Error('Tài khoản này đã là giáo viên của lớp.');
-    if (['student', 'parent'].indexOf(prof.role) !== -1) {
-      var ru = await sb.from('profiles').update({ role: 'assistant' }).eq('id', prof.id);
-      if (ru.error) throw new Error('Không cấp được quyền trợ giảng: ' + ru.error.message);
-    }
     var ri = await sb.from('class_assistants').insert({ class_id: classDangChon.id, assistant_id: prof.id });
     if (ri.error) { if (ri.error.code === '23505') throw new Error('Trợ giảng này đã có trong lớp.'); throw new Error(ri.error.message); }
-    tt.textContent = '✓ Đã thêm ' + (prof.full_name || u) + ' làm trợ giảng lớp.'; tt.style.color = 'var(--ok)';
+    tt.textContent = '✓ Đã thêm ' + (prof.full_name || u) + ' (' + tgNhanVaiTro(prof.role) + ') làm trợ giảng lớp.'; tt.style.color = 'var(--ok)';
     $('tgUsername').value = '';
+    tgUngVienDaChon = null;
+    tgDongGoiY();
     taiTroGiang(classDangChon.id);
-  } catch (e) { tt.textContent = 'Lỗi: ' + e.message; tt.style.color = 'var(--err)'; }
+  } catch (e) { tgDatTrangThai('Lỗi: ' + e.message, 'err'); }
   btn.disabled = false; btn.textContent = old;
 }
 async function xoaTroGiang(assistantId) {
