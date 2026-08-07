@@ -32,7 +32,7 @@ function between(source, from, to) {
         <select id="vmPdfMargins"><option value="normal">normal</option><option value="loose">loose</option><option value="tight">tight</option></select>
         <select id="vmPdfFontSize"><option value="10">10</option><option value="12">12</option></select>
       </div>`);
-    await page.addScriptTag({ content: 'window.$ = function(id){ return document.getElementById(id); }; window.renderToanTrong=function(){};' });
+    await page.addScriptTag({ content: 'window.$ = function(id){ return document.getElementById(id); }; window.renderToanTrong=function(){}; window.toggleTheme=function(){ var root=document.documentElement; root.setAttribute("data-theme", root.getAttribute("data-theme") === "dark" ? "light" : "dark"); };' });
     await page.addScriptTag({ content: reader });
     await page.addScriptTag({ content: controls });
     await page.addScriptTag({ content: pdfViewer });
@@ -83,8 +83,16 @@ function between(source, from, to) {
       chromeHidden: getComputedStyle(document.getElementById('site-chrome')).visibility === 'hidden',
       copyHidden: getComputedStyle(document.querySelector('.vm-tex-actions-copy')).display === 'none',
       downloadHidden: getComputedStyle(document.querySelector('.vm-tex-download')).display === 'none',
+      themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'grid',
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadHidden) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadHidden || !state.themeVisible) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    await page.click('.vm-tex-theme-toggle');
+    state = await page.evaluate(() => ({
+      theme: document.documentElement.getAttribute('data-theme'),
+      darkIconHidden: getComputedStyle(document.querySelector('.vm-tex-theme-dark')).display === 'none',
+      lightIconVisible: getComputedStyle(document.querySelector('.vm-tex-theme-light')).display !== 'none',
+    }));
+    if (state.theme !== 'dark' || !state.darkIconHidden || !state.lightIconVisible) throw new Error(`Fullscreen theme toggle failed: ${JSON.stringify(state)}`);
     if (process.env.VM_SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.VM_SCREENSHOT_DIR, { recursive: true });
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
@@ -95,8 +103,9 @@ function between(source, from, to) {
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
       restored: document.querySelector('[data-reader-key="reader-test"]').parentElement.id === 'root',
+      themeHidden: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'none',
     }));
-    if (state.active || state.locked || !state.restored) throw new Error(`Fullscreen restore failed: ${JSON.stringify(state)}`);
+    if (state.active || state.locked || !state.restored || !state.themeHidden) throw new Error(`Fullscreen restore failed: ${JSON.stringify(state)}`);
 
     await page.click('.vm-tex-download');
     state = await page.evaluate(() => ({
