@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=10.1"></script>
+<script src="js/latex-view.js?v=10.2"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -340,6 +340,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 [data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:2147483000 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; background:var(--bg); }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { position:sticky; top:0; z-index:3; box-shadow:0 8px 24px rgba(15,23,42,.12); }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { flex:1 1 auto; min-height:0; overflow:auto; }
+[data-reader-key].vm-tex-fullscreen-active .theory-reading-container { flex:1 1 auto; min-height:0; width:100%; max-width:none; overflow:auto; }
 [data-reader-key].vm-tex-fullscreen-active.btvn-latex-native > .vm-tex-reader { flex:1 1 auto; overflow:auto; }
 body.vm-reader-locked { overflow:hidden !important; }
 body.vm-reader-locked > * { visibility:hidden !important; }
@@ -1852,8 +1853,18 @@ function vmCapNhatTrangThaiReader(shell) {
   else label.textContent = 'Đã dựng đủ ' + done + ' hình minh họa';
 }
 
-function vmDoiZoomReader(key, delta) {
+function vmTimReaderShell(key, control) {
   var shell = document.querySelector('[data-reader-key="' + key + '"]');
+  if (shell) return shell;
+  var anchor = control || document.querySelector('[data-vm-reader-key="' + key + '"]');
+  var fallback = anchor && anchor.closest ? anchor.closest('.content-body') : null;
+  if (!fallback) return null;
+  fallback.setAttribute('data-reader-key', key);
+  return fallback;
+}
+
+function vmDoiZoomReader(key, delta, control) {
+  var shell = vmTimReaderShell(key, control);
   if (!shell) return;
   var next = delta === 0 ? 1 : Math.min(1.6, Math.max(.8, (vmReaderZoomLevels[key] || 1) + delta));
   next = Math.round(next * 10) / 10;
@@ -1875,9 +1886,9 @@ document.addEventListener('click', function (event) {
   event.preventDefault();
   event.stopPropagation();
   if (control.getAttribute('data-vm-reader-control') === 'zoom') {
-    vmDoiZoomReader(key, Number(control.getAttribute('data-vm-reader-delta') || 0));
+    vmDoiZoomReader(key, Number(control.getAttribute('data-vm-reader-delta') || 0), control);
   } else if (control.getAttribute('data-vm-reader-control') === 'fullscreen') {
-    vmToggleReaderFullscreen(key);
+    vmToggleReaderFullscreen(key, control);
   }
 }, true);
 
@@ -1891,8 +1902,8 @@ function vmCapNhatNutFullscreen(shell, active) {
   }
 }
 
-async function vmToggleReaderFullscreen(key) {
-  var shell = document.querySelector('[data-reader-key="' + key + '"]');
+async function vmToggleReaderFullscreen(key, control) {
+  var shell = vmTimReaderShell(key, control);
   if (!shell) return;
   var fallback = shell.classList.contains('vm-tex-fullscreen-active');
   if (document.fullscreenElement === shell) {
@@ -1916,7 +1927,7 @@ async function vmToggleReaderFullscreen(key) {
   shell.classList.add('vm-tex-fullscreen-active');
   document.body.classList.add('vm-reader-locked');
   vmCapNhatNutFullscreen(shell, true);
-  var scrollTarget = shell.querySelector('.vm-tex-scroll') || (shell.classList.contains('btvn-latex-native') ? shell.querySelector('.vm-tex-reader') : null);
+  var scrollTarget = shell.querySelector('.vm-tex-scroll') || shell.querySelector('.theory-reading-container') || (shell.classList.contains('btvn-latex-native') ? shell.querySelector('.vm-tex-reader') : null);
   if (scrollTarget) scrollTarget.scrollTop = 0;
   vmHenFitLongMath(shell);
 }
@@ -2202,24 +2213,28 @@ function vmBienDoiLoiGiaiPdf(tex, config) {
     return tex.replace(/^\s*\\exitdapso\s*$/gm, '').replace(/^\s*\\renewcommand\{\\indapan\}\[2\]\{\}\s*$/gm, '');
   }
 
-  tex = tex.replace(/\\True\s*/g, '');
+  var documentMarker = '\\begin{document}';
+  var documentAt = tex.indexOf(documentMarker);
+  var preamble = documentAt === -1 ? '' : tex.slice(0, documentAt + documentMarker.length);
+  var body = documentAt === -1 ? tex : tex.slice(documentAt + documentMarker.length);
+
+  body = body.replace(/\\True\s*/g, '');
   var dottedBlock = function () {
     var line = '\\par\\noindent\\dotfill\\par\\medskip\n';
     return Array(config.dotLines + 1).join(line);
   };
   ['loigiai', 'solution', 'answer'].forEach(function (command) {
-    tex = config.answers === 'dots' ? thayLenhKhoiLatex(tex, command, dottedBlock) : xoaLenhKhoiLatex(tex, command);
+    body = config.answers === 'dots' ? thayLenhKhoiLatex(body, command, dottedBlock) : xoaLenhKhoiLatex(body, command);
   });
   ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
-    tex = thayMoiTruongKhoiLatex(tex, environment, config.answers === 'dots' ? dottedBlock : '');
+    body = thayMoiTruongKhoiLatex(body, environment, config.answers === 'dots' ? dottedBlock : '');
   });
+  tex = preamble + body;
   return tex.replace(/\\usepackage(?:\[([^\]]*)\])?\{ex_test\}/g, function (_, options) {
     var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x && x !== 'loigiai'; });
     return '\\usepackage' + (opts.length ? '[' + opts.join(',') + ']' : '') + '{ex_test}';
   });
-}
-
-function vmCauHinhNoiDungPdf(tex, config) {
+}function vmCauHinhNoiDungPdf(tex, config) {
   tex = String(tex || '').replace(/\\documentclass(?:\[([^\]]*)\])?\{([^}]+)\}/, function (_, options, cls) {
     var opts = String(options || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) {
       return x && !/^(10pt|11pt|12pt|onecolumn|twocolumn)$/.test(x);
@@ -2875,7 +2890,10 @@ async function chonNoiDung(loai) {
     if (el) el.classList.remove('active');
   });
   var than = $('thanNoiDung');
-  if (than) than.removeAttribute('data-vm-reader-build');
+  if (than) {
+    than.removeAttribute('data-vm-reader-build');
+    than.removeAttribute('data-reader-key');
+  }
 
   if (loai === 'lythuyet') {
     $('swLyThuyet').classList.add('active');
@@ -3689,6 +3707,7 @@ async function kiemTraDapAnGate(qKey, idx) {
 
 async function renderTheoryReading() {
   var than = $('thanNoiDung');
+  if (than) than.setAttribute('data-reader-key', 'lesson-theory');
   var sections = getTheorySections(details.theory_sections);
   var toolbar = thanhCongCu('📖 Đọc lý thuyết bài học', null);
   var actionHtml = details.latex_content ? vmLatexActionHTML('lesson-theory', details.latex_content, vmTenTepPdf(details.title + '-ly-thuyet'), 'theory') : '';
@@ -4174,3 +4193,4 @@ function dongBuoiHocHS(){ $('modalBuoiHS').style.display='none'; }
 </script>
 </body>
 </html>
+
