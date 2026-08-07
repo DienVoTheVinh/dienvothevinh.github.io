@@ -23,6 +23,9 @@ function getTheorySections(val) {
 var vmLatexTikzSeq = 0;
 var vmLatexTikzRegistry = window.vmLatexTikzRegistry || {};
 window.vmLatexTikzRegistry = vmLatexTikzRegistry;
+var vmLatexContentSeq = 0;
+var vmLatexContentRegistry = window.vmLatexContentRegistry || {};
+window.vmLatexContentRegistry = vmLatexContentRegistry;
 
 function vmEscapeHtml(value) {
   return String(value == null ? '' : value)
@@ -87,7 +90,112 @@ function lamSachLatex(src) {
   if (!src) return '';
   var out = src.replace(/(^|[^\\])%[^\n]*/g, '$1');
   out = out.replace(/\\begin\{center\}|\\end\{center\}/g, ' ');
-  out = out.replace(/\\(immini|hetcot|vspace\{[^}]*\}|hspace\{[^}]*\})/g, ' ');
+  out = out.replace(/\\(hetcot|vspace\{[^}]*\}|hspace\{[^}]*\})/g, ' ');
+  return out;
+}
+
+function vmDocKhoiNgoac(src, start) {
+  var text = String(src || '');
+  var at = start;
+  while (/\s/.test(text.charAt(at))) at++;
+  if (text.charAt(at) !== '{') return null;
+  var depth = 1, i = at + 1;
+  while (i < text.length && depth > 0) {
+    if (text.charAt(i) === '{' && text.charAt(i - 1) !== '\\') depth++;
+    else if (text.charAt(i) === '}' && text.charAt(i - 1) !== '\\') depth--;
+    i++;
+  }
+  if (depth !== 0) return null;
+  return { content: text.slice(at + 1, i - 1), end: i };
+}
+
+// Cac bo DGNL dung \immini{noi dung}{hinh}. Tren web ta giu du ca hai
+// khoi theo thu tu doc thay vi xoa ten lenh va de lo cap ngoac nhon.
+function vmThayLenhHaiKhoi(src, command, replacer) {
+  var text = String(src || '');
+  var token = '\\' + command;
+  var from = 0;
+  while (from < text.length) {
+    var at = text.indexOf(token, from);
+    if (at === -1) break;
+    var after = at + token.length;
+    if (/[A-Za-z@]/.test(text.charAt(after))) { from = after; continue; }
+    var first = vmDocKhoiNgoac(text, after);
+    var second = first ? vmDocKhoiNgoac(text, first.end) : null;
+    if (!first || !second) { from = after; continue; }
+    var replacement = replacer(first.content, second.content);
+    text = text.slice(0, at) + replacement + text.slice(second.end);
+    from = at + replacement.length;
+  }
+  return text;
+}
+
+function vmTachTieuDeMoiTruong(content) {
+  var block = vmDocKhoiNgoac(content, 0);
+  if (!block) return { title: '', content: String(content || '') };
+  return { title: block.content, content: String(content || '').slice(block.end) };
+}
+
+// Bao ve cac moi truong rieng trong bo de DGNL truoc khi chuoi duoc escape.
+// Chay tu khoi trong ra ngoai de xu ly duoc cac callout long nhau.
+function vmBaoVeKhoiNoiDung(src) {
+  var text = String(src || '');
+  var environments = [
+    'boxdn', 'boxdl', 'boxkn', 'boxtb', 'boxvidu', 'boxvdlt', 'kttrongtam',
+    'mydn', 'mydl', 'myvidu', 'vidu', 'vdlt', 'ap', 'bttuongtu', 'makerr',
+    'luuy', 'tomtat', 'dang', 'dangg', 'khung4', 'noidung', 'hd', 'trithuc',
+    'luyentap', 'vandung', 'phantich', 'tttt', 'tc', 'nx', 'note'
+  ];
+  var envPattern = environments.join('|');
+  var pattern = new RegExp('\\\\begin\\{(' + envPattern + ')\\}([\\s\\S]*?)\\\\end\\{\\1\\}', 'gi');
+  var changed = true, limit = 30;
+  while (changed && limit-- > 0) {
+    changed = false;
+    text = text.replace(pattern, function (_, env, content) {
+      changed = true;
+      var info = { env: String(env || '').toLowerCase(), content: content, title: '' };
+      if (/^(dang|dangg|khung4|noidung)$/.test(info.env)) {
+        var titled = vmTachTieuDeMoiTruong(content);
+        info.title = titled.title;
+        info.content = titled.content;
+      }
+      var token = 'VMCONTENT' + (++vmLatexContentSeq);
+      vmLatexContentRegistry[token] = info;
+      return '\n___' + token + '___\n';
+    });
+  }
+  return text;
+}
+
+function vmKhoiNoiDungSangHtml(html) {
+  var labels = {
+    boxdn: 'Định nghĩa', mydn: 'Định nghĩa', boxkn: 'Khái niệm', kttrongtam: 'Kiến thức trọng tâm', trithuc: 'Tri thức',
+    boxdl: 'Định lý', mydl: 'Định lý', hd: 'Hướng dẫn', luuy: 'Lưu ý', note: 'Lưu ý', makerr: 'Chú ý', nx: 'Nhận xét',
+    boxvidu: 'Ví dụ', myvidu: 'Ví dụ', vidu: 'Ví dụ', boxvdlt: 'Ví dụ lý thuyết', vdlt: 'Ví dụ lý thuyết',
+    ap: 'Áp dụng', bttuongtu: 'Bài tập tương tự', luyentap: 'Luyện tập', vandung: 'Vận dụng',
+    phantich: 'Phân tích', tttt: 'Tóm tắt', tc: 'Tính chất', boxtb: 'Thông báo', dang: 'Dạng toán', dangg: 'Dạng toán'
+  };
+  var classMap = {
+    boxdn: 'definition', mydn: 'definition', boxkn: 'definition', kttrongtam: 'definition', trithuc: 'definition', tc: 'definition',
+    boxdl: 'theorem', mydl: 'theorem', hd: 'theorem', boxvidu: 'example', myvidu: 'example', vidu: 'example', boxvdlt: 'example', vdlt: 'example',
+    luuy: 'note', note: 'note', makerr: 'note', nx: 'remark', boxtb: 'remark',
+    dang: 'form', dangg: 'form', khung4: 'form', noidung: 'form',
+    ap: 'practice', bttuongtu: 'practice', luyentap: 'practice', vandung: 'practice', phantich: 'remark', tttt: 'summary'
+  };
+  var out = String(html || '');
+  var limit = 50;
+  while (/___VMCONTENT\d+___/.test(out) && limit-- > 0) {
+    out = out.replace(/___(VMCONTENT\d+)___/g, function (match, token) {
+      var info = vmLatexContentRegistry[token];
+      if (!info) return '';
+      var body = dinhDangVanBanTaiLieuLatex(info.content || '');
+      if (info.env === 'tomtat') return '<section class="vm-tex-summary">' + body + '</section>';
+      var title = info.title ? dinhDangVanBanTaiLieuLatex(info.title) : (labels[info.env] || 'Ghi chú');
+      return '<aside class="vm-tex-callout vm-tex-callout-' + (classMap[info.env] || 'remark') + '">' +
+        '<div class="vm-tex-callout-title">' + title + '</div>' +
+        '<div class="vm-tex-callout-body">' + body + '</div></aside>';
+    });
+  }
   return out;
 }
 
@@ -116,13 +224,13 @@ function latexRaHTML(src) {
   
   // 1. Bao ve cac moi truong display truoc. Neu lam sau $...$, mot cong
   // thuc nam trong \text{...} se tao placeholder long nhau va bi "undefined".
-  s = s.replace(/\\begin\{(equation\*?|align\*?|aligned|gather\*?|multline\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
+  s = s.replace(/\\begin\{(equation\*?|align\*?|alignat\*?|aligned|split|gather\*?|multline\*?|eqnarray\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
     var katexBody = vmChuanHoaTextTrongToan(math);
-    if (/^align/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
+    if (/^(align|alignat|eqnarray)/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
     else if (/^gather/.test(env)) katexBody = '\\begin{gathered}' + katexBody + '\\end{gathered}';
     else if (/^multline/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
-    else if (env === 'cases' || env === 'aligned') katexBody = '\\begin{' + env + '}' + katexBody + '\\end{' + env + '}';
+    else if (env === 'cases' || env === 'aligned' || env === 'split') katexBody = '\\begin{' + (env === 'split' ? 'aligned' : env) + '}' + katexBody + '\\end{' + (env === 'split' ? 'aligned' : env) + '}';
     mathBlocks.push('\\[' + katexBody + '\\]');
     return placeholder;
   });
@@ -151,6 +259,12 @@ function latexRaHTML(src) {
     return placeholder;
   });
 
+  // Dau ngoac kep/don cua bo go lenh Viet (\lq, \rq) chi la van ban,
+  // nen chuyen sau khi da bao ve cong thuc de khong cham vao math mode.
+  s = s.replace(/\\lq\s*\\lq\s*/g, '&ldquo;').replace(/\s*\\rq\s*\\rq/g, '&rdquo;');
+  s = s.replace(/\\lq\b/g, '&lsquo;').replace(/\\rq\b/g, '&rsquo;');
+  s = s.replace(/\\(?:enspace|quad|qquad)\b|\\[,;!]/g, ' ');
+
   // 4. Biên dịch các môi trường định dạng LaTeX sang HTML
   s = tabularSangBangHTML(s);
   
@@ -163,6 +277,10 @@ function latexRaHTML(src) {
   // Tham số [n] của listEX là SỐ CỘT khi in PDF, web bỏ qua và xếp dọc cho dễ đọc.
   s = s.replace(/\\begin\{listEX\}\s*(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
   s = s.replace(/\\end\{listEX\}/g, '\\end{enumerate}');
+  s = s.replace(/\\begin\{enumEX\}\s*(?:\[([^\]]*)\])?\s*\{[^}]*\}/g, function (_, style) {
+    return '\\begin{enumerate}[' + (style || 'a)') + ']';
+  });
+  s = s.replace(/\\end\{enumEX\}/g, '\\end{enumerate}');
   s = s.replace(/\\begin\{multicols\}\{[^}]*\}|\\end\{multicols\}|\\columnbreak/g, ' ');
 
   // Đệ quy xử lý danh sách lồng nhau (enumerate, itemize)
@@ -292,6 +410,9 @@ function dinhDangVanBanTaiLieuLatex(src) {
       return token;
     });
   });
+  text = vmThayLenhHaiKhoi(text, 'immini', function (left, right) { return left + '\n\n' + right; });
+  text = thayLenhKhoiLatex(text, 'centerline', function (content) { return content; });
+  text = vmBaoVeKhoiNoiDung(text);
   var html = latexRaHTML(text);
   html = html.replace(/\\part\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
   html = html.replace(/\\chapter\*?\{([^{}]*)\}/g, '<h1 class="vm-tex-h1">$1</h1>');
@@ -301,6 +422,7 @@ function dinhDangVanBanTaiLieuLatex(src) {
   html = html.replace(/\\(?:emph)\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<em>$1</em>');
   html = html.replace(/\\underline\{((?:[^{}]|\{[^{}]*\})*)\}/g, '<u>$1</u>');
   html = html.replace(/\\textcolor\{[^}]*\}\{((?:[^{}]|\{[^{}]*\})*)\}/g, '$1');
+  html = html.replace(/\\(?:mbox|textrm|textsf|texttt)\{((?:[^{}]|\{[^{}]*\})*)\}/g, '$1');
   html = html.replace(/\\includegraphics(?:\[[^\]]*\])?\{[^}]*\}/g, '<div class="vm-tex-media-note">Hình minh họa có trong bản PDF tải về</div>');
   html = html.replace(/\\(?:noindent|centering|raggedright|raggedleft|small|normalsize|large|Large|LARGE|bfseries|itshape)\b/g, '');
   html = html.replace(/\\(?:vfill|medskip|bigskip|smallskip)\b/g, '<div class="vm-tex-gap"></div>');
@@ -311,7 +433,7 @@ function dinhDangVanBanTaiLieuLatex(src) {
       dinhDangVanBanTaiLieuLatex(content) + '</div></aside>';
     html = html.split('___VMSOLUTION_' + index + '___').join(box);
   });
-  return html.trim();
+  return vmKhoiNoiDungSangHtml(html).trim();
 }
 
 // Bộ đọc tài liệu dùng chung cho lý thuyết thường, đề kiểm tra, BTVN và bài
@@ -329,6 +451,9 @@ function latexTaiLieuRaHTML(src, options) {
       body = thayMoiTruongKhoiLatex(body, environment, '');
     });
   }
+  // tomtat trong bo DGNL la moi truong gom nhom trong suot, thuong boc ca
+  // nx/note. Bo cap marker truoc khi tach cac khoi de tranh cat doi wrapper.
+  body = body.replace(/\\begin\{tomtat\}|\\end\{tomtat\}/g, ' ');
   body = vmBaoVeKhoiTikz(body, src || '');
 
   var labels = {
