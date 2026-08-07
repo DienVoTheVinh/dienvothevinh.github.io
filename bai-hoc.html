@@ -283,6 +283,17 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-zoom button:hover { background:var(--accent-soft); color:var(--accent); }
 .vm-tex-zoom .vm-tex-zoom-label { width:auto; min-width:58px; padding:0 8px; border-right:0; color:var(--ink-2); font-size:.76rem; font-weight:800; }
 .vm-tex-fullscreen { position:relative; z-index:1; min-height:40px; border-color:var(--accent) !important; color:var(--accent) !important; font-weight:800; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.vm-tex-theme-toggle {
+  display:none; position:fixed; right:max(14px,env(safe-area-inset-right)); bottom:max(16px,env(safe-area-inset-bottom));
+  z-index:2147483005; width:46px; height:46px; padding:0 !important; place-items:center;
+  border:1px solid var(--line-2) !important; border-radius:50% !important; background:var(--surface-solid) !important;
+  color:var(--ink) !important; box-shadow:0 10px 30px rgba(15,23,42,.22); font-size:1.15rem !important;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-theme-toggle { display:grid; }
+.vm-tex-theme-light { display:none; }
+[data-theme="dark"] .vm-tex-theme-dark { display:none; }
+[data-theme="dark"] .vm-tex-theme-light { display:inline; }
 .vm-tex-download { min-height:40px; flex:none; font-weight:800; }
 .vm-tex-download[disabled] { opacity:.7; cursor:wait; }
 .vm-tex-scroll { flex:1; min-width:0; min-height:0; overflow:auto; overflow-x:hidden; padding:clamp(12px,2.6vw,30px); scroll-behavior:smooth; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y pinch-zoom; }
@@ -1778,6 +1789,7 @@ function vmLatexActionHTML(key, rawTex, fileName, kind) {
     '<div class="vm-tex-action-tools">' +
       '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="-.1" aria-label="Thu nhỏ">−</button><button type="button" class="vm-tex-zoom-label" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="0" data-vm-zoom-label="' + key + '" aria-label="Đặt lại mức thu phóng 100%">100%</button><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta=".1" aria-label="Phóng to">+</button></div>' +
       '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-reader-control="fullscreen" data-vm-reader-key="' + key + '" data-vm-fullscreen-btn="' + key + '">⛶ Toàn màn hình</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-tex-theme-toggle" onclick="toggleTheme()" aria-label="Đổi giao diện sáng hoặc tối" title="Đổi giao diện sáng/tối"><span class="vm-tex-theme-dark" aria-hidden="true">🌙</span><span class="vm-tex-theme-light" aria-hidden="true">☀️</span></button>' +
       '<button type="button" class="btn btn-primary btn-sm vm-tex-download" onclick="vmMoPdfExport(\'' + key + '\')">⚙️ Tạo &amp; tải PDF</button>' +
     '</div></div>';
 }
@@ -4193,4 +4205,5 @@ function dongBuoiHocHS(){ $('modalBuoiHS').style.display='none'; }
 </script>
 </body>
 </html>
+
 
