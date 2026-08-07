@@ -238,7 +238,11 @@ function thayLenhKhoiLatex(src, command, replacer) {
       else if (out.charAt(i) === '}' && out.charAt(i - 1) !== '\\') depth--;
       i++;
     }
-    var content = depth === 0 ? out.slice(brace + 1, i - 1) : out.slice(brace + 1);
+    if (depth !== 0) {
+      from = brace + 1;
+      continue;
+    }
+    var content = out.slice(brace + 1, i - 1);
     var replacement = typeof replacer === 'function' ? replacer(content) : String(replacer || '');
     out = out.slice(0, at) + replacement + out.slice(i);
     from = at + replacement.length;
@@ -642,3 +646,4 @@ function parseSingleQuestionLatex(latexText) {
     solution_latex: ''
   };
 }
+
