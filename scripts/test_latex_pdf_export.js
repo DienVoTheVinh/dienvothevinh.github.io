@@ -80,6 +80,21 @@ const spacedGeometry = String.raw`\documentclass{article}
 const repairedSpaced = helpers.repair(spacedGeometry, 'top=1.5cm,left=1.5cm');
 if ((repairedSpaced.match(/\\usepackage\{geometry\}/g) || []).length !== 1 || /\\(?:usepackage|RequirePackage)\s*\[[^\]]+\]\s*\{\s*geometry\s*\}/.test(repairedSpaced)) throw new Error('Spaced or RequirePackage geometry declarations were not collapsed');
 
+
+const preambleSolutionSample = String.raw`\documentclass{article}
+\newcommand{\presetSolution}{\loigiai{PREAMBLE SENTINEL}}
+\begin{document}
+\begin{ex}Bai tap.\loigiai{BODY SOLUTION}\end{ex}
+\end{document}`;
+const preambleSolutionDots = configure(preambleSolutionSample, { answers: 'dots', dotLines: 4, layout: 'one', margins: 'normal', fontSize: '12' });
+if (!preambleSolutionDots.includes(String.raw`\newcommand{\presetSolution}{\loigiai{PREAMBLE SENTINEL}}`) ||
+    !preambleSolutionDots.includes(String.raw`\begin{document}`) ||
+    !preambleSolutionDots.includes(String.raw`\end{document}`) ||
+    preambleSolutionDots.includes('BODY SOLUTION') ||
+    (preambleSolutionDots.match(/\\dotfill/g) || []).length !== 4) {
+  throw new Error('Worksheet transformation must preserve the complete LaTeX preamble and document boundary');
+}
+
 if (!lesson.includes('id="vmPdfExportModal"') || !lesson.includes('id="vmPdfProgressPane"') || !lesson.includes('id="vmPdfResultPane"')) throw new Error('Single-state export modal is incomplete');
 if (!lesson.includes('data-preset="original"') || !lesson.includes("vmPdfPresetName = 'original'")) throw new Error('Stable original-source PDF preset is missing');
 if (!lesson.includes('vmBienDoiLoiGiaiPdf(originalTex, config)') || !lesson.includes('Đang thử lại và vẫn giữ chế độ ẩn lời giải')) throw new Error('Advanced PDF fallback does not preserve the selected answer mode');

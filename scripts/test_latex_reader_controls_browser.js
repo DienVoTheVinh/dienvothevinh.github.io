@@ -149,6 +149,37 @@ function between(source, from, to) {
       await page.setViewportSize({ width: 1440, height: 960 });
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-desktop-fullscreen.png`, fullPage: false });
     }
+
+    await page.evaluate(() => {
+      const root = document.getElementById('root');
+      root.className = 'content-body';
+      root.removeAttribute('data-reader-key');
+      root.innerHTML = vmLatexActionHTML('lesson-theory', String.raw`\\documentclass{article}\\begin{document}Noi dung\\end{document}`, 'ly-thuyet.pdf', 'theory') +
+        '<div class="theory-reading-container"><article class="vm-tex-reader">Nội dung lý thuyết</article></div>';
+    });
+    await page.click('[data-vm-reader-key="lesson-theory"][data-vm-reader-delta=".1"]');
+    state = await page.evaluate(() => {
+      const root = document.getElementById('root');
+      return {
+        key: root.getAttribute('data-reader-key'),
+        zoom: root.querySelector('[data-vm-zoom-label="lesson-theory"]').textContent,
+        scale: root.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
+      };
+    });
+    if (state.key !== 'lesson-theory' || state.zoom !== '110%' || state.scale !== '1.1') throw new Error(`Split theory reader zoom fallback failed: ${JSON.stringify(state)}`);
+    await page.click('[data-vm-fullscreen-btn="lesson-theory"]');
+    state = await page.evaluate(() => {
+      const root = document.querySelector('[data-reader-key="lesson-theory"]');
+      const reading = root.querySelector('.theory-reading-container');
+      return {
+        active: root.classList.contains('vm-tex-fullscreen-active'),
+        locked: document.body.classList.contains('vm-reader-locked'),
+        text: root.querySelector('[data-vm-fullscreen-btn="lesson-theory"]').textContent,
+        readingOverflow: getComputedStyle(reading).overflowY,
+      };
+    });
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || state.readingOverflow !== 'auto') throw new Error(`Split theory reader fullscreen fallback failed: ${JSON.stringify(state)}`);
+    await page.click('[data-vm-fullscreen-btn="lesson-theory"]');
     console.log('PASS reader zoom, mobile fullscreen and configurable PDF popup controls');
   } finally {
     await browser.close();
