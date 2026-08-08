@@ -44,6 +44,23 @@ function between(source, from, to) {
       source: String.raw`\begin{tikzpicture}\node[vm node]{A};\end{tikzpicture}`,
     }));
     if (!tikz.includes('definecolor{vmGold}') || !tikz.includes('vm node/.style') || !tikz.includes('tkz-euclide,pgfplots')) throw new Error('TikZ preamble declarations were lost');
+    const tikzFast = await page.evaluate(async () => {
+      const batch = vmTexTikzPreview([
+        { preamble: '', source: String.raw`\begin{tikzpicture}\node{A};\end{tikzpicture}` },
+        { preamble: '', source: String.raw`\begin{tikzpicture}\node{B};\end{tikzpicture}` },
+      ], true);
+      try { Object.defineProperty(window, 'caches', { configurable: true, value: undefined }); } catch (e) {}
+      let calls = 0;
+      window.sb = { functions: { invoke: async () => {
+        calls += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { data: new Blob(['fake-pdf'], { type: 'application/pdf' }) };
+      } } };
+      const unique = `dedupe-${Date.now()}`;
+      await Promise.all([vmLayTikzPdfNhanh(unique), vmLayTikzPdfNhanh(unique), vmLayTikzPdfNhanh(unique)]);
+      return { calls, multi: batch.includes('multi=tikzpicture'), pictures: (batch.match(/\\begin\{tikzpicture\}/g) || []).length };
+    });
+    if (tikzFast.calls !== 1 || !tikzFast.multi || tikzFast.pictures !== 2) throw new Error(`Fast TikZ batching/deduplication failed: ${JSON.stringify(tikzFast)}`);
     await page.evaluate(() => {
       Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
       const chrome = document.createElement('header');
