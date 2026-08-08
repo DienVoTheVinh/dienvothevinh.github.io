@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=10.2"></script>
+<script src="js/latex-view.js?v=10.3"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -334,6 +334,19 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-empty { padding:36px 16px; text-align:center; color:var(--ink-3); }
 .vm-tex-solution { margin-top:16px; padding:14px 16px; border:1px solid rgba(22,134,90,.35); border-radius:12px; background:var(--ok-soft); color:var(--ink); }
 .vm-tex-solution-title { margin-bottom:7px; color:var(--ok); font-weight:850; }
+.vm-tex-summary { min-width:0; margin:14px 0; }
+.vm-tex-callout { min-width:0; margin:16px 0; overflow:hidden; border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:12px; background:var(--surface-solid); }
+.vm-tex-callout-title { padding:9px 13px; background:var(--accent-soft); color:var(--accent); font-weight:850; line-height:1.35; }
+.vm-tex-callout-body { min-width:0; padding:12px 14px; }
+.vm-tex-callout-body > :first-child { margin-top:0; }
+.vm-tex-callout-body > :last-child { margin-bottom:0; }
+.vm-tex-callout-definition,.vm-tex-callout-theorem { border-left-color:var(--ok); }
+.vm-tex-callout-definition .vm-tex-callout-title,.vm-tex-callout-theorem .vm-tex-callout-title { background:var(--ok-soft); color:var(--ok); }
+.vm-tex-callout-note { border-left-color:#e59b16; background:color-mix(in srgb,var(--accent-soft) 42%,var(--surface-solid)); }
+.vm-tex-callout-remark { border-left-color:#6f7f95; }
+.vm-tex-callout-remark .vm-tex-callout-title { background:var(--surface-2); color:var(--ink); }
+.vm-tex-callout-practice { border-left-color:#4777c7; }
+.vm-tex-callout-practice .vm-tex-callout-title { background:color-mix(in srgb,#4777c7 12%,var(--surface-solid)); color:#315fa9; }
 .vm-tex-tikz { width:100%; min-height:120px; margin:18px auto; display:grid; place-items:center; overflow:auto; border:1px dashed var(--line-2); border-radius:14px; background:var(--surface-2); }
 .vm-tex-tikz-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:24px 16px; color:var(--ink-3); font-size:.84rem; text-align:center; }
 .vm-tex-tikz-spinner { width:20px; height:20px; flex:none; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }

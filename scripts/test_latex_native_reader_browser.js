@@ -36,6 +36,21 @@ function extractFunction(source, name) {
 \section{Tập hợp và phép toán}
 Nội dung \textbf{trọng tâm} với công thức $A\subset B$.
 
+\begin{tomtat}
+\begin{boxdn}
+Một \textbf{tập hợp} là một nhóm đối tượng xác định.
+\end{boxdn}
+\begin{luuy}
+Dùng từ \lq\lq tập\rq\rq thay cho cụm từ tập hợp.
+\end{luuy}
+\begin{dang}{Xác định tập hợp}
+\begin{enumEX}{2}
+\item Liệt kê các phần tử.
+\item Chỉ ra tính chất đặc trưng.
+\end{enumEX}
+\end{dang}
+\end{tomtat}
+
 \begin{ex}
 Cho $A=\{1;2\}$. Khẳng định nào đúng?
 \choice{$3\in A$}{\True $2\in A$}{$A=\varnothing$}{$1\notin A$}
@@ -80,7 +95,10 @@ Tính $1+2+3$.
         readerWidth: readerEl.getBoundingClientRect().width,
         overflow: readerEl.scrollWidth > readerEl.clientWidth + 1,
         tikzCount: root.querySelectorAll('.vm-tex-tikz').length,
+        calloutCount: root.querySelectorAll('.vm-tex-callout').length,
+        enumItemCount: root.querySelectorAll('.vm-tex-callout-form ol li').length,
         leakedListOption: root.textContent.includes('leftmargin=*') || root.textContent.includes('\\text{'),
+        leakedDgnlLatex: /\\(?:begin|end)\{(?:boxdn|luuy|dang|enumEX|tomtat)\}|\\(?:lq|rq)\b/.test(root.textContent),
       };
     });
     if (!desktop.text.includes('Tập hợp và phép toán') || !desktop.text.includes('Đề mẫu')) throw new Error('Document title or section is missing');
@@ -88,6 +106,7 @@ Tính $1+2+3$.
     if (desktop.text.includes('NỘI DUNG BÍ MẬT') || desktop.text.includes('Đáp số 6') || desktop.text.includes('True')) throw new Error('Solutions or answer markers leaked to students');
     if (desktop.blockCount !== 2 || desktop.choiceCount !== 4 || desktop.choiceColumns !== 2) throw new Error(`Desktop document structure is wrong: ${JSON.stringify(desktop)}`);
     if (desktop.tikzCount !== 1 || desktop.leakedListOption) throw new Error(`TikZ/list conversion is wrong: ${JSON.stringify(desktop)}`);
+    if (desktop.calloutCount !== 3 || desktop.enumItemCount !== 2 || desktop.leakedDgnlLatex || !desktop.text.includes('“tập”')) throw new Error(`DGNL environments or quote commands leaked: ${JSON.stringify(desktop)}`);
     if (desktop.readerWidth > 921 || desktop.overflow) throw new Error(`Desktop reader overflows: ${JSON.stringify(desktop)}`);
     const theory = await page.evaluate(() => ({
       text: document.getElementById('theoryRoot').textContent,
