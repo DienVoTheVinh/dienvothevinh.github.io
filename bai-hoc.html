@@ -440,9 +440,9 @@ body.vm-reader-locked > [data-reader-key].vm-tex-fullscreen-active { visibility:
   .vm-pdf-export-body { padding:14px 16px calc(16px + env(safe-area-inset-bottom)); }
   .btvn-latex-native .vm-tex-reader { padding:18px 12px 24px; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { flex:none; padding:calc(7px + env(safe-area-inset-top)) 10px 7px; }
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy,
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-download { display:none !important; }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy { display:none !important; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-action-tools { grid-template-columns:minmax(150px,1fr) minmax(138px,1fr); }
+  [data-reader-key].vm-tex-fullscreen-active .vm-tex-download { display:flex !important; grid-column:1 / -1; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { padding:0; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-reader { border:0; border-radius:0; box-shadow:none; }
   #modalNopBai { align-items:flex-end !important; padding:0 !important; }
@@ -2054,6 +2054,7 @@ function vmLayKhaiBaoTikz(preamble) {
 function vmTexTikzDoc(item) {
   var preamble = String(item && item.preamble || '');
   var source = String(item && item.source || '');
+  if (typeof vmChuanHoaTikzSource === 'function') source = vmChuanHoaTikzSource(source);
   var declarations = vmLayKhaiBaoTikz(preamble);
   var optionalPackages = '';
   if (/\\tkzTab/.test(source)) optionalPackages += '\\usepackage{tkz-tab}\n';
@@ -2063,7 +2064,8 @@ function vmTexTikzDoc(item) {
   return '\\documentclass[tikz,border=6pt]{standalone}\n' +
     '\\usepackage[T5]{fontenc}\n\\usepackage[utf8]{inputenc}\n\\usepackage{xcolor}\n' +
     '\\usepackage{amsmath,amssymb,mathtools}\n' +
-    '\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optionalPackages + colorFallbacks + '\\pgfplotsset{compat=1.18}\n' +
+    '\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optionalPackages + colorFallbacks +
+    (typeof vmTikzCompatPreamble === 'function' ? vmTikzCompatPreamble(source) : '') + '\\pgfplotsset{compat=1.18}\n' +
     '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.markings,backgrounds,fit,matrix}\n' +
     declarations + '\n\\begin{document}\n' + source + '\n\\end{document}';
 }
@@ -2143,7 +2145,28 @@ function vmMoPdfExport(key) {
   vmQuayLaiPdfConfig();
   vmApDungPdfPreset('original');
   var modal = $('vmPdfExportModal');
+  vmGanPdfModalVaoReader(key);
   if (modal) modal.style.display = 'flex';
+}
+
+var vmPdfModalViTriGoc = null;
+function vmGanPdfModalVaoReader(key) {
+  var modal = $('vmPdfExportModal');
+  if (!modal) return;
+  if (!vmPdfModalViTriGoc) {
+    vmPdfModalViTriGoc = { parent: modal.parentNode, next: modal.nextSibling };
+  }
+  var shell = vmTimReaderShell(key);
+  var fullscreenShell = document.fullscreenElement === shell || (shell && shell.classList.contains('vm-tex-fullscreen-active'));
+  if (fullscreenShell && !shell.contains(modal)) shell.appendChild(modal);
+}
+
+function vmTraPdfModalVeViTriGoc() {
+  var modal = $('vmPdfExportModal');
+  var state = vmPdfModalViTriGoc;
+  if (!modal || !state || !state.parent) return;
+  if (state.next && state.next.parentNode === state.parent) state.parent.insertBefore(modal, state.next);
+  else state.parent.appendChild(modal);
 }
 
 function vmTaiPdfLatex(key) { vmMoPdfExport(key); }
@@ -2154,6 +2177,7 @@ function vmDongPdfExport(event) {
   if (modal) modal.style.display = 'none';
   if (vmPdfExportUrl) { URL.revokeObjectURL(vmPdfExportUrl); vmPdfExportUrl = ''; }
   vmPdfExportBlob = null;
+  vmTraPdfModalVeViTriGoc();
 }
 
 function vmQuayLaiPdfConfig() {
