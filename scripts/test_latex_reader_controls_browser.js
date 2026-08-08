@@ -44,6 +44,25 @@ function between(source, from, to) {
       source: String.raw`\begin{tikzpicture}\node[vm node]{A};\end{tikzpicture}`,
     }));
     if (!tikz.includes('definecolor{vmGold}') || !tikz.includes('vm node/.style') || !tikz.includes('tkz-euclide,pgfplots')) throw new Error('TikZ preamble declarations were lost');
+    const tikzCompatibility = await page.evaluate(() => {
+      const raw = String.raw`\begin{tikzpicture}
+\IntervalLR{-1}{1/2}
+\def\skipInterval{0.5cm}
+\IntervalGRF{}{}{\big[}{a}
+\def\firstellipse{(0,0) ellipse (1 and .5)}
+\draw \firstellipse;
+\end{tikzpicture}`;
+      const cleaned = tachNoiDungTaiLieuLatex(raw);
+      const doc = vmTexTikzDoc({ preamble: '', source: cleaned });
+      return {
+        keptSkip: cleaned.includes(String.raw`\def\skipInterval`),
+        keptEllipse: cleaned.includes(String.raw`\def\firstellipse`),
+        hasIntervalFallback: doc.includes(String.raw`\providecommand{\IntervalGRF}`),
+        normalizedDelimiter: doc.includes(String.raw`{\lbrack}`) && !doc.includes(String.raw`{\big[}`),
+        loadsUnneededPackage: doc.includes(String.raw`\usepackage{tkz-tab}`),
+      };
+    });
+    if (!tikzCompatibility.keptSkip || !tikzCompatibility.keptEllipse || !tikzCompatibility.hasIntervalFallback || !tikzCompatibility.normalizedDelimiter || tikzCompatibility.loadsUnneededPackage) throw new Error(`TikZ source compatibility failed: ${JSON.stringify(tikzCompatibility)}`);
     const tikzFast = await page.evaluate(async () => {
       const batch = vmTexTikzPreview([
         { preamble: '', source: String.raw`\begin{tikzpicture}\node{A};\end{tikzpicture}` },
@@ -99,10 +118,18 @@ function between(source, from, to) {
       directChild: document.querySelector('[data-reader-key="reader-test"]').parentElement === document.body,
       chromeHidden: getComputedStyle(document.getElementById('site-chrome')).visibility === 'hidden',
       copyHidden: getComputedStyle(document.querySelector('.vm-tex-actions-copy')).display === 'none',
-      downloadHidden: getComputedStyle(document.querySelector('.vm-tex-download')).display === 'none',
+      downloadVisible: getComputedStyle(document.querySelector('.vm-tex-download')).display !== 'none',
       themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'grid',
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadHidden || !state.themeVisible) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadVisible || !state.themeVisible) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    await page.click('.vm-tex-download');
+    state = await page.evaluate(() => {
+      const shell = document.querySelector('[data-reader-key="reader-test"]');
+      const modal = document.getElementById('vmPdfExportModal');
+      return { visible: modal.style.display === 'flex', insideFullscreen: shell.contains(modal) };
+    });
+    if (!state.visible || !state.insideFullscreen) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
+    await page.evaluate(() => vmDongPdfExport());
     await page.click('.vm-tex-theme-toggle');
     state = await page.evaluate(() => ({
       theme: document.documentElement.getAttribute('data-theme'),
