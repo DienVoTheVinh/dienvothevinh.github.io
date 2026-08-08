@@ -58,6 +58,177 @@ function vmKhoiTikzSangHtml(html) {
   });
 }
 
+var vmTikzPdfDangTai = window.vmTikzPdfDangTai || {};
+var vmTikzPdfBoNho = window.vmTikzPdfBoNho || {};
+window.vmTikzPdfDangTai = vmTikzPdfDangTai;
+window.vmTikzPdfBoNho = vmTikzPdfBoNho;
+
+function vmTikzMaNoiDung(tex) {
+  var hash = 2166136261;
+  var text = String(tex || '');
+  for (var i = 0; i < text.length; i++) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 16777619); }
+  return (hash >>> 0).toString(16) + '-' + text.length;
+}
+
+function vmTikzCacheRequestNhanh(tex) {
+  return new Request('/__vinhmath_tikz_cache__/v3/' + vmTikzMaNoiDung(tex) + '.pdf');
+}
+
+function vmTikzDocLoi(data) {
+  return Promise.resolve(typeof data === 'string' ? data : (data && data.text ? data.text() : '')).then(function (log) {
+    var firstError = String(log || '').split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
+    throw new Error(firstError || 'Không nhận được hình TikZ hợp lệ');
+  });
+}
+
+// Một tài liệu TikZ chỉ được gửi lên máy chủ đúng một lần trong cùng phiên.
+// Kết quả tiếp tục được lưu bằng Cache API để lần mở sau có thể dùng ngay.
+async function vmLayTikzPdfNhanh(tex) {
+  var key = vmTikzMaNoiDung(tex);
+  if (vmTikzPdfBoNho[key]) return vmTikzPdfBoNho[key];
+  if (vmTikzPdfDangTai[key]) return vmTikzPdfDangTai[key];
+  vmTikzPdfDangTai[key] = (async function () {
+    var pdfBlob = null;
+    if ('caches' in window) {
+      try {
+        var hit = await (await caches.open('vinhmath-tikz-v3')).match(vmTikzCacheRequestNhanh(tex));
+        if (hit) pdfBlob = await hit.blob();
+      } catch (e) {}
+    }
+    if (!pdfBlob) {
+      if (typeof sb === 'undefined' || !sb.functions) throw new Error('Chưa kết nối được trạm kết xuất TikZ');
+      var result = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+      if (result.error) throw new Error(result.error.message || 'Trạm kết xuất TikZ đang bận');
+      pdfBlob = result.data;
+      if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) return vmTikzDocLoi(pdfBlob);
+      if ('caches' in window) {
+        try {
+          await (await caches.open('vinhmath-tikz-v3')).put(vmTikzCacheRequestNhanh(tex), new Response(pdfBlob, { headers:{ 'Content-Type':'application/pdf' } }));
+        } catch (e) {}
+      }
+    }
+    if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) return vmTikzDocLoi(pdfBlob);
+    vmTikzPdfBoNho[key] = pdfBlob;
+    return pdfBlob;
+  })();
+  try { return await vmTikzPdfDangTai[key]; }
+  finally { delete vmTikzPdfDangTai[key]; }
+}
+
+function vmKhaiBaoTikzPreview(preamble) {
+  var lines = String(preamble || '').split(/\r?\n/), out = [];
+  var collecting = false, depth = 0;
+  var allowed = /^\s*\\(?:newcommand|renewcommand|providecommand|DeclareMathOperator|definecolor|colorlet|tikzset|pgfplotsset|tikzstyle|usetikzlibrary|usepgfplotslibrary|def)\b/;
+  function delta(line) {
+    var clean = String(line || '').replace(/\\[{}]/g, '');
+    return (clean.match(/\{/g) || []).length - (clean.match(/\}/g) || []).length;
+  }
+  lines.forEach(function (line) {
+    if (!collecting && allowed.test(line)) {
+      collecting = true; depth = delta(line); out.push(line);
+      if (depth <= 0) collecting = false;
+    } else if (collecting) {
+      out.push(line); depth += delta(line);
+      if (depth <= 0) collecting = false;
+    }
+  });
+  return out.join('\n');
+}
+
+function vmMauTikzPreview(source) {
+  var text = String(source || '');
+  var builtIn = { red:1,green:1,blue:1,cyan:1,magenta:1,yellow:1,black:1,gray:1,grey:1,white:1,brown:1,lime:1,olive:1,orange:1,pink:1,purple:1,teal:1,violet:1 };
+  var declared = {}, used = {};
+  text.replace(/\\(?:definecolor|providecolor|colorlet)\s*\{([^}]+)\}/g, function (_, name) { declared[name] = 1; return _; });
+  text.replace(/(?:draw|fill|text|color)\s*=\s*([A-Za-z][\w-]*)/g, function (_, name) { used[name] = 1; return _; });
+  text.replace(/\\color\s*\{([A-Za-z][\w-]*)\}/g, function (_, name) { used[name] = 1; return _; });
+  text.replace(/\b([A-Za-z][\w-]*)!/g, function (_, name) { used[name] = 1; return _; });
+  var palette = { brandNavy:'183B61',brandNavySoft:'EAF1F7',brandGold:'D99A16',brandGoldSoft:'FFF3D4',brandBlue:'2867A8',brandGreen:'23805B' };
+  return Object.keys(used).filter(function (name) { return !builtIn[name.toLowerCase()] && !declared[name]; }).map(function (name) {
+    return '\\providecolor{' + name + '}{HTML}{' + (palette[name] || '334155') + '}';
+  }).join('\n') + '\n';
+}
+
+function vmTexTikzPreview(items, batch) {
+  var list = Array.isArray(items) ? items : [items];
+  var preamble = String(list[0] && list[0].preamble || '');
+  var sources = list.map(function (item) { return String(item && item.source || ''); }).join('\n');
+  var optional = '';
+  if (/\\tkzTab/.test(sources)) optional += '\\usepackage{tkz-tab}\n';
+  if (/\\begin\{forest\}/.test(sources)) optional += '\\usepackage{forest}\n';
+  if (/\\begin\{circuitikz\}/.test(sources)) optional += '\\usepackage{circuitikz}\n';
+  return '\\documentclass[' + (batch ? 'multi=tikzpicture,' : 'tikz,') + 'border=6pt]{standalone}\n' +
+    '\\usepackage[T5]{fontenc}\n\\usepackage[utf8]{inputenc}\n\\usepackage{xcolor}\n' +
+    '\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optional +
+    vmMauTikzPreview(preamble + '\n' + sources) + '\\pgfplotsset{compat=1.18}\n' +
+    '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.markings,backgrounds,fit,matrix}\n' +
+    vmKhaiBaoTikzPreview(preamble) + '\n\\begin{document}\n' + sources + '\n\\end{document}';
+}
+
+function vmTaiPdfJsTikz() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (window._vmTikzPdfJsPromise) return window._vmTikzPdfJsPromise;
+  window._vmTikzPdfJsPromise = new Promise(function (resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+    script.onload = function () {
+      var worker = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return window._vmTikzPdfJsPromise;
+}
+
+async function vmVeTrangTikz(pdf, pageNumber, figure) {
+  var page = await pdf.getPage(pageNumber);
+  var scale = Math.min(2.25, Math.max(1.5, window.devicePixelRatio || 1));
+  var viewport = page.getViewport({ scale: scale });
+  var canvas = document.createElement('canvas');
+  canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
+  await page.render({ canvasContext: canvas.getContext('2d', { alpha:false }), viewport:viewport }).promise;
+  figure.innerHTML = ''; figure.appendChild(canvas);
+  figure.setAttribute('data-vm-tikz-ready', 'done');
+}
+
+async function vmRenderTikzPreviewNhanh(root) {
+  if (!root || !window.vmLatexTikzRegistry) return;
+  var figures = Array.prototype.slice.call(root.querySelectorAll('.vm-tex-tikz:not([data-vm-tikz-ready="done"])'));
+  var entries = figures.map(function (figure) {
+    return { figure:figure, item:window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
+  }).filter(function (entry) { return !!entry.item; });
+  if (!entries.length) return;
+  entries.forEach(function (entry) { entry.figure.setAttribute('data-vm-tikz-ready', 'queued'); });
+  try {
+    // standalone multi=tikzpicture tạo một trang cho mỗi hình: một lần gọi
+    // máy chủ có thể dựng toàn bộ bảng hình thay vì N lần gọi liên tiếp.
+    var batchBlob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entries.map(function (entry) { return entry.item; }), true));
+    var lib = await vmTaiPdfJsTikz();
+    var pdf = await lib.getDocument({ data:await batchBlob.arrayBuffer() }).promise;
+    if (pdf.numPages < entries.length) throw new Error('Bản TikZ theo lô thiếu trang');
+    await Promise.all(entries.map(function (entry, index) { return vmVeTrangTikz(pdf, index + 1, entry.figure); }));
+  } catch (batchError) {
+    var next = 0;
+    async function worker() {
+      while (next < entries.length) {
+        var entry = entries[next++];
+        try {
+          var blob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entry.item, false));
+          var lib = await vmTaiPdfJsTikz();
+          var pdf = await lib.getDocument({ data:await blob.arrayBuffer() }).promise;
+          await vmVeTrangTikz(pdf, 1, entry.figure);
+        } catch (error) {
+          entry.figure.setAttribute('data-vm-tikz-ready', 'error');
+          entry.figure.innerHTML = '<div class="vm-tex-tikz-state vm-tex-tikz-error"><b>Chưa kết xuất được hình TikZ.</b></div>';
+        }
+      }
+    }
+    await Promise.all([worker(), worker(), worker()]);
+  }
+}
+
 // LaTeX cho phep chen $...$ ben trong \text{...} cua align, nhung KaTeX
 // dang o math mode se coi dau $ do la loi. Tach phan toan ra khoi \text.
 function vmChuanHoaTextTrongToan(src) {
@@ -199,19 +370,106 @@ function vmKhoiNoiDungSangHtml(html) {
   return out;
 }
 
-// Đổi tabular thành bảng HTML (chạy SAU khi đã escape & -> &amp;)
-function tabularSangBangHTML(s) {
-  return s.replace(/\\begin\{tabular\}\{[^}]*\}([\s\S]*?)\\end\{tabular\}/g, function (_, body) {
-    body = body.replace(/\\hline/g, '');
-    var rows = body.split('\\\\').map(function (r) { return r.trim(); }).filter(function (r) { return r.length; });
-    var html = rows.map(function (r) {
-      var cells = r.split('&amp;').map(function (c) {
-        return '<td style="border:1px solid var(--line-2);padding:4px 10px;text-align:center">' + c.trim() + '</td>';
-      }).join('');
-      return '<tr>' + cells + '</tr>';
+function vmThayLenhNhieuKhoi(src, command, count, replacer) {
+  var text = String(src || '');
+  var token = '\\' + command;
+  var from = 0;
+  while (from < text.length) {
+    var at = text.indexOf(token, from);
+    if (at === -1) break;
+    var after = at + token.length;
+    if (/[A-Za-z@]/.test(text.charAt(after))) { from = after; continue; }
+    var blocks = [], cursor = after, ok = true;
+    for (var i = 0; i < count; i++) {
+      var block = vmDocKhoiNgoac(text, cursor);
+      if (!block) { ok = false; break; }
+      blocks.push(block.content); cursor = block.end;
+    }
+    if (!ok) { from = after; continue; }
+    var replacement = replacer.apply(null, blocks);
+    text = text.slice(0, at) + replacement + text.slice(cursor);
+    from = at + replacement.length;
+  }
+  return text;
+}
+
+function vmTimDongMoiTruong(src, env, from) {
+  var beginToken = '\\begin{' + env + '}';
+  var endToken = '\\end{' + env + '}';
+  var depth = 1, cursor = from;
+  while (cursor < src.length) {
+    var nextBegin = src.indexOf(beginToken, cursor);
+    var nextEnd = src.indexOf(endToken, cursor);
+    if (nextEnd === -1) return null;
+    if (nextBegin !== -1 && nextBegin < nextEnd) {
+      depth++; cursor = nextBegin + beginToken.length;
+    } else {
+      depth--;
+      if (depth === 0) return { start: nextEnd, end: nextEnd + endToken.length };
+      cursor = nextEnd + endToken.length;
+    }
+  }
+  return null;
+}
+
+function vmNoiDungBangSangHtml(body) {
+  var text = String(body || '')
+    .replace(/\\(?:hline|toprule|midrule|bottomrule)\b/g, '')
+    .replace(/\\(?:cline|cmidrule)(?:\([^)]*\))?\{[^}]*\}/g, '')
+    .replace(/\\(?:rowcolor|cellcolor)\{[^}]*\}/g, '')
+    .replace(/\\addlinespace(?:\[[^\]]*\])?/g, '');
+  text = vmThayLenhNhieuKhoi(text, 'multicolumn', 3, function (_, __, content) { return content; });
+  text = vmThayLenhNhieuKhoi(text, 'multirow', 3, function (_, __, content) { return content; });
+  text = vmThayLenhNhieuKhoi(text, 'makecell', 1, function (content) { return content; });
+  text = text.replace(/\\&amp;/g, '___VM_ESCAPED_AMP___');
+  var rows = text.split(/\\\\(?:\[[^\]]*\])?|\\tabularnewline/g)
+    .map(function (row) { return row.trim(); })
+    .filter(function (row) { return row.length; });
+  var html = rows.map(function (row) {
+    var cells = row.split('&amp;').map(function (cell) {
+      var clean = cell.replace(/___VM_ESCAPED_AMP___/g, '&amp;').trim();
+      return '<td style="border:1px solid var(--line-2);padding:6px 10px;text-align:center;vertical-align:middle">' + clean + '</td>';
     }).join('');
-    return '</p><table style="border-collapse:collapse;margin:10px auto">' + html + '</table><p>';
-  });
+    return '<tr>' + cells + '</tr>';
+  }).join('');
+  return '</p><div class="vm-tex-table-wrap"><table style="border-collapse:collapse;margin:10px auto;max-width:100%"><tbody>' + html + '</tbody></table></div><p>';
+}
+
+// Đọc khai báo cột bằng bộ đếm ngoặc thay vì regex. Nhờ vậy các cột kiểu
+// m{5cm}, p{.3\\linewidth}, tabularx... không còn rơi ra thành chữ thô.
+function tabularSangBangHTML(src) {
+  var text = String(src || '');
+  var environments = ['tabularx', 'tabular*', 'longtable', 'tabular', 'array'];
+  var cursor = 0;
+  while (cursor < text.length) {
+    var hit = null;
+    environments.forEach(function (env) {
+      var token = '\\begin{' + env + '}';
+      var at = text.indexOf(token, cursor);
+      if (at !== -1 && (!hit || at < hit.at)) hit = { env: env, token: token, at: at };
+    });
+    if (!hit) break;
+    var argsAt = hit.at + hit.token.length;
+    while (/\s/.test(text.charAt(argsAt))) argsAt++;
+    if (text.charAt(argsAt) === '[') {
+      var bracketEnd = text.indexOf(']', argsAt + 1);
+      if (bracketEnd !== -1) argsAt = bracketEnd + 1;
+    }
+    var first = vmDocKhoiNgoac(text, argsAt);
+    if (!first) { cursor = argsAt; continue; }
+    var bodyAt = first.end;
+    if (hit.env === 'tabularx' || hit.env === 'tabular*') {
+      var second = vmDocKhoiNgoac(text, bodyAt);
+      if (!second) { cursor = bodyAt; continue; }
+      bodyAt = second.end;
+    }
+    var close = vmTimDongMoiTruong(text, hit.env, bodyAt);
+    if (!close) { cursor = bodyAt; continue; }
+    var replacement = vmNoiDungBangSangHtml(text.slice(bodyAt, close.start));
+    text = text.slice(0, hit.at) + replacement + text.slice(close.end);
+    cursor = hit.at + replacement.length;
+  }
+  return text;
 }
 
 // LaTeX -> chuỗi HTML an toàn (công thức $...$ giữ nguyên chờ KaTeX)
@@ -263,7 +521,8 @@ function latexRaHTML(src) {
   // nen chuyen sau khi da bao ve cong thuc de khong cham vao math mode.
   s = s.replace(/\\lq\s*\\lq\s*/g, '&ldquo;').replace(/\s*\\rq\s*\\rq/g, '&rdquo;');
   s = s.replace(/\\lq\b/g, '&lsquo;').replace(/\\rq\b/g, '&rsquo;');
-  s = s.replace(/\\(?:enspace|quad|qquad)\b|\\[,;!]/g, ' ');
+  s = s.replace(/\\(?:enspace|quad|qquad|space|thinspace|medspace|thickspace|negthinspace|negmedspace|negthickspace)\b|\\[,;!:]/g, ' ');
+  s = s.replace(/\\(?:hskip|vskip|kern|mkern)\s*-?[\d.]+\s*(?:pt|em|ex|mu|cm|mm|in)\b/g, ' ');
 
   // 4. Biên dịch các môi trường định dạng LaTeX sang HTML
   s = tabularSangBangHTML(s);
