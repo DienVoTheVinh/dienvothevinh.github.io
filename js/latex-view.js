@@ -149,10 +149,40 @@ function vmMauTikzPreview(source) {
   }).join('\n') + '\n';
 }
 
+function vmChuanHoaTikzSource(source) {
+  return String(source || '')
+    .replace(/\\big\[/g, '\\lbrack').replace(/\\big\]/g, '\\rbrack')
+    .replace(/\\big\(/g, '(').replace(/\\big\)/g, ')');
+}
+
+// Mot so bo de ex_test dinh nghia cac lenh ve khoang trong file .sty thay vi
+// trong tep .tex. Trinh doc dung standalone nen can lop tuong thich nho nay.
+// Chi chen khi hinh thuc su dung ho lenh Interval, khong lam cham cac hinh TikZ khac.
+function vmTikzCompatPreamble(source) {
+  if (!/\\Interval(?:LR|G|GL|GR|GLF|GRF|L|R|LF|RF)?\b/.test(String(source || ''))) return '';
+  var points = '\\coordinate (a) at (#2,0);\\node at (a) {$#1$};\\node[below=4pt] at (a) {$#2$};\\coordinate (b) at (#4,0);\\node at (b) {$#3$};\\node[below=4pt] at (b) {$#4$};';
+  var storedPoints = '\\coordinate (a) at (\\pre,0);\\node at (a) {$#1$};\\node[below=4pt] at (a) {$#2$};\\coordinate (b) at (\\next,0);\\node at (b) {$#3$};\\node[below=4pt] at (b) {$#4$};';
+  return [
+    '\\providecolor{colorInterval}{named}{blue}',
+    '\\providecommand{\\skipInterval}{0.5cm}',
+    '\\providecommand{\\IntervalLR}[2]{\\def\\pre{#1}\\def\\next{#2}}',
+    '\\providecommand{\\IntervalG}[4]{' + storedPoints + '\\draw[colorInterval,thick] (a)--(b);}',
+    '\\providecommand{\\IntervalGL}[4]{' + storedPoints + '\\draw[colorInterval,thick] (a)--(b);}',
+    '\\providecommand{\\IntervalGR}[4]{' + storedPoints + '\\draw[colorInterval,thick] (a)--(b);}',
+    '\\providecommand{\\IntervalGLF}[4]{' + storedPoints + '\\fill[pattern=north west lines,pattern color=colorInterval] (\\pre,-3pt) rectangle (\\next,3pt);}',
+    '\\providecommand{\\IntervalGRF}[4]{' + storedPoints + '\\fill[pattern=north east lines,pattern color=colorInterval] (\\pre,-3pt) rectangle (\\next,3pt);}',
+    '\\providecommand{\\IntervalL}[4]{\\IntervalLR{#2}{#4}\\IntervalGL{#1}{#2}{#3}{#4}}',
+    '\\providecommand{\\IntervalR}[4]{\\IntervalLR{#2}{#4}\\IntervalGR{#1}{#2}{#3}{#4}}',
+    '\\providecommand{\\IntervalLF}[4]{\\IntervalLR{#2}{#4}\\IntervalGLF{#1}{#2}{#3}{#4}}',
+    '\\providecommand{\\IntervalRF}[4]{\\IntervalLR{#2}{#4}\\IntervalGRF{#1}{#2}{#3}{#4}}',
+    '\\providecommand{\\Interval}[4]{' + points + '\\draw[colorInterval,thick] (a)--(b);}'
+  ].join('\n') + '\n';
+}
+
 function vmTexTikzPreview(items, batch) {
   var list = Array.isArray(items) ? items : [items];
   var preamble = String(list[0] && list[0].preamble || '');
-  var sources = list.map(function (item) { return String(item && item.source || ''); }).join('\n');
+  var sources = list.map(function (item) { return vmChuanHoaTikzSource(item && item.source || ''); }).join('\n');
   var optional = '';
   if (/\\tkzTab/.test(sources)) optional += '\\usepackage{tkz-tab}\n';
   if (/\\begin\{forest\}/.test(sources)) optional += '\\usepackage{forest}\n';
@@ -160,7 +190,7 @@ function vmTexTikzPreview(items, batch) {
   return '\\documentclass[' + (batch ? 'multi=tikzpicture,' : 'tikz,') + 'border=6pt]{standalone}\n' +
     '\\usepackage[T5]{fontenc}\n\\usepackage[utf8]{inputenc}\n\\usepackage{xcolor}\n' +
     '\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optional +
-    vmMauTikzPreview(preamble + '\n' + sources) + '\\pgfplotsset{compat=1.18}\n' +
+    vmMauTikzPreview(preamble + '\n' + sources) + vmTikzCompatPreamble(sources) + '\\pgfplotsset{compat=1.18}\n' +
     '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.markings,backgrounds,fit,matrix}\n' +
     vmKhaiBaoTikzPreview(preamble) + '\n\\begin{document}\n' + sources + '\n\\end{document}';
 }
@@ -571,11 +601,23 @@ function tachNoiDungTaiLieuLatex(src) {
   var begin = s.indexOf('\\begin{document}');
   var end = s.lastIndexOf('\\end{document}');
   if (begin !== -1) s = s.slice(begin + '\\begin{document}'.length, end > begin ? end : undefined);
+  // Cac bo tai lieu thuong khai bao macro (\\def, \\newcommand...) ngay ben
+  // trong tikzpicture. Bao ve nguyen khoi truoc khi don preamble; neu khong,
+  // cac macro nhu \\IntervalLR, \\firstellipse se bi xoa khoi tung hinh.
+  var tikzBlocks = [];
+  s = s.replace(/\\begin\{tikzpicture\}(?:\[[^\]]*\])?[\s\S]*?\\end\{tikzpicture\}/g, function (tikz) {
+    var token = '___VMTIKZSOURCE_' + tikzBlocks.length + '___';
+    tikzBlocks.push(tikz);
+    return token;
+  });
   s = s.replace(/^\s*\\(?:documentclass|usepackage|RequirePackage)(?:\[[^\]]*\])?\{[^\n]*\}\s*$/gm, '');
   s = s.replace(/^\s*\\(?:input|include)\{[^}]+\}\s*$/gm, '');
   s = s.replace(/^\s*\\(?:newcommand|renewcommand|providecommand|def)\b[^\n]*$/gm, '');
   s = s.replace(/\\(?:maketitle|tableofcontents|frontmatter|mainmatter|backmatter|clearpage|pagebreak)\b/g, '');
   s = s.replace(/\\(?:thispagestyle|pagestyle|setcounter|addtocounter|label)\s*\{[^}]*\}(?:\s*\{[^}]*\})?/g, '');
+  tikzBlocks.forEach(function (tikz, index) {
+    s = s.split('___VMTIKZSOURCE_' + index + '___').join(tikz);
+  });
   return s.trim();
 }
 
