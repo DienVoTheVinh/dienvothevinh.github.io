@@ -258,6 +258,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 .vm-tex-preview .vm-tex-choice { display:flex; gap:8px; padding:9px; border:1px solid var(--line); border-radius:8px; }
 .vm-tex-preview .vm-tex-choice-key { color:var(--accent); font-weight:800; }
 .vm-tex-preview .vm-tex-summary{margin:12px 0}.vm-tex-preview .vm-tex-callout{margin:12px 0;overflow:hidden;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;background:var(--surface)}.vm-tex-preview .vm-tex-callout-title{padding:8px 11px;background:var(--accent-soft);color:var(--accent);font-weight:800}.vm-tex-preview .vm-tex-callout-body{padding:10px 12px}.vm-tex-preview .vm-tex-callout-definition,.vm-tex-preview .vm-tex-callout-theorem{border-left-color:var(--ok)}.vm-tex-preview .vm-tex-callout-definition .vm-tex-callout-title,.vm-tex-preview .vm-tex-callout-theorem .vm-tex-callout-title{background:var(--ok-soft);color:var(--ok)}.vm-tex-preview .vm-tex-callout-remark .vm-tex-callout-title{background:var(--surface-2);color:var(--ink)}
+.vm-tex-preview .vm-tex-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0}.vm-tex-preview .vm-tex-table-wrap table{min-width:max-content}
 @media(max-width:640px){.vm-tex-upload-row{align-items:stretch}.vm-tex-upload-row label{width:100%;justify-content:center}.vm-tex-preview{padding:8px}.vm-tex-preview .vm-tex-reader{padding:18px 12px}.vm-tex-preview .vm-tex-choices{grid-template-columns:1fr}}
 </style>
 </head>
@@ -1200,7 +1201,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.8"></script>
-<script src="js/latex-view.js?v=10.3"></script>
+<script src="js/latex-view.js?v=10.4"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4431,6 +4432,7 @@ async function bienDichLatexXem(srcId, outId, khungId, nutId, luuBlobTest) {
       ? latexTaiLieuRaHTML(rawTex, { title: title, kind: kind, showSolutions: false })
       : '<div style="padding:10px;color:var(--err)">Bộ đọc LaTeX chưa tải được.</div>';
     if (typeof renderToanTrong === 'function') renderToanTrong(output);
+    if (typeof vmRenderTikzPreviewNhanh === 'function') vmRenderTikzPreviewNhanh(output);
   } catch (e) {
     output.innerHTML = '<div style="padding:10px; color:var(--err)">Không dựng được bản đọc: ' + e.message + '</div>';
   }

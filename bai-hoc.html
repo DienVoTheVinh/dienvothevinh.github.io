@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=10.3"></script>
+<script src="js/latex-view.js?v=10.4"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -348,6 +348,8 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-callout-practice { border-left-color:#4777c7; }
 .vm-tex-callout-practice .vm-tex-callout-title { background:color-mix(in srgb,#4777c7 12%,var(--surface-solid)); color:#315fa9; }
 .vm-tex-tikz { width:100%; min-height:120px; margin:18px auto; display:grid; place-items:center; overflow:auto; border:1px dashed var(--line-2); border-radius:14px; background:var(--surface-2); }
+.vm-tex-table-wrap { width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin:10px 0; }
+.vm-tex-table-wrap table { min-width:max-content; }
 .vm-tex-tikz-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:24px 16px; color:var(--ink-3); font-size:.84rem; text-align:center; }
 .vm-tex-tikz-spinner { width:20px; height:20px; flex:none; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
 .vm-tex-tikz canvas { display:block; width:auto; max-width:100%; height:auto; margin:auto; background:#fff; }
@@ -1749,6 +1751,7 @@ var vmPdfExportUrl = '';
 var vmPdfPresetName = 'original';
 var vmTikzQueue = [];
 var vmTikzActive = 0;
+var vmTikzMaxConcurrent = (navigator.hardwareConcurrency || 4) >= 8 ? 3 : 2;
 var vmTikzObserver = null;
 var vmReaderBuildSeq = 0;
 var vmReaderResizeTimer = 0;
@@ -2002,7 +2005,7 @@ function vmRenderTikzTrong(root) {
         vmTikzObserver.unobserve(entry.target);
         vmXepHangTikz(entry.target);
       });
-    }, { rootMargin: '320px 0px' });
+    }, { rootMargin: '900px 0px' });
   }
   figures.forEach(function (figure) {
     figure.setAttribute('data-vm-tikz-ready', 'observed');
@@ -2020,7 +2023,7 @@ function vmXepHangTikz(figure) {
 }
 
 function vmChayHangTikz() {
-  while (vmTikzActive < 2 && vmTikzQueue.length) {
+  while (vmTikzActive < vmTikzMaxConcurrent && vmTikzQueue.length) {
     var figure = vmTikzQueue.shift();
     vmTikzActive++;
     vmBienDichMotTikz(figure).finally(function () { vmTikzActive--; vmChayHangTikz(); });
@@ -2104,23 +2107,10 @@ async function vmBienDichMotTikz(figure) {
   if (!item) return;
   try {
     var tex = vmTexTikzDoc(item);
-    var pdfBlob = await vmLayTikzDaCache(tex);
-    if (!pdfBlob) {
-      var r = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
-      if (r.error) throw new Error(r.error.message || 'Trạm kết xuất đang bận');
-      if (!(r.data instanceof Blob) || r.data.type.indexOf('pdf') === -1) {
-        var log = typeof r.data === 'string' ? r.data : await r.data.text();
-        var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
-        throw new Error(firstError || 'Không nhận được hình hợp lệ');
-      }
-      pdfBlob = r.data;
-      vmLuuTikzVaoCache(tex, pdfBlob);
-    }
-    if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) {
-      var log = typeof pdfBlob === 'string' ? pdfBlob : await pdfBlob.text();
-      var firstError = log.split('\n').filter(function (line) { return line.indexOf('!') === 0; }).slice(0, 2).join(' ');
-      throw new Error(firstError || 'Không nhận được hình hợp lệ');
-    }
+    var pdfBlob = typeof vmLayTikzPdfNhanh === 'function'
+      ? await vmLayTikzPdfNhanh(tex)
+      : await vmLayTikzDaCache(tex);
+    if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) throw new Error('Không nhận được hình hợp lệ');
     var pdf = await vmTaiPdfJs().then(function (lib) { return pdfBlob.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; }); });
     var page = await pdf.getPage(1);
     var viewport = page.getViewport({ scale: Math.min(3, Math.max(2, window.devicePixelRatio || 1)) });
