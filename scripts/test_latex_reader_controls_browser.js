@@ -118,10 +118,20 @@ function between(source, from, to) {
       directChild: document.querySelector('[data-reader-key="reader-test"]').parentElement === document.body,
       chromeHidden: getComputedStyle(document.getElementById('site-chrome')).visibility === 'hidden',
       copyHidden: getComputedStyle(document.querySelector('.vm-tex-actions-copy')).display === 'none',
-      downloadVisible: getComputedStyle(document.querySelector('.vm-tex-download')).display !== 'none',
+      toolsHidden: getComputedStyle(document.querySelector('.vm-tex-action-tools')).display === 'none',
+      toolbarVisible: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display !== 'none',
+      toolbarDisplay: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display,
+      toolbarExpanded: document.querySelector('.vm-tex-toolbar-toggle').getAttribute('aria-expanded'),
       themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'grid',
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.downloadVisible || !state.themeVisible) throw new Error(`Fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || !state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    await page.click('.vm-tex-toolbar-toggle');
+    state = await page.evaluate(() => ({
+      open: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-tools-open'),
+      expanded: document.querySelector('.vm-tex-toolbar-toggle').getAttribute('aria-expanded'),
+      downloadVisible: getComputedStyle(document.querySelector('.vm-tex-download')).display !== 'none',
+    }));
+    if (!state.open || state.expanded !== 'true' || !state.downloadVisible) throw new Error(`Fullscreen reader tools did not expand: ${JSON.stringify(state)}`);
     await page.click('.vm-tex-download');
     state = await page.evaluate(() => {
       const shell = document.querySelector('[data-reader-key="reader-test"]');
@@ -130,9 +140,10 @@ function between(source, from, to) {
         visible: modal.style.display === 'flex' && getComputedStyle(modal).visibility === 'visible',
         insideFullscreen: shell.contains(modal),
         aboveFullscreen: Number(getComputedStyle(modal).zIndex) > Number(getComputedStyle(shell).zIndex),
+        toolsCollapsed: !shell.classList.contains('vm-tex-tools-open'),
       };
     });
-    if (!state.visible || !state.insideFullscreen || !state.aboveFullscreen) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
+    if (!state.visible || !state.insideFullscreen || !state.aboveFullscreen || !state.toolsCollapsed) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
     await page.evaluate(() => vmDongPdfExport());
     await page.click('.vm-tex-theme-toggle');
     state = await page.evaluate(() => ({
@@ -146,6 +157,7 @@ function between(source, from, to) {
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
     }
 
+    await page.click('.vm-tex-toolbar-toggle');
     await page.click('[data-vm-fullscreen-btn="reader-test"]');
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
@@ -236,6 +248,7 @@ function between(source, from, to) {
       };
     });
     if (!state.active || !state.locked || !state.text.includes('Thoát') || state.readingOverflow !== 'auto') throw new Error(`Split theory reader fullscreen fallback failed: ${JSON.stringify(state)}`);
+    await page.click('.vm-tex-toolbar-toggle');
     await page.click('[data-vm-fullscreen-btn="lesson-theory"]');
     console.log('PASS reader zoom, mobile fullscreen and configurable PDF popup controls');
   } finally {
