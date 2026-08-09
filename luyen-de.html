@@ -31,6 +31,26 @@
 .exam-card-action { min-height: 42px; justify-content: center; text-align: center; white-space: normal; line-height: 1.3; }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 
+/* Dải chọn lớp của học sinh: cuộn ngang độc lập trên màn hình hẹp. */
+#tabLopHocSinh {
+  max-width: 100%;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 10px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x pinch-zoom;
+  scrollbar-width: thin;
+}
+#tabLopHocSinh .tab-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  white-space: nowrap;
+  scroll-snap-align: start;
+}
+
 /* Workspace thi thử */
 .exam-workspace { display: none; position: fixed; inset: 0 !important; width: 100% !important; height: 100vh !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
 .exam-header { position: relative !important; inset: auto !important; width: 100% !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; box-sizing: border-box; min-height: 60px; background: var(--surface); border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 10px 24px; flex-shrink: 0; }
@@ -38,11 +58,13 @@
 .exam-timer { min-width: 8ch; font-size: 1.3rem; font-weight: 800; color: var(--accent); font-family: monospace; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: center; }
 .exam-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .exam-actions .btn { margin: 0 !important; }
+.wk-pdf-mobile { display: none !important; }
 .exam-body { flex: 1; display: grid; grid-template-columns: 1fr 280px; min-height: 0; transition: grid-template-columns 0.3s ease; }
 #wkPdfPanel { display: none; flex-direction: column; border-left: 1px solid var(--line); background: var(--surface); overflow: hidden; height: 100%; }
 @media(max-width: 900px) {
   .exam-body { grid-template-columns: 1fr !important; }
   #wkPdfPanel { display: none !important; }
+  .wk-pdf-mobile { display: inline-flex !important; }
 }
 .exam-questions { padding: 32px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 32px; }
 .exam-sidebar { background: var(--surface); border-left: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
@@ -233,6 +255,7 @@
     <div class="exam-actions">
       <button class="btn btn-ghost btn-sm" id="wkCancelBtn" onclick="huyLamBai()" style="display:none; color:var(--err); margin-right:8px">Hủy làm bài</button>
       <button class="btn btn-primary btn-sm" id="wkSubmitBtn" onclick="nopBaiExam()">Nộp bài thi</button>
+      <button type="button" class="btn btn-secondary btn-sm wk-pdf-mobile" id="wkPdfBtn" onclick="moConfigPDF('exam')">📥 Xuất PDF</button>
       <button class="btn btn-secondary btn-sm" id="wkRetryBtn" onclick="lamLuotMoi()" style="display:none">🔄 Làm lượt mới</button>
       <button class="btn btn-ghost btn-sm" id="wkExitBtn" onclick="exitWorkspace()" style="display:none">Thoát</button>
     </div>
@@ -584,6 +607,12 @@ function taoDongCham(n) {
       var active = cs.class_id === selectedClassId ? ' active' : '';
       return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');
+    requestAnimationFrame(function () {
+      var activeTab = $('tab-class-' + selectedClassId);
+      if (activeTab && activeTab.scrollIntoView) {
+        activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
+      }
+    });
   }
   
   if (isStaff) {
@@ -621,9 +650,22 @@ async function chonLopHocSinh(classId) {
     btn.classList.remove('active');
   });
   var actTab = $('tab-class-' + classId);
-  if (actTab) actTab.classList.add('active');
+  if (actTab) {
+    actTab.classList.add('active');
+    if (actTab.scrollIntoView) {
+      actTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }
   
   await taiDanhSachDe([classId]);
+}
+
+function vmCapNhatNutPdfWorkspace(mode) {
+  var btn = $('wkPdfBtn');
+  if (!btn) return;
+  var laLoiGiai = mode === 'solution';
+  btn.textContent = laLoiGiai ? '📖 PDF lời giải' : '📥 Xuất PDF';
+  btn.onclick = function () { moConfigPDF(laLoiGiai ? 'solution' : 'exam'); };
 }
 
 async function taiDanhSachDe(classIds) {
@@ -769,6 +811,7 @@ async function startExam(examId) {
   currentExam = ex;
   selectedAnswers = {};
   currentAttempt = null;
+  vmCapNhatNutPdfWorkspace('exam');
   
   // Kiểm tra thời khóa biểu đề thi
   var tg = kiemTraThoiGianDe(ex);
@@ -963,6 +1006,7 @@ function moPhongTuLuan(ex, isSubmitted) {
   $('viewMain').style.display = 'none';
   $('viewWorkspace').style.display = 'flex';
   $('wkTitle').textContent = ex.title;
+  vmCapNhatNutPdfWorkspace(isSubmitted ? 'solution' : 'exam');
   
   if (isSubmitted) {
     if ($('wkTimer')) $('wkTimer').style.display = 'none';
@@ -1461,6 +1505,26 @@ async function chonDapAnExam(qId, key) {
   }
 }
 
+async function vmCapNhatVaXacNhanLuotLam(changes, selectFields) {
+  var updated = await sb.from('attempts')
+    .update(changes)
+    .eq('id', currentAttempt.id)
+    .select(selectFields)
+    .maybeSingle();
+
+  if (updated.error || updated.data) return updated;
+
+  var verified = await sb.from('attempts')
+    .select(selectFields)
+    .eq('id', currentAttempt.id)
+    .maybeSingle();
+
+  if (!verified.error && (!verified.data || !verified.data.submitted_at)) {
+    verified.error = { message: 'Không thể xác nhận lượt làm bài. Em hãy tải lại trang rồi thử lại.' };
+  }
+  return verified;
+}
+
 async function nopBaiExam(isAuto) {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
@@ -1477,9 +1541,21 @@ async function nopBaiExam(isAuto) {
       btn.disabled = true; btn.textContent = '⏳ Đang nộp bài...';
     }
     
-    var rAtt = await sb.from('attempts').update({
+    if (currentAttempt.is_practice || !currentAttempt.id) {
+      currentAttempt.submitted_at = new Date().toISOString();
+      currentAttempt.is_practice = true;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Nộp bài thi';
+      }
+      alert('✓ Bài tự luận luyện tập của em đã được gửi thêm; bài chính thức trước đó vẫn được giữ nguyên.');
+      moPhongTuLuan(currentExam, true);
+      return;
+    }
+
+    var rAtt = await vmCapNhatVaXacNhanLuotLam({
       submitted_at: new Date().toISOString()
-    }).eq('id', currentAttempt.id).select('id, submitted_at').single();
+    }, 'id, submitted_at');
     
     if (rAtt.error) {
       alert('Lỗi nộp bài: ' + rAtt.error.message);
@@ -1574,12 +1650,12 @@ async function nopBaiExam(isAuto) {
     return;
   }
 
-  var rAtt = await sb.from('attempts').update({
+  var rAtt = await vmCapNhatVaXacNhanLuotLam({
     score: parseFloat(score.toFixed(2)),
     correct_n: correctCount,
     total_n: totalCount,
     submitted_at: new Date().toISOString()
-  }).eq('id', currentAttempt.id).select('id, score, submitted_at').single();
+  }, 'id, score, correct_n, total_n, submitted_at');
   
   if (rAtt.error) {
     alert('Lỗi nộp bài: ' + rAtt.error.message);
@@ -1605,6 +1681,7 @@ function showExamResults() {
   $('wkExitBtn').style.display = 'inline-flex';
   $('wkRetryBtn').style.display = 'inline-flex';
   $('btnPdfSolution').style.display = 'inline-flex';
+  vmCapNhatNutPdfWorkspace('solution');
   
   var diem = (currentAttempt.score != null) ? Number(currentAttempt.score).toFixed(2) : '0.00';
   $('wkTimer').textContent = diem + 'đ';
@@ -1690,7 +1767,18 @@ function dongPopupScore() {
 async function lamLuotMoi() {
   if (currentExam.de_type === 'essay') {
     // Tự luận: cho nộp ảnh lại (bài nộp trước vẫn giữ để thầy chấm)
+    if (!confirm('Nộp thêm một lượt bài tự luận để luyện tập nhé? Bài chính thức trước đó vẫn được giữ nguyên.')) return;
+    currentAttempt = {
+      id: null,
+      exam_id: currentExam.id,
+      started_at: new Date().toISOString(),
+      is_practice: true,
+      attempt_answers: []
+    };
+    selectedAnswers = {};
+    timeLeftSeconds = currentExam.duration_minutes * 60;
     moPhongTuLuan(currentExam, false);
+    runTimer();
     return;
   }
   // Trắc nghiệm: LUYỆN TẬP cục bộ — KHÔNG lưu vào hệ thống, không tính điểm.
@@ -1705,6 +1793,7 @@ async function lamLuotMoi() {
   $('wkRetryBtn').style.display = 'none';
   $('btnPdfSolution').style.display = 'none';
   $('wkTitle').textContent = currentExam.title;
+  vmCapNhatNutPdfWorkspace('exam');
   
   if (currentExam.de_type === 'essay') {
     moPhongTuLuan(currentExam, false); // false = isSubmitted
