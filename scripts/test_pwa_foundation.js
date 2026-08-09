@@ -20,10 +20,10 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v14"), 'Service worker cache version must publish the portrait orientation fix');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v13'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '14'"), 'Open apps must not enter a refresh loop on shell v14');
-expect(worker.includes("target.searchParams.set('vm_refresh', '14')"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v15"), 'Service worker cache version must publish the orientation control');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v14'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '15'"), 'Open apps must not enter a refresh loop on shell v15');
+expect(worker.includes("target.searchParams.set('vm_refresh', '15')"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
@@ -39,8 +39,14 @@ expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase 
 const sharedJs = read('js/vinhmath.js');
 expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js'"), 'Shared JS must register the service worker');
 expect(sharedJs.includes('function vmKhoaHuongDocTrenPwa()'), 'Installed mobile app needs a runtime portrait lock');
-expect(sharedJs.includes("orientation.lock('portrait-primary')"), 'Runtime orientation lock must prefer portrait-primary');
+expect(sharedJs.includes("mode === 'landscape' ? 'landscape-primary' : 'portrait-primary'"), 'Runtime orientation lock must support both primary directions');
 expect(sharedJs.includes('vmKhoaHuongDocTrenPwa();'), 'PWA startup must activate the portrait lock');
+expect(sharedJs.includes('function vmTaoDieuKhienHuongManHinh()'), 'Mobile pages need a visible orientation shortcut');
+expect(sharedJs.includes("data-vm-orientation=\"landscape\""), 'Orientation panel must offer landscape mode');
+expect(sharedJs.includes("data-vm-orientation=\"auto\""), 'Orientation panel must offer automatic device mode');
+expect(sharedJs.includes("document.documentElement.requestFullscreen({ navigationUI: 'hide' })"), 'Browser tabs must enter fullscreen before requesting an orientation lock');
+expect(sharedJs.includes("localStorage.setItem(VM_HUONG_MAN_HINH_KEY"), 'Orientation preference must persist between pages');
+
 expect(sharedJs.includes("window.addEventListener('beforeinstallprompt'"), 'Install prompt must be captured');
 expect(sharedJs.includes('vm-install-btn'), 'Install action must be rendered');
 expect(sharedJs.includes("document.getElementById('vmInstallHero')"), 'Prominent homepage install action must be synchronized');
@@ -97,6 +103,8 @@ expect(pushShared.includes('npm:web-push@3.6.7'), 'Web Push dependency must be p
 expect(pushShared.includes('statusCode === 404 || statusCode === 410'), 'Expired push endpoints must be removed');
 
 const sharedCss = read('css/vinhmath.css');
+expect(sharedCss.includes('.vm-orientation-btn'), 'Shared CSS must style the visible orientation shortcut');
+expect(sharedCss.includes('.vm-orientation-panel.is-open'), 'Shared CSS must render the orientation control panel');
 expect(sharedCss.includes('#lessonEditorLoading'), 'Cached lesson editor loaders must be disabled globally');
 expect(sharedCss.includes('--vm-safe-top: env(safe-area-inset-top'), 'Safe-area support is required');
 expect(sharedCss.includes('height: 100dvh !important'), 'Modal must be pinned to the dynamic viewport');
