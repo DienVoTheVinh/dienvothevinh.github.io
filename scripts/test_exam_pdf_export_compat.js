@@ -35,13 +35,16 @@ pages.forEach((file) => {
   expect((existingAnswer.match(/C\u00e2u tr\u1ea3 l\u1eddi:/g) || []).length === 1, `${path.basename(file)} duplicates the short answer label`);
   expect(existingAnswer.includes('\\par'), `${path.basename(file)} does not preserve short-solution paragraphs safely`);
 
-  expect(source.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), `${path.basename(file)} lacks the optional choiceTF PDF fallback`);
+  expect(source.includes('\\\\providecommand{\\\\choiceTF}[5][]'), `${path.basename(file)} lacks the four-statement choiceTF PDF fallback`);
+  expect(source.includes('\\\\vmTFItem{a}{#2}') && source.includes('\\\\vmTFItem{d}{#5}'), `${path.basename(file)} must label true/false statements a)-d) in PDF`);
+  expect(!source.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), `${path.basename(file)} still falls back to A-D multiple-choice labels`);
   expect((source.match(/vmEscapeTexText\(currentExam\.title\.toUpperCase\(\)\)/g) || []).length === 2, `${path.basename(file)} does not escape both PDF titles`);
   expect((source.match(/vmChuanHoaLoiGiaiPdf\(q\.solution_latex\)/g) || []).length === 4, `${path.basename(file)} does not normalize every generated MC/TF solution`);
   expect((source.match(/vmTaoLoiGiaiNganPdf\(shortAns, q\.solution_latex \|\| ''\)/g) || []).length === 2, `${path.basename(file)} does not normalize both short-answer export paths`);
 });
 
-expect(admin.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), 'Admin PDF export does not support choiceTF[t]');
-expect(!admin.includes('\\\\providecommand{\\\\choiceTF}[4]'), 'Obsolete fixed-arity choiceTF fallback is still present');
+expect(admin.includes('\\\\providecommand{\\\\choiceTF}[5][]'), 'Admin PDF export does not support four true/false statements');
+expect(admin.includes('\\\\vmTFItem{a}{#2}') && admin.includes('\\\\vmTFItem{d}{#5}'), 'Admin PDF export must label true/false statements a)-d)');
+expect(!admin.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), 'Admin PDF export still falls back to A-D multiple-choice labels');
 
 console.log('Exam PDF compatibility regression checks passed.');

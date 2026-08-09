@@ -14,7 +14,8 @@ const tex = String.raw`\documentclass[12pt,a4paper]{article}
 \usepackage[vietnamese]{babel}
 \usepackage{amsmath,amssymb}
 \usepackage[loigiai]{ex_test}
-\providecommand{\choiceTF}[1][]{\choice}
+\providecommand{\vmTFItem}[2]{\par\noindent\hangindent=1.9em\hangafter=1\textbf{#1)}\ #2\par}
+\providecommand{\choiceTF}[5][]{\begingroup\let\True\relax\vmTFItem{a}{#2}\vmTFItem{b}{#3}\vmTFItem{c}{#4}\vmTFItem{d}{#5}\endgroup}
 \newtheorem{bt}{Bài}
 \begin{document}
 \begin{center}{\Large\bfseries DE 100\% \& A\_B}\end{center}

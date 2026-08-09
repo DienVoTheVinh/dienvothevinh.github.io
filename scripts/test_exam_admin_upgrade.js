@@ -18,11 +18,15 @@ expect(/HTML trực tiếp[\s\S]*PDF/, page, 'HTML and PDF preview modes must bo
 expect(/thpt-standard[\s\S]*thpt-practice/, page, 'Both THPTQG templates must be available.');
 expect(/\\choiceTF/, js, 'The true/false template must use ex_test choiceTF syntax.');
 expect(/providecommand\{\\\\choiceTF\}/, js, 'PDF export must define a choiceTF fallback for the bundled ex_test version.');
+expect(/\\\\vmTFItem\{a\}\{#2\}[\s\S]*\\\\vmTFItem\{d\}\{#5\}/, js, 'True/false PDF choices must use a)-d) labels.');
 expect(/replace\(\/\\\\begin\\\{bt\\\}\//, js, 'PDF export must normalize short-answer bt blocks before compiling.');
 expect(/replace\(\/\\r\?\\n\[ \\t\]\*\\r\?\\n\+\/g/, js, 'PDF export must make blank solution paragraphs safe for ex_test.');
 expect(/\\textbf\{Câu trả lời:\}/, js, 'The short-answer template must expose a parser-compatible answer.');
 expect(/gv_thong_ke_luyen_de/, js, 'The protected analytics RPC is not wired to the UI.');
 expect(/statement_stats/, js, 'Per-statement true/false analytics are not rendered.');
+expect(/async function toggleSolutionPdf\(/, js, 'Each exam needs a quick answer-PDF permission toggle.');
+expect(/update\(\{ allow_solution_pdf: next \}\)[\s\S]*select\('id,allow_solution_pdf'\)[\s\S]*single\(\)/, js, 'The quick answer-PDF toggle must verify the saved row.');
+expect(/exam-solution-toggle/, css, 'The quick answer-PDF toggle is not styled.');
 expect(/@media\(max-width:760px\)/, css, 'Mobile authoring layout is missing.');
 expect(/security definer[\s\S]*set search_path = ''/i, sql, 'Analytics RPC must pin the search path.');
 expect(/v_role not in \('admin', 'teacher'\)/, sql, 'Analytics RPC must reject non-teacher roles.');
