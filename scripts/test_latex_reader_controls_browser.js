@@ -126,9 +126,13 @@ function between(source, from, to) {
     state = await page.evaluate(() => {
       const shell = document.querySelector('[data-reader-key="reader-test"]');
       const modal = document.getElementById('vmPdfExportModal');
-      return { visible: modal.style.display === 'flex', insideFullscreen: shell.contains(modal) };
+      return {
+        visible: modal.style.display === 'flex' && getComputedStyle(modal).visibility === 'visible',
+        insideFullscreen: shell.contains(modal),
+        aboveFullscreen: Number(getComputedStyle(modal).zIndex) > Number(getComputedStyle(shell).zIndex),
+      };
     });
-    if (!state.visible || !state.insideFullscreen) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
+    if (!state.visible || !state.insideFullscreen || !state.aboveFullscreen) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
     await page.evaluate(() => vmDongPdfExport());
     await page.click('.vm-tex-theme-toggle');
     state = await page.evaluate(() => ({
