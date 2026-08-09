@@ -114,6 +114,10 @@ textarea.code:focus { outline: none; border-color: var(--accent); box-shadow: 0 
               <input type="checkbox" id="exPublished" checked>
               <label for="exPublished" style="margin:0; font-weight:600">Xuất bản đề</label>
             </div>
+            <div class="switch-container">
+              <input type="checkbox" id="exAllowSolutionPdf">
+              <label for="exAllowSolutionPdf" style="margin:0; font-weight:600">Cho HS tải PDF đáp án sau khi nộp lần đầu</label>
+            </div>
           </div>
           
           <div class="field">
@@ -524,6 +528,7 @@ async function loadExamForEdit(examId) {
     
     $('exShuffle').checked = !!exam.shuffle;
     $('exPublished').checked = !!exam.published;
+    $('exAllowSolutionPdf').checked = !!exam.allow_solution_pdf;
     if ($('exType')) $('exType').value = exam.de_type || 'mc';
     if ($('exEssayPrompt')) $('exEssayPrompt').value = exam.essay_prompt || '';
     capNhatHinhThucDe();
@@ -581,6 +586,7 @@ function cancelEditExam() {
   $('exCloses').value = '';
   $('exShuffle').checked = true;
   $('exPublished').checked = true;
+  $('exAllowSolutionPdf').checked = false;
   $('exLatex').value = '';
   if ($('exType')) $('exType').value = 'mc';
   if ($('exEssayPrompt')) $('exEssayPrompt').value = '';
@@ -642,6 +648,7 @@ async function parseAndSaveExam(e) {
   var closes = $('exCloses').value ? parseDateTime($('exCloses').value) : null;
   var shuffle = $('exShuffle').checked;
   var published = $('exPublished').checked;
+  var allowSolutionPdf = $('exAllowSolutionPdf').checked;
   
   var btn = $('btnSave');
   btn.disabled = true; btn.textContent = '⏳ Đang lưu đề thi...';
@@ -659,6 +666,7 @@ async function parseAndSaveExam(e) {
         closes_at: closes,
         shuffle: shuffle,
         published: published,
+        allow_solution_pdf: allowSolutionPdf,
         de_type: deType,
         essay_prompt: essayPrompt || null
       }).eq('id', editingExamId);
@@ -678,6 +686,7 @@ async function parseAndSaveExam(e) {
         closes_at: closes,
         shuffle: shuffle,
         published: published,
+        allow_solution_pdf: allowSolutionPdf,
         de_type: deType,
         essay_prompt: essayPrompt || null
       }).select('id').single();

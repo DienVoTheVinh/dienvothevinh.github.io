@@ -1,6 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v14';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v13';
+const VM_CACHE = 'vinhmath-shell-v15';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v14';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -42,16 +42,16 @@ self.addEventListener('activate', function (event) {
       })
       .then(function (needsShellRefresh) {
         if (!needsShellRefresh) return;
-        /* Một lần duy nhất khi lên v14: tải lại cửa sổ ứng dụng đang mở để
-           mọi trang nhận khóa hướng dọc mới của PWA. */
+        /* Một lần duy nhất khi lên v15: tải lại cửa sổ ứng dụng đang mở để
+           mọi trang nhận phím tắt và trạng thái hướng màn hình mới. */
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
           .then(function (windows) {
             return Promise.all(windows.map(function (client) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '14') return null;
-                target.searchParams.set('vm_refresh', '14');
+                if (target.searchParams.get('vm_refresh') === '15') return null;
+                target.searchParams.set('vm_refresh', '15');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

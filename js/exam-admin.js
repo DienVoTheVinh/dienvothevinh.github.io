@@ -331,6 +331,7 @@ Thể tích bằng $3^3=27$.}
       duration_minutes: Math.max(1, parseInt(el('exDuration').value,10) || 90),
       opens_at: isoVietnam(el('exOpens').value), closes_at: isoVietnam(el('exCloses').value),
       shuffle: el('exShuffle').checked, published: el('exPublished').checked,
+      allow_solution_pdf: !!el('exAllowSolutionPdf').checked,
       de_type: type, essay_prompt: el('exEssayPrompt').value.trim() || null,
       latex_source: el('exLatex').value.trim() || null, template_key: state.templateKey || 'custom'
     };
@@ -385,6 +386,7 @@ Thể tích bằng $3^3=27$.}
       el('exDuration').value = data.duration_minutes || 90; el('exType').value = data.de_type || 'mc';
       el('exOpens').value = toLocalInput(data.opens_at); el('exCloses').value = toLocalInput(data.closes_at);
       el('exShuffle').checked = !!data.shuffle; el('exPublished').checked = !!data.published;
+      el('exAllowSolutionPdf').checked = !!data.allow_solution_pdf;
       el('exEssayPrompt').value = data.essay_prompt || '';
       el('exLatex').value = data.latex_source || examSourceFromQuestions(questions);
       el('btnCancelEdit').hidden = false; el('btnSave').textContent = '💾 Cập nhật đề thi';
@@ -395,7 +397,7 @@ Thể tích bằng $3^3=27$.}
 
   function resetForm() {
     state.editingId = null; state.templateKey = 'custom'; state.parsed = [];
-    el('examForm').reset(); el('exDuration').value = 90; el('exShuffle').checked = true; el('exPublished').checked = true;
+    el('examForm').reset(); el('exDuration').value = 90; el('exShuffle').checked = true; el('exPublished').checked = true; el('exAllowSolutionPdf').checked = false;
     el('exType').value = 'mc'; el('exLatex').value = ''; el('exEssayPrompt').value = '';
     el('formTitle').textContent = '1. Thiết lập đề thi'; el('editBadge').textContent = 'Đề mới';
     el('btnCancelEdit').hidden = true; el('btnSave').textContent = '💾 Lưu đề thi'; el('saveStatus').textContent = 'Đề chưa lưu.';
@@ -419,12 +421,12 @@ Thể tích bằng $3^3=27$.}
     el('examLibrary').innerHTML = list.map(function (x) {
       var count = x.exam_questions && x.exam_questions[0] ? x.exam_questions[0].count : 0;
       var className = x.classes && x.classes.name ? x.classes.name : 'Mọi lớp';
-      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?exam_id='+x.id+'" target="_blank">Xem kiểu HS</a><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
+      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><span class="exam-badge">PDF đáp án: '+(x.allow_solution_pdf?'Bật':'Tắt')+'</span></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?exam_id='+x.id+'" target="_blank">Xem kiểu HS</a><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
     }).join('');
   }
 
   async function loadExams() {
-    var result = await sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,class_id,de_type,template_key,classes(name),exam_questions(count)').order('created_at',{ascending:false});
+    var result = await sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,allow_solution_pdf,class_id,de_type,template_key,classes(name),exam_questions(count)').order('created_at',{ascending:false});
     if (result.error) throw result.error;
     state.exams = result.data || [];
     if (state.profile.role !== 'admin') state.exams = state.exams.filter(function (x) { return x.class_id===null || state.classes.some(function (c) { return c.id===x.class_id; }); });
@@ -506,7 +508,7 @@ Thể tích bằng $3^3=27$.}
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
     return '\\begin{filecontents*}{ex_test.sty}\n'+sty+'\n\\end{filecontents*}\n'+
-      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n\\providecommand{\\choiceTF}[4]{\\choice{#1}{#2}{#3}{#4}}\n'+env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
+      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n\\providecommand{\\choiceTF}[1][]{\\choice}\n'+env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
   }
 
   async function compilePdf() {
