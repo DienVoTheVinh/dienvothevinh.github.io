@@ -2614,12 +2614,39 @@ function layEmojiGiaoVien(fullName) {
   }
 
   var VM_HUONG_MAN_HINH_KEY = 'vm_orientation_preference';
+  var VM_HUONG_MAN_HINH_VERSION_KEY = 'vm_orientation_preference_version';
+  var VM_HUONG_MAN_HINH_VERSION = '2';
   var vmHuongToanManHinh = false;
+  var vmYeuCauHuongManHinh = 0;
+  var vmHenKhoaHuongManHinh = [];
+
+  function vmLuuHuongManHinh(mode) {
+    try {
+      localStorage.setItem(VM_HUONG_MAN_HINH_KEY, mode);
+      localStorage.setItem(VM_HUONG_MAN_HINH_VERSION_KEY, VM_HUONG_MAN_HINH_VERSION);
+    } catch (_) {}
+  }
 
   function vmLayHuongManHinh() {
     var mode = '';
-    try { mode = localStorage.getItem(VM_HUONG_MAN_HINH_KEY) || ''; } catch (_) {}
-    return /^(portrait|landscape|auto)$/.test(mode) ? mode : 'portrait';
+    var version = '';
+    try {
+      mode = localStorage.getItem(VM_HUONG_MAN_HINH_KEY) || '';
+      version = localStorage.getItem(VM_HUONG_MAN_HINH_VERSION_KEY) || '';
+    } catch (_) {}
+
+    /* Bản cũ từng mặc định "Theo máy" và gọi orientation.unlock(), khiến PWA có
+       thể tự xoay dù điện thoại đang khóa. Chuyển lựa chọn cũ đó về Dọc một lần;
+       sau khi người dùng tự chọn lại, phiên bản 2 sẽ tôn trọng lựa chọn mới. */
+    if (version !== VM_HUONG_MAN_HINH_VERSION) {
+      mode = /^(portrait|landscape)$/.test(mode) ? mode : 'portrait';
+      vmLuuHuongManHinh(mode);
+    }
+    if (!/^(portrait|landscape|auto)$/.test(mode)) {
+      mode = 'portrait';
+      vmLuuHuongManHinh(mode);
+    }
+    return mode;
   }
 
   function vmTenHuongManHinh(mode) {
@@ -2665,12 +2692,17 @@ function layEmojiGiaoVien(fullName) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) {
       vmCapNhatNutHuongManHinh(vmLayHuongManHinh());
-      vmThongBaoHuongManHinh('Chọn Dọc hoặc Ngang. Trình duyệt thường sẽ chuyển sang toàn màn hình để khóa hướng.', 'info');
+      vmThongBaoHuongManHinh('VinhMath mặc định khóa Dọc. Chỉ chọn Theo máy khi bạn thực sự muốn ứng dụng tự xoay.', 'info');
     }
   }
 
   async function vmApDungHuongManHinh(mode, fromUser) {
+    if (!/^(portrait|landscape|auto)$/.test(mode)) mode = 'portrait';
+    var requestId = ++vmYeuCauHuongManHinh;
     var orientation = window.screen && window.screen.orientation;
+    vmLuuHuongManHinh(mode);
+    vmCapNhatNutHuongManHinh(mode);
+
     if (mode === 'auto') {
       try {
         if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
@@ -2679,9 +2711,7 @@ function layEmojiGiaoVien(fullName) {
         try { await document.exitFullscreen(); } catch (_) {}
       }
       vmHuongToanManHinh = false;
-      try { localStorage.setItem(VM_HUONG_MAN_HINH_KEY, 'auto'); } catch (_) {}
-      vmCapNhatNutHuongManHinh('auto');
-      vmThongBaoHuongManHinh('Đã trả quyền xoay cho thiết bị.', 'success');
+      vmThongBaoHuongManHinh('Đã bật tự xoay theo thiết bị. Chọn Dọc để khóa lại bất cứ lúc nào.', 'success');
       return true;
     }
 
@@ -2701,9 +2731,13 @@ function layEmojiGiaoVien(fullName) {
         await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
         vmHuongToanManHinh = true;
       }
+      if (requestId !== vmYeuCauHuongManHinh) return false;
       await orientation.lock(target);
-      try { localStorage.setItem(VM_HUONG_MAN_HINH_KEY, mode); } catch (_) {}
-      vmCapNhatNutHuongManHinh(mode);
+      if (requestId !== vmYeuCauHuongManHinh) {
+        var latestMode = vmLayHuongManHinh();
+        if (latestMode === 'auto' && typeof orientation.unlock === 'function') orientation.unlock();
+        return false;
+      }
       vmThongBaoHuongManHinh('Đã khóa màn hình ở chế độ ' + vmTenHuongManHinh(mode) + '.', 'success');
       return true;
     } catch (error) {
@@ -2755,17 +2789,38 @@ function layEmojiGiaoVien(fullName) {
     vmCapNhatNutHuongManHinh(vmLayHuongManHinh());
   }
 
+  function vmHuyHenKhoaHuongManHinh() {
+    vmHenKhoaHuongManHinh.forEach(function (timer) { clearTimeout(timer); });
+    vmHenKhoaHuongManHinh = [];
+  }
+
+  function vmLenLichKhoaLaiHuongManHinh() {
+    if (!vmDaCaiPwa()) return;
+    var mode = vmLayHuongManHinh();
+    if (mode === 'auto') return;
+    vmHuyHenKhoaHuongManHinh();
+    [0, 180, 700].forEach(function (delay) {
+      vmHenKhoaHuongManHinh.push(setTimeout(function () {
+        if (!document.hidden && vmDaCaiPwa() && vmLayHuongManHinh() !== 'auto') {
+          vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+        }
+      }, delay));
+    });
+  }
+
   function vmKhoaHuongDocTrenPwa() {
     if (!vmLaDienThoaiCamUng()) return;
     vmTaoDieuKhienHuongManHinh();
-    if (vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+    if (vmDaCaiPwa()) vmLenLichKhoaLaiHuongManHinh();
 
     window.addEventListener('pageshow', function () {
-      if (vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+      vmLenLichKhoaLaiHuongManHinh();
     });
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden && vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+      if (!document.hidden) vmLenLichKhoaLaiHuongManHinh();
     });
+    window.addEventListener('focus', vmLenLichKhoaLaiHuongManHinh);
+    window.addEventListener('orientationchange', vmLenLichKhoaLaiHuongManHinh);
     document.addEventListener('fullscreenchange', function () {
       if (!document.fullscreenElement) vmHuongToanManHinh = false;
     });
