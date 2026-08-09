@@ -412,6 +412,27 @@ Thể tích bằng $3^3=27$.}
     await loadExams(); renderLibrary(); toast('Đã xóa đề thi.','ok');
   }
 
+  async function toggleSolutionPdf(id) {
+    var exam = state.exams.find(function (x) { return x.id === id; });
+    if (!exam) { toast('Không tìm thấy đề cần cập nhật.','err'); return; }
+    var next = !exam.allow_solution_pdf;
+    var button = document.querySelector('[data-solution-toggle="'+id+'"]');
+    if (button) button.disabled = true;
+    var result = await sb.from('exams')
+      .update({ allow_solution_pdf: next })
+      .eq('id', id)
+      .select('id,allow_solution_pdf')
+      .single();
+    if (result.error) {
+      if (button) button.disabled = false;
+      toast('Không đổi được quyền tải PDF đáp án: '+result.error.message,'err');
+      return;
+    }
+    exam.allow_solution_pdf = !!result.data.allow_solution_pdf;
+    renderLibrary();
+    toast(exam.allow_solution_pdf ? 'Đã mở PDF đáp án cho học sinh sau khi nộp lần đầu.' : 'Đã khóa PDF đáp án của đề này.','ok');
+  }
+
   function renderLibrary() {
     var search = (el('librarySearch').value||'').trim().toLowerCase(), classId=el('libraryClass').value, type=el('libraryType').value, status=el('libraryState').value;
     var list = state.exams.filter(function (x) {
@@ -421,7 +442,8 @@ Thể tích bằng $3^3=27$.}
     el('examLibrary').innerHTML = list.map(function (x) {
       var count = x.exam_questions && x.exam_questions[0] ? x.exam_questions[0].count : 0;
       var className = x.classes && x.classes.name ? x.classes.name : 'Mọi lớp';
-      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:5px"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><span class="exam-badge">PDF đáp án: '+(x.allow_solution_pdf?'Bật':'Tắt')+'</span></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?exam_id='+x.id+'" target="_blank">Xem kiểu HS</a><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
+      var solutionLabel = x.allow_solution_pdf ? '🔓 HS được tải đáp án' : '🔒 Khóa PDF đáp án';
+      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?exam_id='+x.id+'" target="_blank">Xem kiểu HS</a><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
     }).join('');
   }
 
@@ -508,7 +530,10 @@ Thể tích bằng $3^3=27$.}
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
     return '\\begin{filecontents*}{ex_test.sty}\n'+sty+'\n\\end{filecontents*}\n'+
-      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n\\providecommand{\\choiceTF}[1][]{\\choice}\n'+env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
+      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n'+
+      '\\providecommand{\\vmTFItem}[2]{\\par\\noindent\\hangindent=1.9em\\hangafter=1\\textbf{#1)}\\ #2\\par}\n'+
+      '\\providecommand{\\choiceTF}[5][]{\\begingroup\\let\\True\\relax\\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}\\endgroup}\n'+
+      env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
   }
 
   async function compilePdf() {
@@ -556,6 +581,6 @@ Thể tích bằng $3^3=27$.}
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,_templates:TEMPLATES,_kindOf:kindOf};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,_templates:TEMPLATES,_kindOf:kindOf};
   document.addEventListener('DOMContentLoaded',function(){init().catch(function(error){toast('Không khởi tạo được khu đề thi: '+error.message,'err');});});
 })();
