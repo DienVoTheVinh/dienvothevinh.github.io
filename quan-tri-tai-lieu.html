@@ -110,6 +110,7 @@ select.input{width:auto}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.8"></script>
+<script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -126,6 +127,7 @@ function bao(msg, loai) {
   if (!daKetNoi()) { bao('Chưa kết nối Supabase.', 'warn'); return; }
   var hoSo = await yeuCauDangNhap();
   if (!hoSo) return;
+  if (typeof vmTaiMoiTruongTex === 'function') await vmTaiMoiTruongTex();
   if (hoSo.role !== 'teacher' && hoSo.role !== 'admin') { window.location.href = 'lop-hoc'; return; }
 
   // Menu quản trị động được tự động vẽ bởi menu.js
@@ -2796,6 +2798,7 @@ async function bienDich() {
   }
 
   // Tự động giải quyết các file phụ thuộc từ cautruc13/ hoặc bia13/ và chèn vào làm virtual files
+  if (typeof vmChenPreambleMoiTruongTex === 'function') tex = vmChenPreambleMoiTruongTex(tex);
   tex = await processVirtualFiles(tex);
 
   // Tự động nhúng ex_test.sty nếu tài liệu sử dụng gói này
