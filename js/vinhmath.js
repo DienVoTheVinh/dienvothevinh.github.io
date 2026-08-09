@@ -2613,34 +2613,161 @@ function layEmojiGiaoVien(fullName) {
     return /android|iphone|ipod|mobile/i.test(ua) || ((navigator.maxTouchPoints || 0) > 1 && kichThuocNho);
   }
 
-  function vmKhoaHuongDocTrenPwa() {
-    if (!vmDaCaiPwa() || !vmLaDienThoaiCamUng()) return;
-    var orientation = window.screen && window.screen.orientation;
-    if (!orientation || typeof orientation.lock !== 'function') return;
+  var VM_HUONG_MAN_HINH_KEY = 'vm_orientation_preference';
+  var vmHuongToanManHinh = false;
 
-    function khoaHuongDoc() {
+  function vmLayHuongManHinh() {
+    var mode = '';
+    try { mode = localStorage.getItem(VM_HUONG_MAN_HINH_KEY) || ''; } catch (_) {}
+    return /^(portrait|landscape|auto)$/.test(mode) ? mode : 'portrait';
+  }
+
+  function vmTenHuongManHinh(mode) {
+    if (mode === 'landscape') return 'Ngang';
+    if (mode === 'auto') return 'Theo máy';
+    return 'Dọc';
+  }
+
+  function vmCapNhatNutHuongManHinh(mode) {
+    var btn = document.getElementById('vmOrientationBtn');
+    if (!btn) return;
+    var label = btn.querySelector('.vm-orientation-label');
+    if (label) label.textContent = vmTenHuongManHinh(mode);
+    btn.setAttribute('data-mode', mode);
+    btn.setAttribute('aria-label', 'Hướng màn hình: ' + vmTenHuongManHinh(mode));
+    document.querySelectorAll('[data-vm-orientation]').forEach(function (item) {
+      var active = item.getAttribute('data-vm-orientation') === mode;
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function vmThongBaoHuongManHinh(message, state) {
+    var status = document.getElementById('vmOrientationStatus');
+    if (!status) return;
+    status.textContent = message;
+    status.className = 'vm-orientation-status' + (state ? ' is-' + state : '');
+  }
+
+  function vmDongBangHuongManHinh() {
+    var panel = document.getElementById('vmOrientationPanel');
+    var btn = document.getElementById('vmOrientationBtn');
+    if (panel) panel.classList.remove('is-open');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function vmMoBangHuongManHinh() {
+    var panel = document.getElementById('vmOrientationPanel');
+    var btn = document.getElementById('vmOrientationBtn');
+    if (!panel || !btn) return;
+    var open = !panel.classList.contains('is-open');
+    panel.classList.toggle('is-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      vmCapNhatNutHuongManHinh(vmLayHuongManHinh());
+      vmThongBaoHuongManHinh('Chọn Dọc hoặc Ngang. Trình duyệt thường sẽ chuyển sang toàn màn hình để khóa hướng.', 'info');
+    }
+  }
+
+  async function vmApDungHuongManHinh(mode, fromUser) {
+    var orientation = window.screen && window.screen.orientation;
+    if (mode === 'auto') {
       try {
-        var result = orientation.lock('portrait-primary');
-        if (result && typeof result.catch === 'function') {
-          result.catch(function () {
-            try {
-              var fallback = orientation.lock('portrait');
-              if (fallback && typeof fallback.catch === 'function') fallback.catch(function () {});
-            } catch (_) {}
-          });
-        }
-      } catch (_) {
-        try {
-          var fallback = orientation.lock('portrait');
-          if (fallback && typeof fallback.catch === 'function') fallback.catch(function () {});
-        } catch (_) {}
+        if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
+      } catch (_) {}
+      if (vmHuongToanManHinh && document.fullscreenElement && document.exitFullscreen) {
+        try { await document.exitFullscreen(); } catch (_) {}
       }
+      vmHuongToanManHinh = false;
+      try { localStorage.setItem(VM_HUONG_MAN_HINH_KEY, 'auto'); } catch (_) {}
+      vmCapNhatNutHuongManHinh('auto');
+      vmThongBaoHuongManHinh('Đã trả quyền xoay cho thiết bị.', 'success');
+      return true;
     }
 
-    khoaHuongDoc();
-    window.addEventListener('pageshow', khoaHuongDoc);
+    if (!orientation || typeof orientation.lock !== 'function') {
+      vmThongBaoHuongManHinh(
+        vmLaIOS()
+          ? 'Safari trên iPhone/iPad không cho website tự khóa hướng. Hãy dùng khóa xoay của iOS và mở VinhMath từ Màn hình chính.'
+          : 'Trình duyệt này chưa hỗ trợ khóa hướng. Hãy mở bằng Chrome hoặc cài VinhMath thành ứng dụng.',
+        'error'
+      );
+      return false;
+    }
+
+    var target = mode === 'landscape' ? 'landscape-primary' : 'portrait-primary';
+    try {
+      if (fromUser && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+        vmHuongToanManHinh = true;
+      }
+      await orientation.lock(target);
+      try { localStorage.setItem(VM_HUONG_MAN_HINH_KEY, mode); } catch (_) {}
+      vmCapNhatNutHuongManHinh(mode);
+      vmThongBaoHuongManHinh('Đã khóa màn hình ở chế độ ' + vmTenHuongManHinh(mode) + '.', 'success');
+      return true;
+    } catch (error) {
+      vmThongBaoHuongManHinh(
+        'Không thể khóa hướng trong cửa sổ hiện tại. Hãy bấm Cài ứng dụng, mở VinhMath từ biểu tượng rồi thử lại.',
+        'error'
+      );
+      return false;
+    }
+  }
+
+  function vmTaoDieuKhienHuongManHinh() {
+    if (!vmLaDienThoaiCamUng() || document.getElementById('vmOrientationBtn')) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'vmOrientationBtn';
+    btn.className = 'vm-orientation-btn';
+    btn.innerHTML = '<span aria-hidden="true">↕</span><span class="vm-orientation-label">Dọc</span>';
+    btn.setAttribute('aria-controls', 'vmOrientationPanel');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', vmMoBangHuongManHinh);
+
+    var panel = document.createElement('aside');
+    panel.id = 'vmOrientationPanel';
+    panel.className = 'vm-orientation-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Điều chỉnh hướng màn hình');
+    panel.innerHTML = '' +
+      '<div class="vm-orientation-head">' +
+        '<div><strong>Hướng màn hình</strong><small>Chọn cách VinhMath hiển thị trên điện thoại</small></div>' +
+        '<button type="button" class="vm-orientation-close" aria-label="Đóng">×</button>' +
+      '</div>' +
+      '<div class="vm-orientation-options">' +
+        '<button type="button" data-vm-orientation="portrait"><span>▯</span><b>Dọc</b></button>' +
+        '<button type="button" data-vm-orientation="landscape"><span>▭</span><b>Ngang</b></button>' +
+        '<button type="button" data-vm-orientation="auto"><span>↻</span><b>Theo máy</b></button>' +
+      '</div>' +
+      '<p class="vm-orientation-status is-info" id="vmOrientationStatus" aria-live="polite"></p>';
+
+    panel.querySelector('.vm-orientation-close').addEventListener('click', vmDongBangHuongManHinh);
+    panel.querySelectorAll('[data-vm-orientation]').forEach(function (item) {
+      item.addEventListener('click', function () {
+        vmApDungHuongManHinh(item.getAttribute('data-vm-orientation'), true);
+      });
+    });
+    document.body.appendChild(btn);
+    document.body.appendChild(panel);
+    vmCapNhatNutHuongManHinh(vmLayHuongManHinh());
+  }
+
+  function vmKhoaHuongDocTrenPwa() {
+    if (!vmLaDienThoaiCamUng()) return;
+    vmTaoDieuKhienHuongManHinh();
+    if (vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+
+    window.addEventListener('pageshow', function () {
+      if (vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+    });
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) khoaHuongDoc();
+      if (!document.hidden && vmDaCaiPwa()) vmApDungHuongManHinh(vmLayHuongManHinh(), false);
+    });
+    document.addEventListener('fullscreenchange', function () {
+      if (!document.fullscreenElement) vmHuongToanManHinh = false;
     });
   }
 
