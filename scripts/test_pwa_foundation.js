@@ -20,10 +20,10 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v16"), 'Service worker cache version must publish the stable orientation lock');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v15'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '16'"), 'Open apps must not enter a refresh loop on shell v16');
-expect(worker.includes("target.searchParams.set('vm_refresh', '16')"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v17"), 'Service worker cache version must publish the orientation lifecycle fix');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v16'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '17'"), 'Open apps must not enter a refresh loop on shell v17');
+expect(worker.includes("target.searchParams.set('vm_refresh', '17')"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
@@ -48,6 +48,8 @@ expect(sharedJs.includes("document.documentElement.requestFullscreen({ navigatio
 expect(sharedJs.includes("localStorage.setItem(VM_HUONG_MAN_HINH_KEY"), 'Orientation preference must persist between pages');
 expect(sharedJs.includes("VM_HUONG_MAN_HINH_VERSION = '2'"), 'Legacy automatic orientation must migrate to a stable portrait default');
 expect(sharedJs.includes("window.addEventListener('orientationchange', vmLenLichKhoaLaiHuongManHinh)"), 'Installed app must restore the selected lock after device rotation');
+expect(sharedJs.includes("['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay']"), 'Installed-app detection must cover every supported display mode');
+expect(sharedJs.includes("if (!vmLaDienThoaiCamUng()) return;"), 'Orientation recovery must not depend only on a fragile display-mode query');
 
 expect(sharedJs.includes("window.addEventListener('beforeinstallprompt'"), 'Install prompt must be captured');
 expect(sharedJs.includes('vm-install-btn'), 'Install action must be rendered');

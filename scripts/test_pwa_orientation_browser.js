@@ -39,7 +39,7 @@ function pwaSection(source) {
     await page.addScriptTag({ content: `
       window.__vmOrientationLocks = [];
       window.matchMedia = function(query) {
-        return { matches: query === '(display-mode: standalone)', media: query, addEventListener: function(){}, removeEventListener: function(){} };
+        return { matches: query === '(display-mode: window-controls-overlay)', media: query, addEventListener: function(){}, removeEventListener: function(){} };
       };
       Object.defineProperty(window.screen, 'orientation', {
         configurable: true,
@@ -71,6 +71,16 @@ function pwaSection(source) {
     const relocks = await page.evaluate(() => window.__vmOrientationLocks.slice());
     if (!relocks.includes('portrait-primary')) {
       throw new Error(`Installed mobile PWA did not restore portrait after rotation: ${JSON.stringify(relocks)}`);
+    }
+
+    await page.evaluate(() => {
+      window.__vmOrientationLocks = [];
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    await page.waitForTimeout(1250);
+    const pageShowRelocks = await page.evaluate(() => window.__vmOrientationLocks.slice());
+    if (!pageShowRelocks.includes('portrait-primary')) {
+      throw new Error(`Installed mobile PWA did not restore portrait after page navigation: ${JSON.stringify(pageShowRelocks)}`);
     }
 
     const browserContext = await browser.newContext({
@@ -166,6 +176,16 @@ function pwaSection(source) {
     }));
     if (automatic.unlocks !== 1 || automatic.saved !== 'auto' || automatic.label !== 'Theo máy') {
       throw new Error(`Automatic orientation mode did not unlock correctly: ${JSON.stringify(automatic)}`);
+    }
+    await browserPage.evaluate(() => {
+      window.__vmOrientationLocks = [];
+      window.dispatchEvent(new Event('orientationchange'));
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    await browserPage.waitForTimeout(1250);
+    const automaticRelocks = await browserPage.evaluate(() => window.__vmOrientationLocks.slice());
+    if (automaticRelocks.length !== 0) {
+      throw new Error(`Automatic device mode must not be overridden by VinhMath after navigation: ${JSON.stringify(automaticRelocks)}`);
     }
     await browserContext.close();
     console.log('PASS stable portrait migration/re-lock, visible shortcut, fullscreen landscape and explicit automatic mode');
