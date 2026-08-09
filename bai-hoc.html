@@ -277,6 +277,12 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-build-status.is-error { color:var(--err); }
 .vm-tex-build-dot { width:7px; height:7px; flex:none; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px color-mix(in srgb,currentColor 14%,transparent); }
 .vm-tex-action-tools { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+.vm-tex-toolbar-toggle {
+  display:none; align-items:center; justify-content:center; gap:7px; min-height:42px; padding:9px 13px;
+  border:1px solid var(--accent); border-radius:999px; background:var(--surface-solid); color:var(--accent);
+  box-shadow:0 8px 24px rgba(15,23,42,.16); font:800 .82rem/1 inherit; cursor:pointer;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
 .vm-tex-zoom { display:inline-flex; align-items:center; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
 .vm-tex-zoom button { position:relative; z-index:1; width:38px; height:38px; padding:0; border:0; border-right:1px solid var(--line); background:transparent; color:var(--ink); font:800 1rem/1 inherit; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .vm-tex-zoom button:last-child { border-right:0; border-left:1px solid var(--line); }
@@ -288,9 +294,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   z-index:2147483005; width:46px; height:46px; padding:0 !important; place-items:center;
   border:1px solid var(--line-2) !important; border-radius:50% !important; background:var(--surface-solid) !important;
   color:var(--ink) !important; box-shadow:0 10px 30px rgba(15,23,42,.22); font-size:1.15rem !important;
-  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  pointer-events:auto; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
 }
-[data-reader-key].vm-tex-fullscreen-active .vm-tex-theme-toggle { display:grid; }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-theme-toggle,[data-reader-key]:fullscreen .vm-tex-theme-toggle { display:grid; }
 .vm-tex-theme-light { display:none; }
 [data-theme="dark"] .vm-tex-theme-dark { display:none; }
 [data-theme="dark"] .vm-tex-theme-light { display:inline; }
@@ -364,7 +370,20 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-reader-loading-line::after { content:""; position:absolute; inset:0 auto 0 0; width:42%; border-radius:inherit; background:linear-gradient(90deg,var(--accent),#f5bd3a); animation:vmReaderLoading 1.15s ease-in-out infinite alternate; }
 @keyframes vmReaderLoading { from { transform:translateX(-20%); } to { transform:translateX(160%); } }
 [data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:2147483000 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; background:var(--bg); }
-[data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { position:sticky; top:0; z-index:3; box-shadow:0 8px 24px rgba(15,23,42,.12); }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-actions,[data-reader-key]:fullscreen .vm-tex-actions {
+  position:absolute; top:max(8px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); z-index:4;
+  width:auto; max-width:calc(100% - 16px); padding:0; border:0; background:transparent; box-shadow:none;
+  pointer-events:none;
+}
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-toolbar-toggle,[data-reader-key]:fullscreen .vm-tex-toolbar-toggle { display:inline-flex; margin-left:auto; pointer-events:auto; }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy,[data-reader-key]:fullscreen .vm-tex-actions-copy,
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-action-tools,[data-reader-key]:fullscreen .vm-tex-action-tools { display:none; }
+[data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-actions,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-actions {
+  width:min(560px,calc(100% - 16px)); padding:10px; border:1px solid var(--line); border-radius:16px;
+  background:color-mix(in srgb,var(--surface-solid) 96%,transparent); box-shadow:0 18px 46px rgba(15,23,42,.24);
+  pointer-events:auto; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+}
+[data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-action-tools,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-action-tools { display:flex; width:100%; margin-top:8px; }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { flex:1 1 auto; min-height:0; overflow:auto; }
 [data-reader-key].vm-tex-fullscreen-active .theory-reading-container { flex:1 1 auto; min-height:0; width:100%; max-width:none; overflow:auto; }
 [data-reader-key].vm-tex-fullscreen-active.btvn-latex-native > .vm-tex-reader { flex:1 1 auto; overflow:auto; }
@@ -440,10 +459,13 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   .vm-pdf-export-head { padding:15px 16px; }
   .vm-pdf-export-body { padding:14px 16px calc(16px + env(safe-area-inset-bottom)); }
   .btvn-latex-native .vm-tex-reader { padding:18px 12px 24px; }
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions { flex:none; padding:calc(7px + env(safe-area-inset-top)) 10px 7px; }
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy { display:none !important; }
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-action-tools { grid-template-columns:minmax(150px,1fr) minmax(138px,1fr); }
-  [data-reader-key].vm-tex-fullscreen-active .vm-tex-download { display:flex !important; grid-column:1 / -1; }
+  [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-actions,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-actions {
+    top:max(6px,env(safe-area-inset-top)); max-height:calc(100dvh - 20px - env(safe-area-inset-top)); overflow:auto;
+  }
+  [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-action-tools,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-action-tools {
+    display:grid; grid-template-columns:minmax(132px,1fr) minmax(126px,1fr);
+  }
+  [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-download,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-download { display:flex; grid-column:1 / -1; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { padding:0; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-reader { border:0; border-radius:0; box-shadow:none; }
   #modalNopBai { align-items:flex-end !important; padding:0 !important; }
@@ -888,7 +910,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.8"></script>
+<script src="js/vinhmath.js?v=7.9"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1760,6 +1782,7 @@ var vmTikzObserver = null;
 var vmReaderBuildSeq = 0;
 var vmReaderResizeTimer = 0;
 var vmReaderFullscreenState = null;
+var vmReaderToolbarTimers = {};
 
 function vmTenTepPdf(name) {
   return String(name || 'tai-lieu').toLowerCase()
@@ -1804,14 +1827,16 @@ function vmLatexActionHTML(key, rawTex, fileName, kind) {
   vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf', kind: kind || 'document' };
   vmReaderZoomLevels[key] = vmReaderZoomLevels[key] || 1;
   return '<div class="vm-tex-actions">' +
+    '<button type="button" class="vm-tex-toolbar-toggle" data-vm-reader-control="toolbar" data-vm-reader-key="' + key + '" aria-expanded="false" aria-label="Hiện công cụ đọc"><span aria-hidden="true">☰</span><span data-vm-toolbar-label="' + key + '">Công cụ</span></button>' +
     '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.' +
       '<br><span class="vm-tex-build-status" data-vm-reader-status="' + key + '"><span class="vm-tex-build-dot"></span><span>Nội dung đã sẵn sàng</span></span></div>' +
     '<div class="vm-tex-action-tools">' +
       '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="-.1" aria-label="Thu nhỏ">−</button><button type="button" class="vm-tex-zoom-label" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="0" data-vm-zoom-label="' + key + '" aria-label="Đặt lại mức thu phóng 100%">100%</button><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta=".1" aria-label="Phóng to">+</button></div>' +
       '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-reader-control="fullscreen" data-vm-reader-key="' + key + '" data-vm-fullscreen-btn="' + key + '">⛶ Toàn màn hình</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm vm-tex-theme-toggle" onclick="toggleTheme()" aria-label="Đổi giao diện sáng hoặc tối" title="Đổi giao diện sáng/tối"><span class="vm-tex-theme-dark" aria-hidden="true">🌙</span><span class="vm-tex-theme-light" aria-hidden="true">☀️</span></button>' +
-      '<button type="button" class="btn btn-primary btn-sm vm-tex-download" onclick="vmMoPdfExport(\'' + key + '\')">⚙️ Tạo &amp; tải PDF</button>' +
-    '</div></div>';
+      '<button type="button" class="btn btn-primary btn-sm vm-tex-download" data-vm-reader-control="pdf" data-vm-reader-key="' + key + '">⚙️ Tạo &amp; tải PDF</button>' +
+    '</div>' +
+    '<button type="button" class="btn btn-ghost btn-sm vm-tex-theme-toggle" onclick="toggleTheme()" aria-label="Đổi giao diện sáng hoặc tối" title="Đổi giao diện sáng/tối"><span class="vm-tex-theme-dark" aria-hidden="true">🌙</span><span class="vm-tex-theme-light" aria-hidden="true">☀️</span></button>' +
+    '</div>';
 }
 
 function vmLatexNativeHTML(title, rawTex, key, fileName, kind, inline) {
@@ -1910,6 +1935,31 @@ function vmDoiZoomReader(key, delta, control) {
   vmHenFitLongMath(shell);
 }
 
+function vmDatTrangThaiCongCuReader(shell, open) {
+  if (!shell) return;
+  var key = shell.getAttribute('data-reader-key');
+  shell.classList.toggle('vm-tex-tools-open', !!open);
+  var toggle = shell.querySelector('.vm-tex-toolbar-toggle');
+  var label = shell.querySelector('[data-vm-toolbar-label="' + key + '"]');
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Ẩn công cụ đọc' : 'Hiện công cụ đọc');
+  }
+  if (label) label.textContent = open ? 'Ẩn' : 'Công cụ';
+  clearTimeout(vmReaderToolbarTimers[key]);
+  if (open) {
+    vmReaderToolbarTimers[key] = setTimeout(function () {
+      vmDatTrangThaiCongCuReader(shell, false);
+    }, 7000);
+  }
+}
+
+function vmToggleCongCuReader(key, control) {
+  var shell = vmTimReaderShell(key, control);
+  if (!shell) return;
+  vmDatTrangThaiCongCuReader(shell, !shell.classList.contains('vm-tex-tools-open'));
+}
+
 document.addEventListener('click', function (event) {
   var control = event.target && event.target.closest ? event.target.closest('[data-vm-reader-control]') : null;
   if (!control) return;
@@ -1919,8 +1969,16 @@ document.addEventListener('click', function (event) {
   event.stopPropagation();
   if (control.getAttribute('data-vm-reader-control') === 'zoom') {
     vmDoiZoomReader(key, Number(control.getAttribute('data-vm-reader-delta') || 0), control);
+    var zoomShell = vmTimReaderShell(key, control);
+    if (zoomShell && zoomShell.classList.contains('vm-tex-tools-open')) vmDatTrangThaiCongCuReader(zoomShell, true);
   } else if (control.getAttribute('data-vm-reader-control') === 'fullscreen') {
     vmToggleReaderFullscreen(key, control);
+  } else if (control.getAttribute('data-vm-reader-control') === 'toolbar') {
+    vmToggleCongCuReader(key, control);
+  } else if (control.getAttribute('data-vm-reader-control') === 'pdf') {
+    var pdfShell = vmTimReaderShell(key, control);
+    vmMoPdfExport(key);
+    if (pdfShell) vmDatTrangThaiCongCuReader(pdfShell, false);
   }
 }, true);
 
@@ -1957,6 +2015,7 @@ async function vmToggleReaderFullscreen(key, control) {
   vmReaderFullscreenState = { shell: shell, placeholder: placeholder, scrollY: scrollY };
   document.body.appendChild(shell);
   shell.classList.add('vm-tex-fullscreen-active');
+  vmDatTrangThaiCongCuReader(shell, false);
   document.body.classList.add('vm-reader-locked');
   vmCapNhatNutFullscreen(shell, true);
   var scrollTarget = shell.querySelector('.vm-tex-scroll') || shell.querySelector('.theory-reading-container') || (shell.classList.contains('btvn-latex-native') ? shell.querySelector('.vm-tex-reader') : null);
@@ -1968,6 +2027,7 @@ function vmThoatReaderFullscreen(shell) {
   shell = shell || (vmReaderFullscreenState && vmReaderFullscreenState.shell);
   if (!shell) return;
   shell.classList.remove('vm-tex-fullscreen-active');
+  vmDatTrangThaiCongCuReader(shell, false);
   document.body.classList.remove('vm-reader-locked');
   vmCapNhatNutFullscreen(shell, false);
   var state = vmReaderFullscreenState;
@@ -1982,7 +2042,10 @@ function vmThoatReaderFullscreen(shell) {
 
 document.addEventListener('fullscreenchange', function () {
   document.querySelectorAll('[data-reader-key]').forEach(function (shell) {
-    vmCapNhatNutFullscreen(shell, document.fullscreenElement === shell || shell.classList.contains('vm-tex-fullscreen-active'));
+    var active = document.fullscreenElement === shell || shell.classList.contains('vm-tex-fullscreen-active');
+    vmCapNhatNutFullscreen(shell, active);
+    if (active) vmDatTrangThaiCongCuReader(shell, false);
+    else shell.classList.remove('vm-tex-tools-open');
   });
 });
 document.addEventListener('keydown', function (event) {
