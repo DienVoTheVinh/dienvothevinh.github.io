@@ -20,10 +20,10 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v17"), 'Service worker cache version must publish the orientation lifecycle fix');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v16'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '17'"), 'Open apps must not enter a refresh loop on shell v17');
-expect(worker.includes("target.searchParams.set('vm_refresh', '17')"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v18"), 'Service worker cache version must publish the exam PDF access update');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v17'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '18'"), 'Open apps must not enter a refresh loop on shell v18');
+expect(worker.includes("target.searchParams.set('vm_refresh', '18')"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');

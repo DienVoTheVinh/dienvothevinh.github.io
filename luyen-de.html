@@ -59,6 +59,14 @@
 .exam-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .exam-actions .btn { margin: 0 !important; }
 .wk-pdf-mobile { display: none !important; }
+.pdf-solution-access { position: relative; overflow: hidden; transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.pdf-solution-access.is-locked { border-color: var(--line-2) !important; background: var(--surface-2) !important; color: var(--ink-3) !important; }
+.pdf-solution-access.is-unlocked { border-color: color-mix(in srgb,var(--ok) 60%,var(--line)) !important; background: var(--ok-soft) !important; color: var(--ok) !important; box-shadow: 0 0 0 1px color-mix(in srgb,var(--ok) 16%,transparent),0 8px 20px color-mix(in srgb,var(--ok) 12%,transparent); animation: vmPdfSolutionUnlock .45s ease both; }
+.pdf-solution-access.is-denied { animation: vmPdfSolutionDenied .34s ease both; }
+.pdf-solution-status { margin-top: 7px; padding: 8px 10px; border-radius: 9px; background: var(--surface-2); color: var(--ink-3); font-size: .72rem; line-height: 1.45; }
+.pdf-solution-status.is-unlocked { background: var(--ok-soft); color: var(--ok); }
+@keyframes vmPdfSolutionUnlock { from { opacity:.55; transform:scale(.97); } 65% { transform:scale(1.02); } to { opacity:1; transform:scale(1); } }
+@keyframes vmPdfSolutionDenied { 0%,100% { transform:translateX(0); } 30% { transform:translateX(-4px); } 70% { transform:translateX(4px); } }
 .exam-body { flex: 1; display: grid; grid-template-columns: 1fr 280px; min-height: 0; transition: grid-template-columns 0.3s ease; }
 #wkPdfPanel { display: none; flex-direction: column; border-left: 1px solid var(--line); background: var(--surface); overflow: hidden; height: 100%; }
 @media(max-width: 900px) {
@@ -78,7 +86,8 @@
 
 /* Câu hỏi & Đáp án */
 .q-box { padding-bottom: 24px; border-bottom: 1px dashed var(--line); }
-.q-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 16px; line-height: 1.5; }
+.q-title { font-weight: 400; font-size: 1.05rem; margin-bottom: 16px; line-height: 1.62; }
+.q-title-label { font-weight: 700; }
 .choices-container { display: flex; flex-direction: column; gap: 10px; }
 .choice-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all .15s; font-size: .95rem; }
 .choice-row:hover { background: var(--surface-2); }
@@ -256,6 +265,7 @@
       <button class="btn btn-ghost btn-sm" id="wkCancelBtn" onclick="huyLamBai()" style="display:none; color:var(--err); margin-right:8px">Hủy làm bài</button>
       <button class="btn btn-primary btn-sm" id="wkSubmitBtn" onclick="nopBaiExam()">Nộp bài thi</button>
       <button type="button" class="btn btn-secondary btn-sm wk-pdf-mobile" id="wkPdfBtn" onclick="moConfigPDF('exam')">📥 Xuất PDF</button>
+      <button type="button" class="btn btn-secondary btn-sm wk-pdf-mobile pdf-solution-access is-locked" id="wkPdfSolutionBtn" onclick="moConfigPDF('solution')" aria-disabled="true" title="PDF đáp án đang khóa">🔒 Đáp án</button>
       <button class="btn btn-secondary btn-sm" id="wkRetryBtn" onclick="lamLuotMoi()" style="display:none">🔄 Làm lượt mới</button>
       <button class="btn btn-ghost btn-sm" id="wkExitBtn" onclick="exitWorkspace()" style="display:none">Thoát</button>
     </div>
@@ -305,7 +315,8 @@
         </p>
         <button class="btn btn-primary btn-sm" onclick="moConfigPDF('exam')" style="width:100%; justify-content:center; margin-bottom:8px">📥 Xem & Tải PDF</button>
         <button class="btn btn-secondary btn-sm" id="btnToggleSidePdf" onclick="toggleSidePdf()" style="width:100%; justify-content:center; margin-bottom:8px; display: flex; align-items: center; gap: 6px;">📄 Xem PDF bên cạnh</button>
-        <button class="btn btn-secondary btn-sm" id="btnPdfSolution" onclick="moConfigPDF('solution')" style="width:100%; justify-content:center; display:none">📖 PDF Lời giải</button>
+        <button class="btn btn-secondary btn-sm pdf-solution-access is-locked" id="btnPdfSolution" onclick="moConfigPDF('solution')" aria-disabled="true" title="PDF đáp án đang khóa" style="width:100%; justify-content:center">🔒 Tải PDF có đáp án</button>
+        <div class="pdf-solution-status" id="pdfSolutionStatus">Khóa đến khi em nộp lần đầu và giáo viên cho phép tải.</div>
       </div>
       
       <div style="margin-top:auto; font-size:.8rem; color:var(--ink-2)">
@@ -506,7 +517,7 @@
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.9"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
-<script src="js/latex-view.js?v=10.0"></script>
+<script src="js/latex-view.js?v=10.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 var listExams = [];
@@ -661,12 +672,51 @@ async function chonLopHocSinh(classId) {
   await taiDanhSachDe([classId]);
 }
 
+function vmDeCoLoiGiai() {
+  if (!currentExam) return false;
+  if (currentExam.de_type === 'essay') {
+    return /\\loigiai\s*(?:\[[^\]]*\])?\s*\{|\\begin\{(?:loigiai|solution|answer)\}/i.test(currentExam.essay_prompt || '');
+  }
+  return examQuestions.some(function (q) {
+    return !!String(q.solution_latex || '').trim();
+  });
+}
+
 function vmCapNhatNutPdfWorkspace(mode) {
-  var btn = $('wkPdfBtn');
-  if (!btn) return;
-  var laLoiGiai = mode === 'solution';
-  btn.textContent = laLoiGiai ? '📖 PDF lời giải' : '📥 Xuất PDF';
-  btn.onclick = function () { moConfigPDF(laLoiGiai ? 'solution' : 'exam'); };
+  var unlocked = mode === true || mode === 'solution';
+  var hasSolution = vmDeCoLoiGiai();
+  var isStaff = vmLaNhanSuDeThi();
+  var examBtn = $('wkPdfBtn');
+  if (examBtn) {
+    examBtn.textContent = '📥 Xuất PDF';
+    examBtn.onclick = function () { moConfigPDF('exam'); };
+  }
+
+  var label = unlocked ? (isStaff ? '🔓 PDF đáp án · Xem trước' : '🔓 Tải PDF có đáp án') : '🔒 Tải PDF có đáp án';
+  var title = unlocked ? 'Đáp án đã được mở' : (!hasSolution ? 'Đề này chưa có lời giải để xuất' : 'Cần nộp lần đầu và được giáo viên cho phép');
+  ['btnPdfSolution', 'wkPdfSolutionBtn'].forEach(function (id) {
+    var btn = $(id);
+    if (!btn) return;
+    btn.textContent = id === 'wkPdfSolutionBtn' ? (unlocked ? '🔓 Đáp án' : '🔒 Đáp án') : label;
+    btn.classList.toggle('is-unlocked', unlocked);
+    btn.classList.toggle('is-locked', !unlocked);
+    btn.setAttribute('aria-disabled', unlocked ? 'false' : 'true');
+    btn.title = title;
+  });
+
+  var status = $('pdfSolutionStatus');
+  if (status) {
+    status.classList.toggle('is-unlocked', unlocked);
+    if (unlocked) {
+      status.textContent = isStaff ? 'Quyền giáo viên: có thể xem trước bản đáp án.' : 'Đã mở: em có thể tạo và tải PDF kèm đáp án, lời giải.';
+    } else if (!hasSolution) {
+      status.textContent = 'Đề này chưa có nội dung lời giải để xuất.';
+    } else if (currentExam && currentExam.allow_solution_pdf) {
+      status.textContent = 'Giáo viên đã cho phép; đáp án sẽ mở sau khi em nộp lần đầu.';
+    } else {
+      status.textContent = 'Đang khóa: giáo viên chưa cho phép tải PDF đáp án.';
+    }
+  }
 }
 
 function vmLaNhanSuDeThi() {
@@ -676,6 +726,7 @@ function vmLaNhanSuDeThi() {
 async function vmKiemTraQuyenPdfLoiGiai(options) {
   options = options || {};
   if (!currentExam) return false;
+  if (!vmDeCoLoiGiai()) return false;
   if (vmLaNhanSuDeThi()) return true;
 
   var result = await sb.rpc('can_download_exam_solution', { p_exam_id: currentExam.id });
@@ -688,14 +739,22 @@ async function vmKiemTraQuyenPdfLoiGiai(options) {
 
 async function vmLamMoiQuyenPdfLoiGiai() {
   canDownloadSolutionPdf = await vmKiemTraQuyenPdfLoiGiai({ silent: true });
-  var btn = $('btnPdfSolution');
-  if (btn) btn.style.display = canDownloadSolutionPdf ? 'inline-flex' : 'none';
   vmCapNhatNutPdfWorkspace(canDownloadSolutionPdf ? 'solution' : 'exam');
   return canDownloadSolutionPdf;
 }
 
 function vmBaoKhongDuocTaiPdfLoiGiai() {
-  alert('PDF đáp án chỉ được mở sau khi em đã nộp lần đầu và giáo viên đã bật quyền tải cho đề này.');
+  ['btnPdfSolution', 'wkPdfSolutionBtn'].forEach(function (id) {
+    var btn = $(id);
+    if (!btn) return;
+    btn.classList.remove('is-denied');
+    void btn.offsetWidth;
+    btn.classList.add('is-denied');
+    setTimeout(function () { btn.classList.remove('is-denied'); }, 380);
+  });
+  alert(vmDeCoLoiGiai()
+    ? 'PDF đáp án chỉ được mở sau khi em đã nộp lần đầu và giáo viên đã bật quyền tải cho đề này.'
+    : 'Đề này chưa có nội dung lời giải để xuất PDF đáp án.');
 }
 
 async function taiDanhSachDe(classIds) {
@@ -842,7 +901,6 @@ async function startExam(examId) {
   selectedAnswers = {};
   currentAttempt = null;
   canDownloadSolutionPdf = false;
-  if ($('btnPdfSolution')) $('btnPdfSolution').style.display = 'none';
   vmCapNhatNutPdfWorkspace('exam');
   
   // Kiểm tra thời khóa biểu đề thi
@@ -863,6 +921,7 @@ async function startExam(examId) {
     .order('sort');
     
   examQuestions = (rQ.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+  vmCapNhatNutPdfWorkspace('exam');
 
   // Nếu là Giáo viên/Admin: vào thẳng chế độ làm bài preview (lượt luyện tập ảo) không lưu CSDL
   var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
@@ -1171,7 +1230,7 @@ async function taiTuLuanDaNop() {
               '</div>';
           }
           return '<div style="margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px">' +
-            '<div class="q-title" style="font-weight:700;margin-bottom:8px">' + qNum + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+            '<div class="q-title" style="margin-bottom:8px"><span class="q-title-label">' + qNum + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
             solHTML +
             '</div>';
         }).join('');
@@ -1400,7 +1459,7 @@ function renderExamQuestions(isSubmitted) {
       return partHeaderHTML +
         '<div class="q-box-result" id="qBox-' + q.id + '">' +
           '<div>' +
-            '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+            '<div class="q-title"><span class="q-title-label">' + questionNumText + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
             choicesHTML +
           '</div>' +
           solHTML +
@@ -1408,7 +1467,7 @@ function renderExamQuestions(isSubmitted) {
     } else {
       return partHeaderHTML +
         '<div class="q-box" id="qBox-' + q.id + '">' +
-          '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+          '<div class="q-title"><span class="q-title-label">' + questionNumText + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
           choicesHTML +
         '</div>';
     }
@@ -1713,7 +1772,6 @@ function showExamResults() {
   if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'none';
   $('wkExitBtn').style.display = 'inline-flex';
   $('wkRetryBtn').style.display = 'inline-flex';
-  $('btnPdfSolution').style.display = 'none';
   vmCapNhatNutPdfWorkspace('exam');
   vmLamMoiQuyenPdfLoiGiai();
   
@@ -1825,7 +1883,6 @@ async function lamLuotMoi() {
   if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'inline-flex';
   $('wkExitBtn').style.display = 'none';
   $('wkRetryBtn').style.display = 'none';
-  $('btnPdfSolution').style.display = 'none';
   $('wkTitle').textContent = currentExam.title;
   vmCapNhatNutPdfWorkspace('exam');
   
@@ -2189,8 +2246,13 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 
 % --- GÓI TRẮC NGHIỆM EX_TEST ---
 \\usepackage[loigiai]{ex_test} 
-% ex_test 2.4.5 chua co choiceTF. Fallback nhan ca tuy chon [t].
-\\providecommand{\\choiceTF}[1][]{\\choice}
+% ex_test 2.4.5 chua co choiceTF. Giu dung nhan a), b), c), d) nhu HTML.
+\\providecommand{\\vmTFItem}[2]{\\par\\noindent\\hangindent=1.9em\\hangafter=1\\textbf{#1)}\\ #2\\par}
+\\providecommand{\\choiceTF}[5][]{%
+  \\begingroup\\let\\True\\relax
+  \\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}%
+  \\endgroup
+}
 \\font\\damEX=ugqb8v at 13pt
 \\def\\iconVD{\\faEdit}                      % Icon trước chữ "Câu"
 \\def\\mauDC{vmInk}                          % Màu dấu kết thúc lời giải

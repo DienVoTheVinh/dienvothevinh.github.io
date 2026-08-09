@@ -22,10 +22,14 @@ const { chromium } = require('playwright');
           return acc;
         }, { mc: 0, tf: 0, short: 0 });
       }
-      return { standard: counts('thpt-standard'), practice: counts('thpt-practice') };
+      const casesHtml = latexRaHTML(String.raw`Hệ bất phương trình \[\begin{cases}x+y-3<0 \\ x-y+1>0\end{cases}\]`);
+      return { standard: counts('thpt-standard'), practice: counts('thpt-practice'), casesHtml };
     });
-    for (const [name, counts] of Object.entries(result)) {
+    for (const [name, counts] of Object.entries({ standard: result.standard, practice: result.practice })) {
       if (!counts.mc || !counts.tf || !counts.short) throw new Error(`${name} template is not three-part: ${JSON.stringify(counts)}`);
+    }
+    if (!result.casesHtml.includes('\\begin{cases}') || /\\\[\s*\\\[/.test(result.casesHtml)) {
+      throw new Error(`cases environment is wrapped in nested math delimiters: ${result.casesHtml}`);
     }
     console.log('PASS THPTQG templates parse into MC, TF and short-answer sections');
   } finally {

@@ -45,7 +45,8 @@
 
 /* Câu hỏi & Đáp án */
 .q-box { padding-bottom: 24px; border-bottom: 1px dashed var(--line); }
-.q-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 16px; line-height: 1.5; }
+.q-title { font-weight: 400; font-size: 1.05rem; margin-bottom: 16px; line-height: 1.62; }
+.q-title-label { font-weight: 700; }
 .choices-container { display: flex; flex-direction: column; gap: 10px; }
 .choice-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: all .15s; font-size: .95rem; }
 .choice-row:hover { background: var(--surface-2); }
@@ -1062,7 +1063,7 @@ async function taiTuLuanDaNop() {
               '</div>';
           }
           return '<div style="margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px">' +
-            '<div class="q-title" style="font-weight:700;margin-bottom:8px">' + qNum + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+            '<div class="q-title" style="margin-bottom:8px"><span class="q-title-label">' + qNum + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
             solHTML +
             '</div>';
         }).join('');
@@ -1217,7 +1218,7 @@ function renderExamQuestions(isSubmitted) {
       return partHeaderHTML +
         '<div class="q-box-result" id="qBox-' + q.id + '">' +
           '<div>' +
-            '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+            '<div class="q-title"><span class="q-title-label">' + questionNumText + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
             choicesHTML +
           '</div>' +
           solHTML +
@@ -1225,7 +1226,7 @@ function renderExamQuestions(isSubmitted) {
     } else {
       return partHeaderHTML +
         '<div class="q-box" id="qBox-' + q.id + '">' +
-          '<div class="q-title">' + questionNumText + ': ' + latexRaHTML(q.content_latex) + '</div>' +
+          '<div class="q-title"><span class="q-title-label">' + questionNumText + ':</span> ' + latexRaHTML(q.content_latex) + '</div>' +
           choicesHTML +
         '</div>';
     }
@@ -1962,8 +1963,13 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 
 % --- GÓI TRẮC NGHIỆM EX_TEST ---
 \\usepackage[loigiai]{ex_test} 
-% ex_test 2.4.5 chua co choiceTF. Fallback nhan ca tuy chon [t].
-\\providecommand{\\choiceTF}[1][]{\\choice}
+% ex_test 2.4.5 chua co choiceTF. Giu dung nhan a), b), c), d) nhu HTML.
+\\providecommand{\\vmTFItem}[2]{\\par\\noindent\\hangindent=1.9em\\hangafter=1\\textbf{#1)}\\ #2\\par}
+\\providecommand{\\choiceTF}[5][]{%
+  \\begingroup\\let\\True\\relax
+  \\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}%
+  \\endgroup
+}
 \\font\\damEX=ugqb8v at 13pt
 \\def\\iconVD{\\faEdit}                      % Icon trước chữ "Câu"
 \\def\\mauDC{vmInk}                          % Màu dấu kết thúc lời giải
