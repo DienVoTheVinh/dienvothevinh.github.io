@@ -228,6 +228,13 @@ Thể tích bằng $3^3=27$.}
     state.previewTimer = setTimeout(function () { renderPreview(false); }, 320);
   }
 
+  function shortAnswerSheet(value) {
+    var chars = String(value || '').trim().replace(/\./g, ',').replace(/\s+/g, '').replace(/[^0-9,\-]/g, '').slice(0, 4).split('');
+    var boxes = '';
+    for (var i = 0; i < 4; i++) boxes += '<span class="exam-short-cell">' + esc(chars[i] || '') + '</span>';
+    return '<div class="exam-short-answer"><span>Phiếu trả lời:</span><span class="exam-short-cells">' + boxes + '</span></div>';
+  }
+
   function renderQuestion(q, number) {
     var kind = kindOf(q);
     var choices = q.choices || [];
@@ -235,9 +242,9 @@ Thể tích bằng $3^3=27$.}
     if (kind === 'mc') {
       body += '<div class="exam-choice-grid">' + choices.map(function (c) { return '<div class="exam-choice' + (c.correct?' correct':'') + '"><b>' + esc(c.key) + '.</b> ' + latexRaHTML(c.latex || '') + '</div>'; }).join('') + '</div>';
     } else if (kind === 'tf') {
-      body += '<div class="exam-tf-grid">' + choices.map(function (c) { return '<div class="exam-tf-row"><div><b>' + esc(String(c.key).toUpperCase()) + '.</b> ' + latexRaHTML(c.latex || '') + '</div><span class="exam-tf-answer">' + (c.correct?'ĐÚNG':'SAI') + '</span></div>'; }).join('') + '</div>';
+      body += '<div class="exam-tf-grid">' + choices.map(function (c) { return '<div class="exam-tf-row"><div><b>' + esc(String(c.key).toLowerCase()) + ')</b> ' + latexRaHTML(c.latex || '') + '</div><span class="exam-tf-answer">' + (c.correct?'ĐÚNG':'SAI') + '</span></div>'; }).join('') + '</div>';
     } else {
-      body += '<span class="exam-short-answer">Đáp số: ' + latexRaHTML((choices[0] && choices[0].latex) || 'Chưa nhận diện') + '</span>';
+      body += shortAnswerSheet((choices[0] && choices[0].latex) || '');
     }
     if (q.solution_latex) body += '<div class="exam-solution"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>';
     return body + '</article>';
