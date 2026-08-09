@@ -488,10 +488,18 @@ Thể tích bằng $3^3=27$.}
     if(el('exType').value==='essay') raw=el('exEssayPrompt').value.trim();
     if(!raw) throw new Error('Chưa có nội dung để biên dịch.');
     if(/\\documentclass(?:\[[^\]]*\])?\{/.test(raw)) return typeof vmChenPreambleMoiTruongTex==='function'?vmChenPreambleMoiTruongTex(raw):raw;
+    // The bundled ex_test version has neither `bt` nor `choiceTF`. Keep the
+    // authoring syntax intact for HTML, but normalize it for PDF compilation.
+    raw=raw.replace(/\\begin\{bt\}/g,'\\begin{ex}').replace(/\\end\{bt\}/g,'\\end{ex}');
+    // ex_test 2.4.5 defines \loigiai with a non-paragraph-safe argument. A
+    // blank line inside a solution therefore aborts pdflatex. Explicit \par
+    // tokens preserve the intended spacing and work both inside and outside
+    // solution blocks without mutating the source stored for HTML authoring.
+    raw=raw.replace(/\r?\n[ \t]*\r?\n+/g,'\n\\par\n');
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
     return '\\begin{filecontents*}{ex_test.sty}\n'+sty+'\n\\end{filecontents*}\n'+
-      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n'+env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
+      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n\\providecommand{\\choiceTF}[4]{\\choice{#1}{#2}{#3}{#4}}\n'+env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
   }
 
   async function compilePdf() {
