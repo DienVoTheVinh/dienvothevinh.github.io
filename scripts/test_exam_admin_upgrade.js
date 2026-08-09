@@ -17,6 +17,9 @@ expect(/value="thpt">Chuẩn THPTQG/, page, 'The THPTQG three-part exam type is 
 expect(/HTML trực tiếp[\s\S]*PDF/, page, 'HTML and PDF preview modes must both be visible.');
 expect(/thpt-standard[\s\S]*thpt-practice/, page, 'Both THPTQG templates must be available.');
 expect(/\\choiceTF/, js, 'The true/false template must use ex_test choiceTF syntax.');
+expect(/providecommand\{\\\\choiceTF\}/, js, 'PDF export must define a choiceTF fallback for the bundled ex_test version.');
+expect(/replace\(\/\\\\begin\\\{bt\\\}\//, js, 'PDF export must normalize short-answer bt blocks before compiling.');
+expect(/replace\(\/\\r\?\\n\[ \\t\]\*\\r\?\\n\+\/g/, js, 'PDF export must make blank solution paragraphs safe for ex_test.');
 expect(/\\textbf\{Câu trả lời:\}/, js, 'The short-answer template must expose a parser-compatible answer.');
 expect(/gv_thong_ke_luyen_de/, js, 'The protected analytics RPC is not wired to the UI.');
 expect(/statement_stats/, js, 'Per-statement true/false analytics are not rendered.');
