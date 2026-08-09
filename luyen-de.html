@@ -72,6 +72,7 @@
 .tf-container { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .tf-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); gap: 12px; }
 .tf-statement { font-size: .92rem; flex: 1; }
+.tf-statement-key { display: inline-block; min-width: 1.55em; color: var(--accent); text-transform: lowercase; }
 .tf-btns { display: flex; gap: 6px; }
 .tf-btn { border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); font-weight: 600; font-size: .82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; }
 .tf-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -81,9 +82,20 @@
 .tf-btn.correct-false { background: var(--err-soft); border-color: var(--err); color: var(--err); }
 
 /* Giao diện Phần III (Trả lời ngắn) */
-.short-input-container { margin-top: 12px; display: flex; gap: 10px; align-items: center; }
-.short-input { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); color: var(--ink); font-size: .95rem; width: 220px; font-weight: 600; transition: all .15s; }
-.short-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
+.short-input-container { margin-top: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.short-answer-sheet { display: inline-flex; align-items: stretch; gap: 7px; padding: 9px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
+.short-answer-cell {
+  width: 48px; height: 56px; box-sizing: border-box; padding: 0; border: 1.5px solid var(--line-2); border-radius: 8px;
+  background: var(--surface); color: var(--ink); text-align: center; font: 800 1.35rem/1 var(--font-sans,inherit);
+  font-variant-numeric: tabular-nums; caret-color: var(--accent); transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.short-answer-cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.short-answer-sheet.correct { border-color: var(--ok); background: var(--ok-soft); }
+.short-answer-sheet.correct .short-answer-cell { border-color: color-mix(in srgb,var(--ok) 58%,var(--line)); color: var(--ok); }
+.short-answer-sheet.incorrect { border-color: var(--err); background: var(--err-soft); }
+.short-answer-sheet.incorrect .short-answer-cell { border-color: color-mix(in srgb,var(--err) 58%,var(--line)); color: var(--err); }
+.short-answer-cell:disabled { opacity: 1; cursor: default; }
+.short-answer-note { flex-basis: 100%; color: var(--ink-3); font-size: .78rem; line-height: 1.45; }
 
 /* Kết quả Split View */
 .q-box-result { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; padding-bottom: 28px; border-bottom: 1px dashed var(--line); }
@@ -128,8 +140,6 @@
 
 /* Preview Frame */
 .pdf-preview-frame { width: 100%; height: 500px; border: 1px solid var(--line); border-radius: var(--r-md); background: #f4f4f4; margin-top: 16px; }
-.short-input.correct { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
-.short-input.incorrect { border-color: var(--err); background: var(--err-soft); color: var(--err); }
 
 @media (max-width: 700px) {
   .wrap { padding: 0 14px calc(82px + env(safe-area-inset-bottom)); }
@@ -167,8 +177,9 @@
   .tf-row { align-items: stretch; flex-direction: column; }
   .tf-btns { display: grid; grid-template-columns: 1fr 1fr; }
   .tf-btn { min-height: 42px; }
-  .short-input-container { align-items: stretch; flex-direction: column; }
-  .short-input { width: 100%; box-sizing: border-box; }
+  .short-input-container { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .short-answer-sheet { width: 100%; box-sizing: border-box; justify-content: center; gap: 6px; padding: 8px; }
+  .short-answer-cell { width:min(48px,19vw); height:54px; }
   .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
 }
 </style>
@@ -470,7 +481,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.8"></script>
+<script src="js/vinhmath.js?v=7.9"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/latex-view.js?v=10.0"></script>
 <script src="js/analytics.js"></script>
@@ -1112,6 +1123,79 @@ function isShortAnswerCorrect(studentAns, correctAns) {
   return s === c;
 }
 
+var VM_SHORT_ANSWER_CELL_COUNT = 4;
+
+function vmTachKyTuDapAnNgan(value) {
+  return String(value == null ? '' : value)
+    .trim()
+    .replace(/\./g, ',')
+    .replace(/\s+/g, '')
+    .replace(/[^0-9,\-]/g, '')
+    .slice(0, VM_SHORT_ANSWER_CELL_COUNT)
+    .split('');
+}
+
+function vmGiaTriTuCacODapAnNgan(qId) {
+  var qBox = $('qBox-' + qId);
+  if (!qBox) return '';
+  return Array.prototype.map.call(qBox.querySelectorAll('.short-answer-cell'), function (cell) {
+    return cell.value || '';
+  }).join('');
+}
+
+function vmDongBoDapAnNgan(qId) {
+  chonDapAnShort(qId, vmGiaTriTuCacODapAnNgan(qId));
+}
+
+function vmNhapODapAnNgan(qId, index, input) {
+  var chars = vmTachKyTuDapAnNgan(input.value);
+  input.value = chars.length ? chars[chars.length - 1] : '';
+  var qBox = $('qBox-' + qId);
+  var cells = qBox ? qBox.querySelectorAll('.short-answer-cell') : [];
+  if (input.value && cells[index + 1]) cells[index + 1].focus();
+  vmDongBoDapAnNgan(qId);
+}
+
+function vmDanDapAnNgan(event, qId, startIndex) {
+  event.preventDefault();
+  var chars = vmTachKyTuDapAnNgan(event.clipboardData ? event.clipboardData.getData('text') : '');
+  var qBox = $('qBox-' + qId);
+  var cells = qBox ? qBox.querySelectorAll('.short-answer-cell') : [];
+  chars.forEach(function (char, offset) {
+    if (cells[startIndex + offset]) cells[startIndex + offset].value = char;
+  });
+  var focusIndex = Math.min(startIndex + chars.length, cells.length - 1);
+  if (cells[focusIndex]) cells[focusIndex].focus();
+  vmDongBoDapAnNgan(qId);
+}
+
+function vmPhimODapAnNgan(event, qId, index) {
+  var qBox = $('qBox-' + qId);
+  var cells = qBox ? qBox.querySelectorAll('.short-answer-cell') : [];
+  if (event.key === 'Backspace' && !event.currentTarget.value && cells[index - 1]) {
+    event.preventDefault();
+    cells[index - 1].value = '';
+    cells[index - 1].focus();
+    vmDongBoDapAnNgan(qId);
+  } else if (event.key === 'ArrowLeft' && cells[index - 1]) {
+    event.preventDefault(); cells[index - 1].focus();
+  } else if (event.key === 'ArrowRight' && cells[index + 1]) {
+    event.preventDefault(); cells[index + 1].focus();
+  }
+}
+
+function vmHTMLPhieuTraLoiNgan(qId, value, disabled, stateClass) {
+  var chars = vmTachKyTuDapAnNgan(value);
+  var cells = '';
+  for (var i = 0; i < VM_SHORT_ANSWER_CELL_COUNT; i++) {
+    cells += '<input type="text" class="short-answer-cell" maxlength="1" inputmode="decimal" autocomplete="off" aria-label="Ký tự đáp án ' + (i + 1) + '" value="' + (chars[i] || '') + '" ' + disabled +
+      ' oninput="vmNhapODapAnNgan(\'' + qId + '\',' + i + ',this)"' +
+      ' onkeydown="vmPhimODapAnNgan(event,\'' + qId + '\',' + i + ')"' +
+      ' onpaste="vmDanDapAnNgan(event,\'' + qId + '\',' + i + ')">';
+  }
+  return '<div class="short-answer-sheet' + (stateClass ? ' ' + stateClass : '') + '" role="group" aria-label="Phiếu trả lời ngắn, mỗi ô một ký tự">' + cells + '</div>';
+}
+
 function renderExamQuestions(isSubmitted) {
   var container = $('wkQuestions');
   container.innerHTML = examQuestions.map(function (q, idx) {
@@ -1172,7 +1256,7 @@ function renderExamQuestions(isSubmitted) {
         var onclickFalse = isSubmitted ? '' : 'onclick="chonDapAnTF(\'' + q.id + '\', \'' + c.key + '\', \'S\')"';
         
         choicesHTML += '<div class="tf-row">' +
-          '<div class="tf-statement"><b>' + c.key.toUpperCase() + '.</b> ' + latexRaHTML(c.latex) + '</div>' +
+          '<div class="tf-statement" data-tf-key="' + c.key.toLowerCase() + '"><b class="tf-statement-key">' + c.key.toLowerCase() + ')</b> ' + latexRaHTML(c.latex) + '</div>' +
           '<div class="tf-btns">' +
             '<button class="' + btnTrueClass + '" ' + onclickTrue + '>Đúng</button>' +
             '<button class="' + btnFalseClass + '" ' + onclickFalse + '>Sai</button>' +
@@ -1182,20 +1266,21 @@ function renderExamQuestions(isSubmitted) {
       choicesHTML += '</div></div>';
     } else if (isPartIII) {
       var studentChoice = selectedAnswers[q.id] || '';
-      var inputClass = 'short-input';
+      var shortStateClass = '';
       if (isSubmitted) {
         var correctVal = q.choices[0] ? q.choices[0].latex : '';
         if (isShortAnswerCorrect(studentChoice, correctVal)) {
-          inputClass += ' correct';
+          shortStateClass = 'correct';
         } else {
-          inputClass += ' incorrect';
+          shortStateClass = 'incorrect';
         }
       }
       
       var disabledAttr = isSubmitted ? 'disabled' : '';
       choicesHTML = '<div class="short-input-container">' +
-        '<span>Đáp án của em:</span>' +
-        '<input type="text" class="' + inputClass + '" value="' + studentChoice + '" placeholder="Nhập câu trả lời..." ' + disabledAttr + ' onchange="chonDapAnShort(\'' + q.id + '\', this.value)">' +
+        '<b>Đáp án của em:</b>' +
+        vmHTMLPhieuTraLoiNgan(q.id, studentChoice, disabledAttr, shortStateClass) +
+        '<span class="short-answer-note">Mỗi ô chỉ ghi một ký tự, kể cả dấu âm hoặc dấu phẩy. Ví dụ: 3 | , | 6.</span>' +
       '</div>';
       
       if (isSubmitted) {
@@ -1289,9 +1374,8 @@ function updateTFButtonsUI(qId, tfAns) {
   if (!qBox) return;
   var tfRows = qBox.querySelectorAll('.tf-row');
   tfRows.forEach(function (row) {
-    var statementText = row.querySelector('.tf-statement').innerText;
-    var match = statementText.match(/^([A-Da-d])\./);
-    var key = match ? match[1].toLowerCase() : '';
+    var statement = row.querySelector('.tf-statement');
+    var key = statement ? statement.getAttribute('data-tf-key') : '';
     if (!key) return;
     var val = tfAns[key] || '';
     var btns = row.querySelectorAll('.tf-btn');
