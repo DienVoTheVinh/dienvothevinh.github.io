@@ -32,6 +32,10 @@ function pwaSection(source) {
       body: route.request().url().endsWith('/sw.js') ? 'self.addEventListener("fetch", function () {});' : '<meta name="viewport" content="width=device-width, initial-scale=1"><main>VinhMath</main>',
     }));
     await page.goto('https://vinhmath.com/test-orientation');
+    await page.evaluate(() => {
+      localStorage.setItem('vm_orientation_preference', 'auto');
+      localStorage.removeItem('vm_orientation_preference_version');
+    });
     await page.addScriptTag({ content: `
       window.__vmOrientationLocks = [];
       window.matchMedia = function(query) {
@@ -43,13 +47,30 @@ function pwaSection(source) {
       });
       ${source}
     ` });
-    await page.waitForTimeout(50);
-    const locks = await page.evaluate(() => window.__vmOrientationLocks.slice());
+    await page.waitForTimeout(850);
+    const startup = await page.evaluate(() => ({
+      locks: window.__vmOrientationLocks.slice(),
+      saved: localStorage.getItem('vm_orientation_preference'),
+      version: localStorage.getItem('vm_orientation_preference_version'),
+    }));
+    const locks = startup.locks;
     if (!locks.includes('portrait-primary')) {
       throw new Error(`Installed mobile PWA did not request portrait-primary: ${JSON.stringify(locks)}`);
     }
+    if (startup.saved !== 'portrait' || startup.version !== '2') {
+      throw new Error(`Legacy automatic orientation was not migrated to portrait: ${JSON.stringify(startup)}`);
+    }
     if (!(await page.locator('#vmOrientationBtn').isVisible())) {
       throw new Error('Installed mobile PWA does not expose the orientation shortcut');
+    }
+    await page.evaluate(() => {
+      window.__vmOrientationLocks = [];
+      window.dispatchEvent(new Event('orientationchange'));
+    });
+    await page.waitForTimeout(850);
+    const relocks = await page.evaluate(() => window.__vmOrientationLocks.slice());
+    if (!relocks.includes('portrait-primary')) {
+      throw new Error(`Installed mobile PWA did not restore portrait after rotation: ${JSON.stringify(relocks)}`);
     }
 
     const browserContext = await browser.newContext({
@@ -147,7 +168,7 @@ function pwaSection(source) {
       throw new Error(`Automatic orientation mode did not unlock correctly: ${JSON.stringify(automatic)}`);
     }
     await browserContext.close();
-    console.log('PASS visible mobile orientation shortcut, portrait lock, fullscreen landscape and automatic mode');
+    console.log('PASS stable portrait migration/re-lock, visible shortcut, fullscreen landscape and explicit automatic mode');
   } finally {
     await browser.close();
   }
