@@ -431,6 +431,34 @@ var selectedAnswers = {};
 var currentAttempt = null;
 var timerInterval = null;
 var timeLeftSeconds = 0;
+var canDownloadSolutionPdf = false;
+
+function vmLaNhanSuDeThi() {
+  return !!(studentInfo && ['admin', 'teacher'].includes(studentInfo.role));
+}
+
+async function vmKiemTraQuyenPdfLoiGiai(options) {
+  options = options || {};
+  if (!currentExam) return false;
+  if (vmLaNhanSuDeThi()) return true;
+  var result = await sb.rpc('can_download_exam_solution', { p_exam_id: currentExam.id });
+  if (result.error) {
+    console.error('Không kiểm tra được quyền PDF lời giải:', result.error);
+    return false;
+  }
+  return result.data === true;
+}
+
+async function vmLamMoiQuyenPdfLoiGiai() {
+  canDownloadSolutionPdf = await vmKiemTraQuyenPdfLoiGiai({ silent: true });
+  var btn = $('btnPdfSolution');
+  if (btn) btn.style.display = canDownloadSolutionPdf ? 'inline-flex' : 'none';
+  return canDownloadSolutionPdf;
+}
+
+function vmBaoKhongDuocTaiPdfLoiGiai() {
+  alert('PDF đáp án chỉ được mở sau khi em đã nộp lần đầu và giáo viên đã bật quyền tải cho đề này.');
+}
 
 function kiemTraThoiGianDe(e) {
   var now = new Date();
@@ -590,7 +618,7 @@ async function taiDanhSachDe(classIds) {
   } else {
     // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
     var query = sb.from('exams')
-      .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, exam_questions(count)')
+      .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, allow_solution_pdf, exam_questions(count)')
       .eq('published', true);
       
     if (!isStaff) {
@@ -706,6 +734,8 @@ async function startExam(examId) {
   currentExam = ex;
   selectedAnswers = {};
   currentAttempt = null;
+  canDownloadSolutionPdf = false;
+  if ($('btnPdfSolution')) $('btnPdfSolution').style.display = 'none';
   
   // Kiểm tra thời khóa biểu đề thi
   var tg = kiemTraThoiGianDe(ex);
@@ -900,6 +930,7 @@ function moPhongTuLuan(ex, isSubmitted) {
   $('viewMain').style.display = 'none';
   $('viewWorkspace').style.display = 'flex';
   $('wkTitle').textContent = ex.title;
+  if (isSubmitted) vmLamMoiQuyenPdfLoiGiai();
   
   if (isSubmitted) {
     if ($('wkTimer')) $('wkTimer').style.display = 'none';
@@ -1468,7 +1499,8 @@ function showExamResults() {
   if ($('wkCancelBtn')) $('wkCancelBtn').style.display = 'none';
   $('wkExitBtn').style.display = 'inline-flex';
   $('wkRetryBtn').style.display = 'inline-flex';
-  $('btnPdfSolution').style.display = 'inline-flex';
+  $('btnPdfSolution').style.display = 'none';
+  vmLamMoiQuyenPdfLoiGiai();
   
   var diem = (currentAttempt.score != null) ? Number(currentAttempt.score).toFixed(2) : '0.00';
   $('wkTimer').textContent = diem + 'đ';
@@ -1682,8 +1714,8 @@ async function chayBienDichTaiCho() {
   var tfStyle = $('pdfTfStyle') ? $('pdfTfStyle').value : 'noframe';
   var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
-  // Xác định chế độ xuất bản: học sinh chưa nộp bài thì xem 'exam' ẩn giải, nộp rồi thì xem 'solution' hiện giải
-  var cheDo = (currentAttempt && currentAttempt.submitted_at) ? 'solution' : 'exam';
+  // PDF lời giải luôn phải qua kiểm tra máy chủ; trạng thái giao diện không đủ để cấp quyền.
+  var cheDo = (await vmKiemTraQuyenPdfLoiGiai({ silent: true })) ? 'solution' : 'exam';
   
   var styExTest = await taiExTestSty();
   var styTitleDot = await taiTitleDotSty();
@@ -1708,7 +1740,7 @@ async function chayBienDichTaiCho() {
   var exTestOpt = cheDo === 'solution' ? '[loigiai]' : '';
   preamble = preamble.replace(/\\usepackage\[loigiai\]\{ex_test\}/, '\\usepackage' + exTestOpt + '{ex_test}');
   
-  var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
+  var body = '\\begin{center}\n{\\Large\\bfseries ' + vmEscapeTexText(currentExam.title.toUpperCase()) + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
     if (cheDo === 'exam') {
@@ -1741,7 +1773,7 @@ async function chayBienDichTaiCho() {
           body += '{' + prefix + c.latex + '}\n';
         });
         if (q.solution_latex) {
-          body += '\\loigiai{' + q.solution_latex + '}\n';
+          body += '\\loigiai{' + vmChuanHoaLoiGiaiPdf(q.solution_latex) + '}\n';
         }
         body += '\\end{ex}\n';
         if (cheDo === 'exam' && soDongCham > 0) {
@@ -1761,7 +1793,7 @@ async function chayBienDichTaiCho() {
           body += '{' + prefix + c.latex + '}\n';
         });
         if (q.solution_latex) {
-          body += '\\loigiai{' + q.solution_latex + '}\n';
+          body += '\\loigiai{' + vmChuanHoaLoiGiaiPdf(q.solution_latex) + '}\n';
         }
         body += '\\end{ex}\n';
         if (cheDo === 'exam' && soDongCham > 0) {
@@ -1776,7 +1808,7 @@ async function chayBienDichTaiCho() {
       partIIIQs.forEach(function (q) {
         body += '\\begin{bt}\n' + q.content_latex + '\n';
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
-        body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
+        body += '\\loigiai{' + vmTaoLoiGiaiNganPdf(shortAns, q.solution_latex || '') + '}\n';
         body += '\\end{bt}\n';
         if (cheDo === 'exam' && soDongCham > 0) {
           body += taoDongCham(soDongCham);
@@ -1930,6 +1962,8 @@ var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twosid
 
 % --- GÓI TRẮC NGHIỆM EX_TEST ---
 \\usepackage[loigiai]{ex_test} 
+% ex_test 2.4.5 chua co choiceTF. Fallback nhan ca tuy chon [t].
+\\providecommand{\\choiceTF}[1][]{\\choice}
 \\font\\damEX=ugqb8v at 13pt
 \\def\\iconVD{\\faEdit}                      % Icon trước chữ "Câu"
 \\def\\mauDC{vmInk}                          % Màu dấu kết thúc lời giải
@@ -2028,6 +2062,30 @@ async function taiTitleDotSty() {
     console.error('Lỗi tải file titledot.sty:', e);
   }
   return '';
+}
+
+function vmEscapeTexText(value) {
+  return String(value || '').replace(/[\\{}%$#&_~^]/g, function (ch) {
+    var map = {
+      '\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', '%': '\\%',
+      '$': '\\$', '#': '\\#', '&': '\\&', '_': '\\_',
+      '~': '\\textasciitilde{}', '^': '\\textasciicircum{}'
+    };
+    return map[ch] || ch;
+  });
+}
+
+function vmChuanHoaLoiGiaiPdf(value) {
+  return String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\n[ \t]*\n+/g, '\n\\par\n');
+}
+
+function vmTaoLoiGiaiNganPdf(answer, solution) {
+  var normalized = vmChuanHoaLoiGiaiPdf(solution);
+  if (/\\textbf\s*\{\s*Câu\s+trả\s+lời\s*:/i.test(normalized)) return normalized;
+  return '\n\\textbf{Câu trả lời:} ' + String(answer || '') +
+    (normalized ? '\n\\par\n' + normalized : '') + '\n';
 }
 
 function ghepTexCode(styExTest, styTitleDot, preamble, body) {
@@ -2165,7 +2223,11 @@ function ghepTexCode(styExTest, styTitleDot, preamble, body) {
   return tex;
 }
 
-function moConfigPDF(mode) {
+async function moConfigPDF(mode) {
+  if (mode === 'solution' && !(await vmKiemTraQuyenPdfLoiGiai())) {
+    vmBaoKhongDuocTaiPdfLoiGiai();
+    return;
+  }
   pdfCompileMode = mode;
   var title = mode === 'solution' ? 'Cấu hình PDF Lời giải chi tiết' : 'Cấu hình PDF Đề thi';
   $('pdfConfigTitle').textContent = title;
@@ -2218,6 +2280,10 @@ function apDungPreset(presetName) {
 }
 
 async function generateAndCompilePDF() {
+  if (pdfCompileMode === 'solution' && !(await vmKiemTraQuyenPdfLoiGiai())) {
+    vmBaoKhongDuocTaiPdfLoiGiai();
+    return;
+  }
   dongConfigPDF();
   
   $('modalPdfPreview').style.display = 'flex';
@@ -2258,7 +2324,7 @@ async function generateAndCompilePDF() {
   var exTestOpt = pdfCompileMode === 'solution' ? '[loigiai]' : '';
   preamble = preamble.replace(/\\usepackage\[loigiai\]\{ex_test\}/, '\\usepackage' + exTestOpt + '{ex_test}');
   
-  var body = '\\begin{center}\n{\\Large\\bfseries ' + currentExam.title.toUpperCase() + '}\n\\end{center}\n\\vspace{0.4cm}\n';
+  var body = '\\begin{center}\n{\\Large\\bfseries ' + vmEscapeTexText(currentExam.title.toUpperCase()) + '}\n\\end{center}\n\\vspace{0.4cm}\n';
   
   if (currentExam.de_type === 'essay') {
     if (pdfCompileMode === 'exam') {
@@ -2291,7 +2357,7 @@ async function generateAndCompilePDF() {
           body += '{' + prefix + c.latex + '}\n';
         });
         if (q.solution_latex) {
-          body += '\\loigiai{' + q.solution_latex + '}\n';
+          body += '\\loigiai{' + vmChuanHoaLoiGiaiPdf(q.solution_latex) + '}\n';
         }
         body += '\\end{ex}\n';
         if (pdfCompileMode === 'exam' && soDongCham > 0) {
@@ -2311,7 +2377,7 @@ async function generateAndCompilePDF() {
           body += '{' + prefix + c.latex + '}\n';
         });
         if (q.solution_latex) {
-          body += '\\loigiai{' + q.solution_latex + '}\n';
+          body += '\\loigiai{' + vmChuanHoaLoiGiaiPdf(q.solution_latex) + '}\n';
         }
         body += '\\end{ex}\n';
         if (pdfCompileMode === 'exam' && soDongCham > 0) {
@@ -2326,7 +2392,7 @@ async function generateAndCompilePDF() {
       partIIIQs.forEach(function (q) {
         body += '\\begin{bt}\n' + q.content_latex + '\n';
         var shortAns = q.choices && q.choices[0] ? q.choices[0].latex : '';
-        body += '\\loigiai{\n\\textbf{Câu trả lời:} ' + shortAns + '\n\n' + (q.solution_latex || '') + '\n}\n';
+        body += '\\loigiai{' + vmTaoLoiGiaiNganPdf(shortAns, q.solution_latex || '') + '}\n';
         body += '\\end{bt}\n';
         if (pdfCompileMode === 'exam' && soDongCham > 0) {
           body += taoDongCham(soDongCham);
@@ -2368,8 +2434,12 @@ async function generateAndCompilePDF() {
   }
 }
 
-function downloadCompiledPDF() {
+async function downloadCompiledPDF() {
   if (!pdfBlob) return;
+  if (pdfCompileMode === 'solution' && !(await vmKiemTraQuyenPdfLoiGiai())) {
+    vmBaoKhongDuocTaiPdfLoiGiai();
+    return;
+  }
   var link = document.createElement('a');
   link.href = URL.createObjectURL(pdfBlob);
   link.download = currentExam.title + (pdfCompileMode === 'solution' ? '_loi_giai' : '') + '.pdf';
