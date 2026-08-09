@@ -889,6 +889,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=7.8"></script>
+<script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
 var lessonId = null;
@@ -945,6 +946,8 @@ var coTest = false;
   if (!hoSo) return;
   nguoiDung = hoSo;
   $('nutNopBai').style.display = '';
+
+  if (typeof vmTaiMoiTruongTex === 'function') await vmTaiMoiTruongTex();
 
   // Tải song song: chi tiết bài + mục lục
   taiMucLuc();
@@ -2472,9 +2475,9 @@ async function processVirtualFiles(tex) {
 async function chuanHoaTexBaiHoc(rawCode) {
   var trimmed = (rawCode || '').trim();
   if (/\\documentclass/.test(trimmed)) {
-    // Keep complete documents byte-for-byte stable on the primary PDF path.
-    // Rewriting their preamble can duplicate packages and break valid sources.
-    return trimmed;
+    // Giữ nguyên preamble gốc, chỉ thêm các định nghĩa môi trường đã xuất bản.
+    return typeof vmChenPreambleMoiTruongTex === 'function'
+      ? vmChenPreambleMoiTruongTex(trimmed) : trimmed;
   }
   
   var styExTest = '';
@@ -2668,7 +2671,8 @@ async function chuanHoaTexBaiHoc(rawCode) {
 ` + trimmed + `
 \\end{document}`;
   preamble = await processVirtualFiles(preamble);
-  return preamble;
+  return typeof vmChenPreambleMoiTruongTex === 'function'
+    ? vmChenPreambleMoiTruongTex(preamble) : preamble;
 }
 
 async function hienTaiLieuTex() {
