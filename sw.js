@@ -1,6 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v13';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v12';
+const VM_CACHE = 'vinhmath-shell-v14';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v13';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -31,27 +31,27 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys()
       .then(function (keys) {
-        var needsPopupRefresh = keys.indexOf(VM_PREVIOUS_POPUP_CACHE) !== -1;
+        var needsShellRefresh = keys.indexOf(VM_PREVIOUS_POPUP_CACHE) !== -1;
         return Promise.all(keys.filter(function (key) {
           return key.indexOf('vinhmath-') === 0 && key !== VM_CACHE;
         }).map(function (key) { return caches.delete(key); }))
-          .then(function () { return needsPopupRefresh; });
+          .then(function () { return needsShellRefresh; });
       })
-      .then(function (needsPopupRefresh) {
-        return self.clients.claim().then(function () { return needsPopupRefresh; });
+      .then(function (needsShellRefresh) {
+        return self.clients.claim().then(function () { return needsShellRefresh; });
       })
-      .then(function (needsPopupRefresh) {
-        if (!needsPopupRefresh) return;
-        /* Một lần duy nhất khi lên v13: tải lại cửa sổ ứng dụng đang mở để
-           mọi trang nhận thanh đọc gọn và cơ chế giữ liên kết nội bộ trong PWA. */
+      .then(function (needsShellRefresh) {
+        if (!needsShellRefresh) return;
+        /* Một lần duy nhất khi lên v14: tải lại cửa sổ ứng dụng đang mở để
+           mọi trang nhận khóa hướng dọc mới của PWA. */
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
           .then(function (windows) {
             return Promise.all(windows.map(function (client) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '13') return null;
-                target.searchParams.set('vm_refresh', '13');
+                if (target.searchParams.get('vm_refresh') === '14') return null;
+                target.searchParams.set('vm_refresh', '14');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

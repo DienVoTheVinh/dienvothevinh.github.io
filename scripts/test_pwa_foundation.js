@@ -13,16 +13,17 @@ expect(manifest.scope === '/', 'Manifest scope must cover the website');
 expect(manifest.launch_handler && manifest.launch_handler.client_mode === 'navigate-existing', 'Installed links should reuse the existing VinhMath app window');
 expect(manifest.handle_links === 'preferred', 'Supported browsers should prefer the installed VinhMath app for in-scope links');
 expect(manifest.prefer_related_applications === false, 'The web app must remain the preferred install target');
+expect(manifest.orientation === 'portrait-primary', 'Installed mobile app must stay in portrait orientation');
 expect(Array.isArray(manifest.icons) && manifest.icons.length >= 1, 'Manifest needs the VinhMath app icon');
 expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-192.png' && icon.sizes === '192x192'), 'Manifest needs the 192px VinhMath logo');
 expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && icon.sizes === '512x512'), 'Manifest needs the 512px VinhMath logo');
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v13"), 'Service worker cache version must publish the compact reader toolbar');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v12'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '13'"), 'Open apps must not enter a refresh loop on shell v13');
-expect(worker.includes("target.searchParams.set('vm_refresh', '13')"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v14"), 'Service worker cache version must publish the portrait orientation fix');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v13'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '14'"), 'Open apps must not enter a refresh loop on shell v14');
+expect(worker.includes("target.searchParams.set('vm_refresh', '14')"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
@@ -37,6 +38,9 @@ expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase 
 
 const sharedJs = read('js/vinhmath.js');
 expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js'"), 'Shared JS must register the service worker');
+expect(sharedJs.includes('function vmKhoaHuongDocTrenPwa()'), 'Installed mobile app needs a runtime portrait lock');
+expect(sharedJs.includes("orientation.lock('portrait-primary')"), 'Runtime orientation lock must prefer portrait-primary');
+expect(sharedJs.includes('vmKhoaHuongDocTrenPwa();'), 'PWA startup must activate the portrait lock');
 expect(sharedJs.includes("window.addEventListener('beforeinstallprompt'"), 'Install prompt must be captured');
 expect(sharedJs.includes('vm-install-btn'), 'Install action must be rendered');
 expect(sharedJs.includes("document.getElementById('vmInstallHero')"), 'Prominent homepage install action must be synchronized');
