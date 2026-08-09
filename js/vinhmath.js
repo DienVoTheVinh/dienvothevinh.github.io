@@ -555,9 +555,11 @@ window.vmChonNghi = function(studentId, studentName, callbackName) {
 
 /* ---------- 0A. GIỮ LIÊN KẾT NỘI BỘ BÊN TRONG ỨNG DỤNG ĐÃ CÀI ---------- */
 function vmDangChayTrongUngDungDaCai() {
+  var displayModes = ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay'];
   return !!(
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-    (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+    (window.matchMedia && displayModes.some(function (mode) {
+      return window.matchMedia('(display-mode: ' + mode + ')').matches;
+    })) ||
     window.navigator.standalone === true
   );
 }
@@ -2599,7 +2601,16 @@ function layEmojiGiaoVien(fullName) {
   vmThemMeta('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: '/icons/vinhmath-192.png' });
 
   function vmDaCaiPwa() {
-    return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (typeof vmDangChayTrongUngDungDaCai === 'function') {
+      return vmDangChayTrongUngDungDaCai();
+    }
+    var displayModes = ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay'];
+    return !!(
+      (window.matchMedia && displayModes.some(function (mode) {
+        return window.matchMedia('(display-mode: ' + mode + ')').matches;
+      })) ||
+      window.navigator.standalone === true
+    );
   }
 
   function vmLaIOS() {
@@ -2704,6 +2715,7 @@ function layEmojiGiaoVien(fullName) {
     vmCapNhatNutHuongManHinh(mode);
 
     if (mode === 'auto') {
+      vmHuyHenKhoaHuongManHinh();
       try {
         if (orientation && typeof orientation.unlock === 'function') orientation.unlock();
       } catch (_) {}
@@ -2795,13 +2807,16 @@ function layEmojiGiaoVien(fullName) {
   }
 
   function vmLenLichKhoaLaiHuongManHinh() {
-    if (!vmDaCaiPwa()) return;
+    /* Mot so PWA Android/OEM khong bao cao display-mode nhat quan sau khi dieu
+       huong noi bo. Van thu khoa tren moi dien thoai cam ung; trinh duyet thuong
+       se tu choi im lang neu chua du dieu kien fullscreen. */
+    if (!vmLaDienThoaiCamUng()) return;
     var mode = vmLayHuongManHinh();
     if (mode === 'auto') return;
     vmHuyHenKhoaHuongManHinh();
-    [0, 180, 700].forEach(function (delay) {
+    [0, 120, 420, 1200].forEach(function (delay) {
       vmHenKhoaHuongManHinh.push(setTimeout(function () {
-        if (!document.hidden && vmDaCaiPwa() && vmLayHuongManHinh() !== 'auto') {
+        if (!document.hidden && vmLaDienThoaiCamUng() && vmLayHuongManHinh() !== 'auto') {
           vmApDungHuongManHinh(vmLayHuongManHinh(), false);
         }
       }, delay));
@@ -2811,7 +2826,7 @@ function layEmojiGiaoVien(fullName) {
   function vmKhoaHuongDocTrenPwa() {
     if (!vmLaDienThoaiCamUng()) return;
     vmTaoDieuKhienHuongManHinh();
-    if (vmDaCaiPwa()) vmLenLichKhoaLaiHuongManHinh();
+    vmLenLichKhoaLaiHuongManHinh();
 
     window.addEventListener('pageshow', function () {
       vmLenLichKhoaLaiHuongManHinh();
