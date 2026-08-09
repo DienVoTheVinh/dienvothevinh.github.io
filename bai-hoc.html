@@ -371,6 +371,7 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 body.vm-reader-locked { overflow:hidden !important; }
 body.vm-reader-locked > * { visibility:hidden !important; }
 body.vm-reader-locked > [data-reader-key].vm-tex-fullscreen-active { visibility:visible !important; }
+body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-index:2147483647 !important; }
 .vm-pdf-export-card { width:min(720px,100%); max-height:min(92dvh,820px); overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
 .vm-pdf-export-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line); background:var(--surface-solid); }
 .vm-pdf-export-body { padding:18px 20px 20px; }
@@ -2146,7 +2147,13 @@ function vmMoPdfExport(key) {
   vmApDungPdfPreset('original');
   var modal = $('vmPdfExportModal');
   vmGanPdfModalVaoReader(key);
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    // Fallback for browsers that keep the modal under <body> while the reader
+    // is using the CSS fullscreen mode. It must stay above the fullscreen shell.
+    modal.style.visibility = 'visible';
+    modal.style.zIndex = '2147483647';
+    modal.style.display = 'flex';
+  }
 }
 
 var vmPdfModalViTriGoc = null;
@@ -2174,7 +2181,11 @@ function vmTaiPdfLatex(key) { vmMoPdfExport(key); }
 function vmDongPdfExport(event) {
   if (event && event.target !== event.currentTarget) return;
   var modal = $('vmPdfExportModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) {
+    modal.style.display = 'none';
+    modal.style.visibility = '';
+    modal.style.zIndex = '100020';
+  }
   if (vmPdfExportUrl) { URL.revokeObjectURL(vmPdfExportUrl); vmPdfExportUrl = ''; }
   vmPdfExportBlob = null;
   vmTraPdfModalVeViTriGoc();
