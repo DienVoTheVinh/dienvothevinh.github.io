@@ -528,26 +528,10 @@ function latexRaHTML(src) {
   // Bảo vệ các khối công thức toán học tránh bị biên dịch sai ký tự (như \\ thành <br>)
   var mathBlocks = [];
   
-  // 1. Bao ve cac moi truong display truoc. Neu lam sau $...$, mot cong
-  // thuc nam trong \text{...} se tao placeholder long nhau va bi "undefined".
-  s = s.replace(/\\begin\{(equation\*?|align\*?|alignat\*?|aligned|split|gather\*?|multline\*?|eqnarray\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math, offset, source) {
-    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    var katexBody = vmChuanHoaTextTrongToan(math);
-    if (/^(align|alignat|eqnarray)/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
-    else if (/^gather/.test(env)) katexBody = '\\begin{gathered}' + katexBody + '\\end{gathered}';
-    else if (/^multline/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
-    else if (env === 'cases' || env === 'aligned' || env === 'split') katexBody = '\\begin{' + (env === 'split' ? 'aligned' : env) + '}' + katexBody + '\\end{' + (env === 'split' ? 'aligned' : env) + '}';
-    // Neu cases/align da nam trong \\[...\\] hoac $$...$$ thi khong boc
-    // them mot cap delimiter nua. Boc kep lam KaTeX nhan \\[\\[...\\]\\]
-    // va hien nguyen ma mau do thay vi ket xuat he phuong trinh.
-    var before = source.slice(0, offset);
-    var after = source.slice(offset + match.length);
-    var alreadyInDisplay = (/\\\[\s*$/.test(before) && /^\s*\\\]/.test(after)) || (/\$\$\s*$/.test(before) && /^\s*\$\$/.test(after));
-    mathBlocks.push(alreadyInDisplay ? katexBody : '\\[' + katexBody + '\\]');
-    return placeholder;
-  });
-
-  // 2. Bảo vệ $$...$$ và \[...\]
+  // 1. Bao ve delimiter display truoc de mot moi truong cases/align nam trong
+  // \[...\] chi tao dung mot placeholder. Cach cu tao placeholder long nhau;
+  // khi trinh duyet con giu mot ban JS cu hoac khoi co dau so sanh, KaTeX co
+  // the nhan lai nguyen \[\begin{cases}... va hien ma mau do.
   s = s.replace(/\$\$([\s\S]*?)\$\$/g, function (match, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
     mathBlocks.push('$$' + vmChuanHoaTextTrongToan(math) + '$$');
@@ -556,6 +540,18 @@ function latexRaHTML(src) {
   s = s.replace(/\\\[([\s\S]*?)\\\]/g, function (match, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
     mathBlocks.push('\\[' + vmChuanHoaTextTrongToan(math) + '\\]');
+    return placeholder;
+  });
+
+  // 2. Cac moi truong display khong co delimiter van duoc boc cho KaTeX.
+  s = s.replace(/\\begin\{(equation\*?|align\*?|alignat\*?|aligned|split|gather\*?|multline\*?|eqnarray\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    var katexBody = vmChuanHoaTextTrongToan(math);
+    if (/^(align|alignat|eqnarray)/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
+    else if (/^gather/.test(env)) katexBody = '\\begin{gathered}' + katexBody + '\\end{gathered}';
+    else if (/^multline/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
+    else if (env === 'cases' || env === 'aligned' || env === 'split') katexBody = '\\begin{' + (env === 'split' ? 'aligned' : env) + '}' + katexBody + '\\end{' + (env === 'split' ? 'aligned' : env) + '}';
+    mathBlocks.push('\\[' + katexBody + '\\]');
     return placeholder;
   });
   
