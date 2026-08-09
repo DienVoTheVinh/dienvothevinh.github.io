@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#9e6100">
+<title>Quản trị môi trường TeX — VinhMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css?v=7.4">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<style>
+.tex-admin{max-width:1480px;margin:0 auto;padding:34px 22px 90px}
+.tex-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:22px}
+.tex-head h1{margin:5px 0 5px;font-size:clamp(1.75rem,3vw,2.65rem)}
+.tex-head p{margin:0;color:var(--ink-3);max-width:820px}
+.tex-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.tex-sidebar,.tex-panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-sm)}
+.tex-sidebar{position:sticky;top:88px;overflow:hidden}
+.tex-side-head{padding:15px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.tex-list{max-height:calc(100vh - 260px);overflow:auto;padding:8px}
+.tex-item{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;color:var(--ink);padding:11px;border-radius:12px;text-align:left;cursor:pointer;font:inherit}
+.tex-item:hover{background:var(--surface-2)} .tex-item.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.tex-item-main{min-width:0;flex:1}.tex-item-name{display:block;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tex-item-code{font:600 .72rem/1.4 Consolas,monospace;color:var(--ink-3)}
+.tex-version{font-size:.7rem;border:1px solid var(--line-2);border-radius:999px;padding:2px 7px;color:var(--ink-3)}
+.tex-empty{padding:26px;text-align:center;color:var(--ink-3)}
+.tex-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);position:sticky;top:70px;z-index:5;background:var(--surface-solid);border-radius:18px 18px 0 0}
+.tex-toolbar-left{min-width:0}.tex-toolbar h2{margin:0;font-size:1.25rem}.tex-toolbar small{color:var(--ink-3)}
+.tex-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.tex-content{padding:18px}.tex-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:18px}
+.tex-section{border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--surface-2);margin-bottom:14px}
+.tex-section h3{margin:0 0 13px;font-size:1rem;display:flex;align-items:center;gap:8px}
+.tex-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tex-fields .wide{grid-column:1/-1}
+.tex-field label{display:block;font-size:.78rem;font-weight:750;color:var(--ink-2);margin:0 0 6px}.tex-field small{display:block;color:var(--ink-3);font-size:.72rem;margin-top:5px}
+.tex-field input,.tex-field select,.tex-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;padding:10px 11px}
+.tex-field textarea{min-height:108px;resize:vertical;font-family:Consolas,"SFMono-Regular",monospace;font-size:.8rem;line-height:1.55}.tex-field textarea#latexDefinition{min-height:220px}
+.tex-colors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tex-color{display:grid;grid-template-columns:38px 1fr;gap:7px;align-items:center}.tex-color input[type=color]{width:38px;height:38px;padding:2px}.tex-color input[type=text]{min-width:0}
+.tex-switch{display:flex;align-items:center;gap:8px;min-height:42px}.tex-switch input{width:19px;height:19px;accent-color:var(--accent)}
+.tex-preview-wrap{position:sticky;top:142px}.tex-preview{min-height:250px;max-height:560px;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:14px}
+.tex-preview .vm-tex-reader{margin:0!important;max-width:none!important}.tex-preview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tex-status{display:none;margin:0 0 14px;padding:11px 13px;border-radius:11px;font-size:.84rem;white-space:pre-wrap}.tex-status.show{display:block}.tex-status.ok{background:var(--ok-soft);color:var(--ok)}.tex-status.err{background:var(--err-soft);color:var(--err)}.tex-status.warn{background:var(--warn-soft);color:var(--warn)}
+.tex-history{display:grid;gap:8px}.tex-history-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:.8rem}
+.tex-pdf{display:none;margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}.tex-pdf.show{display:block}.tex-pdf iframe{width:100%;height:520px;border:0}
+.tex-help{font-size:.78rem;line-height:1.65;color:var(--ink-3);margin:0}.tex-help code{font-family:Consolas,monospace;color:var(--accent)}
+.btn-danger-soft{border-color:rgba(210,55,55,.35)!important;color:#c43d3d!important;background:rgba(210,55,55,.06)!important}
+@media(max-width:1050px){.tex-layout{grid-template-columns:240px minmax(0,1fr)}.tex-grid{grid-template-columns:1fr}.tex-preview-wrap{position:static}.tex-colors{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.tex-admin{padding:20px 12px 72px}.tex-head{align-items:start;flex-direction:column}.tex-layout{display:block}.tex-sidebar{position:static;margin-bottom:14px}.tex-list{max-height:220px}.tex-toolbar{top:0;align-items:flex-start;flex-direction:column}.tex-toolbar-actions{justify-content:flex-start}.tex-content{padding:12px}.tex-fields,.tex-colors{grid-template-columns:1fr}.tex-fields .wide{grid-column:auto}.tex-preview{padding:8px;max-height:500px}.tex-pdf iframe{height:70vh}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="nav">
+  <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span><span class="brand-vinh">Vinh</span><span class="brand-math">Math</span></span><small>· Quản trị</small></a>
+  <nav class="navlinks"><a href="trang-chu">Trang chủ</a><a href="quan-tri-lop">Quản trị</a></nav>
+  <div style="display:flex;gap:8px;align-items:center"><button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()" aria-label="Đổi giao diện">◐</button><button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button></div>
+</div></div>
+
+<main class="tex-admin">
+  <header class="tex-head"><div><div class="sec-label">CẤU HÌNH DÙNG CHUNG</div><h1>Quản trị môi trường TeX</h1><p>Thiết kế các hộp <b>định nghĩa, ví dụ, lưu ý, bài tập…</b> một lần rồi áp dụng cho trình đọc trên web và bản PDF. Bản nháp không ảnh hưởng học sinh cho đến khi thầy bấm <b>Xuất bản</b>.</p></div><button class="btn btn-primary" onclick="taoMoi()">＋ Môi trường mới</button></header>
+
+  <div class="tex-layout">
+    <aside class="tex-sidebar"><div class="tex-side-head"><b>Danh sách môi trường</b><input class="input" id="searchEnv" placeholder="Tìm tên hoặc mã…" oninput="veDanhSach()"></div><div class="tex-list" id="envList"><div class="tex-empty">Đang tải…</div></div></aside>
+
+    <section class="tex-panel">
+      <div class="tex-toolbar"><div class="tex-toolbar-left"><h2 id="editorTitle">Chọn một môi trường</h2><small id="editorMeta">Mọi thay đổi được lưu vào bản nháp trước.</small></div><div class="tex-toolbar-actions"><button class="btn btn-secondary btn-sm" onclick="datLaiTheoBanXuat()">↶ Bỏ thay đổi</button><button class="btn btn-secondary btn-sm" onclick="luuBanNhap(false)">💾 Lưu nháp</button><button class="btn btn-primary btn-sm" onclick="xuatBan()">🚀 Xuất bản</button></div></div>
+      <div class="tex-content">
+        <div class="tex-status" id="status"></div>
+        <div class="tex-grid">
+          <div>
+            <div class="tex-section"><h3>1. Nhận diện môi trường</h3><div class="tex-fields">
+              <div class="tex-field"><label>Mã môi trường *</label><input id="envName" maxlength="64" placeholder="vd: boxdn"><small>Chỉ chữ, số, @, gạch dưới hoặc gạch ngang.</small></div>
+              <div class="tex-field"><label>Tên hiển thị *</label><input id="displayName" maxlength="80" placeholder="Định nghĩa"></div>
+              <div class="tex-field"><label>Biểu tượng</label><input id="icon" maxlength="16" placeholder="📗"></div>
+              <div class="tex-field"><label>Nhóm giao diện</label><select id="tone"><option value="definition">Định nghĩa</option><option value="theorem">Định lý</option><option value="example">Ví dụ</option><option value="note">Lưu ý</option><option value="remark">Nhận xét</option><option value="practice">Bài tập</option><option value="form">Dạng toán</option><option value="summary">Tóm tắt</option></select></div>
+              <div class="tex-field wide"><label>Tên tương đương</label><input id="aliases" placeholder="mydn, dn"><small>Các tài liệu dùng tên cũ vẫn nhận đúng cấu hình này.</small></div>
+              <div class="tex-field"><label>Đánh số tự động</label><div class="tex-switch"><input type="checkbox" id="isNumbered"><span>Hiện số thứ tự trên web</span></div></div>
+              <div class="tex-field"><label>Nhóm bộ đếm</label><input id="counterGroup" placeholder="example"><small>Dùng chung số với môi trường cùng nhóm.</small></div>
+            </div></div>
+
+            <div class="tex-section"><h3>2. Màu sắc và khung trên web</h3><div class="tex-colors" id="colorFields"></div><div class="tex-fields" style="margin-top:11px"><div class="tex-field"><label>Bo góc</label><input id="radius" value="14px"></div><div class="tex-field"><label>Độ dày viền</label><input id="borderWidth" value="2px"></div></div></div>
+
+            <div class="tex-section"><h3>3. Cấu trúc PDF nâng cao</h3><p class="tex-help">Đoạn này được chèn ngay trước <code>\begin{document}</code>. Có thể dùng <code>\newenvironment</code>, <code>\newtcolorbox</code>, bộ đếm và các lệnh TeX khác. Không chứa JavaScript. Nếu để trống, PDF giữ nguyên định nghĩa có sẵn trong tệp của thầy.</p><div class="tex-preview-actions" style="margin-top:10px"><button class="btn btn-secondary btn-sm" onclick="taoMauPdfAnToan()">✨ Tạo mẫu tcolorbox</button><button class="btn btn-secondary btn-sm" onclick="thuPdf()">🧪 Biên dịch thử PDF</button></div><div class="tex-field"><textarea id="latexDefinition" spellcheck="false" placeholder="% Định nghĩa hoặc điều chỉnh môi trường cho bản PDF"></textarea></div><div class="tex-pdf" id="pdfPreview"></div></div>
+
+            <div class="tex-section"><h3>4. Lịch sử xuất bản</h3><div class="tex-history" id="history"><div class="tex-empty">Chưa có lịch sử.</div></div></div>
+          </div>
+
+          <div class="tex-preview-wrap">
+            <div class="tex-section"><h3>Xem trực tiếp trên web</h3><div class="tex-preview-actions"><button class="btn btn-secondary btn-sm" onclick="xemTruoc()">↻ Cập nhật xem trước</button><button class="btn btn-secondary btn-sm" onclick="toggleTheme()">◐ Sáng / tối</button></div><div class="tex-field"><label>Nội dung mẫu</label><textarea id="sampleLatex" spellcheck="false"></textarea></div><div class="tex-preview" id="webPreview"><div class="tex-empty">Chọn môi trường để xem trước.</div></div></div>
+            <div class="tex-section"><h3>Quy trình an toàn</h3><ol class="tex-help"><li>Sửa và xem trước trên web.</li><li>Lưu bản nháp để không ảnh hưởng học sinh.</li><li>Biên dịch thử PDF nếu có mã TeX nâng cao.</li><li>Bấm <b>Xuất bản</b> khi đã ổn.</li><li>Có thể khôi phục bất kỳ phiên bản cũ nào vào bản nháp.</li></ol></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vinhmath.js?v=7.8"></script>
+<script src="js/tex-environments.js?v=1.0"></script>
+<script src="js/latex-view.js?v=10.5"></script>
+<script src="js/menu-v5.js?v=8.1"></script>
+<script src="js/analytics.js"></script>
+<script>
+var published = {}, drafts = {}, selectedName = '', creating = false, pdfUrl = '';
+var COLOR_FIELDS = [
+  ['accent','Màu nhấn','#9e6100'],['background','Nền sáng','#fffaf0'],['border','Viền sáng','#ead8b5'],
+  ['title_background','Tiêu đề sáng','#fff1d6'],['dark_background','Nền tối','#201c17'],['dark_border','Viền tối','#645033'],
+  ['dark_title_background','Tiêu đề tối','#2d251b'],['title_color','Chữ tiêu đề','#9e6100'],['dark_title_color','Chữ tiêu đề tối','#e5a936']
+];
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function msg(text,type){var el=document.getElementById('status');el.textContent=text;el.className='tex-status show '+(type||'ok');}
+function clearMsg(){document.getElementById('status').className='tex-status';}
+function renderColors(){document.getElementById('colorFields').innerHTML=COLOR_FIELDS.map(function(f){return '<div class="tex-field"><label>'+f[1]+'</label><div class="tex-color"><input type="color" id="c_'+f[0]+'" value="'+f[2]+'" oninput="syncColor(\''+f[0]+'\',true)"><input type="text" id="ct_'+f[0]+'" value="'+f[2]+'" oninput="syncColor(\''+f[0]+'\',false)"></div></div>';}).join('');}
+function syncColor(key,fromPicker){var a=document.getElementById('c_'+key),b=document.getElementById('ct_'+key);if(fromPicker)b.value=a.value;else if(/^#[0-9a-f]{6}$/i.test(b.value))a.value=b.value;xemTruocDebounced();}
+function getWeb(){var w={};COLOR_FIELDS.forEach(function(f){w[f[0]]=document.getElementById('ct_'+f[0]).value.trim()||f[2];});w.radius=document.getElementById('radius').value.trim()||'14px';w.border_width=document.getElementById('borderWidth').value.trim()||'2px';return w;}
+function setWeb(w){w=w||{};COLOR_FIELDS.forEach(function(f){var v=w[f[0]]||f[2];document.getElementById('ct_'+f[0]).value=v;if(/^#[0-9a-f]{6}$/i.test(v))document.getElementById('c_'+f[0]).value=v;});document.getElementById('radius').value=w.radius||'14px';document.getElementById('borderWidth').value=w.border_width||'2px';}
+function formData(){var name=document.getElementById('envName').value.trim().toLowerCase();return {environment_name:name,display_name:document.getElementById('displayName').value.trim(),aliases:document.getElementById('aliases').value.split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean),icon:document.getElementById('icon').value.trim()||'📘',tone:document.getElementById('tone').value,is_numbered:document.getElementById('isNumbered').checked,counter_group:document.getElementById('counterGroup').value.trim().toLowerCase()||null,web_config:getWeb(),latex_definition:document.getElementById('latexDefinition').value,sample_latex:document.getElementById('sampleLatex').value,base_version:(published[name]&&published[name].version)||0,updated_by:window.VM_USER_ID||null,updated_at:new Date().toISOString()};}
+function validate(d){if(!/^[a-z][a-z0-9@_-]{0,63}$/.test(d.environment_name))throw new Error('Mã môi trường không hợp lệ.');if(!d.display_name)throw new Error('Cần nhập tên hiển thị.');var bad=d.aliases.find(function(x){return !/^[a-z][a-z0-9@_-]{0,63}$/.test(x);});if(bad)throw new Error('Tên tương đương không hợp lệ: '+bad);if(d.aliases.indexOf(d.environment_name)!==-1)throw new Error('Không cần lặp lại mã chính trong tên tương đương.');return d;}
+
+async function init(){renderColors();if(!daKetNoi()){msg('Chưa kết nối được Supabase.','err');return;}var profile=await yeuCauDangNhap();if(!profile)return;if(profile.role!=='admin'){location.href='trang-chu';return;}window.VM_USER_ID=profile.id;await taiDuLieu();}
+async function taiDuLieu(keep){clearMsg();var rs=await Promise.all([sb.from('tex_environment_configs').select('*').order('environment_name'),sb.from('tex_environment_drafts').select('*').order('environment_name')]);if(rs[0].error)throw rs[0].error;if(rs[1].error)throw rs[1].error;published={};drafts={};(rs[0].data||[]).forEach(function(x){published[x.environment_name]=x;});(rs[1].data||[]).forEach(function(x){drafts[x.environment_name]=x;});veDanhSach();var target=keep||selectedName||Object.keys(published)[0]||Object.keys(drafts)[0];if(target)chonEnv(target);}
+function veDanhSach(){var q=(document.getElementById('searchEnv').value||'').trim().toLowerCase();var names=Array.from(new Set(Object.keys(published).concat(Object.keys(drafts)))).sort();names=names.filter(function(n){var x=drafts[n]||published[n];return !q||n.indexOf(q)>=0||String(x.display_name||'').toLowerCase().indexOf(q)>=0;});document.getElementById('envList').innerHTML=names.length?names.map(function(n){var x=drafts[n]||published[n],p=published[n],dirty=p&&drafts[n]&&new Date(drafts[n].updated_at)>new Date(p.updated_at);return '<button class="tex-item '+(n===selectedName?'active':'')+'" onclick="chonEnv(\''+esc(n)+'\')"><span style="font-size:1.25rem">'+esc(x.icon||'📘')+'</span><span class="tex-item-main"><span class="tex-item-name">'+esc(x.display_name||n)+(dirty?' · nháp':'')+'</span><span class="tex-item-code">\\begin{'+esc(n)+'}</span></span><span class="tex-version">v'+(p?p.version:0)+'</span></button>';}).join(''):'<div class="tex-empty">Không tìm thấy môi trường.</div>';}
+function chonEnv(name){selectedName=name;creating=false;var x=drafts[name]||published[name];if(!x)return;document.getElementById('envName').value=x.environment_name;document.getElementById('envName').readOnly=true;document.getElementById('displayName').value=x.display_name||'';document.getElementById('aliases').value=(x.aliases||[]).join(', ');document.getElementById('icon').value=x.icon||'📘';document.getElementById('tone').value=x.tone||'definition';document.getElementById('isNumbered').checked=!!x.is_numbered;document.getElementById('counterGroup').value=x.counter_group||'';document.getElementById('latexDefinition').value=x.latex_definition||'';document.getElementById('sampleLatex').value=x.sample_latex||('\\begin{'+name+'}Nội dung xem trước.\\end{'+name+'}');setWeb(x.web_config);var p=published[name];document.getElementById('editorTitle').textContent=(x.icon||'📘')+' '+(x.display_name||name);document.getElementById('editorMeta').textContent=p?'Đã xuất bản phiên bản '+p.version+' · bản nháp có thể chỉnh độc lập.':'Môi trường mới · chưa xuất bản.';veDanhSach();xemTruoc();taiLichSu(name);}
+function taoMoi(){creating=true;selectedName='';['envName','displayName','aliases','counterGroup','latexDefinition'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('envName').readOnly=false;document.getElementById('icon').value='📘';document.getElementById('tone').value='definition';document.getElementById('isNumbered').checked=false;document.getElementById('sampleLatex').value='\\begin{moitruong}Nội dung xem trước.\\end{moitruong}';setWeb({});document.getElementById('editorTitle').textContent='Môi trường mới';document.getElementById('editorMeta').textContent='Nhập mã, lưu nháp rồi xuất bản.';document.getElementById('history').innerHTML='<div class="tex-empty">Chưa có lịch sử.</div>';document.getElementById('webPreview').innerHTML='<div class="tex-empty">Nhập mã môi trường để xem trước.</div>';}
+function datLaiTheoBanXuat(){if(!selectedName||!published[selectedName]){msg('Môi trường này chưa có bản đã xuất bản.','warn');return;}drafts[selectedName]=Object.assign({},published[selectedName]);chonEnv(selectedName);msg('Đã đưa nội dung bản xuất bản trở lại biểu mẫu. Bấm Lưu nháp nếu muốn giữ.','ok');}
+
+async function luuBanNhap(silent){try{var d=validate(formData());var r=await sb.from('tex_environment_drafts').upsert(d,{onConflict:'environment_name'}).select().single();if(r.error)throw r.error;selectedName=d.environment_name;creating=false;drafts[selectedName]=r.data;if(!silent)msg('Đã lưu bản nháp. Học sinh chưa bị ảnh hưởng.','ok');veDanhSach();return r.data;}catch(e){msg('Không lưu được bản nháp: '+e.message,'err');throw e;}}
+async function xuatBan(){try{var d=await luuBanNhap(true);if(!confirm('Xuất bản cấu hình "'+d.display_name+'" cho toàn bộ tài liệu đang dùng môi trường này?'))return;var r=await sb.rpc('publish_tex_environment',{p_environment_name:d.environment_name});if(r.error)throw r.error;if(typeof vmXoaCacheMoiTruongTex==='function')vmXoaCacheMoiTruongTex();await vmTaiMoiTruongTex(true);await taiDuLieu(d.environment_name);msg('Đã xuất bản thành công. Tài liệu cũ sẽ dùng cấu hình mới ngay khi mở lại.','ok');}catch(e){msg('Không xuất bản được: '+e.message,'err');}}
+
+var previewTimer=0;function xemTruocDebounced(){clearTimeout(previewTimer);previewTimer=setTimeout(xemTruoc,250);}function xemTruoc(){try{var d=validate(formData());vmXemTruocMoiTruongTex(d);var sample=d.sample_latex||('\\begin{'+d.environment_name+'}Nội dung xem trước.\\end{'+d.environment_name+'}');var html=latexTaiLieuRaHTML(sample,{title:'Xem trước · '+d.display_name,kind:'document',showSolutions:true});var box=document.getElementById('webPreview');box.innerHTML=html;if(window.renderMathInElement)renderMathInElement(box,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],throwOnError:false});}catch(e){document.getElementById('webPreview').innerHTML='<div class="tex-empty" style="color:var(--err)">'+esc(e.message)+'</div>';}}
+
+function hexToRgb(hex){hex=String(hex||'').replace('#','');if(hex.length===3)hex=hex.split('').map(function(x){return x+x;}).join('');return /^[0-9a-f]{6}$/i.test(hex)?[parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)]:[158,97,0];}
+function texColor(rgb){return rgb.map(function(x){return Math.round(x/255*1000)/1000;}).join(',');}
+function taoMauPdfAnToan(){try{var d=validate(formData()),w=d.web_config,rgb=hexToRgb(w.accent),bg=hexToRgb(w.background),border=hexToRgb(w.border),name=d.environment_name,title=(d.icon?d.icon+' ':'')+d.display_name;var aliases=d.aliases||[];var code=['% Cần gói tcolorbox (cấu trúc VinhMath đã nạp sẵn).','\\definecolor{vm'+name+'Accent}{rgb}{'+texColor(rgb)+'}','\\definecolor{vm'+name+'Bg}{rgb}{'+texColor(bg)+'}','\\definecolor{vm'+name+'Border}{rgb}{'+texColor(border)+'}','\\makeatletter','\\@ifundefined{'+name+'}{','  \\newtcolorbox{'+name+'}{enhanced,breakable,colback=vm'+name+'Bg,colframe=vm'+name+'Border,boxrule='+String(w.border_width||'1px').replace('px','pt')+',arc='+String(w.radius||'8px').replace('px','pt')+',title={'+title.replace(/[{}]/g,'')+'},fonttitle=\\bfseries,coltitle=vm'+name+'Accent}','}{','  \\tcolorboxenvironment{'+name+'}{enhanced,breakable,colback=vm'+name+'Bg,colframe=vm'+name+'Border}','}'];aliases.forEach(function(a){code.push('\\@ifundefined{'+a+'}{\\newenvironment{'+a+'}{\\begin{'+name+'}}{\\end{'+name+'}}}{}');});code.push('\\makeatother');document.getElementById('latexDefinition').value=code.join('\n');msg('Đã tạo mẫu PDF an toàn. Hãy bấm “Biên dịch thử PDF” trước khi xuất bản.','ok');}catch(e){msg(e.message,'err');}}
+
+async function thuPdf(){var btn=event&&event.currentTarget;try{var d=validate(formData());if(btn){btn.disabled=true;btn.textContent='⏳ Đang biên dịch…';}var sample=d.sample_latex||('\\begin{'+d.environment_name+'}Nội dung mẫu.\\end{'+d.environment_name+'}');var tex='\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage[most]{tcolorbox}\n\\usepackage{amsmath,amssymb}\n'+d.latex_definition+'\n\\begin{document}\n'+sample+'\n\\end{document}';var r=await sb.functions.invoke('latex',{body:{tex:tex,engine:'pdflatex'}});if(r.error)throw new Error(r.error.message||'Edge Function lỗi');if(!(r.data instanceof Blob)||r.data.type.indexOf('pdf')<0){var log=typeof r.data==='string'?r.data:await r.data.text();throw new Error(log.split('\n').filter(function(x){return x.indexOf('!')===0||/error/i.test(x);}).slice(0,5).join(' ')||'Không nhận được PDF');}if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(r.data);var box=document.getElementById('pdfPreview');box.className='tex-pdf show';box.innerHTML='<iframe title="Xem thử PDF" src="'+pdfUrl+'#view=FitH"></iframe>';msg('Biên dịch PDF thử thành công.','ok');}catch(e){msg('PDF chưa biên dịch được: '+e.message,'err');}finally{if(btn){btn.disabled=false;btn.textContent='🧪 Biên dịch thử PDF';}}}
+
+async function taiLichSu(name){var r=await sb.from('tex_environment_versions').select('version,published_at').eq('environment_name',name).order('version',{ascending:false}).limit(20);var box=document.getElementById('history');if(r.error){box.innerHTML='<div class="tex-empty">Không tải được lịch sử.</div>';return;}box.innerHTML=(r.data||[]).length?r.data.map(function(x){return '<div class="tex-history-row"><span><b>Phiên bản '+x.version+'</b><br><small>'+new Date(x.published_at).toLocaleString('vi-VN')+'</small></span><button class="btn btn-secondary btn-sm" onclick="khoiPhuc('+x.version+')">Khôi phục vào nháp</button></div>';}).join(''):'<div class="tex-empty">Chưa có lịch sử.</div>';}
+async function khoiPhuc(version){if(!selectedName)return;if(!confirm('Đưa phiên bản '+version+' vào bản nháp? Bản đang xuất bản chưa thay đổi.'))return;var r=await sb.rpc('restore_tex_environment_version',{p_environment_name:selectedName,p_version:version});if(r.error){msg('Không khôi phục được: '+r.error.message,'err');return;}await taiDuLieu(selectedName);msg('Đã khôi phục phiên bản '+version+' vào bản nháp. Kiểm tra rồi bấm Xuất bản nếu muốn áp dụng.','ok');}
+
+document.addEventListener('input',function(e){if(['displayName','icon','aliases','tone','isNumbered','counterGroup','radius','borderWidth','sampleLatex'].indexOf(e.target.id)>=0)xemTruocDebounced();});
+init().catch(function(e){msg('Không khởi tạo được trang: '+e.message,'err');});
+</script>
+</body>
+</html>
