@@ -514,6 +514,28 @@ Thể tích bằng $3^3=27$.}
 
   function openAnalytics(classId,examId){switchTab('analytics');if(classId)el('statClass').value=classId;loadAnalyticsOptions().then(function(){el('statExam').value=examId;loadAnalytics();});}
 
+  function normalizeSolutionParagraphs(raw) {
+    var text=String(raw||'').replace(/\r\n?/g,'\n'), token='\\loigiai', from=0;
+    while(from<text.length){
+      var at=text.indexOf(token,from);
+      if(at===-1)break;
+      var open=at+token.length;
+      while(/\s/.test(text.charAt(open)))open++;
+      if(text.charAt(open)!=='{'){from=open;continue;}
+      var depth=1,i=open+1;
+      while(i<text.length&&depth>0){
+        if(text.charAt(i)==='{'&&text.charAt(i-1)!=='\\')depth++;
+        else if(text.charAt(i)==='}'&&text.charAt(i-1)!=='\\')depth--;
+        i++;
+      }
+      if(depth!==0)break;
+      var body=text.slice(open+1,i-1).replace(/\n[ \t]*\n+/g,'\n\\par\n');
+      text=text.slice(0,open+1)+body+text.slice(i-1);
+      from=open+1+body.length+1;
+    }
+    return text;
+  }
+
   async function buildPdfSource() {
     var raw=el('exLatex').value.trim(), title=el('exTitle').value.trim()||'Đề thi VinhMath';
     if(el('exType').value==='essay') raw=el('exEssayPrompt').value.trim();
@@ -523,10 +545,9 @@ Thể tích bằng $3^3=27$.}
     // authoring syntax intact for HTML, but normalize it for PDF compilation.
     raw=raw.replace(/\\begin\{bt\}/g,'\\begin{ex}').replace(/\\end\{bt\}/g,'\\end{ex}');
     // ex_test 2.4.5 defines \loigiai with a non-paragraph-safe argument. A
-    // blank line inside a solution therefore aborts pdflatex. Explicit \par
-    // tokens preserve the intended spacing and work both inside and outside
-    // solution blocks without mutating the source stored for HTML authoring.
-    raw=raw.replace(/\r?\n[ \t]*\r?\n+/g,'\n\\par\n');
+    // blank line inside a solution therefore aborts pdflatex. Chi chuyen dong
+    // trang ben trong \loigiai: chen \par toan cuc se pha cases/aligned/tabular.
+    raw=normalizeSolutionParagraphs(raw);
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
     return '\\begin{filecontents*}{ex_test.sty}\n'+sty+'\n\\end{filecontents*}\n'+
@@ -581,6 +602,6 @@ Thể tích bằng $3^3=27$.}
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,_templates:TEMPLATES,_kindOf:kindOf};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs};
   document.addEventListener('DOMContentLoaded',function(){init().catch(function(error){toast('Không khởi tạo được khu đề thi: '+error.message,'err');});});
 })();
