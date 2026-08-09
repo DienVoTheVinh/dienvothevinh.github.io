@@ -553,6 +553,29 @@ window.vmChonNghi = function(studentId, studentName, callbackName) {
     else if(res.msg) alert(res.msg); };
 })();
 
+/* ---------- 0A. GIỮ LIÊN KẾT NỘI BỘ BÊN TRONG ỨNG DỤNG ĐÃ CÀI ---------- */
+function vmDangChayTrongUngDungDaCai() {
+  return !!(
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+    window.navigator.standalone === true
+  );
+}
+
+(function vmGiuLienKetNoiBoTrongUngDung() {
+  document.addEventListener('click', function (event) {
+    if (!vmDangChayTrongUngDungDaCai()) return;
+    var anchor = event.target && event.target.closest ? event.target.closest('a[href][target="_blank"]') : null;
+    if (!anchor || anchor.hasAttribute('download') || anchor.getAttribute('rel') === 'external') return;
+    var target;
+    try { target = new URL(anchor.href, window.location.href); } catch (_) { return; }
+    if (target.origin !== window.location.origin) return;
+    // Cùng nguồn thì điều hướng trong cửa sổ PWA hiện tại. Nếu giữ _blank,
+    // Android/iOS sẽ bật Chrome Custom Tab hoặc Safari và lộ thanh địa chỉ.
+    anchor.removeAttribute('target');
+  }, true);
+})();
+
 /* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
 (function () {
   try {
