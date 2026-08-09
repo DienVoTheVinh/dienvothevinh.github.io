@@ -99,6 +99,6 @@ if (!lesson.includes('id="vmPdfExportModal"') || !lesson.includes('id="vmPdfProg
 if (!lesson.includes('data-preset="original"') || !lesson.includes("vmPdfPresetName = 'original'")) throw new Error('Stable original-source PDF preset is missing');
 if (!lesson.includes('vmBienDoiLoiGiaiPdf(originalTex, config)') || !lesson.includes('Đang thử lại và vẫn giữ chế độ ẩn lời giải')) throw new Error('Advanced PDF fallback does not preserve the selected answer mode');
 if (!lesson.includes('Option clash for package geometry') || !lesson.includes('Đang tự sửa xung đột lề trang')) throw new Error('Geometry clash auto-repair is missing');
-if (!/if \(\/\\\\documentclass\/\.test\(trimmed\)\) \{[\s\S]{0,240}?return trimmed;\s*\}/.test(lesson)) throw new Error('Complete TeX documents must keep the stable unmodified PDF source path');
+if (!/if \(\/\\\\documentclass\/\.test\(trimmed\)\) \{[\s\S]{0,320}?vmChenPreambleMoiTruongTex\(trimmed\)/.test(lesson)) throw new Error('Complete TeX documents must preserve their source while accepting the controlled published environment preamble');
 if (!lesson.includes('.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; display:flex; flex-direction:column;') || !lesson.includes('min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch')) throw new Error('Exported PDF preview cannot scroll through all rendered pages');
 console.log('PASS configurable PDF export presets and single popup flow');

@@ -16,9 +16,9 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v11"), 'Service worker cache version must evict the broken popup behavior');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v10'"), 'Service worker must detect the stale popup cache');
-expect(worker.includes("target.searchParams.set('vm_refresh', '11')"), 'Open apps must reload once after the popup hotfix activates');
+expect(worker.includes("vinhmath-shell-v12"), 'Service worker cache version must publish the TeX environment runtime');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v11'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.set('vm_refresh', '12')"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
@@ -26,6 +26,7 @@ expect(worker.includes("request.mode === 'navigate'"), 'Navigation must use the 
 expect(worker.includes("caches.match('/offline.html')"), 'Offline page must be cached');
 expect(worker.includes("self.addEventListener('push'"), 'Push display foundation must exist');
 expect(worker.includes("'/js/push-notifications.js'"), 'Web Push client must be available offline after installation');
+expect(worker.includes("'/js/tex-environments.js'"), 'TeX environment registry must be available offline after installation');
 expect(worker.includes("'/icons/vinhmath-192.png'"), 'Service worker must cache the 192px VinhMath logo');
 expect(worker.includes("'/icons/vinhmath-512.png'"), 'Service worker must cache the 512px VinhMath logo');
 expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase traffic');

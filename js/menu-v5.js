@@ -23,6 +23,7 @@ function apDungMenu(role) {
           { path: 'quan-tri-lop', label: 'Lớp học' },
           (role === 'admin' ? { path: 'quan-tri-thuong', label: 'Phần thưởng' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu', label: 'Soạn tài liệu' } : null),
+          (role === 'admin' ? { path: 'quan-tri-tex', label: 'Môi trường TeX' } : null),
           (role === 'admin' ? { path: 'viet-blog', label: 'Viết blog' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc', label: 'Khóa bài giảng' } : null),
           { path: 'quan-tri-hoc-sinh', label: role === 'admin' ? 'Quản lý tài khoản' : 'Học sinh' },

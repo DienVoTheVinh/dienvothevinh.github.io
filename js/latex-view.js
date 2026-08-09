@@ -347,6 +347,11 @@ function vmBaoVeKhoiNoiDung(src) {
     'luuy', 'tomtat', 'dang', 'dangg', 'khung4', 'noidung', 'hd', 'trithuc',
     'luyentap', 'vandung', 'phantich', 'tttt', 'tc', 'nx', 'note'
   ];
+  if (typeof window !== 'undefined' && typeof window.vmDanhSachTenMoiTruongTex === 'function') {
+    environments = environments.concat(window.vmDanhSachTenMoiTruongTex());
+  }
+  environments = environments.map(function (name) { return String(name || '').toLowerCase(); })
+    .filter(function (name, index, all) { return /^[a-z][a-z0-9@_-]*$/.test(name) && all.indexOf(name) === index; });
   var envPattern = environments.join('|');
   var pattern = new RegExp('\\\\begin\\{(' + envPattern + ')\\}([\\s\\S]*?)\\\\end\\{\\1\\}', 'gi');
   var changed = true, limit = 30;
@@ -384,6 +389,7 @@ function vmKhoiNoiDungSangHtml(html) {
     ap: 'practice', bttuongtu: 'practice', luyentap: 'practice', vandung: 'practice', phantich: 'remark', tttt: 'summary'
   };
   var out = String(html || '');
+  var configuredCounters = {};
   var limit = 50;
   while (/___VMCONTENT\d+___/.test(out) && limit-- > 0) {
     out = out.replace(/___(VMCONTENT\d+)___/g, function (match, token) {
@@ -391,9 +397,21 @@ function vmKhoiNoiDungSangHtml(html) {
       if (!info) return '';
       var body = dinhDangVanBanTaiLieuLatex(info.content || '');
       if (info.env === 'tomtat') return '<section class="vm-tex-summary">' + body + '</section>';
-      var title = info.title ? dinhDangVanBanTaiLieuLatex(info.title) : (labels[info.env] || 'Ghi chú');
-      return '<aside class="vm-tex-callout vm-tex-callout-' + (classMap[info.env] || 'remark') + '">' +
-        '<div class="vm-tex-callout-title">' + title + '</div>' +
+      var configured = typeof window !== 'undefined' && typeof window.vmLayMoiTruongTex === 'function'
+        ? window.vmLayMoiTruongTex(info.env) : null;
+      var title = info.title ? dinhDangVanBanTaiLieuLatex(info.title) :
+        (configured && configured.display_name ? configured.display_name : (labels[info.env] || 'Ghi chú'));
+      var tone = configured && configured.tone ? configured.tone : (classMap[info.env] || 'remark');
+      var canonical = configured && configured.environment_name ? configured.environment_name : info.env;
+      var numberLabel = '';
+      if (configured && configured.is_numbered) {
+        var counterKey = configured.counter_group || canonical;
+        configuredCounters[counterKey] = (configuredCounters[counterKey] || 0) + 1;
+        numberLabel = ' ' + configuredCounters[counterKey];
+      }
+      var icon = configured && configured.icon ? '<span class="vm-tex-env-icon" aria-hidden="true">' + configured.icon + '</span>' : '';
+      return '<aside class="vm-tex-callout vm-tex-callout-' + tone + '" data-vm-env="' + canonical + '">' +
+        '<div class="vm-tex-callout-title">' + icon + title + numberLabel + '</div>' +
         '<div class="vm-tex-callout-body">' + body + '</div></aside>';
     });
   }
@@ -764,10 +782,9 @@ function latexTaiLieuRaHTML(src, options) {
   };
   var envLabels = { ex: kind === 'test' ? labels.test : labels.homework, bt: labels.homework, vd: labels.example, dl: labels.theorem, dn: labels.definition, hq: 'Hệ quả', nx: 'Nhận xét', note: labels.note, remark: 'Nhận xét' };
   var envRe = /\\begin\{(ex|bt|vd|dl|dn|hq|nx|note|remark)\}([\s\S]*?)\\end\{\1\}/g;
-  var html = '', last = 0, match, count = 0;
+  var html = '', last = 0, match, blockCounters = {};
 
   function renderQuestion(env, content) {
-    count++;
     var parsed = (env === 'ex' || env === 'bt') && typeof parseSingleQuestionLatex === 'function'
       ? parseSingleQuestionLatex('\\begin{' + env + '}' + content + '\\end{' + env + '}') : null;
     var questionBody = parsed ? parsed.content_latex : content;
@@ -783,9 +800,20 @@ function latexTaiLieuRaHTML(src, options) {
       solution = '<aside class="vm-tex-solution"><div class="vm-tex-solution-title">Lời giải</div><div>' +
         dinhDangVanBanTaiLieuLatex(parsed.solution_latex) + '</div></aside>';
     }
-    var numbered = ['ex', 'bt', 'vd'].indexOf(env) !== -1;
-    return '<section class="vm-tex-block vm-tex-block-' + env + '">' +
-      '<div class="vm-tex-block-title"><span>' + (envLabels[env] || labels.document) + (numbered ? ' ' + count : '') + '</span></div>' +
+    var configured = typeof window !== 'undefined' && typeof window.vmLayMoiTruongTex === 'function'
+      ? window.vmLayMoiTruongTex(env) : null;
+    var numbered = configured ? !!configured.is_numbered : ['ex', 'bt', 'vd'].indexOf(env) !== -1;
+    var blockLabel = configured && configured.display_name ? configured.display_name : (envLabels[env] || labels.document);
+    var canonical = configured && configured.environment_name ? configured.environment_name : env;
+    var numberLabel = '';
+    if (numbered) {
+      var counterKey = configured && configured.counter_group ? configured.counter_group : canonical;
+      blockCounters[counterKey] = (blockCounters[counterKey] || 0) + 1;
+      numberLabel = ' ' + blockCounters[counterKey];
+    }
+    var icon = configured && configured.icon ? '<span class="vm-tex-env-icon" aria-hidden="true">' + configured.icon + '</span>' : '';
+    return '<section class="vm-tex-block vm-tex-block-' + env + '" data-vm-env="' + canonical + '">' +
+      '<div class="vm-tex-block-title"><span>' + icon + blockLabel + numberLabel + '</span></div>' +
       '<div class="vm-tex-block-body">' + inner + choices + solution + '</div></section>';
   }
 
