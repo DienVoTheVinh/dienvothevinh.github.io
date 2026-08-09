@@ -260,6 +260,7 @@ end;
 $$;
 
 revoke all on function public.gv_thong_ke_luyen_de(uuid, uuid, uuid) from public;
+revoke all on function public.gv_thong_ke_luyen_de(uuid, uuid, uuid) from anon;
 grant execute on function public.gv_thong_ke_luyen_de(uuid, uuid, uuid) to authenticated;
 
 comment on function public.gv_thong_ke_luyen_de(uuid, uuid, uuid) is
