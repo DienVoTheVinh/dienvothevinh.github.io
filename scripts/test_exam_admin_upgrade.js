@@ -20,7 +20,10 @@ expect(/\\choiceTF/, js, 'The true/false template must use ex_test choiceTF synt
 expect(/providecommand\{\\\\choiceTF\}/, js, 'PDF export must define a choiceTF fallback for the bundled ex_test version.');
 expect(/\\\\vmTFItem\{a\}\{#2\}[\s\S]*\\\\vmTFItem\{d\}\{#5\}/, js, 'True/false PDF choices must use a)-d) labels.');
 expect(/replace\(\/\\\\begin\\\{bt\\\}\//, js, 'PDF export must normalize short-answer bt blocks before compiling.');
-expect(/replace\(\/\\r\?\\n\[ \\t\]\*\\r\?\\n\+\/g/, js, 'PDF export must make blank solution paragraphs safe for ex_test.');
+expect(/function normalizeSolutionParagraphs\(/, js, 'PDF export must normalize paragraphs only inside solution blocks.');
+if (/raw=raw\.replace\(\/\\r\?\\n\[ \\t\]\*\\r\?\\n\+\/g/.test(js)) {
+  throw new Error('PDF export must not inject paragraph commands globally into math environments.');
+}
 expect(/\\textbf\{Câu trả lời:\}/, js, 'The short-answer template must expose a parser-compatible answer.');
 expect(/gv_thong_ke_luyen_de/, js, 'The protected analytics RPC is not wired to the UI.');
 expect(/statement_stats/, js, 'Per-statement true/false analytics are not rendered.');

@@ -46,5 +46,7 @@ pages.forEach((file) => {
 expect(admin.includes('\\\\providecommand{\\\\choiceTF}[5][]'), 'Admin PDF export does not support four true/false statements');
 expect(admin.includes('\\\\vmTFItem{a}{#2}') && admin.includes('\\\\vmTFItem{d}{#5}'), 'Admin PDF export must label true/false statements a)-d)');
 expect(!admin.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), 'Admin PDF export still falls back to A-D multiple-choice labels');
+expect(admin.includes('function normalizeSolutionParagraphs('), 'Admin PDF export lacks scoped solution paragraph normalization');
+expect(!admin.includes("raw=raw.replace(/\\r?\\n[ \\t]*\\r?\\n+/g"), 'Admin PDF export still injects paragraph commands into every math environment');
 
 console.log('Exam PDF compatibility regression checks passed.');

@@ -20,6 +20,15 @@ const tex = String.raw`\documentclass[12pt,a4paper]{article}
 \begin{document}
 \begin{center}{\Large\bfseries DE 100\% \& A\_B}\end{center}
 \begin{ex}
+Cap so nao la nghiem cua he
+\[\begin{cases}
+x+y-3<0 \\
+x-y+1>0
+\end{cases}\]?
+\choice{\True $(1;0)$}{$(-1;1)$}{$(0;2)$}{$(2;0)$}
+\loigiai{Thay tung cap so vao he.\par Ket luan.}
+\end{ex}
+\begin{ex}
 Cho hàm số $f(x)=x^2-2x$. Xét tính đúng sai của các khẳng định sau.
 \choiceTF[t]
 {\True Đồ thị là một parabol.}
