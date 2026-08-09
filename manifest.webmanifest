@@ -12,7 +12,7 @@
   "launch_handler": { "client_mode": "navigate-existing" },
   "handle_links": "preferred",
   "prefer_related_applications": false,
-  "orientation": "any",
+  "orientation": "portrait-primary",
   "background_color": "#faf8f5",
   "theme_color": "#9e6100",
   "categories": ["education", "productivity"],
