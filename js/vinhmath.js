@@ -2607,6 +2607,43 @@ function layEmojiGiaoVien(fullName) {
     return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
   }
 
+  function vmLaDienThoaiCamUng() {
+    var ua = navigator.userAgent || '';
+    var kichThuocNho = window.screen && Math.min(window.screen.width || 0, window.screen.height || 0) <= 1024;
+    return /android|iphone|ipod|mobile/i.test(ua) || ((navigator.maxTouchPoints || 0) > 1 && kichThuocNho);
+  }
+
+  function vmKhoaHuongDocTrenPwa() {
+    if (!vmDaCaiPwa() || !vmLaDienThoaiCamUng()) return;
+    var orientation = window.screen && window.screen.orientation;
+    if (!orientation || typeof orientation.lock !== 'function') return;
+
+    function khoaHuongDoc() {
+      try {
+        var result = orientation.lock('portrait-primary');
+        if (result && typeof result.catch === 'function') {
+          result.catch(function () {
+            try {
+              var fallback = orientation.lock('portrait');
+              if (fallback && typeof fallback.catch === 'function') fallback.catch(function () {});
+            } catch (_) {}
+          });
+        }
+      } catch (_) {
+        try {
+          var fallback = orientation.lock('portrait');
+          if (fallback && typeof fallback.catch === 'function') fallback.catch(function () {});
+        } catch (_) {}
+      }
+    }
+
+    khoaHuongDoc();
+    window.addEventListener('pageshow', khoaHuongDoc);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) khoaHuongDoc();
+    });
+  }
+
   function vmLaSafariApple() {
     var ua = navigator.userAgent || '';
     var vendor = navigator.vendor || '';
@@ -2809,6 +2846,7 @@ function layEmojiGiaoVien(fullName) {
 
   function vmKhoiDongPwa() {
     vmCapNhatNutCaiDat();
+    vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
