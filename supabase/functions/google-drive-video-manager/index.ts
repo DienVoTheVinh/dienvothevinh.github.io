@@ -66,7 +66,7 @@ async function syncRecordings(profile: any, days: number) {
   if (!connection) throw new Error("Chưa kết nối tài khoản Google.");
   const refreshToken = await decryptSecret(connection.refresh_token_ciphertext);
   const accessToken = await refreshAccessToken(refreshToken);
-  const since = new Date(Date.now() - Math.max(7, Math.min(days || 45, 180)) * 86400000).toISOString();
+  const since = new Date(Date.now() - Math.max(7, Math.min(days || 365, 3650)) * 86400000).toISOString();
   const files: any[] = [];
   let pageToken = "";
   do {
@@ -87,7 +87,7 @@ async function syncRecordings(profile: any, days: number) {
       return file.trashed !== true && String(file.mimeType || "").startsWith("video/") && timestamp >= since;
     }));
     pageToken = data.nextPageToken || "";
-  } while (pageToken && files.length < 500);
+  } while (pageToken && files.length < 1000);
 
   const classIds = await accessibleClassIds(profile);
   let classesQuery = admin.from("classes").select("id,name,teacher_id,co_teacher_id");
