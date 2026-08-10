@@ -29,7 +29,12 @@ const checks = [
   [page.includes('meetCalendar') && page.includes('gradeFilter'), 'Trang video phải có lịch và bộ lọc khối'],
   [page.includes('togglePreview') && page.includes('/preview'), 'Video chỉ tải khung xem nhanh khi người dùng yêu cầu'],
   [manager.includes('Math.min(days || 365, 3650)') && manager.includes('files.length < 1000'), 'Đồng bộ toàn bộ phải có giới hạn an toàn'],
-  [page.includes(".eq('owner_user_id',profile.id)"), 'Client chỉ đọc danh mục video của tài khoản đang kết nối'],
+  [page.includes("goi('catalog')") && !page.includes("sb.from('meet_recordings')"), 'Client nhận danh mục đã lọc quyền từ Edge Function'],
+  [manager.includes('action === "catalog"') && manager.includes('catalogFor(profile)'), 'Edge Function phải cấp catalog riêng cho từng giáo viên'],
+  [manager.includes('.eq("owner_user_id", profile.id)'), 'Catalog chỉ trả video của tài khoản Google đang kết nối'],
+  [manager.includes('classesQuery.in("id", classIds)') && manager.includes('lessonsQuery.in("class_id", classIds)'), 'Catalog giáo viên chỉ chứa lớp và bài đang phụ trách'],
+  [page.includes('Mỗi giáo viên dùng Drive riêng'), 'Giao diện phải giải thích rõ kết nối Drive riêng theo giáo viên'],
+  [page.includes('background:#fff0c7') && page.includes('color:#6f4300'), 'Nhãn số video phải đủ tương phản trên nền sáng'],
   [migration.includes('(select auth.uid()) = owner_user_id'), 'RLS chỉ cho chủ kết nối đọc danh mục video của mình'],
 ];
 let failed = 0;
