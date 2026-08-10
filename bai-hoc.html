@@ -278,11 +278,12 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-build-dot { width:7px; height:7px; flex:none; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px color-mix(in srgb,currentColor 14%,transparent); }
 .vm-tex-action-tools { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
 .vm-tex-toolbar-toggle {
-  display:none; align-items:center; justify-content:center; gap:7px; min-height:42px; padding:9px 13px;
-  border:1px solid var(--accent); border-radius:999px; background:var(--surface-solid); color:var(--accent);
-  box-shadow:0 8px 24px rgba(15,23,42,.16); font:800 .82rem/1 inherit; cursor:pointer;
+  display:none; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:9px 14px;
+  border:1px solid var(--line-2); border-radius:12px; background:color-mix(in srgb,var(--surface-solid) 94%,var(--accent-soft)); color:var(--ink);
+  box-shadow:0 8px 24px rgba(15,23,42,.14); font:800 .8rem/1 inherit; cursor:pointer;
   touch-action:manipulation; -webkit-tap-highlight-color:transparent;
 }
+.vm-tex-toolbar-toggle > span:first-child { color:var(--accent); font-size:1rem; }
 .vm-tex-zoom { display:inline-flex; align-items:center; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
 .vm-tex-zoom button { position:relative; z-index:1; width:38px; height:38px; padding:0; border:0; border-right:1px solid var(--line); background:transparent; color:var(--ink); font:800 1rem/1 inherit; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .vm-tex-zoom button:last-child { border-right:0; border-left:1px solid var(--line); }
@@ -290,13 +291,13 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-tex-zoom .vm-tex-zoom-label { width:auto; min-width:58px; padding:0 8px; border-right:0; color:var(--ink-2); font-size:.76rem; font-weight:800; }
 .vm-tex-fullscreen { position:relative; z-index:1; min-height:40px; border-color:var(--accent) !important; color:var(--accent) !important; font-weight:800; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .vm-tex-theme-toggle {
-  display:none; position:fixed; right:max(14px,env(safe-area-inset-right)); bottom:max(16px,env(safe-area-inset-bottom));
-  z-index:2147483005; width:46px; height:46px; padding:0 !important; place-items:center;
-  border:1px solid var(--line-2) !important; border-radius:50% !important; background:var(--surface-solid) !important;
-  color:var(--ink) !important; box-shadow:0 10px 30px rgba(15,23,42,.22); font-size:1.15rem !important;
+  display:none; position:static; min-width:0; min-height:40px; padding:8px 12px !important; align-items:center; justify-content:center; gap:8px;
+  border:1px solid var(--line-2) !important; border-radius:10px !important; background:var(--surface) !important;
+  color:var(--ink) !important; box-shadow:none; font-size:.82rem !important; font-weight:800 !important;
   pointer-events:auto; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
 }
-[data-reader-key].vm-tex-fullscreen-active .vm-tex-theme-toggle,[data-reader-key]:fullscreen .vm-tex-theme-toggle { display:grid; }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-theme-toggle,[data-reader-key]:fullscreen .vm-tex-theme-toggle { display:inline-flex; }
+.vm-tex-theme-toggle .vm-tex-theme-dark,.vm-tex-theme-toggle .vm-tex-theme-light { font-size:1rem; }
 .vm-tex-theme-light { display:none; }
 [data-theme="dark"] .vm-tex-theme-dark { display:none; }
 [data-theme="dark"] .vm-tex-theme-light { display:inline; }
@@ -465,6 +466,7 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-action-tools,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-action-tools {
     display:grid; grid-template-columns:minmax(132px,1fr) minmax(126px,1fr);
   }
+  [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-theme-toggle,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-theme-toggle { grid-column:1 / -1; width:100%; }
   [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-download,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-download { display:flex; grid-column:1 / -1; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-scroll { padding:0; }
   [data-reader-key].vm-tex-fullscreen-active .vm-tex-reader { border:0; border-radius:0; box-shadow:none; }
@@ -490,6 +492,15 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
 /* Thao tác phụ có thể thu gọn để ưu tiên không gian đọc tài liệu trên mobile. */
 .lesson-action-shell { position:relative; }
 .lesson-action-collapse,.lesson-action-restore { display:none; }
+.linked-exam-panel { min-width:0; overflow:hidden; padding:14px 18px; border-radius:16px; background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(37,99,235,.04)); border:1px solid rgba(37,99,235,.35); box-shadow:0 4px 18px rgba(37,99,235,.10); }
+.linked-exam-heading { display:flex; align-items:center; gap:10px; min-width:0; margin-bottom:10px; padding-right:34px; }
+.linked-exam-list { display:grid; min-width:0; gap:8px; }
+.linked-exam-card { display:grid; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:12px; min-width:0; padding:10px 12px; border:1px solid rgba(37,99,235,.24); border-radius:12px; background:var(--surface); color:var(--ink); text-decoration:none; }
+.linked-exam-index { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:rgba(37,99,235,.12); color:#2563eb; font-weight:800; }
+.linked-exam-copy { min-width:0; }
+.linked-exam-title { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.linked-exam-meta { display:block; margin-top:2px; color:var(--ink-3); }
+.linked-exam-cta { min-width:max-content; background:#2563eb !important; border-color:#2563eb !important; white-space:nowrap; }
 
 @media (max-width:980px) {
   .sidebar {
@@ -539,6 +550,13 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   .ml-sub a { min-height:38px; padding:5px 10px 5px 34px; font-size:.76rem; }
   .lesson-partner-chip { display:none !important; }
   .lesson-action-shell { margin:8px 10px 0 !important; }
+  .linked-exam-panel { padding:12px 10px 10px; border-radius:14px; }
+  .linked-exam-heading { padding:0 38px 0 2px; }
+  .linked-exam-card { grid-template-columns:34px minmax(0,1fr); gap:10px; padding:11px 10px; }
+  .linked-exam-index { width:34px; height:34px; }
+  .linked-exam-title { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.35; overflow-wrap:anywhere; }
+  .linked-exam-meta { line-height:1.35; }
+  .linked-exam-cta { grid-column:1 / -1; width:100%; min-height:42px; display:flex !important; align-items:center; justify-content:center; white-space:normal; }
   .lesson-action-shell .submission-empty-card { margin:0 !important; }
   .submission-action-shell .submission-empty-card { padding:42px 14px 16px !important; }
   .lesson-action-collapse { position:absolute;display:grid;place-items:center;top:8px;right:8px;z-index:3;width:32px;height:32px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface-solid);color:var(--ink-2);font:800 1rem/1 var(--font-sans);cursor:pointer; }
@@ -735,9 +753,9 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
   <!-- 📝 Bài kiểm tra được giao (đề từ Khu luyện đề) -->
   <div id="linkedExamShell" class="lesson-action-shell" data-action-key="linked-exam" style="display:none; margin:12px 20px 0">
-    <div style="padding:14px 18px; border-radius:16px; background:linear-gradient(135deg, rgba(37,99,235,0.14), rgba(37,99,235,0.04)); border:1px solid rgba(37,99,235,0.35); box-shadow:0 4px 18px rgba(37,99,235,0.10)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:1.5rem">📝</span><div style="flex:1"><div style="font-weight:800;color:#2563eb;font-size:1rem">Bài kiểm tra được giao</div><div id="linkedExamCount" style="font-size:.8rem;color:var(--ink-3);margin-top:1px"></div></div></div>
-      <div id="linkedExamList" style="display:grid;gap:8px"></div>
+    <div class="linked-exam-panel">
+      <div class="linked-exam-heading"><span style="font-size:1.5rem">📝</span><div style="flex:1;min-width:0"><div style="font-weight:800;color:#2563eb;font-size:1rem">Bài kiểm tra được giao</div><div id="linkedExamCount" style="font-size:.8rem;color:var(--ink-3);margin-top:1px"></div></div></div>
+      <div id="linkedExamList" class="linked-exam-list"></div>
     </div>
     <button class="lesson-action-collapse" type="button" onclick="vmToggleLessonAction(this,true)" aria-label="Thu gọn bài kiểm tra" title="Thu gọn">−</button>
     <button class="lesson-action-restore" type="button" onclick="vmToggleLessonAction(this,false)"><span>📝 Các bài kiểm tra được giao</span><small>Mở lại →</small></button>
@@ -1736,10 +1754,10 @@ function renderBaiHoc() {
         exList.innerHTML = rows.map(function (exam, index) {
           var lo = exam.de_type === 'tu_luan' ? 'Tự luận' : (exam.de_type === 'thpt' ? 'Chuẩn THPTQG' : 'Trắc nghiệm');
           var meta = lo + (exam.duration_minutes ? ' · ' + exam.duration_minutes + ' phút' : '');
-          return '<a href="luyen-de?exam_id=' + encodeURIComponent(exam.id) + '" style="display:flex;align-items:center;gap:12px;text-decoration:none;padding:10px 12px;border:1px solid rgba(37,99,235,.24);border-radius:12px;background:var(--surface);color:var(--ink)">' +
-            '<span style="display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(37,99,235,.12);color:#2563eb;font-weight:800;flex:none">' + (index + 1) + '</span>' +
-            '<span style="flex:1;min-width:0"><strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + hubEsc(exam.title || 'Đề kiểm tra') + '</strong><small style="color:var(--ink-3)">' + hubEsc(meta) + '</small></span>' +
-            '<span class="btn btn-primary btn-sm" style="background:#2563eb;border-color:#2563eb;white-space:nowrap;flex:none">Làm đề →</span></a>';
+          return '<a class="linked-exam-card" href="luyen-de?exam_id=' + encodeURIComponent(exam.id) + '">' +
+            '<span class="linked-exam-index">' + (index + 1) + '</span>' +
+            '<span class="linked-exam-copy"><strong class="linked-exam-title">' + hubEsc(exam.title || 'Đề kiểm tra') + '</strong><small class="linked-exam-meta">' + hubEsc(meta) + '</small></span>' +
+            '<span class="btn btn-primary btn-sm linked-exam-cta">Làm đề →</span></a>';
         }).join('');
       });
       vmApplyLessonActionState(exShell);
@@ -1839,15 +1857,15 @@ function vmLatexActionHTML(key, rawTex, fileName, kind) {
   vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf', kind: kind || 'document' };
   vmReaderZoomLevels[key] = vmReaderZoomLevels[key] || 1;
   return '<div class="vm-tex-actions">' +
-    '<button type="button" class="vm-tex-toolbar-toggle" data-vm-reader-control="toolbar" data-vm-reader-key="' + key + '" aria-expanded="false" aria-label="Hiện công cụ đọc"><span aria-hidden="true">☰</span><span data-vm-toolbar-label="' + key + '">Công cụ</span></button>' +
+    '<button type="button" class="vm-tex-toolbar-toggle" data-vm-reader-control="toolbar" data-vm-reader-key="' + key + '" aria-expanded="false" aria-label="Hiện công cụ đọc"><span aria-hidden="true">⚙</span><span data-vm-toolbar-label="' + key + '">Tùy chỉnh</span></button>' +
     '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.' +
       '<br><span class="vm-tex-build-status" data-vm-reader-status="' + key + '"><span class="vm-tex-build-dot"></span><span>Nội dung đã sẵn sàng</span></span></div>' +
     '<div class="vm-tex-action-tools">' +
       '<div class="vm-tex-zoom" aria-label="Thu phóng tài liệu"><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="-.1" aria-label="Thu nhỏ">−</button><button type="button" class="vm-tex-zoom-label" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta="0" data-vm-zoom-label="' + key + '" aria-label="Đặt lại mức thu phóng 100%">100%</button><button type="button" data-vm-reader-control="zoom" data-vm-reader-key="' + key + '" data-vm-reader-delta=".1" aria-label="Phóng to">+</button></div>' +
       '<button type="button" class="btn btn-secondary btn-sm vm-tex-fullscreen" data-vm-reader-control="fullscreen" data-vm-reader-key="' + key + '" data-vm-fullscreen-btn="' + key + '">⛶ Toàn màn hình</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-tex-theme-toggle" onclick="toggleTheme()" aria-label="Đổi giao diện sáng hoặc tối" title="Đổi giao diện sáng/tối"><span class="vm-tex-theme-dark" aria-hidden="true">🌙</span><span class="vm-tex-theme-light" aria-hidden="true">☀️</span><span>Giao diện</span></button>' +
       '<button type="button" class="btn btn-primary btn-sm vm-tex-download" data-vm-reader-control="pdf" data-vm-reader-key="' + key + '">⚙️ Tạo &amp; tải PDF</button>' +
     '</div>' +
-    '<button type="button" class="btn btn-ghost btn-sm vm-tex-theme-toggle" onclick="toggleTheme()" aria-label="Đổi giao diện sáng hoặc tối" title="Đổi giao diện sáng/tối"><span class="vm-tex-theme-dark" aria-hidden="true">🌙</span><span class="vm-tex-theme-light" aria-hidden="true">☀️</span></button>' +
     '</div>';
 }
 
@@ -1957,7 +1975,7 @@ function vmDatTrangThaiCongCuReader(shell, open) {
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     toggle.setAttribute('aria-label', open ? 'Ẩn công cụ đọc' : 'Hiện công cụ đọc');
   }
-  if (label) label.textContent = open ? 'Ẩn' : 'Công cụ';
+  if (label) label.textContent = open ? 'Thu gọn' : 'Tùy chỉnh';
   clearTimeout(vmReaderToolbarTimers[key]);
   if (open) {
     vmReaderToolbarTimers[key] = setTimeout(function () {
