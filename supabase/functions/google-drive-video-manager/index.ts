@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { decryptSecret, DRIVE_SCOPE, googleClientConfig, IDENTITY_SCOPES, randomToken, refreshAccessToken, sha256Hex } from "../_shared/google_oauth.ts";
+import { decryptSecret, DRIVE_METADATA_SCOPE, DRIVE_SCOPE, googleClientConfig, IDENTITY_SCOPES, randomToken, refreshAccessToken, sha256Hex } from "../_shared/google_oauth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -71,17 +71,21 @@ async function syncRecordings(profile: any, days: number) {
   let pageToken = "";
   do {
     const params = new URLSearchParams({
-      q: `mimeType contains 'video/' and trashed = false and createdTime >= '${since}'`,
+      q: "mimeType contains 'video/' and trashed = false",
       spaces: "drive",
+      corpora: "user",
       pageSize: "100",
       orderBy: "createdTime desc",
-      fields: "nextPageToken,files(id,name,mimeType,createdTime,modifiedTime,webViewLink,size,videoMediaMetadata,capabilities(canShare))",
+      fields: "nextPageToken,files(id,name,mimeType,trashed,createdTime,modifiedTime,webViewLink,size,videoMediaMetadata,capabilities(canShare))",
     });
     if (pageToken) params.set("pageToken", pageToken);
     const response = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, { headers: { authorization: `Bearer ${accessToken}` } });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || "Không thể đọc danh sách video Meet.");
-    files.push(...(data.files || []));
+    files.push(...(data.files || []).filter((file: any) => {
+      const timestamp = file.createdTime || file.modifiedTime || "";
+      return file.trashed !== true && String(file.mimeType || "").startsWith("video/") && timestamp >= since;
+    }));
     pageToken = data.nextPageToken || "";
   } while (pageToken && files.length < 500);
 
@@ -176,7 +180,7 @@ Deno.serve(async (request: Request) => {
         client_id: cfg.clientId,
         redirect_uri: cfg.callbackUrl,
         response_type: "code",
-        scope: [...IDENTITY_SCOPES, DRIVE_SCOPE].join(" "),
+        scope: [...IDENTITY_SCOPES, DRIVE_SCOPE, DRIVE_METADATA_SCOPE].join(" "),
         access_type: "offline",
         include_granted_scopes: "true",
         prompt: "consent",
