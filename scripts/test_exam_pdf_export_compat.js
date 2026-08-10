@@ -18,7 +18,7 @@ pages.forEach((file) => {
   const helperEnd = source.indexOf('function ghepTexCode(', helperStart);
   expect(helperStart >= 0 && helperEnd > helperStart, `${path.basename(file)} PDF helpers are missing`);
   const helperCode = source.slice(helperStart, helperEnd);
-  const helpers = new Function(`${helperCode}; return { vmEscapeTexText, vmChuanHoaLoiGiaiPdf, vmTaoLoiGiaiNganPdf };`)();
+  const helpers = new Function(`${helperCode}; return { vmEscapeTexText, vmChuanHoaLoiGiaiPdf, vmChuanHoaNoiDungDePdf, vmTaoLoiGiaiNganPdf };`)();
 
   expect(
     helpers.vmEscapeTexText('DE 100% & A_B') === 'DE 100\\% \\& A\\_B',
@@ -35,12 +35,19 @@ pages.forEach((file) => {
   expect((existingAnswer.match(/C\u00e2u tr\u1ea3 l\u1eddi:/g) || []).length === 1, `${path.basename(file)} duplicates the short answer label`);
   expect(existingAnswer.includes('\\par'), `${path.basename(file)} does not preserve short-solution paragraphs safely`);
 
+  const itemChoice = helpers.vmChuanHoaNoiDungDePdf(String.raw`\begin{itemchoice}\itemch Ý thứ nhất\itemch Ý thứ hai\end{itemchoice}`);
+  expect(!/itemchoice|itemch/.test(itemChoice), `${path.basename(file)} leaves itemchoice syntax in generated PDF source`);
+  expect(itemChoice.includes(String.raw`\begin{enumerate}[label=\alph*)]`), `${path.basename(file)} does not convert itemchoice to enumitem`);
+  expect((itemChoice.match(/\\item\b/g) || []).length === 2, `${path.basename(file)} does not convert every itemch entry`);
+
   expect(source.includes('\\\\providecommand{\\\\choiceTF}[5][]'), `${path.basename(file)} lacks the four-statement choiceTF PDF fallback`);
   expect(source.includes('\\\\vmTFItem{a}{#2}') && source.includes('\\\\vmTFItem{d}{#5}'), `${path.basename(file)} must label true/false statements a)-d) in PDF`);
   expect(!source.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), `${path.basename(file)} still falls back to A-D multiple-choice labels`);
   expect((source.match(/vmEscapeTexText\(currentExam\.title\.toUpperCase\(\)\)/g) || []).length === 2, `${path.basename(file)} does not escape both PDF titles`);
   expect((source.match(/vmChuanHoaLoiGiaiPdf\(q\.solution_latex\)/g) || []).length === 4, `${path.basename(file)} does not normalize every generated MC/TF solution`);
   expect((source.match(/vmTaoLoiGiaiNganPdf\(shortAns, q\.solution_latex \|\| ''\)/g) || []).length === 2, `${path.basename(file)} does not normalize both short-answer export paths`);
+  expect(source.includes('body = vmChuanHoaNoiDungDePdf(body);'), `${path.basename(file)} does not normalize the shared PDF pipeline`);
+  expect((source.match(/var tex = ghepTexCode\(styExTest, styTitleDot, preamble, body\)/g) || []).length === 2, `${path.basename(file)} side and download PDF paths no longer share one builder`);
 });
 
 expect(admin.includes('\\\\providecommand{\\\\choiceTF}[5][]'), 'Admin PDF export does not support four true/false statements');
