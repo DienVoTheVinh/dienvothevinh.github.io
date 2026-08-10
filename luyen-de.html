@@ -2370,6 +2370,17 @@ function vmChuanHoaLoiGiaiPdf(value) {
     .replace(/\n[ \t]*\n+/g, '\n\\par\n');
 }
 
+// Mọi cách xuất PDF (xem bên cạnh, xem trước và tải xuống) đều đi qua hàm
+// này. `itemchoice`/`itemch` là cú pháp riêng của một số bộ đề nhưng không có
+// trong ex_test đang chạy trên máy chủ, nên phải đổi sang enumitem trước khi
+// biên dịch.
+function vmChuanHoaNoiDungDePdf(value) {
+  return String(value || '')
+    .replace(/\\begin\{itemchoice\}\s*(?:\[[^\]]*\])?/g, '\\begin{enumerate}[label=\\alph*)]')
+    .replace(/\\end\{itemchoice\}/g, '\\end{enumerate}')
+    .replace(/\\itemch\b/g, '\\item');
+}
+
 function vmTaoLoiGiaiNganPdf(answer, solution) {
   var normalized = vmChuanHoaLoiGiaiPdf(solution);
   if (/\\textbf\s*\{\s*Câu\s+trả\s+lời\s*:/i.test(normalized)) return normalized;
@@ -2378,6 +2389,7 @@ function vmTaoLoiGiaiNganPdf(answer, solution) {
 }
 
 function ghepTexCode(styExTest, styTitleDot, preamble, body) {
+  body = vmChuanHoaNoiDungDePdf(body);
   var tex = '';
   if (styExTest) {
     tex += '\\begin{filecontents*}{ex_test.sty}\n' + styExTest + '\n\\end{filecontents*}\n';
