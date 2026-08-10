@@ -184,6 +184,22 @@ function extractPopupManager(source) {
     const unlocked = await page.evaluate(() => !document.documentElement.classList.contains('vm-popup-open'));
     if (!unlocked) throw new Error('Popup scroll lock remained after every overlay closed');
 
+    await page.evaluate(() => {
+      const dynamic = document.createElement('div');
+      dynamic.id = 'dynamicRemovedPopup';
+      dynamic.style.cssText = 'position:fixed;inset:0;display:flex;z-index:10030;background:rgba(0,0,0,.4)';
+      dynamic.innerHTML = '<div class="modal-content"><button>Đóng</button></div>';
+      document.body.appendChild(dynamic);
+      window.vmCanhPopup(dynamic);
+    });
+    await page.waitForTimeout(60);
+    const dynamicLocked = await page.evaluate(() => document.documentElement.classList.contains('vm-popup-open'));
+    if (!dynamicLocked) throw new Error('Dynamically inserted popup did not lock page scroll');
+    await page.evaluate(() => { document.getElementById('dynamicRemovedPopup').remove(); });
+    await page.waitForTimeout(60);
+    const unlockedAfterRemove = await page.evaluate(() => !document.documentElement.classList.contains('vm-popup-open'));
+    if (!unlockedAfterRemove) throw new Error('Removed popup left the page scroll locked');
+
     console.log(`PASS shared popup system: ${modalCount} modal overlays rendered on mobile + desktop across ${modalPages.length} pages; ${htmlFiles.length} pages scanned`);
   } finally {
     await browser.close();
