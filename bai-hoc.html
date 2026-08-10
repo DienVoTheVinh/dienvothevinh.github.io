@@ -994,8 +994,16 @@ var coTest = false;
   // Tải song song: chi tiết bài + mục lục
   taiMucLuc();
   await taiChiTietBaiHoc();
+  await vmMoDichDenThongBao(params);
   khoiTaoResizer();
 })();
+
+async function vmMoDichDenThongBao(params) {
+  if (!params || params.get('action') !== 'graded') return;
+  var kind = params.get('kind');
+  if (['homework', 'homework_bonus', 'test'].indexOf(kind) === -1) kind = 'homework';
+  await xemKetQua(lessonId, kind, params.get('submission'));
+}
 
 /* ===== NỘP BÀI ===== */
 var nguoiDung = null;
@@ -1357,7 +1365,7 @@ async function mlNop(lid, phanloai) {
   moNopBai(phanloai);
 }
 // Xem kết quả (bài thầy chấm / điểm) của Bài kiểm tra hoặc Bài tập về nhà
-async function xemKetQua(lid, kind) {
+async function xemKetQua(lid, kind, submissionId) {
   kind = kind || 'homework';
   var tenTieuDe = (kind === 'homework' || kind === 'homework_bonus') ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra';
   var than = $('thanNoiDung');
@@ -1370,7 +1378,7 @@ async function xemKetQua(lid, kind) {
     than.innerHTML = thanhCongCu(tenTieuDe, null) +
       '<div class="no-content" style="flex:1"><div class="spinner"></div><h3>Đang tải bài thầy đã chấm…</h3><p>Em chờ một chút nhé.</p></div>';
     var noiDungKetQua = nguoiDung
-      ? await layKetQuaChamHtml(kind)
+      ? await layKetQuaChamHtml(kind, submissionId)
       : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>';
     than.innerHTML = thanhCongCu(tenTieuDe, null) +
       '<div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px">' + noiDungKetQua + '</div>';
@@ -1379,7 +1387,7 @@ async function xemKetQua(lid, kind) {
     if (than) than.innerHTML = thanhCongCu(tenTieuDe, null) +
       '<div class="no-content" role="alert"><div class="ic">⚠️</div><h3>Chưa tải được bài đã chấm</h3>' +
       '<p>Kết nối có thể đang gián đoạn. Em thử tải lại; nếu vẫn lỗi hãy báo thầy nhé.</p>' +
-      '<button class="btn btn-primary" onclick="xemKetQua(lessonId,\'' + btvnEsc(kind) + '\')">↻ Tải lại kết quả</button></div>';
+      '<button class="btn btn-primary" onclick="xemKetQua(lessonId,\'' + btvnEsc(kind) + '\',\'' + btvnEsc(submissionId || '') + '\')">↻ Tải lại kết quả</button></div>';
   }
 }
 async function mlMoMuc(lid, tab, key, loai) {
@@ -2926,18 +2934,18 @@ async function veTestTex() {
   renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
 }
 
-async function layKetQuaChamHtml(kind) {
+async function layKetQuaChamHtml(kind, submissionId) {
   kind = kind || 'test';
   var tenLoai = kind === 'homework_bonus' ? 'bài tập thưởng thêm' : (kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận');
   try {
-    var r = await sb.from('submissions')
+    var truyVan = sb.from('submissions')
       .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, student_reflection, reviewed_at')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
-      .eq('kind', kind)
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('kind', kind);
+    if (submissionId) truyVan = truyVan.eq('id', submissionId);
+    else truyVan = truyVan.order('submitted_at', { ascending: false }).limit(1);
+    var r = await truyVan.maybeSingle();
 
     if (r.error) throw new Error(r.error.message || 'Không tải được dữ liệu bài đã chấm');
     var sub = r.data;
