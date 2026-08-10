@@ -1,4 +1,5 @@
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.meet.readonly";
+export const DRIVE_METADATA_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
 export const IDENTITY_SCOPES = ["openid", "email"];
 
 function bytesToBase64(bytes: Uint8Array): string {
