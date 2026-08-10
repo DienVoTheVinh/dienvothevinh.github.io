@@ -297,7 +297,7 @@ async function veDanhSachThongBao() {
   var khung = document.getElementById('dsThongBao');
   khung.innerHTML = '<div class="bell-item" style="color:var(--ink-3)">Đang tải…</div>';
   var r = await sb.from('notifications')
-    .select('id, title, body, link, read_at, created_at')
+    .select('id, title, body, link, kind, read_at, created_at')
     .eq('user_id', chuongUserId)
     .order('created_at', { ascending: false })
     .limit(12);
@@ -308,7 +308,7 @@ async function veDanhSachThongBao() {
   }
   khung.innerHTML = ds.map(function (t) {
     var luc = new Date(t.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' });
-    return '<div class="bell-item' + (t.read_at ? '' : ' unread') + '" data-id="' + t.id + '" data-link="' + (t.link || '') + '">' +
+    return '<div class="bell-item' + (t.read_at ? '' : ' unread') + '" data-id="' + t.id + '" data-link="' + (t.link || '') + '" data-kind="' + (t.kind || '') + '" data-body="' + encodeURIComponent(t.body || '') + '">' +
       '<b>' + t.title + '</b>' +
       (t.body ? '<span>' + t.body + '</span>' : '') +
       '<small>' + luc + '</small></div>';
@@ -316,12 +316,27 @@ async function veDanhSachThongBao() {
   khung.querySelectorAll('.bell-item[data-id]').forEach(function (el) {
     el.onclick = async function () {
       await sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', el.getAttribute('data-id'));
-      var l = el.getAttribute('data-link');
+      var l = vmDichDenThongBao(el.getAttribute('data-link'), el.getAttribute('data-kind'), decodeURIComponent(el.getAttribute('data-body') || ''));
       if (l && l.indexOf('http') === 0) { window.open(l, '_blank'); demThongBao(); veDanhSachThongBao(); }
       else if (l) { window.location.href = l; }
       else { demThongBao(); veDanhSachThongBao(); }
     };
   });
+}
+
+function vmDichDenThongBao(link, kind, body) {
+  if (!link) return '';
+  try {
+    var url = new URL(link, window.location.origin);
+    if (url.origin === window.location.origin && kind === 'graded' && /\/bai-hoc(?:\.html)?$/.test(url.pathname)) {
+      url.searchParams.set('action', 'graded');
+      if (!url.searchParams.has('kind')) {
+        var text = String(body || '').toLowerCase();
+        url.searchParams.set('kind', text.indexOf('thưởng') !== -1 ? 'homework_bonus' : (text.indexOf('kiểm tra') !== -1 ? 'test' : 'homework'));
+      }
+    }
+    return url.origin === window.location.origin ? (url.pathname + url.search + url.hash) : url.href;
+  } catch (e) { return link; }
 }
 
 // Đóng mở dropdown khi click (dành cho mobile và đóng khi click ngoài)
