@@ -24,6 +24,6 @@ expect(admin.includes('.update({ allow_solution_pdf: next })'), 'The quick toggl
 expect(admin.includes(".select('id,allow_solution_pdf')") && admin.includes('.single()'), 'The quick toggle must verify the saved permission value.');
 expect(student.includes('.q-title { font-weight: 400;'), 'Exam prompts must use normal text weight.');
 expect(student.includes('class="q-title-label"'), 'Only the question number should keep a stronger weight.');
-expect(reader.includes('alreadyInDisplay'), 'The shared LaTeX reader must avoid nested display delimiters around cases.');
+expect(reader.includes('isDisplayEnvironment') && reader.indexOf('isDisplayEnvironment') < reader.indexOf('Cac moi truong display khong co delimiter'), 'The shared LaTeX reader must protect dollar-delimited cases before bare display environments.');
 
 console.log('Exam answer-PDF access control checks passed.');

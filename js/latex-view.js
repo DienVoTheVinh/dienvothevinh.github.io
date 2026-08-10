@@ -543,6 +543,21 @@ function latexRaHTML(src) {
     return placeholder;
   });
 
+  // Protect inline delimiters before bare display environments. Otherwise
+  // $\begin{cases}...\end{cases}$ becomes an invalid nested $\[...\]$.
+  s = s.replace(/(^|[^\\])\$([\s\S]*?)\$/g, function (match, prefix, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    var normalized = vmChuanHoaTextTrongToan(math);
+    var isDisplayEnvironment = /\\begin\{(?:equation\*?|align\*?|alignat\*?|aligned|split|gather\*?|multline\*?|eqnarray\*?|cases)\}/.test(normalized);
+    mathBlocks.push(isDisplayEnvironment ? '\\[' + normalized + '\\]' : '$' + normalized + '$');
+    return prefix + placeholder;
+  });
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, function (match, math) {
+    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
+    mathBlocks.push('\\(' + vmChuanHoaTextTrongToan(math) + '\\)');
+    return placeholder;
+  });
+
   // 2. Cac moi truong display khong co delimiter van duoc boc cho KaTeX.
   s = s.replace(/\\begin\{(equation\*?|align\*?|alignat\*?|aligned|split|gather\*?|multline\*?|eqnarray\*?|cases)\}([\s\S]*?)\\end\{\1\}/g, function (match, env, math) {
     var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
@@ -552,18 +567,6 @@ function latexRaHTML(src) {
     else if (/^multline/.test(env)) katexBody = '\\begin{aligned}' + katexBody + '\\end{aligned}';
     else if (env === 'cases' || env === 'aligned' || env === 'split') katexBody = '\\begin{' + (env === 'split' ? 'aligned' : env) + '}' + katexBody + '\\end{' + (env === 'split' ? 'aligned' : env) + '}';
     mathBlocks.push('\\[' + katexBody + '\\]');
-    return placeholder;
-  });
-  
-  // 3. Bảo vệ $...$ và \(...\) (tránh ký tự \$ bị escape)
-  s = s.replace(/(^|[^\\])\$([\s\S]*?)\$/g, function (match, prefix, math) {
-    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    mathBlocks.push('$' + math + '$');
-    return prefix + placeholder;
-  });
-  s = s.replace(/\\\(([\s\S]*?)\\\)/g, function (match, math) {
-    var placeholder = '___MATHBLOCK_' + mathBlocks.length + '___';
-    mathBlocks.push('\\(' + math + '\\)');
     return placeholder;
   });
 
@@ -586,6 +589,9 @@ function latexRaHTML(src) {
   // Tham số [n] của listEX là SỐ CỘT khi in PDF, web bỏ qua và xếp dọc cho dễ đọc.
   s = s.replace(/\\begin\{listEX\}\s*(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
   s = s.replace(/\\end\{listEX\}/g, '\\end{enumerate}');
+  s = s.replace(/\\begin\{itemchoice\}\s*(?:\[[^\]]*\])?/g, '\\begin{enumerate}[a)]');
+  s = s.replace(/\\end\{itemchoice\}/g, '\\end{enumerate}');
+  s = s.replace(/\\itemch\b/g, '\\item');
   s = s.replace(/\\begin\{enumEX\}\s*(?:\[([^\]]*)\])?\s*\{[^}]*\}/g, function (_, style) {
     return '\\begin{enumerate}[' + (style || 'a)') + ']';
   });
@@ -1102,4 +1108,3 @@ function parseSingleQuestionLatex(latexText) {
     solution_latex: ''
   };
 }
-
