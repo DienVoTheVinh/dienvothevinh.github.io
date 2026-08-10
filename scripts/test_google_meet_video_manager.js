@@ -8,6 +8,7 @@ const oauthShared = read('supabase/functions/_shared/google_oauth.ts');
 const callback = read('supabase/functions/google-drive-oauth-callback/index.ts');
 const migration = read('web/supabase/google_meet_video_manager.sql');
 const home = read('trang-chu.html');
+const menu = read('js/menu-v5.js');
 const checks = [
   [page.includes("['admin','teacher']"), 'Trang quản trị phải giới hạn admin/teacher'],
   [page.includes("sb.functions.invoke('google-drive-video-manager'"), 'Trang phải gọi Edge Function'],
@@ -23,7 +24,13 @@ const checks = [
   [callback.includes('encryptSecret'), 'Refresh token phải được mã hóa'],
   [migration.includes('revoke all on public.google_drive_connections'), 'Bảng token phải bị chặn khỏi client'],
   [migration.includes('enable row level security'), 'Các bảng phải bật RLS'],
-  [home.includes('quan-tri-video-meet'), 'Trang chủ phải có lối vào tính năng'],
+  [menu.includes("path: 'quan-tri-video-meet'") && menu.includes("label: 'Video Google Meet'"), 'Video Meet phải nằm trong menu Quản trị'],
+  [!home.includes('vmVideoShortcut') && !home.includes('staffChecklistContainer'), 'Trang chủ không còn shortcut và khối lưu ý cũ'],
+  [page.includes('meetCalendar') && page.includes('gradeFilter'), 'Trang video phải có lịch và bộ lọc khối'],
+  [page.includes('togglePreview') && page.includes('/preview'), 'Video chỉ tải khung xem nhanh khi người dùng yêu cầu'],
+  [manager.includes('Math.min(days || 365, 3650)') && manager.includes('files.length < 1000'), 'Đồng bộ toàn bộ phải có giới hạn an toàn'],
+  [page.includes(".eq('owner_user_id',profile.id)"), 'Client chỉ đọc danh mục video của tài khoản đang kết nối'],
+  [migration.includes('(select auth.uid()) = owner_user_id'), 'RLS chỉ cho chủ kết nối đọc danh mục video của mình'],
 ];
 let failed = 0;
 for (const [ok, label] of checks) { console.log(`${ok ? 'OK' : 'FAIL'} ${label}`); if (!ok) failed++; }
