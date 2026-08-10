@@ -71,7 +71,7 @@ async function syncRecordings(profile: any, days: number) {
   let pageToken = "";
   do {
     const params = new URLSearchParams({
-      q: "mimeType contains 'video/' and trashed = false",
+      q: `mimeType contains 'video/' and trashed = false and createdTime >= '${since}'`,
       spaces: "drive",
       corpora: "user",
       pageSize: "100",

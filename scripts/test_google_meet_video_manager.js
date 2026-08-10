@@ -17,6 +17,7 @@ const checks = [
   [!manager.includes('auth/drive"') && !manager.includes('auth/drive.readonly'), 'Không được xin quyền đọc/sửa toàn Drive'],
   [manager.includes('VIDEO_EXISTS'), 'Phải chống ghi đè link video ngoài ý muốn'],
   [manager.includes('accessibleClassIds') && manager.includes('class_assistants'), 'Giáo viên chỉ được đồng bộ lớp đang phụ trách hoặc trợ giảng'],
+  [manager.includes("createdTime >= '${since}'"), 'Drive API phải lọc theo ngày ngay từ truy vấn để không quét toàn bộ kho video'],
   [manager.includes('Không có quyền gắn video') || manager.includes('KhÃ´ng cÃ³ quyá»n gáº¯n video'), 'Phải chặn giáo viên gắn video vào lớp ngoài phạm vi'],
   [callback.includes('state_hash') && callback.includes('used_at'), 'Callback phải xác minh state một lần'],
   [callback.includes('encryptSecret'), 'Refresh token phải được mã hóa'],
