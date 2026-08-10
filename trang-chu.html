@@ -73,42 +73,12 @@
 }
 .vm-install-hero-action:hover { transform: translateY(-2px); box-shadow: 0 13px 28px rgba(38, 19, 2, .28); }
 .vm-install-hero-action:focus-visible { outline: 3px solid #ffe08a; outline-offset: 3px; }
-.vm-video-shortcut {
-  display: none;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  margin: 0 0 24px;
-  padding: 18px 20px;
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%);
-  box-shadow: 0 12px 28px rgba(89, 53, 6, .11);
-}
-.vm-video-shortcut.is-visible { display: grid; }
-.vm-video-shortcut-icon {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  border-radius: 16px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 1.55rem;
-  box-shadow: 0 8px 20px rgba(158, 97, 0, .24);
-}
-.vm-video-shortcut-copy h2 { margin: 0; color: var(--ink); font-size: 1.05rem; font-weight: 850; }
-.vm-video-shortcut-copy p { margin: 4px 0 0; color: var(--ink-2); font-size: .84rem; line-height: 1.5; }
-.vm-video-shortcut-action { min-height: 46px; padding-inline: 18px; white-space: nowrap; }
 @media (max-width: 700px) {
   .vm-install-hero { grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 17px; border-radius: 18px; }
   .vm-install-hero-icon { width: 52px; height: 52px; border-radius: 15px; font-size: 1.5rem; }
   .vm-install-hero-copy h2 { font-size: 1.02rem; }
   .vm-install-hero-copy p { font-size: .82rem; }
   .vm-install-hero-action { grid-column: 1 / -1; width: 100%; min-height: 50px; }
-  .vm-video-shortcut { grid-template-columns: auto minmax(0, 1fr); padding: 16px; border-radius: 18px; }
-  .vm-video-shortcut-icon { width: 48px; height: 48px; border-radius: 14px; }
-  .vm-video-shortcut-action { grid-column: 1 / -1; width: 100%; justify-content: center; }
 }
 
 /* --- GRID DASHBOARD --- */
@@ -650,15 +620,6 @@
     <button type="button" class="vm-install-hero-action" id="vmInstallHeroBtn">⇩ Cài ứng dụng</button>
   </section>
 
-  <section id="vmVideoShortcut" class="vm-video-shortcut" aria-labelledby="vmVideoShortcutTitle">
-    <div class="vm-video-shortcut-icon" aria-hidden="true">🎬</div>
-    <div class="vm-video-shortcut-copy">
-      <h2 id="vmVideoShortcutTitle">Video Google Meet vừa ghi</h2>
-      <p>Đồng bộ video từ Drive, xem gợi ý lớp và gắn vào đúng bài giảng.</p>
-    </div>
-    <a class="btn btn-primary vm-video-shortcut-action" href="quan-tri-video-meet">Quản lý video Meet →</a>
-  </section>
-
   <!-- Banner Link Google Meet cho học sinh lớp Online -->
   <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
     <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
@@ -961,21 +922,6 @@
       <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
     </div>
   </section>
-
-  <!-- Checklist Nhiệm vụ Giảng dạy cho Trợ giảng/GV/Admin (Dạng ô thông báo lưu ý) -->
-  <div class="card" id="staffChecklistContainer" style="display:none; margin-bottom:24px; padding:20px 24px; border:1px solid var(--line-2); border-radius:var(--r-md, 12px)">
-    <h3 style="margin-top:0; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:8px; color:var(--accent)">
-      💡 LƯU Ý QUAN TRỌNG TRONG BUỔI HỌC (TRÁNH BỎ QUÊN)
-    </h3>
-    <p style="margin:4px 0 12px; font-size:.9rem; color:var(--ink-2); line-height:1.4">Thầy/Cô và Trợ giảng lưu ý thực hiện đầy đủ các đầu việc sau trong mỗi buổi học:</p>
-    <ul style="margin: 0; padding-left: 20px; font-size: .88rem; color: var(--ink); display: flex; flex-direction: column; gap: 8px; line-height: 1.45;">
-      <li><b>1. Điểm danh lớp học:</b> Mở mã QR điểm danh tự động hoặc điểm danh thủ công ở danh sách lịch lớp học bên dưới.</li>
-      <li><b>2. Đánh giá thái độ & Chuyên cần:</b> Cập nhật nhận xét, sao thái độ và điểm số tương tác cho học sinh trong mục quản lý lớp học.</li>
-      <li><b>3. Bài kiểm tra cuối giờ:</b> Soạn và kích hoạt đề thi trắc nghiệm mini-test cuối giờ cho học sinh làm.</li>
-      <li><b>4. Ghi chú bài giảng & Ảnh chụp bảng:</b> Ghi chú dặn dò HS sau buổi học và upload các hình ảnh chụp bảng viết nháp lên bài giảng.</li>
-      <li><b>5. Tải video bài học:</b> Đính kèm link video YouTube hoặc Google Drive của buổi học sau khi render/record xong. <a href="quan-tri-video-meet" style="font-weight:800;color:var(--accent)">Mở Quản lý video Meet →</a></li>
-    </ul>
-  </div>
 
   <style>
     .checklist-item-hover:hover {
@@ -1330,8 +1276,6 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     $('tenLop').textContent = roleLabel + ' · VinhMath';
     $('loiChaoSub').textContent = 'Chào mừng thầy quay lại bảng điều khiển giảng dạy.';
     $('staffHomeContainer').style.display = 'block';
-    $('staffChecklistContainer').style.display = 'block';
-    $('vmVideoShortcut').classList.add('is-visible');
     khoiTaoChecklistStaff();
 
     window.myAssistantClassIds = [];

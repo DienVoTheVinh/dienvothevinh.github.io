@@ -78,7 +78,7 @@ for all to anon, authenticated using (false) with check (false);
 
 drop policy if exists meet_recordings_staff_read on public.meet_recordings;
 create policy meet_recordings_staff_read on public.meet_recordings
-for select to authenticated using (public.is_teacher());
+for select to authenticated using ((select auth.uid()) = owner_user_id and public.is_teacher());
 
 comment on table public.google_drive_connections is 'Encrypted Google OAuth refresh token; never exposed through client RLS.';
 comment on table public.meet_recordings is 'Metadata-only catalogue of Google Meet recordings. Video content stays in Drive.';

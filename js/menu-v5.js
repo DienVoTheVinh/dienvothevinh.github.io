@@ -29,6 +29,7 @@ function apDungMenu(role) {
           { path: 'quan-tri-hoc-sinh', label: role === 'admin' ? 'Quản lý tài khoản' : 'Học sinh' },
           (role === 'admin' ? { path: 'quan-tri-tai-khoan', label: 'Tạo tài khoản' } : null),
           { path: 'quan-tri-lich', label: 'Lịch học' },
+          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-video-meet', label: 'Video Google Meet' } : null),
           { path: 'quan-tri-de', label: 'Luyện đề' },
           { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-buoi-day', label: 'Giám sát buổi' } : null),
