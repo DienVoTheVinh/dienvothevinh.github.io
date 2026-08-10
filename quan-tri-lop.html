@@ -183,6 +183,19 @@
 @media (max-width: 640px) { .modal { padding: 68px 10px 24px; } .modal-content { padding: 22px 18px; } }
 .modal-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: var(--ink-3); }
 .modal-close:hover { color: var(--ink); }
+.bn-modal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding-right:52px; }
+#modalBaiNop .modal-close { z-index:3; top:14px; right:14px; width:38px; height:38px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:50%; background:var(--surface-solid, var(--surface)); color:var(--ink); box-shadow:0 4px 14px rgba(0,0,0,.12); line-height:1; }
+#modalBaiNop .modal-close:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+.linked-exam-picker { border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; }
+.linked-exam-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-2); font-size:.84rem; }
+.linked-exam-options { display:grid; gap:8px; max-height:230px; overflow:auto; padding:10px; }
+.linked-exam-option { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:var(--surface-2); transition:border-color .15s, background .15s, transform .15s; }
+.linked-exam-option:hover { border-color:rgba(37,99,235,.45); transform:translateY(-1px); }
+.linked-exam-option:has(input:checked) { border-color:#2563eb; background:rgba(37,99,235,.09); }
+.linked-exam-option input { width:18px; height:18px; margin:1px 0 0; accent-color:#2563eb; flex:none; }
+.linked-exam-option strong { display:block; color:var(--ink); font-size:.9rem; }
+.linked-exam-option small { display:block; color:var(--ink-3); margin-top:2px; }
+@media (max-width:640px) { .bn-modal-head { align-items:flex-start; } #bnChamNgay { width:100%; justify-content:center; } }
 .modal h2 { margin-bottom: 20px; margin-top: 10px; line-height: 1.4; padding-top: 4px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
@@ -675,8 +688,12 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
       <!-- TAB 3: BÀI KIỂM TRA -->
       <div id="tabFormKiemTra" style="display:none">
         <div class="field" style="background:rgba(37,99,235,.05); border:1px solid rgba(37,99,235,.25); border-radius:10px; padding:12px 14px">
-          <label>🔗 Gắn đề từ Khu luyện đề <small style="color:var(--ink-3);font-weight:400">(HS sẽ thấy banner "Bài kiểm tra được giao" trong bài và bấm vào làm đề này)</small></label>
-          <select class="input" id="bhLinkedExam" style="max-width:440px"><option value="">— Không gắn đề —</option></select>
+          <label>🔗 Gắn nhiều đề từ Khu luyện đề <small style="color:var(--ink-3);font-weight:400">(HS sẽ thấy danh sách các đề được giao và có thể mở từng đề)</small></label>
+          <div class="linked-exam-picker" id="bhLinkedExamPicker">
+            <div class="linked-exam-summary"><span id="bhLinkedExamCount">Chưa chọn đề nào</span><button type="button" class="btn btn-ghost btn-sm" onclick="boChonTatCaDe()">Bỏ chọn</button></div>
+            <div class="linked-exam-options" id="bhLinkedExamOptions"><div style="padding:8px;color:var(--ink-3)">Đang tải danh sách đề…</div></div>
+          </div>
+          <input type="hidden" id="bhLinkedExam" value="">
         </div>
         <div class="field">
           <label>📝 Bài kiểm tra trắc nghiệm cuối giờ (Dropdown kho PDF)</label>
@@ -1091,8 +1108,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <!-- Modal: Xem nhanh bài nộp của học sinh trong bài giảng -->
 <div class="modal" id="modalBaiNop" style="display:none; z-index:10020">
   <div class="modal-content" style="max-width:760px">
-    <button class="modal-close" onclick="dongBaiNop()">×</button>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <button type="button" class="modal-close" onclick="dongBaiNop()" aria-label="Đóng cửa sổ bài học sinh đã nộp" title="Đóng">×</button>
+    <div class="bn-modal-head">
       <h2 style="margin:0">📥 Bài học sinh đã nộp</h2>
       <a id="bnChamNgay" class="btn btn-primary btn-sm" href="#" style="text-decoration:none">✏️ Chấm ngay tất cả →</a>
     </div>
@@ -1754,7 +1771,7 @@ async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, linked_exam_ids, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
 
   var lessons = r.data || [];
@@ -3680,23 +3697,51 @@ async function moFormThemBaiGiang() {
   if ($('bhTestLatex')) $('bhTestLatex').value = '';
   pdfBlobTest = null;
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
+  napDropdownDe([]);
   
   moFormBaiGiangTrenManHinh('Thêm bài giảng mới');
 }
 
-async function napDropdownDe(selectedId) {
-  var sel = $('bhLinkedExam'); if (!sel || !classDangChon) return;
+var bhLinkedExamIds = [];
+function layDanhSachDeDaGan() {
+  return Array.from(document.querySelectorAll('#bhLinkedExamOptions input[type="checkbox"]:checked')).map(function (el) { return el.value; });
+}
+function capNhatDanhSachDeDaGan() {
+  bhLinkedExamIds = layDanhSachDeDaGan();
+  var hidden = $('bhLinkedExam');
+  if (hidden) hidden.value = bhLinkedExamIds[0] || '';
+  var count = $('bhLinkedExamCount');
+  if (count) count.textContent = bhLinkedExamIds.length ? ('Đã chọn ' + bhLinkedExamIds.length + ' đề') : 'Chưa chọn đề nào';
+}
+function boChonTatCaDe() {
+  document.querySelectorAll('#bhLinkedExamOptions input[type="checkbox"]').forEach(function (el) { el.checked = false; });
+  capNhatDanhSachDeDaGan();
+}
+async function napDropdownDe(selectedIds) {
+  var box = $('bhLinkedExamOptions'); if (!box || !classDangChon) return;
+  if (!Array.isArray(selectedIds)) selectedIds = selectedIds ? [selectedIds] : [];
+  selectedIds = selectedIds.filter(Boolean).map(String);
+  bhLinkedExamIds = selectedIds.slice();
+  box.innerHTML = '<div style="padding:8px;color:var(--ink-3)">Đang tải danh sách đề…</div>';
   try {
     var r = await sb.from('exams').select('id, title, de_type')
       .or('class_id.eq.' + classDangChon.id + ',class_id.is.null')
       .order('created_at', { ascending: false });
     var ds = r.data || [];
-    sel.innerHTML = '<option value="">— Không gắn đề —</option>' + ds.map(function (e) {
-      var t = e.de_type === 'tu_luan' ? ' (tự luận)' : '';
-      return '<option value="' + e.id + '">' + qlaEsc(e.title || 'Đề') + t + '</option>';
-    }).join('');
-    if (selectedId) sel.value = selectedId;
-  } catch (e) {}
+    if (!ds.length) {
+      box.innerHTML = '<div style="padding:10px;color:var(--ink-3)">Chưa có đề phù hợp với lớp này.</div>';
+    } else {
+      box.innerHTML = ds.map(function (e) {
+        var checked = selectedIds.indexOf(String(e.id)) >= 0 ? ' checked' : '';
+        var loai = e.de_type === 'tu_luan' ? 'Tự luận' : (e.de_type === 'thpt' ? 'Chuẩn THPTQG' : 'Trắc nghiệm');
+        return '<label class="linked-exam-option"><input type="checkbox" value="' + e.id + '" onchange="capNhatDanhSachDeDaGan()"' + checked + '><span><strong>' + qlaEsc(e.title || 'Đề') + '</strong><small>' + qlaEsc(loai) + '</small></span></label>';
+      }).join('');
+    }
+    capNhatDanhSachDeDaGan();
+  } catch (e) {
+    box.innerHTML = '<div style="padding:10px;color:var(--err)">Không tải được danh sách đề. Vui lòng thử lại.</div>';
+    capNhatDanhSachDeDaGan();
+  }
 }
 
 async function moFormSua(id) {
@@ -3747,7 +3792,9 @@ async function moFormSua(id) {
   if ($('bhTestDue')) $('bhTestDue').value = bh.test_deadline ? isoToLocalInput(bh.test_deadline) : '';
   if ($('bhBtvnLate')) $('bhBtvnLate').value = bh.homework_late_policy || 'late';
   if ($('bhTestLate')) $('bhTestLate').value = bh.test_late_policy || 'late';
-  napDropdownDe(bh.linked_exam_id || '');
+  var deDaGan = Array.isArray(bh.linked_exam_ids) ? bh.linked_exam_ids.slice() : [];
+  if (bh.linked_exam_id && deDaGan.indexOf(bh.linked_exam_id) < 0) deDaGan.unshift(bh.linked_exam_id);
+  napDropdownDe(deDaGan);
   if ($('bhBtvnPdfUrl')) $('bhBtvnPdfUrl').value = '';
   if ($('bhBtvnPdfFile')) $('bhBtvnPdfFile').value = '';
   if ($('khungXemBtvn')) $('khungXemBtvn').style.display = 'none';
@@ -3846,6 +3893,7 @@ async function luuBaiHoc(e) {
   e.preventDefault();
   if (!classDangChon) return;
   var id = $('bhId').value;
+  var linkedExamIds = layDanhSachDeDaGan();
   var data = {
     title: $('bhTieuDe').value.trim(),
     class_id: classDangChon.id,
@@ -3862,7 +3910,8 @@ async function luuBaiHoc(e) {
     test_late_policy: ($('bhTestLate') && $('bhTestLate').value) || 'late',
     homework_bonus: false,
     homework2_late_policy: ($('bhBtvn2Late') && $('bhBtvn2Late').value) || 'late',
-    linked_exam_id: ($('bhLinkedExam') && $('bhLinkedExam').value) || null,
+    linked_exam_id: linkedExamIds[0] || null,
+    linked_exam_ids: linkedExamIds,
     created_at: $('bhNgayTao') && $('bhNgayTao').value ? $('bhNgayTao').value + 'T12:00:00+07:00' : new Date().toISOString(),
     note: (function() {
       var studentNote = $('bhGhiChu').value.trim();
@@ -4927,7 +4976,7 @@ async function moFormNopBaiHo(studentId, studentName) {
   nbhCapNhatDich();
   
   try {
-    var rL = await sb.from('lessons').select('id, title, homework_text, homework_images, homework_latex_content, homework_document_id, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, test_document_id, test_latex_content, linked_exam_id').eq('class_id', classDangChon.id).order('sort', { ascending: false });
+    var rL = await sb.from('lessons').select('id, title, homework_text, homework_images, homework_latex_content, homework_document_id, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, test_document_id, test_latex_content, linked_exam_id, linked_exam_ids').eq('class_id', classDangChon.id).order('sort', { ascending: false });
     var rE = await sb.from('exams').select('id, title, de_type').eq('class_id', classDangChon.id).order('created_at', { ascending: false });
     if (rL.error) throw rL.error;
     if (rE.error) throw rE.error;
@@ -4944,7 +4993,7 @@ async function moFormNopBaiHo(studentId, studentName) {
 function nbhLessonCoLoai(l, loai) {
   if (loai === 'homework') return !!(l.homework_text || (l.homework_images && l.homework_images.length) || l.homework_latex_content || l.homework_document_id);
   if (loai === 'homework_bonus') return !!(l.homework2_text || (l.homework2_images && l.homework2_images.length) || l.homework2_latex_content || l.homework2_document_id);
-  return !!(l.test_document_id || l.test_latex_content || l.linked_exam_id);
+  return !!(l.test_document_id || l.test_latex_content || l.linked_exam_id || (Array.isArray(l.linked_exam_ids) && l.linked_exam_ids.length));
 }
 
 function nbhCapNhatDanhSach() {
