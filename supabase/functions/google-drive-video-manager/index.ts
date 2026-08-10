@@ -60,6 +60,27 @@ async function accessibleClassIds(profile: any): Promise<string[] | null> {
   return Array.from(new Set([...(owned || []).map((x: any) => x.id), ...(assisted || []).map((x: any) => x.class_id)]));
 }
 
+async function catalogFor(profile: any) {
+  const since = new Date(Date.now() - 3650 * 86400000).toISOString();
+  const classIds = await accessibleClassIds(profile);
+  let classesQuery = admin.from("classes").select("id,name,grade").order("grade").order("name");
+  let lessonsQuery = admin.from("lessons").select("id,class_id,title,created_at,youtube_url").gte("created_at", since).order("created_at", { ascending: false });
+  if (classIds) {
+    if (!classIds.length) return { classes: [], lessons: [], recordings: [] };
+    classesQuery = classesQuery.in("id", classIds);
+    lessonsQuery = lessonsQuery.in("class_id", classIds);
+  }
+  const [{ data: classes, error: classesError }, { data: lessons, error: lessonsError }, { data: recordings, error: recordingsError }] = await Promise.all([
+    classesQuery,
+    lessonsQuery,
+    admin.from("meet_recordings").select("*").eq("owner_user_id", profile.id).order("created_time", { ascending: false }).limit(1000),
+  ]);
+  if (classesError) throw classesError;
+  if (lessonsError) throw lessonsError;
+  if (recordingsError) throw recordingsError;
+  return { classes: classes || [], lessons: lessons || [], recordings: recordings || [] };
+}
+
 async function syncRecordings(profile: any, days: number) {
   const userId = profile.id;
   const connection = await connectionFor(userId);
@@ -169,6 +190,7 @@ Deno.serve(async (request: Request) => {
       const connection = await connectionFor(profile.id);
       return json(request, { connected: !!connection, google_email: connection?.google_email || null, last_synced_at: connection?.last_synced_at || null, last_sync_count: connection?.last_sync_count || 0 });
     }
+    if (action === "catalog") return json(request, await catalogFor(profile));
     if (action === "auth-url") {
       const state = randomToken();
       const stateHash = await sha256Hex(state);

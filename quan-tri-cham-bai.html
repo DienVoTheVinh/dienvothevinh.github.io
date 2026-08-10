@@ -382,6 +382,16 @@ var hoSoNguoiDung = null;
   if (!hoSo) return;
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   hoSoNguoiDung = hoSo;
+
+  var vmKhoiTaoParams = new URLSearchParams(location.search);
+  var vmLoc = vmKhoiTaoParams.get('loc');
+  if (vmLoc === 'test' || vmLoc === 'luyende') {
+    dangLoc = vmLoc;
+    ['cho', 'xong', 'tatca', 'test', 'luyende'].forEach(function (k) {
+      var nut = $('loc-' + k); if (nut) nut.classList.remove('active');
+    });
+    var nutLoc = $('loc-' + vmLoc); if (nutLoc) nutLoc.classList.add('active');
+  }
   
   // Lấy các lớp phụ trách
   if (hoSo.role !== 'admin') {
@@ -434,13 +444,36 @@ var hoSoNguoiDung = null;
   await taiDanhSach();
   // Lọc sẵn theo link "Chấm ngay" từ bài giảng (?lop=&lesson=)
   try {
-    var _p = new URLSearchParams(location.search);
-    var _lop = _p.get('lop'), _bai = _p.get('lesson');
+    var _p = vmKhoiTaoParams;
+    var _lop = _p.get('lop');
+    var _bai = dangLoc === 'luyende' ? _p.get('exam') : _p.get('lesson');
+    var _submission = _p.get('submission'), _attempt = _p.get('attempt');
     if (_lop) { $('selLop').value = _lop; capNhatDropdownBoLoc(); }
     if (_bai) { $('selBai').value = _bai; }
-    if (_lop || _bai) veDanhSach();
+    if (_lop || _bai) await veDanhSach();
+    if (_submission) vmFocusSubmission(_submission);
+    if (_attempt) vmFocusAttempt(_attempt);
   } catch (e) {}
 })();
+
+function vmFocusSubmission(submissionId) {
+  var el = document.getElementById('sub-' + submissionId);
+  vmFocusRecord(el);
+}
+
+function vmFocusAttempt(attemptId) {
+  var el = document.getElementById('attempt-' + attemptId);
+  vmFocusRecord(el);
+}
+
+function vmFocusRecord(el) {
+  if (!el) return;
+  el.setAttribute('tabindex', '-1');
+  el.style.outline = '3px solid var(--accent)';
+  el.style.outlineOffset = '4px';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+}
 
 function capNhatDropdownBoLoc() {
   var selLopVal = $('selLop').value;
@@ -592,7 +625,7 @@ function veDanhSach() {
       var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
       var lop = classNames || '—';
       var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
-      return '<div class="card sub-card">' +
+      return '<div id="attempt-' + s.id + '" class="card sub-card">' +
         '<div class="sub-head">' +
           '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
           '<span class="badge badge-ok">' + s.score.toFixed(1) + 'đ (' + s.correct_n + '/' + s.total_n + ' câu)</span>' +
@@ -621,7 +654,7 @@ function veDanhSach() {
       var classNames = (hs.class_students || []).map(function (c) { return c.classes ? c.classes.name : ''; }).filter(Boolean).join(', ');
       var lop = classNames || '—';
       var ngay = new Date(s.submitted_at).toLocaleString('vi-VN');
-      return '<div class="card sub-card">' +
+      return '<div id="attempt-' + s.id + '" class="card sub-card">' +
         '<div class="sub-head">' +
           '<div><b>' + (hs.full_name || '?') + '</b> <span style="color:var(--ink-3);font-size:.85rem">(' + (hs.username || '') + ' · ' + lop + ')</span></div>' +
           '<span class="badge badge-ok">' + s.score.toFixed(1) + 'đ (' + s.correct_n + '/' + s.total_n + ' câu)</span>' +

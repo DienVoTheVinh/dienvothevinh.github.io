@@ -1,6 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v20';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v19';
+const VM_CACHE = 'vinhmath-shell-v21';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v20';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -145,19 +145,37 @@ self.addEventListener('push', function (event) {
   event.waitUntil(Promise.all(tasks));
 });
 
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close();
-  var target = (event.notification.data && event.notification.data.url) || '/trang-chu';
+function vmNotificationTarget(rawTarget, kind, body) {
+  var target = rawTarget || '/trang-chu';
   try {
     var parsed = new URL(target, self.location.origin);
-    target = parsed.origin === self.location.origin ? parsed.href : '/trang-chu';
-  } catch (_) { target = '/trang-chu'; }
+    if (parsed.origin !== self.location.origin) return parsed.href;
+    if (kind === 'graded' && /\/bai-hoc(?:\.html)?$/.test(parsed.pathname)) {
+      parsed.searchParams.set('action', 'graded');
+      if (!parsed.searchParams.has('kind')) {
+        var text = String(body || '').toLowerCase();
+        parsed.searchParams.set('kind', text.indexOf('thưởng') !== -1 ? 'homework_bonus' : (text.indexOf('kiểm tra') !== -1 ? 'test' : 'homework'));
+      }
+    }
+    return parsed.href;
+  } catch (_) {
+    return self.location.origin + '/trang-chu';
+  }
+}
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  var notificationData = event.notification.data || {};
+  var target = vmNotificationTarget(notificationData.url, notificationData.kind, event.notification.body);
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
+      var sameOrigin = target.indexOf(self.location.origin + '/') === 0;
+      if (!sameOrigin) return clients.openWindow ? clients.openWindow(target) : null;
       for (var i = 0; i < windows.length; i++) {
         if ('focus' in windows[i]) {
-          windows[i].navigate(target);
-          return windows[i].focus();
+          return windows[i].navigate(target).then(function (client) {
+            return client && 'focus' in client ? client.focus() : null;
+          });
         }
       }
       return clients.openWindow ? clients.openWindow(target) : null;
