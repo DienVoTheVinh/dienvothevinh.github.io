@@ -9,8 +9,10 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(!/#boChuyen\s*\{[^}]*display\s*:\s*none\s*!important/i.test(lesson),
-  'Thanh chuyển nội dung vẫn bị cưỡng chế ẩn bằng !important.');
+assert(/#boChuyen\s*\{[^}]*display\s*:\s*none\s*!important/i.test(lesson),
+  'Thanh chuyển nội dung trùng lặp chưa được ẩn khỏi header.');
+assert(/class="lesson-header-actions"/i.test(lesson) && /#themeBtn\s*\{[^}]*margin-left\s*:\s*auto/i.test(lesson),
+  'Theme toggle must stay anchored at the far right of the lesson header.');
 assert(/homework_latex_content, homework_document_id/.test(lesson),
   'Mục lục bài học chưa lấy BTVN dạng LaTeX/PDF.');
 assert(/homework2_latex_content, homework2_document_id/.test(lesson),

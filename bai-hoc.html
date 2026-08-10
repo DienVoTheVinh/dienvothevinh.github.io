@@ -54,7 +54,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
 /* Bỏ thanh nút tính năng trên đỉnh — mọi tính năng nằm trong mục lục trái */
-#boChuyen { display:none; }
+#boChuyen { display:none !important; }
+.lesson-header-actions { margin-left:auto; }
+#themeBtn { margin-left:auto; }
 #nutBuoiHS, #nutNopBai { display:none !important; }   /* dời hết vào mục lục */
 .ml-vao-btn { font-size:.66rem; font-weight:800; padding:2px 9px; border-radius:99px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent); cursor:pointer; flex:none; white-space:nowrap; margin-left:6px; }
 .ml-vao-btn:hover { background:var(--accent); color:#fff; }
@@ -734,7 +736,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       <button class="sw-btn" id="swBTVN" onclick="chonNoiDung('btvn')" style="display:none">🏠 <span class="sw-text">Bài tập về nhà</span></button>
       <button class="sw-btn" id="swTest" onclick="chonNoiDung('test')">📝 <span class="sw-text">Kiểm tra</span></button>
     </div>
-    <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+    <div class="lesson-header-actions" style="display:flex; gap:8px; align-items:center; flex-shrink:0">
       <button class="btn btn-secondary btn-sm" id="nutBuoiHS" style="display:none" onclick="moBuoiHocHS()">📊 <span class="sw-text">Buổi học của em</span></button>
       <button class="btn btn-secondary btn-sm" id="nutQuanLyBuoi" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff" onclick="moHubQuanLy()">🛠 <span class="sw-text">Quản lý buổi</span></button>
       <button class="btn btn-primary btn-sm" id="nutNopBai" style="display:none" onclick="moNopBai()">📤 <span class="sw-text">Nộp bài</span></button>
