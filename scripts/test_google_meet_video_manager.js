@@ -13,6 +13,7 @@ const checks = [
   [page.includes("sb.functions.invoke('google-drive-video-manager'"), 'Trang phải gọi Edge Function'],
   [page.includes('Không sao chép video') || page.includes('không sao chép video'), 'Trang phải nói rõ chế độ metadata-only'],
   [oauthShared.includes('drive.meet.readonly'), 'OAuth phải dùng scope Meet hẹp'],
+  [oauthShared.includes('drive.metadata.readonly'), 'OAuth chỉ được bổ sung quyền đọc metadata để tìm video cũ'],
   [!manager.includes('auth/drive"') && !manager.includes('auth/drive.readonly'), 'Không được xin quyền đọc/sửa toàn Drive'],
   [manager.includes('VIDEO_EXISTS'), 'Phải chống ghi đè link video ngoài ý muốn'],
   [manager.includes('accessibleClassIds') && manager.includes('class_assistants'), 'Giáo viên chỉ được đồng bộ lớp đang phụ trách hoặc trợ giảng'],
