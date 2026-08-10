@@ -141,6 +141,25 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
       popupDangMo[i].classList.toggle('vm-popup-underlay', i < popupDangMo.length - 1);
     }
   }
+  function donPopupDaNgatKetNoi() {
+    var changed = false;
+    for (var i = popupDangMo.length - 1; i >= 0; i--) {
+      var el = popupDangMo[i];
+      if (el && el.isConnected) continue;
+      popupDangMo.splice(i, 1);
+      var state = el && (trangThai ? trangThai.get(el) : el._vmPopupState);
+      if (state) {
+        state.visible = false;
+        state.anchor = null;
+        if (state.resizeObserver) {
+          try { state.resizeObserver.disconnect(); } catch (_) {}
+          state.resizeObserver = null;
+        }
+      }
+      changed = true;
+    }
+    if (changed) capNhatChongPopup();
+  }
   function themPopupMo(el) {
     if (trongMang(popupDangMo, el)) return;
     var maxZ = 0;
@@ -160,6 +179,10 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
   }
   function capNhatKhoaCuon() {
     if (!document.documentElement) return;
+    // Popup động thường được đóng bằng element.remove(). MutationObserver vẫn
+    // phải loại chúng khỏi danh sách, nếu không lớp vm-popup-open sẽ khóa cuộn
+    // trang cho đến lần tương tác tiếp theo.
+    donPopupDaNgatKetNoi();
     if (popupDangMo.length) document.documentElement.classList.add('vm-popup-open');
     else document.documentElement.classList.remove('vm-popup-open');
   }
@@ -336,6 +359,8 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
           quetLen(m.target);
           for (var j = 0; m.addedNodes && j < m.addedNodes.length; j++) quetThem(m.addedNodes[j]);
         }
+        donPopupDaNgatKetNoi();
+        capNhatKhoaCuon();
       });
       obs.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], subtree: true, childList: true });
     } catch (e) {}
