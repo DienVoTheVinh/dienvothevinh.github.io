@@ -13,9 +13,13 @@ const tex = String.raw`\documentclass[12pt,a4paper]{article}
 \usepackage[T5]{fontenc}
 \usepackage[vietnamese]{babel}
 \usepackage{amsmath,amssymb}
+\usepackage{tikz,tkz-tab}
+\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.pathreplacing,decorations.markings,backgrounds,fit,matrix}
+\usepackage{enumitem}
 \usepackage[loigiai]{ex_test}
 \providecommand{\vmTFItem}[2]{\par\noindent\hangindent=1.9em\hangafter=1\textbf{#1)}\ #2\par}
-\providecommand{\choiceTF}[5][]{\begingroup\let\True\relax\vmTFItem{a}{#2}\vmTFItem{b}{#3}\vmTFItem{c}{#4}\vmTFItem{d}{#5}\endgroup}
+\providecommand{\choiceTF}[5][]{}
+\renewcommand{\choiceTF}[5][]{\begingroup\let\True\relax\vmTFItem{a}{#2}\vmTFItem{b}{#3}\vmTFItem{c}{#4}\vmTFItem{d}{#5}\endgroup}
 \newtheorem{bt}{Bài}
 \begin{document}
 \begin{center}{\Large\bfseries DE 100\% \& A\_B}\end{center}
@@ -28,6 +32,17 @@ x-y+1>0
 \choice{\True $(1;0)$}{$(-1;1)$}{$(0;2)$}{$(2;0)$}
 \loigiai{Thay tung cap so vao he.\par Ket luan.}
 \end{ex}
+\begin{center}
+\begin{tikzpicture}
+\tkzTabInit{$x$/1,$f'(x)$/1,$f(x)$/2}{$-\infty$,0,$+\infty$}
+\tkzTabLine{,+,z,-,}
+\tkzTabVar{-/$-\infty$,+/$1$,-/$-\infty$}
+\end{tikzpicture}
+\end{center}
+\begin{enumerate}[label=\alph*)]
+\item Y thu nhat.
+\item Y thu hai.
+\end{enumerate}
 \begin{ex}
 Cho hàm số $f(x)=x^2-2x$. Xét tính đúng sai của các khẳng định sau.
 \choiceTF[t]

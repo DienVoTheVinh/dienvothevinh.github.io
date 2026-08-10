@@ -44,7 +44,11 @@ pages.forEach((file) => {
 });
 
 expect(admin.includes('\\\\providecommand{\\\\choiceTF}[5][]'), 'Admin PDF export does not support four true/false statements');
+expect(admin.includes('\\\\renewcommand{\\\\choiceTF}[5][]'), 'Admin PDF export must override ex_test choiceTF labels');
 expect(admin.includes('\\\\vmTFItem{a}{#2}') && admin.includes('\\\\vmTFItem{d}{#5}'), 'Admin PDF export must label true/false statements a)-d)');
+expect(admin.includes('usepackage{tkz-tab}'), 'Admin PDF export does not auto-load tkz-tab');
+expect(admin.includes('itemchoice'), 'Admin PDF export does not normalize itemchoice');
+expect(admin.includes('itemch'), 'Admin PDF export does not normalize itemch');
 expect(!admin.includes('\\\\providecommand{\\\\choiceTF}[1][]{\\\\choice}'), 'Admin PDF export still falls back to A-D multiple-choice labels');
 expect(admin.includes('function normalizeSolutionParagraphs('), 'Admin PDF export lacks scoped solution paragraph normalization');
 expect(!admin.includes("raw=raw.replace(/\\r?\\n[ \\t]*\\r?\\n+/g"), 'Admin PDF export still injects paragraph commands into every math environment');

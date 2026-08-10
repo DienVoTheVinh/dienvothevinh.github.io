@@ -25,9 +25,12 @@ const { chromium } = require('playwright');
         }, { mc: 0, tf: 0, short: 0 });
       }
       const caseRoot = document.createElement('div');
-      caseRoot.innerHTML = latexRaHTML(String.raw`Hệ bất phương trình \[\begin{cases}x+y-3<0 \\ x-y+1>0\end{cases}\]`);
+      const caseHtml = latexRaHTML(String.raw`Hệ bất phương trình $\begin{cases}x+y-3<0 \\ x-y+1>0\end{cases}$`);
+      caseRoot.innerHTML = caseHtml;
       document.body.appendChild(caseRoot);
       renderToanTrong(caseRoot);
+      const itemChoiceRoot = document.createElement('div');
+      itemChoiceRoot.innerHTML = latexRaHTML(String.raw`\begin{itemchoice}\itemch Ý thứ nhất\itemch Ý thứ hai\end{itemchoice}`);
       const paragraphFixture = String.raw`\begin{ex}
 \[\begin{cases}
 x+y<3
@@ -42,13 +45,18 @@ Dòng hai.}
       return {
         standard: counts('thpt-standard'), practice: counts('thpt-practice'),
         casesRendered: !!caseRoot.querySelector('.katex-display .katex'),
-        casesError: !!caseRoot.querySelector('.katex-error'), normalized,
+        casesError: !!caseRoot.querySelector('.katex-error'),
+        casesNested: /\$\s*\\\[|\\\]\s*\$/.test(caseHtml),
+        itemChoiceRendered: itemChoiceRoot.querySelectorAll('li').length === 2,
+        itemChoiceRaw: /itemchoice|itemch/.test(itemChoiceRoot.textContent),
+        normalized,
       };
     });
     for (const [name, counts] of Object.entries({ standard: result.standard, practice: result.practice })) {
       if (!counts.mc || !counts.tf || !counts.short) throw new Error(`${name} template is not three-part: ${JSON.stringify(counts)}`);
     }
-    if (!result.casesRendered || result.casesError) throw new Error('cases environment did not render through real KaTeX');
+    if (!result.casesRendered || result.casesError || result.casesNested) throw new Error('dollar-delimited cases environment did not render through real KaTeX');
+    if (!result.itemChoiceRendered || result.itemChoiceRaw) throw new Error('itemchoice/itemch did not render as an HTML list');
     if (!/\\begin\{cases\}[\s\S]*\n\n[\s\S]*\\end\{cases\}/.test(result.normalized)) {
       throw new Error('PDF paragraph normalization mutated blank lines inside cases');
     }

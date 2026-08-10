@@ -544,16 +544,27 @@ Thể tích bằng $3^3=27$.}
     // The bundled ex_test version has neither `bt` nor `choiceTF`. Keep the
     // authoring syntax intact for HTML, but normalize it for PDF compilation.
     raw=raw.replace(/\\begin\{bt\}/g,'\\begin{ex}').replace(/\\end\{bt\}/g,'\\end{ex}');
+    raw=raw.replace(/\\begin\{itemchoice\}\s*(?:\[[^\]]*\])?/g,'\\begin{enumerate}[label=\\alph*)]')
+      .replace(/\\end\{itemchoice\}/g,'\\end{enumerate}')
+      .replace(/\\itemch\b/g,'\\item');
     // ex_test 2.4.5 defines \loigiai with a non-paragraph-safe argument. A
     // blank line inside a solution therefore aborts pdflatex. Chi chuyen dong
     // trang ben trong \loigiai: chen \par toan cuc se pha cases/aligned/tabular.
     raw=normalizeSolutionParagraphs(raw);
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
+    var optionalPackages='';
+    if(/\\tkzTab(?:Init|Line|Var|Val|Ima|Slope|Setup)\b/.test(raw)) optionalPackages+='\\usepackage{tkz-tab}\n';
+    if(/\\begin\{forest\}/.test(raw)) optionalPackages+='\\usepackage{forest}\n';
+    if(/\\begin\{circuitikz\}/.test(raw)) optionalPackages+='\\usepackage{circuitikz}\n';
+    if(/\\includegraphics\b/.test(raw)) optionalPackages+='\\usepackage{graphicx}\n';
+    if(/\\begin\{longtable\}/.test(raw)) optionalPackages+='\\usepackage{longtable}\n';
+    if(/\\begin\{tabularx\}/.test(raw)) optionalPackages+='\\usepackage{tabularx}\n';
     return '\\begin{filecontents*}{ex_test.sty}\n'+sty+'\n\\end{filecontents*}\n'+
-      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n\\usepackage[loigiai]{ex_test}\n'+
+      '\\documentclass[12pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T5]{fontenc}\n\\usepackage[vietnamese]{babel}\n\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{geometry}\n\\geometry{top=1.6cm,bottom=1.6cm,left=1.8cm,right=1.8cm}\n\\usepackage{tikz}\n\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.pathreplacing,decorations.markings,backgrounds,fit,matrix}\n\\usepackage[most]{tcolorbox}\n\\usepackage{enumitem,multicol}\n'+optionalPackages+'\\usepackage[loigiai]{ex_test}\n'+
       '\\providecommand{\\vmTFItem}[2]{\\par\\noindent\\hangindent=1.9em\\hangafter=1\\textbf{#1)}\\ #2\\par}\n'+
-      '\\providecommand{\\choiceTF}[5][]{\\begingroup\\let\\True\\relax\\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}\\endgroup}\n'+
+      '\\providecommand{\\choiceTF}[5][]{}\n'+
+      '\\renewcommand{\\choiceTF}[5][]{\\begingroup\\let\\True\\relax\\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}\\endgroup}\n'+
       env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
   }
 
