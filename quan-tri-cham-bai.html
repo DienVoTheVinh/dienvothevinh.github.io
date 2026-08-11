@@ -52,6 +52,17 @@
 .chb-thumb .idx { position:absolute; top:2px; left:2px; background:rgba(0,0,0,.68); color:#fff; font-size:.64rem; font-weight:800; padding:0 5px; border-radius:5px; z-index:1; }
 .chb-thumb.file { display:flex; align-items:center; justify-content:center; font-size:1.7rem; text-decoration:none; color:var(--ink-2); }
 .chb-thumb:hover { border-color:var(--accent); transform:scale(1.03); transition:.12s; }
+.chb-existing-wrap .chb-existing-remove {
+  display:none; position:absolute; top:3px; right:3px; z-index:3;
+  width:26px; height:26px; padding:0; border:1px solid rgba(255,255,255,.75);
+  border-radius:999px; background:rgba(190,24,24,.94); color:#fff;
+  font-size:1rem; font-weight:900; line-height:22px; cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.chb-existing-wrap.is-editing .chb-existing-remove { display:block; }
+.chb-existing-wrap .chb-thumb.is-pending-delete { display:none; }
+.chb-existing-help { display:none; margin:5px 0 0; color:var(--danger); font-size:.78rem; }
+.chb-existing-wrap.is-editing + .chb-existing-help { display:block; }
 /* Khu dán/chọn ảnh chấm */
 .chb-stage-zone { border:2px dashed var(--line-2); border-radius:10px; padding:12px; text-align:center; color:var(--ink-3); font-size:.84rem; cursor:pointer; outline:none; }
 .chb-stage-zone:hover, .chb-stage-zone:focus, .chb-stage-zone.drag { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
@@ -841,7 +852,7 @@ function veDanhSach() {
 
   function chbGradeForm(s) {
     var links = chbThumbs(s.files);
-    var linksCham = chbThumbs(s.graded_files);
+    var linksCham = chbGradedThumbs(s.graded_files, s.id);
     var isGraded = s.status === 'graded';
     window._chbOriginalGrades = window._chbOriginalGrades || {};
     window._chbOriginalGrades[s.id] = {
@@ -868,7 +879,7 @@ function veDanhSach() {
       '</div>' +
       '<div class="chb-label">📎 Ảnh học sinh nộp (' + (s.files || []).length + ') — bấm để xem lớn</div>' +
       '<div class="chb-thumbs">' + links + '</div>' +
-      (linksCham ? ('<div class="chb-label">✏️ Ảnh thầy đã chấm trả</div><div class="chb-thumbs">' + linksCham + '</div>') : '') +
+      (linksCham ? ('<div class="chb-label">✏️ Ảnh thầy đã chấm trả</div><div class="chb-thumbs chb-existing-wrap" id="chamexisting-' + s.id + '">' + linksCham + '</div><div class="chb-existing-help" id="chamexistinghelp-' + s.id + '">Bấm × để đánh dấu xóa ảnh sai. Ảnh chỉ bị xóa thật khi bấm “Lưu chỉnh sửa”.</div>') : '') +
       summary +
       '<div class="chb-grade-editor" id="gradeeditor-' + s.id + '"' + (isGraded ? ' hidden' : '') + '>' +
       '<div class="grade-row">' +
@@ -933,6 +944,7 @@ function veDanhSach() {
       editor.hidden = false;
       editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+    var existing = $('chamexisting-' + id); if (existing) existing.classList.add('is-editing');
     if (status) status.textContent = 'Đang chỉnh lại bài đã chấm — thay đổi chỉ được ghi khi bấm “Lưu chỉnh sửa”.';
     var score = $('diem-' + id); if (score) score.focus();
   }
@@ -946,6 +958,12 @@ function veDanhSach() {
     var staged = chamStaged[id] || [];
     staged.forEach(function (it) { try { URL.revokeObjectURL(it.url); } catch (e) {} });
     delete chamStaged[id];
+    delete chamRemoved[id];
+    var existing = $('chamexisting-' + id);
+    if (existing) {
+      existing.classList.remove('is-editing');
+      existing.querySelectorAll('.is-pending-delete').forEach(function (el) { el.classList.remove('is-pending-delete'); });
+    }
     chamRenderStage(id);
     var stagedText = $('danchamtt-' + id); if (stagedText) stagedText.textContent = '';
     var editor = $('gradeeditor-' + id), summary = $('gradesummary-' + id), status = $('editstatus-' + id);
@@ -973,7 +991,20 @@ function veDanhSach() {
       arr.forEach(function (it) { try { URL.revokeObjectURL(it.url); } catch (e) {} });
       delete chamStaged[id];
     }
-    // 2. Lưu điểm + lời phê
+    // 2. Xóa các ảnh cũ đã được GV đánh dấu. Edge Function kiểm tra quyền lớp và xóa cả link DB lẫn tệp Drive.
+    var removed = chamRemoved[id] || [];
+    if (removed.length) {
+      nut.textContent = '⏳ Đang xóa ảnh chấm sai…';
+      var fdXoa = new FormData();
+      fdXoa.append('kind', 'xoa_cham');
+      fdXoa.append('submission_id', id);
+      fdXoa.append('file_ids', JSON.stringify(removed));
+      var rXoa = await sb.functions.invoke('nop-bai', { body: fdXoa });
+      if (rXoa.error) throw new Error(rXoa.error.message || 'Trạm lỗi');
+      if (rXoa.data && rXoa.data.error) throw new Error(rXoa.data.error);
+      delete chamRemoved[id];
+    }
+    // 3. Lưu điểm + lời phê
     var diem = $('diem-' + id).value;
     var r2 = await sb.from('submissions').update({
       score: diem === '' ? null : parseFloat(diem),
@@ -1040,6 +1071,32 @@ function chbThumbs(files) {
   window._chbGalleries = window._chbGalleries || {};
   window._chbGalleries[gid] = imgs;
   return html || '<span style="font-size:.82rem;color:var(--ink-3)">Không có ảnh.</span>';
+}
+function chbGradedThumbs(files, subId) {
+  files = files || [];
+  if (!files.length) return '';
+  var gid = 'g' + (window._chbGid = (window._chbGid || 0) + 1);
+  var imgs = [];
+  var html = files.map(function (f, fileIndex) {
+    var fileId = String(f && f.id || '');
+    var isImg = /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(f.name || '');
+    var inner;
+    if (isImg && fileId) {
+      imgs.push({ id: fileId, name: f.name });
+      var galleryIndex = imgs.length - 1;
+      inner = '<div class="chb-thumb" data-chb-file-id="' + chamEsc(fileId) + '" onclick="chbXemGallery(\'' + gid + '\',' + galleryIndex + ')" title="' + chamEsc(f.name) + '">' +
+        '<span class="idx">' + (fileIndex + 1) + '</span>' +
+        '<img loading="lazy" src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300" onerror="chbImgLoi(this)">' +
+        '<button type="button" class="chb-existing-remove" aria-label="Xóa ảnh chấm này" title="Xóa ảnh chấm này" onclick="event.stopPropagation(); chamXoaCu(\'' + subId + '\',\'' + chamEsc(fileId) + '\',this)">×</button></div>';
+    } else {
+      inner = '<div class="chb-thumb file" data-chb-file-id="' + chamEsc(fileId) + '" onclick="window.open(\'' + chamEsc(f.link || '') + '\',\'_blank\')" title="' + chamEsc(f.name || 'Tệp chấm') + '">📄' +
+        '<button type="button" class="chb-existing-remove" aria-label="Xóa tệp chấm này" title="Xóa tệp chấm này" onclick="event.stopPropagation(); chamXoaCu(\'' + subId + '\',\'' + chamEsc(fileId) + '\',this)">×</button></div>';
+    }
+    return inner;
+  }).join('');
+  window._chbGalleries = window._chbGalleries || {};
+  window._chbGalleries[gid] = imgs;
+  return html;
 }
 function chbImgLoi(img) { img.onerror = null; var p = img.parentNode; p.classList.add('file'); img.remove(); p.insertAdjacentText('beforeend', '🖼'); }
 function chbLightboxEl() {
@@ -1181,6 +1238,16 @@ function chbXemUrl(url) {
 
 /* ===== Ảnh chấm trả (staging): dán / chọn, sắp thứ tự, đổi vị trí, xoá ===== */
 var chamStaged = {};
+var chamRemoved = {};
+function chamXoaCu(subId, fileId, button) {
+  if (!fileId) return;
+  chamRemoved[subId] = chamRemoved[subId] || [];
+  if (chamRemoved[subId].indexOf(fileId) === -1) chamRemoved[subId].push(fileId);
+  var thumb = button && button.closest ? button.closest('.chb-thumb') : null;
+  if (thumb) thumb.classList.add('is-pending-delete');
+  var status = document.getElementById('editstatus-' + subId);
+  if (status) status.textContent = 'Đã đánh dấu xóa ' + chamRemoved[subId].length + ' ảnh cũ. Bấm “Lưu chỉnh sửa” để xác nhận hoặc “Hủy chỉnh sửa” để khôi phục.';
+}
 function chamThemFile(subId, fileList) {
   chamStaged[subId] = chamStaged[subId] || [];
   var them = 0;
