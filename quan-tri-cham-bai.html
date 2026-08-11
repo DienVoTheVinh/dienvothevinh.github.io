@@ -30,6 +30,17 @@
 .sub-files a { font-size: .88rem; }
 .grade-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; margin-top: 14px; align-items: start; }
 @media(max-width:640px) { .grade-row { grid-template-columns: 1fr; } }
+.chb-grade-summary { margin-top:12px; padding:13px 14px; border:1px solid var(--ok); border-radius:10px; background:var(--ok-soft); }
+.chb-grade-summary-grid { display:grid; grid-template-columns:minmax(92px,auto) 1fr auto; gap:12px; align-items:start; }
+.chb-grade-score { font-size:1.05rem; font-weight:800; color:var(--ok); white-space:nowrap; }
+.chb-grade-feedback { color:var(--ink); white-space:pre-wrap; line-height:1.55; min-width:0; }
+.chb-grade-editor { margin-top:10px; padding:12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface-2); }
+.chb-grade-editor[hidden], .chb-grade-summary[hidden] { display:none !important; }
+.chb-edit-status { min-height:1.25em; margin-top:6px; font-size:.8rem; color:var(--ok); }
+@media(max-width:640px) {
+  .chb-grade-summary-grid { grid-template-columns:1fr; }
+  .chb-grade-summary-grid .btn { width:100%; }
+}
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 640px; padding: 28px; max-height: 88vh; overflow-y: auto; position: relative; }
@@ -831,6 +842,21 @@ function veDanhSach() {
   function chbGradeForm(s) {
     var links = chbThumbs(s.files);
     var linksCham = chbThumbs(s.graded_files);
+    var isGraded = s.status === 'graded';
+    window._chbOriginalGrades = window._chbOriginalGrades || {};
+    window._chbOriginalGrades[s.id] = {
+      score: s.score == null ? '' : String(s.score),
+      feedback: s.feedback || ''
+    };
+    var summary = isGraded
+      ? '<div class="chb-grade-summary" id="gradesummary-' + s.id + '">' +
+          '<div class="chb-grade-summary-grid">' +
+            '<div class="chb-grade-score">Điểm: ' + (s.score != null ? chamEsc(s.score) + '/10' : 'Chưa nhập') + '</div>' +
+            '<div class="chb-grade-feedback">' + (s.feedback ? chamEsc(s.feedback) : '<i>Chưa có lời phê.</i>') + '</div>' +
+            '<button type="button" class="btn btn-ghost btn-sm" onclick="batSuaCham(\'' + s.id + '\')">✏️ Sửa bài đã chấm</button>' +
+          '</div>' +
+        '</div>'
+      : '';
     var badge = s.status === 'graded'
       ? '<span class="badge badge-ok">Đã chấm' + (s.score != null ? ' · ' + s.score + 'đ' : '') + '</span>'
       : '<span class="badge badge-warn">Chờ chấm</span>';
@@ -843,9 +869,11 @@ function veDanhSach() {
       '<div class="chb-label">📎 Ảnh học sinh nộp (' + (s.files || []).length + ') — bấm để xem lớn</div>' +
       '<div class="chb-thumbs">' + links + '</div>' +
       (linksCham ? ('<div class="chb-label">✏️ Ảnh thầy đã chấm trả</div><div class="chb-thumbs">' + linksCham + '</div>') : '') +
+      summary +
+      '<div class="chb-grade-editor" id="gradeeditor-' + s.id + '"' + (isGraded ? ' hidden' : '') + '>' +
       '<div class="grade-row">' +
-        '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? s.score : '') + '">' +
-        '<textarea class="input" rows="4" placeholder="Lời phê cho học sinh… (nhấn Enter để xuống dòng — mỗi câu/ý một dòng cho dễ đọc)" id="phe-' + s.id + '" style="resize:vertical;line-height:1.5">' + (s.feedback || '') + '</textarea>' +
+        '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? chamEsc(s.score) : '') + '">' +
+        '<textarea class="input" rows="4" placeholder="Lời phê cho học sinh… (nhấn Enter để xuống dòng — mỗi câu/ý một dòng cho dễ đọc)" id="phe-' + s.id + '" style="resize:vertical;line-height:1.5">' + chamEsc(s.feedback || '') + '</textarea>' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">' +
         '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="chenYPhe(\'' + s.id + '\')">• Thêm dòng ý</button>' +
@@ -858,7 +886,12 @@ function veDanhSach() {
       '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="display:none" onchange="chamThemFile(\'' + s.id + '\', this.files); this.value=String()">' +
       '<div class="chb-thumbs" id="chamstage-' + s.id + '" style="margin-top:8px"></div>' +
       '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:4px"></div>' +
-      '<div style="margin-top:10px"><button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">💾 Lưu & trả bài</button></div>';
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+        '<button class="btn btn-primary btn-sm" id="luu-' + s.id + '" onclick="luuCham(\'' + s.id + '\')">' + (isGraded ? '💾 Lưu chỉnh sửa' : '💾 Lưu & trả bài') + '</button>' +
+        (isGraded ? '<button type="button" class="btn btn-ghost btn-sm" onclick="huySuaCham(\'' + s.id + '\')">Hủy chỉnh sửa</button>' : '') +
+      '</div>' +
+      '<div class="chb-edit-status" id="editstatus-' + s.id + '"></div>' +
+      '</div>';
   }
 
   $('dsBaiNop').innerHTML = order.map(function (g) {
@@ -891,11 +924,40 @@ function veDanhSach() {
       '</div>';
   }).join('');
   chbRenderAssignmentMath($('dsBaiNop'));
-}
+  }
 
-async function luuCham(id) {
-  var nut = $('luu-' + id);
-  nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
+  function batSuaCham(id) {
+    var summary = $('gradesummary-' + id), editor = $('gradeeditor-' + id), status = $('editstatus-' + id);
+    if (summary) summary.hidden = true;
+    if (editor) {
+      editor.hidden = false;
+      editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    if (status) status.textContent = 'Đang chỉnh lại bài đã chấm — thay đổi chỉ được ghi khi bấm “Lưu chỉnh sửa”.';
+    var score = $('diem-' + id); if (score) score.focus();
+  }
+
+  function huySuaCham(id) {
+    var original = (window._chbOriginalGrades || {})[id] || { score: '', feedback: '' };
+    var score = $('diem-' + id), feedback = $('phe-' + id), preview = $('preview-' + id);
+    if (score) score.value = original.score;
+    if (feedback) feedback.value = original.feedback;
+    if (preview) preview.style.display = 'none';
+    var staged = chamStaged[id] || [];
+    staged.forEach(function (it) { try { URL.revokeObjectURL(it.url); } catch (e) {} });
+    delete chamStaged[id];
+    chamRenderStage(id);
+    var stagedText = $('danchamtt-' + id); if (stagedText) stagedText.textContent = '';
+    var editor = $('gradeeditor-' + id), summary = $('gradesummary-' + id), status = $('editstatus-' + id);
+    if (editor) editor.hidden = true;
+    if (summary) summary.hidden = false;
+    if (status) status.textContent = '';
+  }
+
+  async function luuCham(id) {
+    var nut = $('luu-' + id);
+    var wasGraded = !!$('gradesummary-' + id);
+    nut.disabled = true; nut.textContent = '⏳ Đang lưu…';
   try {
     // 1. Nếu có ảnh chấm (staging, đúng thứ tự): gửi lên Drive qua trạm nop-bai — chỉ lưu link, không tốn dung lượng DB
     var arr = chamStaged[id] || [];
@@ -918,12 +980,13 @@ async function luuCham(id) {
       feedback: $('phe-' + id).value.trim() || null,
       status: 'graded',
       graded_at: new Date().toISOString()
-    }).eq('id', id);
+    }).eq('id', id).select('id,status,score,feedback,graded_at').single();
     if (r2.error) throw new Error(r2.error.message);
+    if (!r2.data || r2.data.id !== id) throw new Error('Không xác nhận được bài đã cập nhật. Vui lòng tải lại trang và thử lại.');
     await taiDanhSach();
   } catch (e) {
     alert('Lỗi khi lưu: ' + e.message);
-    nut.disabled = false; nut.textContent = '💾 Lưu & trả bài';
+    nut.disabled = false; nut.textContent = wasGraded ? '💾 Lưu chỉnh sửa' : '💾 Lưu & trả bài';
   }
 }
 
