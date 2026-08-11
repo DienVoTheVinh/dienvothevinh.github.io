@@ -201,10 +201,10 @@ Deno.serve(async (req) => {
     const action = String(form.get("kind") || "nop");
     const phanloai = String(form.get("phanloai") || "");
     const files = form.getAll("files").filter((item): item is File => item instanceof File);
-    if (!files.length) throw new Error("Chưa chọn tệp nào.");
+    if (action !== "xoa_cham" && !files.length) throw new Error("Chưa chọn tệp nào.");
 
     const token = await googleToken();
-    const goc = await timHoacTaoThuMuc(token, "VINHMATH NOP BAI");
+    const goc = action === "xoa_cham" ? "" : await timHoacTaoThuMuc(token, "VINHMATH NOP BAI");
     const ngay = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 
     if (action === "nop") {
@@ -304,8 +304,8 @@ Deno.serve(async (req) => {
       return traJson({ ok: true, submission: row, files: ketQua, destination: { kind: kindVal, title: targetTitle, folder: thuMucLoaiTen(kindVal) } });
     }
 
-    if (action !== "cham") throw new Error("Thao tác không hợp lệ.");
-    if (!["admin", "teacher", "assistant"].includes(prof.role)) throw new Error("Chỉ giáo viên mới được tải file chấm.");
+    if (action !== "cham" && action !== "xoa_cham") throw new Error("Thao tác không hợp lệ.");
+    if (!["admin", "teacher", "assistant"].includes(prof.role)) throw new Error("Chỉ giáo viên mới được sửa file chấm.");
     const subId = String(form.get("submission_id") || "");
     if (!subId) throw new Error("Thiếu mã bài nộp.");
     const { data: sub } = await svc.from("submissions").select("id, graded_files, student_id, lesson_id, exam_id, kind, profiles(username, full_name)").eq("id", subId).single();
@@ -333,6 +333,28 @@ Deno.serve(async (req) => {
       folderPath = [className, thuMucLoaiTen(sub.kind), `${hs.username} - ${hs.full_name}`, ngay];
     }
     if (!(await coQuyenQuanLyLop(svc, user.id, prof.role, classId))) throw new Error("Thầy/cô không có quyền chấm bài của lớp này.");
+
+    if (action === "xoa_cham") {
+      let requestedIds: string[] = [];
+      try {
+        const parsed = JSON.parse(String(form.get("file_ids") || "[]"));
+        if (Array.isArray(parsed)) requestedIds = parsed.map((id) => String(id || "").trim()).filter(Boolean);
+      } catch { throw new Error("Danh sách ảnh cần xóa không hợp lệ."); }
+      requestedIds = [...new Set(requestedIds)];
+      if (!requestedIds.length) throw new Error("Chưa chọn ảnh chấm cần xóa.");
+      if (requestedIds.length > MAX_FILES) throw new Error(`Mỗi lần chỉ xóa tối đa ${MAX_FILES} tệp.`);
+
+      const oldFiles = Array.isArray(sub.graded_files) ? (sub.graded_files as any[]) : [];
+      const allowedIds = new Set(oldFiles.map((item) => String(item?.id || "")).filter(Boolean));
+      const deleteIds = requestedIds.filter((id) => allowedIds.has(id));
+      if (!deleteIds.length) throw new Error("Các ảnh đã chọn không còn trong bài chấm.");
+      const deleteSet = new Set(deleteIds);
+      const remaining = oldFiles.filter((item) => !deleteSet.has(String(item?.id || "")));
+      const { error: updateError } = await svc.from("submissions").update({ graded_files: remaining }).eq("id", subId);
+      if (updateError) throw new Error("Không cập nhật được danh sách ảnh chấm: " + updateError.message);
+      await Promise.all(deleteIds.map((id) => xoaFileDrive(token, id)));
+      return traJson({ ok: true, deleted_count: deleteIds.length, graded_files: remaining });
+    }
 
     let currentParentId = goc;
     for (const folderName of folderPath) currentParentId = await timHoacTaoThuMuc(token, folderName, currentParentId);
