@@ -23,7 +23,7 @@ assert.strictEqual(
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '\\begin{bt} Bài tập \\end{bt}'), '');
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '{"statusCode":400,"error":"InvalidKey"}'), '');
 
-const latex = '\\begin{bt} Cho các biểu thức sau. \\end{bt}';
+const latex = String.raw`\begin{bt} Cho các biểu thức sau: $$A(x) = 2x^4 - \dfrac{1}{2}x^3 + 3x - 1; \quad B(x) = \dfrac{2x^2 - 3x + 1}{x - 2}; \quad C(y) = -y^5 + 2y^2 - \sqrt{2}; \quad D(u) = 15 - 3u + 4u^3 - u^6.$$ \begin{enumerate}[a)] \item Biểu thức nào là đa thức một biến? \end{enumerate} \end{bt}`;
 const preview = context.vmNoiDungXemNhanh({
   id: 'lesson-123',
   title: 'Biểu thức đại số',
