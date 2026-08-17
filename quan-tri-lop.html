@@ -3753,6 +3753,17 @@ async function moFormSua(id) {
     return;
   }
   var bh = r.data;
+  // Nguồn có lời giải được bảo vệ riêng; chỉ tài khoản nhân sự mới đọc được khi sửa bài.
+  var rNguon = await sb.from('lesson_latex_sources')
+    .select('kind, content')
+    .eq('lesson_id', id);
+  if (!rNguon.error && Array.isArray(rNguon.data)) {
+    rNguon.data.forEach(function (src) {
+      if (src.kind === 'homework') bh.homework_latex_content = src.content;
+      else if (src.kind === 'homework_bonus') bh.homework2_latex_content = src.content;
+      else if (src.kind === 'test') bh.test_latex_content = src.content;
+    });
+  }
   
   await napChuyenDeSelect(bh.topic_id);
   $('formBaiHoc').reset();

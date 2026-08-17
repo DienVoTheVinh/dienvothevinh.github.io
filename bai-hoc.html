@@ -1001,7 +1001,18 @@ var coTest = false;
 })();
 
 async function vmMoDichDenThongBao(params) {
-  if (!params || params.get('action') !== 'graded') return;
+  if (!params) return;
+  if (params.get('action') === 'solution-unlocked') {
+    var solutionKind = params.get('kind');
+    if (['homework', 'homework_bonus', 'test'].indexOf(solutionKind) === -1) solutionKind = 'homework';
+    await chonNoiDung(solutionKind === 'test' ? 'test' : 'btvn');
+    window.setTimeout(function () {
+      var banner = document.querySelector('[data-solution-unlocked="' + solutionKind + '"]');
+      if (banner && banner.scrollIntoView) banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+    return;
+  }
+  if (params.get('action') !== 'graded') return;
   var kind = params.get('kind');
   if (['homework', 'homework_bonus', 'test'].indexOf(kind) === -1) kind = 'homework';
   await xemKetQua(lessonId, kind, params.get('submission'));
@@ -1195,10 +1206,16 @@ async function guiBaiNop() {
     await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
     $('nbFiles').value = '';
     if (typeof vmRenderFileList === 'function') vmRenderFileList('nbFiles', 'nbFileList');
-    tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div><div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô. Cố lên nhé!</div></div>';
+    var nguonDaMo = await vmLayNguonLatexTheoQuyen(nopBaiPhanLoai, '');
+    var coLoiGiaiDaMo = !!(nguonDaMo.unlocked && nguonDaMo.hasSolution);
+    tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div>' +
+      '<div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô.' + (coLoiGiaiDaMo ? ' Hệ thống vừa mở lời giải và gửi thông báo cho em.' : ' Cố lên nhé!') + '</div>' +
+      (coLoiGiaiDaMo ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="vmXemLoiGiaiVuaMo(\'' + nopBaiPhanLoai + '\')">🔓 Xem lời giải ngay</button>' : '') + '</div>';
     if (typeof bhConfetti === 'function') bhConfetti();
     nut.textContent = '🔄 Nộp lại bài khác';   // đổi nhãn để HS biết đã nộp
-    taiBaiDaNop();
+    await taiBaiDaNop();
+    if (noiDungDangChon === 'test' && nopBaiPhanLoai === 'test') await hienTestTex();
+    if (noiDungDangChon === 'btvn' && nopBaiPhanLoai !== 'test') await renderBTVN($('thanNoiDung'));
     if (typeof taiMucLuc === 'function') taiMucLuc(); // cập nhật glow Nộp bài -> tắt
   } catch (e) {
     tb.textContent = 'Lỗi: ' + e.message;
@@ -1207,6 +1224,11 @@ async function guiBaiNop() {
   }
   window._vmDangNop = false;
   nut.disabled = false;
+}
+
+function vmXemLoiGiaiVuaMo(kind) {
+  if (typeof dongNopBai === 'function') dongNopBai();
+  chonNoiDung(kind === 'test' ? 'test' : 'btvn');
 }
 
 /* ===== MỤC LỤC BÊN TRÁI: accordion chuyên đề → bài → mục con + vòng % ===== */
@@ -1881,10 +1903,36 @@ function vmLatexActionHTML(key, rawTex, fileName, kind) {
     '</div>';
 }
 
-function vmLatexNativeHTML(title, rawTex, key, fileName, kind, inline) {
+async function vmLayNguonLatexTheoQuyen(kind, fallback) {
+  var result = { content: fallback || '', unlocked: false, hasSolution: false };
+  if (!lessonId || !nguoiDung || ['homework', 'homework_bonus', 'test'].indexOf(kind) === -1) return result;
+  try {
+    var r = await sb.from('lesson_latex_sources')
+      .select('content, has_solution')
+      .eq('lesson_id', lessonId)
+      .eq('kind', kind)
+      .maybeSingle();
+    if (r.error) throw r.error;
+    if (r.data && r.data.content) {
+      result.content = r.data.content;
+      result.unlocked = true;
+      result.hasSolution = !!r.data.has_solution;
+    }
+  } catch (e) {
+    console.warn('Chưa có quyền đọc nguồn LaTeX đầy đủ:', e && e.message ? e.message : e);
+  }
+  return result;
+}
+
+function vmLoiGiaiDaMoHTML(kind, unlocked, hasSolution) {
+  if (!unlocked || !hasSolution || laQuanTriBaiHoc()) return '';
+  return '<div class="card" data-solution-unlocked="' + kind + '" style="margin:12px 14px;padding:12px 14px;border:1px solid var(--ok);background:var(--ok-soft);color:var(--ok);font-weight:800">🔓 Em đã nộp bài hoàn chỉnh — lời giải bên dưới đã được mở để em đối chiếu.</div>';
+}
+
+function vmLatexNativeHTML(title, rawTex, key, fileName, kind, inline, forceShowSolutions) {
   kind = kind || 'document';
   var teacherView = typeof laQuanTriBaiHoc === 'function' && laQuanTriBaiHoc();
-  var showSolutions = teacherView || kind === 'document' || kind === 'theory';
+  var showSolutions = forceShowSolutions === true || teacherView || kind === 'document' || kind === 'theory';
   var reader = typeof latexTaiLieuRaHTML === 'function'
     ? latexTaiLieuRaHTML(rawTex || '', { title: title, kind: kind, showSolutions: showSolutions })
     : '<div class="no-content"><h3>Chưa tải được bộ đọc LaTeX</h3></div>';
@@ -2915,11 +2963,13 @@ async function hienTestTex() {
   var toolbar = thanhCongCu('📝 Đề kiểm tra cuối giờ', null);
   var buildToken = vmBatDauDungReader(than, toolbar, 'Đang chuẩn bị đề kiểm tra…');
   await vmChoTrinhDuyetVe();
+  var nguonTest = await vmLayNguonLatexTheoQuyen('test', details.test_latex_content);
   var ketQuaChamHtml = await layKetQuaChamHtml();
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   than.innerHTML = toolbar +
     ketQuaChamHtml +
-    vmLatexNativeHTML(details.title + ' — Đề kiểm tra', details.test_latex_content, 'lesson-test', vmTenTepPdf(details.title + '-de-kiem-tra'), 'test', false);
+    vmLoiGiaiDaMoHTML('test', nguonTest.unlocked, nguonTest.hasSolution) +
+    vmLatexNativeHTML(details.title + ' — Đề kiểm tra', nguonTest.content, 'lesson-test', vmTenTepPdf(details.title + '-de-kiem-tra'), 'test', false, nguonTest.unlocked && nguonTest.hasSolution);
   await vmChoTrinhDuyetVe();
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   vmRenderMathTaiLieu(than);
@@ -3136,16 +3186,20 @@ async function renderBTVN(than) {
   await vmChoTrinhDuyetVe();
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   var laAdmin = laQuanTriBaiHoc();
+  var nguonBtvn = await Promise.all([
+    vmLayNguonLatexTheoQuyen('homework', details.homework_latex_content),
+    vmLayNguonLatexTheoQuyen('homework_bonus', details.homework2_latex_content)
+  ]);
   var blocks = [
     { sfx: '', bonus: false, phanloai: 'homework', kind: 'homework',
       text: details.homework_text, images: details.homework_images,
       docPath: (details.bai_btvn && details.bai_btvn.file_path) || '',
-      latex: details.homework_latex_content, due: details.homework_due,
+      latex: nguonBtvn[0].content, solutionUnlocked: nguonBtvn[0].unlocked, hasSolution: nguonBtvn[0].hasSolution, due: details.homework_due,
       latePolicy: details.homework_late_policy || 'late' },
     { sfx: '2', bonus: true, phanloai: 'homework_bonus', kind: 'homework_bonus',
       text: details.homework2_text, images: details.homework2_images,
       docPath: (details.bai_btvn2 && details.bai_btvn2.file_path) || '',
-      latex: details.homework2_latex_content, due: details.homework2_due,
+      latex: nguonBtvn[1].content, solutionUnlocked: nguonBtvn[1].unlocked, hasSolution: nguonBtvn[1].hasSolution, due: details.homework2_due,
       latePolicy: details.homework2_late_policy || 'late' }
   ];
 
@@ -3171,7 +3225,7 @@ async function renderBTVN(than) {
       ? '<div class="btvn-note-card"><div class="btvn-note-card-head"><span>📝</span> Ghi chú cho học sinh</div>' +
         '<div class="btvn-note-card-body">' + btvnEsc(b.text) + '</div></div>' : '';
     var latexTitle = b.bonus ? 'Bài tập thưởng thêm' : 'Bài tập về nhà bắt buộc';
-    var latexHtml = coLatex ? vmLatexNativeHTML(latexTitle, b.latex, 'lesson-homework' + b.sfx, vmTenTepPdf(details.title + '-' + latexTitle), b.kind, true) : '';
+    var latexHtml = coLatex ? vmLatexNativeHTML(latexTitle, b.latex, 'lesson-homework' + b.sfx, vmTenTepPdf(details.title + '-' + latexTitle), b.kind, true, b.solutionUnlocked && b.hasSolution) : '';
     var pdfUrl = coDoc ? buildPdfUrl(b.docPath) : '';
     var docHtml = coDoc ? '<div class="btvn-document">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<div id="btvnPdfBox' + b.sfx + '" style="height:clamp(420px,70vh,900px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:10px"></div></div>' : '';
     var anhHtml = dsAnh.length ? '<div class="btvn-media">' +
@@ -3191,7 +3245,7 @@ async function renderBTVN(than) {
         '<button type="button" class="btn ' + (b.bonus ? 'btn-secondary is-bonus' : 'btn-primary') + ' btvn-submit-btn" disabled aria-disabled="true">' +
           (biKhoa ? '🔒 Đã hết hạn nộp ' : quaHan ? '📤 Nộp trễ ' : '📤 Nộp ') + (b.bonus ? 'bài thưởng thêm' : 'bài tập về nhà') + '</button></div>';
     }
-    var deInner = coDe ? (deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập bắt buộc</h3></div>';
+    var deInner = coDe ? (vmLoiGiaiDaMoHTML(b.kind, b.solutionUnlocked, b.hasSolution) + deHtml + latexHtml + docHtml + anhHtml) : '<div class="no-content"><div class="ic">🏠</div><h3>Chưa có đề bài tập bắt buộc</h3></div>';
     return '<section class="btvn-block' + (b.bonus ? ' is-bonus' : '') + '">' + head + hanHtml + actionHtml + deInner + '</section>';
   }
 
