@@ -152,6 +152,27 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .pane-video { border-right:1px solid var(--line); }
 .video-wrapper { width:100%; height:100%; background:#000; display:flex; flex-direction:column; }
 .video-wrapper iframe { flex:1; width:100%; border:none; }
+.pane-video:fullscreen,
+.pane-video:-webkit-full-screen,
+.pane-video.vm-video-fullscreen-active {
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147483000 !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  max-width:none !important;
+  flex:none !important;
+  border:0 !important;
+  background:#000 !important;
+}
+.pane-video:fullscreen .video-wrapper,
+.pane-video:-webkit-full-screen .video-wrapper,
+.pane-video.vm-video-fullscreen-active .video-wrapper { width:100% !important; height:100% !important; }
+.pane-video:fullscreen .pane-control,
+.pane-video:-webkit-full-screen .pane-control,
+.pane-video.vm-video-fullscreen-active .pane-control { position:fixed; top:max(12px, env(safe-area-inset-top)); right:max(12px, env(safe-area-inset-right)); }
+body.vm-video-locked { overflow:hidden !important; }
 .pane-control { position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:6px; }
 .ctrl-btn { background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:6px; width:30px; height:30px; display:grid; place-items:center; cursor:pointer; font-size:.85rem; }
 .ctrl-btn:hover { background:rgba(0,0,0,.8); }
@@ -913,7 +934,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
     <main class="workspace show-video" id="khongGianHoc">
       <section class="pane pane-video" id="khungTrangVideo">
         <div class="pane-control">
-          <button class="ctrl-btn" onclick="phongToPane('video')" title="Phóng to Video" id="btnMaxVideo">⛶</button>
+          <button class="ctrl-btn" onclick="phongToPane('video')" title="Xem video toàn màn hình" aria-label="Xem video toàn màn hình" aria-pressed="false" id="btnMaxVideo">⛶</button>
         </div>
         <div class="video-wrapper" id="videoWrapper"></div>
       </section>
@@ -932,7 +953,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.9"></script>
+<script src="js/vinhmath.js?v=8.0"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -3715,32 +3736,93 @@ function hienMobilePane(loai) {
   }
 }
 
-function phongToPane(loai) {
-  var v = $('khungTrangVideo'), c = $('khungTrangNoiDung');
-  var bv = $('btnMaxVideo');
-  var resizer = $('workspaceResizer');
-  
-  if (viewMode === 'split') {
-    v.style.flex = 'none';
-    v.style.width = '100%';
-    c.style.display = 'none';
-    bv.textContent = '⧉';
-    viewMode = 'video-only';
-    if (resizer) resizer.style.display = 'none';
-  } else {
-    v.style.display = 'flex'; 
-    v.style.width = leftPaneWidthPercent + '%'; 
-    v.style.flex = 'none';
-    
-    c.style.display = 'flex'; 
-    c.style.width = (100 - leftPaneWidthPercent) + '%'; 
-    c.style.flex = 'none';
-    
-    bv.textContent = '⛶'; 
-    viewMode = 'split';
-    if (resizer && window.innerWidth > 820) resizer.style.display = 'block';
-  }
+function vmVideoFullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
 }
+
+function vmCapNhatNutFullscreenVideo(active) {
+  var btn = $('btnMaxVideo');
+  if (!btn) return;
+  btn.textContent = active ? '×' : '⛶';
+  btn.title = active ? 'Thoát toàn màn hình' : 'Xem video toàn màn hình';
+  btn.setAttribute('aria-label', btn.title);
+  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+}
+
+function vmThoatVideoFullscreenFallback() {
+  var v = $('khungTrangVideo');
+  if (v) v.classList.remove('vm-video-fullscreen-active');
+  document.body.classList.remove('vm-video-locked');
+  vmCapNhatNutFullscreenVideo(false);
+  viewMode = 'split';
+}
+
+async function phongToPane(loai) {
+  if (loai !== 'video') return;
+  var v = $('khungTrangVideo');
+  if (!v) return;
+
+  if (vmVideoFullscreenElement() === v) {
+    var exitNative = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exitNative) {
+      try { await exitNative.call(document); } catch (e) {}
+    }
+    return;
+  }
+  if (v.classList.contains('vm-video-fullscreen-active')) {
+    vmThoatVideoFullscreenFallback();
+    return;
+  }
+
+  // Xóa trạng thái phóng rộng kiểu cũ trước khi dùng toàn màn hình thật.
+  v.style.display = '';
+  v.style.width = '';
+  v.style.flex = '';
+  var contentPane = $('khungTrangNoiDung');
+  if (contentPane) {
+    contentPane.style.display = '';
+    contentPane.style.width = '';
+    contentPane.style.flex = '';
+  }
+  var resizer = $('workspaceResizer');
+  if (resizer) resizer.style.display = '';
+
+  var requestNative = v.requestFullscreen || v.webkitRequestFullscreen;
+  if (requestNative) {
+    try {
+      await requestNative.call(v);
+      viewMode = 'video-only';
+      vmCapNhatNutFullscreenVideo(true);
+      return;
+    } catch (e) {
+      console.warn('Trình duyệt không cho mở Fullscreen API, chuyển sang chế độ toàn màn hình tương thích.', e);
+    }
+  }
+
+  // Safari iPhone và một số WebView không hỗ trợ Fullscreen API cho phần tử HTML.
+  v.classList.add('vm-video-fullscreen-active');
+  document.body.classList.add('vm-video-locked');
+  viewMode = 'video-only';
+  vmCapNhatNutFullscreenVideo(true);
+}
+
+function vmDongBoVideoFullscreen() {
+  var v = $('khungTrangVideo');
+  var active = !!v && (vmVideoFullscreenElement() === v || v.classList.contains('vm-video-fullscreen-active'));
+  if (!active) {
+    document.body.classList.remove('vm-video-locked');
+    viewMode = 'split';
+  }
+  vmCapNhatNutFullscreenVideo(active);
+}
+
+document.addEventListener('fullscreenchange', vmDongBoVideoFullscreen);
+document.addEventListener('webkitfullscreenchange', vmDongBoVideoFullscreen);
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape' && $('khungTrangVideo') && $('khungTrangVideo').classList.contains('vm-video-fullscreen-active')) {
+    vmThoatVideoFullscreenFallback();
+  }
+});
 
 /* ----- TIẾN TRÌNH ĐỌC LÝ THUYẾT & CÂU HỎI CHẶN (ACTIVE READING) ----- */
 var currentProgress = { unlocked_section: 0, completed_at: null, answers: {} };

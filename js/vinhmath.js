@@ -2460,10 +2460,24 @@ async function vmDanhDauDaXem(lessonId, item) {
 window.vmBaiMap = window.vmBaiMap || {};
 function vmDangKyBai(list) { (list || []).forEach(function (b) { if (b && b.id) window.vmBaiMap[b.id] = b; }); }
 
+function vmStoragePathHopLe(path) {
+  if (typeof path !== 'string') return '';
+  var value = path.trim();
+  if (!value || value.length > 2048) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  // A few legacy rows accidentally stored the LaTeX source in file_path.
+  // Never turn source code (or an API error payload) into a Storage object key.
+  if (/[\r\n\t]/.test(value) || /\\(?:begin|end|documentclass|usepackage)\s*\{/i.test(value)) return '';
+  if (/^[\[{]/.test(value) || value.charAt(0) === '\\') return '';
+  return value;
+}
 function vmStorageUrl(bucket, path) {
-  if (!path) return '';
-  if (/^https?:\/\//.test(path)) return path;
-  return (VM.SUPABASE_URL || '') + '/storage/v1/object/public/' + bucket + '/' + path;
+  var value = vmStoragePathHopLe(path);
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  var encodedPath = value.split('/').filter(Boolean).map(function (part) { return encodeURIComponent(part); }).join('/');
+  if (!encodedPath) return '';
+  return (VM.SUPABASE_URL || '') + '/storage/v1/object/public/' + encodeURIComponent(bucket) + '/' + encodedPath;
 }
 function vmEscQ(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function vmYtIdQ(u) { if (!u) return ''; var m = String(u).match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ''; }
@@ -2473,13 +2487,13 @@ function vmNoiDungXemNhanh(b, item) {
   var body = '', dl = '';
   var iframe = function (src) { return '<div style="position:relative;padding-top:56.25%;background:#000;border-radius:10px;overflow:hidden"><iframe src="' + src + '" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe></div>'; };
   var pdfFrame = function (u) { return '<iframe src="' + u + '#toolbar=1" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>'; };
-  var anhList = function (arr) { return '<div style="display:flex;flex-direction:column;gap:10px">' + arr.map(function (p) { var u = vmStorageUrl('hinh-anh', p); return '<a href="' + u + '" target="_blank"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line)" loading="lazy"></a>'; }).join('') + '</div>'; };
+  var anhList = function (arr) { var items = arr.map(function (p) { var u = vmStorageUrl('hinh-anh', p); return u ? '<a href="' + u + '" target="_blank"><img src="' + u + '" style="width:100%;border-radius:10px;border:1px solid var(--line)" loading="lazy"></a>' : ''; }).filter(Boolean); return items.length ? '<div style="display:flex;flex-direction:column;gap:10px">' + items.join('') + '</div>' : ''; };
 
   if (item === 'video') {
     var yt = vmYtIdQ(b.youtube_url), dr = vmDriveIdQ(b.youtube_url);
     body = yt ? iframe('https://www.youtube.com/embed/' + yt + '?rel=0&modestbranding=1') : (dr ? iframe('https://drive.google.com/file/d/' + dr + '/preview') : '<p style="color:var(--ink-3)">Chưa có video.</p>');
   } else if (item === 'tailieu') {
-    var fp = (b.documents && b.documents.file_path) || '';
+    var fp = vmStoragePathHopLe((b.documents && b.documents.file_path) || '');
     if (fp) { var u = vmStorageUrl('tai-lieu', fp); body = pdfFrame(u); dl = u; }
     else if (b.latex_content) body = '<p style="color:var(--ink-2)">Tài liệu dạng LaTeX sẽ được biên dịch khi vào học. Bấm <b>Vào học</b> để xem bản PDF đầy đủ.</p>';
     else body = '<p style="color:var(--ink-3)">Chưa có tài liệu.</p>';
@@ -2488,7 +2502,7 @@ function vmNoiDungXemNhanh(b, item) {
     body = imgs.length ? anhList(imgs) : '<p style="color:var(--ink-3)">Chưa có ảnh bảng.</p>';
   } else if (item === 'btvn') {
     var t = b.homework_text || '', hi = Array.isArray(b.homework_images) ? b.homework_images : [];
-    var hwfp = (b.bai_btvn && b.bai_btvn.file_path) || '';
+    var hwfp = vmStoragePathHopLe((b.bai_btvn && b.bai_btvn.file_path) || '');
     body = '';
     if (b.homework_due) {
       var _hd = new Date(b.homework_due);
@@ -2496,12 +2510,12 @@ function vmNoiDungXemNhanh(b, item) {
     }
     if (t) body += '<div style="font-weight:800;color:var(--accent);font-size:.9rem;margin-bottom:4px">📝 Ghi chú / dặn dò cho học sinh</div>' +
       '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>';
-    if (b.homework_latex_content) body += '<p style="color:var(--ink-2);margin-bottom:10px">📝 Đề LaTeX — bấm <b>Vào học</b> để xem bản biên dịch đầy đủ.</p>';
+    if (b.homework_latex_content) body += '<div style="color:var(--ink-2);margin-bottom:10px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)">📝 Đề LaTeX — mở bản đọc trực tiếp để xem đầy đủ công thức và hình vẽ.<div style="margin-top:10px"><a class="btn btn-sm" style="background:var(--accent);color:#fff;border-color:var(--accent)" href="bai-hoc?id=' + encodeURIComponent(b.id || '') + '&tab=btvn">▶ Xem đề bài tập</a></div></div>';
     if (hwfp) { var hu = vmStorageUrl('tai-lieu', hwfp); body += pdfFrame(hu); dl = hu; }
     if (hi.length) body += anhList(hi);
     if (!t && !hi.length && !hwfp && !b.homework_latex_content) body += '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
   } else if (item === 'test') {
-    var tfp = (b.bai_test && b.bai_test.file_path) || '';
+    var tfp = vmStoragePathHopLe((b.bai_test && b.bai_test.file_path) || '');
     if (tfp) { var tu = vmStorageUrl('tai-lieu', tfp); body = pdfFrame(tu); dl = tu; }
     else body = '<p style="color:var(--ink-2)">Đây là bài kiểm tra. Bấm <b>Vào học</b> để làm bài / xem chi tiết.</p>';
   } else if (item === 'lythuyet') {
