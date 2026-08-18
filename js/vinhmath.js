@@ -2460,11 +2460,21 @@ async function vmDanhDauDaXem(lessonId, item) {
 window.vmBaiMap = window.vmBaiMap || {};
 function vmDangKyBai(list) { (list || []).forEach(function (b) { if (b && b.id) window.vmBaiMap[b.id] = b; }); }
 
+function vmTrongGiongNguonLatex(value) {
+  if (typeof value !== 'string') return false;
+  var source = value.trim();
+  if (!source) return false;
+  return /(?:\\|\/)(?:begin|end|documentclass|usepackage|item|frac|dfrac|sqrt|quad|loigiai)\b/i.test(source)
+    || /\$\$/.test(source)
+    || (/[\r\n]/.test(source) && /\\[A-Za-z]+/.test(source));
+}
+
 function vmStoragePathHopLe(path) {
   if (typeof path !== 'string') return '';
   var value = path.trim();
-  if (!value || value.length > 2048) return '';
-  if (/^https?:\/\//i.test(value)) return value;
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value.length <= 4096 ? value : '';
+  if (value.length > 2048 || vmTrongGiongNguonLatex(value)) return '';
   // A few legacy rows accidentally stored the LaTeX source in file_path.
   // Never turn source code (or an API error payload) into a Storage object key.
   if (/[\r\n\t]/.test(value) || /\\(?:begin|end|documentclass|usepackage)\s*\{/i.test(value)) return '';
@@ -2502,7 +2512,12 @@ function vmNoiDungXemNhanh(b, item) {
     body = imgs.length ? anhList(imgs) : '<p style="color:var(--ink-3)">Chưa có ảnh bảng.</p>';
   } else if (item === 'btvn') {
     var t = b.homework_text || '', hi = Array.isArray(b.homework_images) ? b.homework_images : [];
-    var hwfp = vmStoragePathHopLe((b.bai_btvn && b.bai_btvn.file_path) || '');
+    var rawHomeworkPath = (b.bai_btvn && b.bai_btvn.file_path) || '';
+    var hwfp = vmStoragePathHopLe(rawHomeworkPath);
+    // Một số bài cũ lưu thẳng mã LaTeX vào file_path. Không được ghép chuỗi này
+    // thành URL Storage vì Supabase sẽ trả InvalidKey và che mất toàn bộ đề.
+    var legacyHomeworkLatex = (!hwfp && vmTrongGiongNguonLatex(rawHomeworkPath)) ? rawHomeworkPath : '';
+    var homeworkLatex = b.homework_latex_content || legacyHomeworkLatex;
     body = '';
     if (b.homework_due) {
       var _hd = new Date(b.homework_due);
@@ -2510,10 +2525,10 @@ function vmNoiDungXemNhanh(b, item) {
     }
     if (t) body += '<div style="font-weight:800;color:var(--accent);font-size:.9rem;margin-bottom:4px">📝 Ghi chú / dặn dò cho học sinh</div>' +
       '<div style="white-space:pre-wrap;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">' + vmEscQ(t) + '</div>';
-    if (b.homework_latex_content) body += '<div style="color:var(--ink-2);margin-bottom:10px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)">📝 Đề LaTeX — mở bản đọc trực tiếp để xem đầy đủ công thức và hình vẽ.<div style="margin-top:10px"><a class="btn btn-sm" style="background:var(--accent);color:#fff;border-color:var(--accent)" href="bai-hoc?id=' + encodeURIComponent(b.id || '') + '&tab=btvn">▶ Xem đề bài tập</a></div></div>';
+    if (homeworkLatex) body += '<div style="color:var(--ink-2);margin-bottom:10px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)">📝 Đề LaTeX — mở bản đọc trực tiếp để xem đầy đủ công thức và hình vẽ.<div style="margin-top:10px"><a class="btn btn-sm" style="background:var(--accent);color:#fff;border-color:var(--accent)" href="bai-hoc?id=' + encodeURIComponent(b.id || '') + '&tab=btvn">▶ Xem đề bài tập</a></div></div>';
     if (hwfp) { var hu = vmStorageUrl('tai-lieu', hwfp); body += pdfFrame(hu); dl = hu; }
     if (hi.length) body += anhList(hi);
-    if (!t && !hi.length && !hwfp && !b.homework_latex_content) body += '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
+    if (!t && !hi.length && !hwfp && !homeworkLatex) body += '<p style="color:var(--ink-3)">Chưa có đề bài tập về nhà.</p>';
   } else if (item === 'test') {
     var tfp = vmStoragePathHopLe((b.bai_test && b.bai_test.file_path) || '');
     if (tfp) { var tu = vmStorageUrl('tai-lieu', tfp); body = pdfFrame(tu); dl = tu; }

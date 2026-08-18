@@ -360,7 +360,7 @@ body.theme-map .map-ribbon { display:flex; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.0"></script>
+<script src="js/vinhmath.js?v=8.1"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1257,9 +1257,14 @@ function doiStudentTab(tab) {
 }
 
 function buildPdfUrl(p) {
-  if (!p) return '';
-  if (p.startsWith('http://') || p.startsWith('https://')) return p;
-  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p;
+  var value = typeof vmStoragePathHopLe === 'function'
+    ? vmStoragePathHopLe(p)
+    : String(p || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  var encoded = value.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  if (!encoded) return '';
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + encoded;
 }
 
 async function taiTaiLieuHocSinh() {
