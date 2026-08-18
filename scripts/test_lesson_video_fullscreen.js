@@ -18,6 +18,10 @@ assert(
   'Phải có lớp toàn màn hình độc lập dự phòng cho iPhone/WebView.'
 );
 assert(
+  /visibility:visible !important/.test(lesson) && /pointer-events:auto !important/.test(lesson),
+  'Lớp toàn màn hình dự phòng phải luôn hiển thị và nhận thao tác.'
+);
+assert(
   /stage\.appendChild\(v\)/.test(lesson) && /insertBefore\(state\.pane, state\.placeholder\)/.test(lesson),
   'Video phải được tách khỏi bố cục hai cột khi phóng lớn và trả về đúng vị trí khi thoát.'
 );
@@ -28,6 +32,14 @@ assert(
 assert(
   /document\.addEventListener\('fullscreenchange', vmDongBoVideoFullscreen\)/.test(lesson),
   'Trạng thái nút phải đồng bộ khi người dùng thoát fullscreen bằng Esc.'
+);
+assert(
+  /nativeEntered: false/.test(lesson) && /closing: false/.test(lesson),
+  'Trạng thái phải phân biệt native fullscreen, fallback CSS và thao tác đóng.'
+);
+assert(
+  /if \(state\.nativePending \|\| !state\.nativeEntered \|\| state\.closing\)/.test(lesson),
+  'Sự kiện fullscreen rỗng không được tháo lớp phủ CSS trước khi native fullscreen thực sự mở.'
 );
 assert(
   !/v\.style\.width = '100%';[\s\S]{0,180}c\.style\.display = 'none'/.test(lesson),

@@ -155,6 +155,10 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-video-fullscreen-stage {
   position:fixed !important;
   inset:0 !important;
+  top:0 !important;
+  right:0 !important;
+  bottom:0 !important;
+  left:0 !important;
   z-index:2147483000 !important;
   width:100vw !important;
   height:100vh !important;
@@ -162,6 +166,13 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
   display:flex !important;
   overflow:hidden !important;
   background:#000 !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
 }
 .vm-video-fullscreen-stage .pane-video {
   position:relative !important;
@@ -3799,7 +3810,9 @@ function vmTaoVideoFullscreenStage(v) {
     placeholder: placeholder,
     parent: parent,
     pane: v,
-    nativePending: false
+    nativePending: false,
+    nativeEntered: false,
+    closing: false
   };
   return stage;
 }
@@ -3825,6 +3838,7 @@ function vmKhoiPhucVideoFullscreen() {
 async function vmDongVideoFullscreenNeuCan() {
   var state = vmVideoFullscreenState;
   if (!state) return;
+  state.closing = true;
   var active = vmVideoFullscreenElement();
   var exitNative = document.exitFullscreen || document.webkitExitFullscreen;
   if (active === state.stage && exitNative) {
@@ -3862,7 +3876,10 @@ async function phongToPane(loai) {
     vmVideoFullscreenState.nativePending = true;
     try {
       await requestNative.call(stage);
-      if (vmVideoFullscreenState) vmVideoFullscreenState.nativePending = false;
+      if (vmVideoFullscreenState) {
+        vmVideoFullscreenState.nativePending = false;
+        vmVideoFullscreenState.nativeEntered = vmVideoFullscreenElement() === stage;
+      }
       viewMode = 'video-only';
       vmCapNhatNutFullscreenVideo(true);
       return;
@@ -3879,11 +3896,30 @@ async function phongToPane(loai) {
 
 function vmDongBoVideoFullscreen() {
   var state = vmVideoFullscreenState;
-  if (state && !state.nativePending && vmVideoFullscreenElement() !== state.stage) {
-    vmKhoiPhucVideoFullscreen();
-  } else {
-    vmCapNhatNutFullscreenVideo(!!state);
+  if (!state) {
+    vmCapNhatNutFullscreenVideo(false);
+    return;
   }
+
+  var active = vmVideoFullscreenElement();
+  if (active === state.stage) {
+    state.nativeEntered = true;
+    state.nativePending = false;
+    vmCapNhatNutFullscreenVideo(true);
+    return;
+  }
+
+  // Fullscreen API có thể phát sự kiện rỗng trước khi promise hoàn tất hoặc
+  // bị WebView/Safari từ chối. Trong hai trường hợp đó, vẫn giữ lớp phủ CSS
+  // toàn màn hình thay vì tháo video khỏi DOM làm màn hình chớp rồi biến mất.
+  if (state.nativePending || !state.nativeEntered || state.closing) {
+    vmCapNhatNutFullscreenVideo(true);
+    return;
+  }
+
+  // Chỉ khôi phục bố cục khi trình duyệt đã thực sự vào native fullscreen rồi
+  // người dùng thoát bằng Esc/cử chỉ hệ thống.
+  vmKhoiPhucVideoFullscreen();
 }
 
 document.addEventListener('fullscreenchange', vmDongBoVideoFullscreen);
