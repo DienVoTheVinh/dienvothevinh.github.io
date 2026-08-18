@@ -3,7 +3,7 @@ const fs = require('fs');
 const vm = require('vm');
 
 const source = fs.readFileSync('js/vinhmath.js', 'utf8');
-const start = source.indexOf('function vmStoragePathHopLe');
+const start = source.indexOf('function vmTrongGiongNguonLatex');
 const end = source.indexOf('function vmHienModalXN', start);
 assert(start >= 0 && end > start, 'Không tìm thấy bộ dựng cửa sổ xem nhanh.');
 
@@ -21,6 +21,7 @@ assert.strictEqual(
   'https://example.supabase.co/storage/v1/object/public/tai-lieu/lop%207/de%20bai.pdf'
 );
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '\\begin{bt} Bài tập \\end{bt}'), '');
+assert.strictEqual(context.vmStorageUrl('tai-lieu', '/begin{bt} Bài tập /dfrac{1}{2} /quad /end{bt}'), '');
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '{"statusCode":400,"error":"InvalidKey"}'), '');
 
 const latex = String.raw`\begin{bt} Cho các biểu thức sau: $$A(x) = 2x^4 - \dfrac{1}{2}x^3 + 3x - 1; \quad B(x) = \dfrac{2x^2 - 3x + 1}{x - 2}; \quad C(y) = -y^5 + 2y^2 - \sqrt{2}; \quad D(u) = 15 - 3u + 4u^3 - u^6.$$ \begin{enumerate}[a)] \item Biểu thức nào là đa thức một biến? \end{enumerate} \end{bt}`;
@@ -36,5 +37,14 @@ assert(!preview.body.includes('<iframe'), 'Mã LaTeX không được đưa vào 
 assert(!preview.body.includes('InvalidKey'), 'Không được lộ lỗi Storage thô cho học sinh.');
 assert(preview.body.includes('bai-hoc?id=lesson-123&amp;tab=btvn') || preview.body.includes('bai-hoc?id=lesson-123&tab=btvn'), 'Phải có nút mở đề đầy đủ.');
 assert.strictEqual(preview.download, '');
+
+const legacyPreview = context.vmNoiDungXemNhanh({
+  id: 'legacy-lesson',
+  title: 'Dữ liệu cũ',
+  bai_btvn: { file_path: latex }
+}, 'btvn');
+assert(!legacyPreview.body.includes('<iframe'), 'Nguồn LaTeX kiểu cũ không được dựng thành iframe PDF.');
+assert(legacyPreview.body.includes('bai-hoc?id=legacy-lesson'), 'Nguồn LaTeX kiểu cũ vẫn phải có lối mở đề trực tiếp.');
+assert.strictEqual(legacyPreview.download, '');
 
 console.log('✓ Homework quick preview rejects invalid Storage keys and keeps the lesson accessible.');

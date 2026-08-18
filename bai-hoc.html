@@ -152,26 +152,41 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .pane-video { border-right:1px solid var(--line); }
 .video-wrapper { width:100%; height:100%; background:#000; display:flex; flex-direction:column; }
 .video-wrapper iframe { flex:1; width:100%; border:none; }
-.pane-video:fullscreen,
-.pane-video:-webkit-full-screen,
-.pane-video.vm-video-fullscreen-active {
+.vm-video-fullscreen-stage {
   position:fixed !important;
   inset:0 !important;
   z-index:2147483000 !important;
   width:100vw !important;
   height:100vh !important;
   height:100dvh !important;
+  display:flex !important;
+  overflow:hidden !important;
+  background:#000 !important;
+}
+.vm-video-fullscreen-stage .pane-video {
+  position:relative !important;
+  inset:auto !important;
+  display:flex !important;
+  width:100% !important;
+  height:100% !important;
   max-width:none !important;
-  flex:none !important;
+  min-width:0 !important;
+  flex:1 1 auto !important;
   border:0 !important;
   background:#000 !important;
 }
-.pane-video:fullscreen .video-wrapper,
-.pane-video:-webkit-full-screen .video-wrapper,
-.pane-video.vm-video-fullscreen-active .video-wrapper { width:100% !important; height:100% !important; }
-.pane-video:fullscreen .pane-control,
-.pane-video:-webkit-full-screen .pane-control,
-.pane-video.vm-video-fullscreen-active .pane-control { position:fixed; top:max(12px, env(safe-area-inset-top)); right:max(12px, env(safe-area-inset-right)); }
+.vm-video-fullscreen-stage .video-wrapper,
+.vm-video-fullscreen-stage .video-wrapper iframe {
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+}
+.vm-video-fullscreen-stage .pane-control {
+  display:flex !important;
+  position:fixed !important;
+  top:max(12px, env(safe-area-inset-top));
+  right:max(12px, env(safe-area-inset-right));
+}
 body.vm-video-locked { overflow:hidden !important; }
 .pane-control { position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:6px; }
 .ctrl-btn { background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:6px; width:30px; height:30px; display:grid; place-items:center; cursor:pointer; font-size:.85rem; }
@@ -953,7 +968,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.0"></script>
+<script src="js/vinhmath.js?v=8.1"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1650,9 +1665,14 @@ function bhConfetti() {
   }
 }
 function buildPdfUrl(p) {
-  if (!p) return '';
-  if (p.startsWith('http://') || p.startsWith('https://')) return p;
-  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p;
+  var value = typeof vmStoragePathHopLe === 'function'
+    ? vmStoragePathHopLe(p)
+    : String(p || '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  var encoded = value.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  if (!encoded) return '';
+  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + encoded;
 }
 function urlAnh(p) { return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p; }
 
@@ -3202,31 +3222,39 @@ function btvnEsc(s) {
 }
 
 async function renderBTVN(than) {
+  await vmDongVideoFullscreenNeuCan();
   var toolbar = thanhCongCu('🏠 Bài tập về nhà', null);
   var buildToken = vmBatDauDungReader(than, toolbar, 'Đang dựng nội dung bài tập…');
   await vmChoTrinhDuyetVe();
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   var laAdmin = laQuanTriBaiHoc();
+  var rawHomeworkDoc = (details.bai_btvn && details.bai_btvn.file_path) || '';
+  var rawBonusDoc = (details.bai_btvn2 && details.bai_btvn2.file_path) || '';
+  var safeHomeworkDoc = typeof vmStoragePathHopLe === 'function' ? vmStoragePathHopLe(rawHomeworkDoc) : rawHomeworkDoc;
+  var safeBonusDoc = typeof vmStoragePathHopLe === 'function' ? vmStoragePathHopLe(rawBonusDoc) : rawBonusDoc;
+  var legacyHomeworkLatex = !safeHomeworkDoc && typeof vmTrongGiongNguonLatex === 'function' && vmTrongGiongNguonLatex(rawHomeworkDoc) ? rawHomeworkDoc : '';
+  var legacyBonusLatex = !safeBonusDoc && typeof vmTrongGiongNguonLatex === 'function' && vmTrongGiongNguonLatex(rawBonusDoc) ? rawBonusDoc : '';
   var nguonBtvn = await Promise.all([
-    vmLayNguonLatexTheoQuyen('homework', details.homework_latex_content),
-    vmLayNguonLatexTheoQuyen('homework_bonus', details.homework2_latex_content)
+    vmLayNguonLatexTheoQuyen('homework', details.homework_latex_content || legacyHomeworkLatex),
+    vmLayNguonLatexTheoQuyen('homework_bonus', details.homework2_latex_content || legacyBonusLatex)
   ]);
   var blocks = [
     { sfx: '', bonus: false, phanloai: 'homework', kind: 'homework',
       text: details.homework_text, images: details.homework_images,
-      docPath: (details.bai_btvn && details.bai_btvn.file_path) || '',
+      docPath: safeHomeworkDoc,
       latex: nguonBtvn[0].content, solutionUnlocked: nguonBtvn[0].unlocked, hasSolution: nguonBtvn[0].hasSolution, due: details.homework_due,
       latePolicy: details.homework_late_policy || 'late' },
     { sfx: '2', bonus: true, phanloai: 'homework_bonus', kind: 'homework_bonus',
       text: details.homework2_text, images: details.homework2_images,
-      docPath: (details.bai_btvn2 && details.bai_btvn2.file_path) || '',
+      docPath: safeBonusDoc,
       latex: nguonBtvn[1].content, solutionUnlocked: nguonBtvn[1].unlocked, hasSolution: nguonBtvn[1].hasSolution, due: details.homework2_due,
       latePolicy: details.homework2_late_policy || 'late' }
   ];
 
   function blockHtml(b) {
     var coText = !!b.text, dsAnh = Array.isArray(b.images) ? b.images : [];
-    var coDoc = !!b.docPath, coLatex = !!b.latex;
+    var pdfUrl = buildPdfUrl(b.docPath);
+    var coDoc = !!pdfUrl, coLatex = !!b.latex;
     var coDe = coText || dsAnh.length || coDoc || coLatex;
     if (b.bonus && !coDe) return '';   // buổi không có bài thưởng thêm -> ẩn hẳn
     var head = b.bonus
@@ -3247,7 +3275,6 @@ async function renderBTVN(than) {
         '<div class="btvn-note-card-body">' + btvnEsc(b.text) + '</div></div>' : '';
     var latexTitle = b.bonus ? 'Bài tập thưởng thêm' : 'Bài tập về nhà bắt buộc';
     var latexHtml = coLatex ? vmLatexNativeHTML(latexTitle, b.latex, 'lesson-homework' + b.sfx, vmTenTepPdf(details.title + '-' + latexTitle), b.kind, true, b.solutionUnlocked && b.hasSolution) : '';
-    var pdfUrl = coDoc ? buildPdfUrl(b.docPath) : '';
     var docHtml = coDoc ? '<div class="btvn-document">' + thanhCongCu('📄 Đề bài tập (PDF)', pdfUrl) + '<div id="btvnPdfBox' + b.sfx + '" style="height:clamp(420px,70vh,900px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:10px"></div></div>' : '';
     var anhHtml = dsAnh.length ? '<div class="btvn-media">' +
       dsAnh.map(function (p, idx) { var u = urlAnh(p); return '<a href="' + btvnEsc(u) + '" target="_blank" rel="noopener" title="Xem ảnh gốc"><img src="' + btvnEsc(u) + '" alt="Trang ' + (idx + 1) + ' của đề bài ' + (b.bonus ? 'thưởng thêm' : 'về nhà') + '" loading="lazy"></a>'; }).join('') + '</div>' : '';
@@ -3282,9 +3309,10 @@ async function renderBTVN(than) {
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   vmRenderMathTaiLieu(than);
   blocks.forEach(function (b) {
-    if (b.docPath) {
+    var pdfUrl = buildPdfUrl(b.docPath);
+    if (pdfUrl) {
       var pdfBox = document.getElementById('btvnPdfBox' + b.sfx);
-      if (pdfBox) renderPDFWithJS(buildPdfUrl(b.docPath), pdfBox);
+      if (pdfBox) renderPDFWithJS(pdfUrl, pdfBox);
     }
     if (!laAdmin && nguoiDung) {
       (async function () {
@@ -3740,6 +3768,8 @@ function vmVideoFullscreenElement() {
   return document.fullscreenElement || document.webkitFullscreenElement || null;
 }
 
+var vmVideoFullscreenState = null;
+
 function vmCapNhatNutFullscreenVideo(active) {
   var btn = $('btnMaxVideo');
   if (!btn) return;
@@ -3750,11 +3780,57 @@ function vmCapNhatNutFullscreenVideo(active) {
 }
 
 function vmThoatVideoFullscreenFallback() {
-  var v = $('khungTrangVideo');
-  if (v) v.classList.remove('vm-video-fullscreen-active');
+  vmKhoiPhucVideoFullscreen();
+}
+
+function vmTaoVideoFullscreenStage(v) {
+  var parent = v.parentNode;
+  var placeholder = document.createComment('vm-video-fullscreen-placeholder');
+  parent.insertBefore(placeholder, v);
+  var stage = document.createElement('div');
+  stage.id = 'vmVideoFullscreenStage';
+  stage.className = 'vm-video-fullscreen-stage';
+  document.body.appendChild(stage);
+  stage.appendChild(v);
+  v.classList.add('vm-video-fullscreen-active');
+  document.body.classList.add('vm-video-locked');
+  vmVideoFullscreenState = {
+    stage: stage,
+    placeholder: placeholder,
+    parent: parent,
+    pane: v,
+    nativePending: false
+  };
+  return stage;
+}
+
+function vmKhoiPhucVideoFullscreen() {
+  var state = vmVideoFullscreenState;
+  if (state) {
+    if (state.placeholder && state.placeholder.parentNode) {
+      state.placeholder.parentNode.insertBefore(state.pane, state.placeholder);
+    } else if (state.parent && state.pane) {
+      state.parent.appendChild(state.pane);
+    }
+    if (state.pane) state.pane.classList.remove('vm-video-fullscreen-active');
+    if (state.placeholder && state.placeholder.parentNode) state.placeholder.remove();
+    if (state.stage && state.stage.parentNode) state.stage.remove();
+  }
+  vmVideoFullscreenState = null;
   document.body.classList.remove('vm-video-locked');
   vmCapNhatNutFullscreenVideo(false);
   viewMode = 'split';
+}
+
+async function vmDongVideoFullscreenNeuCan() {
+  var state = vmVideoFullscreenState;
+  if (!state) return;
+  var active = vmVideoFullscreenElement();
+  var exitNative = document.exitFullscreen || document.webkitExitFullscreen;
+  if (active === state.stage && exitNative) {
+    try { await exitNative.call(document); } catch (e) {}
+  }
+  vmKhoiPhucVideoFullscreen();
 }
 
 async function phongToPane(loai) {
@@ -3762,15 +3838,8 @@ async function phongToPane(loai) {
   var v = $('khungTrangVideo');
   if (!v) return;
 
-  if (vmVideoFullscreenElement() === v) {
-    var exitNative = document.exitFullscreen || document.webkitExitFullscreen;
-    if (exitNative) {
-      try { await exitNative.call(document); } catch (e) {}
-    }
-    return;
-  }
-  if (v.classList.contains('vm-video-fullscreen-active')) {
-    vmThoatVideoFullscreenFallback();
+  if (vmVideoFullscreenState) {
+    await vmDongVideoFullscreenNeuCan();
     return;
   }
 
@@ -3787,40 +3856,41 @@ async function phongToPane(loai) {
   var resizer = $('workspaceResizer');
   if (resizer) resizer.style.display = '';
 
-  var requestNative = v.requestFullscreen || v.webkitRequestFullscreen;
+  var stage = vmTaoVideoFullscreenStage(v);
+  var requestNative = stage.requestFullscreen || stage.webkitRequestFullscreen;
   if (requestNative) {
+    vmVideoFullscreenState.nativePending = true;
     try {
-      await requestNative.call(v);
+      await requestNative.call(stage);
+      if (vmVideoFullscreenState) vmVideoFullscreenState.nativePending = false;
       viewMode = 'video-only';
       vmCapNhatNutFullscreenVideo(true);
       return;
     } catch (e) {
+      if (vmVideoFullscreenState) vmVideoFullscreenState.nativePending = false;
       console.warn('Trình duyệt không cho mở Fullscreen API, chuyển sang chế độ toàn màn hình tương thích.', e);
     }
   }
 
   // Safari iPhone và một số WebView không hỗ trợ Fullscreen API cho phần tử HTML.
-  v.classList.add('vm-video-fullscreen-active');
-  document.body.classList.add('vm-video-locked');
   viewMode = 'video-only';
   vmCapNhatNutFullscreenVideo(true);
 }
 
 function vmDongBoVideoFullscreen() {
-  var v = $('khungTrangVideo');
-  var active = !!v && (vmVideoFullscreenElement() === v || v.classList.contains('vm-video-fullscreen-active'));
-  if (!active) {
-    document.body.classList.remove('vm-video-locked');
-    viewMode = 'split';
+  var state = vmVideoFullscreenState;
+  if (state && !state.nativePending && vmVideoFullscreenElement() !== state.stage) {
+    vmKhoiPhucVideoFullscreen();
+  } else {
+    vmCapNhatNutFullscreenVideo(!!state);
   }
-  vmCapNhatNutFullscreenVideo(active);
 }
 
 document.addEventListener('fullscreenchange', vmDongBoVideoFullscreen);
 document.addEventListener('webkitfullscreenchange', vmDongBoVideoFullscreen);
 document.addEventListener('keydown', function (event) {
-  if (event.key === 'Escape' && $('khungTrangVideo') && $('khungTrangVideo').classList.contains('vm-video-fullscreen-active')) {
-    vmThoatVideoFullscreenFallback();
+  if (event.key === 'Escape' && vmVideoFullscreenState) {
+    vmDongVideoFullscreenNeuCan();
   }
 });
 
