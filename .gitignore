@@ -1,14 +1,40 @@
-.DS_Store
+# Local configuration and credentials
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+**/secrets/
+
+# Dependencies and local runtimes
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.tools/
+.source-package/
+.source/
+
+# Supabase local state
+.supabase/
+supabase/.temp/
+supabase/.branches/
+web/supabase/supabase/
+
+# Logs and build residue
 *.log
+logs/
+.DS_Store
+Thumbs.db
 *.aux
 *.out
 *.synctex.gz
 *.thm
 *.toc
-.venv/
-__pycache__/
-node_modules/
-.supabase/
-web/supabase/supabase/

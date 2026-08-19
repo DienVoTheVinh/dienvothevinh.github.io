@@ -32,7 +32,7 @@ def run_migration():
         # pg8000.connect accepts connection parameters. We can parse the URI or use pg8000.dbapi.connect
         # Actually, pg8000 has native URI support in newer versions, or we can parse it manually.
         # Let's parse the URI manually to extract host, port, database, user, and password.
-        # URI format: postgresql://user:password@host:port/database
+        # Read the connection URI from the process environment; never hardcode credentials.
         if not connection_uri.startswith("postgresql://"):
             print("Error: Invalid Connection URI. Must start with postgresql://")
             sys.exit(1)

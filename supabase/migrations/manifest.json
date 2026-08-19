@@ -1,0 +1,167 @@
+{
+  "captured_at": "2026-08-03T00:00:00+07:00",
+  "project_ref": "nrnokgciogxqzjqjeuwi",
+  "migrations": [
+    {
+      "version": "20260625140246",
+      "name": "add_test_active_to_lessons"
+    },
+    {
+      "version": "20260625195908",
+      "name": "harden_profiles_and_functions"
+    },
+    {
+      "version": "20260626095901",
+      "name": "add_meet_link_to_schedules"
+    },
+    {
+      "version": "20260627204219",
+      "name": "add_lesson_id_to_class_sessions"
+    },
+    {
+      "version": "20260701181359",
+      "name": "class_posts_feature"
+    },
+    {
+      "version": "20260701210345",
+      "name": "class_assistants"
+    },
+    {
+      "version": "20260703070400",
+      "name": "allow_service_role_profile_link"
+    },
+    {
+      "version": "20260706171044",
+      "name": "add_homework_and_submission_kind"
+    },
+    {
+      "version": "20260706175055",
+      "name": "create_lesson_item_progress"
+    },
+    {
+      "version": "20260707170311",
+      "name": "assistant_can_write_lessons"
+    },
+    {
+      "version": "20260708161411",
+      "name": "homework_document_and_latex"
+    },
+    {
+      "version": "20260708163033",
+      "name": "homework_due_and_status"
+    },
+    {
+      "version": "20260708164554",
+      "name": "parent_read_submissions"
+    },
+    {
+      "version": "20260709191152",
+      "name": "thong_ke_truy_cap_function"
+    },
+    {
+      "version": "20260709192918",
+      "name": "phan_tich_truy_cap_function"
+    },
+    {
+      "version": "20260713123138",
+      "name": "gamification_tables"
+    },
+    {
+      "version": "20260713123231",
+      "name": "rpc_hs_nhiem_vu"
+    },
+    {
+      "version": "20260713181601",
+      "name": "late_submission_fields"
+    },
+    {
+      "version": "20260713190309",
+      "name": "notify_staff_on_student_activity"
+    },
+    {
+      "version": "20260713190754",
+      "name": "lesson_linked_exam"
+    },
+    {
+      "version": "20260713194903",
+      "name": "submission_reflection"
+    },
+    {
+      "version": "20260713195022",
+      "name": "rpc_hs_nhiem_vu_review"
+    },
+    {
+      "version": "20260713195634",
+      "name": "rpc_hs_nhiem_vu_hide_submitted_lesson"
+    },
+    {
+      "version": "20260714092527",
+      "name": "game_economy_foundation"
+    },
+    {
+      "version": "20260714092730",
+      "name": "rpc_hs_ho_so"
+    },
+    {
+      "version": "20260714113132",
+      "name": "rpc_shop_actions"
+    },
+    {
+      "version": "20260714113154",
+      "name": "fix_hs_doi_avatar"
+    },
+    {
+      "version": "20260714115622",
+      "name": "homework_bonus_and_hot_reward"
+    },
+    {
+      "version": "20260714115704",
+      "name": "hs_ho_so_exclude_bonus_btvn"
+    },
+    {
+      "version": "20260714121057",
+      "name": "rpc_gv_bao_cao_hs"
+    },
+    {
+      "version": "20260714122002",
+      "name": "game_pillars_penalty_model"
+    },
+    {
+      "version": "20260714122032",
+      "name": "hs_ho_so_use_game_pillars"
+    },
+    {
+      "version": "20260716061322",
+      "name": "daily_checkin_streak"
+    },
+    {
+      "version": "20260716062159",
+      "name": "reward_config_table"
+    },
+    {
+      "version": "20260716062253",
+      "name": "hs_nhiem_vu_use_reward_config"
+    },
+    {
+      "version": "20260716062333",
+      "name": "hs_ho_so_and_checkin_use_reward_config"
+    },
+    {
+      "version": "20260716110829",
+      "name": "homework_bonus_slot2"
+    },
+    {
+      "version": "20260716110937",
+      "name": "reward_homework_bonus_submissions"
+    },
+    {
+      "version": "20260716111007",
+      "name": "hs_ho_so_bonus_coins"
+    },
+    {
+      "version": "20260716112809",
+      "name": "add_homework2_document_fk"
+    }
+  ],
+  "note": "Read-only manifest reported by Supabase; no migration SQL files were fabricated."
+}
