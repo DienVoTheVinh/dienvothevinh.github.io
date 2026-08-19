@@ -11,6 +11,12 @@ create table if not exists public.google_drive_connections (
   connected_at timestamptz not null default now(),
   last_synced_at timestamptz,
   last_sync_count integer not null default 0,
+  last_sync_started_at timestamptz,
+  last_sync_status text not null default 'idle',
+  last_sync_error text,
+  last_sync_mode text,
+  last_sync_scanned integer not null default 0,
+  last_sync_matched integer not null default 0,
   updated_at timestamptz not null default now()
 );
 
@@ -26,6 +32,7 @@ create table if not exists public.meet_recordings (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references public.profiles(id) on delete cascade,
   google_file_id text not null,
+  google_recording_name text,
   file_name text not null,
   mime_type text,
   created_time timestamptz,
@@ -35,6 +42,11 @@ create table if not exists public.meet_recordings (
   duration_ms bigint,
   width integer,
   height integer,
+  source text not null default 'drive_scan',
+  recording_state text not null default 'FILE_GENERATED',
+  conference_start_time timestamptz,
+  conference_end_time timestamptz,
+  is_meet_recording boolean not null default false,
   suggested_class_id uuid references public.classes(id) on delete set null,
   suggested_lesson_id uuid references public.lessons(id) on delete set null,
   match_confidence smallint not null default 0 check (match_confidence between 0 and 100),
@@ -55,6 +67,9 @@ create index if not exists meet_recordings_suggested_lesson_idx on public.meet_r
 create index if not exists meet_recordings_assigned_class_idx on public.meet_recordings(assigned_class_id);
 create index if not exists meet_recordings_assigned_lesson_idx on public.meet_recordings(assigned_lesson_id);
 create index if not exists meet_recordings_assigned_by_idx on public.meet_recordings(assigned_by);
+create unique index if not exists meet_recordings_google_recording_name_uidx on public.meet_recordings(owner_user_id, google_recording_name);
+create index if not exists meet_recordings_owner_meet_created_idx on public.meet_recordings(owner_user_id, is_meet_recording, created_time desc);
+create index if not exists meet_recordings_state_idx on public.meet_recordings(recording_state) where is_meet_recording = true;
 create index if not exists google_oauth_states_expiry_idx on public.google_oauth_states(expires_at);
 create index if not exists google_oauth_states_user_idx on public.google_oauth_states(user_id);
 
