@@ -1,6 +1,15 @@
 .DS_Store
 .env
 .env.local
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+secrets/
 *.log
 *.aux
 *.out
@@ -10,5 +19,9 @@
 .venv/
 __pycache__/
 node_modules/
+.tools/
 .supabase/
+supabase/.temp/
+supabase/.branches/
+supabase/.env
 web/supabase/supabase/

@@ -24,6 +24,16 @@
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
+.vm-class-answer { margin:14px; padding:18px 20px; border:1px solid #7c3aed; border-radius:14px; background:linear-gradient(135deg,var(--surface),rgba(124,58,237,.09)); }
+.vm-class-answer h4 { margin:0; color:#7c3aed; font-size:1.06rem; }
+.vm-class-answer-note { margin:6px 0 12px; color:var(--ink-2); font-size:.84rem; line-height:1.55; }
+.vm-class-answer-files { display:flex; flex-wrap:wrap; gap:9px; margin:10px 0; }
+.vm-class-answer-file { min-width:130px; min-height:48px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); cursor:pointer; font:inherit; font-size:.8rem; font-weight:750; text-align:left; }
+.vm-class-answer-file:hover { border-color:#7c3aed; color:#7c3aed; }
+.vm-class-answer-preview { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-top:10px; }
+.vm-class-answer-preview button { padding:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); cursor:zoom-in; min-height:120px; }
+.vm-class-answer-preview img { display:block; width:100%; height:150px; object-fit:contain; background:var(--surface-2); }
+.vm-class-answer-preview span { display:block; padding:7px; color:var(--ink-2); font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* ===== Thanh trên cùng ===== */
 .topbar-lesson {
@@ -979,7 +989,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.1"></script>
+<script src="js/vinhmath.js?v=8.2"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1049,6 +1059,18 @@ var coTest = false;
 
 async function vmMoDichDenThongBao(params) {
   if (!params) return;
+  if (params.get('action') === 'class-answer') {
+    var latest = await sb.from('submissions')
+      .select('id, kind')
+      .eq('lesson_id', lessonId)
+      .eq('student_id', nguoiDung.id)
+      .eq('status', 'graded')
+      .order('graded_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latest.data) await xemKetQua(lessonId, latest.data.kind || 'homework', latest.data.id);
+    return;
+  }
   if (params.get('action') === 'solution-unlocked') {
     var solutionKind = params.get('kind');
     if (['homework', 'homework_bonus', 'test'].indexOf(solutionKind) === -1) solutionKind = 'homework';
@@ -1438,6 +1460,7 @@ async function mlNop(lid, phanloai) {
 // Xem kết quả (bài thầy chấm / điểm) của Bài kiểm tra hoặc Bài tập về nhà
 async function xemKetQua(lid, kind, submissionId) {
   kind = kind || 'homework';
+  if (typeof vmThuHoiDapAnUrls === 'function') vmThuHoiDapAnUrls();
   var tenTieuDe = (kind === 'homework' || kind === 'homework_bonus') ? '📋 Kết quả bài tập về nhà' : '📋 Kết quả bài kiểm tra';
   var than = $('thanNoiDung');
   if (than) than.removeAttribute('data-vm-reader-build');
@@ -1453,6 +1476,7 @@ async function xemKetQua(lid, kind, submissionId) {
       : '<div class="no-content"><div class="ic">🔒</div><h3>Vui lòng đăng nhập để xem kết quả</h3></div>';
     than.innerHTML = thanhCongCu(tenTieuDe, null) +
       '<div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px">' + noiDungKetQua + '</div>';
+    if (typeof vmKhoiTaoPreviewDapAnChung === 'function') vmKhoiTaoPreviewDapAnChung(than);
   } catch (e) {
     console.error('Không mở được kết quả bài đã chấm:', e);
     if (than) than.innerHTML = thanhCongCu(tenTieuDe, null) +
@@ -3025,6 +3049,7 @@ async function hienTestTex() {
   await vmChoTrinhDuyetVe();
   if (!vmReaderBuildConHieuLuc(than, buildToken)) return;
   vmRenderMathTaiLieu(than);
+  vmKhoiTaoPreviewDapAnChung(than);
 }
 
 async function veTestTex() {
@@ -3036,6 +3061,73 @@ async function veTestTex() {
     '<div style="padding:6px 14px;background:var(--surface);border-bottom:1px solid var(--line)"><a class="btn btn-primary btn-sm" style="padding:4px 12px" download="de-kiem-tra.pdf" href="' + u + '">💾 Tải đề thi PDF</a></div>' +
     '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
   renderPDFWithJS(u, document.getElementById('pdfViewerArea'));
+  vmKhoiTaoPreviewDapAnChung(than);
+}
+
+var vmDapAnObjectUrls = [];
+
+function vmThuHoiDapAnUrls() {
+  vmDapAnObjectUrls.forEach(function (url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+  vmDapAnObjectUrls = [];
+}
+
+async function vmLayDapAnChung() {
+  try {
+    var fd = new FormData(); fd.append('kind', 'class_answer_get'); fd.append('lesson_id', lessonId);
+    var result = await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 45000 });
+    return result.answer || null;
+  } catch (e) {
+    console.warn('Chưa tải được đáp án chung:', e && e.message ? e.message : e);
+    return null;
+  }
+}
+
+function vmDapAnChungHTML(answer) {
+  if (!answer) return '';
+  var files = Array.isArray(answer.files) ? answer.files : [];
+  var images = files.filter(function (file) { return String(file.mime_type || '').indexOf('image/') === 0; });
+  var others = files.filter(function (file) { return String(file.mime_type || '').indexOf('image/') !== 0; });
+  var fileButtons = others.length ? '<div class="vm-class-answer-files">' + others.map(function (file) {
+    return '<button type="button" class="vm-class-answer-file" onclick="vmMoTepDapAn(\'' + btvnEsc(file.id || '') + '\')">📄 Mở PDF<br><small>' + btvnEsc(file.name || 'Đáp án.pdf') + '</small></button>';
+  }).join('') + '</div>' : '';
+  var imageGrid = images.length ? '<div class="vm-class-answer-preview">' + images.map(function (file) {
+    return '<button type="button" data-answer-image="' + btvnEsc(file.id || '') + '" onclick="vmMoTepDapAn(\'' + btvnEsc(file.id || '') + '\')"><div class="spinner" style="margin:32px auto"></div><span>' + btvnEsc(file.name || 'Ảnh đáp án') + '</span></button>';
+  }).join('') + '</div>' : '';
+  var texHtml = answer.tex_content
+    ? '<div style="margin-top:14px">' + vmLatexNativeHTML('Đáp án chung — ' + ((details && details.title) || 'Bài giảng'), answer.tex_content, 'class-answer-' + lessonId, vmTenTepPdf(((details && details.title) || 'bai-giang') + '-dap-an'), 'document', false, true) + '</div>'
+    : '';
+  var updated = answer.updated_at ? new Date(answer.updated_at).toLocaleString('vi-VN') : '';
+  return '<section class="vm-class-answer" data-class-answer-ready="true">' +
+    '<h4>🔐 Đáp án chung của lớp đã được mở</h4>' +
+    '<p class="vm-class-answer-note">Chỉ học sinh đã nộp bài và đã được giáo viên chấm mới xem được nội dung này.' + (updated ? ' Cập nhật: ' + btvnEsc(updated) + '.' : '') + '</p>' +
+    fileButtons + imageGrid + texHtml + '</section>';
+}
+
+async function vmTaiBlobDapAn(fileId) {
+  var fd = new FormData(); fd.append('kind', 'class_answer_file'); fd.append('lesson_id', lessonId); fd.append('file_id', fileId);
+  return await vmGoiHamFormDataBlob('nop-bai', fd, { timeoutMs: 90000 });
+}
+
+async function vmMoTepDapAn(fileId) {
+  var popup = null; try { popup = window.open('', '_blank'); if (popup) popup.document.write('<p style="font-family:sans-serif;padding:20px">Đang tải đáp án bảo mật…</p>'); } catch (e) {}
+  try {
+    var blob = await vmTaiBlobDapAn(fileId); var url = URL.createObjectURL(blob); vmDapAnObjectUrls.push(url);
+    if (popup) popup.location.replace(url); else { var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.click(); }
+  } catch (e) { if (popup) popup.close(); alert('Không mở được tệp đáp án: ' + e.message); }
+}
+
+async function vmKhoiTaoPreviewDapAnChung(root) {
+  var buttons = Array.from((root || document).querySelectorAll('[data-answer-image]'));
+  await Promise.all(buttons.map(async function (button) {
+    var fileId = button.getAttribute('data-answer-image'); if (!fileId) return;
+    var label = button.querySelector('span'); var name = label ? label.textContent : 'Ảnh đáp án';
+    try {
+      var blob = await vmTaiBlobDapAn(fileId); var url = URL.createObjectURL(blob); vmDapAnObjectUrls.push(url);
+      button.innerHTML = '<img src="' + url + '" alt="' + btvnEsc(name) + '"><span>' + btvnEsc(name) + '</span>';
+    } catch (e) {
+      button.innerHTML = '<span>⚠️ Không tải được ' + btvnEsc(name) + '</span>';
+    }
+  }));
 }
 
 async function layKetQuaChamHtml(kind, submissionId) {
@@ -3074,6 +3166,8 @@ async function layKetQuaChamHtml(kind, submissionId) {
           bhAnhThumbs(sub.graded_files) + '</div>';
       }
       var anhEmNop = (sub.files || []).length ? '<div style="margin-top:12px; font-size:0.9rem"><b>📎 Bài em đã nộp:</b>' + bhAnhThumbs(sub.files) + '</div>' : '';
+      var dapAnChung = await vmLayDapAnChung();
+      var dapAnChungHtml = vmDapAnChungHTML(dapAnChung);
 
       return '<div class="card" style="margin:14px; padding:16px 20px; border:1px solid var(--ok); background:linear-gradient(135deg, var(--surface) 0%, var(--ok-soft) 100%)">' +
         '  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">' +
@@ -3094,7 +3188,7 @@ async function layKetQuaChamHtml(kind, submissionId) {
         '    </div>' +
         '  </div>' +
         '  <div style="margin-top:12px; font-size:0.78rem; color:var(--ink-3)">Nộp ngày: ' + ngay + ' · <a href="javascript:void(0)" onclick="moNopBai(\'' + kind + '\')" style="color:var(--accent); text-decoration:underline">Nộp lại bài khác</a></div>' +
-        '</div>';
+        '</div>' + dapAnChungHtml;
     } else {
       return '<div class="card" style="margin:14px; padding:16px; border:1px solid var(--warn); background:linear-gradient(135deg, var(--surface) 0%, var(--warn-soft) 100%)">' +
         '  <h4 style="margin:0 0 6px; color:var(--warn); display:flex; align-items:center; gap:8px">📤 Đã nộp bài thành công! ' + lateBadge + '</h4>' +
@@ -3212,6 +3306,7 @@ async function chonNoiDung(loai) {
         ketQuaChamHtml +
         '<div id="pdfViewerArea" style="flex:1; display:flex; flex-direction:column; overflow:hidden;"></div>';
       renderPDFWithJS(ut, document.getElementById('pdfViewerArea'));
+      vmKhoiTaoPreviewDapAnChung(than);
     }
   }
   if (loai !== 'test') { var atb = $('adminTestBar'); if (atb) atb.style.display = 'none'; }

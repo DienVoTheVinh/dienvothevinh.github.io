@@ -72,6 +72,23 @@
 .chb-cham-thumb .ops { position:absolute; bottom:0; left:0; right:0; display:flex; background:rgba(0,0,0,.58); }
 .chb-cham-thumb .ops button { flex:1; border:none; background:none; color:#fff; cursor:pointer; font-size:.72rem; padding:2px 0; line-height:1.4; }
 .chb-cham-thumb .ops button:hover { background:rgba(255,255,255,.22); }
+.chb-class-answer { margin:14px 0 18px; padding:18px 20px; border:1px solid var(--accent); background:linear-gradient(135deg,var(--surface),var(--accent-soft)); }
+.chb-class-answer-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+.chb-class-answer-head h2 { margin:0; font-size:1.08rem; color:var(--accent); }
+.chb-class-answer-head p { margin:5px 0 0; max-width:760px; color:var(--ink-2); font-size:.84rem; line-height:1.5; }
+.chb-answer-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,.8fr); gap:14px; margin-top:14px; }
+.chb-answer-pane { min-width:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.chb-answer-drop { min-height:92px; display:grid; place-items:center; text-align:center; padding:14px; border:2px dashed rgba(224,160,32,.55); border-radius:10px; cursor:pointer; color:var(--ink-2); font-size:.84rem; }
+.chb-answer-drop:focus,.chb-answer-drop:hover { outline:none; border-color:var(--accent); background:var(--accent-soft); }
+.chb-answer-files { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.chb-answer-file { position:relative; width:94px; min-height:94px; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--surface-2); display:grid; place-items:center; }
+.chb-answer-file img { width:100%; height:94px; object-fit:cover; }
+.chb-answer-file .file-name { padding:8px 5px; max-width:100%; overflow:hidden; text-overflow:ellipsis; font-size:.7rem; text-align:center; }
+.chb-answer-file button { position:absolute; top:3px; right:3px; width:25px; height:25px; border:0; border-radius:50%; cursor:pointer; color:#fff; background:rgba(185,28,28,.9); font-weight:900; }
+.chb-answer-file.is-removed { opacity:.42; filter:grayscale(1); }
+.chb-answer-file.is-removed button { background:var(--ok); }
+.chb-answer-status { margin-top:10px; min-height:20px; font-size:.82rem; font-weight:700; color:var(--ink-2); }
+@media(max-width:760px){.chb-answer-grid{grid-template-columns:1fr}.chb-class-answer{padding:14px}}
 /* Lightbox modal overlay */
 #chbLightbox {
   display: none;
@@ -455,6 +472,40 @@
     </div>
   </div>
 
+  <section id="dapAnChungBox" class="card chb-class-answer">
+    <div class="chb-class-answer-head">
+      <div>
+        <h2>📚 Đáp án chung cho lớp và bài giảng</h2>
+        <p>Tải một bộ bài sửa để mọi học sinh của bài giảng được nhận. Hệ thống chỉ mở cho học sinh đã nộp bài và có ít nhất một bài nộp được thầy/cô chấm.</p>
+      </div>
+      <span class="badge badge-warn" id="dapAnScope">Chọn lớp và bài giảng</span>
+    </div>
+    <div id="dapAnEditor" hidden>
+      <div class="chb-answer-grid">
+        <div class="chb-answer-pane">
+          <b>Ảnh hoặc PDF</b>
+          <div class="chb-answer-drop" id="dapAnDrop" tabindex="0" onclick="document.getElementById('dapAnFiles').click()">
+            📤 Chọn nhiều ảnh/PDF · hoặc bấm vào đây rồi dán ảnh (Ctrl/⌘ + V)
+          </div>
+          <input type="file" id="dapAnFiles" accept="image/*,application/pdf" multiple hidden onchange="dapAnThemFile(this.files);this.value=String()">
+          <div class="chb-answer-files" id="dapAnFileList"></div>
+        </div>
+        <div class="chb-answer-pane">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+            <b>Nội dung TeX (không bắt buộc)</b>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">📄 Nạp tệp .tex<input type="file" accept=".tex,text/x-tex,text/plain" hidden onchange="dapAnDocTex(this.files&&this.files[0]);this.value=String()"></label>
+          </div>
+          <textarea class="input" id="dapAnTex" rows="9" style="width:100%;margin-top:8px;resize:vertical;font-family:Consolas,monospace;line-height:1.45" placeholder="Dán lời giải TeX hoặc nạp tệp .tex tại đây…"></textarea>
+        </div>
+      </div>
+      <div class="chb-answer-status" id="dapAnStatus"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-primary" id="dapAnSave" onclick="dapAnLuu()">💾 Lưu và gửi cho học sinh đủ điều kiện</button>
+        <button class="btn btn-secondary" id="dapAnDelete" onclick="dapAnXoa()" hidden>🗑 Xóa đáp án chung</button>
+      </div>
+    </div>
+  </section>
+
   <div id="dsBaiNop"><div class="empty card">Đang tải…</div></div>
 </div>
 
@@ -470,7 +521,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.9"></script>
+<script src="js/vinhmath.js?v=8.2"></script>
 <script src="js/menu-v5.js?v=8.1"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -483,6 +534,10 @@ var dsDe = [];
 var dangLoc = 'submitted';
 var myClassIds = [];
 var hoSoNguoiDung = null;
+var dapAnCurrent = null;
+var dapAnKeepIds = new Set();
+var dapAnStaged = [];
+var dapAnLoadToken = 0;
 
 (async function () {
   if (!daKetNoi()) { $('dsBaiNop').innerHTML = '<div class="empty card">Chưa kết nối Supabase.</div>'; return; }
@@ -559,6 +614,7 @@ var hoSoNguoiDung = null;
     if (_lop) { $('selLop').value = _lop; capNhatDropdownBoLoc(); }
     if (_bai) { $('selBai').value = _bai; }
     if (_lop || _bai) await veDanhSach();
+    await capNhatDapAnChung();
     if (_submission) vmFocusSubmission(_submission);
     if (_attempt) vmFocusAttempt(_attempt);
   } catch (e) {}
@@ -606,7 +662,158 @@ function capNhatDropdownBoLoc() {
 
 function locDuLieu() {
   veDanhSach();
+  capNhatDapAnChung();
 }
+
+function dapAnDonStage() {
+  dapAnStaged.forEach(function (item) { try { URL.revokeObjectURL(item.url); } catch (e) {} });
+  dapAnStaged = [];
+}
+
+function dapAnRenderFiles() {
+  var box = $('dapAnFileList'); if (!box) return;
+  var currentFiles = dapAnCurrent && Array.isArray(dapAnCurrent.files) ? dapAnCurrent.files : [];
+  var oldHtml = currentFiles.map(function (file) {
+    var id = String(file.id || '');
+    var kept = dapAnKeepIds.has(id);
+    var icon = String(file.mime_type || '').indexOf('pdf') >= 0 ? '📄 PDF' : '🖼 Ảnh';
+    return '<div class="chb-answer-file' + (kept ? '' : ' is-removed') + '">' +
+      '<div class="file-name" role="button" tabindex="0" onclick="dapAnMoTep(\'' + chamEsc(id) + '\')"><b>' + icon + '</b><br>' + chamEsc(file.name || 'Tệp đáp án') + '</div>' +
+      '<button type="button" title="' + (kept ? 'Đánh dấu xóa' : 'Giữ lại') + '" onclick="dapAnToggleKeep(\'' + chamEsc(id) + '\')">' + (kept ? '×' : '↶') + '</button></div>';
+  }).join('');
+  var stagedHtml = dapAnStaged.map(function (item, index) {
+    var isImage = String(item.file.type || '').indexOf('image/') === 0;
+    return '<div class="chb-answer-file">' +
+      (isImage ? '<img src="' + item.url + '" alt="' + chamEsc(item.file.name) + '">' : '<div class="file-name"><b>📄 PDF</b><br>' + chamEsc(item.file.name) + '</div>') +
+      '<button type="button" title="Bỏ tệp mới" onclick="dapAnBoFileMoi(' + index + ')">×</button></div>';
+  }).join('');
+  box.innerHTML = oldHtml + stagedHtml;
+}
+
+function dapAnToggleKeep(id) {
+  if (dapAnKeepIds.has(id)) dapAnKeepIds.delete(id); else dapAnKeepIds.add(id);
+  dapAnRenderFiles();
+}
+
+function dapAnThemFile(fileList) {
+  var files = Array.from(fileList || []);
+  var currentCount = dapAnKeepIds.size + dapAnStaged.length;
+  var accepted = 0;
+  files.forEach(function (file) {
+    if (currentCount + accepted >= 12) return;
+    var mime = String(file.type || '').toLowerCase();
+    if (mime.indexOf('image/') !== 0 && mime !== 'application/pdf' && !/\.(jpe?g|png|webp|gif|pdf)$/i.test(file.name || '')) return;
+    dapAnStaged.push({ file: file, url: URL.createObjectURL(file) }); accepted++;
+  });
+  dapAnRenderFiles();
+  $('dapAnStatus').textContent = accepted ? 'Đã thêm ' + accepted + ' tệp mới; bấm Lưu để tải lên Drive riêng tư.' : 'Không thêm được tệp: chỉ nhận ảnh/PDF và tối đa 12 tệp.';
+}
+
+function dapAnBoFileMoi(index) {
+  var item = dapAnStaged[index]; if (!item) return;
+  try { URL.revokeObjectURL(item.url); } catch (e) {}
+  dapAnStaged.splice(index, 1); dapAnRenderFiles();
+}
+
+function dapAnDocTex(file) {
+  if (!file) return;
+  if (file.size > 200000) { $('dapAnStatus').textContent = 'Tệp TeX lớn hơn 200 KB.'; return; }
+  var reader = new FileReader();
+  reader.onload = function () { $('dapAnTex').value = String(reader.result || ''); $('dapAnStatus').textContent = 'Đã nạp nội dung từ ' + file.name + '.'; };
+  reader.onerror = function () { $('dapAnStatus').textContent = 'Không đọc được tệp TeX.'; };
+  reader.readAsText(file, 'utf-8');
+}
+
+async function capNhatDapAnChung() {
+  var box = $('dapAnChungBox'), editor = $('dapAnEditor'), scope = $('dapAnScope'), status = $('dapAnStatus');
+  if (!box || !editor) return;
+  var token = ++dapAnLoadToken;
+  var hiddenByTab = dangLoc === 'test' || dangLoc === 'luyende';
+  box.hidden = hiddenByTab;
+  if (hiddenByTab) return;
+  var classId = $('selLop').value, lessonId = $('selBai').value;
+  var lesson = dsBai.find(function (item) { return item.id === lessonId; });
+  var cls = dsLop.find(function (item) { return item.id === classId; });
+  if (!classId || !lessonId || !lesson || lesson.class_id !== classId) {
+    editor.hidden = true; scope.textContent = 'Chọn lớp và bài giảng';
+    dapAnCurrent = null; dapAnKeepIds = new Set(); dapAnDonStage(); dapAnRenderFiles();
+    return;
+  }
+  editor.hidden = false;
+  scope.textContent = (cls ? cls.name : 'Lớp') + ' · ' + lesson.title;
+  status.textContent = 'Đang tải đáp án hiện tại…';
+  try {
+    var fd = new FormData(); fd.append('kind', 'class_answer_get'); fd.append('lesson_id', lessonId);
+    var result = await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 45000 });
+    if (token !== dapAnLoadToken) return;
+    dapAnDonStage();
+    dapAnCurrent = result.answer || null;
+    dapAnKeepIds = new Set((dapAnCurrent && Array.isArray(dapAnCurrent.files) ? dapAnCurrent.files : []).map(function (file) { return String(file.id || ''); }).filter(Boolean));
+    $('dapAnTex').value = dapAnCurrent && dapAnCurrent.tex_content ? dapAnCurrent.tex_content : '';
+    $('dapAnDelete').hidden = !dapAnCurrent;
+    dapAnRenderFiles();
+    status.textContent = dapAnCurrent ? 'Đã tải đáp án hiện tại. Mọi thay đổi chỉ có hiệu lực sau khi bấm Lưu.' : 'Chưa có đáp án chung cho bài giảng này.';
+  } catch (e) {
+    if (token !== dapAnLoadToken) return;
+    status.textContent = 'Không tải được đáp án: ' + e.message;
+  }
+}
+
+async function dapAnLuu() {
+  var lessonId = $('selBai').value, save = $('dapAnSave'), status = $('dapAnStatus');
+  if (!$('selLop').value || !lessonId) { status.textContent = 'Hãy chọn đúng lớp và bài giảng.'; return; }
+  var tex = ($('dapAnTex').value || '').trim();
+  if (!tex && !dapAnKeepIds.size && !dapAnStaged.length) { status.textContent = 'Đáp án cần có ít nhất một ảnh, PDF hoặc nội dung TeX.'; return; }
+  save.disabled = true; save.textContent = '⏳ Đang lưu đáp án…'; status.textContent = 'Đang tải tệp lên Drive riêng tư và gửi thông báo…';
+  try {
+    var fd = new FormData();
+    fd.append('kind', 'class_answer_save'); fd.append('lesson_id', lessonId); fd.append('tex_content', tex);
+    fd.append('keep_file_ids', JSON.stringify(Array.from(dapAnKeepIds)));
+    dapAnStaged.forEach(function (item) { fd.append('files', item.file, item.file.name); });
+    var result = await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 180000 });
+    await capNhatDapAnChung();
+    $('dapAnStatus').textContent = '✓ Đã lưu đáp án và gửi thông báo cho ' + Number(result.notified_count || 0) + ' học sinh đã được chấm.';
+  } catch (e) {
+    status.textContent = 'Lỗi: ' + e.message;
+  } finally {
+    save.disabled = false; save.textContent = '💾 Lưu và gửi cho học sinh đủ điều kiện';
+  }
+}
+
+async function dapAnXoa() {
+  if (!dapAnCurrent || !confirm('Xóa toàn bộ đáp án chung của bài giảng này? Tệp Drive riêng tư cũng sẽ bị xóa.')) return;
+  var button = $('dapAnDelete'), status = $('dapAnStatus'); button.disabled = true; status.textContent = 'Đang xóa đáp án…';
+  try {
+    var fd = new FormData(); fd.append('kind', 'class_answer_delete'); fd.append('lesson_id', $('selBai').value);
+    await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 90000 });
+    await capNhatDapAnChung(); $('dapAnStatus').textContent = '✓ Đã xóa đáp án chung và các tệp Drive liên quan.';
+  } catch (e) { status.textContent = 'Lỗi: ' + e.message; }
+  finally { button.disabled = false; }
+}
+
+async function dapAnMoTep(fileId) {
+  var popup = null; try { popup = window.open('', '_blank'); if (popup) popup.document.write('<p style="font-family:sans-serif;padding:20px">Đang tải tệp đáp án…</p>'); } catch (e) {}
+  try {
+    var fd = new FormData(); fd.append('kind', 'class_answer_file'); fd.append('lesson_id', $('selBai').value); fd.append('file_id', fileId);
+    var blob = await vmGoiHamFormDataBlob('nop-bai', fd, { timeoutMs: 90000 });
+    var url = URL.createObjectURL(blob);
+    if (popup) popup.location.replace(url); else { var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.click(); }
+    setTimeout(function () { URL.revokeObjectURL(url); }, 300000);
+  } catch (e) { if (popup) popup.close(); $('dapAnStatus').textContent = 'Không mở được tệp: ' + e.message; }
+}
+
+document.addEventListener('paste', function (event) {
+  if (document.activeElement !== $('dapAnDrop')) return;
+  var pasted = Array.from((event.clipboardData && event.clipboardData.items) || []).filter(function (item) { return item.kind === 'file' && String(item.type || '').indexOf('image/') === 0; });
+  if (!pasted.length) return;
+  event.preventDefault();
+  var files = pasted.map(function (item, index) {
+    var source = item.getAsFile(); if (!source) return null;
+    var ext = (String(source.type || '').split('/')[1] || 'png').replace('jpeg', 'jpg');
+    return new File([source], 'dap-an-dan-' + Date.now() + '-' + (index + 1) + '.' + ext, { type: source.type || 'image/png' });
+  }).filter(Boolean);
+  dapAnThemFile(files);
+});
 
 function matchLopMyClassIds(lessonOrExam, studentProfiles) {
   if (lessonOrExam && lessonOrExam.class_id) {
@@ -680,6 +887,7 @@ async function taiDanhSach() {
     dsLuyenDeAttempts = allLuyenDe;
   }
   veDanhSach();
+  capNhatDapAnChung();
 }
 
 async function locTheo(loai) {

@@ -4,12 +4,15 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Expose-Headers": "content-type, content-length",
 };
 
 const LOAI_HOP_LE = new Set(["homework", "homework_bonus", "test"]);
+const DAP_AN_MIME_HOP_LE = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
 const MAX_FILES = 12;
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
+const MAX_TEX_BYTES = 200000;
 const UPLOAD_CONCURRENCY = 3;
 const folderCache = new Map<string, string>();
 
@@ -23,6 +26,12 @@ function traJson(data: unknown, status = 200) {
 function tenAnToan(value: unknown, fallback: string) {
   const text = String(value || fallback).replace(/[\u0000-\u001f/\\]/g, "-").trim();
   return (text || fallback).slice(0, 160);
+}
+
+function loi(message: string, status: number) {
+  const error = new Error(message);
+  (error as any).status = status;
+  return error;
 }
 
 async function fetchJson(url: string, init: RequestInit, moTa: string, timeoutMs: number, retryGet = 0): Promise<any> {
@@ -105,30 +114,56 @@ async function xoaFileDrive(token: string, id: string) {
   } catch { /* dọn best-effort */ } finally { clearTimeout(timer); }
 }
 
-async function taiLenDrive(token: string, file: File, thuMucId: string, ten: string) {
+async function taiLenDrive(token: string, file: File, thuMucId: string, ten: string, congKhai = true) {
   const fd = new FormData();
   fd.append("metadata", new Blob([JSON.stringify({ name: tenAnToan(ten, file.name), parents: [thuMucId] })], { type: "application/json" }));
   fd.append("file", file);
-  const uploaded = await fetchJson("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+  const uploaded = await fetchJson("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,mimeType,size", {
     method: "POST",
     headers: { Authorization: "Bearer " + token },
     body: fd,
   }, `Không tải được tệp “${file.name}” lên Drive`, 55000);
   if (!uploaded.id) throw new Error(`Google Drive không trả ID cho tệp “${file.name}”.`);
-  try {
-    await fetchJson("https://www.googleapis.com/drive/v3/files/" + uploaded.id + "/permissions", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-      body: JSON.stringify({ role: "reader", type: "anyone" }),
-    }, `Không cấp được quyền xem tệp “${file.name}”`, 20000);
-  } catch (error) {
-    await xoaFileDrive(token, uploaded.id);
-    throw error;
+  if (congKhai) {
+    try {
+      await fetchJson("https://www.googleapis.com/drive/v3/files/" + uploaded.id + "/permissions", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "reader", type: "anyone" }),
+      }, `Không cấp được quyền xem tệp “${file.name}”`, 20000);
+    } catch (error) {
+      await xoaFileDrive(token, uploaded.id);
+      throw error;
+    }
   }
-  return { id: uploaded.id, name: uploaded.name, link: uploaded.webViewLink };
+  return {
+    id: uploaded.id,
+    name: uploaded.name,
+    ...(congKhai ? { link: uploaded.webViewLink } : {}),
+    mime_type: uploaded.mimeType || file.type || "application/octet-stream",
+    size: Number(uploaded.size || file.size || 0),
+  };
 }
 
-async function taiNhieuFile(token: string, files: File[], thuMucId: string, prefix: string) {
+async function taiFileDrive(token: string, id: string) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 55000);
+  try {
+    const response = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(id) + "?alt=media", {
+      headers: { Authorization: "Bearer " + token },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw loi(`Không tải được tệp đáp án: HTTP ${response.status}.`, response.status === 404 ? 404 : 502);
+    return response;
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") throw loi("Quá thời gian tải tệp đáp án.", 504);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function taiNhieuFile(token: string, files: File[], thuMucId: string, prefix: string, congKhai = true) {
   if (files.length > MAX_FILES) throw new Error(`Mỗi lần chỉ nộp tối đa ${MAX_FILES} tệp.`);
   let total = 0;
   for (const file of files) {
@@ -147,7 +182,7 @@ async function taiNhieuFile(token: string, files: File[], thuMucId: string, pref
       const index = nextIndex++;
       if (index >= files.length) return;
       try {
-        results[index] = await taiLenDrive(token, files[index], thuMucId, prefix + files[index].name);
+        results[index] = await taiLenDrive(token, files[index], thuMucId, prefix + files[index].name, congKhai);
       } catch (error) {
         errors.push(error as Error);
         stopped = true;
@@ -185,6 +220,52 @@ async function xacNhanHocSinhTrongLop(svc: any, studentId: string, classId: stri
   if (!data) throw new Error("Học sinh không thuộc lớp của bài đã chọn.");
 }
 
+function docDanhSachId(value: FormDataEntryValue | null) {
+  if (!value) return [] as string[];
+  try {
+    const parsed = JSON.parse(String(value));
+    if (!Array.isArray(parsed)) return [] as string[];
+    return [...new Set(parsed.map((id) => String(id || "").trim()).filter(Boolean))];
+  } catch {
+    throw loi("Danh sách tệp đáp án không hợp lệ.", 400);
+  }
+}
+
+function mimeDapAnAnToan(file: File) {
+  const mime = String(file.type || "").toLowerCase();
+  const name = String(file.name || "").toLowerCase();
+  const mimeTheoDuoi = name.endsWith(".pdf") ? "application/pdf"
+    : name.endsWith(".png") ? "image/png"
+    : name.endsWith(".webp") ? "image/webp"
+    : name.endsWith(".gif") ? "image/gif"
+    : /\.jpe?g$/.test(name) ? "image/jpeg"
+    : "";
+  if (DAP_AN_MIME_HOP_LE.has(mime)) return mime;
+  if (mimeTheoDuoi) return mimeTheoDuoi;
+  throw loi(`Tệp “${file.name}” không phải ảnh hoặc PDF.`, 400);
+}
+
+function kiemTraTepDapAn(files: File[]) {
+  for (const file of files) {
+    mimeDapAnAnToan(file);
+  }
+}
+
+async function coQuyenXemDapAn(svc: any, userId: string, role: string, lesson: any) {
+  if (["admin", "teacher", "assistant"].includes(role)) {
+    return await coQuyenQuanLyLop(svc, userId, role, lesson.class_id);
+  }
+  if (role !== "student") return false;
+  const { data: graded } = await svc.from("submissions")
+    .select("id")
+    .eq("lesson_id", lesson.id)
+    .eq("student_id", userId)
+    .eq("status", "graded")
+    .not("submitted_at", "is", null)
+    .limit(1);
+  return !!graded?.length;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
@@ -201,11 +282,149 @@ Deno.serve(async (req) => {
     const action = String(form.get("kind") || "nop");
     const phanloai = String(form.get("phanloai") || "");
     const files = form.getAll("files").filter((item): item is File => item instanceof File);
-    if (action !== "xoa_cham" && !files.length) throw new Error("Chưa chọn tệp nào.");
+    const canKhongCanTep = new Set(["xoa_cham", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
+    if (!canKhongCanTep.has(action) && !files.length) throw loi("Chưa chọn tệp nào.", 400);
 
-    const token = await googleToken();
-    const goc = action === "xoa_cham" ? "" : await timHoacTaoThuMuc(token, "VINHMATH NOP BAI");
+    const canGoogle = action !== "class_answer_get";
+    const token = canGoogle ? await googleToken() : "";
+    const canThuMucNopBai = action === "nop" || action === "cham";
+    const goc = canThuMucNopBai ? await timHoacTaoThuMuc(token, "VINHMATH NOP BAI") : "";
     const ngay = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+
+    if (action.startsWith("class_answer_")) {
+      const lessonId = String(form.get("lesson_id") || "").trim();
+      if (!lessonId) throw loi("Chưa chọn bài giảng để quản lý đáp án.", 400);
+      const { data: lesson, error: lessonError } = await svc.from("lessons")
+        .select("id, title, class_id, classes(name, grade, is_specialized)")
+        .eq("id", lessonId)
+        .single();
+      if (lessonError || !lesson) throw loi("Không tìm thấy bài giảng đã chọn.", 404);
+
+      const duocQuanLy = ["admin", "teacher", "assistant"].includes(prof.role)
+        && await coQuyenQuanLyLop(svc, user.id, prof.role, lesson.class_id);
+      const duocXem = duocQuanLy || await coQuyenXemDapAn(svc, user.id, prof.role, lesson);
+
+      if (action === "class_answer_get") {
+        if (!duocXem) throw loi("Đáp án chỉ mở sau khi bài của em đã được giáo viên chấm.", 403);
+        const { data: answer, error: answerError } = await svc.from("class_lesson_answers")
+          .select("id, lesson_id, tex_content, files, updated_at")
+          .eq("lesson_id", lessonId)
+          .maybeSingle();
+        if (answerError) throw new Error("Không tải được đáp án chung: " + answerError.message);
+        return traJson({ ok: true, can_edit: duocQuanLy, answer: answer || null });
+      }
+
+      if (action === "class_answer_file") {
+        if (!duocXem) throw loi("Đáp án chỉ mở sau khi bài của em đã được giáo viên chấm.", 403);
+        const fileId = String(form.get("file_id") || "").trim();
+        if (!fileId) throw loi("Thiếu mã tệp đáp án.", 400);
+        const { data: answer } = await svc.from("class_lesson_answers")
+          .select("files")
+          .eq("lesson_id", lessonId)
+          .maybeSingle();
+        const answerFiles = Array.isArray(answer?.files) ? answer.files as any[] : [];
+        const selected = answerFiles.find((item) => String(item?.id || "") === fileId);
+        if (!selected) throw loi("Tệp không thuộc đáp án của bài giảng này.", 404);
+        const driveResponse = await taiFileDrive(token, fileId);
+        return new Response(driveResponse.body, {
+          status: 200,
+          headers: {
+            ...cors,
+            "Content-Type": String(selected.mime_type || driveResponse.headers.get("content-type") || "application/octet-stream"),
+            "Cache-Control": "private, no-store, max-age=0",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+
+      if (!duocQuanLy) throw loi("Thầy/cô không có quyền quản lý đáp án của lớp này.", 403);
+
+      const { data: oldAnswer, error: oldError } = await svc.from("class_lesson_answers")
+        .select("id, files, created_by")
+        .eq("lesson_id", lessonId)
+        .maybeSingle();
+      if (oldError) throw new Error("Không đọc được đáp án hiện tại: " + oldError.message);
+      const oldFiles = Array.isArray(oldAnswer?.files) ? oldAnswer.files as any[] : [];
+
+      if (action === "class_answer_delete") {
+        if (!oldAnswer) return traJson({ ok: true, deleted: false });
+        const { error: deleteError } = await svc.from("class_lesson_answers").delete().eq("id", oldAnswer.id);
+        if (deleteError) throw new Error("Không xóa được đáp án: " + deleteError.message);
+        await Promise.all(oldFiles.map((item) => String(item?.id || "")).filter(Boolean).map((id) => xoaFileDrive(token, id)));
+        return traJson({ ok: true, deleted: true });
+      }
+
+      if (action !== "class_answer_save") throw loi("Thao tác đáp án không hợp lệ.", 400);
+      kiemTraTepDapAn(files);
+      const texContent = String(form.get("tex_content") || "").trim();
+      if (new TextEncoder().encode(texContent).length > MAX_TEX_BYTES) throw loi("Nội dung TeX lớn hơn 200 KB.", 400);
+
+      const keepRequested = new Set(docDanhSachId(form.get("keep_file_ids")));
+      const allowedOldIds = new Set(oldFiles.map((item) => String(item?.id || "")).filter(Boolean));
+      const keptFiles = oldFiles.filter((item) => {
+        const id = String(item?.id || "");
+        return id && allowedOldIds.has(id) && keepRequested.has(id);
+      });
+      if (keptFiles.length + files.length > MAX_FILES) throw loi(`Mỗi đáp án chỉ được tối đa ${MAX_FILES} tệp.`, 400);
+
+      let newFiles: any[] = [];
+      if (files.length) {
+        const classInfo = lesson.classes as any;
+        const className = classInfo
+          ? `Khối ${classInfo.grade} - ${classInfo.name} (${classInfo.is_specialized ? "Chuyên" : "Đại trà"})`
+          : "Chưa phân lớp";
+        let answerRoot = await timHoacTaoThuMuc(token, "VINHMATH DAP AN LOP");
+        for (const folderName of [className, lesson.title || "Bài giảng", "DAP AN CHUNG"]) {
+          answerRoot = await timHoacTaoThuMuc(token, folderName, answerRoot);
+        }
+        newFiles = await taiNhieuFile(token, files, answerRoot, `[${lesson.title || "Bài giảng"}] DAP-AN-`, false);
+        newFiles = newFiles.map((item, index) => ({ ...item, mime_type: mimeDapAnAnToan(files[index]) }));
+      }
+
+      const finalFiles = [...keptFiles, ...newFiles];
+      if (!texContent && !finalFiles.length) {
+        await Promise.all(newFiles.map((item) => xoaFileDrive(token, item.id)));
+        throw loi("Đáp án cần có ít nhất một ảnh, PDF hoặc nội dung TeX.", 400);
+      }
+
+      const answerPayload = {
+        lesson_id: lessonId,
+        tex_content: texContent || null,
+        files: finalFiles,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      const answerWrite = oldAnswer
+        ? await svc.from("class_lesson_answers").update(answerPayload).eq("id", oldAnswer.id).select("id, lesson_id, tex_content, files, updated_at").single()
+        : await svc.from("class_lesson_answers").insert({ ...answerPayload, created_by: user.id }).select("id, lesson_id, tex_content, files, updated_at").single();
+      if (answerWrite.error) {
+        await Promise.all(newFiles.map((item) => xoaFileDrive(token, item.id)));
+        throw new Error("Không lưu được đáp án chung: " + answerWrite.error.message);
+      }
+
+      const finalIds = new Set(finalFiles.map((item) => String(item?.id || "")).filter(Boolean));
+      const removedIds = oldFiles.map((item) => String(item?.id || "")).filter((id) => id && !finalIds.has(id));
+      await Promise.all(removedIds.map((id) => xoaFileDrive(token, id)));
+
+      const { data: gradedRows } = await svc.from("submissions")
+        .select("student_id")
+        .eq("lesson_id", lessonId)
+        .eq("status", "graded");
+      const studentIds = [...new Set((gradedRows || []).map((row: any) => String(row.student_id || "")).filter(Boolean))];
+      if (studentIds.length) {
+        const notifications = studentIds.map((studentId) => ({
+          user_id: studentId,
+          title: "Đáp án chung đã sẵn sàng",
+          body: `Thầy/cô đã đăng bài sửa cho “${lesson.title || "bài giảng"}”. Em mở kết quả bài đã chấm để xem.`,
+          link: `bai-hoc?id=${lessonId}&action=class-answer`,
+          kind: "class_answer_ready",
+          class_ref: lesson.class_id,
+        }));
+        const { error: notifyError } = await svc.from("notifications").insert(notifications);
+        if (notifyError) console.warn("Không gửi được một số thông báo đáp án:", notifyError.message);
+      }
+      return traJson({ ok: true, answer: answerWrite.data, notified_count: studentIds.length });
+    }
 
     if (action === "nop") {
       const lessonId = form.get("lesson_id") ? String(form.get("lesson_id")) : null;
@@ -368,6 +587,7 @@ Deno.serve(async (req) => {
     return traJson({ ok: true, graded_files: tatCa });
   } catch (error) {
     console.error("nop-bai:", error);
-    return traJson({ error: String((error as Error)?.message || error) }, 500);
+    const status = Number((error as any)?.status || 500);
+    return traJson({ error: String((error as Error)?.message || error) }, status >= 400 && status <= 599 ? status : 500);
   }
 });

@@ -38,6 +38,10 @@ function extractFunction(source, name) {
       function $(id){return document.getElementById(id)}
       var lessonId='lesson-1',nguoiDung={id:'student-1'},details={},window_khongCoVideo=false;
       function switchLesson(){return Promise.resolve()}
+      function vmThuHoiDapAnUrls(){}
+      async function vmLayDapAnChung(){return null}
+      function vmDapAnChungHTML(){return ''}
+      async function vmKhoiTaoPreviewDapAnChung(){}
       ${functions}
     ` });
     await page.evaluate(() => {
