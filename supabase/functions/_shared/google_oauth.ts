@@ -1,5 +1,6 @@
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.meet.readonly";
 export const DRIVE_METADATA_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
+export const MEET_SPACE_SCOPE = "https://www.googleapis.com/auth/meetings.space.readonly";
 export const IDENTITY_SCOPES = ["openid", "email"];
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -8,9 +9,11 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(value: string): Uint8Array {
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value);
-  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 
 export function randomToken(bytes = 32): string {
