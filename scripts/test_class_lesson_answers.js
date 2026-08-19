@@ -7,7 +7,7 @@ const admin = fs.readFileSync(path.join(root, 'quan-tri-cham-bai.html'), 'utf8')
 const lesson = fs.readFileSync(path.join(root, 'bai-hoc.html'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'web', 'supabase', 'function-nop-bai.ts'), 'utf8');
 const shared = fs.readFileSync(path.join(root, 'js', 'vinhmath.js'), 'utf8');
-const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260819094835_class_lesson_answer_release.sql'), 'utf8');
+const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260819100914_class_lesson_answer_release.sql'), 'utf8');
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
