@@ -875,6 +875,40 @@ async function vmGoiHamFormData(tenHam, formData, tuyChon) {
   }
 }
 
+/* Biến thể trả Blob cho tệp riêng tư. Vẫn giữ nguyên thông báo lỗi JSON và JWT
+   của phiên hiện tại; chỉ tạo object URL sau khi Edge Function đã cho phép. */
+async function vmGoiHamFormDataBlob(tenHam, formData, tuyChon) {
+  tuyChon = tuyChon || {};
+  if (!sb) throw new Error('Chưa kết nối được máy chủ VinhMath.');
+  var phien = await sb.auth.getSession();
+  var accessToken = phien && phien.data && phien.data.session && phien.data.session.access_token;
+  if (!accessToken) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang và đăng nhập lại.');
+
+  var controller = new AbortController();
+  var timeoutMs = Number(tuyChon.timeoutMs) || 120000;
+  var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+  try {
+    var response = await fetch(VM.SUPABASE_URL + '/functions/v1/' + encodeURIComponent(tenHam), {
+      method: 'POST',
+      headers: { apikey: VM.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + accessToken },
+      body: formData,
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      var raw = await response.text();
+      var data = null;
+      try { data = raw ? JSON.parse(raw) : {}; } catch (e) { data = { error: raw }; }
+      throw new Error((data && data.error) || ('Máy chủ trả lỗi HTTP ' + response.status + '.'));
+    }
+    return await response.blob();
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Quá thời gian chờ tải tệp. Vui lòng thử lại.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /* ---------- 3. ĐĂNG NHẬP / ĐĂNG XUẤT ---------- */
 // HS dùng "tên đăng nhập" (vd DienVoTheVinh@ad.vinhmath). Supabase cần email,
 // nên ta tự ghép đuôi cố định ngầm (.com) — HS không cần biết điều này.
