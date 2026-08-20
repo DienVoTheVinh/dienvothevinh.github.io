@@ -484,13 +484,11 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </select>
       </div>
       <div class="field">
-        <label>Bộ nhận diện lớp (Theme)</label>
+        <label>Thương hiệu lớp</label>
         <select class="input" id="classTheme">
-          <option value="vinhmath">📘 VinhMath (mặc định)</option>
-          <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
-          <option value="duyminh">🔴 Trung tâm Duy Minh</option>
+          <option value="">Đang tải kho thương hiệu…</option>
         </select>
-        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">Chọn M.A.P sẽ áp logo &amp; tông màu CLB M.A.P cho giao diện lớp (cả GV lẫn HS).</div>
+        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">Logo, màu sắc và phong cách này sẽ áp dụng cho cả giáo viên lẫn học sinh của lớp.</div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
         <button type="button" class="btn btn-secondary" onclick="dongFormLop()">Hủy bỏ</button>
@@ -547,11 +545,9 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </select>
       </div>
       <div class="field">
-        <label>Bộ nhận diện lớp (Theme)</label>
+        <label>Thương hiệu lớp</label>
         <select class="input" id="classEditTheme">
-          <option value="vinhmath">📘 VinhMath (mặc định)</option>
-          <option value="map">⭐ CLB M.A.P (Math And Passion)</option>
-          <option value="duyminh">🔴 Trung tâm Duy Minh</option>
+          <option value="">Đang tải kho thương hiệu…</option>
         </select>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
@@ -1217,14 +1213,15 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.0"></script>
+<script src="js/vinhmath.js?v=8.2"></script>
 <script src="js/latex-view.js?v=10.6"></script>
-<script src="js/menu-v5.js?v=8.1"></script>
+<script src="js/menu-v5.js?v=8.2"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 var dsLop = [];
 var classDangChon = null;
+var dsThuongHieu = [];
 var tabDangChon = 'lessons';
 var tatCaChuyenDe = [];
 var tatCaTaiLieu = [];
@@ -1277,6 +1274,7 @@ var tgGoiYTimer = null;
     dsGiaoVien.forEach(function(u) { mapGiaoVien[u.id] = u.full_name; mapGioiTinhGV[u.id] = u.gender; });
   } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
   
+  await napThuongHieu();
   console.log("5. Đang tải sidebar...");
   await loadingSidebar();
   console.log("6. Tải sidebar xong, đang tải danh mục...");
@@ -1306,10 +1304,36 @@ function napSelectGiaoVien() {
   if (editCoTeachSelect) editCoTeachSelect.innerHTML = optionsHtml;
 }
 
+async function napThuongHieu() {
+  var r = await sb.from('brand_templates').select(VM_BRAND_COLUMNS).order('is_active', { ascending: false }).order('name');
+  if (r.error) {
+    console.error('Không tải được kho thương hiệu:', r.error);
+    dsThuongHieu = [];
+  } else dsThuongHieu = r.data || [];
+  ['classTheme', 'classEditTheme'].forEach(function (id) {
+    var select = $(id); if (!select) return;
+    select.replaceChildren();
+    dsThuongHieu.forEach(function (brand) {
+      if (id === 'classTheme' && !brand.is_active) return;
+      var opt = document.createElement('option'); opt.value = brand.id;
+      opt.textContent = brand.name + (brand.is_active ? '' : ' (đã ẩn)');
+      select.appendChild(opt);
+    });
+    var fallback = dsThuongHieu.find(function (x) { return x.slug === 'vinhmath'; });
+    if (fallback && id === 'classTheme') select.value = fallback.id;
+  });
+}
+
+function thuongHieuTheoId(id) { return dsThuongHieu.find(function (x) { return x.id === id; }) || null; }
+function themeTuThuongHieu(id) {
+  var brand = thuongHieuTheoId(id);
+  return brand && ['vinhmath','map','duyminh'].indexOf(brand.slug) !== -1 ? brand.slug : (id ? 'brand:' + id : 'vinhmath');
+}
+
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
   console.log("loadingSidebar: Đang truy vấn bảng classes...");
-  var r = await sb.from('classes').select('id, name, grade, mode, is_specialized, teacher_id, co_teacher_id, theme').order('grade').order('name');
+  var r = await sb.from('classes').select('id, name, grade, mode, school_year, is_specialized, teacher_id, co_teacher_id, theme, brand_id, ' + VM_BRAND_RELATION).order('grade').order('name');
   console.log("loadingSidebar: Kết quả truy vấn classes:", r);
   dsLop = r.data || [];
   
@@ -1412,20 +1436,15 @@ function chonLopHoc(id) {
     }
   }
   
-  // Bộ nhận diện thương hiệu con (M.A.P / Duy Minh)
-  var theme = cl.theme || 'vinhmath';
-  var isMap = theme === 'map';
-  var isDM = theme === 'duyminh';
+  // Bộ nhận diện được cấu hình trong kho thương hiệu.
+  var theme = typeof vmThuongHieuTuLop === 'function' ? vmThuongHieuTuLop(cl) : (cl.theme || 'vinhmath');
+  var preset = typeof vmPresetThuongHieu === 'function' ? vmPresetThuongHieu(theme) : (cl.theme || 'vinhmath');
   if (typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(theme);
-  else { document.body.classList.toggle('theme-map', isMap); document.body.classList.toggle('theme-duyminh', isDM); }
   var mapBadge = $('detMapBadge');
   if (mapBadge) {
-    if (isMap) {
-      mapBadge.style.cssText = 'margin-left:6px; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#1B2644,#24335C); color:#fff; padding:3px 10px; border-radius:99px; font-size:.72rem; font-weight:800';
-      mapBadge.innerHTML = '<img src="logo/CLB-MAP-logo.png" style="width:16px;height:16px;border-radius:50%;background:#fff;vertical-align:middle"> CLB M.A.P';
-    } else if (isDM) {
+    if ((theme && typeof theme === 'object') || preset !== 'vinhmath') {
       mapBadge.style.cssText = 'margin-left:6px; display:inline-flex; background:none; padding:0';
-      mapBadge.innerHTML = (typeof vmChipDuyMinh === 'function' ? vmChipDuyMinh(16) : '🔴 Duy Minh');
+      mapBadge.innerHTML = typeof vmChipThuongHieu === 'function' ? vmChipThuongHieu(theme, 16) : '';
     } else {
       mapBadge.style.display = 'none';
     }
@@ -1697,7 +1716,8 @@ function moFormSuaLop() {
   $('classEditMode').value = classDangChon.mode;
   $('classEditYear').value = classDangChon.school_year || '2026-2027';
   $('classEditCoTeacher').value = classDangChon.co_teacher_id || '';
-  $('classEditTheme').value = classDangChon.theme || 'vinhmath';
+  var editBrandId = classDangChon.brand_id || ((dsThuongHieu.find(function (x) { return x.slug === (classDangChon.theme || 'vinhmath'); }) || {}).id || '');
+  $('classEditTheme').value = editBrandId;
   $('modalSuaLop').style.display = 'flex';
 }
 function dongFormSuaLop() {
@@ -1712,7 +1732,8 @@ async function luuSuaLopHoc(e) {
   var mode = $('classEditMode').value;
   var year = $('classEditYear').value.trim();
   var coTeacherId = $('classEditCoTeacher').value || null;
-  var theme = $('classEditTheme').value || 'vinhmath';
+  var brandId = $('classEditTheme').value || null;
+  var theme = themeTuThuongHieu(brandId);
 
   var r = await sb.from('classes').update({
     grade: grade,
@@ -1721,7 +1742,8 @@ async function luuSuaLopHoc(e) {
     mode: mode,
     school_year: year,
     co_teacher_id: coTeacherId,
-    theme: theme
+    theme: theme,
+    brand_id: brandId
   }).eq('id', classDangChon.id).select().single();
   
   if (r.error) {
@@ -3089,7 +3111,8 @@ async function luuLopHoc(e) {
   var year = $('classYear').value;
   var isSpecialized = $('classIsSpecialized').value === 'true';
   var coTeacherId = $('classCoTeacher').value || null;
-  var theme = $('classTheme').value || 'vinhmath';
+  var brandId = $('classTheme').value || null;
+  var theme = themeTuThuongHieu(brandId);
 
   var u = await sb.auth.getUser();
   var teacherId = u.data.user ? u.data.user.id : null;
@@ -3102,7 +3125,8 @@ async function luuLopHoc(e) {
     is_specialized: isSpecialized,
     teacher_id: teacherId,
     co_teacher_id: coTeacherId,
-    theme: theme
+    theme: theme,
+    brand_id: brandId
   }).select('id').single();
   
   if (r.error) {

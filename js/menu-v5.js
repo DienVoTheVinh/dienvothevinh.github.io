@@ -21,6 +21,7 @@ function apDungMenu(role) {
         label: 'Quản trị ▾',
         items: [
           { path: 'quan-tri-lop', label: 'Lớp học' },
+          (role === 'admin' ? { path: 'quan-tri-thuong-hieu', label: 'Tạo thương hiệu' } : null),
           (role === 'admin' ? { path: 'quan-tri-thuong', label: 'Phần thưởng' } : null),
           (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu', label: 'Soạn tài liệu' } : null),
           (role === 'admin' ? { path: 'quan-tri-tex', label: 'Môi trường TeX' } : null),

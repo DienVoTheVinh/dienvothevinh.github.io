@@ -20,10 +20,10 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v22"), 'Service worker cache version must publish the class-answer release');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v21'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '22'"), 'Open apps must not enter a refresh loop on shell v22');
-expect(worker.includes("target.searchParams.set('vm_refresh', '22')"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v23"), 'Service worker cache version must publish the brand builder release');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v22'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '23'"), 'Open apps must not enter a refresh loop on shell v23');
+expect(worker.includes("target.searchParams.set('vm_refresh', '23'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
@@ -142,7 +142,7 @@ for (const file of htmlFiles) {
     expect(sharedVersion && Number(sharedVersion[1]) >= 7.9, `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=8.1'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=8.2'), `${file}: stale shared menu version`);
   }
 }
 
