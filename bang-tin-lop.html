@@ -164,8 +164,8 @@ body.theme-duyminh { --accent:#C81E27; --accent-soft:#FCEBEC; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=7.9"></script>
-<script src="js/menu-v5.js?v=8.1"></script>
+<script src="js/vinhmath.js?v=8.2"></script>
+<script src="js/menu-v5.js?v=8.2"></script>
 <script src="js/analytics.js"></script>
 <script>
 /* ===== render markdown (rút gọn từ trình blog) ===== */
@@ -224,7 +224,7 @@ function initials(name){ var p=String(name||'?').trim().split(/\s+/); return (p[
   me = await yeuCauDangNhap();
   if(!me) return;
 
-  var rc = await sb.from('classes').select('id, name, theme, teacher_id, co_teacher_id, grade, is_specialized').eq('id', classId).single();
+  var rc = await sb.from('classes').select('id, name, theme, brand_id, teacher_id, co_teacher_id, grade, is_specialized, ' + VM_BRAND_RELATION).eq('id', classId).single();
   if(rc.error || !rc.data){ $('btDeny').style.display='block'; return; }
   classInfo = rc.data;
 
@@ -246,29 +246,17 @@ function initials(name){ var p=String(name||'?').trim().split(/\s+/); return (p[
 })();
 
 function apDungTheme(){
-  var theme = classInfo.theme || 'vinhmath';
-  var isMap = theme === 'map';
-  var isDM = theme === 'duyminh';
+  var theme = typeof vmThuongHieuTuLop === 'function' ? vmThuongHieuTuLop(classInfo) : (classInfo.theme || 'vinhmath');
+  var preset = typeof vmPresetThuongHieu === 'function' ? vmPresetThuongHieu(theme) : theme;
   if (typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(theme);
   var heroLogo = $('heroLogo'), navLogo = $('navLogo'), navSub = $('navSub'), heroBrand = $('heroBrand');
-  if(isMap){
-    document.body.classList.add('theme-map');
-    if(heroLogo) heroLogo.src = 'logo/CLB-MAP-logo.png';
-    if(navLogo) navLogo.src = 'logo/CLB-MAP-logo.png';
-    if(navSub) navSub.textContent = '· CLB M.A.P';
-    if(heroBrand) heroBrand.textContent = '⭐ CLB M.A.P · Math And Passion';
-    document.title = 'Bảng tin lớp — CLB M.A.P';
-  } else if(isDM){
-    document.body.classList.add('theme-duyminh');
-    if(heroLogo) heroLogo.src = 'logo/duyminh-logo.png';
-    if(navLogo) navLogo.src = 'logo/duyminh-logo.png';
-    if(navSub) navSub.textContent = '· Duy Minh';
-    if(heroBrand) heroBrand.innerHTML = '🔴 Trung tâm <span class="dm-mark"><span class="dm-duy">DUY</span><span class="dm-minh">MINH</span></span>';
-    document.title = 'Bảng tin lớp — Duy Minh';
-  } else {
-    if(heroLogo) heroLogo.src = 'logo/VinhMath_logo.png';
-    if(heroBrand) heroBrand.textContent = '📘 VinhMath';
-  }
+  var brandName = typeof vmTenThuongHieu === 'function' ? vmTenThuongHieu(theme) : 'VinhMath';
+  var brandLogo = typeof vmUrlLogoThuongHieu === 'function' ? vmUrlLogoThuongHieu(theme) : 'img/logo.png';
+  if(heroLogo){heroLogo.src=brandLogo;heroLogo.alt=brandName;}
+  if(navLogo){navLogo.src=brandLogo;navLogo.alt=brandName;}
+  if(navSub) navSub.textContent = '· ' + brandName;
+  if(heroBrand) heroBrand.textContent = (preset==='map'?'⭐ ':(preset==='duyminh'?'🔴 ':'📘 ')) + brandName + ((theme&&typeof theme==='object'&&theme.tagline)?' · '+theme.tagline:'');
+  document.title = 'Bảng tin lớp — ' + brandName;
 }
 
 async function taiTatCa(){

@@ -1570,9 +1570,9 @@ async function taiChiTietBaiHoc() {
 
   // Tải thông tin lớp để kiểm tra đồng giảng dạy
   try {
-    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id, theme').eq('id', details.class_id).single();
+    var rClass = await sb.from('classes').select('teacher_id, co_teacher_id, theme, brand_id, ' + VM_BRAND_RELATION).eq('id', details.class_id).single();
     classInfo = rClass.data;
-    apDungThemeLopBaiHoc(classInfo && classInfo.theme);
+    apDungThemeLopBaiHoc(typeof vmThuongHieuTuLop === 'function' ? vmThuongHieuTuLop(classInfo) : (classInfo && classInfo.theme));
   } catch(e) { console.error("Lỗi tải thông tin lớp:", e); }
 
   // Tải bài học tương ứng của giáo viên kia (nếu có)
@@ -1632,14 +1632,14 @@ var laLopMAP = false;
 var laLopDuyMinh = false;
 function apDungThemeLopBaiHoc(theme) {
   theme = theme || 'vinhmath';
-  laLopMAP = theme === 'map';
-  laLopDuyMinh = theme === 'duyminh';
+  var preset = typeof vmPresetThuongHieu === 'function' ? vmPresetThuongHieu(theme) : theme;
+  laLopMAP = preset === 'map';
+  laLopDuyMinh = preset === 'duyminh';
   if (typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(theme);
   else { document.body.classList.toggle('theme-map', laLopMAP); document.body.classList.toggle('theme-duyminh', laLopDuyMinh); }
   var mlogo = document.getElementById('mapHeaderLogo');
   if (mlogo) {
-    if (laLopMAP) { mlogo.src = 'logo/CLB-MAP-logo.png'; mlogo.title = 'Lớp thuộc CLB M.A.P'; mlogo.style.display = 'block'; }
-    else if (laLopDuyMinh) { mlogo.src = 'logo/duyminh-logo.png'; mlogo.title = 'Lớp thuộc Trung tâm Duy Minh'; mlogo.style.display = 'block'; }
+    if ((theme && typeof theme === 'object') || laLopMAP || laLopDuyMinh) { mlogo.src = typeof vmUrlLogoThuongHieu === 'function' ? vmUrlLogoThuongHieu(theme) : ''; mlogo.title = 'Lớp thuộc ' + (typeof vmTenThuongHieu === 'function' ? vmTenThuongHieu(theme) : 'thương hiệu riêng'); mlogo.style.display = 'block'; }
     else { mlogo.style.display = 'none'; }
   }
 }

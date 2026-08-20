@@ -2373,17 +2373,80 @@ function themNutChupManHinh() {
 
 
 /* ============================================================
-   BỘ NHẬN DIỆN CLB M.A.P — đổi logo/tên cả web + logo chìm
-   Gọi vmApDungThuongHieuMAP(true/false) tuỳ lớp có theme 'map'.
+   BỘ NHẬN DIỆN LỚP HỌC
+   Nhận cả chuỗi theme cũ lẫn bản ghi public.brand_templates.
    ============================================================ */
-/* Áp thương hiệu theo theme của lớp: 'vinhmath' (mặc định) | 'map' | 'duyminh' */
+var VM_BRAND_COLUMNS = 'id,slug,name,short_name,tagline,logo_path,preset,primary_color,secondary_color,accent_color,accent_soft_color,surface_color,text_color,topbar_color,topbar_text_color,logo_scale,logo_x,logo_y,radius_px,is_active';
+var VM_BRAND_RELATION = 'brand:brand_templates(' + VM_BRAND_COLUMNS + ')';
+
+function vmThuongHieuTuLop(lop) {
+  if (!lop) return 'vinhmath';
+  var brand = Array.isArray(lop.brand) ? lop.brand[0] : lop.brand;
+  return brand || lop.theme || 'vinhmath';
+}
+
+function vmPresetThuongHieu(brand) {
+  if (typeof brand === 'string') return brand || 'vinhmath';
+  return (brand && brand.preset) || 'vinhmath';
+}
+
+function vmUrlLogoThuongHieu(brand) {
+  var preset = vmPresetThuongHieu(brand);
+  var path = brand && typeof brand === 'object' ? String(brand.logo_path || '') : '';
+  if (path.indexOf('site:') === 0) return path.slice(5);
+  if (path && typeof sb !== 'undefined' && sb && sb.storage) {
+    try { return sb.storage.from('brand-assets').getPublicUrl(path).data.publicUrl; } catch (e) {}
+  }
+  return preset === 'map' ? 'logo/CLB-MAP-logo.png' : (preset === 'duyminh' ? 'logo/duyminh-logo.png' : 'img/logo.png');
+}
+
+function vmTenThuongHieu(brand) {
+  if (brand && typeof brand === 'object') return brand.name || brand.short_name || 'VinhMath';
+  return brand === 'map' ? 'CLB M.A.P' : (brand === 'duyminh' ? 'Trung tâm Duy Minh' : 'VinhMath');
+}
+
+function vmXoaBienThuongHieu() {
+  var vars = ['--accent','--accent-hover','--accent-soft','--accent-gradient','--accent-2','--accent-strong','--gold','--surface','--surface-solid','--ink','--ink-2','--topbar-bg','--topbar-text','--topbar-link','--topbar-link-active','--topbar-link-hover','--line-2','--r-sm','--r-md','--r-lg'];
+  vars.forEach(function (name) { document.body.style.removeProperty(name); });
+}
+
+function vmApDungBienThuongHieu(brand) {
+  if (!brand || typeof brand !== 'object') return;
+  var primary = brand.primary_color || '#7A4D00';
+  var secondary = brand.secondary_color || primary;
+  var accent = brand.accent_color || primary;
+  var soft = brand.accent_soft_color || '#F4EBDD';
+  var surface = brand.surface_color || '#FFFFFF';
+  var ink = brand.text_color || '#1A1A1A';
+  var topbar = brand.topbar_color || '#FAF8F5';
+  var topbarText = brand.topbar_text_color || ink;
+  var radius = Math.max(4, Math.min(32, Number(brand.radius_px) || 12));
+  var values = {
+    '--accent': accent, '--accent-hover': secondary, '--accent-soft': soft,
+    '--accent-gradient': 'linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%)',
+    '--accent-2': secondary, '--accent-strong': secondary, '--gold': accent,
+    '--surface': surface, '--surface-solid': surface, '--ink': ink, '--ink-2': ink,
+    '--topbar-bg': topbar, '--topbar-text': topbarText, '--topbar-link': topbarText,
+    '--topbar-link-active': accent, '--topbar-link-hover': accent,
+    '--line-2': accent + '55', '--r-sm': Math.max(4, radius - 6) + 'px',
+    '--r-md': radius + 'px', '--r-lg': Math.min(40, radius + 6) + 'px'
+  };
+  Object.keys(values).forEach(function (name) { document.body.style.setProperty(name, values[name]); });
+}
+
 function vmApDungThuongHieu(theme) {
   try {
     theme = theme || 'vinhmath';
-    var isMap = theme === 'map';
-    var isDM = theme === 'duyminh';
+    var preset = vmPresetThuongHieu(theme);
+    var isMap = preset === 'map';
+    var isDM = preset === 'duyminh';
+    var isCustom = typeof theme === 'object';
     document.body.classList.toggle('theme-map', isMap);
     document.body.classList.toggle('theme-duyminh', isDM);
+    document.body.classList.toggle('theme-custom', isCustom);
+    document.body.dataset.vmBrand = isCustom ? (theme.slug || theme.id || 'custom') : preset;
+    vmXoaBienThuongHieu();
+    if (isCustom) vmApDungBienThuongHieu(theme);
 
     // Bỏ logo chìm nền (gây khó nhìn) — xoá nếu còn tồn tại từ phiên trước
     var wm = document.getElementById('mapWatermarkGlobal');
@@ -2393,7 +2456,21 @@ function vmApDungThuongHieu(theme) {
     var logoEl = document.querySelector('.topbar .logo') || document.querySelector('.logo');
     if (logoEl) {
       var img = logoEl.querySelector('img');
-      if (img) img.src = isMap ? 'logo/CLB-MAP-logo.png' : (isDM ? 'logo/duyminh-logo.png' : 'img/logo.png');
+      if (img) {
+        img.src = vmUrlLogoThuongHieu(theme);
+        img.alt = vmTenThuongHieu(theme);
+        img.style.objectFit = 'contain';
+        if (isCustom) {
+          var logoX = Number(theme.logo_x), logoY = Number(theme.logo_y);
+          if (!Number.isFinite(logoX)) logoX = 50;
+          if (!Number.isFinite(logoY)) logoY = 50;
+          img.style.objectPosition = logoX + '% ' + logoY + '%';
+          img.style.transform = 'scale(' + Math.max(.4, Math.min(1.6, (Number(theme.logo_scale) || 100) / 100)) + ')';
+        } else {
+          img.style.removeProperty('object-position');
+          img.style.removeProperty('transform');
+        }
+      }
 
       var brandTextEl = logoEl.querySelector('.brand-container-el');
       if (!brandTextEl) {
@@ -2413,7 +2490,14 @@ function vmApDungThuongHieu(theme) {
         }
       }
 
-      if (isMap) {
+      if (isCustom) {
+        brandTextEl.replaceChildren();
+        var customName = document.createElement('span');
+        customName.className = 'brand-vinh';
+        customName.style.setProperty('color', 'var(--accent)', 'important');
+        customName.textContent = theme.short_name || theme.name || 'VinhMath';
+        brandTextEl.appendChild(customName);
+      } else if (isMap) {
         brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.P</span>';
       } else if (isDM) {
         brandTextEl.innerHTML = '<span class="dm-mark"><span class="dm-duy">DUY</span><span class="dm-minh">MINH</span></span>';
@@ -2425,6 +2509,19 @@ function vmApDungThuongHieu(theme) {
 }
 /* Tương thích ngược: các trang cũ gọi vmApDungThuongHieuMAP(true/false) */
 function vmApDungThuongHieuMAP(isMap) { vmApDungThuongHieu(isMap ? 'map' : 'vinhmath'); }
+function vmChipThuongHieu(brand, size) {
+  size = size || 16;
+  if (!brand || brand === 'vinhmath') return '';
+  var name = vmTenThuongHieu(brand);
+  var logo = vmUrlLogoThuongHieu(brand);
+  var span = document.createElement('span');
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);padding:3px 9px;border-radius:99px;font-size:.72rem;font-weight:800;line-height:1';
+  var img = document.createElement('img');
+  img.src = logo; img.alt = ''; img.style.cssText = 'width:'+size+'px;height:'+size+'px;border-radius:50%;background:#fff;object-fit:contain;flex-shrink:0';
+  var label = document.createElement('span'); label.textContent = name;
+  span.appendChild(img); span.appendChild(label);
+  return span.outerHTML;
+}
 /* Wordmark Duy Minh dùng chung cho chip/badge (DUY đỏ · MINH trắng trên nền đỏ) */
 function vmChipDuyMinh(size) {
   size = size || 16;
