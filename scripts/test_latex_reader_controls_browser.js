@@ -96,19 +96,21 @@ function between(source, from, to) {
     let state = await page.evaluate(() => ({
       zoom: document.querySelector('[data-vm-zoom-label="reader-test"]').textContent,
       scale: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
+      targetWidth: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-target-width'),
       computedSize: getComputedStyle(document.querySelector('.vm-tex-reader')).fontSize,
       scrollable: document.querySelector('.katex-display').classList.contains('vm-math-scrollable'),
       fittedTransform: document.querySelector('.katex-display > .katex').style.transform,
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
     }));
-    if (state.zoom !== '110%' || state.scale !== '1.1' || parseFloat(state.computedSize) < 16 || !state.scrollable || state.fittedTransform || state.overflow) throw new Error(`Zoom/uniform formula scrolling failed: ${JSON.stringify(state)}`);
+    if (state.zoom !== '110%' || state.scale !== '1.1' || state.targetWidth !== 'clamp(920px,80vw,2220px)' || parseFloat(state.computedSize) < 16 || !state.scrollable || state.fittedTransform || state.overflow) throw new Error(`Zoom/responsive width/uniform formula scrolling failed: ${JSON.stringify(state)}`);
 
     await page.click('[data-vm-zoom-label="reader-test"]');
     state = await page.evaluate(() => ({
       zoom: document.querySelector('[data-vm-zoom-label="reader-test"]').textContent,
       scale: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-scale'),
+      targetWidth: document.querySelector('.vm-tex-reader').style.getPropertyValue('--vm-reader-target-width'),
     }));
-    if (state.zoom !== '100%' || state.scale !== '1') throw new Error(`Zoom reset failed: ${JSON.stringify(state)}`);
+    if (state.zoom !== '100%' || state.scale !== '1' || state.targetWidth !== 'clamp(920px,78vw,2100px)') throw new Error(`Zoom reset failed: ${JSON.stringify(state)}`);
 
     await page.click('[data-vm-fullscreen-btn="reader-test"]');
     state = await page.evaluate(() => ({
@@ -122,7 +124,7 @@ function between(source, from, to) {
       toolbarVisible: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display !== 'none',
       toolbarDisplay: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display,
       toolbarExpanded: document.querySelector('.vm-tex-toolbar-toggle').getAttribute('aria-expanded'),
-      themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'grid',
+      themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display !== 'none',
     }));
     if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || !state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
     await page.click('.vm-tex-toolbar-toggle');
@@ -145,6 +147,9 @@ function between(source, from, to) {
     });
     if (!state.visible || !state.insideFullscreen || !state.aboveFullscreen || !state.toolsCollapsed) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
     await page.evaluate(() => vmDongPdfExport());
+    if (!(await page.locator('[data-reader-key="reader-test"]').evaluate((el) => el.classList.contains('vm-tex-tools-open')))) {
+      await page.click('.vm-tex-toolbar-toggle');
+    }
     await page.click('.vm-tex-theme-toggle');
     state = await page.evaluate(() => ({
       theme: document.documentElement.getAttribute('data-theme'),
@@ -157,8 +162,7 @@ function between(source, from, to) {
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
     }
 
-    await page.click('.vm-tex-toolbar-toggle');
-    await page.click('[data-vm-fullscreen-btn="reader-test"]');
+    await page.evaluate(() => vmThoatReaderFullscreen(document.querySelector('[data-reader-key="reader-test"]')));
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
@@ -248,8 +252,7 @@ function between(source, from, to) {
       };
     });
     if (!state.active || !state.locked || !state.text.includes('Thoát') || state.readingOverflow !== 'auto') throw new Error(`Split theory reader fullscreen fallback failed: ${JSON.stringify(state)}`);
-    await page.click('.vm-tex-toolbar-toggle');
-    await page.click('[data-vm-fullscreen-btn="lesson-theory"]');
+    await page.evaluate(() => vmThoatReaderFullscreen(document.querySelector('[data-reader-key="lesson-theory"]')));
     console.log('PASS reader zoom, mobile fullscreen and configurable PDF popup controls');
   } finally {
     await browser.close();

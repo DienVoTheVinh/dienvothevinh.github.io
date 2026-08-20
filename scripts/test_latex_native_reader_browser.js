@@ -119,13 +119,24 @@ Tính $1+2+3$.
     if (desktop.tikzCount !== 1 || desktop.leakedListOption) throw new Error(`TikZ/list conversion is wrong: ${JSON.stringify(desktop)}`);
     if (desktop.calloutCount !== 3 || desktop.enumItemCount !== 2 || desktop.leakedDgnlLatex || !desktop.text.includes('“tập”')) throw new Error(`DGNL environments or quote commands leaked: ${JSON.stringify(desktop)}`);
     if (desktop.tableCellCount !== 4 || desktop.leakedTableSpec || desktop.leakedSpacing) throw new Error(`Table column spec or spacing command leaked: ${JSON.stringify(desktop)}`);
-    if (desktop.readerWidth > 921 || desktop.overflow) throw new Error(`Desktop reader overflows: ${JSON.stringify(desktop)}`);
+    if (desktop.readerWidth < 980 || desktop.readerWidth > 1280 || desktop.overflow) throw new Error(`Desktop reader does not use the available width safely: ${JSON.stringify(desktop)}`);
     const theory = await page.evaluate(() => ({
       text: document.getElementById('theoryRoot').textContent,
       solutions: document.querySelectorAll('#theoryRoot .vm-tex-solution').length,
     }));
     if (!theory.text.includes('Đáp số 6') || theory.solutions < 2) throw new Error(`Theory solutions disappeared: ${JSON.stringify(theory)}`);
     if (theory.text.includes('undefined') || /\\begin\{align\*?\}/.test(theory.text)) throw new Error(`Aligned solution leaked raw LaTeX: ${JSON.stringify(theory)}`);
+
+    await page.setViewportSize({ width: 2560, height: 1200 });
+    const wideDesktop = await page.evaluate(() => {
+      const article = document.querySelector('.vm-tex-reader');
+      return {
+        articleWidth: article.getBoundingClientRect().width,
+        viewportWidth: innerWidth,
+        bodyOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    if (wideDesktop.articleWidth < 1800 || wideDesktop.articleWidth >= wideDesktop.viewportWidth || wideDesktop.bodyOverflow) throw new Error(`Wide desktop reader wastes space or overflows: ${JSON.stringify(wideDesktop)}`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await page.evaluate(() => {

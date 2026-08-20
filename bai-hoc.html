@@ -364,7 +364,12 @@ body.vm-video-locked { overflow:hidden !important; }
 .vm-tex-download[disabled] { opacity:.7; cursor:wait; }
 .vm-tex-scroll { flex:1; min-width:0; min-height:0; overflow:auto; overflow-x:hidden; padding:clamp(12px,2.6vw,30px); scroll-behavior:smooth; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y pinch-zoom; }
 .vm-tex-reader {
-  flex:0 0 auto; width:min(920px,100%); margin:0 auto; padding:clamp(22px,4vw,48px);
+  /*
+   * Keep the article comfortable on a laptop, but do not waste an ultrawide
+   * display.  The zoom controller updates --vm-reader-target-width together
+   * with the type scale; mobile deliberately overrides this back to 100%.
+   */
+  flex:0 0 auto; width:min(var(--vm-reader-target-width,clamp(920px,78vw,2100px)),100%); margin:0 auto; padding:clamp(22px,4vw,48px);
   box-sizing:border-box;
   border:1px solid var(--line); border-radius:18px; background:var(--surface);
   box-shadow:0 14px 38px rgba(15,23,42,.08); color:var(--ink); line-height:1.72;
@@ -499,7 +504,7 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   .vm-tex-fullscreen,.vm-tex-download { min-width:0; min-height:44px; padding:8px 10px !important; white-space:normal; }
   .vm-tex-download { grid-column:1 / -1; }
   .vm-tex-scroll { padding:8px; }
-  .vm-tex-reader { --vm-reader-base-size:.96rem; width:100%; padding:16px 10px 24px; border-radius:12px; box-shadow:none; line-height:1.64; }
+  .vm-tex-reader { --vm-reader-base-size:.96rem; --vm-reader-target-width:100%; width:100%; max-width:100%; padding:16px 10px 24px; border-radius:12px; box-shadow:none; line-height:1.64; }
   .vm-tex-reader-head { margin-bottom:20px; padding-bottom:14px; }
   .vm-tex-reader-kicker { font-size:.64rem; letter-spacing:.09em; }
   .vm-tex-reader-head h2 { font-size:1.3rem; }
@@ -2094,7 +2099,18 @@ function vmDoiZoomReader(key, delta, control) {
   vmReaderZoomLevels[key] = next;
   shell.style.setProperty('--vm-reader-scale', next);
   var reader = shell.querySelector('.vm-tex-reader');
-  if (reader) reader.style.setProperty('--vm-reader-scale', next);
+  if (reader) {
+    reader.style.setProperty('--vm-reader-scale', next);
+    /*
+     * Desktop zoom changes both type and the reading canvas.  vw keeps the
+     * layout fluid after a window resize, while the pixel cap prevents very
+     * long lines on ultrawide monitors.  The mobile media query above ignores
+     * this value and keeps the document at the viewport width.
+     */
+    var targetVw = Math.round((58 + next * 20) * 10) / 10;
+    var targetMaxPx = Math.round(900 + next * 1200);
+    reader.style.setProperty('--vm-reader-target-width', 'clamp(920px,' + targetVw + 'vw,' + targetMaxPx + 'px)');
+  }
   var label = shell.querySelector('[data-vm-zoom-label="' + key + '"]');
   if (label) label.textContent = Math.round(next * 100) + '%';
   shell.setAttribute('data-vm-reader-zoom', String(Math.round(next * 100)));
