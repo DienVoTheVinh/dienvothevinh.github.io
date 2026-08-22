@@ -33,6 +33,21 @@ Deno.serve(async (req) => {
     const password = String(body.password || "");
     const password2 = String(body.password2 || password);
 
+    if (type === "reset_password") {
+      if (prof.role !== "admin") return jsonRes({ error: "Chi Quan tri duoc cap lai mat khau" }, 403);
+      const targetUserId = String(body.targetUserId || "");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+        return jsonRes({ error: "Tai khoan dich khong hop le" }, 400);
+      }
+      if (targetUserId === user.id) return jsonRes({ error: "Khong cap lai mat khau cua chinh minh tai day" }, 400);
+      if (password.length < 8) return jsonRes({ error: "Mat khau moi toi thieu 8 ky tu" }, 400);
+      const { data: target } = await svc.from("profiles").select("id").eq("id", targetUserId).maybeSingle();
+      if (!target) return jsonRes({ error: "Khong tim thay tai khoan" }, 404);
+      const { error: updateError } = await svc.auth.admin.updateUserById(targetUserId, { password });
+      if (updateError) return jsonRes({ error: "Khong cap lai duoc mat khau" }, 500);
+      return jsonRes({ ok: true, type });
+    }
+
     // Portal students are admin-only. Partner managers deliberately do not get
     // the broad teacher role or access to this service-role operation.
     if (["gv", "tg", "portal_hs", "portal_gv"].includes(type)) {

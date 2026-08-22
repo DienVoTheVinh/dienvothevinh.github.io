@@ -62,7 +62,7 @@
 
     <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 6 ký tự)</span></label>
-      <input class="input" id="ttMkHS" type="text" value="VinhMath2026#" style="width:100%">
+      <input class="input" id="ttMkHS" type="password" autocomplete="new-password" style="width:100%">
     </div>
 
     <div class="field" id="ttRowDungChung">
@@ -74,7 +74,7 @@
 
     <div class="field" id="ttFieldMkPH" style="display:none">
       <label>Mật khẩu phụ huynh</label>
-      <input class="input" id="ttMkPH" type="text" value="VinhMath2026#" style="width:100%">
+      <input class="input" id="ttMkPH" type="password" autocomplete="new-password" style="width:100%">
     </div>
 
     <div id="ttThongBao" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
@@ -138,8 +138,6 @@
 <script src="js/menu-v5.js"></script>
 <script src="js/analytics.js"></script>
 <script>
-var TT_MK_MAC_DINH = 'VinhMath2026#';
-
 (async function () {
   if (!daKetNoi()) { ttBao('Chưa kết nối Supabase.'); return; }
   var hoSo = await yeuCauDangNhap();

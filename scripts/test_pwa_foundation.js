@@ -144,7 +144,7 @@ for (const file of htmlFiles) {
     expect(sharedVersion && Number(sharedVersion[1]) >= 7.9, `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=8.2'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=8.4'), `${file}: stale shared menu version`);
   }
 }
 

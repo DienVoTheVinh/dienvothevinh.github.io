@@ -51,8 +51,8 @@ assert(
   'Không được quay lại cơ chế cũ chỉ kéo rộng một nửa workspace.'
 );
 assert(
-  /js\/vinhmath\.js\?v=8\.2/.test(lesson),
-  'Trang bài học phải nhận runtime thương hiệu 8.2 thay vì bản cache cũ.'
+  /js\/vinhmath\.js\?v=8\.4/.test(lesson),
+  'Trang bài học phải nhận runtime thương hiệu 8.4 thay vì bản cache cũ.'
 );
 
 console.log('PASS lesson keeps split view by default and offers manual fullscreen with Safari/WebView fallback');

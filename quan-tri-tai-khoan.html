@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#9e6100">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Tạo tài khoản — VinhMath</title>
+<title>Quản lý tài khoản — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
@@ -21,6 +21,11 @@
 .field label { font-weight: 600; font-size: .9rem; margin-bottom: 6px; display: block; }
 .preview-box { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; font-size: .84rem; line-height: 1.7; margin-bottom: 14px; }
 .preview-box b { color: var(--accent); font-family: var(--font-mono), monospace; }
+.tt-user-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.tt-dialog { width:min(92vw,460px); border:1px solid var(--line); border-radius:var(--r-md); padding:0; color:var(--ink); background:var(--surface); box-shadow:var(--shadow-lg); }
+.tt-dialog::backdrop { background:rgba(0,0,0,.55); backdrop-filter:blur(3px); }
+.tt-dialog-body { padding:22px; }
+.tt-dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 </style>
 </head>
 <body>
@@ -39,7 +44,7 @@
 <div class="wrap">
   <div class="head">
     <div class="sec-label">Khu vực quản trị</div>
-    <h1>Tạo tài khoản</h1>
+    <h1>Quản lý tài khoản</h1>
     <p style="margin-top:6px">Tạo tài khoản cho học sinh + phụ huynh (tự liên kết), giáo viên hoặc trợ giảng. Tên đăng nhập tự sinh từ họ tên; phần sau dấu @ là chức vụ: <b>hs</b> (học sinh), <b>ph</b> (phụ huynh), <b>gv</b> (giáo viên), <b>tg</b> (trợ giảng).</p>
   </div>
 
@@ -66,7 +71,7 @@
 
     <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 6 ký tự)</span></label>
-      <input class="input" id="ttMkHS" type="text" value="VinhMath2026#" style="width:100%">
+      <div style="display:flex;gap:8px"><input class="input" id="ttMkHS" type="password" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkHS')">Tạo mạnh</button></div>
     </div>
 
     <div class="field" id="ttRowDungChung">
@@ -78,7 +83,7 @@
 
     <div class="field" id="ttFieldMkPH" style="display:none">
       <label>Mật khẩu phụ huynh</label>
-      <input class="input" id="ttMkPH" type="text" value="VinhMath2026#" style="width:100%">
+      <div style="display:flex;gap:8px"><input class="input" id="ttMkPH" type="password" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkPH')">Tạo mạnh</button></div>
     </div>
 
     <div id="ttThongBao" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
@@ -136,14 +141,27 @@
   </div>
 </div>
 
+<dialog class="tt-dialog" id="ttResetDialog">
+  <form class="tt-dialog-body" onsubmit="ttDatLaiMatKhau(event)">
+    <h2 style="margin:0 0 6px">Cấp lại mật khẩu</h2>
+    <p class="text-muted" id="ttResetTarget" style="margin:0 0 18px"></p>
+    <input type="hidden" id="ttResetUserId">
+    <div class="field">
+      <label>Mật khẩu mới <span style="color:var(--ink-3);font-weight:400">(tối thiểu 8 ký tự)</span></label>
+      <div style="display:flex;gap:8px"><input class="input" id="ttResetPassword" type="password" minlength="8" autocomplete="new-password" required style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttResetPassword')">Tạo mạnh</button></div>
+    </div>
+    <p class="preview-box">Mật khẩu chỉ được gửi trực tiếp tới Edge Function khi thầy bấm xác nhận; trang không lưu mật khẩu vào database hay trình duyệt.</p>
+    <div id="ttResetMessage" aria-live="polite"></div>
+    <div class="tt-dialog-actions"><button class="btn btn-secondary" type="button" onclick="ttDongDatLaiMatKhau()">Hủy</button><button class="btn btn-primary" id="ttResetSubmit" type="submit">Xác nhận cấp lại</button></div>
+  </form>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.4"></script>
 <script src="js/menu-v5.js?v=8.4"></script>
 <script src="js/analytics.js"></script>
 <script>
-var TT_MK_MAC_DINH = 'VinhMath2026#';
-
 (async function () {
   if (!daKetNoi()) { ttBao('Chưa kết nối Supabase.'); return; }
   var hoSo = await yeuCauDangNhap();
@@ -151,8 +169,21 @@ var TT_MK_MAC_DINH = 'VinhMath2026#';
   if (hoSo.role !== 'admin') { window.location.href = 'trang-chu'; return; }
   window._hoSo = hoSo;
   taiDanhSachTaiKhoan();
+  ttTaoMatKhau('ttMkHS');
+  ttTaoMatKhau('ttMkPH');
   ttDoiLoai();
 })();
+
+function ttTaoMatKhau(inputId) {
+  var bytes = new Uint32Array(3);
+  crypto.getRandomValues(bytes);
+  var value = 'VM-' + Array.from(bytes).map(function(n){ return n.toString(36); }).join('-') + '!';
+  var input = $(inputId);
+  input.value = value;
+  input.type = 'text';
+  input.focus();
+  input.select();
+}
 
 function ttSlug(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -395,15 +426,59 @@ function renderUserRow(u) {
   }
   
   var isSelf = u.id === window._hoSo.id;
-  var deleteBtn = isSelf ? '' : '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\', \'' + u.full_name.replace(/'/g, "\\'") + '\')">Xoá</button>';
+  var actionButtons = isSelf ? '' : '<div class="tt-user-actions"><button class="btn btn-secondary btn-sm" onclick="ttMoDatLaiMatKhau(\'' + u.id + '\')">Cấp lại MK</button><button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\', \'' + u.full_name.replace(/'/g, "\\'") + '\')">Xoá</button></div>';
   
   return '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface)">' +
     '<div>' +
       '<div style="font-weight:700; font-size:.9rem; color:var(--ink)">' + qlaEsc(u.full_name) + ' (' + roleLabel + ')</div>' +
       '<div style="font-size:.78rem; color:var(--ink-3); margin-top:2px">ID: ' + u.username + detail + '</div>' +
     '</div>' +
-    deleteBtn +
+    actionButtons +
     '</div>';
+}
+
+function ttMoDatLaiMatKhau(id) {
+  var user = window.allUsers.find(function(item){ return item.id === id; });
+  if (!user || id === window._hoSo.id) return;
+  $('ttResetUserId').value = id;
+  $('ttResetTarget').textContent = (user.full_name || user.username || 'Tài khoản') + ' · @' + (user.username || '');
+  $('ttResetPassword').value = '';
+  $('ttResetPassword').type = 'password';
+  $('ttResetMessage').textContent = '';
+  $('ttResetDialog').showModal();
+  $('ttResetPassword').focus();
+}
+
+function ttDongDatLaiMatKhau() {
+  $('ttResetPassword').value = '';
+  $('ttResetUserId').value = '';
+  $('ttResetDialog').close();
+}
+
+async function ttDatLaiMatKhau(event) {
+  event.preventDefault();
+  var targetUserId = $('ttResetUserId').value;
+  var password = $('ttResetPassword').value;
+  if (!targetUserId || password.length < 8) return;
+  var btn = $('ttResetSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Đang cập nhật…';
+  $('ttResetMessage').textContent = '';
+  try {
+    var response = await sb.functions.invoke('tao-tai-khoan', { body: { type:'reset_password', targetUserId:targetUserId, password:password } });
+    var data = response.data || {};
+    if (response.error || data.error) throw new Error(data.error || response.error.message || 'Không cập nhật được');
+    $('ttResetPassword').value = '';
+    $('ttResetMessage').style.color = 'var(--ok)';
+    $('ttResetMessage').textContent = 'Đã cấp lại mật khẩu. Học sinh có thể đăng nhập ngay.';
+    setTimeout(ttDongDatLaiMatKhau, 1200);
+  } catch (error) {
+    $('ttResetMessage').style.color = 'var(--err)';
+    $('ttResetMessage').textContent = error.message || 'Không cập nhật được mật khẩu.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Xác nhận cấp lại';
+  }
 }
 
 function qlaEsc(str) {
