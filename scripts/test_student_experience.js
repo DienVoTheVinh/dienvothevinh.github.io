@@ -19,6 +19,9 @@ const results = read('js/student-results.js');
 const achievementsPage = read('thanh-tuu.html');
 const achievements = read('js/student-achievement-map.js');
 const lessonPage = read('bai-hoc.html');
+const practicePage = read('luyen-de.html');
+const gradingPage = read('quan-tri-cham-bai.html');
+const assessmentMigration = read('supabase/migrations/20260822192813_add_submission_assessment_level.sql');
 
 for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/role-home.js', 'js/student-results.js', 'js/student-achievement-map.js']) {
   new vm.Script(read(file), {filename:file});
@@ -59,10 +62,11 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=5'), 'Trang Hôm nay phải nạp phiên bản việc cần làm mới nhất');
+expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=6'), 'Trang Hôm nay phải nạp phiên bản việc cần làm mới nhất');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
 expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
 expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
+expect(home.includes("var vmStudentFeedFilter = 'todo'") && !home.includes('data-feed-filter="all"'), 'Dòng cập nhật phải mặc định Cần làm và không còn tab Tất cả');
 expect(home.includes("priority:0, label:'Quá hạn") && home.includes("priority:1, label:'Hôm nay'") && home.includes("priority:2, label:'Ngày mai'"), 'Việc cần làm chưa được sắp theo hạn ưu tiên');
 expect(homePage.includes('if (window._nvData && !window._nvData.error) r = { data: window._nvData }'), 'Trang Hôm nay không được gọi lặp RPC hồ sơ khi đã có dữ liệu nhiệm vụ');
 expect(home.includes(".eq('student_id', profile.id).eq('status', 'graded')"), 'Số bài đã chấm phải chỉ đếm của học sinh hiện tại');
@@ -84,7 +88,10 @@ expect(personal.includes("profileData.role === 'student'") && personal.includes(
 expect(resultsPage.includes('Bài giáo viên đã chấm') && resultsPage.includes('data-filter="corrected"'), 'Trang Kết quả thiếu danh sách hoặc lọc file sửa');
 expect(results.includes(".eq('student_id', profile.id)") && results.includes(".eq('status', 'graded')"), 'Truy vấn kết quả phải khóa vào học sinh hiện tại và trạng thái đã chấm');
 expect(results.includes("sessionStorage.getItem('vm-guest-mode') === 'true'"), 'Chế độ trải nghiệm phải có kết quả minh họa mà không đọc dữ liệu thật');
-expect(results.includes("item.lesson_id") && results.includes("&action=graded&kind=") && results.includes("&submission="), 'Trang Kết quả thiếu deep link chính xác vào bài đã chấm');
+expect(!results.includes('&action=graded&kind=') && results.includes('Toàn bộ điểm, nhận xét và file sửa được xem ngay tại đây'), 'Trang Kết quả phải xem đầy đủ tại chỗ, không dẫn ngược sang bài giảng');
+expect(resultsPage.includes('studentResultClassFilter') && resultsPage.includes('studentResultGradeFilter') && results.includes('populateScopes()'), 'Trang Kết quả thiếu lọc theo lớp và khối');
+expect(results.includes('assessment_level') && results.includes("needs_improvement") && results.includes("meets") && results.includes("good"), 'Trang Kết quả thiếu ba mức đánh giá');
+expect(results.includes('student-result-pdf') && results.includes('<iframe'), 'PDF bài sửa phải xem được ngay trong Kết quả');
 expect(results.includes("url.protocol === 'https:' || url.protocol === 'http:'"), 'Tệp bài sửa phải chặn giao thức URL không an toàn');
 expect(results.includes("replace(/[&<>\"']/g"), 'Dữ liệu kết quả phải được escape trước khi render');
 expect(experienceCss.includes('width:min(1180px,calc(100% - 40px))') && experienceCss.includes('margin-inline:auto!important'), 'Trang Kết quả phải căn giữa trên màn hình rộng');
@@ -92,6 +99,10 @@ expect(experienceCss.includes('.student-result-dialog{box-sizing:border-box;posi
 expect(achievementsPage.includes('Bản đồ thành tựu') && achievementsPage.includes('achievementMap'), 'Thiếu trang Bản đồ thành tựu');
 expect(achievements.includes("sb.rpc('hs_ho_so')") && achievements.includes('for (var offset = 0; offset < 6; offset++)'), 'Bản đồ phải dùng level hiện có và dựng đủ các cột mốc');
 expect(lessonPage.includes('[data-reader-key]:fullscreen') && lessonPage.includes('[data-reader-key]:-webkit-full-screen'), 'Tài liệu toàn màn hình phải thoát khỏi kích thước cột chia đôi');
+expect(practicePage.includes('Bài tập & kiểm tra trong bài giảng') && practicePage.includes('Đề thi & thi thử') && practicePage.includes('Tất cả các lớp'), 'Luyện tập phải hợp nhất bài tập, kiểm tra, đề thi và có phạm vi mọi lớp');
+expect(practicePage.includes("vmPracticeFilter = 'all'") && practicePage.includes("kind:'homework'") && practicePage.includes("kind:'test'"), 'Luyện tập thiếu phân loại bài tập và bài kiểm tra');
+expect(gradingPage.includes('assessment_level') && gradingPage.includes('Cần cố gắng') && gradingPage.includes('Không dùng mức'), 'Màn chấm bài thiếu chế độ đánh giá ba mức có thể bỏ chọn');
+expect(assessmentMigration.includes('add column if not exists assessment_level text') && assessmentMigration.includes('submissions_assessment_level_check') && assessmentMigration.includes("'needs_improvement', 'meets', 'good'"), 'Migration đánh giá mức phải cộng thêm, idempotent và có CHECK constraint');
 expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY|postgres(?:ql)?:\/\//i.test([menu, shared, home, classPage, personal, resultsPage, results].join('\n')), 'Mã giao diện không được chứa credential đặc quyền');
 
 console.log('PASS student experience: compact PWA, focused home/class, personal hub and private graded results');

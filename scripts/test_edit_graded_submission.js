@@ -15,7 +15,7 @@ assert(/function batSuaCham\(id\)/.test(grading) && /function huySuaCham\(id\)/.
   'Thiếu luồng mở hoặc hủy chỉnh sửa bài đã chấm.');
 assert(/_chbOriginalGrades/.test(grading),
   'Chưa lưu trạng thái ban đầu để hủy chỉnh sửa an toàn.');
-assert(/\.update\(\{[\s\S]*?status:\s*'graded'[\s\S]*?\}\)\.eq\('id', id\)\.select\('id,status,score,feedback,graded_at'\)\.single\(\)/.test(grading),
+assert(/\.update\(\{[\s\S]*?assessment_level:[\s\S]*?status:\s*'graded'[\s\S]*?\}\)\.eq\('id', id\)\.select\('id,status,score,assessment_level,feedback,graded_at'\)\.single\(\)/.test(grading),
   'Chỉnh sửa phải cập nhật đúng bản ghi cũ và xác nhận hàng đã lưu.');
 assert(/Lưu chỉnh sửa/.test(grading),
   'Nút lưu chưa phân biệt thao tác chấm lần đầu với chỉnh sửa.');

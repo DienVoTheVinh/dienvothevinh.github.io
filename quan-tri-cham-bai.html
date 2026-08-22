@@ -39,6 +39,7 @@
 .chb-grade-editor { margin-top:10px; padding:12px; border:1px solid var(--line-2); border-radius:10px; background:var(--surface-2); }
 .chb-grade-editor[hidden], .chb-grade-summary[hidden] { display:none !important; }
 .chb-edit-status { min-height:1.25em; margin-top:6px; font-size:.8rem; color:var(--ok); }
+.chb-assessment-wrap{margin-top:12px}.chb-assessment-wrap>span{display:block;margin-bottom:7px;color:var(--ink-3);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.chb-assessment-options{display:flex;gap:7px;flex-wrap:wrap}.chb-assessment-options label{cursor:pointer}.chb-assessment-options input{position:absolute;opacity:0;pointer-events:none}.chb-assessment-options label span,.chb-assessment-clear{display:inline-flex;align-items:center;min-height:38px;padding:7px 12px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface);color:var(--ink-2);font:800 .78rem/1.2 inherit}.chb-assessment-options input:checked+span{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff);box-shadow:0 0 0 3px var(--accent-soft)}.chb-assessment-clear{cursor:pointer}.chb-assessment-chip{display:inline-flex;align-items:center;margin-top:7px;padding:4px 9px;border-radius:999px;font-size:.72rem;font-weight:900}.chb-assessment-chip.needs_improvement{background:var(--err-soft);color:var(--err)}.chb-assessment-chip.meets{background:var(--ok-soft);color:var(--ok)}.chb-assessment-chip.good{background:var(--accent-soft);color:var(--accent)}
 @media(max-width:640px) {
   .chb-grade-summary-grid { grid-template-columns:1fr; }
   .chb-grade-summary-grid .btn { width:100%; }
@@ -532,7 +533,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.6"></script>
 <script src="js/menu-v5.js?v=8.7"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -912,7 +913,7 @@ async function taiAttemptsLuyenDe() {
 
 async function taiDanhSach() {
   var r = await sb.from('submissions')
-    .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, kind, lesson_id, lessons(title, class_id, homework_text, homework_images, homework_latex_content, homework_document_id, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, bai_btvn:documents!lessons_homework_document_id_fkey(title,file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title,file_path)), exam_id, exams(title, class_id), profiles(full_name, username, class_students(class_id, classes(name)))')
+    .select('id, submitted_at, files, status, score, assessment_level, feedback, graded_files, is_late, kind, lesson_id, lessons(title, class_id, homework_text, homework_images, homework_latex_content, homework_document_id, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, bai_btvn:documents!lessons_homework_document_id_fkey(title,file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title,file_path)), exam_id, exams(title, class_id), profiles(full_name, username, class_students(class_id, classes(name)))')
     .order('submitted_at', { ascending: false });
   if (r.error) { $('dsBaiNop').innerHTML = '<div class="empty card">Lỗi: ' + r.error.message + '</div>'; return; }
   
@@ -1120,12 +1121,14 @@ function veDanhSach() {
     window._chbOriginalGrades = window._chbOriginalGrades || {};
     window._chbOriginalGrades[s.id] = {
       score: s.score == null ? '' : String(s.score),
+      assessmentLevel: s.assessment_level || '',
       feedback: s.feedback || ''
     };
+    var assessment = chbAssessmentMeta(s.assessment_level);
     var summary = isGraded
       ? '<div class="chb-grade-summary" id="gradesummary-' + s.id + '">' +
           '<div class="chb-grade-summary-grid">' +
-            '<div class="chb-grade-score">Điểm: ' + (s.score != null ? chamEsc(s.score) + '/10' : 'Chưa nhập') + '</div>' +
+            '<div class="chb-grade-score">Điểm: ' + (s.score != null ? chamEsc(s.score) + '/10' : 'Chưa nhập') + (assessment ? '<span class="chb-assessment-chip ' + chamEsc(s.assessment_level) + '">' + assessment.icon + ' ' + assessment.label + '</span>' : '') + '</div>' +
             '<div class="chb-grade-feedback">' + (s.feedback ? chamEsc(s.feedback) : '<i>Chưa có lời phê.</i>') + '</div>' +
             '<button type="button" class="btn btn-ghost btn-sm" onclick="batSuaCham(\'' + s.id + '\')">✏️ Sửa bài đã chấm</button>' +
           '</div>' +
@@ -1149,6 +1152,7 @@ function veDanhSach() {
         '<input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" id="diem-' + s.id + '" value="' + (s.score != null ? chamEsc(s.score) : '') + '">' +
         '<textarea class="input" rows="4" placeholder="Lời phê cho học sinh… (nhấn Enter để xuống dòng — mỗi câu/ý một dòng cho dễ đọc)" id="phe-' + s.id + '" style="resize:vertical;line-height:1.5">' + chamEsc(s.feedback || '') + '</textarea>' +
       '</div>' +
+      chbAssessmentControl(s.id, s.assessment_level) +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">' +
         '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="chenYPhe(\'' + s.id + '\')">• Thêm dòng ý</button>' +
         '<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:.8rem" onclick="chenCauPhe(\'' + s.id + '\')">➕ Thêm “Câu …”</button>' +
@@ -1166,6 +1170,26 @@ function veDanhSach() {
       '</div>' +
       '<div class="chb-edit-status" id="editstatus-' + s.id + '"></div>' +
       '</div>';
+  }
+
+  function chbAssessmentMeta(value) {
+    return {
+      needs_improvement: { label: 'Cần cố gắng', icon: '🌱' },
+      meets: { label: 'Đạt', icon: '✓' },
+      good: { label: 'Tốt', icon: '⭐' }
+    }[value] || null;
+  }
+
+  function chbAssessmentControl(id, current) {
+    return '<div class="chb-assessment-wrap"><span>Đánh giá theo mức (có thể dùng thay hoặc cùng với điểm số)</span><div class="chb-assessment-options" id="assessment-' + id + '">' +
+      [['needs_improvement','🌱 Cần cố gắng'],['meets','✓ Đạt'],['good','⭐ Tốt']].map(function (item) {
+        return '<label><input type="radio" name="assessment-' + id + '" value="' + item[0] + '"' + (current === item[0] ? ' checked' : '') + '><span>' + item[1] + '</span></label>';
+      }).join('') +
+      '<button type="button" class="chb-assessment-clear" onclick="chbClearAssessment(\'' + id + '\')">Không dùng mức</button></div></div>';
+  }
+
+  function chbClearAssessment(id) {
+    document.querySelectorAll('input[name="assessment-' + id + '"]').forEach(function (input) { input.checked = false; });
   }
 
   $('dsBaiNop').innerHTML = order.map(function (g) {
@@ -1213,10 +1237,13 @@ function veDanhSach() {
   }
 
   function huySuaCham(id) {
-    var original = (window._chbOriginalGrades || {})[id] || { score: '', feedback: '' };
+    var original = (window._chbOriginalGrades || {})[id] || { score: '', assessmentLevel: '', feedback: '' };
     var score = $('diem-' + id), feedback = $('phe-' + id), preview = $('preview-' + id);
     if (score) score.value = original.score;
     if (feedback) feedback.value = original.feedback;
+    chbClearAssessment(id);
+    var assessment = document.querySelector('input[name="assessment-' + id + '"][value="' + original.assessmentLevel + '"]');
+    if (assessment) assessment.checked = true;
     if (preview) preview.style.display = 'none';
     var staged = chamStaged[id] || [];
     staged.forEach(function (it) { try { URL.revokeObjectURL(it.url); } catch (e) {} });
@@ -1269,12 +1296,14 @@ function veDanhSach() {
     }
     // 3. Lưu điểm + lời phê
     var diem = $('diem-' + id).value;
+    var assessmentInput = document.querySelector('input[name="assessment-' + id + '"]:checked');
     var r2 = await sb.from('submissions').update({
       score: diem === '' ? null : parseFloat(diem),
+      assessment_level: assessmentInput ? assessmentInput.value : null,
       feedback: $('phe-' + id).value.trim() || null,
       status: 'graded',
       graded_at: new Date().toISOString()
-    }).eq('id', id).select('id,status,score,feedback,graded_at').single();
+    }).eq('id', id).select('id,status,score,assessment_level,feedback,graded_at').single();
     if (r2.error) throw new Error(r2.error.message);
     if (!r2.data || r2.data.id !== id) throw new Error('Không xác nhận được bài đã cập nhật. Vui lòng tải lại trang và thử lại.');
     await taiDanhSach();

@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=7.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
-  <link rel="stylesheet" href="css/student-experience.css?v=3">
+  <link rel="stylesheet" href="css/student-experience.css?v=4">
 </head>
 <body class="student-results-page">
   <div class="topbar">
@@ -38,7 +38,12 @@
       <div class="student-results-count"><strong id="studentResultsCount">—</strong><small>bài đã chấm</small></div>
     </header>
 
-    <div class="student-results-toolbar" role="group" aria-label="Lọc kết quả">
+    <div class="student-results-scope" aria-label="Phạm vi kết quả">
+      <label><span>Lớp học</span><select class="input" id="studentResultClassFilter"><option value="all">Tất cả các lớp</option></select></label>
+      <label><span>Khối</span><select class="input" id="studentResultGradeFilter"><option value="all">Tất cả các khối</option></select></label>
+    </div>
+
+    <div class="student-results-toolbar" role="group" aria-label="Loại kết quả">
       <button class="student-result-filter active" type="button" data-filter="all">Tất cả</button>
       <button class="student-result-filter" type="button" data-filter="test">Bài kiểm tra</button>
       <button class="student-result-filter" type="button" data-filter="homework">Bài tập về nhà</button>
@@ -58,6 +63,6 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=8.6"></script>
   <script src="js/menu-v5.js?v=8.7"></script>
-  <script src="js/student-results.js?v=2"></script>
+  <script src="js/student-results.js?v=3"></script>
 </body>
 </html>
