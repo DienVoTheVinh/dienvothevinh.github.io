@@ -25,6 +25,7 @@ const optimization = read('supabase/migrations/20260822125005_optimize_partner_e
 const hardening = read('supabase/migrations/20260822125416_harden_partner_portal_scope.sql');
 const loginSuffix = read('supabase/migrations/20260822125510_partner_portal_login_suffix.sql');
 const teacherSuffix = read('supabase/migrations/20260822131500_partner_portal_teacher_suffix.sql');
+const toanThayTruong = read('supabase/migrations/20260822152556_add_toan_thay_truong_demo_portal.sql');
 const accountFunction = read('supabase/functions/tao-tai-khoan/index.ts');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
@@ -39,6 +40,7 @@ expect(shared.includes('/@hs$/') && shared.includes('/@(hs|gv)[a-z0-9]{2,20}$/')
 expect(portal.includes('Khu vực khảo thí riêng') && !portal.includes('js/menu-v5.js'), 'Portal must have an independent shell');
 expect(exam.includes('vmPortalExamIds') && exam.includes("query.in('id', vmPortalExamIds)"), 'Exam engine is not constrained to portal assignments');
 expect(portalAdmin.includes('portal_hs') && portalAdmin.includes('portal_gv') && portalAdmin.includes('exam_portal_exams') && portalAdmin.includes('Xem portal'), 'Portal account, exam and admin preview workflow is incomplete');
+expect(portalAdmin.includes('portal_only:false') && !portalAdmin.includes("portal_only:role==='student'"), 'Existing VinhMath accounts must not become portal-only through manual membership');
 expect(accountFunction.includes('prof.role !== "admin"') && accountFunction.includes('portal_only: true') && accountFunction.includes('isManager ? "manager" : "student"'), 'Portal account creation must be admin-only and portal-only');
 expect(accountFunction.includes('portal.login_suffix') && accountFunction.includes('portal.teacher_login_suffix') && accountFunction.includes('type === "portal_gv"') && !accountFunction.includes('@hs.${portal.slug}'), 'Portal student and teacher accounts must use configured compact suffixes');
 expect(!accountFunction.includes('role: "teacher"') || accountFunction.includes('type === "gv"'), 'Partner account must never receive broad teacher access');
@@ -50,6 +52,10 @@ expect(optimization.includes('exam_portals_admin_insert') && !optimization.inclu
 for (const table of ['class_students', 'documents', 'topics', 'schedules', 'submissions', 'class_posts', 'student_lesson_progress', 'lesson_item_progress', 'class_sessions', 'attendance']) expect(hardening.includes(`${table}_portal_only_scope`), `Portal-only account can still reach ${table}`);
 expect(loginSuffix.includes("login_suffix ~ '^hs[a-z0-9]{2,20}$'") && loginSuffix.includes('unique (login_suffix)') && loginSuffix.includes("login_suffix <> 'hs'"), 'Portal suffix must be compact, reserved-safe and unique');
 expect(teacherSuffix.includes("teacher_login_suffix ~ '^gv[a-z0-9]{2,20}$'") && teacherSuffix.includes('unique (teacher_login_suffix)') && teacherSuffix.includes("teacher_login_suffix <> 'gv'"), 'Portal teacher suffix must be compact, reserved-safe and unique');
-expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test([menu, shared, portal, portalAdmin, exam, migration, hardening, loginSuffix, teacherSuffix].join('\n')), 'Privileged credentials must not appear in browser or migration files');
+expect(toanThayTruong.includes("'toan-thay-truong'") && toanThayTruong.includes("'hstt'") && toanThayTruong.includes("'gvtt'"), 'Toán Thầy Trường brand and suffix pair are missing');
+expect(toanThayTruong.includes('exam_portal_members_one_private_portal_per_user_idx') && toanThayTruong.includes('where portal_only'), 'Private portal routing must be unambiguous per account');
+expect(toanThayTruong.includes("'site:logo/toan-thay-truong-logo.svg'"), 'Toán Thầy Trường must use its checked-in logo');
+expect(toanThayTruong.includes('set search_path = public, pg_temp') && toanThayTruong.includes('proc.prosecdef'), 'Security-definer functions must use a trusted path and explicit execution grants');
+expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test([menu, shared, portal, portalAdmin, exam, migration, hardening, loginSuffix, teacherSuffix, toanThayTruong].join('\n')), 'Privileged credentials must not appear in browser or migration files');
 
 console.log('PASS role UX + partner exam portal: navigation, routing, allow-list, account workflow and RLS');

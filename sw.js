@@ -1,6 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v26';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v25';
+const VM_CACHE = 'vinhmath-shell-v27';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v26';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -21,6 +21,7 @@ const VM_SHELL = [
   '/js/push-notifications.js',
   '/icons/vinhmath-192.png',
   '/icons/vinhmath-512.png',
+  '/logo/toan-thay-truong-logo.svg',
   '/favicon.png'
 ];
 
@@ -54,8 +55,8 @@ self.addEventListener('activate', function (event) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '26') return null;
-                target.searchParams.set('vm_refresh', '26');
+                if (target.searchParams.get('vm_refresh') === '27') return null;
+                target.searchParams.set('vm_refresh', '27');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));
