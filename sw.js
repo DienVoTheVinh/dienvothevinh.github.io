@@ -1,17 +1,22 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v23';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v22';
+const VM_CACHE = 'vinhmath-shell-v24';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v23';
 const VM_SHELL = [
   '/',
   '/index.html',
   '/dang-nhap.html',
+  '/thi.html',
   '/offline.html',
   '/manifest.webmanifest',
   '/css/tokens.css',
   '/css/vinhmath.css',
+  '/css/exam-portal.css',
+  '/css/role-home.css',
   '/js/config.js',
   '/js/vinhmath.js',
   '/js/menu-v5.js',
+  '/js/exam-portal.js',
+  '/js/role-home.js',
   '/js/tex-environments.js',
   '/js/push-notifications.js',
   '/icons/vinhmath-192.png',
@@ -42,16 +47,15 @@ self.addEventListener('activate', function (event) {
       })
       .then(function (needsShellRefresh) {
         if (!needsShellRefresh) return;
-        /* Một lần duy nhất khi lên v17: tải lại cửa sổ ứng dụng đang mở để
-           mọi trang nhận phím tắt và trạng thái hướng màn hình mới. */
+        /* Tải lại một lần để cửa sổ ứng dụng đang mở nhận điều hướng theo vai trò. */
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
           .then(function (windows) {
             return Promise.all(windows.map(function (client) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '23') return null;
-                target.searchParams.set('vm_refresh', '23');
+                if (target.searchParams.get('vm_refresh') === '24') return null;
+                target.searchParams.set('vm_refresh', '24');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

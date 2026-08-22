@@ -927,8 +927,13 @@ async function dangNhap(username, password) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
     email = u + '@hs.vinhmath.com';
   } else {
+    // Tài khoản đối tác có dạng ten@hs.<portal>; tài khoản VinhMath cũ có
+    // dạng ten@hs. Cả hai đều được ánh xạ sang email nội bộ .vinhmath.com.
+    // Hậu tố chỉ giúp định tuyến; quyền thực tế luôn lấy từ RLS + membership.
+    if (/@hs\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(u)) {
+      email = u + '.vinhmath.com';
     // Bất kỳ đuôi phân quyền .vinhmath nào (hs, ph, gv, tg, ad, admin...) đều tự thêm .com ngầm
-    if (/@[a-z]+\.vinhmath$/.test(u)) {
+    } else if (/@[a-z]+\.vinhmath$/.test(u)) {
       email = u + '.com';
     } else {
       email = u;
@@ -2007,6 +2012,9 @@ async function taiCaiDatHeThongGlobal() {
       root.style.setProperty('--glass-blur-radius', finalBlur + 'px');
       root.style.setProperty('--canvas-opacity', finalCanvasOpacity);
       apdungMauAccent(root, finalAccent, finalTheme === 'dark');
+      // Bộ nhận diện lớp/portal có bảng màu riêng. Báo cho runtime áp lại đúng
+      // biến màu sau khi theme toàn cục tải bất đồng bộ từ database.
+      try { window.dispatchEvent(new Event('theme-change')); } catch (themeEventError) {}
       
       // Đồng bộ vào localStorage để load nhanh cho lần sau
       localStorage.setItem('vm-theme', finalTheme);
@@ -2090,6 +2098,7 @@ function dangKyRealtimeCaiDatHeThong() {
             
             var activeColor = localStorage.getItem('vm-accent') || 'amber';
             apdungMauAccent(root, activeColor, theme === 'dark');
+            try { window.dispatchEvent(new Event('theme-change')); } catch (themeEventError) {}
             
             var ccLight = document.getElementById('ccBtnLight');
             var ccDark = document.getElementById('ccBtnDark');

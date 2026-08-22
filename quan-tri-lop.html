@@ -1281,12 +1281,16 @@ var tgGoiYTimer = null;
   await taiDuLieuDanhMuc();
   napSelectGiaoVien();
   
-  // Tự động chọn lớp từ URL (nếu có)
+  // Mở ngay lớp gần nhất: URL > lựa chọn đã lưu > lớp đầu tiên được phép xem.
   var params = new URLSearchParams(window.location.search);
   var urlClassId = params.get('classId');
-  if (urlClassId) {
-    chonLopHoc(urlClassId);
-  }
+  var savedClassId = localStorage.getItem('vm-admin-active-class-id');
+  var chosenId = [urlClassId, savedClassId].find(function(id) {
+    return id && dsLop.some(function(lop) { return lop.id === id; });
+  }) || (dsLop[0] && dsLop[0].id);
+  var requestedTab = params.get('tab') || localStorage.getItem('vm-admin-class-tab');
+  if (['lessons', 'tailieu', 'students', 'bangtin'].indexOf(requestedTab) !== -1) tabDangChon = requestedTab;
+  if (chosenId) chonLopHoc(chosenId);
   
   console.log("7. Khởi tạo trang: Hoàn tất!");
 })();
@@ -1403,6 +1407,11 @@ function chonLopHoc(id) {
   var cl = dsLop.find(function (l) { return l.id === id; });
   if (!cl) return;
   classDangChon = cl;
+  localStorage.setItem('vm-admin-active-class-id', id);
+  var currentUrl = new URL(location.href);
+  currentUrl.searchParams.set('classId', id);
+  currentUrl.searchParams.set('tab', tabDangChon);
+  history.replaceState(null, '', currentUrl.pathname + currentUrl.search);
   // Bung khối của lớp vừa chọn
   if (window.sidebarCollapsedGrades) window.sidebarCollapsedGrades[String(cl.grade || 12)] = false;
 
@@ -1773,6 +1782,13 @@ async function xoaLopHocCurrent() {
 /* ----- Chuyển đổi tab ----- */
 function doiPhanHeLop(tab) {
   tabDangChon = tab;
+  localStorage.setItem('vm-admin-class-tab', tab);
+  if (classDangChon) {
+    var currentUrl = new URL(location.href);
+    currentUrl.searchParams.set('classId', classDangChon.id);
+    currentUrl.searchParams.set('tab', tab);
+    history.replaceState(null, '', currentUrl.pathname + currentUrl.search);
+  }
   ['Lessons', 'Students', 'Bangtin', 'Tailieu'].forEach(function (t) {
     var b = $('tab' + t), p = $('phanHe' + t);
     if (b) b.classList.remove('active');

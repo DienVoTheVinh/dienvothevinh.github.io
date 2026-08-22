@@ -638,6 +638,27 @@ function baoLoi(msg, loai) {
   el.textContent = msg;
 }
 
+async function vmDichDangNhap(uid, role) {
+  var requestedPortal = new URLSearchParams(location.search).get('portal');
+  try {
+    var membership = await sb.from('exam_portal_members')
+      .select('portal_only,portal:exam_portals!inner(slug,is_active)')
+      .eq('user_id', uid)
+      .eq('portal_only', true)
+      .limit(1)
+      .maybeSingle();
+    if (membership.data && membership.data.portal && membership.data.portal.is_active) {
+      location.replace('thi?portal=' + encodeURIComponent(membership.data.portal.slug));
+      return;
+    }
+  } catch (portalError) { /* Bản cũ chưa có portal: giữ luồng VinhMath. */ }
+  if (requestedPortal) {
+    location.replace('thi?portal=' + encodeURIComponent(requestedPortal));
+    return;
+  }
+  location.replace(role === 'parent' ? 'phu-huynh' : 'trang-chu');
+}
+
 // Chưa điền config.js → nhắc nhẹ (chế độ xem thử)
 if (!daKetNoi()) {
   baoLoi('Chế độ xem thử: web chưa kết nối Supabase nên chưa đăng nhập được thật.', 'warn');
@@ -648,14 +669,8 @@ if (daKetNoi()) {
   sb.auth.getSession().then(function (s) {
     if (s.data.session) {
       sb.from('profiles').select('role').eq('id', s.data.session.user.id).single().then(function(rp) {
-        if (rp.data && rp.data.role === 'parent') {
-          window.location.href = 'phu-huynh';
-        } else {
-          window.location.href = 'trang-chu';
-        }
-      }).catch(function() {
-        window.location.href = 'trang-chu';
-      });
+        return vmDichDangNhap(s.data.session.user.id, rp.data && rp.data.role);
+      }).catch(function() { return vmDichDangNhap(s.data.session.user.id, 'student'); });
     }
   });
 }
@@ -678,10 +693,8 @@ $('formDangNhap').addEventListener('submit', async function (e) {
       var s = await sb.auth.getSession();
       if (s.data.session) {
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-        if (rp.data && rp.data.role === 'parent') {
-          window.location.href = 'phu-huynh';
-          return;
-        }
+        await vmDichDangNhap(s.data.session.user.id, rp.data && rp.data.role);
+        return;
       }
     } catch (err) {}
     window.location.href = 'trang-chu';

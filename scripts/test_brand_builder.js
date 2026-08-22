@@ -28,7 +28,7 @@ const goldMigration = read('supabase/migrations/20260822065653_restore_vinhmath_
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
 
-expect(menu.includes("path: 'quan-tri-thuong-hieu', label: 'Tạo thương hiệu'"), 'Admin menu shortcut is missing');
+expect(menu.includes("path: 'quan-tri', label: 'Quản trị'") && read('quan-tri.html').includes('href="quan-tri-thuong-hieu"'), 'Admin hub shortcut is missing');
 expect(manager.includes('id="logoDrop"') && manager.includes("addEventListener('paste'"), 'Logo drop/paste workflow is missing');
 expect(manager.includes('id="previewLogoBox"') && manager.includes("addEventListener('pointermove'"), 'Logo drag positioning is missing');
 expect(manager.includes("PRESETS={") && manager.includes('vinhmath:') && manager.includes('map:') && manager.includes('duyminh:'), 'Brand presets are incomplete');

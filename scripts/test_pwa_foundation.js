@@ -20,10 +20,12 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v23"), 'Service worker cache version must publish the brand builder release');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v22'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '23'"), 'Open apps must not enter a refresh loop on shell v23');
-expect(worker.includes("target.searchParams.set('vm_refresh', '23'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v24"), 'Service worker cache version must publish the role UX and portal release');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v23'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '24'"), 'Open apps must not enter a refresh loop on shell v24');
+expect(worker.includes("target.searchParams.set('vm_refresh', '24'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
+expect(worker.includes("'/js/role-home.js'"), 'Role-focused home client must be available offline after installation');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
 expect(worker.includes("self.addEventListener('fetch'"), 'Service worker must handle fetch');
