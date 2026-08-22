@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     // Portal students are admin-only. Partner managers deliberately do not get
     // the broad teacher role or access to this service-role operation.
-    if (["gv", "tg", "portal_hs"].includes(type)) {
+    if (["gv", "tg", "portal_hs", "portal_gv"].includes(type)) {
       if (prof.role !== "admin") return jsonRes({ error: "Chi Quan tri duoc tao loai tai khoan nay" }, 403);
     } else if (!["admin", "teacher"].includes(prof.role)) {
       return jsonRes({ error: "Chi Quan tri / Giao vien duoc tao tai khoan" }, 403);
@@ -55,26 +55,28 @@ Deno.serve(async (req) => {
       return null;
     }
 
-    if (type === "portal_hs") {
+    if (type === "portal_hs" || type === "portal_gv") {
       const portalId = String(body.portalId || "");
-      const { data: portal } = await svc.from("exam_portals").select("id,slug,is_active").eq("id", portalId).maybeSingle();
+      const { data: portal } = await svc.from("exam_portals").select("id,slug,login_suffix,teacher_login_suffix,is_active").eq("id", portalId).maybeSingle();
       if (!portal || !portal.is_active) return jsonRes({ error: "Portal khong ton tai hoac dang tam dung" }, 404);
       const u = await timU(false);
       if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
-      const email = `${u}@hs.${portal.slug}.vinhmath.com`;
+      const isManager = type === "portal_gv";
+      const suffix = isManager ? portal.teacher_login_suffix : portal.login_suffix;
+      const email = `${u}@${suffix}.vinhmath.com`;
       const { data: acc, error: accErr } = await svc.auth.admin.createUser({
         email, password, email_confirm: true, user_metadata: { full_name: fullName },
       });
       if (accErr || !acc?.user) return jsonRes({ error: "Tao TK hoc sinh loi: " + (accErr?.message || "unknown") }, 500);
       const profileResult = await svc.from("profiles").update({ full_name: fullName, username: u, role: "student" }).eq("id", acc.user.id);
       const memberResult = await svc.from("exam_portal_members").insert({
-        portal_id: portal.id, user_id: acc.user.id, member_role: "student", portal_only: true,
+        portal_id: portal.id, user_id: acc.user.id, member_role: isManager ? "manager" : "student", portal_only: true,
       });
       if (profileResult.error || memberResult.error) {
         await svc.auth.admin.deleteUser(acc.user.id).catch(() => {});
         return jsonRes({ error: "Khong gan duoc tai khoan vao portal" }, 500);
       }
-      return jsonRes({ ok: true, type, login: `${u}@hs.${portal.slug}` });
+      return jsonRes({ ok: true, type, login: `${u}@${suffix}` });
     }
 
     if (type === "hs_ph") {

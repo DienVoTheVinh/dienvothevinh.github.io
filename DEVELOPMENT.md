@@ -33,7 +33,9 @@ Portal được tách theo ba lớp để có thể chuyển sang website riêng
 - Engine thi dùng chung: `luyen-de.html`, nhưng portal bắt buộc lọc allow-list `exam_portal_exams`.
 - Dữ liệu tách biệt: `exam_portals`, `exam_portal_members`, `exam_portal_exams` và restrictive RLS.
 
-Tên đăng nhập dạng `username@hs.<portal>` chỉ dùng để nhận diện và định tuyến. Quyền truy cập luôn dựa trên membership + RLS. Quản lý đối tác không được gán `profiles.role=teacher`.
+Học sinh VinhMath mặc định dùng `username` hoặc `username@hs`. Mỗi portal có một cặp hậu tố ngắn, duy nhất do admin đặt, ví dụ học sinh `username@hstt` và giáo viên portal `username@gvtt`. Dạng cũ `username@hs.<portal>` vẫn được nhận ở màn hình đăng nhập để tương thích. Hậu tố chỉ dùng để nhận diện và định tuyến, còn quyền truy cập luôn dựa trên membership + restrictive RLS. Giáo viên portal là `member_role=manager`, `portal_only=true` và không được gán `profiles.role=teacher`, nên không thể đi vào lớp/dữ liệu VinhMath chung.
+
+Admin xem trước giao diện bất kỳ portal nào bằng nút **Xem portal** trong `quan-tri-portal-thi.html`; chế độ xem trước không tạo tài khoản học sinh và không nới RLS.
 
 Để tách portal thành site riêng: chuyển ba file shell sang frontend mới, giữ Supabase schema/RLS, và tái sử dụng hoặc tách engine `luyen-de` thành package. Không phụ thuộc menu chính VinhMath.
 

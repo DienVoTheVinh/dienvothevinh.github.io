@@ -927,10 +927,10 @@ async function dangNhap(username, password) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
     email = u + '@hs.vinhmath.com';
   } else {
-    // Tài khoản đối tác có dạng ten@hs.<portal>; tài khoản VinhMath cũ có
-    // dạng ten@hs. Cả hai đều được ánh xạ sang email nội bộ .vinhmath.com.
+    // Tài khoản portal mới có dạng ngắn ten@hstt hoặc ten@gvtt; dạng cũ ten@hs.<portal>
+    // vẫn được hỗ trợ. Tài khoản VinhMath mặc định là ten hoặc ten@hs.
     // Hậu tố chỉ giúp định tuyến; quyền thực tế luôn lấy từ RLS + membership.
-    if (/@hs\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(u)) {
+    if (/@hs$/.test(u) || /@(hs|gv)[a-z0-9]{2,20}$/.test(u) || /@hs\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(u)) {
       email = u + '.vinhmath.com';
     // Bất kỳ đuôi phân quyền .vinhmath nào (hs, ph, gv, tg, ad, admin...) đều tự thêm .com ngầm
     } else if (/@[a-z]+\.vinhmath$/.test(u)) {
