@@ -20,12 +20,14 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v28"), 'Service worker cache version must publish the grading grade-filter release');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v27'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("vinhmath-shell-v29"), 'Service worker cache version must publish the partner classroom release');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v28'"), 'Service worker must detect the previous application shell');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '28'"), 'Open apps must not enter a refresh loop on shell v28');
-expect(worker.includes("target.searchParams.set('vm_refresh', '28'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '29'"), 'Open apps must not enter a refresh loop on shell v29');
+expect(worker.includes("target.searchParams.set('vm_refresh', '29'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
+expect(worker.includes("'/js/portal-classroom.js'"), 'Partner classroom authoring client must be available offline after installation');
+expect(worker.includes("'/js/latex-view.js'"), 'Partner lesson and exam TeX parser must be available offline after installation');
 expect(worker.includes("'/js/role-home.js'"), 'Role-focused home client must be available offline after installation');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');
