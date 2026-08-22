@@ -24,12 +24,29 @@ for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/role-home.js', 'js/st
   new vm.Script(read(file), {filename:file});
 }
 
+const todoInstrumented = home.replace(/\}\)\(\);\s*$/, 'window.__vmTodoTest={buildStudentTodos:buildStudentTodos,todoDue:todoDue};})();');
+const todoSandbox = {window:{}, document:{readyState:'loading', addEventListener(){}}, console};
+new vm.Script(todoInstrumented, {filename:'js/role-home.todo-test.js'}).runInNewContext(todoSandbox);
+const dateKey = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+const today = new Date();
+const todoOrder = todoSandbox.window.__vmTodoTest.buildStudentTodos({lessons:[], tasks:[
+  {kind:'lesson',lesson_id:'lesson',title:'Bài giảng',class_name:'Lớp 9'},
+  {kind:'btvn',lesson_id:'homework',title:'Bài tập',class_name:'Lớp 9'},
+  {kind:'test',lesson_id:'test',title:'Kiểm tra',class_name:'Lớp 9'},
+  {kind:'review',lesson_id:'review',title:'Bài đã chấm',class_name:'Lớp 9'}
+], reminders:[
+  {id:'today',content:'Việc hôm nay',due_date:dateKey(today),done:false},
+  {id:'late',content:'Việc quá hạn',due_date:dateKey(yesterday),done:false}
+]}, {class_students:[]}).map((item) => item.id);
+expect(todoOrder[0] === 'todo-reminder-late' && todoOrder[1] === 'todo-reminder-today' && todoOrder[2] === 'todo-task-review-review', 'Thứ tự Cần làm phải ưu tiên quá hạn, hôm nay rồi bài đã chấm cần xem lại');
+
 for (const item of [
   "path: 'trang-chu', label: 'Hôm nay'",
   "path: 'lop-hoc', label: 'Lớp học'",
   "path: 'luyen-de', label: 'Luyện tập'",
   "path: 'ket-qua', label: 'Kết quả'",
-  "path: 'ca-nhan', label: 'Trang cá nhân'"
+  "path: 'ca-nhan', label: 'Cá nhân'"
 ]) expect(menu.includes(item), `Thiếu mục điều hướng học sinh: ${item}`);
 expect(!/MENU CỦA HỌC SINH[\s\S]{0,900}type:\s*'dropdown'/.test(menu), 'Menu học sinh không được giấu công cụ trong dropdown dài');
 expect(menu.includes("sessionStorage.getItem('vm-guest-mode') === 'true'") && menu.includes("apDungMenu('student', null)"), 'Chế độ trải nghiệm phải hiển thị đủ menu học sinh mới');
@@ -42,8 +59,12 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=5'), 'Trang Hôm nay phải nạp phiên bản responsive mới nhất');
+expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=5'), 'Trang Hôm nay phải nạp phiên bản việc cần làm mới nhất');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
+expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
+expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
+expect(home.includes("priority:0, label:'Quá hạn") && home.includes("priority:1, label:'Hôm nay'") && home.includes("priority:2, label:'Ngày mai'"), 'Việc cần làm chưa được sắp theo hạn ưu tiên');
+expect(homePage.includes('if (window._nvData && !window._nvData.error) r = { data: window._nvData }'), 'Trang Hôm nay không được gọi lặp RPC hồ sơ khi đã có dữ liệu nhiệm vụ');
 expect(home.includes(".eq('student_id', profile.id).eq('status', 'graded')"), 'Số bài đã chấm phải chỉ đếm của học sinh hiện tại');
 for (const oldBlock of ['#khungVaoHocNgay', '#khungNhiemVu', '#khungThongKeHocSinh']) {
   expect(homeCss.includes(oldBlock), `Khối trang chủ trùng lặp chưa được thu gọn: ${oldBlock}`);
