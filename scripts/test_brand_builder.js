@@ -24,6 +24,7 @@ const studentClass = compileInline('lop-hoc.html');
 const lesson = compileInline('bai-hoc.html');
 const classNews = compileInline('bang-tin-lop.html');
 const migration = read('supabase/migrations/20260820160031_brand_template_builder.sql');
+const goldMigration = read('supabase/migrations/20260822065653_restore_vinhmath_signature_gold.sql');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
 
@@ -31,6 +32,8 @@ expect(menu.includes("path: 'quan-tri-thuong-hieu', label: 'Tạo thương hiệ
 expect(manager.includes('id="logoDrop"') && manager.includes("addEventListener('paste'"), 'Logo drop/paste workflow is missing');
 expect(manager.includes('id="previewLogoBox"') && manager.includes("addEventListener('pointermove'"), 'Logo drag positioning is missing');
 expect(manager.includes("PRESETS={") && manager.includes('vinhmath:') && manager.includes('map:') && manager.includes('duyminh:'), 'Brand presets are incomplete');
+expect(manager.includes("primary_color:'#FFD21A'") && manager.includes("secondary_color:'#DD9400'") && manager.includes("accent_color:'#DD9400'") && manager.includes("accent_soft_color:'#FCF4E6'"), 'VinhMath signature gold preset has regressed');
+expect(manager.includes("map:{label:'M.A.P'") && manager.includes("primary_color:'#1B2644'") && manager.includes("duyminh:{label:'Duy Minh'") && manager.includes("primary_color:'#C81E27'"), 'M.A.P or Duy Minh preset was changed unexpectedly');
 expect(manager.includes("file.size>2097152") && manager.includes("image/webp"), 'Client logo validation is incomplete');
 expect(manager.includes("profile.role!=='admin'"), 'Brand manager must be admin-only');
 expect(manager.includes("location.hostname==='127.0.0.1'") && manager.includes("get('preview')==='1'"), 'Local visual preview must be host-restricted');
@@ -51,5 +54,7 @@ expect(migration.includes("'brand-assets'") && migration.includes('2097152'), 'D
 expect(migration.includes('allowed_mime_types') && migration.includes("'image/png'") && migration.includes("'image/jpeg'") && migration.includes("'image/webp'"), 'Logo MIME restrictions are missing');
 expect(migration.includes('classes_brand_id_fkey') && migration.includes('classes_brand_id_idx'), 'Class brand foreign key/index is missing');
 expect(migration.includes('grant select on table public.brand_templates to anon, authenticated'), 'Data API grants for brand reads are missing');
+expect(goldMigration.includes("where slug = 'vinhmath'") && goldMigration.includes("and preset = 'vinhmath'"), 'Gold repair migration must target only the canonical VinhMath template');
+expect(!/where\s+slug\s+in/i.test(goldMigration) && !/slug\s*=\s*'(?:map|duyminh)'/i.test(goldMigration), 'Gold repair migration must not modify M.A.P or Duy Minh');
 
 console.log('PASS brand builder: schema/RLS, admin editor, logo workflow, class selection and student branding');

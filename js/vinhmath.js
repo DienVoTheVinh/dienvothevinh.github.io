@@ -2412,10 +2412,10 @@ function vmXoaBienThuongHieu() {
 
 function vmApDungBienThuongHieu(brand) {
   if (!brand || typeof brand !== 'object') return;
-  var primary = brand.primary_color || '#7A4D00';
+  var primary = brand.primary_color || '#FFD21A';
   var secondary = brand.secondary_color || primary;
   var accent = brand.accent_color || primary;
-  var soft = brand.accent_soft_color || '#F4EBDD';
+  var soft = brand.accent_soft_color || '#FCF4E6';
   var surface = brand.surface_color || '#FFFFFF';
   var ink = brand.text_color || '#1A1A1A';
   var topbar = brand.topbar_color || '#FAF8F5';
