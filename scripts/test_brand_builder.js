@@ -46,6 +46,9 @@ for (const [name, source] of [['lop-hoc.html', studentClass], ['bai-hoc.html', l
   expect(source.includes('vmThuongHieuTuLop'), `${name} does not apply the selected brand`);
 }
 expect(shared.includes('function vmApDungBienThuongHieu') && shared.includes('function vmUrlLogoThuongHieu'), 'Shared dynamic brand runtime is incomplete');
+expect(shared.includes("document.documentElement.getAttribute('data-theme') === 'dark'"), 'Dynamic brands must distinguish light and dark mode');
+expect(shared.includes('function vmBangMauToiThuongHieu') && shared.includes('function vmMauDuSangTrenNenToi'), 'Dark brand palette adaptation is missing');
+expect(shared.includes("window.addEventListener('theme-change'") && shared.includes('window.VM_ACTIVE_BRAND'), 'Active brand must be reapplied after a theme switch');
 
 expect(migration.includes('alter table public.brand_templates enable row level security'), 'Brand templates need RLS');
 expect(migration.includes('brand_templates_insert_admin') && migration.includes('brand_templates_update_admin'), 'Admin-only write policies are missing');

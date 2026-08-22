@@ -9,6 +9,11 @@ assert(
   /<button[^>]+aria-label="Xem video toàn màn hình"[^>]+id="btnMaxVideo"/.test(lesson),
   'Nút video phải mô tả rõ thao tác toàn màn hình.'
 );
+assert.strictEqual(
+  (lesson.match(/phongToPane\('video'\)/g) || []).length,
+  1,
+  'Video chỉ được mở toàn màn hình khi người dùng chủ động bấm nút, không được tự mở khi vào bài.'
+);
 assert(
   /stage\.requestFullscreen \|\| stage\.webkitRequestFullscreen/.test(lesson),
   'Khung toàn màn hình độc lập phải ưu tiên Fullscreen API và có nhánh WebKit/Safari.'
@@ -46,8 +51,8 @@ assert(
   'Không được quay lại cơ chế cũ chỉ kéo rộng một nửa workspace.'
 );
 assert(
-  /js\/vinhmath\.js\?v=8\.1/.test(lesson),
-  'Trang bài học phải nhận bản vá dùng chung mới thay vì cache 8.0.'
+  /js\/vinhmath\.js\?v=8\.2/.test(lesson),
+  'Trang bài học phải nhận runtime thương hiệu 8.2 thay vì bản cache cũ.'
 );
 
-console.log('PASS lesson video uses native fullscreen with Safari/WebView fallback');
+console.log('PASS lesson keeps split view by default and offers manual fullscreen with Safari/WebView fallback');
