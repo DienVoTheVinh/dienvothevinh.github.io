@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const root = path.resolve(__dirname, '..');
-const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
 const expect = (value, message) => { if (!value) throw new Error(message); };
 const compile = (file) => new vm.Script(read(file), { filename: file });
 const compileInline = (file) => {
