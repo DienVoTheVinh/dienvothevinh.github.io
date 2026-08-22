@@ -23,6 +23,8 @@
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+.chb-filter-selects { display:flex; gap:10px; margin-left:auto; align-items:center; flex-wrap:wrap; }
+.chb-filter-selects select { padding:6px 12px; font-size:.85rem; }
 .tab-btn { background: transparent; border: 1px solid var(--line-2); padding: 7px 16px; font-family: inherit; font-size: .88rem; font-weight: 500; color: var(--ink-2); cursor: pointer; border-radius: 99px; }
 .tab-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 .sub-card { margin-bottom: 16px; }
@@ -40,6 +42,8 @@
 @media(max-width:640px) {
   .chb-grade-summary-grid { grid-template-columns:1fr; }
   .chb-grade-summary-grid .btn { width:100%; }
+  .chb-filter-selects { width:100%; margin-left:0; display:grid; grid-template-columns:1fr; gap:8px; }
+  .chb-filter-selects select { width:100% !important; min-height:40px; }
 }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -466,11 +470,14 @@
     <button class="tab-btn" id="loc-test" onclick="locTheo('test')">📝 Trắc nghiệm cuối giờ (<span id="demTest">0</span>)</button>
     <button class="tab-btn" id="loc-luyende" onclick="locTheo('luyende')">🎯 Luyện đề (<span id="demLuyenDe">0</span>)</button>
     
-    <div style="display:flex; gap:10px; margin-left:auto; align-items:center; flex-wrap:wrap">
-      <select class="input" id="selLop" onchange="capNhatDropdownBoLoc(); locDuLieu();" style="width:160px; padding:6px 12px; font-size:0.85rem">
+    <div class="chb-filter-selects">
+      <select class="input" id="selKhoi" aria-label="Lọc theo khối" onchange="capNhatLopTheoKhoi(); locDuLieu();" style="width:125px">
+        <option value="">-- Tất cả khối --</option>
+      </select>
+      <select class="input" id="selLop" aria-label="Lọc theo lớp" onchange="capNhatDropdownBoLoc(); locDuLieu();" style="width:160px">
         <option value="">-- Tất cả các lớp --</option>
       </select>
-      <select class="input" id="selBai" onchange="locDuLieu()" style="width:200px; padding:6px 12px; font-size:0.85rem">
+      <select class="input" id="selBai" aria-label="Lọc theo bài giảng hoặc đề thi" onchange="locDuLieu()" style="width:200px">
         <option value="">-- Tất cả các bài giảng --</option>
       </select>
     </div>
@@ -572,7 +579,7 @@ var dapAnLoadToken = 0;
   }
   
   try {
-    var rLop = await sb.from('classes').select('id, name, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
+    var rLop = await sb.from('classes').select('id, name, grade, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
     dsLop = rLop.data || [];
     
     var rBai = await sb.from('lessons').select('id, title, class_id').order('title');
@@ -600,10 +607,8 @@ var dapAnLoadToken = 0;
       });
     }
     
-    $('selLop').innerHTML = '<option value="">-- Tất cả các lớp --</option>' + 
-      dsLop.map(function (l) { return '<option value="' + l.id + '">' + l.name + (l.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>'; }).join('');
-      
-    capNhatDropdownBoLoc();
+    capNhatDropdownKhoi();
+    capNhatLopTheoKhoi();
   } catch (e) {
     console.error('Lỗi tải dữ liệu bộ lọc:', e);
   }
@@ -615,7 +620,11 @@ var dapAnLoadToken = 0;
     var _lop = _p.get('lop');
     var _bai = dangLoc === 'luyende' ? _p.get('exam') : _p.get('lesson');
     var _submission = _p.get('submission'), _attempt = _p.get('attempt');
-    if (_lop) { $('selLop').value = _lop; capNhatDropdownBoLoc(); }
+    if (_lop) {
+      var _lopObj = dsLop.find(function (l) { return l.id === _lop; });
+      if (_lopObj) { $('selKhoi').value = giaTriKhoi(_lopObj); capNhatLopTheoKhoi(); }
+      $('selLop').value = _lop; capNhatDropdownBoLoc();
+    }
     if (_bai) { $('selBai').value = _bai; }
     if (_lop || _bai) await veDanhSach();
     await capNhatDapAnChung();
@@ -643,7 +652,41 @@ function vmFocusRecord(el) {
   try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
 }
 
+function giaTriKhoi(lop) {
+  return lop && lop.grade != null && lop.grade !== '' ? String(lop.grade) : 'khac';
+}
+
+function lopTheoKhoiDangChon() {
+  var khoi = $('selKhoi').value;
+  return khoi ? dsLop.filter(function (lop) { return giaTriKhoi(lop) === khoi; }) : dsLop.slice();
+}
+
+function capNhatDropdownKhoi() {
+  var dangChon = $('selKhoi').value;
+  var grades = Array.from(new Set(dsLop.map(giaTriKhoi))).sort(function (a, b) {
+    if (a === 'khac') return 1;
+    if (b === 'khac') return -1;
+    return (Number(a) || 999) - (Number(b) || 999) || a.localeCompare(b, 'vi');
+  });
+  $('selKhoi').innerHTML = '<option value="">-- Tất cả khối --</option>' + grades.map(function (grade) {
+    return '<option value="' + chamEsc(grade) + '">' + (grade === 'khac' ? 'Khối chưa xác định' : 'Khối ' + chamEsc(grade)) + '</option>';
+  }).join('');
+  if (grades.indexOf(dangChon) !== -1) $('selKhoi').value = dangChon;
+}
+
+function capNhatLopTheoKhoi() {
+  var dangChon = $('selLop').value;
+  var rows = lopTheoKhoiDangChon();
+  $('selLop').innerHTML = '<option value="">-- Tất cả các lớp --</option>' + rows.map(function (lop) {
+    var tenKhoi = giaTriKhoi(lop) === 'khac' ? '' : 'Khối ' + chamEsc(lop.grade) + ' · ';
+    return '<option value="' + chamEsc(lop.id) + '">' + tenKhoi + chamEsc(lop.name) + (lop.is_specialized ? ' (Chuyên)' : ' (Đại trà)') + '</option>';
+  }).join('');
+  if (rows.some(function (lop) { return lop.id === dangChon; })) $('selLop').value = dangChon;
+  capNhatDropdownBoLoc();
+}
+
 function capNhatDropdownBoLoc() {
+  var selKhoiVal = $('selKhoi').value;
   var selLopVal = $('selLop').value;
   var selBai = $('selBai');
   
@@ -651,6 +694,9 @@ function capNhatDropdownBoLoc() {
     var dsDeLoc = dsDe;
     if (selLopVal) {
       dsDeLoc = dsDe.filter(function (d) { return d.class_id === selLopVal || d.class_id === null; });
+    } else if (selKhoiVal) {
+      var idsDeKhoi = lopTheoKhoiDangChon().map(function (lop) { return lop.id; });
+      dsDeLoc = dsDe.filter(function (d) { return d.class_id === null || idsDeKhoi.indexOf(d.class_id) !== -1; });
     }
     selBai.innerHTML = '<option value="">-- Tất cả đề thi --</option>' +
       dsDeLoc.map(function (d) { return '<option value="' + d.id + '">' + d.title + '</option>'; }).join('');
@@ -658,6 +704,9 @@ function capNhatDropdownBoLoc() {
     var dsBaiLoc = dsBai;
     if (selLopVal) {
       dsBaiLoc = dsBai.filter(function (b) { return b.class_id === selLopVal; });
+    } else if (selKhoiVal) {
+      var idsBaiKhoi = lopTheoKhoiDangChon().map(function (lop) { return lop.id; });
+      dsBaiLoc = dsBai.filter(function (b) { return idsBaiKhoi.indexOf(b.class_id) !== -1; });
     }
     selBai.innerHTML = '<option value="">-- Tất cả bài giảng --</option>' +
       dsBaiLoc.map(function (b) { return '<option value="' + b.id + '">' + b.title + '</option>'; }).join('');
@@ -914,20 +963,22 @@ async function locTheo(loai) {
 }
 
 function veDanhSach() {
+  var selectedKhoi = $('selKhoi').value;
   var selectedLop = $('selLop').value;
   var selectedSub = $('selBai').value;
   
   function matchLop(lessonOrExam, studentProfiles) {
-    if (!selectedLop) return true;
-    if (lessonOrExam && lessonOrExam.class_id) {
-      return lessonOrExam.class_id === selectedLop;
+    if (!selectedKhoi && !selectedLop) return true;
+    var classIds = [];
+    if (lessonOrExam && lessonOrExam.class_id) classIds.push(lessonOrExam.class_id);
+    else if (studentProfiles && studentProfiles.class_students) {
+      classIds = (studentProfiles.class_students || []).map(function (cs) { return cs.class_id; });
     }
-    // Fallback nếu bài học / đề thi không gán lớp học nào
-    if (studentProfiles && studentProfiles.class_students) {
-      var studentClassIds = (studentProfiles.class_students || []).map(function (cs) { return cs.class_id; });
-      return studentClassIds.includes(selectedLop);
-    }
-    return false;
+    if (selectedLop) return classIds.indexOf(selectedLop) !== -1;
+    return classIds.some(function (classId) {
+      var lop = dsLop.find(function (item) { return item.id === classId; });
+      return lop && giaTriKhoi(lop) === selectedKhoi;
+    });
   }
   
   if (dangLoc === 'test') {
