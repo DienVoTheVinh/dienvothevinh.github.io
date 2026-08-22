@@ -32,10 +32,13 @@ expect(schedule.includes("meetInput = layLinkMeetHopLe('schMeet')"), 'Per-sessio
 expect(schedule.includes("sb.from('class_links')") && schedule.includes("sb.from('app_settings')"), 'Class and global Meet fallbacks must remain available');
 expect(schedule.includes("khungThu.style.display = 'none'") && schedule.includes("$('khungSchMeet').hidden = !online"), 'Schedule form must progressively hide irrelevant controls');
 
-for (const fragment of ['Trung tâm nội dung', 'Bài giảng & bài học', 'Tài liệu LaTeX / PDF', 'Đề kiểm tra & luyện tập', 'Đề thi thử THPTQG', 'Môi trường TeX', 'Preamble mặc định', 'contentEnvStatus']) {
+for (const fragment of ['Trung tâm nội dung', 'Xưởng biên soạn', '1. Tạo nội dung mới', '2. Quản lý & xuất bản', '3. Thiết lập & môi trường', 'Bài giảng & bài học', 'Tài liệu LaTeX / PDF', 'Đề thi chuẩn THPTQG', 'THPTQG có lời giải', 'Môi trường TeX', 'Cấu hình biên soạn toàn hệ thống', 'contentEnvStatus', 'metricLessons', 'metricDocuments', 'metricExams', 'metricThpt', 'metricBlog']) {
   expect(content.includes(fragment), `Content studio is missing ${fragment}`);
 }
-expect(content.includes('quan-tri-de?template=thpt-standard'), 'THPTQG template needs a direct content-studio shortcut');
-expect(examAdmin.includes("new URLSearchParams(location.search).get('template')") && examAdmin.includes('applyTemplate(requestedTemplate)'), 'Exam editor must honor the direct THPTQG template link');
+expect(content.includes('quan-tri-de?tab=compose&template=thpt-standard') && content.includes('quan-tri-de?tab=compose&template=thpt-practice'), 'Both THPTQG templates need direct content-studio shortcuts');
+for (const setting of ['latex_preamble_default', 'latex_engine_default', 'latex_raw_mode_default']) expect(content.includes(setting), `System authoring setting is missing: ${setting}`);
+expect(content.includes("sb.from('app_settings').upsert(rows") && content.includes("contentProfile.role !== 'admin'"), 'Only admin may save system-wide authoring settings through RLS-backed app_settings');
+expect(examAdmin.includes("var queryParams=new URLSearchParams(location.search)") && examAdmin.includes('applyTemplate(requestedTemplate)') && examAdmin.includes("switchTab(requestedTab)"), 'Exam editor must honor direct template and library links');
+expect(examAdmin.includes("engine:state.pdfEngine||'pdflatex'") && examAdmin.includes("eq('key','latex_engine_default')"), 'Exam PDF compilation must use the system authoring engine');
 
 console.log('PASS schedule restoration + compact Meet setup + complete content studio');

@@ -9,6 +9,7 @@
     parsed: [],
     editingId: null,
     templateKey: 'custom',
+    pdfEngine: 'pdflatex',
     previewTimer: 0,
     pdfUrl: '',
     analytics: null
@@ -575,7 +576,7 @@ Thể tích bằng $3^3=27$.}
     try{
       if(typeof vmTaiMoiTruongTex==='function')await vmTaiMoiTruongTex();
       var tex=await buildPdfSource();
-      var result=await sb.functions.invoke('latex',{body:{tex:tex,engine:'pdflatex'}});
+      var result=await sb.functions.invoke('latex',{body:{tex:tex,engine:state.pdfEngine||'pdflatex'}});
       if(result.error)throw new Error(result.error.message||'Edge Function lỗi');
       if(!(result.data instanceof Blob)||result.data.type.indexOf('pdf')<0){var log=typeof result.data==='string'?result.data:await result.data.text();throw new Error(log.split('\n').filter(function(x){return x.indexOf('!')===0||/error/i.test(x);}).slice(0,6).join(' ')||'Không nhận được PDF');}
       if(state.pdfUrl)URL.revokeObjectURL(state.pdfUrl);state.pdfUrl=URL.createObjectURL(result.data);
@@ -590,6 +591,8 @@ Thể tích bằng $3^3=27$.}
     var profile=await yeuCauDangNhap();if(!profile)return;
     if(['admin','teacher','assistant'].indexOf(profile.role)<0){location.href='luyen-de';return;}
     state.profile=profile;
+    var engineSetting=await sb.from('app_settings').select('value').eq('key','latex_engine_default').maybeSingle();
+    if(!engineSetting.error&&engineSetting.data&&['pdflatex','xelatex','lualatex'].indexOf(engineSetting.data.value)>=0)state.pdfEngine=engineSetting.data.value;
     if(profile.role==='assistant'){
       var analyticsTab=document.querySelector('[data-tab="analytics"]');
       if(analyticsTab)analyticsTab.hidden=true;
@@ -610,8 +613,13 @@ Thể tích bằng $3^3=27$.}
     el('kpiAttempts').textContent=attempts.count==null?'—':attempts.count;
     el('exLatex').addEventListener('input',function(){state.templateKey='custom';schedulePreview();});
     el('exTitle').addEventListener('input',schedulePreview);el('exEssayPrompt').addEventListener('input',schedulePreview);
-    var requestedTemplate=new URLSearchParams(location.search).get('template');
+    var queryParams=new URLSearchParams(location.search);
+    var requestedTemplate=queryParams.get('template');
+    var requestedTab=queryParams.get('tab');
+    var requestedState=queryParams.get('state');
     if(requestedTemplate&&TEMPLATES[requestedTemplate])applyTemplate(requestedTemplate);
+    if(['compose','library','analytics'].indexOf(requestedTab)>=0)switchTab(requestedTab);
+    if(requestedTab==='library'&&['published','draft'].indexOf(requestedState)>=0){el('libraryState').value=requestedState;renderLibrary();}
     renderPreview(false);
   }
 
