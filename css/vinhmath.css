@@ -2048,7 +2048,15 @@ iframe, video, canvas, svg, table { max-width: 100%; }
   cursor: pointer;
   white-space: nowrap;
 }
-.vm-install-btn.is-available { display: inline-flex; }
+.vm-authenticated .vm-install-btn.is-available { display: inline-flex; }
+.vm-authenticated .vm-install-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+.vm-authenticated .vm-install-btn .vm-install-label { display: none; }
 .vm-install-btn:hover {
   color: var(--topbar-link-hover);
   border-color: var(--topbar-link-hover);
@@ -2198,14 +2206,7 @@ iframe, video, canvas, svg, table { max-width: 100%; }
     max-height: none;
   }
   .bell-list { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
-  .vm-install-label { display: inline; }
-  .navlinks .vm-install-btn {
-    width: 100%;
-    min-height: var(--vm-touch);
-    padding: 0 14px;
-    justify-content: flex-start;
-    font-size: .95rem;
-  }
+  .vm-authenticated .vm-install-btn .vm-install-label { display: none; }
   .modal {
     padding: calc(64px + var(--vm-safe-top)) max(10px, var(--vm-safe-right)) max(18px, var(--vm-safe-bottom)) max(10px, var(--vm-safe-left)) !important;
   }

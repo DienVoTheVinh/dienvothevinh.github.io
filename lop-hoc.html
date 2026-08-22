@@ -231,8 +231,9 @@ body.theme-map .map-ribbon { display:flex; }
   100% { left: 100%; width: 30%; }
 }
 </style>
+<link rel="stylesheet" href="css/student-experience.css?v=1">
 </head>
-<body>
+<body class="student-class-page">
 <!-- Premium Page Preloader -->
 <div id="vm-preloader">
   <div class="vm-preloader-content">
@@ -305,63 +306,62 @@ body.theme-map .map-ribbon { display:flex; }
       </div>
     </div>
 
-    <!-- Banner Link Google Meet cho lớp Online -->
-    <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
+    <!-- Google Meet thu gọn, luôn nằm ngay trên vùng bài giảng -->
+    <div id="khungMeetHoc" class="card student-meet-strip" style="display:none; margin-bottom: 14px; padding: 14px 18px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
       <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1">
         <div style="display: flex; gap: 16px; align-items: center">
           <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
           <div>
-            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
-            <p style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
+            <h3 style="margin: 0; font-size: .95rem; font-weight: 800; color: var(--ink)">Phòng học Google Meet</h3>
+            <p style="margin: 3px 0 0; font-size: .76rem; color: var(--ink-2)">Vào đúng phòng học của lớp đang chọn.</p>
           </div>
         </div>
-        <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
-          Vào lớp học ngay 🚀
+        <a id="linkMeetHoc" class="btn btn-primary" href="#" target="_blank" style="padding: 9px 16px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px">
+          Vào phòng Meet →
         </a>
       </div>
     </div>
 
-    <section class="stats">
-      <div class="grid grid-3">
-        <div class="card stat"><b id="tkDiem">—</b><span>Điểm trung bình</span></div>
-        <div class="card stat"><b id="tkChuyenCan">—</b><span>Chuyên cần</span></div>
-        <div class="card stat"><b id="tkBaiHoc">—</b><span>Bài đã hoàn thành</span></div>
-      </div>
-    </section>
+    <!-- Giữ ID thống kê cho mã cũ nhưng không hiển thị ở trang Lớp học. -->
+    <div hidden aria-hidden="true"><span id="tkDiem">—</span><span id="tkChuyenCan">—</span><span id="tkBaiHoc">—</span></div>
 
     <section class="lessons">
-      <div class="sec-label">Bài học của lớp</div>
-      <h2 style="margin-bottom:16px">Danh sách bài học</h2>
-      
-      <!-- Bộ chọn lớp học của học sinh (tab button) -->
-      <div class="class-tabs" id="tabLopHocSinh" style="display:none; margin-bottom:20px;"></div>
+      <div class="student-class-layout">
+        <aside class="student-class-rail">
+          <div class="student-rail-label"><span>🏫</span><div><b>Lớp của em</b><small>Chọn lớp để đổi nội dung</small></div></div>
+          <div class="class-tabs" id="tabLopHocSinh" style="display:none;"></div>
+          <div class="student-rail-section-title">Thông báo lớp</div>
+          <div id="btLopBox" style="display:none"></div>
+        </aside>
 
-      <!-- Tabs chuyển đổi phân hệ lớp phía học sinh -->
-      <div class="class-tabs" id="studentSubTabs" style="margin-bottom: 20px; display: flex; gap: 8px;">
-        <button class="tab-btn active" id="btnStudentLessons" onclick="doiStudentTab('lessons')">📖 Bài giảng</button>
-        <button class="tab-btn" id="btnStudentDocs" onclick="doiStudentTab('docs')">📂 Tài liệu lớp học</button>
+        <main class="student-lesson-main">
+          <div class="student-lesson-heading">
+            <div><div class="sec-label">Bài giảng của lớp</div><h2>Danh sách bài giảng</h2><p>Bài mới và nội dung cần học được đặt ở vị trí trung tâm.</p></div>
+            <div class="class-tabs" id="studentSubTabs" style="display:flex;">
+              <button class="tab-btn active" id="btnStudentLessons" onclick="doiStudentTab('lessons')">📖 Bài giảng</button>
+              <button class="tab-btn" id="btnStudentDocs" onclick="doiStudentTab('docs')">📂 Tài liệu</button>
+            </div>
+          </div>
+
+          <!-- Ruy băng CLB M.A.P (chỉ hiện khi lớp dùng theme M.A.P) -->
+          <div class="map-ribbon" id="mapRibbon">
+            <img src="logo/CLB-MAP-logo.png" alt="M.A.P">
+            <div class="t"><b>CLB M.A.P</b><span>Math And Passion · Thầy Điền Võ Thế Vinh &amp; Thầy Đậu Văn Huy Hoàng</span></div>
+          </div>
+
+          <div id="dsBaiHocGomNhom"></div>
+          <div id="dsTaiLieuHocSinh" style="display:none"></div>
+        </main>
       </div>
-
-      <!-- Ruy băng CLB M.A.P (chỉ hiện khi lớp dùng theme M.A.P) -->
-      <div class="map-ribbon" id="mapRibbon">
-        <img src="logo/CLB-MAP-logo.png" alt="M.A.P">
-        <div class="t"><b>CLB M.A.P</b><span>Math And Passion · Thầy Điền Võ Thế Vinh &amp; Thầy Đậu Văn Huy Hoàng</span></div>
-      </div>
-
-      <!-- Bảng tin lớp (liên kết) -->
-      <div id="btLopBox" style="display:none; margin-bottom:18px"></div>
-
-      <div id="dsBaiHocGomNhom"></div>
-      <div id="dsTaiLieuHocSinh" style="display:none"></div>
     </section>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=8.5"></script>
+<script src="js/vinhmath.js?v=8.5"></script>
+<script src="js/menu-v5.js?v=8.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 // Lấy mã video từ link YouTube để hiện ảnh bìa
