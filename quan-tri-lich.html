@@ -139,6 +139,12 @@
 .schedule-details-table tr:last-child td {
   border-bottom: none;
 }
+.head{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap}.head h1{margin-bottom:4px}.head p{margin:0;color:var(--ink-2);font-size:.9rem}
+.quick-card{padding:0;overflow:hidden;border-color:color-mix(in srgb,var(--accent) 32%,var(--line))}.quick-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:linear-gradient(120deg,var(--accent-soft),var(--surface));border-bottom:1px solid var(--line)}.quick-card-head h2{margin:0;font-size:1.15rem}.quick-card-head span{color:var(--ink-2);font-size:.82rem}.quick-form{padding:20px}
+.schedule-main-grid{display:grid;grid-template-columns:minmax(200px,1.15fr) minmax(230px,1.35fr) minmax(210px,1fr);gap:18px;align-items:start}.setup-step{min-width:0}.setup-step-title{display:flex;align-items:center;gap:7px;margin-bottom:10px;color:var(--ink);font-size:.88rem;font-weight:800}.setup-step-title b{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:#fff;font-size:.75rem}.quick-form .field{margin-bottom:10px}.quick-form .field:last-child{margin-bottom:0}.quick-form .field label{display:block;margin-bottom:5px;font-size:.76rem;font-weight:700;color:var(--ink-2)}.time-row,.date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meet-field{padding:10px;border:1px dashed var(--line-2);border-radius:10px;background:var(--surface-2)}.meet-field[hidden]{display:none}.field-help{margin:5px 0 0;color:var(--ink-3);font-size:.72rem;line-height:1.45}.quick-submit{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.quick-submit p{margin:0;color:var(--ink-3);font-size:.78rem}
+.setup-details{margin-top:18px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}.setup-details>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;cursor:pointer;list-style:none;font-weight:800}.setup-details>summary::-webkit-details-marker{display:none}.setup-details>summary::after{content:'▾';color:var(--ink-3);transition:transform .2s}.setup-details[open]>summary::after{transform:rotate(180deg)}.setup-details>summary small{display:block;margin-top:3px;color:var(--ink-3);font-size:.75rem;font-weight:500}.setup-details-body{padding:18px;border-top:1px solid var(--line);background:var(--surface-2)}.meet-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px;align-items:end;margin-bottom:12px}.meet-editor{min-height:78px}.meet-class-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.meet-class-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}.meet-class-head h3{margin:0;font-size:1rem}.meet-status{display:inline-flex;align-items:center;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-size:.72rem;font-weight:800}.meet-row{display:grid;grid-template-columns:minmax(150px,220px) minmax(180px,1fr) auto 22px;gap:9px;align-items:center;padding:7px 0}.meet-row+.meet-row{border-top:1px dashed var(--line)}.meet-row-label{font-size:.8rem;color:var(--ink-2)}.meet-hierarchy{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px;color:var(--ink-3);font-size:.74rem}.meet-hierarchy span{padding:3px 7px;border:1px solid var(--line);border-radius:99px;background:var(--surface)}.global-meet{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2)}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}.section-head h2{margin:0}.section-head p{margin:4px 0 0;color:var(--ink-2);font-size:.84rem}
+@media(max-width:820px){.schedule-main-grid{grid-template-columns:1fr 1fr}.setup-step:last-child{grid-column:1/-1}}
+@media(max-width:600px){.wrap{padding:0 14px 72px}.head{padding-top:24px}.head h1{font-size:1.7rem}.quick-card-head{align-items:flex-start;flex-direction:column}.quick-form{padding:14px}.schedule-main-grid{grid-template-columns:1fr;gap:16px}.setup-step:last-child{grid-column:auto}.date-row{grid-template-columns:1fr}.quick-submit{align-items:stretch;flex-direction:column}.quick-submit .btn{width:100%;min-height:44px}.meet-toolbar{grid-template-columns:1fr}.meet-row{grid-template-columns:1fr auto}.meet-row-label{grid-column:1/-1}.meet-row .input{min-width:0!important}.section-head{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -160,37 +166,21 @@
 
 <div class="wrap">
   <div class="head">
-    <div class="sec-label">Khu vực của thầy</div>
-    <h1>Lịch học & Điểm danh QR</h1>
+    <div><div class="sec-label">Khu vực của thầy</div><h1>Lịch dạy & phòng học</h1><p>Tạo lịch trong một lượt; link Meet tự kế thừa đúng cấp nên không cần nhập lặp lại.</p></div>
+    <a class="btn btn-secondary btn-sm" href="trang-chu#weekCal">← Xem thời khóa biểu</a>
   </div>
 
-  <!-- 1. Link Meet theo lớp -->
-  <div class="card section" style="margin-top:20px">
-    <h3>🎥 Link Google Meet theo lớp</h3>
-    <p style="font-size:.88rem;color:var(--ink-2);margin:6px 0 12px">Mỗi lớp một phòng riêng — học sinh lớp nào thấy link lớp đó. Lớp bỏ trống sẽ dùng link chung dự phòng.</p>
-    <div id="khungMeetLop" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div style="border-top:1px dashed var(--line-2);margin-top:16px;padding-top:14px">
-      <b style="font-size:.9rem">Link chung (dự phòng)</b>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-        <input class="input" id="meetLink" placeholder="https://meet.google.com/abc-defg-hij" style="flex:1;min-width:240px">
-        <button class="btn btn-secondary" onclick="luuMeet()">Lưu link chung</button>
-      </div>
-      <div id="tbMeet" style="font-size:.85rem;margin-top:8px"></div>
-    </div>
-  </div>
-
-  <!-- 2. Thời khóa biểu -->
-  <div class="section">
-    <div class="sec-label">Thời khóa biểu</div>
-    <h2 style="margin-bottom:6px">Lịch học các lớp</h2>
-    <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:16px">Lịch có bật "công khai" sẽ hiện ở trang chủ cho phụ huynh xem và đăng ký.</p>
-
-    <div class="card" style="margin-bottom:16px">
-      <div class="form-grid">
-        <div><label style="font-size:.8rem;font-weight:600">Lớp</label><select class="input" id="schLop" onchange="capNhatGiaoVienSchedule()"></select></div>
-        <div><label style="font-size:.8rem;font-weight:600">Giáo viên dạy</label><select class="input" id="schGiaoVien"></select></div>
-        <div style="grid-column: span 2; min-width: 280px;"><label style="font-size:.8rem;font-weight:600">Thứ (chọn nhiều thứ)</label>
-          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap" id="schThuContainer">
+  <div class="card quick-card section" style="margin-top:20px">
+    <div class="quick-card-head"><h2>＋ Tạo lịch dạy</h2><span>Chỉ các trường cần thiết được hiển thị theo lựa chọn.</span></div>
+    <div class="quick-form">
+      <div class="schedule-main-grid">
+        <div class="setup-step"><div class="setup-step-title"><b>1</b> Chọn lớp & giáo viên</div>
+          <div class="field"><label>Lớp</label><select class="input" id="schLop" onchange="capNhatGiaoVienSchedule();capNhatGoiYMeetSchedule()"></select></div>
+          <div class="field"><label>Giáo viên dạy</label><select class="input" id="schGiaoVien"></select></div>
+        </div>
+        <div class="setup-step"><div class="setup-step-title"><b>2</b> Chọn ngày & giờ</div>
+          <div class="field"><label>Lặp lại</label><select class="input" id="schRecurrence" onchange="doiLapLai()"><option value="weekly">🔄 Hàng tuần</option><option value="once">📅 Chỉ một lần</option></select></div>
+          <div class="field" id="khungThu"><label>Thứ trong tuần (có thể chọn nhiều)</label><div style="display:flex;gap:6px;flex-wrap:wrap" id="schThuContainer">
             <button type="button" class="thu-btn active" data-val="1">T2</button>
             <button type="button" class="thu-btn" data-val="2">T3</button>
             <button type="button" class="thu-btn" data-val="3">T4</button>
@@ -198,24 +188,33 @@
             <button type="button" class="thu-btn" data-val="5">T6</button>
             <button type="button" class="thu-btn" data-val="6">T7</button>
             <button type="button" class="thu-btn" data-val="7">CN</button>
-          </div>
+          </div></div>
+          <div class="field" id="khungSchNgay" style="display:none"><label>Ngày diễn ra</label><input class="input" type="date" id="schDate" onchange="dongBoThuTuNgay()"></div>
+          <div class="date-row"><div class="field" id="khungHieuLuc"><label>Áp dụng từ ngày</label><input class="input" type="date" id="schStartDate"></div><div class="field" id="khungKetThuc"><label>Kết thúc (không bắt buộc)</label><input class="input" type="date" id="schEndDate"></div></div>
+          <div class="time-row"><div class="field"><label>Bắt đầu</label><input class="input" type="time" id="schTu" value="19:30"></div><div class="field"><label>Kết thúc</label><input class="input" type="time" id="schDen" value="21:30"></div></div>
         </div>
-        <div><label style="font-size:.8rem;font-weight:600">Từ</label><input class="input" type="time" id="schTu" value="19:30"></div>
-        <div><label style="font-size:.8rem;font-weight:600">Đến</label><input class="input" type="time" id="schDen" value="21:30"></div>
-        <div><label style="font-size:.8rem;font-weight:600">Hình thức</label><select class="input" id="schMode">
-          <option value="online">🎥 Online</option><option value="offline">🏫 Tại lớp</option>
-        </select></div>
-        <div><label style="font-size:.8rem;font-weight:600">Lặp lại</label><select class="input" id="schRecurrence" onchange="doiLapLai()">
-          <option value="weekly">🔄 Hàng tuần</option><option value="once">📅 Chỉ một lần (chọn ngày)</option>
-        </select></div>
-        <div id="khungSchNgay" style="display:none"><label style="font-size:.8rem;font-weight:600">Ngày diễn ra</label><input class="input" type="date" id="schDate" onchange="dongBoThuTuNgay()"></div>
-        <div id="khungHieuLuc"><label style="font-size:.8rem;font-weight:600">Áp dụng từ ngày</label><input class="input" type="date" id="schStartDate"></div>
-        <div id="khungKetThuc"><label style="font-size:.8rem;font-weight:600">Kết thúc ngày (để trống nếu kéo dài mãi)</label><input class="input" type="date" id="schEndDate" placeholder="Kéo dài mãi..."></div>
-        <div><label style="font-size:.8rem;font-weight:600">Ghi chú</label><input class="input" id="schNote" placeholder="Còn nhận HS…"></div>
-        <div style="grid-column: span 2; min-width:280px"><label style="font-size:.8rem;font-weight:600">🎥 Link Google Meet (buổi này)</label><input class="input" id="schMeet" placeholder="Dán link Meet của GV phụ trách buổi này — để trống sẽ dùng link chung của lớp"></div>
-        <div id="schBtnContainer"><button class="btn btn-primary" onclick="themLich()">+ Thêm lịch</button></div>
+        <div class="setup-step"><div class="setup-step-title"><b>3</b> Phòng học</div>
+          <div class="field"><label>Hình thức</label><select class="input" id="schMode" onchange="capNhatHinhThucSchedule()"><option value="online">🎥 Online · Google Meet</option><option value="offline">🏫 Tại lớp</option></select></div>
+          <div class="field meet-field" id="khungSchMeet"><label>Link riêng cho buổi này (không bắt buộc)</label><input class="input" id="schMeet" inputmode="url" placeholder="Dán link Meet nếu buổi này dùng phòng riêng"><p class="field-help" id="schMeetHint">Để trống sẽ tự dùng link của lớp, sau đó mới đến link chung.</p></div>
+          <div class="field"><label>Ghi chú (không bắt buộc)</label><input class="input" id="schNote" placeholder="Ví dụ: học tại CS1, mang máy tính…"></div>
+        </div>
       </div>
+      <div class="quick-submit"><p>Lịch mới sẽ hiển thị ngay trong danh sách bên dưới và trên trang Hôm nay.</p><button class="btn btn-primary" id="schBtnContainer" onclick="themLich()">＋ Lưu lịch dạy</button></div>
     </div>
+  </div>
+
+  <details class="setup-details" id="meetSettingsPanel">
+    <summary><span>🎥 Thiết lập phòng Meet<small>Dùng khi muốn đổi phòng mặc định của một lớp hoặc toàn hệ thống.</small></span></summary>
+    <div class="setup-details-body">
+      <div class="meet-toolbar"><div><label style="display:block;margin-bottom:5px;font-size:.76rem;font-weight:700;color:var(--ink-2)">Chọn lớp cần thiết lập</label><select class="input" id="meetClassFilter" onchange="taiMeetLop()"></select></div><button class="btn btn-secondary btn-sm" type="button" onclick="dongBoLopTuForm()">Dùng lớp đang tạo lịch</button></div>
+      <div id="khungMeetLop" class="meet-editor"><div class="empty">Đang tải phòng học…</div></div>
+      <div class="meet-hierarchy"><b>Thứ tự dùng link:</b><span>1 · Buổi học</span>→<span>2 · Lớp</span>→<span>3 · Link chung</span></div>
+      <div class="global-meet" id="khungMeetChung"><b style="font-size:.86rem">Link chung dự phòng (chỉ admin)</b><div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:7px"><input class="input" id="meetLink" inputmode="url" placeholder="https://meet.google.com/abc-defg-hij" style="flex:1;min-width:220px"><button class="btn btn-secondary btn-sm" onclick="luuMeet()">Lưu link chung</button></div><div id="tbMeet" style="font-size:.8rem;margin-top:6px"></div></div>
+    </div>
+  </details>
+
+  <div class="section">
+    <div class="section-head"><div><div class="sec-label">Thời khóa biểu</div><h2>Lịch đang áp dụng</h2><p>Mở từng lớp để sửa, ẩn hoặc xóa một buổi.</p></div></div>
 
     <!-- Lịch cá nhân -->
     <div id="khungLichCaNhan" style="display: none; margin-bottom: 28px;">
@@ -327,7 +326,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=8.4"></script>
+<script src="js/menu-v5.js?v=8.5"></script>
 <script src="js/analytics.js"></script>
 <script>
 var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
@@ -341,6 +340,41 @@ var dsLich = [];
 var lichDangSuaId = null;
 var expandedClasses = new Set();
 var parameterChecked = false;
+var meetLinkMap = {};
+var meetSchedulesByClass = {};
+
+function lichEsc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function chuanHoaLinkMeet(value) {
+  var link = String(value || '').trim();
+  if (/^meet\.google\.com\//i.test(link)) link = 'https://' + link;
+  return link;
+}
+
+function laLinkMeetHopLe(value) {
+  var link = chuanHoaLinkMeet(value);
+  if (!link) return true;
+  try {
+    var u = new URL(link);
+    return u.protocol === 'https:' && u.hostname.toLowerCase() === 'meet.google.com' && u.pathname.length > 1;
+  } catch (e) { return false; }
+}
+
+function layLinkMeetHopLe(inputId) {
+  var input = $(inputId);
+  var link = chuanHoaLinkMeet(input ? input.value : '');
+  if (!laLinkMeetHopLe(link)) {
+    if (input) input.focus();
+    alert('Link chưa đúng định dạng Google Meet. Ví dụ: https://meet.google.com/abc-defg-hij');
+    return null;
+  }
+  if (input) input.value = link;
+  return link;
+}
 
 function toggleNhomLich(classId) {
   var el = document.getElementById('group-' + classId);
@@ -405,6 +439,13 @@ function kiemTraQuyenLop(classId) {
     }).join('');
   });
 
+  var meetFilter = $('meetClassFilter');
+  if (meetFilter) {
+    meetFilter.innerHTML = userLop.map(function (l) { return '<option value="' + lichEsc(l.id) + '">' + lichEsc(l.name) + '</option>'; }).join('');
+  }
+  var globalMeetBox = $('khungMeetChung');
+  if (globalMeetBox) globalMeetBox.style.display = hoSoNguoiDung.role === 'admin' ? 'block' : 'none';
+
   // Meet link
   var lk = await sb.from('app_settings').select('value').eq('key', 'meet_link').single();
   if (lk.data) $('meetLink').value = lk.data.value;
@@ -414,6 +455,7 @@ function kiemTraQuyenLop(classId) {
   taiBuoi();
   capNhatGiaoVienSession(); // Set initial teacher dropdown values
   capNhatGiaoVienSchedule(); // Set initial teacher schedule dropdown values
+  capNhatHinhThucSchedule();
 
   // Đăng ký sự kiện click cho các nút chọn Thứ (khung thêm lịch - chọn nhiều thứ)
   document.querySelectorAll('#schThuContainer .thu-btn').forEach(function (btn) {
@@ -472,12 +514,12 @@ var THU_NHAN = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7', 7: 'CN' }
 
 async function taiMeetLop() {
   var r = await sb.from('class_links').select('class_id, meet_link');
-  var map = {};
-  (r.data || []).forEach(function (x) { map[x.class_id] = x.meet_link; });
+  meetLinkMap = {};
+  (r.data || []).forEach(function (x) { meetLinkMap[x.class_id] = x.meet_link || ''; });
 
-  // Tải các buổi lịch để lớp có 2 GV sổ ra link riêng từng buổi
+  // Chỉ tải các ca còn hiệu lực; người dùng chọn một lớp để tránh danh sách dài.
   var rs = await sb.from('schedules')
-    .select('id, class_id, weekday, teacher_id, meet_link, start_time, recurrence, date, start_date, end_date')
+    .select('id, class_id, weekday, teacher_id, meet_link, start_time, mode, recurrence, date, start_date, end_date')
     .order('weekday');
   
   var tzOffset = (new Date()).getTimezoneOffset() * 60000;
@@ -491,8 +533,8 @@ async function taiMeetLop() {
     return true;
   });
 
-  var schByClass = {};
-  activeSchedules.forEach(function (s) { (schByClass[s.class_id] = schByClass[s.class_id] || []).push(s); });
+  meetSchedulesByClass = {};
+  activeSchedules.forEach(function (s) { (meetSchedulesByClass[s.class_id] = meetSchedulesByClass[s.class_id] || []).push(s); });
 
   var isTeacher = hoSoNguoiDung && (hoSoNguoiDung.role === 'teacher' || hoSoNguoiDung.role === 'assistant');
   var displayLopMeet = dsLop;
@@ -502,53 +544,46 @@ async function taiMeetLop() {
     });
   }
 
-  function tagCuaLop(l) {
-    var t = '';
-    if (l.grade) t += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + l.grade + '</span>';
-    if (l.is_specialized) t += '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>';
-    return t;
+  var filter = $('meetClassFilter');
+  var selectedId = filter && filter.value;
+  if (!selectedId && displayLopMeet.length) selectedId = displayLopMeet[0].id;
+  var lop = displayLopMeet.find(function (x) { return x.id === selectedId; });
+  if (!lop) {
+    $('khungMeetLop').innerHTML = '<div class="empty">Không có lớp nào được phân công để thiết lập.</div>';
+    capNhatGoiYMeetSchedule();
+    return;
   }
+  if (filter && filter.value !== lop.id) filter.value = lop.id;
 
-  $('khungMeetLop').innerHTML = displayLopMeet.map(function (l) {
-    var tagHtml = tagCuaLop(l);
-
-    // Lớp 2 giáo viên (đồng giảng) -> sổ ra link riêng từng buổi
-    if (l.co_teacher_id) {
-      var sess = schByClass[l.id] || [];
-      var header = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.92rem;margin-bottom:6px"><b>' + l.name + '</b>' + tagHtml +
-        '<span style="font-size:.72rem;color:var(--accent);background:var(--accent-soft);padding:2px 6px;border-radius:4px;margin-left:4px">👥 2 GV — link riêng từng buổi</span></div>';
-      var rows;
-      if (!sess.length) {
-        rows = '<div style="font-size:.82rem;color:var(--ink-3);padding:2px 0 4px 14px">Lớp chưa có buổi nào. Thêm buổi (gán giáo viên + thứ) ở mục “Lịch học các lớp” bên dưới, rồi quay lại đây để đặt link cho từng buổi.</div>';
-      } else {
-        rows = sess.map(function (s) {
-          var gv = (s.teacher_id && mapGiaoVien[s.teacher_id]) ? mapGiaoVien[s.teacher_id] : '⚠️ chưa gán GV';
-          var nhan = (THU_NHAN[s.weekday] || '?') + ' · ' + gv + (s.start_time ? ' (' + s.start_time.slice(0, 5) + ')' : '');
-          return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:3px 0 3px 14px">' +
-            '<div style="width:210px;flex:none;font-size:.85rem;color:var(--ink-2)">📅 ' + nhan + '</div>' +
-            '<input class="input" style="flex:1;min-width:200px" id="mls-' + s.id + '" placeholder="Link Meet của GV buổi này…" value="' + (s.meet_link || '') + '">' +
-            '<button class="btn btn-secondary btn-sm" onclick="luuMeetBuoi(\'' + s.id + '\', \'' + l.id + '\')">Lưu</button>' +
-            '<span id="mlst-' + s.id + '" style="font-size:.85rem;width:20px"></span>' +
-            '</div>';
-        }).join('');
-      }
-      var fallback = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0 2px 14px;border-top:1px dashed var(--line);margin-top:6px">' +
-        '<div style="width:210px;flex:none;font-size:.8rem;color:var(--ink-3)">Link chung của lớp (dự phòng)</div>' +
-        '<input class="input" style="flex:1;min-width:200px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
-        '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
-        '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
-        '</div>';
-      return '<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--surface)">' + header + rows + fallback + '</div>';
-    }
-
-    // Lớp 1 giáo viên -> một link như cũ
-    return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">' +
-      '<div style="width:160px;flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.9rem"><b>' + l.name + '</b>' + tagHtml + '</div>' +
-      '<input class="input" style="flex:1;min-width:220px" id="ml-' + l.id + '" placeholder="https://meet.google.com/…" value="' + (map[l.id] || '') + '">' +
-      '<button class="btn btn-secondary btn-sm" onclick="luuMeetLop(\'' + l.id + '\')">Lưu</button>' +
-      '<span id="mlt-' + l.id + '" style="font-size:.85rem;width:20px"></span>' +
-      '</div>';
+  var sessions = (meetSchedulesByClass[lop.id] || []).filter(function (s) { return s.mode === 'online'; });
+  var sessionRows = sessions.map(function (s) {
+    var gv = s.teacher_id && mapGiaoVien[s.teacher_id] ? mapGiaoVien[s.teacher_id] : 'Giáo viên của lớp';
+    var when = s.recurrence === 'once' && s.date ? formatNgayDep(s.date) : (THU_NHAN[s.weekday] || '?');
+    var label = 'Buổi ' + when + (s.start_time ? ' · ' + s.start_time.slice(0,5) : '') + ' · ' + gv;
+    return '<div class="meet-row"><div class="meet-row-label">' + lichEsc(label) + '</div><input class="input" inputmode="url" id="mls-' + lichEsc(s.id) + '" placeholder="Để trống = dùng link lớp" value="' + lichEsc(s.meet_link || '') + '"><button class="btn btn-secondary btn-sm" onclick="luuMeetBuoi(\'' + s.id + '\',\'' + lop.id + '\')">Lưu</button><span id="mlst-' + lichEsc(s.id) + '"></span></div>';
   }).join('');
+  if (!sessionRows) sessionRows = '<div class="field-help" style="padding:4px 0 10px">Chưa có buổi online nào cần link riêng. Link lớp bên dưới sẽ được dùng tự động.</div>';
+
+  var status = meetLinkMap[lop.id] ? 'Đã có link lớp' : 'Đang dùng link chung';
+  $('khungMeetLop').innerHTML = '<div class="meet-class-card"><div class="meet-class-head"><h3>' + lichEsc(lop.name) + '</h3><span class="meet-status">' + status + '</span></div>' + sessionRows + '<div class="meet-row"><div class="meet-row-label"><b>Link mặc định của lớp</b></div><input class="input" inputmode="url" id="ml-' + lichEsc(lop.id) + '" placeholder="https://meet.google.com/…" value="' + lichEsc(meetLinkMap[lop.id] || '') + '"><button class="btn btn-primary btn-sm" onclick="luuMeetLop(\'' + lop.id + '\')">Lưu</button><span id="mlt-' + lichEsc(lop.id) + '"></span></div></div>';
+  capNhatGoiYMeetSchedule();
+}
+
+function dongBoLopTuForm() {
+  if ($('meetClassFilter') && $('schLop')) $('meetClassFilter').value = $('schLop').value;
+  taiMeetLop();
+}
+
+function capNhatGoiYMeetSchedule() {
+  var hint = $('schMeetHint');
+  var classId = $('schLop') && $('schLop').value;
+  if (!hint) return;
+  hint.textContent = meetLinkMap[classId] ? 'Để trống: tự dùng link mặc định đã lưu của lớp này.' : 'Lớp chưa có link riêng; để trống sẽ dùng link chung của hệ thống.';
+}
+
+function capNhatHinhThucSchedule() {
+  var online = !$('schMode') || $('schMode').value === 'online';
+  if ($('khungSchMeet')) $('khungSchMeet').hidden = !online;
 }
 
 async function luuMeetBuoi(sid, classId) {
@@ -556,7 +591,8 @@ async function luuMeetBuoi(sid, classId) {
     alert('Thầy không có quyền thay đổi link buổi của lớp này!');
     return;
   }
-  var v = $('mls-' + sid).value.trim();
+  var v = layLinkMeetHopLe('mls-' + sid);
+  if (v === null) return;
   var r = await sb.from('schedules').update({ meet_link: v || null }).eq('id', sid);
   var t = $('mlst-' + sid);
   if (t) {
@@ -564,6 +600,7 @@ async function luuMeetBuoi(sid, classId) {
     t.title = r.error ? r.error.message : 'Đã lưu';
     t.style.color = r.error ? 'var(--err)' : 'var(--ok)';
   }
+  if (!r.error) { await taiMeetLop(); }
 }
 
 async function luuMeetLop(id) {
@@ -571,17 +608,21 @@ async function luuMeetLop(id) {
     alert("Thầy không có quyền thay đổi link Meet của lớp này!");
     return;
   }
-  var v = $('ml-' + id).value.trim();
+  var v = layLinkMeetHopLe('ml-' + id);
+  if (v === null) return;
   var r = await sb.from('class_links').upsert({ class_id: id, meet_link: v });
   var t = $('mlt-' + id);
   t.textContent = r.error ? '✗' : '✓';
   t.title = r.error ? r.error.message : 'Đã lưu';
   t.style.color = r.error ? 'var(--err)' : 'var(--ok)';
+  if (!r.error) { meetLinkMap[id] = v; await taiMeetLop(); capNhatGoiYMeetSchedule(); }
 }
 
 /* ----- Meet ----- */
 async function luuMeet() {
-  var v = $('meetLink').value.trim();
+  if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'admin') return;
+  var v = layLinkMeetHopLe('meetLink');
+  if (v === null) return;
   var r = await sb.from('app_settings').upsert({ key: 'meet_link', value: v });
   $('tbMeet').textContent = r.error ? 'Lỗi: ' + r.error.message : '✓ Đã lưu — học sinh thấy ngay.';
   $('tbMeet').style.color = r.error ? 'var(--err)' : 'var(--ok)';
@@ -602,7 +643,9 @@ function doiLapLai() {
   var khung = $('khungSchNgay');
   var khungHieuLuc = $('khungHieuLuc');
   var khungKetThuc = $('khungKetThuc');
+  var khungThu = $('khungThu');
   if (r === 'once') {
+    if (khungThu) khungThu.style.display = 'none';
     khung.style.display = 'block';
     if (khungHieuLuc) khungHieuLuc.style.display = 'none';
     if (khungKetThuc) khungKetThuc.style.display = 'none';
@@ -611,6 +654,7 @@ function doiLapLai() {
     }
     dongBoThuTuNgay();
   } else {
+    if (khungThu) khungThu.style.display = 'block';
     khung.style.display = 'none';
     if (khungHieuLuc) {
       khungHieuLuc.style.display = 'block';
@@ -872,6 +916,10 @@ async function themLich() {
   }
   var mode = $('schMode').value;
   var rec = $('schRecurrence').value;
+  if (!$('schTu').value || !$('schDen').value || $('schTu').value >= $('schDen').value) {
+    alert('Giờ kết thúc phải sau giờ bắt đầu.');
+    return;
+  }
   
   var schDateVal = null;
   if (rec === 'once') {
@@ -886,7 +934,8 @@ async function themLich() {
   var meetLinkBuoi = null; // link Meet riêng cho buổi này (theo GV phụ trách)
   if (mode === 'online') {
     // 1. Ưu tiên link Meet do GV nhập riêng cho buổi này
-    var meetInput = ($('schMeet') && $('schMeet').value.trim()) || '';
+    var meetInput = layLinkMeetHopLe('schMeet');
+    if (meetInput === null) return;
     var meetLink = meetInput;
     // 2. Nếu để trống → lấy link riêng của lớp
     if (!meetLink) {
@@ -1088,6 +1137,10 @@ async function luuSuaLichModal() {
   }
   var mode = $('editSchMode').value;
   var rec = $('editSchRecurrence').value;
+  if (!$('editSchTu').value || !$('editSchDen').value || $('editSchTu').value >= $('editSchDen').value) {
+    alert('Giờ kết thúc phải sau giờ bắt đầu.');
+    return;
+  }
   
   var schDateVal = null;
   if (rec === 'once') {
@@ -1101,7 +1154,8 @@ async function luuSuaLichModal() {
   var locationValue = null;
   var meetLinkBuoi = null;
   if (mode === 'online') {
-    var meetInput = ($('editSchMeet') && $('editSchMeet').value.trim()) || '';
+    var meetInput = layLinkMeetHopLe('editSchMeet');
+    if (meetInput === null) return;
     var meetLink = meetInput;
     if (!meetLink) {
       var lr = await sb.from('class_links').select('meet_link').eq('class_id', classId).maybeSingle();

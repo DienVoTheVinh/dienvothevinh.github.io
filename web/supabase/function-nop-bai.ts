@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
     const action = String(form.get("kind") || "nop");
     const phanloai = String(form.get("phanloai") || "");
     const files = form.getAll("files").filter((item): item is File => item instanceof File);
-    const canKhongCanTep = new Set(["xoa_cham", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
+    const canKhongCanTep = new Set(["xoa_cham", "submission_file", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
     if (!canKhongCanTep.has(action) && !files.length) throw loi("Chưa chọn tệp nào.", 400);
 
     const canGoogle = action !== "class_answer_get";
@@ -290,6 +290,41 @@ Deno.serve(async (req) => {
     const canThuMucNopBai = action === "nop" || action === "cham";
     const goc = canThuMucNopBai ? await timHoacTaoThuMuc(token, "VINHMATH NOP BAI") : "";
     const ngay = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+
+    if (action === "submission_file") {
+      if (!["admin", "teacher", "assistant"].includes(prof.role)) throw loi("Chỉ giáo viên mới được mở ảnh bài nộp để chấm.", 403);
+      const subId = String(form.get("submission_id") || "").trim();
+      const fileId = String(form.get("file_id") || "").trim();
+      if (!subId || !fileId) throw loi("Thiếu mã bài nộp hoặc mã ảnh.", 400);
+      const { data: submitted } = await svc.from("submissions").select("id, files, lesson_id, exam_id").eq("id", subId).single();
+      if (!submitted) throw loi("Không tìm thấy bài nộp.", 404);
+      const submittedFiles = Array.isArray(submitted.files) ? submitted.files as any[] : [];
+      const selected = submittedFiles.find((item) => String(item?.id || "") === fileId);
+      if (!selected) throw loi("Ảnh không thuộc bài nộp này.", 404);
+      const fileName = String(selected.name || "");
+      const mimeType = String(selected.mime_type || "");
+      if (!mimeType.startsWith("image/") && !/\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(fileName)) throw loi("Chỉ có thể viết trực tiếp lên tệp ảnh.", 400);
+
+      let classId: string | null = null;
+      if (submitted.lesson_id) {
+        const { data: lesson } = await svc.from("lessons").select("class_id").eq("id", submitted.lesson_id).single();
+        classId = lesson?.class_id || null;
+      } else if (submitted.exam_id) {
+        const { data: exam } = await svc.from("exams").select("class_id").eq("id", submitted.exam_id).single();
+        classId = exam?.class_id || null;
+      }
+      if (!(await coQuyenQuanLyLop(svc, user.id, prof.role, classId))) throw loi("Thầy/cô không có quyền chấm bài của lớp này.", 403);
+      const driveResponse = await taiFileDrive(token, fileId);
+      return new Response(driveResponse.body, {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": mimeType || driveResponse.headers.get("content-type") || "application/octet-stream",
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
 
     if (action.startsWith("class_answer_")) {
       const lessonId = String(form.get("lesson_id") || "").trim();

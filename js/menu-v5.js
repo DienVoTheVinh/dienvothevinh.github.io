@@ -25,6 +25,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp học' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+      { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
       { type: 'link', path: 'quan-tri', label: 'Quản trị' }
     ];

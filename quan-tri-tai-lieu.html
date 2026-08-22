@@ -34,6 +34,9 @@ textarea.code:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px
 .alert.ok{display:block;background:var(--ok-soft);color:var(--ok)}
 .alert.warn{display:block;background:var(--warn-soft);color:var(--warn)}
 select.input{width:auto}
+.content-studio{margin-bottom:22px}.content-studio-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:12px}.content-studio-head h2{margin:0;font-size:1.15rem}.content-studio-head p{margin:4px 0 0;color:var(--ink-3);font-size:.82rem}.content-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.content-tool{display:flex;flex-direction:column;gap:7px;min-height:120px;padding:15px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);text-decoration:none;cursor:pointer;text-align:left;font:inherit;transition:.18s}.content-tool:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}.content-tool .ic{font-size:1.4rem}.content-tool b{font-size:.88rem}.content-tool small{color:var(--ink-3);font-size:.72rem;line-height:1.4}.content-tool .state{margin-top:auto;color:var(--accent);font-size:.7rem;font-weight:800}.setup-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px;padding:12px;border:1px dashed var(--line-2);border-radius:14px;background:var(--surface-2)}.setup-link{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);text-decoration:none;font:inherit;text-align:left;cursor:pointer}.setup-link b{display:block;font-size:.8rem}.setup-link small{display:block;color:var(--ink-3);font-size:.68rem;margin-top:2px}
+@media(max-width:900px){.content-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.setup-strip{grid-template-columns:1fr}}
+@media(max-width:520px){.wrap{padding-left:14px;padding-right:14px}.content-studio-head{align-items:flex-start;flex-direction:column}.content-tools{grid-template-columns:1fr}.content-tool{min-height:96px}}
 </style>
 </head>
 <body>
@@ -57,11 +60,28 @@ select.input{width:auto}
 <div class="wrap">
   <div class="head">
     <div class="sec-label">Khu vực của thầy</div>
-    <h1>Soạn tài liệu từ LaTeX</h1>
-    <p style="margin-top:6px">Dán code LaTeX (hoặc chọn file .tex) → Biên dịch → Xem thử → Lưu vào kho cho học sinh.</p>
+    <h1>Trung tâm nội dung</h1>
+    <p style="margin-top:6px">Mọi công cụ soạn bài, tài liệu và đề thi nằm tại đây; phần bên dưới là trình biên dịch LaTeX.</p>
   </div>
 
-  <div class="card" style="margin-bottom:20px">
+  <section class="content-studio" aria-label="Công cụ soạn nội dung">
+    <div class="content-studio-head"><div><h2>Thầy muốn tạo gì?</h2><p>Chọn đúng loại nội dung để bắt đầu ngay, không cần tìm trong Quản trị.</p></div><a class="btn btn-secondary btn-sm" href="tai-lieu">Xem kho đã xuất bản</a></div>
+    <div class="content-tools">
+      <a class="content-tool" href="quan-tri-lop"><span class="ic">📚</span><b>Bài giảng & bài học</b><small>Chọn lớp, thêm buổi học, video, tài liệu và BTVN.</small><span class="state">MỞ TRÌNH QUẢN LÝ →</span></a>
+      <a class="content-tool" href="#latexEditor"><span class="ic">📄</span><b>Tài liệu LaTeX / PDF</b><small>Biên dịch, xem trước và lưu trực tiếp vào kho học sinh.</small><span class="state">SOẠN NGAY ↓</span></a>
+      <a class="content-tool" href="quan-tri-de"><span class="ic">🧪</span><b>Đề kiểm tra & luyện tập</b><small>Trắc nghiệm, đúng/sai, tự luận và thống kê kết quả.</small><span class="state">MỞ KHO ĐỀ →</span></a>
+      <a class="content-tool" href="quan-tri-de?template=thpt-standard"><span class="ic">🇻🇳</span><b>Đề thi thử THPTQG</b><small>Mở sẵn cấu trúc 3 phần: chọn đáp án, đúng/sai, trả lời ngắn.</small><span class="state">DÙNG MẪU THPTQG →</span></a>
+      <a class="content-tool" href="viet-blog"><span class="ic">✍️</span><b>Bài viết & thông báo</b><small>Soạn nội dung công khai cho trang Blog.</small><span class="state">VIẾT BÀI →</span></a>
+      <a class="content-tool" href="quan-tri-bai-hoc"><span class="ic">🔐</span><b>Quyền xem bài giảng</b><small>Mở, khóa và kiểm tra bài học theo tài khoản.</small><span class="state">KIỂM TRA QUYỀN →</span></a>
+    </div>
+    <div class="setup-strip admin-only" id="contentSetupStrip">
+      <a class="setup-link" href="quan-tri-tex"><span>∑</span><span><b>Môi trường TeX</b><small id="contentEnvStatus">Đang đọc trạng thái…</small></span></a>
+      <button class="setup-link" type="button" onclick="moCauHinhPreamble()"><span>⚙</span><span><b>Preamble mặc định</b><small id="contentPreambleStatus">Cấu hình dùng khi nhập nội dung thô</small></span></button>
+      <a class="setup-link" href="quan-tri-de"><span>🧩</span><span><b>Mẫu & môi trường đề</b><small>THPTQG, ex_test và xem trước PDF</small></span></a>
+    </div>
+  </section>
+
+  <div class="card" id="latexEditor" style="margin-bottom:20px;scroll-margin-top:86px">
     <div class="row">
       <div class="field" style="flex:1;min-width:220px;margin:0">
         <label>Tiêu đề tài liệu</label>
@@ -111,7 +131,7 @@ select.input{width:auto}
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.4"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
-<script src="js/menu-v5.js?v=8.4"></script>
+<script src="js/menu-v5.js?v=8.5"></script>
 <script src="js/analytics.js"></script>
 <script>
 var pdfBlob = null; // PDF vừa biên dịch xong, chờ lưu
@@ -129,6 +149,18 @@ function bao(msg, loai) {
   if (!hoSo) return;
   if (typeof vmTaiMoiTruongTex === 'function') await vmTaiMoiTruongTex();
   if (hoSo.role !== 'teacher' && hoSo.role !== 'admin') { window.location.href = 'lop-hoc'; return; }
+
+  document.querySelectorAll('.admin-only').forEach(function (el) { el.style.display = hoSo.role === 'admin' ? '' : 'none'; });
+  if (hoSo.role === 'admin') {
+    try {
+      var envState = await Promise.all([
+        sb.from('tex_environment_configs').select('environment_name', { count: 'exact', head: true }),
+        sb.from('tex_environment_drafts').select('environment_name', { count: 'exact', head: true })
+      ]);
+      $('contentEnvStatus').textContent = (envState[0].count || 0) + ' môi trường đã xuất bản · ' + (envState[1].count || 0) + ' bản nháp';
+    } catch (e) { $('contentEnvStatus').textContent = 'Mở để xem và chỉnh cấu hình'; }
+  }
+  $('contentPreambleStatus').textContent = localStorage.getItem('vm-latex-preamble') ? 'Đang dùng cấu hình tùy chỉnh trên thiết bị này' : 'Đang dùng cấu hình VinhMath mặc định';
 
   // Menu quản trị động được tự động vẽ bởi menu.js
   // nạp danh sách lớp vào ô chọn

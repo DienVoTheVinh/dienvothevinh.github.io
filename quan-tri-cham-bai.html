@@ -52,6 +52,7 @@
 .chb-thumb .idx { position:absolute; top:2px; left:2px; background:rgba(0,0,0,.68); color:#fff; font-size:.64rem; font-weight:800; padding:0 5px; border-radius:5px; z-index:1; }
 .chb-thumb.file { display:flex; align-items:center; justify-content:center; font-size:1.7rem; text-decoration:none; color:var(--ink-2); }
 .chb-thumb:hover { border-color:var(--accent); transform:scale(1.03); transition:.12s; }
+.chb-annotate-btn{position:absolute;left:4px;right:4px;bottom:4px;z-index:3;border:1px solid rgba(255,255,255,.8);border-radius:7px;background:rgba(158,97,0,.94);color:#fff;font:700 .68rem/1.2 inherit;padding:5px 3px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.24)}.chb-annotate-btn:hover{background:var(--accent)}
 .chb-existing-wrap .chb-existing-remove {
   display:none; position:absolute; top:3px; right:3px; z-index:3;
   width:26px; height:26px; padding:0; border:1px solid rgba(255,255,255,.75);
@@ -89,6 +90,9 @@
 .chb-answer-file.is-removed button { background:var(--ok); }
 .chb-answer-status { margin-top:10px; min-height:20px; font-size:.82rem; font-weight:700; color:var(--ink-2); }
 @media(max-width:760px){.chb-answer-grid{grid-template-columns:1fr}.chb-class-answer{padding:14px}}
+/* Trình viết trực tiếp lên ảnh bài nộp */
+.chb-draw-modal{display:none;position:fixed;inset:0;z-index:100120;background:rgba(0,0,0,.76);padding:16px;align-items:center;justify-content:center;box-sizing:border-box}.chb-draw-modal.open{display:flex}.chb-draw-dialog{width:min(1180px,100%);height:min(92dvh,900px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 25px 70px rgba(0,0,0,.5)}.chb-draw-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;border-bottom:1px solid var(--line)}.chb-draw-head h2{margin:0;font-size:1rem}.chb-draw-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}.chb-draw-tools button,.chb-draw-tools label{min-height:36px}.chb-draw-tool.active{color:#fff!important;background:var(--accent)!important;border-color:var(--accent)!important}.chb-draw-color{width:31px;height:31px;padding:2px;border:2px solid transparent;border-radius:50%;cursor:pointer}.chb-draw-color.active{border-color:var(--ink)}.chb-draw-width{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--ink-2)}.chb-draw-width input{width:110px}.chb-draw-stage-wrap{flex:1;min-height:0;overflow:auto;padding:14px;background:#353535;display:grid;place-items:center}.chb-draw-stage{position:relative;max-width:100%;line-height:0;box-shadow:0 4px 20px rgba(0,0,0,.4);background:#fff}.chb-draw-stage canvas{display:block;max-width:100%;height:auto}.chb-draw-stage canvas+canvas{position:absolute;inset:0;touch-action:none;cursor:crosshair}.chb-draw-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}.chb-draw-foot small{color:var(--ink-3)}
+@media(max-width:640px){.chb-draw-modal{padding:0}.chb-draw-dialog{height:100dvh;border:0;border-radius:0}.chb-draw-head{padding-top:calc(10px + env(safe-area-inset-top))}.chb-draw-tools{gap:6px;padding:8px}.chb-draw-tools .btn{padding:7px 9px}.chb-draw-width{width:100%}.chb-draw-width input{flex:1}.chb-draw-stage-wrap{padding:6px}.chb-draw-foot{align-items:stretch;flex-direction:column}.chb-draw-foot>div{display:grid!important;grid-template-columns:1fr 1fr}.chb-draw-foot .btn{width:100%}}
 /* Lightbox modal overlay */
 #chbLightbox {
   display: none;
@@ -522,7 +526,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=8.4"></script>
+<script src="js/menu-v5.js?v=8.5"></script>
 <script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
@@ -1059,7 +1063,7 @@ function veDanhSach() {
   }
 
   function chbGradeForm(s) {
-    var links = chbThumbs(s.files);
+    var links = chbThumbs(s.files, s.id);
     var linksCham = chbGradedThumbs(s.graded_files, s.id);
     var isGraded = s.status === 'graded';
     window._chbOriginalGrades = window._chbOriginalGrades || {};
@@ -1261,7 +1265,7 @@ function xemPheNhuHS(id) {
 }
 
 /* ===== Ảnh nộp / ảnh chấm: thumbnail Drive + lightbox ===== */
-function chbThumbs(files) {
+function chbThumbs(files, subId) {
   files = files || [];
   var gid = 'g' + (window._chbGid = (window._chbGid || 0) + 1);
   var imgs = [];
@@ -1272,7 +1276,8 @@ function chbThumbs(files) {
       var idx = imgs.length - 1;
       return '<div class="chb-thumb" onclick="chbXemGallery(\'' + gid + '\',' + idx + ')" title="' + chamEsc(f.name) + '">' +
         '<span class="idx">' + (idx + 1) + '</span>' +
-        '<img loading="lazy" src="https://drive.google.com/thumbnail?id=' + f.id + '&sz=w300" onerror="chbImgLoi(this)"></div>';
+        '<img loading="lazy" src="https://drive.google.com/thumbnail?id=' + f.id + '&sz=w300" onerror="chbImgLoi(this)">' +
+        '<button type="button" class="chb-annotate-btn" onclick="event.stopPropagation();chamMoVe(\'' + subId + '\',\'' + gid + '\',' + idx + ')">✎ Viết lên ảnh</button></div>';
     }
     return '<a class="chb-thumb file" href="' + f.link + '" target="_blank" title="' + chamEsc(f.name) + '">📄</a>';
   }).join('');
@@ -1442,6 +1447,92 @@ function chbXemUrl(url) {
   var fpv = document.getElementById('chbLbFooterPrev'), fnx = document.getElementById('chbLbFooterNext');
   if (fpv) fpv.style.display = 'none'; if (fnx) fnx.style.display = 'none';
   lb.style.display = 'flex';
+}
+
+/* ===== Viết trực tiếp lên ảnh bài nộp: canvas nền + lớp nét riêng ===== */
+var chamVeState = { subId:'', item:null, strokes:[], redo:[], current:null, tool:'pen', color:'#e11d48', width:6, loading:false };
+function chamVeEl() {
+  var modal = document.getElementById('chbDrawModal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'chbDrawModal'; modal.className = 'chb-draw-modal'; modal.setAttribute('data-vm-popup-position','native');
+  modal.innerHTML = '<div class="chb-draw-dialog" data-vm-popup-content onclick="event.stopPropagation()">' +
+    '<div class="chb-draw-head"><h2>✎ Viết trực tiếp lên ảnh học sinh</h2><button class="btn btn-ghost btn-sm" type="button" onclick="chamDongVe()">✕ Đóng</button></div>' +
+    '<div class="chb-draw-tools">' +
+      '<button class="btn btn-secondary btn-sm chb-draw-tool active" id="chbDrawPen" type="button" onclick="chamChonCongCu(\'pen\')">✎ Bút</button>' +
+      '<button class="btn btn-secondary btn-sm chb-draw-tool" id="chbDrawEraser" type="button" onclick="chamChonCongCu(\'eraser\')">⌫ Tẩy nét</button>' +
+      '<button class="chb-draw-color active" type="button" data-color="#e11d48" style="background:#e11d48" aria-label="Màu đỏ" onclick="chamChonMau(this)"></button>' +
+      '<button class="chb-draw-color" type="button" data-color="#2563eb" style="background:#2563eb" aria-label="Màu xanh" onclick="chamChonMau(this)"></button>' +
+      '<button class="chb-draw-color" type="button" data-color="#111827" style="background:#111827" aria-label="Màu đen" onclick="chamChonMau(this)"></button>' +
+      '<button class="chb-draw-color" type="button" data-color="#16a34a" style="background:#16a34a" aria-label="Màu xanh lá" onclick="chamChonMau(this)"></button>' +
+      '<label class="chb-draw-width">Độ dày <input id="chbDrawWidth" type="range" min="2" max="24" value="6" oninput="chamVeState.width=Number(this.value)"><b id="chbDrawWidthLabel">6</b></label>' +
+      '<button class="btn btn-secondary btn-sm" id="chbDrawUndo" type="button" onclick="chamVeUndo()" disabled>↶ Hoàn tác</button>' +
+      '<button class="btn btn-secondary btn-sm" id="chbDrawRedo" type="button" onclick="chamVeRedo()" disabled>↷ Làm lại</button>' +
+      '<button class="btn btn-ghost btn-sm" type="button" onclick="chamVeXoaHet()">Xóa mọi nét</button>' +
+    '</div>' +
+    '<div class="chb-draw-stage-wrap"><div class="chb-draw-stage" id="chbDrawStage"><canvas id="chbDrawBase"></canvas><canvas id="chbDrawInk"></canvas></div></div>' +
+    '<div class="chb-draw-foot"><small id="chbDrawStatus">Đang tải ảnh gốc…</small><div style="display:flex;gap:8px"><button class="btn btn-secondary" type="button" onclick="chamDongVe()">Hủy</button><button class="btn btn-primary" id="chbDrawSave" type="button" onclick="chamLuuAnhVe()">✓ Đính kèm bản sửa</button></div></div>' +
+  '</div>';
+  modal.addEventListener('click', chamDongVe);
+  document.body.appendChild(modal);
+  var ink = document.getElementById('chbDrawInk');
+  ink.addEventListener('pointerdown', chamVeBatDau);
+  ink.addEventListener('pointermove', chamVeDiChuyen);
+  ink.addEventListener('pointerup', chamVeKetThuc);
+  ink.addEventListener('pointercancel', chamVeKetThuc);
+  document.getElementById('chbDrawWidth').addEventListener('input', function(){ document.getElementById('chbDrawWidthLabel').textContent=this.value; });
+  document.addEventListener('keydown', function(e){
+    if (!document.getElementById('chbDrawModal') || !document.getElementById('chbDrawModal').classList.contains('open')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z') { e.preventDefault(); e.shiftKey ? chamVeRedo() : chamVeUndo(); }
+    else if (e.key==='Escape') chamDongVe();
+  });
+  return modal;
+}
+function chamVeCapNhatNut(){
+  var undo=$('chbDrawUndo'),redo=$('chbDrawRedo');
+  if(undo)undo.disabled=!chamVeState.strokes.length;if(redo)redo.disabled=!chamVeState.redo.length;
+}
+function chamChonCongCu(tool){
+  chamVeState.tool=tool;
+  $('chbDrawPen').classList.toggle('active',tool==='pen');$('chbDrawEraser').classList.toggle('active',tool==='eraser');
+}
+function chamChonMau(button){chamVeState.color=button.dataset.color;document.querySelectorAll('.chb-draw-color').forEach(function(x){x.classList.toggle('active',x===button);});chamChonCongCu('pen');}
+function chamVeDiem(event){var c=$('chbDrawInk'),r=c.getBoundingClientRect();return{x:(event.clientX-r.left)*c.width/r.width,y:(event.clientY-r.top)*c.height/r.height};}
+function chamVeBatDau(event){
+  if(chamVeState.loading||event.button>0)return;event.preventDefault();this.setPointerCapture(event.pointerId);
+  var p=chamVeDiem(event),scale=this.width/Math.max(1,this.getBoundingClientRect().width);
+  chamVeState.current={tool:chamVeState.tool,color:chamVeState.color,width:chamVeState.width*scale,points:[p]};chamVeState.redo=[];
+}
+function chamVeDiChuyen(event){if(!chamVeState.current)return;event.preventDefault();chamVeState.current.points.push(chamVeDiem(event));chamVeVeLai(true);}
+function chamVeKetThuc(event){if(!chamVeState.current)return;event.preventDefault();if(chamVeState.current.points.length===1)chamVeState.current.points.push(chamVeState.current.points[0]);chamVeState.strokes.push(chamVeState.current);chamVeState.current=null;chamVeVeLai(false);chamVeCapNhatNut();}
+function chamVeMotNet(ctx,stroke){
+  var pts=stroke.points;if(!pts||!pts.length)return;ctx.save();ctx.globalCompositeOperation=stroke.tool==='eraser'?'destination-out':'source-over';ctx.strokeStyle=stroke.color;ctx.fillStyle=stroke.color;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++){var a=pts[i-1],b=pts[i];ctx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);}ctx.stroke();ctx.restore();
+}
+function chamVeVeLai(includeCurrent){var c=$('chbDrawInk'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);chamVeState.strokes.forEach(function(s){chamVeMotNet(ctx,s);});if(includeCurrent&&chamVeState.current)chamVeMotNet(ctx,chamVeState.current);}
+function chamVeUndo(){if(!chamVeState.strokes.length)return;chamVeState.redo.push(chamVeState.strokes.pop());chamVeVeLai(false);chamVeCapNhatNut();}
+function chamVeRedo(){if(!chamVeState.redo.length)return;chamVeState.strokes.push(chamVeState.redo.pop());chamVeVeLai(false);chamVeCapNhatNut();}
+function chamVeXoaHet(){if(!chamVeState.strokes.length)return;if(!confirm('Xóa toàn bộ nét đã viết trên ảnh này?'))return;chamVeState.redo=chamVeState.strokes.splice(0);chamVeVeLai(false);chamVeCapNhatNut();}
+async function chamMoVe(subId,gid,index){
+  var gallery=(window._chbGalleries||{})[gid]||[],item=gallery[index];if(!item||!item.id)return;
+  if($('gradesummary-'+subId))batSuaCham(subId);
+  var modal=chamVeEl();modal.classList.add('open');document.documentElement.classList.add('vm-popup-open');chamVeState={subId:subId,item:item,strokes:[],redo:[],current:null,tool:'pen',color:'#e11d48',width:6,loading:true};chamChonCongCu('pen');chamVeCapNhatNut();
+  $('chbDrawStatus').textContent='Đang tải ảnh gốc an toàn…';$('chbDrawSave').disabled=true;
+  try{
+    var fd=new FormData();fd.append('kind','submission_file');fd.append('submission_id',subId);fd.append('file_id',item.id);
+    var blob=await vmGoiHamFormDataBlob('nop-bai',fd,{timeoutMs:90000});if(!(blob instanceof Blob))throw new Error('Máy chủ không trả về dữ liệu ảnh hợp lệ.');
+    var url=URL.createObjectURL(blob),img=new Image();await new Promise(function(resolve,reject){img.onload=resolve;img.onerror=function(){reject(new Error('Trình duyệt không đọc được định dạng ảnh này.'));};img.src=url;});URL.revokeObjectURL(url);
+    var maxSide=2400,ratio=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*ratio)),h=Math.max(1,Math.round(img.naturalHeight*ratio));
+    var base=$('chbDrawBase'),ink=$('chbDrawInk'),stage=$('chbDrawStage');base.width=ink.width=w;base.height=ink.height=h;stage.style.width=w+'px';stage.style.aspectRatio=w+' / '+h;base.style.width=ink.style.width='100%';base.style.height=ink.style.height='100%';base.getContext('2d').drawImage(img,0,0,w,h);chamVeVeLai(false);
+    chamVeState.loading=false;$('chbDrawStatus').textContent='Viết bằng chuột, cảm ứng hoặc bút điện tử · Ctrl/⌘+Z để hoàn tác.';$('chbDrawSave').disabled=false;
+  }catch(error){chamVeState.loading=false;$('chbDrawStatus').textContent='Không mở được ảnh: '+error.message;}
+}
+function chamDongVe(){var modal=$('chbDrawModal');if(!modal||!modal.classList.contains('open'))return;if(chamVeState.strokes.length&&!chamVeState.loading&&!confirm('Đóng và bỏ các nét chưa đính kèm?'))return;modal.classList.remove('open');document.documentElement.classList.remove('vm-popup-open');}
+async function chamLuuAnhVe(){
+  if(chamVeState.loading)return;if(!chamVeState.strokes.length){alert('Thầy chưa viết nét nào lên ảnh.');return;}
+  var btn=$('chbDrawSave');btn.disabled=true;btn.textContent='⏳ Đang tạo bản sửa…';
+  try{var base=$('chbDrawBase'),ink=$('chbDrawInk'),out=document.createElement('canvas');out.width=base.width;out.height=base.height;var ctx=out.getContext('2d');ctx.drawImage(base,0,0);ctx.drawImage(ink,0,0);var blob=await new Promise(function(resolve){out.toBlob(resolve,'image/jpeg',.94);});if(!blob)throw new Error('Không tạo được ảnh kết quả.');var original=String(chamVeState.item.name||'bai-lam').replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9À-ỹ_-]+/g,'-');var file=new File([blob],'bai-sua-'+original+'-'+Date.now()+'.jpg',{type:'image/jpeg'});chamThemFile(chamVeState.subId,[file]);var status=$('danchamtt-'+chamVeState.subId);if(status)status.textContent='✓ Đã đính kèm bản viết trực tiếp. Bấm “Lưu & trả bài” để gửi cho học sinh.';chamVeState.strokes=[];$('chbDrawModal').classList.remove('open');document.documentElement.classList.remove('vm-popup-open');}
+  catch(error){alert('Không tạo được bản sửa: '+error.message);btn.disabled=false;btn.textContent='✓ Đính kèm bản sửa';}
+  finally{if(btn){btn.disabled=false;btn.textContent='✓ Đính kèm bản sửa';}}
 }
 
 /* ===== Ảnh chấm trả (staging): dán / chọn, sắp thứ tự, đổi vị trí, xoá ===== */

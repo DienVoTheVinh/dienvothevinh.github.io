@@ -20,10 +20,10 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v24"), 'Service worker cache version must publish the role UX and portal release');
-expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v23'"), 'Service worker must detect the previous application shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '24'"), 'Open apps must not enter a refresh loop on shell v24');
-expect(worker.includes("target.searchParams.set('vm_refresh', '24'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("vinhmath-shell-v25"), 'Service worker cache version must publish the schedule and content release');
+expect(worker.includes("VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v24'"), 'Service worker must detect the previous application shell');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '25'"), 'Open apps must not enter a refresh loop on shell v25');
+expect(worker.includes("target.searchParams.set('vm_refresh', '25'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
 expect(worker.includes("'/js/role-home.js'"), 'Role-focused home client must be available offline after installation');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
@@ -144,7 +144,7 @@ for (const file of htmlFiles) {
     expect(sharedVersion && Number(sharedVersion[1]) >= 7.9, `${file}: stale shared JS version`);
   }
   if (html.includes('js/menu-v5.js')) {
-    expect(html.includes('js/menu-v5.js?v=8.4'), `${file}: stale shared menu version`);
+    expect(html.includes('js/menu-v5.js?v=8.5'), `${file}: stale shared menu version`);
   }
 }
 
