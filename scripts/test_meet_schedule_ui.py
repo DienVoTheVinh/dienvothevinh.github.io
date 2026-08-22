@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +24,9 @@ for page, name in ((class_page, "lớp học"), (online, "lớp online")):
     require(page, "vmChonBuoiMeetTheoGio(todayRows", f"Trang {name} chưa chọn Meet theo giờ")
     require(page, "vmLichDienRaNgay", f"Trang {name} chưa lọc đúng ngày hiệu lực")
     require(page, "end_time, meet_link", f"Trang {name} chưa tải giờ kết thúc và link từng ca")
-    require(page, "js/vinhmath.js?v=8.4", f"Trang {name} chưa làm mới bộ nhớ đệm")
+    version = re.search(r"js/vinhmath\.js\?v=([0-9.]+)", page)
+    if not version or float(version.group(1)) < 8.4:
+        raise AssertionError(f"Trang {name} chưa làm mới bộ nhớ đệm")
     if "todayRows.find(function (s) { return s.meet_link; })" in page:
         raise AssertionError(f"Trang {name} vẫn có thể lấy link của ca khác trong cùng ngày")
 require(schedule, "s.meet_link || meetLinkGlobal", "Thời khóa biểu vẫn dùng một link chung cho mọi ca")

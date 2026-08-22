@@ -59,14 +59,8 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
       { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
       { type: 'link', path: 'luyen-de', label: 'Luyện tập' },
-      { type: 'link', path: 'ca-nhan', label: 'Kết quả' },
-      { type: 'dropdown', label: 'Thêm ▾', items: [
-        { path: 'tai-lieu', label: 'Tài liệu' },
-        { path: 'lich-hoc', label: 'Lịch học' },
-        { path: 'goc-tu-hoc', label: 'Góc tự học' },
-        { path: 'bang-vang', label: 'Bảng vàng' },
-        { path: 'blog', label: 'Blog' }
-      ] }
+      { type: 'link', path: 'ket-qua', label: 'Kết quả' },
+      { type: 'link', path: 'ca-nhan', label: 'Trang cá nhân' }
     ];
   }
 
@@ -168,11 +162,20 @@ function apDungLogoBadge(role) {
     damBaoNutMenuMobile();
   }
   try {
+    if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+      document.body.classList.add('vm-authenticated', 'vm-role-student');
+      apDungMenu('student', null);
+      apDungLogoBadge('student');
+      napDongHoTuHoc();
+      return;
+    }
     if (typeof daKetNoi !== 'function' || !daKetNoi()) return;
     var s = await sb.auth.getSession();
     if (!s.data.session) return;
     var r = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
     if (r.data) {
+      document.body.classList.add('vm-authenticated');
+      document.body.classList.add('vm-role-' + (r.data.role || 'student'));
       var portalContext = null;
       try {
         var pm = await sb.from('exam_portal_members')

@@ -356,13 +356,21 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
       var obs = new MutationObserver(function (muts) {
         for (var i = 0; i < muts.length; i++) {
           var m = muts[i];
+          // Sau dialog.close(), UA đổi position từ fixed về absolute nên
+          // laOverlayFull() không còn nhận diện được chính phần tử cần gỡ.
+          if (m.type === 'attributes' && m.attributeName === 'open' && m.target.tagName === 'DIALOG' && !m.target.hasAttribute('open')) {
+            boPopupMo(m.target);
+            continue;
+          }
           quetLen(m.target);
           for (var j = 0; m.addedNodes && j < m.addedNodes.length; j++) quetThem(m.addedNodes[j]);
         }
         donPopupDaNgatKetNoi();
         capNhatKhoaCuon();
       });
-      obs.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], subtree: true, childList: true });
+      // Native <dialog> đóng/mở bằng thuộc tính `open`; phải quan sát thuộc tính
+      // này để gỡ vm-popup-open và trả lại cuộn trang ngay khi dialog.close().
+      obs.observe(document.body, { attributes: true, attributeFilter: ['style', 'class', 'open'], subtree: true, childList: true });
     } catch (e) {}
   }
 
@@ -3301,17 +3309,20 @@ function layEmojiGiaoVien(fullName) {
 
   function vmLayNutCaiDat() {
     var btn = document.getElementById('vmInstallBtn');
-    if (btn) return btn;
-    var navlinks = document.querySelector('.topbar .navlinks');
-    if (!navlinks) return null;
-    btn = document.createElement('button');
-    btn.id = 'vmInstallBtn';
-    btn.type = 'button';
-    btn.className = 'vm-install-btn';
-    btn.setAttribute('aria-label', 'Cài VinhMath như ứng dụng');
-    btn.innerHTML = '<span class="vm-install-icon" aria-hidden="true">⇩</span><span class="vm-install-label">Cài ứng dụng</span>';
-    btn.addEventListener('click', vmBatDauCaiPwa);
-    navlinks.appendChild(btn);
+    var themeBtn = document.getElementById('themeBtn');
+    var tools = themeBtn && themeBtn.parentElement;
+    if (!tools) return btn;
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'vmInstallBtn';
+      btn.type = 'button';
+      btn.className = 'vm-install-btn';
+      btn.setAttribute('aria-label', 'Cài VinhMath như ứng dụng');
+      btn.title = 'Cài VinhMath';
+      btn.innerHTML = '<span class="vm-install-icon" aria-hidden="true">⇩</span><span class="vm-install-label">Cài ứng dụng</span>';
+      btn.addEventListener('click', vmBatDauCaiPwa);
+    }
+    if (btn.parentElement !== tools || btn.nextElementSibling !== themeBtn) tools.insertBefore(btn, themeBtn);
     return btn;
   }
 

@@ -13,7 +13,7 @@ const compileInline = (file) => {
   return html;
 };
 
-for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/exam-portal.js', 'js/portal-classroom.js', 'js/role-home.js']) compile(file);
+for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/exam-portal.js', 'js/portal-classroom.js', 'js/role-home.js', 'js/student-results.js']) compile(file);
 const login = compileInline('dang-nhap.html');
 const classAdmin = compileInline('quan-tri-lop.html');
 const exam = compileInline('luyen-de.html');
@@ -36,7 +36,7 @@ const roleHome = read('js/role-home.js');
 
 expect(menu.includes("path: 'trang-chu', label: 'Hôm nay'") && menu.includes("path: 'quan-tri', label: 'Quản trị'"), 'Role navigation is not task-focused');
 expect(hub.includes('Trung tâm quản trị') && hub.includes('quan-tri-portal-thi'), 'Admin tools are not grouped in one hub');
-expect(roleHome.includes('Việc cần ưu tiên') && roleHome.includes('Hôm nay em học gì?'), 'Teacher/student home priorities are incomplete');
+expect(roleHome.includes('Việc cần ưu tiên') && roleHome.includes('Tổng quan hôm nay'), 'Teacher/student home priorities are incomplete');
 expect(classAdmin.includes("localStorage.getItem('vm-admin-active-class-id')") && classAdmin.includes("dsLop[0] && dsLop[0].id"), 'Class manager must select a valid class immediately');
 expect(classAdmin.includes("currentUrl.searchParams.set('tab', tab)"), 'Class tab state must survive reloads');
 expect(shared.includes('/@hs$/') && shared.includes('/@(hs|gv)[a-z0-9]{2,20}$/') && shared.includes('/@hs\\.[a-z0-9]+(?:-[a-z0-9]+)*$/') && login.includes('vmDichDangNhap'), 'Default, compact student/teacher and legacy login routing is missing');

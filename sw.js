@@ -1,17 +1,19 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v29';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v28';
+const VM_CACHE = 'vinhmath-shell-v30';
+const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v29';
 const VM_SHELL = [
   '/',
   '/index.html',
   '/dang-nhap.html',
   '/thi.html',
+  '/ket-qua.html',
   '/offline.html',
   '/manifest.webmanifest',
   '/css/tokens.css',
   '/css/vinhmath.css',
   '/css/exam-portal.css',
   '/css/role-home.css',
+  '/css/student-experience.css',
   '/js/config.js',
   '/js/vinhmath.js',
   '/js/menu-v5.js',
@@ -19,6 +21,7 @@ const VM_SHELL = [
   '/js/portal-classroom.js',
   '/js/latex-view.js',
   '/js/role-home.js',
+  '/js/student-results.js',
   '/js/tex-environments.js',
   '/js/push-notifications.js',
   '/icons/vinhmath-192.png',
@@ -57,8 +60,8 @@ self.addEventListener('activate', function (event) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '29') return null;
-                target.searchParams.set('vm_refresh', '29');
+                if (target.searchParams.get('vm_refresh') === '30') return null;
+                target.searchParams.set('vm_refresh', '30');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

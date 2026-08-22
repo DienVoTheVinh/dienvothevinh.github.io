@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
+<link rel="stylesheet" href="css/student-experience.css?v=2">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -238,6 +239,25 @@
       </select>
     </div>
   </div>
+
+  <section id="studentPersonalHub" class="student-personal-hub" hidden aria-labelledby="studentPersonalHubTitle">
+    <div class="student-personal-hub-head">
+      <div>
+        <div class="sec-label">Không gian của em</div>
+        <h2 id="studentPersonalHubTitle">Mọi công cụ cá nhân ở một nơi</h2>
+        <p>Lịch học, tài liệu, tự học và thành tích được gom gọn để em không phải tìm trong nhiều menu.</p>
+      </div>
+      <a class="btn btn-primary btn-sm" href="ket-qua">Xem bài đã chấm →</a>
+    </div>
+    <div class="student-personal-links">
+      <a href="lich-hoc"><span>📅</span><b>Lịch học</b><small>Buổi học và phòng Meet sắp tới</small></a>
+      <a href="tai-lieu"><span>📂</span><b>Tài liệu</b><small>Tài liệu chung và của lớp</small></a>
+      <a href="goc-tu-hoc"><span>🧠</span><b>Góc tự học</b><small>Kế hoạch và nhật ký học tập</small></a>
+      <a href="bang-vang"><span>🏆</span><b>Bảng vàng</b><small>Thành tích và vinh danh</small></a>
+      <a href="blog"><span>📰</span><b>Blog</b><small>Bài viết và thông báo VinhMath</small></a>
+      <a href="ket-qua"><span>✅</span><b>Kết quả</b><small>Bài giáo viên đã chấm và sửa</small></a>
+    </div>
+  </section>
 
   <!-- Thiết kế hàng ngang điểm trạng thái (Rank) nổi bật -->
   <div class="profile-grid">
@@ -503,8 +523,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=8.5"></script>
+<script src="js/vinhmath.js?v=8.5"></script>
+<script src="js/menu-v5.js?v=8.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 var profileData = null;
@@ -647,6 +667,15 @@ function hienThiProfileAvatar(avatarUrl, fullName) {
     });
   } else {
     profileData = hoSo;
+  }
+
+  if (!targetStudentId && profileData.role === 'student') {
+    var personalHub = $('studentPersonalHub');
+    if (personalHub) personalHub.hidden = false;
+    var headLabel = document.querySelector('.head .sec-label');
+    var headDescription = document.querySelector('.head > p');
+    if (headLabel) headLabel.textContent = 'Trang cá nhân';
+    if (headDescription) headDescription.textContent = 'Hồ sơ, học lực và các công cụ cá nhân của em.';
   }
   
   // Điền dữ liệu vào form cài đặt

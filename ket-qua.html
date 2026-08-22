@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e5a500">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>Kết quả — VinhMath</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css?v=7.4">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
+  <link rel="stylesheet" href="css/student-experience.css?v=2">
+</head>
+<body class="student-results-page">
+  <div class="topbar">
+    <div class="nav">
+      <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display:inline-flex;align-items:center"><span class="brand-vinh" style="color:var(--accent)!important">Vinh</span><span class="brand-math" style="color:var(--topbar-text,#fff)!important">Math</span></span> <small>· Lớp Toán Thầy Vinh</small></a>
+      <nav class="navlinks" aria-label="Điều hướng chính"></nav>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()" aria-label="Đổi chế độ sáng tối">🌙</button>
+        <button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <header class="student-results-head">
+      <div>
+        <div class="sec-label">Phản hồi từ giáo viên</div>
+        <h1>Bài giáo viên đã chấm</h1>
+        <p>Xem điểm, lời phê và file giáo viên đã viết/sửa trực tiếp trên bài của em.</p>
+      </div>
+      <div class="student-results-count"><strong id="studentResultsCount">—</strong><small>bài đã chấm</small></div>
+    </header>
+
+    <div class="student-results-toolbar" role="group" aria-label="Lọc kết quả">
+      <button class="student-result-filter active" type="button" data-filter="all">Tất cả</button>
+      <button class="student-result-filter" type="button" data-filter="test">Bài kiểm tra</button>
+      <button class="student-result-filter" type="button" data-filter="homework">Bài tập về nhà</button>
+      <button class="student-result-filter" type="button" data-filter="corrected">Có file giáo viên sửa</button>
+    </div>
+
+    <section id="studentResultsList" class="student-results-list" aria-live="polite">
+      <div class="student-results-empty"><span>⏳</span><b>Đang tải bài đã chấm…</b></div>
+    </section>
+  </main>
+
+  <dialog id="studentResultDialog" class="student-result-dialog" aria-labelledby="studentResultDialogTitle">
+    <div class="student-result-dialog-inner" id="studentResultDialogInner"></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vinhmath.js?v=8.5"></script>
+  <script src="js/menu-v5.js?v=8.6"></script>
+  <script src="js/student-results.js?v=1"></script>
+</body>
+</html>
