@@ -610,6 +610,8 @@ Thể tích bằng $3^3=27$.}
     el('kpiAttempts').textContent=attempts.count==null?'—':attempts.count;
     el('exLatex').addEventListener('input',function(){state.templateKey='custom';schedulePreview();});
     el('exTitle').addEventListener('input',schedulePreview);el('exEssayPrompt').addEventListener('input',schedulePreview);
+    var requestedTemplate=new URLSearchParams(location.search).get('template');
+    if(requestedTemplate&&TEMPLATES[requestedTemplate])applyTemplate(requestedTemplate);
     renderPreview(false);
   }
 

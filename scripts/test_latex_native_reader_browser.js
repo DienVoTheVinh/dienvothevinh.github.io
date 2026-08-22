@@ -158,7 +158,7 @@ Tính $1+2+3$.
     if (!/\.vm-tex-reader\s*\{[\s\S]*?flex:0 0 auto;[\s\S]*?overflow:visible;/.test(inlineCss)) throw new Error('Long reader content can still be clipped by flex sizing');
     if (lesson.includes('id="btnMaxContent"')) throw new Error('Legacy transparent content fullscreen button still exists');
     if (!lesson.includes('vmReaderLoadingHTML') || !lesson.includes('Đang dựng nội dung lý thuyết')) throw new Error('Visible reader build state is missing');
-    if (!lesson.includes("renderPDFWithJS(buildPdfUrl(b.docPath), pdfBox)")) throw new Error('PDF-only homework does not use the web viewer');
+    if (!/var\s+pdfUrl\s*=\s*buildPdfUrl\(b\.docPath\);[\s\S]*?renderPDFWithJS\(pdfUrl,\s*pdfBox\)/.test(lesson)) throw new Error('PDF-only homework does not use the web viewer');
     console.log('PASS native LaTeX reader, upload, solution safety, PDF fallback, desktop and mobile checks');
   } finally {
     await browser.close();

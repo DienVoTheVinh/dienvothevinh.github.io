@@ -122,9 +122,9 @@ function between(source, from, to) {
       toolbarVisible: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display !== 'none',
       toolbarDisplay: getComputedStyle(document.querySelector('.vm-tex-toolbar-toggle')).display,
       toolbarExpanded: document.querySelector('.vm-tex-toolbar-toggle').getAttribute('aria-expanded'),
-      themeVisible: getComputedStyle(document.querySelector('.vm-tex-theme-toggle')).display === 'grid',
+      themeVisible: document.querySelector('.vm-tex-theme-toggle').offsetParent !== null,
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || !state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
     await page.click('.vm-tex-toolbar-toggle');
     state = await page.evaluate(() => ({
       open: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-tools-open'),
@@ -145,6 +145,7 @@ function between(source, from, to) {
     });
     if (!state.visible || !state.insideFullscreen || !state.aboveFullscreen || !state.toolsCollapsed) throw new Error(`PDF popup escaped fullscreen reader: ${JSON.stringify(state)}`);
     await page.evaluate(() => vmDongPdfExport());
+    await page.click('.vm-tex-toolbar-toggle');
     await page.click('.vm-tex-theme-toggle');
     state = await page.evaluate(() => ({
       theme: document.documentElement.getAttribute('data-theme'),
@@ -157,7 +158,6 @@ function between(source, from, to) {
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
     }
 
-    await page.click('.vm-tex-toolbar-toggle');
     await page.click('[data-vm-fullscreen-btn="reader-test"]');
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
