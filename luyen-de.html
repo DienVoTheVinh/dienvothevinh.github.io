@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
+<link rel="stylesheet" href="css/exam-portal.css?v=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -30,6 +31,11 @@
 .exam-meta span { min-width: 0; line-height: 1.45; }
 .exam-card-action { min-height: 42px; justify-content: center; text-align: center; white-space: normal; line-height: 1.3; }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
+.portal-exam-mode #viewMain > .topbar .navlinks { display: none !important; }
+.portal-exam-mode #viewMain > .topbar .logo small { display: none; }
+.portal-exam-mode #viewMain > .topbar .nav { max-width: 1180px; }
+.portal-exam-back { display:none; }
+.portal-exam-mode .portal-exam-back { display:inline-flex; margin-bottom:16px; }
 
 /* Dải chọn lớp của học sinh: cuộn ngang độc lập trên màn hình hẹp. */
 #tabLopHocSinh {
@@ -234,6 +240,7 @@
 
   <div class="wrap">
     <div class="head">
+      <a id="portalExamBack" class="btn btn-secondary btn-sm portal-exam-back" href="thi">← Về cổng thi</a>
       <div class="sec-label" id="labelKhuVuc">Khu vực kiểm tra</div>
       <h1>Luyện đề & Thi thử</h1>
       <p style="margin-top:4px" id="subHeadTieuDe">Nơi tổng hợp đề thi thử chất lượng cao, chấm điểm trắc nghiệm trực tuyến.</p>
@@ -515,8 +522,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.2"></script>
-<script src="js/menu-v5.js?v=8.2"></script>
+<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/menu-v5.js?v=8.4"></script>
 <script src="js/latex-view.js?v=10.8"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -529,6 +536,45 @@ var currentAttempt = null;
 var timerInterval = null;
 var timeLeftSeconds = 0;
 var canDownloadSolutionPdf = false;
+var vmPortalSlug = '';
+var vmPortalMembership = null;
+var vmPortalExamIds = [];
+
+async function vmKhoiTaoCheDoPortal() {
+  vmPortalSlug = new URLSearchParams(location.search).get('portal') || '';
+  if (!vmPortalSlug) return false;
+  var membership = await sb.from('exam_portal_members')
+    .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active,brand:brand_templates(' + VM_BRAND_COLUMNS + '))')
+    .eq('user_id', studentInfo.id)
+    .eq('portal.slug', vmPortalSlug)
+    .maybeSingle();
+  if ((!membership.data || !membership.data.portal) && studentInfo.role === 'admin') {
+    var preview = await sb.from('exam_portals')
+      .select('id,slug,name,short_name,is_active,brand:brand_templates(' + VM_BRAND_COLUMNS + ')')
+      .eq('slug', vmPortalSlug).maybeSingle();
+    if (preview.data) membership.data = { member_role: 'owner', portal_only: false, portal: preview.data };
+  }
+  if (!membership.data || !membership.data.portal || !membership.data.portal.is_active) {
+    location.replace('thi?portal=' + encodeURIComponent(vmPortalSlug));
+    return true;
+  }
+  vmPortalMembership = membership.data;
+  var assigned = await sb.from('exam_portal_exams').select('exam_id')
+    .eq('portal_id', vmPortalMembership.portal.id)
+    .order('sort');
+  vmPortalExamIds = (assigned.data || []).map(function(item) { return item.exam_id; });
+  document.body.classList.add('portal-exam-mode');
+  document.title = 'Thi thử — ' + vmPortalMembership.portal.name;
+  $('labelKhuVuc').textContent = vmPortalMembership.portal.short_name || 'Cổng thi đối tác';
+  document.querySelector('.head h1').textContent = vmPortalMembership.portal.name;
+  $('subHeadTieuDe').textContent = 'Chỉ hiển thị các kỳ thi được đơn vị của em phân công.';
+  $('portalExamBack').href = 'thi?portal=' + encodeURIComponent(vmPortalSlug);
+  var logo = document.querySelector('#viewMain .logo');
+  if (logo) { logo.href = 'thi?portal=' + encodeURIComponent(vmPortalSlug); logo.querySelector('span').textContent = vmPortalMembership.portal.short_name || vmPortalMembership.portal.name; }
+  var brand = vmPortalMembership.portal.brand;
+  if (brand && typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(brand);
+  return true;
+}
 
 function kiemTraThoiGianDe(e) {
   var now = new Date();
@@ -589,11 +635,12 @@ function taoDongCham(n) {
   
   studentInfo = await yeuCauDangNhap();
   if (!studentInfo) return;
+  var portalMode = await vmKhoiTaoCheDoPortal();
   
   var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
   var dsHocSinhLop = studentInfo.class_students || [];
   
-  if (dsHocSinhLop.length === 0 && !isStaff) {
+  if (dsHocSinhLop.length === 0 && !isStaff && !portalMode) {
     $('coLopContainer').style.display = 'none';
     $('chuaCoLopContainer').style.display = 'block';
     $('labelKhuVuc').textContent = 'Luyện đề & Thi thử';
@@ -627,7 +674,9 @@ function taoDongCham(n) {
     });
   }
   
-  if (isStaff) {
+  if (portalMode) {
+    await taiDanhSachDe([]);
+  } else if (isStaff) {
     await taiDanhSachDe(null);
   } else {
     await taiDanhSachDe(selectedClassId ? [selectedClassId] : []);
@@ -637,6 +686,10 @@ function taoDongCham(n) {
   var params = new URLSearchParams(window.location.search);
   var autoExamId = params.get('exam_id');
   if (autoExamId) {
+    if (portalMode && vmPortalExamIds.indexOf(autoExamId) === -1) {
+      $('dsDeThi').innerHTML = '<div class="empty card">Đề này không thuộc cổng thi của em.</div>';
+      return;
+    }
     var exExists = listExams.some(function (e) { return e.id === autoExamId; });
     if (!exExists) {
       try {
@@ -786,8 +839,15 @@ async function taiDanhSachDe(classIds) {
     var query = sb.from('exams')
       .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, allow_solution_pdf, exam_questions(count)')
       .eq('published', true);
-      
-    if (!isStaff) {
+
+    if (vmPortalSlug) {
+      if (!vmPortalExamIds.length) {
+        listExams = [];
+        $('dsDeThi').innerHTML = '<div class="empty card">Đơn vị chưa giao kỳ thi nào. Em quay lại sau nhé!</div>';
+        return;
+      }
+      query = query.in('id', vmPortalExamIds);
+    } else if (!isStaff) {
       if (classIds && classIds.length > 0) {
         query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
       } else {

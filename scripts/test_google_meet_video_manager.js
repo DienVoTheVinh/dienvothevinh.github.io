@@ -28,7 +28,7 @@ const checks = [
   [callback.includes('encryptSecret'), 'Refresh token phải được mã hóa'],
   [migration.includes('revoke all on public.google_drive_connections'), 'Bảng token phải bị chặn khỏi client'],
   [migration.includes('enable row level security'), 'Các bảng phải bật RLS'],
-  [menu.includes("path: 'quan-tri-video-meet'") && menu.includes("label: 'Video Google Meet'"), 'Video Meet phải nằm trong menu Quản trị'],
+  [menu.includes("path: 'quan-tri', label: 'Quản trị'") && read('quan-tri.html').includes('href="quan-tri-video-meet"'), 'Video Meet phải nằm trong Trung tâm Quản trị'],
   [!home.includes('vmVideoShortcut') && !home.includes('staffChecklistContainer'), 'Trang chủ không còn shortcut và khối lưu ý cũ'],
   [page.includes('meetCalendar') && page.includes('gradeFilter'), 'Trang video phải có lịch và bộ lọc khối'],
   [page.includes('togglePreview') && page.includes('/preview'), 'Video chỉ tải khung xem nhanh khi người dùng yêu cầu'],

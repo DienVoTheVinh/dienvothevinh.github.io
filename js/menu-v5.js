@@ -5,42 +5,46 @@
 // Muốn thêm/bớt mục menu: sửa ĐÚNG MỘT chỗ là file này.
 // ============================================================
 
-function apDungMenu(role) {
+function apDungMenu(role, portalContext) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
   var trang = (location.pathname.split('/').pop() || 'index').split('?')[0];
 
   var muc;
-  if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
-    // ----- MENU CỦA THẦY / TRỢ GIẢNG (Gom nhóm Quản trị) -----
+  if (portalContext && portalContext.portal_only) {
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
-      { type: 'link', path: 'blog', label: 'Blog' },
-      {
-        type: 'dropdown',
-        label: 'Quản trị ▾',
-        items: [
-          { path: 'quan-tri-lop', label: 'Lớp học' },
-          (role === 'admin' ? { path: 'quan-tri-thuong-hieu', label: 'Tạo thương hiệu' } : null),
-          (role === 'admin' ? { path: 'quan-tri-thuong', label: 'Phần thưởng' } : null),
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-tai-lieu', label: 'Soạn tài liệu' } : null),
-          (role === 'admin' ? { path: 'quan-tri-tex', label: 'Môi trường TeX' } : null),
-          (role === 'admin' ? { path: 'viet-blog', label: 'Viết blog' } : null),
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-bai-hoc', label: 'Khóa bài giảng' } : null),
-          { path: 'quan-tri-hoc-sinh', label: role === 'admin' ? 'Quản lý tài khoản' : 'Học sinh' },
-          (role === 'admin' ? { path: 'quan-tri-tai-khoan', label: 'Tạo tài khoản' } : null),
-          { path: 'quan-tri-lich', label: 'Lịch học' },
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-video-meet', label: 'Video Google Meet' } : null),
-          { path: 'quan-tri-de', label: 'Luyện đề' },
-          { path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-          (role === 'admin' || role === 'teacher' ? { path: 'quan-tri-buoi-day', label: 'Giám sát buổi' } : null),
-          (role === 'admin' ? { path: 'quan-tri-truy-cap', label: 'Giám sát' } : null)
-        ].filter(Boolean)
-      },
-      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
-      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
+      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Kỳ thi' },
+      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#results', label: 'Kết quả' }
+    ];
+    if (portalContext.member_role === 'owner' || portalContext.member_role === 'manager') {
+      muc.push({ type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#manage', label: 'Quản lý' });
+    }
+  } else if (role === 'admin') {
+    // Admin dùng khu điều hành riêng; thanh đầu chỉ giữ các nhiệm vụ hằng ngày.
+    muc = [
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp học' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+      { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'quan-tri', label: 'Quản trị' }
+    ];
+  } else if (role === 'teacher') {
+    muc = [
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+      { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
-    ].filter(Boolean);
+    ];
+  } else if (role === 'assistant') {
+    muc = [
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp được giao' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
+      { type: 'link', path: 'quan-tri-hoc-sinh', label: 'Học sinh' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+    ];
   } else if (role === 'parent') {
     // ----- MENU CỦA PHỤ HUYNH -----
     muc = [
@@ -51,28 +55,25 @@ function apDungMenu(role) {
   } else {
     // ----- MENU CỦA HỌC SINH -----
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Trang chủ' },
-      {
-        type: 'dropdown',
-        label: 'Học tập ▾',
-        items: [
-          { path: 'lop-hoc', label: 'Lớp học' },
-          { path: 'luyen-de', label: 'Luyện đề' },
-          { path: 'tai-lieu', label: 'Tài liệu' },
-          { path: 'lich-hoc', label: 'Lịch học' }
-        ]
-      },
-      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
-      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' },
-      { type: 'link', path: 'blog', label: 'Blog' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
+      { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
+      { type: 'link', path: 'luyen-de', label: 'Luyện tập' },
+      { type: 'link', path: 'ca-nhan', label: 'Kết quả' },
+      { type: 'dropdown', label: 'Thêm ▾', items: [
+        { path: 'tai-lieu', label: 'Tài liệu' },
+        { path: 'lich-hoc', label: 'Lịch học' },
+        { path: 'goc-tu-hoc', label: 'Góc tự học' },
+        { path: 'bang-vang', label: 'Bảng vàng' },
+        { path: 'blog', label: 'Blog' }
+      ] }
     ];
   }
 
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
       var activeClass = '';
-      if (m.path === trang) {
+      var menuPage = m.path.split('?')[0].split('#')[0];
+      if (menuPage === trang) {
         activeClass = ' class="active"';
       } else if (m.path === 'lop-hoc' && trang === 'bai-hoc') {
         activeClass = ' class="active"';
@@ -86,7 +87,8 @@ function apDungMenu(role) {
       var dropdownActive = false;
       var itemsHtml = m.items.map(function(sub) {
         var isSubActive = false;
-        if (sub.path === trang) {
+        var subPage = sub.path.split('?')[0].split('#')[0];
+        if (subPage === trang) {
           isSubActive = true;
         } else if (sub.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
           isSubActive = true;
@@ -170,7 +172,26 @@ function apDungLogoBadge(role) {
     if (!s.data.session) return;
     var r = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
     if (r.data) {
-      apDungMenu(r.data.role);
+      var portalContext = null;
+      try {
+        var pm = await sb.from('exam_portal_members')
+          .select('member_role, portal_only, portal:exam_portals(id,slug,name,short_name,is_active)')
+          .eq('user_id', s.data.session.user.id)
+          .eq('portal_only', true)
+          .limit(1)
+          .maybeSingle();
+        if (pm.data && pm.data.portal && pm.data.portal.is_active) portalContext = pm.data;
+      } catch (portalError) { /* migration chưa có: giữ điều hướng cũ */ }
+      window.VM_PORTAL_CONTEXT = portalContext;
+      if (portalContext) {
+        var currentPage = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+        var allowed = ['thi', 'luyen-de', 'dang-nhap'];
+        if (allowed.indexOf(currentPage) === -1) {
+          location.replace('thi?portal=' + encodeURIComponent(portalContext.portal.slug));
+          return;
+        }
+      }
+      apDungMenu(r.data.role, portalContext);
       apDungLogoBadge(r.data.role);
     }
     khoiDongChuong(s.data.session.user.id);

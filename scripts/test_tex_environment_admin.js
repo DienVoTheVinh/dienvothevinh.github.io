@@ -24,7 +24,7 @@ ok(reader.includes('vmDanhSachTenMoiTruongTex'), 'reader must discover configure
 ok(reader.includes('data-vm-env'), 'reader output must carry the environment style hook');
 ok(lesson.includes('await vmTaiMoiTruongTex()'), 'lesson must load published environment definitions');
 ok(lesson.includes('vmChenPreambleMoiTruongTex(trimmed)'), 'complete TeX documents must receive the published PDF preamble');
-ok(menu.includes("path: 'quan-tri-tex'"), 'admin menu must link to the TeX manager');
+ok(menu.includes("path: 'quan-tri', label: 'Quản trị'") && read('quan-tri.html').includes('href="quan-tri-tex"'), 'admin hub must link to the TeX manager');
 ok(admin.includes("profile.role!=='admin'"), 'admin page must reject non-admin profiles');
 ok(admin.includes("sb.rpc('publish_tex_environment'"), 'publishing must use the atomic RPC');
 ok(admin.includes('restore_tex_environment_version'), 'version restore must be available');
