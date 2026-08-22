@@ -429,7 +429,9 @@ body.vm-video-locked { overflow:hidden !important; }
 .vm-reader-loading-line { position:relative; width:min(290px,82%); height:5px; margin:18px auto 0; overflow:hidden; border-radius:99px; background:var(--line); }
 .vm-reader-loading-line::after { content:""; position:absolute; inset:0 auto 0 0; width:42%; border-radius:inherit; background:linear-gradient(90deg,var(--accent),#f5bd3a); animation:vmReaderLoading 1.15s ease-in-out infinite alternate; }
 @keyframes vmReaderLoading { from { transform:translateX(-20%); } to { transform:translateX(160%); } }
-[data-reader-key].vm-tex-fullscreen-active { position:fixed !important; inset:0 !important; z-index:2147483000 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; background:var(--bg); }
+[data-reader-key].vm-tex-fullscreen-active,
+[data-reader-key]:fullscreen,
+[data-reader-key]:-webkit-full-screen { position:fixed !important; inset:0 !important; z-index:2147483000 !important; width:100vw !important; height:100vh !important; height:100dvh !important; max-width:none !important; min-width:0 !important; margin:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; flex:1 1 auto !important; background:var(--bg); }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions,[data-reader-key]:fullscreen .vm-tex-actions {
   position:absolute; top:max(8px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); z-index:4;
   width:auto; max-width:calc(100% - 16px); padding:0; border:0; background:transparent; box-shadow:none;
@@ -2208,6 +2210,14 @@ function vmThoatReaderFullscreen(shell) {
 document.addEventListener('fullscreenchange', function () {
   document.querySelectorAll('[data-reader-key]').forEach(function (shell) {
     var active = document.fullscreenElement === shell || shell.classList.contains('vm-tex-fullscreen-active');
+    vmCapNhatNutFullscreen(shell, active);
+    if (active) vmDatTrangThaiCongCuReader(shell, false);
+    else shell.classList.remove('vm-tex-tools-open');
+  });
+});
+document.addEventListener('webkitfullscreenchange', function () {
+  document.querySelectorAll('[data-reader-key]').forEach(function (shell) {
+    var active = document.webkitFullscreenElement === shell || shell.classList.contains('vm-tex-fullscreen-active');
     vmCapNhatNutFullscreen(shell, active);
     if (active) vmDatTrangThaiCongCuReader(shell, false);
     else shell.classList.remove('vm-tex-tools-open');

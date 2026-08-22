@@ -33,38 +33,25 @@
     return (profile.class_students || []).map(function (item) { return item.class_id; }).filter(Boolean);
   }
 
-  function activeClass(profile) {
-    var memberships = profile.class_students || [];
-    var saved = localStorage.getItem('vm-active-class-id');
-    return memberships.find(function (item) { return item.class_id === saved; }) || memberships[0] || null;
-  }
-
   async function loadStudentSnapshot(profile) {
     var ids = classIds(profile);
     var gradedPromise = count('submissions', function (query) {
       return query.eq('student_id', profile.id).eq('status', 'graded');
     });
-    if (!ids.length) return {lessons:[], posts:[], graded:await gradedPromise};
+    if (!ids.length) return {lessons:[], exams:[], posts:[], graded:await gradedPromise};
     var results = await Promise.all([
       sb.from('lessons')
-        .select('id,title,class_id,created_at,topics(name)')
-        .in('class_id', ids)
-        .eq('published', true)
-        .order('created_at', {ascending:false})
-        .limit(6),
+        .select('id,title,class_id,created_at,homework_text,homework_images,homework_document_id,homework_latex_content,homework_due,test_document_id,test_latex_content,test_active,test_started_at,test_deadline,linked_exam_id,linked_exam_ids,topics(name)')
+        .in('class_id', ids).eq('published', true).order('created_at', {ascending:false}).limit(14),
+      sb.from('exams')
+        .select('id,title,class_id,created_at,opens_at,closes_at,de_type')
+        .in('class_id', ids).eq('published', true).order('created_at', {ascending:false}).limit(10),
       sb.from('class_posts')
         .select('id,title,class_id,created_at')
-        .in('class_id', ids)
-        .order('pinned', {ascending:false})
-        .order('created_at', {ascending:false})
-        .limit(3),
+        .in('class_id', ids).order('pinned', {ascending:false}).order('created_at', {ascending:false}).limit(3),
       gradedPromise
     ]);
-    return {
-      lessons: results[0].data || [],
-      posts: results[1].data || [],
-      graded: results[2] || 0
-    };
+    return {lessons:results[0].data || [], exams:results[1].data || [], posts:results[2].data || [], graded:results[3] || 0};
   }
 
   function classNameMap(profile) {
@@ -75,27 +62,83 @@
     return map;
   }
 
-  function renderLatestLessons(snapshot, profile) {
-    var names = classNameMap(profile);
-    if (!snapshot.lessons.length) {
-      return '<div class="vm-student-empty"><span>📚</span><b>Chưa có bài giảng mới</b><small>Khi giáo viên công bố bài, em sẽ thấy ngay tại đây.</small></div>';
+  var vmStudentFeed = [];
+  var vmStudentFeedFilter = 'all';
+  function hasText(value) { return typeof value === 'string' && value.trim() !== ''; }
+  function hasFiles(value) { return Array.isArray(value) && value.length > 0; }
+
+  function formatUpdateTime(value) {
+    if (!value) return 'Mới cập nhật';
+    var date = new Date(value);
+    if (isNaN(date.getTime())) return 'Mới cập nhật';
+    var delta = Date.now() - date.getTime();
+    if (delta >= 0 && delta < 3600000) return Math.max(1, Math.round(delta / 60000)) + ' phút trước';
+    if (delta >= 0 && delta < 86400000) return Math.max(1, Math.round(delta / 3600000)) + ' giờ trước';
+    return new Intl.DateTimeFormat('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}).format(date);
+  }
+
+  function formatDeadline(value, prefix) {
+    if (!value) return '';
+    var date = new Date(value);
+    if (isNaN(date.getTime())) return '';
+    return prefix + ' ' + new Intl.DateTimeFormat('vi-VN', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(date);
+  }
+
+  function buildStudentFeed(snapshot, profile) {
+    var names = classNameMap(profile), linkedExams = {}, feed = [];
+    (snapshot.lessons || []).forEach(function (lesson) {
+      var className = names[lesson.class_id] || 'Lớp học';
+      var topic = lesson.topics && lesson.topics.name ? lesson.topics.name : 'Bài giảng';
+      var base = {lessonId:lesson.id, title:lesson.title, className:className, createdAt:lesson.created_at};
+      feed.push(Object.assign({}, base, {id:'lesson-' + lesson.id, type:'lesson', icon:'📚', label:'Bài giảng mới', detail:topic, href:'bai-hoc?id=' + encodeURIComponent(lesson.id)}));
+      var homework = hasText(lesson.homework_text) || hasFiles(lesson.homework_images) || !!lesson.homework_document_id || hasText(lesson.homework_latex_content);
+      if (homework) feed.push(Object.assign({}, base, {id:'homework-' + lesson.id, type:'homework', icon:'📝', label:'Bài tập mới', detail:formatDeadline(lesson.homework_due, 'Hạn') || 'Bài tập về nhà', href:'bai-hoc?id=' + encodeURIComponent(lesson.id) + '&tab=btvn'}));
+      var linked = Array.isArray(lesson.linked_exam_ids) ? lesson.linked_exam_ids.slice() : [];
+      if (lesson.linked_exam_id) linked.push(lesson.linked_exam_id);
+      linked.forEach(function (id) { if (id) linkedExams[id] = true; });
+      var test = !!lesson.test_document_id || hasText(lesson.test_latex_content) || !!lesson.test_active || linked.length > 0;
+      if (test) feed.push(Object.assign({}, base, {id:'test-' + lesson.id, type:'test', icon:'🧪', label:'Bài kiểm tra mới', detail:formatDeadline(lesson.test_deadline, 'Đóng lúc') || 'Trong bài giảng', href:'bai-hoc?id=' + encodeURIComponent(lesson.id) + '&tab=test'}));
+    });
+    (snapshot.exams || []).forEach(function (exam) {
+      if (linkedExams[exam.id]) return;
+      feed.push({id:'exam-' + exam.id, type:'test', icon:'🧪', label:'Đề luyện mới', title:exam.title, className:names[exam.class_id] || 'Lớp học', detail:formatDeadline(exam.closes_at, 'Đóng lúc') || 'Sẵn sàng làm bài', createdAt:exam.created_at || exam.opens_at, href:'luyen-de?exam_id=' + encodeURIComponent(exam.id)});
+    });
+    return feed.sort(function (a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); });
+  }
+
+  function renderStudentFeed() {
+    var box = document.getElementById('vmStudentLatest');
+    if (!box) return;
+    var rows = vmStudentFeed.filter(function (item) { return vmStudentFeedFilter === 'all' || item.type === vmStudentFeedFilter; }).slice(0, 10);
+    if (!rows.length) {
+      box.innerHTML = '<div class="vm-student-empty"><span>📭</span><b>Chưa có cập nhật mới</b><small>Bài giảng, bài tập và bài kiểm tra mới sẽ cùng xuất hiện tại đây.</small></div>';
+      return;
     }
-    return snapshot.lessons.slice(0, 5).map(function (lesson, index) {
-      var topic = lesson.topics && lesson.topics.name ? lesson.topics.name : names[lesson.class_id];
-      return '<a class="vm-student-lesson-row" href="bai-hoc?id=' + encodeURIComponent(lesson.id) + '">' +
-        '<span class="vm-student-lesson-number">' + (index + 1) + '</span><span><b>' + esc(lesson.title) +
-        '</b><small>' + esc(topic || 'Bài giảng') + ' · ' + esc(names[lesson.class_id] || 'Lớp học') +
-        '</small></span><strong>Vào học →</strong></a>';
+    box.innerHTML = rows.map(function (item) {
+      return '<a class="vm-student-feed-row type-' + esc(item.type) + '" href="' + esc(item.href) + '"><span class="vm-student-feed-icon">' + item.icon + '</span>' +
+        '<span class="vm-student-feed-copy"><span class="vm-student-feed-meta"><b>' + esc(item.label) + '</b><small>' + esc(formatUpdateTime(item.createdAt)) + '</small></span>' +
+        '<strong>' + esc(item.title) + '</strong><small>' + esc(item.className) + ' · ' + esc(item.detail || '') + '</small></span><span class="vm-student-feed-open">Mở →</span></a>';
     }).join('');
+  }
+
+  function bindFeedFilters() {
+    var filters = document.getElementById('vmStudentFeedFilters');
+    if (!filters || filters.dataset.bound === '1') return;
+    filters.dataset.bound = '1';
+    filters.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-feed-filter]');
+      if (!button) return;
+      vmStudentFeedFilter = button.getAttribute('data-feed-filter') || 'all';
+      filters.querySelectorAll('[data-feed-filter]').forEach(function (item) { item.classList.toggle('active', item === button); });
+      renderStudentFeed();
+    });
   }
 
   function renderPosts(snapshot, profile) {
     var names = classNameMap(profile);
     if (!snapshot.posts.length) return '<div class="vm-student-side-empty">Không có thông báo mới.</div>';
     return snapshot.posts.map(function (post) {
-      return '<a class="vm-student-post" href="bang-tin-lop?classId=' + encodeURIComponent(post.class_id) + '">' +
-        '<span>📌</span><span><b>' + esc(post.title || 'Thông báo lớp') + '</b><small>' +
-        esc(names[post.class_id] || 'Lớp học') + '</small></span></a>';
+      return '<a class="vm-student-post" href="bang-tin-lop?classId=' + encodeURIComponent(post.class_id) + '"><span>📌</span><span><b>' + esc(post.title || 'Thông báo lớp') + '</b><small>' + esc(names[post.class_id] || 'Lớp học') + '</small></span></a>';
     }).join('');
   }
 
@@ -111,33 +154,21 @@
   async function renderStudentHome(profile, box, actions, title, sub) {
     document.body.classList.add('vm-home-student');
     hideInternalInstallPanel();
-    var selected = activeClass(profile);
-    var selectedName = selected && selected.classes ? selected.classes.name : '';
-    title.textContent = 'Tổng quan hôm nay';
-    sub.textContent = 'Bài học, lịch gần nhất và kết quả mới — tất cả trong một màn hình.';
-    actions.innerHTML = '<div class="vm-student-home-grid">' +
-      '<section class="vm-student-main-card">' +
-        '<div class="vm-student-card-head"><div><span class="vm-student-kicker">HỌC TIẾP</span><h3>' +
-          esc(selectedName || 'Lớp học của em') + '</h3><p>Bài giảng mới nhất được ưu tiên trước.</p></div>' +
-          '<a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
-        '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải bài giảng…</div></div>' +
-      '</section>' +
-      '<aside class="vm-student-side">' +
-        '<div class="vm-student-quick-grid">' +
-          '<a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a>' +
-          '<a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a>' +
-          '<a href="ca-nhan"><span>👤</span><b>Em</b><small>Trang cá nhân</small></a>' +
-        '</div>' +
-        '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div>' +
-        '<section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section>' +
-      '</aside>' +
-    '</div>';
+    title.textContent = 'Cập nhật học tập mới nhất';
+    sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
+    actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
+      '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
+      '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="active" type="button" data-feed-filter="all">Tất cả</button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
+      '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
+      '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Level</b><small>Bản đồ thành tựu</small></a></div>' +
+      '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
     moveLiveCards();
     box.classList.add('is-ready');
+    bindFeedFilters();
     var snapshot = await loadStudentSnapshot(profile);
-    var latest = document.getElementById('vmStudentLatest');
+    vmStudentFeed = buildStudentFeed(snapshot, profile);
+    renderStudentFeed();
     var posts = document.getElementById('vmStudentPosts');
-    if (latest) latest.innerHTML = renderLatestLessons(snapshot, profile);
     if (posts) posts.innerHTML = renderPosts(snapshot, profile);
     var graded = actions.querySelector('.vm-student-quick-grid a[href="ket-qua"] b');
     if (graded) graded.textContent = snapshot.graded;
@@ -145,10 +176,7 @@
 
   window.vmRoleHomeRender = async function (profile) {
     hideInternalInstallPanel();
-    var box = document.getElementById('vmRoleFocus');
-    var actions = document.getElementById('vmRoleActions');
-    var title = document.getElementById('vmRoleTitle');
-    var sub = document.getElementById('vmRoleSub');
+    var box = document.getElementById('vmRoleFocus'), actions = document.getElementById('vmRoleActions'), title = document.getElementById('vmRoleTitle'), sub = document.getElementById('vmRoleSub');
     if (!box || !profile) return;
     var role = profile.role;
     if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
@@ -157,10 +185,7 @@
       var classes = role === 'admin' ? 'Tất cả' : ((profile.class_students || []).length || 'Của tôi');
       title.textContent = 'Việc cần ưu tiên';
       sub.textContent = 'Đi thẳng vào công việc giảng dạy thường dùng nhất.';
-      actions.innerHTML = card('🏫','Lớp học','Mở ngay lớp và danh sách bài giảng gần nhất.','quan-tri-lop',classes) +
-        card('✍️','Bài chờ chấm','Xử lý bài nộp chưa được phản hồi.','quan-tri-cham-bai',pending) +
-        card('📅','Lịch dạy','Xem buổi dạy, điểm danh và thay đổi lịch.','quan-tri-lich') +
-        card('📚','Nội dung','Soạn tài liệu, đề thi và bài học.','quan-tri-tai-lieu');
+      actions.innerHTML = card('🏫','Lớp học','Mở ngay lớp và danh sách bài giảng gần nhất.','quan-tri-lop',classes) + card('✍️','Bài chờ chấm','Xử lý bài nộp chưa được phản hồi.','quan-tri-cham-bai',pending) + card('📅','Lịch dạy','Xem buổi dạy, điểm danh và thay đổi lịch.','quan-tri-lich') + card('📚','Nội dung','Soạn tài liệu, đề thi và bài học.','quan-tri-tai-lieu');
       box.classList.add('is-ready');
       return;
     }

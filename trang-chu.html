@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
-<link rel="stylesheet" href="css/role-home.css?v=3">
+<link rel="stylesheet" href="css/role-home.css?v=4">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -1155,7 +1155,7 @@
 <script src="js/vinhmath.js?v=8.5"></script>
 <script src="js/menu-v5.js?v=8.6"></script>
 <script src="js/analytics.js"></script>
-<script src="js/role-home.js?v=3"></script>
+<script src="js/role-home.js?v=4"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----
 var hoSoNguoiDung = null;
@@ -1318,14 +1318,9 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
       console.error("Lỗi hiển thị khungVaoHocNgay:", e);
     }
     
-    // Khởi tạo active class trong localStorage
-    var savedClassId = localStorage.getItem('vm-active-class-id');
-    var exists = hoSo.class_students.some(function(c) { return c.class_id === savedClassId; }) || savedClassId === 'all';
-    if (!savedClassId || !exists) {
-      // Chọn lớp đầu tiên nếu chưa có
-      savedClassId = hoSo.class_students[0].class_id;
-      localStorage.setItem('vm-active-class-id', savedClassId);
-    }
+    // Trang Hôm nay luôn tổng hợp mọi lớp; chọn từng lớp nằm ở trang Lớp học.
+    var savedClassId = 'all';
+    localStorage.setItem('vm-active-class-id', savedClassId);
     
     // Vẽ select box chọn lớp
     veSelectorLopHocSinh();
@@ -2114,28 +2109,9 @@ function veSelectorLopHocSinh() {
   if (hoSo.class_students.length === 1) {
     var name = hoSo.class_students[0].classes ? hoSo.class_students[0].classes.name : '';
     $('tenLop').textContent = (name ? 'Lớp ' + name + ' · ' : '') + 'VinhMath';
-    return;
+  } else {
+    $('tenLop').textContent = hoSo.class_students.length + ' lớp của em · VinhMath';
   }
-  
-  var activeClassId = localStorage.getItem('vm-active-class-id') || hoSo.class_students[0].class_id;
-  
-  var optionsHtml = '';
-  optionsHtml += '<option value="all" ' + (activeClassId === 'all' ? 'selected' : '') + '>Tất cả các lớp học</option>';
-  hoSo.class_students.forEach(function(c) {
-    var name = c.classes ? c.classes.name : 'Chưa rõ';
-    if (c.classes && c.classes.is_specialized) name += ' ⭐ Chuyên';
-    var selected = c.class_id === activeClassId ? 'selected' : '';
-    optionsHtml += '<option value="' + c.class_id + '" ' + selected + '>Lớp ' + name + '</option>';
-  });
-  
-  $('tenLop').innerHTML = 
-    '<div style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom: 6px;">' +
-      '<span style="font-weight:700; color:var(--ink-2); font-size:0.85rem">Lớp đang xem:</span>' +
-      '<select id="selActiveLop" onchange="doiLopHocSinhHoatDong(this.value)" style="font-weight:700; color:var(--accent); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-sm); padding:4px 24px 4px 8px; font-size:0.85rem; cursor:pointer; outline:none; font-family:inherit; min-width:140px; box-shadow:var(--shadow-sm);">' +
-        optionsHtml +
-      '</select>' +
-      '<span style="font-weight:700; color:var(--ink-3); font-size:0.85rem">· VinhMath</span>' +
-    '</div>';
 }
 
 async function capNhatMeetLinkTheoLop(classId) {
