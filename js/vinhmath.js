@@ -3369,7 +3369,9 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+      navigator.serviceWorker.register('/sw.js?v=32', { scope: '/', updateViaCache: 'none' })
+        .then(function (registration) { return registration.update(); })
+        .catch(function () {});
     }
 
     /* Anh ngoai man hinh duoc tai tre, anh dau trang van duoc uu tien. */

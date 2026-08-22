@@ -8,6 +8,7 @@ const expect = (value, message) => { if (!value) throw new Error(message); };
 
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
+const homePage = read('trang-chu.html');
 const home = read('js/role-home.js');
 const homeCss = read('css/role-home.css');
 const classPage = read('lop-hoc.html');
@@ -39,6 +40,7 @@ expect(shared.includes("m.target.tagName === 'DIALOG'") && shared.includes('boPo
 expect(home.includes('hideInternalInstallPanel()') && homeCss.includes('#vmInstallHero'), 'Banner cài đặt lớn phải được ẩn sau đăng nhập');
 expect(home.includes('Cập nhật học tập mới nhất') && home.includes('vmStudentLatest') && home.includes('vmStudentLiveSlot'), 'Trang Hôm nay chưa có dòng cập nhật học tập tập trung');
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
+expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
 expect(home.includes(".eq('student_id', profile.id).eq('status', 'graded')"), 'Số bài đã chấm phải chỉ đếm của học sinh hiện tại');
 for (const oldBlock of ['#khungVaoHocNgay', '#khungNhiemVu', '#khungThongKeHocSinh']) {
