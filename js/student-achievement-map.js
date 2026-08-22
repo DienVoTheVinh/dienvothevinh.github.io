@@ -1,120 +1,17 @@
 (function () {
   'use strict';
-
-  var regions = [
-    {icon:'🌱', name:'Miền Khởi Hành', subtitle:'Xây nền nếp và bắt đầu tích lũy XP'},
-    {icon:'🧭', name:'Thung Lũng Đại Số', subtitle:'Luyện bài đều đặn và làm chủ biến đổi'},
-    {icon:'🏰', name:'Thành Trì Hình Học', subtitle:'Kiên trì lập luận và trình bày chặt chẽ'},
-    {icon:'⛰️', name:'Đỉnh Cao Hàm Số', subtitle:'Vượt thử thách và nâng độ chính xác'},
-    {icon:'🌌', name:'Thiên Hà Tư Duy', subtitle:'Kết nối kiến thức và tự học chủ động'},
-    {icon:'👑', name:'Vương Miện Toán Học', subtitle:'Bản lĩnh, bền bỉ và sẵn sàng dẫn đầu'}
+  var current=null;
+  var badges=[
+    ['first_btvn','🎬','Bài nộp đầu tiên','Khởi động hành trình bằng bài nộp đầu tiên.'],['no_debt','✅','Không nợ bài','Hoàn tất sạch danh sách bài tập.'],['streak_3','🔥','Giữ lửa 3 ngày','Học tập 3 ngày liên tiếp.'],['streak_7','⚡','Một tuần bền bỉ','Giữ chuỗi học tập 7 ngày.'],['streak_14','🌋','Hai tuần rực lửa','Giữ chuỗi học tập 14 ngày.'],['streak_30','☀️','Tháng không ngừng nghỉ','Giữ chuỗi học tập 30 ngày.'],['test_5','🛡️','Chiến binh kiểm tra','Hoàn thành 5 bài kiểm tra.'],['test_10','⚔️','Không ngán đề','Hoàn thành 10 bài kiểm tra.'],['btvn_10','✍️','Máy cày BTVN','Nộp đủ 10 bài tập về nhà.'],['btvn_25','🚜','Siêu máy cày','Nộp đủ 25 bài tập về nhà.'],['review_10','🔍','Bậc thầy sửa sai','Xem lại 10 bài giáo viên đã chấm.'],['explorer_10','🧭','Nhà thám hiểm','Mở 10 bài học khác nhau.'],['diligent','📚','Siêng năng chăm chỉ','Hoàn thành 20 hoạt động học tập.'],['score_80','🏆','Học lực giỏi','Điểm tổng quát đạt từ 80.'],['perfect10','💯','Điểm 10 tuyệt đối','Chinh phục một bài với điểm tuyệt đối.'],['xp_1000','🌟','Ngàn sao kinh nghiệm','Tích lũy 1.000 XP.'],['coin_300','🪙','Nhà sưu tập xu','Tích lũy 300 xu trong hành trình.'],['nuoc_den_chan','⏰','Thánh nước đến chân','Ba lần về đích sát giờ — lần tới mình đi sớm nhé!'],['vua_cup_hoc','🫣','Vua cúp học đang hoàn lương','Một danh hiệu riêng để nhắc mình quay lại lớp đều hơn.'],['vua_luoi_lam_bai','🦥','Vua lười làm bài bị bắt quả tang','Linh thú nhắc khéo: xử lý từng bài một là hết ngay!']
   ];
-  var milestoneIcons = ['📖','✍️','🎯','🧠','⚡','🏆'];
-  var milestoneNames = ['Mở khóa kiến thức','Rèn luyện bền bỉ','Chinh phục thử thách','Tư duy sắc bén','Bứt phá giới hạn','Cột mốc danh dự'];
-  var badgeCatalog = [
-    ['first_btvn','🎬','Bài nộp đầu tiên'],['no_debt','✅','Không nợ bài tập'],['streak_3','🔥','Chuỗi 3 ngày'],['streak_7','⚡','Chuỗi 7 ngày'],
-    ['test_5','🛡️','Chiến binh kiểm tra'],['explorer_10','🧭','Nhà thám hiểm'],['level_5','⭐','Ngôi sao Lv.5'],['level_10','🌟','Bậc thầy Lv.10'],
-    ['diligent','📚','Siêng năng chăm chỉ'],['score_80','🏆','Học lực giỏi'],['coin_300','💰','Nhà sưu tập xu'],['perfect10','💯','Điểm 10 tuyệt đối']
-  ];
-  var currentStats = null;
-
-  function esc(value) {
-    return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
-    });
-  }
-
-  function xpFloor(level) {
-    var l = Math.max(1, Number(level) || 1);
-    return 100 * (l - 1) + 25 * (l - 1) * (l - 2);
-  }
-
-  function demoStats() {
-    return {xp:485,level:4,tier:'Học Trò Chăm',tier_icon:'📗',xp_floor:450,xp_next:700,streak:4,longest_streak:7,coins:85,counts:{lesson:8,btvn:5,test:2,review:3,dando:4},badges:[{code:'first_btvn'},{code:'streak_3'}]};
-  }
-
-  function statusFor(level) {
-    if (level < currentStats.level) return 'completed';
-    if (level === currentStats.level) return 'current';
-    return 'locked';
-  }
-
-  function renderSummary() {
-    var c = currentStats.counts || {};
-    document.getElementById('achievementSummary').innerHTML =
-      '<div><b>' + Number(c.lesson || 0) + '</b><small>Bài học đã mở</small></div>' +
-      '<div><b>' + Number(c.btvn || 0) + '</b><small>Bài tập đã nộp</small></div>' +
-      '<div><b>' + Number(c.test || 0) + '</b><small>Bài kiểm tra</small></div>' +
-      '<div><b>🔥 ' + Number(currentStats.streak || 0) + '</b><small>Chuỗi ngày hiện tại</small></div>';
-    var floor = Number(currentStats.xp_floor == null ? xpFloor(currentStats.level) : currentStats.xp_floor);
-    var next = Number(currentStats.xp_next == null ? xpFloor(currentStats.level + 1) : currentStats.xp_next);
-    var xp = Number(currentStats.xp || 0);
-    var progress = Math.max(0, Math.min(100, Math.round((xp - floor) / Math.max(1, next - floor) * 100)));
-    var card = document.getElementById('achievementLevelCard');
-    card.style.setProperty('--level-progress', progress + '%');
-    card.innerHTML = '<div class="achievement-level-orb"><span>Lv.' + Number(currentStats.level || 1) + '</span></div><h2>' + esc((currentStats.tier_icon || '🌱') + ' ' + (currentStats.tier || 'Tân Binh')) + '</h2>' +
-      '<p>' + xp + ' XP · còn ' + Math.max(0, next - xp) + ' XP tới cấp tiếp theo</p><div class="achievement-progress"><i></i></div>';
-  }
-
-  function renderMap() {
-    var html = regions.map(function (region, regionIndex) {
-      var start = regionIndex * 6 + 1;
-      var nodes = [];
-      for (var offset = 0; offset < 6; offset++) {
-        var level = start + offset;
-        var status = statusFor(level);
-        var icon = status === 'locked' ? '🔒' : status === 'completed' ? '✓' : milestoneIcons[offset];
-        nodes.push('<button type="button" class="achievement-node ' + status + '" data-achievement-level="' + level + '"><span class="achievement-node-orb">' + icon + '</span><b>Level ' + level + '</b><small>' + esc(milestoneNames[offset]) + '</small></button>');
-      }
-      return '<article class="achievement-region"><div class="achievement-region-head"><span class="achievement-region-icon">' + region.icon + '</span><span><b>Chương ' + (regionIndex + 1) + ' · ' + esc(region.name) + '</b><small>' + esc(region.subtitle) + ' · Level ' + start + '–' + (start + 5) + '</small></span></div><div class="achievement-track">' + nodes.join('') + '</div></article>';
-    }).join('');
-    document.getElementById('achievementMap').innerHTML = html;
-  }
-
-  function renderBadges() {
-    var earned = {};
-    (currentStats.badges || []).forEach(function (badge) { earned[badge.code] = true; });
-    document.getElementById('achievementBadges').innerHTML = badgeCatalog.map(function (badge) {
-      var unlocked = !!earned[badge[0]];
-      return '<div class="achievement-badge' + (unlocked ? '' : ' locked') + '"><span>' + (unlocked ? badge[1] : '🔒') + '</span><b>' + esc(badge[2]) + '</b><small>' + (unlocked ? 'Đã đạt' : 'Chưa mở') + '</small></div>';
-    }).join('');
-  }
-
-  function openLevel(level) {
-    var status = statusFor(level);
-    var region = regions[Math.min(regions.length - 1, Math.floor((level - 1) / 6))];
-    var needed = xpFloor(level);
-    var statusText = status === 'completed' ? '✓ Em đã chinh phục cột mốc này.' : status === 'current' ? '◉ Đây là cột mốc hiện tại của em.' : '🔒 Cần thêm ' + Math.max(0, needed - Number(currentStats.xp || 0)) + ' XP để mở cột mốc này.';
-    var dialog = document.getElementById('achievementDialog');
-    document.getElementById('achievementDialogBody').innerHTML = '<div class="achievement-dialog-head"><span>' + (status === 'locked' ? '🔒' : region.icon) + '</span><button class="achievement-dialog-close" type="button" aria-label="Đóng">✕</button></div>' +
-      '<h3 id="achievementDialogTitle">Level ' + level + ' · ' + esc(milestoneNames[(level - 1) % 6]) + '</h3><p>Thuộc <b>' + esc(region.name) + '</b>. Cột mốc mở ở ' + needed + ' XP. Em nhận XP khi mở bài học, nộp bài tập, hoàn thành kiểm tra và xem lại bài giáo viên đã sửa.</p><div class="achievement-dialog-status">' + esc(statusText) + '</div>';
-    dialog.querySelector('.achievement-dialog-close').addEventListener('click', function () { dialog.close(); });
-    if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
-  }
-
-  async function load() {
-    if (!daKetNoi()) return;
-    var profile = await yeuCauDangNhap();
-    if (!profile) return;
-    if (profile.role !== 'student') { window.location.replace('ca-nhan'); return; }
-    if (sessionStorage.getItem('vm-guest-mode') === 'true') currentStats = demoStats();
-    else {
-      var response = await sb.rpc('hs_ho_so');
-      if (response.error || !response.data || response.data.error) {
-        document.getElementById('achievementMap').innerHTML = '<div class="student-results-error"><span>⚠️</span><b>Chưa tải được bản đồ thành tựu</b><p>Vui lòng thử lại khi kết nối ổn định.</p></div>';
-        return;
-      }
-      currentStats = response.data;
-    }
-    renderSummary();
-    renderMap();
-    renderBadges();
-  }
-
-  document.addEventListener('click', function (event) {
-    var node = event.target.closest('[data-achievement-level]');
-    if (node && currentStats) openLevel(Number(node.getAttribute('data-achievement-level')));
-  });
-  document.getElementById('achievementDialog').addEventListener('click', function (event) { if (event.target === this) this.close(); });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function status(level){var visible=Number(current.rank.level||1),raw=Number(current.rank.raw_level||visible);if(level<visible)return'completed';if(level===visible)return'current';if(level<=raw)return'awaiting';return'locked';}
+  function renderHero(){var r=current.rank,m=VMRank.info(r.level),floor=Number(r.xp_floor||VMRank.xpFloor(r.level)),next=r.xp_next==null?floor:Number(r.xp_next),pct=r.xp_next==null?100:Math.max(0,Math.min(100,Math.round((Number(r.xp)-floor)/Math.max(1,next-floor)*100))),c=r.counts||{};document.getElementById('achievementSummary').innerHTML='<div><b>'+Number(c.lesson||0)+'</b><small>Bài học đã mở</small></div><div><b>'+Number(c.btvn||0)+'</b><small>Bài tập đã nộp</small></div><div><b>'+Number(c.test||0)+'</b><small>Bài kiểm tra</small></div><div><b>🔥 '+Number(r.streak||0)+'</b><small>Chuỗi ngày hiện tại</small></div>';var card=document.getElementById('achievementLevelCard');card.style.setProperty('--level-progress',pct+'%');card.style.setProperty('--rank-color',m.major.color);card.className='achievement-level-card aura-'+m.major.aura;card.innerHTML='<div class="achievement-rank-symbol">'+m.major.symbol+'</div>'+VMRank.rankPill(r,'large')+'<h2>'+esc(m.label)+'</h2><p>'+Number(r.xp||0)+' XP'+(r.xp_next==null?' · Đã chạm đỉnh 44 cấp':' · còn '+Math.max(0,next-Number(r.xp||0))+' XP')+'</p><div class="achievement-progress"><i></i></div><small>'+esc(m.major.motto)+'</small>';}
+  function renderMap(){document.getElementById('achievementMap').innerHTML=VMRank.majors.map(function(major,majorIndex){var nodes=VMRank.medals.map(function(medal,medalIndex){var level=majorIndex*4+medalIndex+1,s=status(level),icon=s==='completed'?'✓':s==='awaiting'?'⚡':medal.icon;return '<button class="achievement-node '+s+' medal-'+medal.cls+'" data-achievement-level="'+level+'" style="--rank-color:'+major.color+'"><span class="achievement-node-orb">'+icon+'</span><b>'+esc(medal.name)+'</b><small>'+VMRank.xpFloor(level)+' XP</small></button>';}).join('');return '<article class="achievement-region aura-'+major.aura+'" style="--region:'+major.color+'"><div class="achievement-region-head"><span class="achievement-region-icon">'+major.symbol+'</span><span><b>Đại cấp '+(majorIndex+1)+' · '+esc(major.name)+'</b><small>'+esc(major.motto)+' · Cấp '+(majorIndex*4+1)+'–'+(majorIndex*4+4)+'</small></span></div><div class="achievement-track">'+nodes+'</div>'+(majorIndex<10?'<div class="achievement-gate"><span>⚡</span><small>Kiểm tra đột phá ≥ 8/10</small></div>':'')+'</article>';}).join('');}
+  function renderBadges(){var earned={};(current.rank.badges||[]).forEach(function(b){earned[b.code]=true;});document.getElementById('achievementBadges').innerHTML=badges.map(function(b){var ok=!!earned[b[0]],fun=b[0].indexOf('vua_')===0||b[0]==='nuoc_den_chan';return '<article class="achievement-badge '+(ok?'':'locked')+(fun?' playful':'')+'"><span>'+(ok?b[1]:'🔒')+'</span><b>'+esc(b[2])+'</b><small>'+esc(ok?b[3]:'Chưa mở · '+b[3])+'</small>'+(fun?'<em>Chỉ em, phụ huynh và thầy/cô nhìn thấy</em>':'')+'</article>';}).join('');}
+  function renderCompanion(){var box=document.getElementById('companionSanctuary'),c=current.companion,r=current.rank;if(!box)return;var owned=Array.isArray(c.owned)?c.owned:[];box.innerHTML='<div class="companion-sanctuary-main"><div class="companion-large">'+VMRank.petVisual(c,r,'map-pet')+'</div><div><span class="vm-modal-kicker">LINH THÚ ĐỒNG HÀNH</span><h2>'+(c.chosen?(c.hatched?esc(VMRank.pets[c.active_code].name):'Trứng đang được ấp'):'Chưa chọn trứng')+'</h2><p>'+(c.chosen?(c.hatched?'Linh thú tiến hóa cùng mỗi đại cấp và mang hào quang của cấp bậc hiện tại.':'Học tập để trứng dần ấm lên, đổi màu, nứt vỏ và nở ở đại cấp Chăm Học.'):'Chọn một trong ba quả trứng trắng. Loài linh thú sẽ được quyết định ngẫu nhiên khi trứng nở.')+'</p><div class="companion-actions">'+(c.chosen?'<button class="btn btn-secondary" data-pet-shop>Đổi / mở khóa linh thú · '+Number(c.coins||0)+' xu</button>':'<button class="btn btn-primary" onclick="location.reload()">Chọn trứng ngay</button>')+'</div></div></div>'+(c.hatched?'<div class="companion-owned">'+Object.keys(VMRank.pets).map(function(code){var pet=VMRank.pets[code],has=owned.indexOf(code)!==-1;return '<button data-pet="'+code+'" '+(has?'':'disabled')+'>'+VMRank.petVisual({chosen:true,hatched:true,active_code:code},r,'owned-pet')+'<b>'+esc(pet.name)+'</b><small>'+(has?(code===c.active_code?'Đang đồng hành':'Đã mở khóa'):'300 xu')+'</small></button>';}).join('')+'</div>':'');bindCompanion(box);}
+  function bindCompanion(box){box.querySelectorAll('[data-pet]').forEach(function(btn){btn.addEventListener('click',async function(){var code=btn.dataset.pet,owned=current.companion.owned||[],rpc=owned.indexOf(code)!==-1?'select_companion':'purchase_companion',res=await sb.rpc(rpc,{p_companion_code:code});if(res.error||!res.data||!res.data.ok){alert((res.data&&res.data.message)||(res.error&&res.error.message));return;}location.reload();});});var shop=box.querySelector('[data-pet-shop]');if(shop)shop.addEventListener('click',function(){var ownedBox=box.querySelector('.companion-owned');if(ownedBox)ownedBox.scrollIntoView({behavior:'smooth'});});}
+  function openLevel(level){var m=VMRank.info(level),s=status(level),text=s==='completed'?'✓ Em đã chinh phục huy chương này.':s==='current'?'◉ Đây là cấp hiện tại của em.':s==='awaiting'?'⚡ XP đã đủ. Em cần vượt bài kiểm tra đột phá đại cấp.':'🔒 Cần thêm '+Math.max(0,VMRank.xpFloor(level)-Number(current.rank.xp||0))+' XP.';var d=document.getElementById('achievementDialog');document.getElementById('achievementDialogBody').innerHTML='<div class="achievement-dialog-head"><span>'+m.major.symbol+'</span><button class="achievement-dialog-close">✕</button></div><h3 id="achievementDialogTitle">'+esc(m.label)+'</h3><p>Cấp '+level+'/44 · mốc '+VMRank.xpFloor(level)+' XP. Em nhận XP khi học bài, nộp bài, làm kiểm tra và xem lại bài giáo viên đã sửa.</p><div class="achievement-dialog-status">'+esc(text)+'</div>';d.querySelector('button').onclick=function(){d.close();};d.showModal();}
+  async function load(){if(!window.VMRank){setTimeout(load,60);return;}current=await VMRank.load();if(!current)return;renderHero();renderMap();renderBadges();renderCompanion();document.querySelectorAll('.companion-owned button[disabled]').forEach(function(button){button.disabled=false;button.classList.add('locked');});}
+  document.addEventListener('click',function(e){var n=e.target.closest('[data-achievement-level]');if(n&&current)openLevel(Number(n.dataset.achievementLevel));});var dialog=document.getElementById('achievementDialog');if(dialog)dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close();});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
 })();

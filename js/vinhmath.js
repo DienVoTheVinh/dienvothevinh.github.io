@@ -505,6 +505,11 @@ window.vmChonNghi = function(studentId, studentName, callbackName) {
 
   window.vmRenderGameCard = function (el, d, opts) {
     if (!el) return; opts = opts || {}; ensureCss();
+    var rankCurrent = window.VMRank && window.VMRank.getCurrent ? window.VMRank.getCurrent() : null;
+    if (rankCurrent && rankCurrent.rank) {
+      var rankMeta = window.VMRank.info(rankCurrent.rank.level);
+      d = Object.assign({}, d, rankCurrent.rank, { tier: rankMeta.label, tier_icon: rankMeta.major.symbol });
+    }
     var pct = 0, span = (d.xp_next - d.xp_floor); if (span>0) pct = Math.max(0, Math.min(100, Math.round((d.xp - d.xp_floor)/span*100)));
     var earned = {}; (d.badges||[]).forEach(function(b){ earned[b.code]=1; });
     var badges = VG_BADGES.map(function(b){ return '<div class="vg-badge'+(earned[b[0]]?'':' locked')+'" title="'+esc(b[2])+(earned[b[0]]?'':' (chưa mở)')+'">'+b[1]+'</div>'; }).join('');
@@ -517,7 +522,7 @@ window.vmChonNghi = function(studentId, studentName, callbackName) {
         '<div class="vg-id"><div class="vg-tier">'+esc(d.tier||'Tân Binh')+'</div>'+
           '<div class="vg-name">'+esc(opts.name||d.full_name||'Học sinh')+' · '+d.xp+' XP · 🔥 '+(d.streak||0)+' ngày</div>'+
           '<div class="vg-xpbar"><div class="vg-xpfill" data-w="'+pct+'"></div></div>'+
-          '<div class="vg-xptext"><span>Lv.'+d.level+'</span><span>'+(d.xp-d.xp_floor)+' / '+(d.xp_next-d.xp_floor)+' XP → Lv.'+(d.level+1)+'</span></div>'+
+          '<div class="vg-xptext"><span>Cấp '+d.level+'/44</span><span>'+(d.xp_next==null?'Đã chạm Vô Cực':(d.xp-d.xp_floor)+' / '+(d.xp_next-d.xp_floor)+' XP → cấp '+(d.level+1))+'</span></div>'+
         '</div>'+
         '<div class="vg-coins"'+coinsClick+'><span style="font-size:1.3rem">🪙</span><span class="n">'+(d.coins||0)+'</span><span class="l">xu</span></div>'+
       '</div>'+

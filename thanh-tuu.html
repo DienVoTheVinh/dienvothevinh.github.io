@@ -9,12 +9,13 @@
   <link rel="icon" type="image/png" href="favicon.png?v=3">
   <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <title>Bản đồ thành tựu — VinhMath</title>
+  <title>Bản đồ cấp bậc & Linh thú — VinhMath</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=7.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
   <link rel="stylesheet" href="css/student-experience.css?v=3">
+  <link rel="stylesheet" href="css/rank-map.css?v=1">
 </head>
 <body class="achievement-page">
   <div class="topbar">
@@ -31,32 +32,34 @@
   <main class="wrap">
     <section class="achievement-hero" aria-live="polite">
       <div class="achievement-hero-main">
-        <div class="sec-label">Hành trình chinh phục Toán học</div>
-        <h1>Bản đồ thành tựu</h1>
-        <p>Mỗi bài học, bài tập, bài kiểm tra và lần xem lại bài sửa đều đưa em tiến thêm một bước. Bản đồ này dùng chính XP và level hiện có của em, không phải một bảng điểm riêng.</p>
+        <div class="sec-label">Hành trình 44 cấp của em</div>
+        <h1>Bản đồ cấp bậc VinhMath</h1>
+        <p>11 đại cấp, mỗi đại cấp gồm Đồng, Bạc, Vàng và Kim Cương. XP đưa em tiến lên; bài kiểm tra đột phá mở cánh cửa sang đại cấp mới.</p>
         <div class="achievement-summary" id="achievementSummary">
           <div><b>—</b><small>Bài học đã mở</small></div><div><b>—</b><small>Bài tập đã nộp</small></div><div><b>—</b><small>Bài kiểm tra</small></div><div><b>—</b><small>Chuỗi ngày</small></div>
         </div>
       </div>
       <aside class="achievement-level-card" id="achievementLevelCard" style="--level-progress:0%">
-        <div class="achievement-level-orb"><span>Lv.—</span></div>
-        <h2>Đang tải hành trình…</h2>
+        <div class="achievement-level-orb"><span>—</span></div>
+        <h2>Đang tải cấp bậc…</h2>
         <p>Vui lòng chờ trong giây lát.</p>
         <div class="achievement-progress"><i></i></div>
       </aside>
     </section>
 
     <div class="achievement-map-head">
-      <div><div class="sec-label">36 cột mốc phát triển</div><h2>Con đường phía trước</h2><p>Bấm vào từng cột mốc để xem điều kiện và ý nghĩa.</p></div>
-      <div class="achievement-legend"><span>✓ Đã chinh phục</span><span>◉ Hiện tại</span><span>🔒 Chưa mở</span></div>
+      <div><div class="sec-label">11 đại cấp · 44 huy chương</div><h2>Con đường phía trước</h2><p>Bấm vào từng huy chương để xem XP và trạng thái đột phá.</p></div>
+      <div class="achievement-legend"><span>✓ Đã chinh phục</span><span>◉ Hiện tại</span><span>⚡ Chờ đột phá</span><span>🔒 Chưa mở</span></div>
     </div>
-    <section class="achievement-map" id="achievementMap" aria-label="Bản đồ 36 cấp độ">
+    <section class="achievement-map" id="achievementMap" aria-label="Bản đồ 44 cấp bậc">
       <div class="student-results-empty"><span>🗺️</span><b>Đang dựng bản đồ của em…</b></div>
     </section>
 
+    <section class="companion-sanctuary" id="companionSanctuary" aria-label="Linh thú đồng hành"></section>
+
     <section class="achievement-badges">
       <h2>Bộ sưu tập huy hiệu</h2>
-      <p>Các huy hiệu đã nhận và những thử thách em có thể tiếp tục chinh phục.</p>
+      <p>Huy hiệu mở tự động từ hoạt động thật. Danh hiệu vui chỉ nhắc khéo riêng tư, không dùng để trêu chọc hay xếp loại học lực.</p>
       <div class="achievement-badge-grid" id="achievementBadges"></div>
     </section>
   </main>
@@ -67,8 +70,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
-  <script src="js/vinhmath.js?v=8.6"></script>
-  <script src="js/menu-v5.js?v=8.7"></script>
-  <script src="js/student-achievement-map.js?v=1"></script>
+  <script src="js/vinhmath.js?v=8.7"></script>
+  <script src="js/menu-v5.js?v=8.8"></script>
+  <script src="js/student-achievement-map.js?v=2"></script>
 </body>
 </html>

@@ -22,6 +22,8 @@
 <style>
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
+.chb-rank-panel{margin-bottom:18px;padding:18px;border-color:color-mix(in srgb,#7b61ff 28%,var(--line));background:radial-gradient(circle at 90% 0,rgba(123,97,255,.12),transparent 34%),var(--surface)}
+.chb-rank-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.chb-rank-head span{color:#7651ce;font-size:.65rem;font-weight:900;letter-spacing:.1em}.chb-rank-head h2{margin:4px 0;font-size:1.12rem}.chb-rank-head p{margin:0;color:var(--ink-3);font-size:.7rem;line-height:1.5}.chb-rank-head>b{padding:6px 10px;border-radius:999px;background:rgba(123,97,255,.12);color:#7651ce;font-size:.68rem;white-space:nowrap}.chb-rank-queue{display:grid;gap:9px;margin-top:14px}.chb-rank-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}.chb-rank-row.passed{border-color:var(--ok)}.chb-rank-row.failed{opacity:.78}.chb-rank-student{display:flex;align-items:center;gap:9px;min-width:0}.chb-rank-student>span{font-size:1.4rem}.chb-rank-student b,.chb-rank-student small,.chb-rank-result b,.chb-rank-result small{display:block}.chb-rank-student b{font-size:.78rem}.chb-rank-student small,.chb-rank-result small{color:var(--ink-3);font-size:.6rem;margin-top:2px}.chb-rank-grade{display:grid;grid-template-columns:90px minmax(150px,1fr) auto;gap:7px;min-width:min(470px,55%)}.chb-rank-result{text-align:right}.chb-rank-result b{font-size:.72rem}.chb-rank-empty{padding:15px;text-align:center;color:var(--ink-3);font-size:.72rem}@media(max-width:760px){.chb-rank-head,.chb-rank-row{flex-direction:column;align-items:stretch}.chb-rank-grade{min-width:0;grid-template-columns:1fr}.chb-rank-result{text-align:left}}
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
 .chb-filter-selects { display:flex; gap:10px; margin-left:auto; align-items:center; flex-wrap:wrap; }
 .chb-filter-selects select { padding:6px 12px; font-size:.85rem; }
@@ -464,6 +466,11 @@
     <p style="margin-top:6px">Bài nộp nằm trong Drive của thầy (thư mục <b>VINHMATH NOP BAI</b>). Chấm xong nhập điểm + lời phê, đính kèm file chấm nếu cần — học sinh thấy ngay.</p>
   </div>
 
+  <section id="rankBreakthroughPanel" class="card chb-rank-panel" hidden>
+    <div class="chb-rank-head"><div><span>⚡ KIỂM TRA ĐỘT PHÁ</span><h2>Học sinh chờ mở đại cấp</h2><p>Giao bài kiểm tra riêng, sau đó nhập điểm tại đây. Từ 8/10 hệ thống tự mở đại cấp mới; dưới 8 học sinh giữ nguyên XP và có thể xin kiểm tra lại.</p></div><b id="rankBreakthroughCount">0 yêu cầu</b></div>
+    <div id="rankBreakthroughQueue" class="chb-rank-queue"></div>
+  </section>
+
   <div class="filters" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
     <button class="tab-btn active" id="loc-cho" onclick="locTheo('submitted')">🕐 Chờ chấm (<span id="demCho">0</span>)</button>
     <button class="tab-btn" id="loc-xong" onclick="locTheo('graded')">✓ Đã chấm (<span id="demXong">0</span>)</button>
@@ -533,8 +540,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.6"></script>
-<script src="js/menu-v5.js?v=8.7"></script>
+<script src="js/vinhmath.js?v=8.7"></script>
+<script src="js/menu-v5.js?v=8.8"></script>
 <script src="js/analytics.js"></script>
 <script>
 var tatCa = [];
@@ -550,6 +557,19 @@ var dapAnCurrent = null;
 var dapAnKeepIds = new Set();
 var dapAnStaged = [];
 var dapAnLoadToken = 0;
+var RANK_MAJOR_NAMES = ['Tân Binh','Chăm Học','Học Khá','Học Giỏi','Học Bá','Cao Thủ','Kỳ Tài','Thiên Tài','Học Thần','Đại Thần','Vô Cực'];
+
+async function taiHangDoiDotPha() {
+  var panel=$('rankBreakthroughPanel'),box=$('rankBreakthroughQueue'); if(!panel||!box)return;
+  var response=await sb.rpc('staff_rank_breakthrough_queue');
+  if(response.error){panel.hidden=false;box.innerHTML='<div class="empty">Chưa tải được hàng đợi đột phá.</div>';return;}
+  var rows=response.data||[],pending=rows.filter(function(row){return row.status==='requested';});
+  panel.hidden=false;$('rankBreakthroughCount').textContent=pending.length+' yêu cầu';
+  if(!rows.length){box.innerHTML='<div class="chb-rank-empty">✓ Chưa có học sinh nào chờ kiểm tra đột phá.</div>';return;}
+  box.innerHTML=rows.map(function(row){var requested=row.status==='requested',name=RANK_MAJOR_NAMES[Number(row.target_major)-1]||'Đại cấp mới';return '<article class="chb-rank-row '+row.status+'"><div class="chb-rank-student"><span>'+(requested?'⚡':row.status==='passed'?'🎉':'💪')+'</span><div><b>'+chamEsc(row.student_name)+'</b><small>'+chamEsc(row.class_names)+' · Đột phá '+chamEsc(name)+' · Lần '+Number(row.attempt_no||1)+'</small></div></div>'+(requested?'<div class="chb-rank-grade"><input class="input" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" data-rank-score="'+row.attempt_id+'"><input class="input" placeholder="Nhận xét ngắn (không bắt buộc)" data-rank-feedback="'+row.attempt_id+'"><button class="btn btn-primary btn-sm" onclick="chamDotPha(\''+row.attempt_id+'\',this)">Lưu kết quả</button></div>':'<div class="chb-rank-result"><b>'+Number(row.score||0)+'/10 · '+(row.status==='passed'?'Đã đột phá':'Cần ôn thêm')+'</b><small>'+chamEsc(row.feedback||'Đã ghi nhận kết quả')+'</small></div>')+'</article>';}).join('');
+}
+
+async function chamDotPha(attemptId,button){var scoreInput=document.querySelector('[data-rank-score="'+attemptId+'"]'),feedbackInput=document.querySelector('[data-rank-feedback="'+attemptId+'"]'),score=Number(scoreInput&&scoreInput.value);if(!scoreInput||scoreInput.value===''||score<0||score>10){alert('Nhập điểm từ 0 đến 10.');return;}button.disabled=true;button.textContent='Đang lưu…';var response=await sb.rpc('review_rank_breakthrough',{p_attempt_id:attemptId,p_score:score,p_feedback:feedbackInput?feedbackInput.value:null});if(response.error||!response.data||!response.data.ok){alert((response.data&&response.data.message)||(response.error&&response.error.message)||'Chưa lưu được kết quả');button.disabled=false;button.textContent='Lưu kết quả';return;}await taiHangDoiDotPha();}
 
 (async function () {
   if (!daKetNoi()) { $('dsBaiNop').innerHTML = '<div class="empty card">Chưa kết nối Supabase.</div>'; return; }
@@ -557,6 +577,7 @@ var dapAnLoadToken = 0;
   if (!hoSo) return;
   if (!['admin', 'teacher', 'assistant'].includes(hoSo.role)) { window.location.href = 'lop-hoc'; return; }
   hoSoNguoiDung = hoSo;
+  await taiHangDoiDotPha();
 
   var vmKhoiTaoParams = new URLSearchParams(location.search);
   var vmLoc = vmKhoiTaoParams.get('loc');
