@@ -38,7 +38,7 @@
     var gradedPromise = count('submissions', function (query) {
       return query.eq('student_id', profile.id).eq('status', 'graded');
     });
-    if (!ids.length) return {lessons:[], exams:[], posts:[], graded:await gradedPromise};
+    if (!ids.length) return {lessons:[], exams:[], posts:[], tasks:[], reminders:[], graded:await gradedPromise};
     var results = await Promise.all([
       sb.from('lessons')
         .select('id,title,class_id,created_at,homework_text,homework_images,homework_document_id,homework_latex_content,homework_due,test_document_id,test_latex_content,test_active,test_started_at,test_deadline,linked_exam_id,linked_exam_ids,topics(name)')
@@ -49,9 +49,14 @@
       sb.from('class_posts')
         .select('id,title,class_id,created_at')
         .in('class_id', ids).order('pinned', {ascending:false}).order('created_at', {ascending:false}).limit(3),
-      gradedPromise
+      gradedPromise,
+      sb.rpc('hs_ho_so'),
+      sb.rpc('get_my_reminders')
     ]);
-    return {lessons:results[0].data || [], exams:results[1].data || [], posts:results[2].data || [], graded:results[3] || 0};
+    var missionData = results[4] && results[4].data && !results[4].data.error ? results[4].data : {};
+    if (missionData && Object.keys(missionData).length) window._nvData = missionData;
+    return {lessons:results[0].data || [], exams:results[1].data || [], posts:results[2].data || [], graded:results[3] || 0,
+      tasks:Array.isArray(missionData.tasks) ? missionData.tasks : [], reminders:results[5].data || []};
   }
 
   function classNameMap(profile) {
@@ -63,6 +68,7 @@
   }
 
   var vmStudentFeed = [];
+  var vmStudentTodos = [];
   var vmStudentFeedFilter = 'all';
   function hasText(value) { return typeof value === 'string' && value.trim() !== ''; }
   function hasFiles(value) { return Array.isArray(value) && value.length > 0; }
@@ -82,6 +88,62 @@
     var date = new Date(value);
     if (isNaN(date.getTime())) return '';
     return prefix + ' ' + new Intl.DateTimeFormat('vi-VN', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(date);
+  }
+
+  function parseDueDate(value) {
+    if (!value) return null;
+    var plain = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+    var date = plain ? new Date(+plain[1], +plain[2] - 1, +plain[3], 23, 59, 59, 999) : new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  function todoDue(value) {
+    var due = parseDueDate(value);
+    if (!due) return {priority:null, label:'', time:Number.MAX_SAFE_INTEGER, state:'normal'};
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    var days = Math.round((dueDay - today) / 86400000);
+    if (days < 0) return {priority:0, label:'Quá hạn ' + (-days) + ' ngày', time:due.getTime(), state:'overdue'};
+    if (days === 0) return {priority:1, label:'Hôm nay', time:due.getTime(), state:'today'};
+    if (days === 1) return {priority:2, label:'Ngày mai', time:due.getTime(), state:'soon'};
+    return {priority:days <= 3 ? 3 : 6, label:'Còn ' + days + ' ngày', time:due.getTime(), state:days <= 3 ? 'soon' : 'normal'};
+  }
+
+  function buildStudentTodos(snapshot, profile) {
+    var names = classNameMap(profile), lessons = {}, todos = [];
+    var kind = {
+      review:{icon:'🔎', label:'Xem lại bài đã chấm', tab:'', weight:2},
+      btvn:{icon:'📝', label:'Bài tập về nhà', tab:'btvn', weight:4},
+      test:{icon:'🧪', label:'Bài kiểm tra', tab:'test', weight:3},
+      dando:{icon:'📌', label:'Lời dặn của giáo viên', tab:'', weight:5},
+      lesson:{icon:'📚', label:'Bài giảng chưa xem', tab:'', weight:7}
+    };
+    (snapshot.lessons || []).forEach(function (lesson) { lessons[lesson.id] = lesson; });
+    (snapshot.tasks || []).forEach(function (task) {
+      var meta = kind[task.kind] || kind.lesson, lesson = lessons[task.lesson_id] || {};
+      var dueValue = task.kind === 'btvn' ? lesson.homework_due : (task.kind === 'test' ? lesson.test_deadline : null);
+      var due = todoDue(dueValue), priority = due.priority == null ? meta.weight : due.priority;
+      todos.push({id:'todo-task-' + task.kind + '-' + task.lesson_id, type:'todo', icon:meta.icon, label:meta.label,
+        title:task.title || 'Việc cần làm', className:task.class_name || names[task.class_id] || 'Lớp học',
+        detail:due.label || meta.label, priorityLabel:due.label || 'Ưu tiên', priorityState:due.state,
+        priority:priority, dueTime:due.time, createdAt:task.created_at,
+        href:'bai-hoc?id=' + encodeURIComponent(task.lesson_id) + (meta.tab ? '&tab=' + meta.tab : '')});
+    });
+    (snapshot.reminders || []).filter(function (item) { return !item.done; }).forEach(function (item) {
+      var due = todoDue(item.due_date);
+      if (due.priority != null && due.priority > 6) return;
+      var className = item.scope || names[item.class_id] || 'Nhắc nhở từ giáo viên';
+      todos.push({id:'todo-reminder-' + item.id, type:'todo', icon:'📌', label:'Giáo viên nhắc',
+        title:item.content || item.lesson_title || 'Nhắc nhở học tập', className:className,
+        detail:due.label || 'Cần hoàn thành', priorityLabel:due.label || 'Ưu tiên', priorityState:due.state,
+        priority:due.priority == null ? 3 : due.priority, dueTime:due.time, createdAt:item.created_at || item.due_date,
+        href:item.lesson_id ? 'bai-hoc?id=' + encodeURIComponent(item.lesson_id) : 'lop-hoc'});
+    });
+    return todos.sort(function (a, b) {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      if (a.dueTime !== b.dueTime) return a.dueTime - b.dueTime;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
   }
 
   function buildStudentFeed(snapshot, profile) {
@@ -109,14 +171,18 @@
   function renderStudentFeed() {
     var box = document.getElementById('vmStudentLatest');
     if (!box) return;
-    var rows = vmStudentFeed.filter(function (item) { return vmStudentFeedFilter === 'all' || item.type === vmStudentFeedFilter; }).slice(0, 10);
+    var rows = vmStudentFeedFilter === 'todo' ? vmStudentTodos.slice(0, 10) : vmStudentFeed.filter(function (item) { return vmStudentFeedFilter === 'all' || item.type === vmStudentFeedFilter; }).slice(0, 10);
     if (!rows.length) {
-      box.innerHTML = '<div class="vm-student-empty"><span>📭</span><b>Chưa có cập nhật mới</b><small>Bài giảng, bài tập và bài kiểm tra mới sẽ cùng xuất hiện tại đây.</small></div>';
+      box.innerHTML = vmStudentFeedFilter === 'todo'
+        ? '<div class="vm-student-empty"><span>🎉</span><b>Em đã hoàn thành mọi việc</b><small>Việc mới hoặc sắp đến hạn sẽ tự xuất hiện tại đây.</small></div>'
+        : '<div class="vm-student-empty"><span>📭</span><b>Chưa có cập nhật mới</b><small>Bài giảng, bài tập và bài kiểm tra mới sẽ cùng xuất hiện tại đây.</small></div>';
       return;
     }
     box.innerHTML = rows.map(function (item) {
-      return '<a class="vm-student-feed-row type-' + esc(item.type) + '" href="' + esc(item.href) + '"><span class="vm-student-feed-icon">' + item.icon + '</span>' +
-        '<span class="vm-student-feed-copy"><span class="vm-student-feed-meta"><b>' + esc(item.label) + '</b><small>' + esc(formatUpdateTime(item.createdAt)) + '</small></span>' +
+      var priorityClass = item.type === 'todo' ? ' priority-' + esc(item.priorityState || 'normal') : '';
+      var timeLabel = item.type === 'todo' ? item.priorityLabel : formatUpdateTime(item.createdAt);
+      return '<a class="vm-student-feed-row type-' + esc(item.type) + priorityClass + '" href="' + esc(item.href) + '"><span class="vm-student-feed-icon">' + item.icon + '</span>' +
+        '<span class="vm-student-feed-copy"><span class="vm-student-feed-meta"><b>' + esc(item.label) + '</b><small>' + esc(timeLabel) + '</small></span>' +
         '<strong>' + esc(item.title) + '</strong><small>' + esc(item.className) + ' · ' + esc(item.detail || '') + '</small></span><span class="vm-student-feed-open">Mở →</span></a>';
     }).join('');
   }
@@ -158,7 +224,7 @@
     sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
     actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
       '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
-      '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="active" type="button" data-feed-filter="all">Tất cả</button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
+      '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="active" type="button" data-feed-filter="all">Tất cả</button><button class="vm-student-todo-filter" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
       '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Level</b><small>Bản đồ thành tựu</small></a></div>' +
       '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
@@ -167,6 +233,9 @@
     bindFeedFilters();
     var snapshot = await loadStudentSnapshot(profile);
     vmStudentFeed = buildStudentFeed(snapshot, profile);
+    vmStudentTodos = buildStudentTodos(snapshot, profile);
+    var todoCount = document.getElementById('vmStudentTodoCount');
+    if (todoCount) todoCount.textContent = vmStudentTodos.length;
     renderStudentFeed();
     var posts = document.getElementById('vmStudentPosts');
     if (posts) posts.innerHTML = renderPosts(snapshot, profile);

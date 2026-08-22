@@ -60,7 +60,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
       { type: 'link', path: 'luyen-de', label: 'Luyện tập' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả' },
-      { type: 'link', path: 'ca-nhan', label: 'Trang cá nhân' }
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
 
