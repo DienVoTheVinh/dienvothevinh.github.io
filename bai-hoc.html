@@ -1796,9 +1796,8 @@ function renderBaiHoc() {
   } else {
     chonNoiDung(macDinh);
   }
-  if (!coLyThuyet && !coTaiLieu && !dsAnh.length && !coTest && (ytId || driveId) && window.innerWidth > 820) {
-    phongToPane('video');
-  }
+  // Luôn giữ bố cục học tập hai cột trên desktop. Video chỉ vào toàn màn hình
+  // khi người dùng chủ động bấm nút ⛶; không tự che tài liệu/BTVN bên cạnh.
   // Học sinh mở bài có video => đánh dấu đã xem video
   if ((ytId || driveId) && nguoiDung && !laQuanTriBaiHoc()) {
     vmDanhDauDaXem(lessonId, 'video').then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });

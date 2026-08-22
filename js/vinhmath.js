@@ -2378,6 +2378,7 @@ function themNutChupManHinh() {
    ============================================================ */
 var VM_BRAND_COLUMNS = 'id,slug,name,short_name,tagline,logo_path,preset,primary_color,secondary_color,accent_color,accent_soft_color,surface_color,text_color,topbar_color,topbar_text_color,logo_scale,logo_x,logo_y,radius_px,is_active';
 var VM_BRAND_RELATION = 'brand:brand_templates(' + VM_BRAND_COLUMNS + ')';
+window.VM_ACTIVE_BRAND = null;
 
 function vmThuongHieuTuLop(lop) {
   if (!lop) return 'vinhmath';
@@ -2410,6 +2411,65 @@ function vmXoaBienThuongHieu() {
   vars.forEach(function (name) { document.body.style.removeProperty(name); });
 }
 
+function vmRgbTuHex(hex) {
+  var match = String(hex || '').trim().match(/^#([0-9a-f]{6})$/i);
+  if (!match) return null;
+  var value = parseInt(match[1], 16);
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function vmHexTuRgb(rgb) {
+  function channel(value) { return Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0'); }
+  return ('#' + channel(rgb.r) + channel(rgb.g) + channel(rgb.b)).toUpperCase();
+}
+
+function vmDoSangTuongDoi(rgb) {
+  function linear(value) {
+    value /= 255;
+    return value <= .04045 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4);
+  }
+  return .2126 * linear(rgb.r) + .7152 * linear(rgb.g) + .0722 * linear(rgb.b);
+}
+
+function vmMauDuSangTrenNenToi(hex) {
+  var original = vmRgbTuHex(hex);
+  if (!original) return '#DFBC5E';
+  var background = vmDoSangTuongDoi({ r: 18, g: 18, b: 18 });
+  var mixed = original;
+  for (var amount = 0; amount <= .8; amount += .08) {
+    mixed = {
+      r: original.r + (255 - original.r) * amount,
+      g: original.g + (255 - original.g) * amount,
+      b: original.b + (255 - original.b) * amount
+    };
+    if ((vmDoSangTuongDoi(mixed) + .05) / (background + .05) >= 4.5) break;
+  }
+  return vmHexTuRgb(mixed);
+}
+
+function vmBangMauToiThuongHieu(brand, primary, secondary, accent) {
+  var preset = vmPresetThuongHieu(brand);
+  var canonical = String(brand.slug || '').toLowerCase() === preset;
+  if (canonical && preset === 'map') {
+    return { accent:'#8FB3EC', hover:'#A9C5F2', soft:'#233149', gradient:'linear-gradient(135deg, #3E5EA0 0%, #24335C 100%)' };
+  }
+  if (canonical && preset === 'duyminh') {
+    return { accent:'#F3767B', hover:'#F99A9E', soft:'#3A1F22', gradient:'linear-gradient(135deg, #E5484D 0%, #B0313A 100%)' };
+  }
+  if (canonical && preset === 'vinhmath') {
+    return { accent:'#DFBC5E', hover:'#F3D483', soft:'rgba(223, 188, 94, 0.15)', gradient:'linear-gradient(135deg, #F3D483 0%, #A66B00 100%)' };
+  }
+  var darkAccent = vmMauDuSangTrenNenToi(accent);
+  var darkHover = vmMauDuSangTrenNenToi(secondary);
+  var rgb = vmRgbTuHex(darkAccent) || { r:223, g:188, b:94 };
+  return {
+    accent: darkAccent,
+    hover: darkHover,
+    soft: 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', 0.18)',
+    gradient: 'linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%)'
+  };
+}
+
 function vmApDungBienThuongHieu(brand) {
   if (!brand || typeof brand !== 'object') return;
   var primary = brand.primary_color || '#FFD21A';
@@ -2421,22 +2481,38 @@ function vmApDungBienThuongHieu(brand) {
   var topbar = brand.topbar_color || '#FAF8F5';
   var topbarText = brand.topbar_text_color || ink;
   var radius = Math.max(4, Math.min(32, Number(brand.radius_px) || 12));
-  var values = {
-    '--accent': accent, '--accent-hover': secondary, '--accent-soft': soft,
-    '--accent-gradient': 'linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%)',
-    '--accent-2': secondary, '--accent-strong': secondary, '--gold': accent,
-    '--surface': surface, '--surface-solid': surface, '--ink': ink, '--ink-2': ink,
-    '--topbar-bg': topbar, '--topbar-text': topbarText, '--topbar-link': topbarText,
-    '--topbar-link-active': accent, '--topbar-link-hover': accent,
-    '--line-2': accent + '55', '--r-sm': Math.max(4, radius - 6) + 'px',
-    '--r-md': radius + 'px', '--r-lg': Math.min(40, radius + 6) + 'px'
-  };
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var values = { '--r-sm': Math.max(4, radius - 6) + 'px', '--r-md': radius + 'px', '--r-lg': Math.min(40, radius + 6) + 'px' };
+  if (isDark) {
+    var dark = vmBangMauToiThuongHieu(brand, primary, secondary, accent);
+    values['--accent'] = dark.accent;
+    values['--accent-hover'] = dark.hover;
+    values['--accent-soft'] = dark.soft;
+    values['--accent-gradient'] = dark.gradient;
+    values['--accent-2'] = dark.hover;
+    values['--accent-strong'] = dark.accent;
+    values['--gold'] = dark.accent;
+    values['--topbar-link-active'] = dark.accent;
+    values['--topbar-link-hover'] = dark.accent;
+    values['--line-2'] = dark.accent + '55';
+  } else {
+    Object.assign(values, {
+      '--accent': accent, '--accent-hover': secondary, '--accent-soft': soft,
+      '--accent-gradient': 'linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%)',
+      '--accent-2': secondary, '--accent-strong': secondary, '--gold': accent,
+      '--surface': surface, '--surface-solid': surface, '--ink': ink, '--ink-2': ink,
+      '--topbar-bg': topbar, '--topbar-text': topbarText, '--topbar-link': topbarText,
+      '--topbar-link-active': accent, '--topbar-link-hover': accent,
+      '--line-2': accent + '55'
+    });
+  }
   Object.keys(values).forEach(function (name) { document.body.style.setProperty(name, values[name]); });
 }
 
 function vmApDungThuongHieu(theme) {
   try {
     theme = theme || 'vinhmath';
+    window.VM_ACTIVE_BRAND = theme;
     var preset = vmPresetThuongHieu(theme);
     var isMap = preset === 'map';
     var isDM = preset === 'duyminh';
@@ -2507,6 +2583,9 @@ function vmApDungThuongHieu(theme) {
     }
   } catch (e) { /* im lặng */ }
 }
+window.addEventListener('theme-change', function () {
+  if (window.VM_ACTIVE_BRAND) vmApDungThuongHieu(window.VM_ACTIVE_BRAND);
+});
 /* Tương thích ngược: các trang cũ gọi vmApDungThuongHieuMAP(true/false) */
 function vmApDungThuongHieuMAP(isMap) { vmApDungThuongHieu(isMap ? 'map' : 'vinhmath'); }
 function vmChipThuongHieu(brand, size) {
