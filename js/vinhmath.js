@@ -910,18 +910,27 @@ async function vmGoiHamFormDataBlob(tenHam, formData, tuyChon) {
 }
 
 /* ---------- 3. ĐĂNG NHẬP / ĐĂNG XUẤT ---------- */
-// HS dùng "tên đăng nhập" (vd DienVoTheVinh@ad.vinhmath). Supabase cần email,
-// nên ta tự ghép đuôi cố định ngầm (.com) — HS không cần biết điều này.
-async function dangNhap(username, password) {
-  if (!daKetNoi()) return { error: 'Web đang ở chế độ xem thử — chưa kết nối Supabase.' };
-  
-  var u = username.trim().toLowerCase();
-  
-  // Tự động cắt bỏ đuôi .com nếu trình duyệt tự điền hoặc người dùng nhập theo thói quen cũ
-  if (u.endsWith('.com')) {
-    u = u.replace(/\.com$/, '');
-  }
-  
+// Chuẩn hóa lỗi dán/tự điền thường gặp trên điện thoại nhưng không làm thay đổi
+// username thực tế. Dạng .app cũ được chuyển về miền Auth hiện hành (.com).
+function vmChuanHoaTenDangNhap(value) {
+  var u = String(value || '');
+  try { u = u.normalize('NFKC'); } catch (_) {}
+  return u
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[＠﹫]/g, '@')
+    .replace(/[．。｡]/g, '.')
+    .replace(/^mailto:/i, '')
+    .replace(/\s+/g, '')
+    .toLowerCase()
+    .replace(/\.app$/, '.com');
+}
+
+function vmEmailDangNhap(username) {
+  var u = vmChuanHoaTenDangNhap(username);
+
+  // Tự động cắt bỏ đuôi .com nếu trình duyệt tự điền email nội bộ đầy đủ.
+  if (u.endsWith('.com')) u = u.replace(/\.com$/, '');
+
   var email = "";
   if (!u.includes('@')) {
     // Nếu học sinh chỉ nhập tên (vd: TranHaTuAnh), tự động ghép đuôi học sinh đầy đủ
@@ -930,20 +939,50 @@ async function dangNhap(username, password) {
     // Tài khoản portal mới có dạng ngắn ten@hstt hoặc ten@gvtt; dạng cũ ten@hs.<portal>
     // vẫn được hỗ trợ. Tài khoản VinhMath mặc định là ten hoặc ten@hs.
     // Hậu tố chỉ giúp định tuyến; quyền thực tế luôn lấy từ RLS + membership.
-    if (/@hs$/.test(u) || /@(hs|gv)[a-z0-9]{2,20}$/.test(u) || /@hs\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(u)) {
+    if (/@hs\.vinhmath$/.test(u)) {
+      // Phải ưu tiên miền VinhMath mặc định trước dạng portal cũ @hs.<portal>.
+      // Nếu không, @hs.vinhmath sẽ bị ghép thành @hs.vinhmath.vinhmath.com.
+      email = u + '.com';
+    } else if (/@hs$/.test(u) || /@(hs|gv)[a-z0-9]{2,20}$/.test(u) || /@hs\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(u)) {
       email = u + '.vinhmath.com';
     // Bất kỳ đuôi phân quyền .vinhmath nào (hs, ph, gv, tg, ad, admin...) đều tự thêm .com ngầm
-    } else if (/@[a-z]+\.vinhmath$/.test(u)) {
+    } else if (/@[a-z]+\.vinhmath$/.test(u) || /@hs\.[a-z0-9]+(?:-[a-z0-9]+)*\.vinhmath$/.test(u)) {
       email = u + '.com';
     } else {
       email = u;
     }
   }
-  
-  var r = await sb.auth.signInWithPassword({ email: email, password: password });
+  return email;
+}
+
+function vmUngVienMatKhauDangNhap(password) {
+  var exact = String(password == null ? '' : password);
+  var cleaned = exact
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u00A0/g, ' ')
+    .trim();
+  return cleaned !== exact ? [exact, cleaned] : [exact];
+}
+
+// HS dùng "tên đăng nhập" (vd DienVoTheVinh@ad.vinhmath). Supabase cần email,
+// nên ta tự ghép đuôi cố định ngầm (.com) — HS không cần biết điều này.
+async function dangNhap(username, password) {
+  if (!daKetNoi()) return { error: 'Web đang ở chế độ xem thử — chưa kết nối Supabase.' };
+
+  var email = vmEmailDangNhap(username);
+  var candidates = vmUngVienMatKhauDangNhap(password);
+  var r = null;
+  for (var i = 0; i < candidates.length; i++) {
+    r = await sb.auth.signInWithPassword({ email: email, password: candidates[i] });
+    if (!r.error) break;
+    var code = r.error.code || '';
+    var message = r.error.message || '';
+    if (code !== 'invalid_credentials' && message.indexOf('Invalid login credentials') === -1) break;
+  }
+
   if (r.error) {
     var msg = r.error.message || '';
-    if (msg.indexOf('Invalid login credentials') !== -1)
+    if (r.error.code === 'invalid_credentials' || msg.indexOf('Invalid login credentials') !== -1)
       return { error: 'Sai tên đăng nhập hoặc mật khẩu. Em kiểm tra lại nhé.' };
     return { error: 'Không đăng nhập được: ' + msg };
   }
