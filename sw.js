@@ -1,6 +1,6 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v31';
-const VM_PREVIOUS_POPUP_CACHE = 'vinhmath-shell-v30';
+const VM_CACHE = 'vinhmath-shell-v32';
+const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
   '/index.html',
@@ -44,7 +44,11 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys()
       .then(function (keys) {
-        var needsShellRefresh = keys.indexOf(VM_PREVIOUS_POPUP_CACHE) !== -1;
+        /* Một số thiết bị có thể bỏ qua vài bản phát hành. Chỉ kiểm tra v31 sẽ
+           khiến tab đang mở ở v29/v30 tiếp tục giữ giao diện cũ. */
+        var needsShellRefresh = keys.some(function (key) {
+          return key.indexOf(VM_SHELL_PREFIX) === 0 && key !== VM_CACHE;
+        });
         return Promise.all(keys.filter(function (key) {
           return key.indexOf('vinhmath-') === 0 && key !== VM_CACHE;
         }).map(function (key) { return caches.delete(key); }))
@@ -62,8 +66,8 @@ self.addEventListener('activate', function (event) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '31') return null;
-                target.searchParams.set('vm_refresh', '31');
+                if (target.searchParams.get('vm_refresh') === '32') return null;
+                target.searchParams.set('vm_refresh', '32');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));
