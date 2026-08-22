@@ -60,6 +60,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
       { type: 'link', path: 'luyen-de', label: 'Luyện tập' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả' },
+      { type: 'link', path: 'bang-vang', label: 'Bảng xếp hạng' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
@@ -166,6 +167,7 @@ function apDungLogoBadge(role) {
       document.body.classList.add('vm-authenticated', 'vm-role-student');
       apDungMenu('student', null);
       apDungLogoBadge('student');
+      napHeThongCapBac();
       napDongHoTuHoc();
       return;
     }
@@ -197,11 +199,22 @@ function apDungLogoBadge(role) {
       }
       apDungMenu(r.data.role, portalContext);
       apDungLogoBadge(r.data.role);
+      if (r.data.role === 'student' && !portalContext) napHeThongCapBac();
     }
     khoiDongChuong(s.data.session.user.id);
     napDongHoTuHoc();
   } catch (e) { /* giữ menu tĩnh sẵn có nếu lỗi */ }
 })();
+
+function napHeThongCapBac() {
+  if (window.VMRank) { window.VMRank.init(); return; }
+  if (document.getElementById('vmRankSystemScript')) return;
+  var sc = document.createElement('script');
+  sc.id = 'vmRankSystemScript';
+  sc.src = 'js/rank-system.js?v=1';
+  sc.onload = function () { if (window.VMRank) window.VMRank.init(); };
+  document.body.appendChild(sc);
+}
 
 // Nạp engine đồng hồ tự học (ô trôi nổi sống sót qua mọi trang)
 function napDongHoTuHoc() {

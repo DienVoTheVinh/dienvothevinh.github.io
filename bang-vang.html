@@ -236,8 +236,8 @@
     <span class="bv-spark" style="bottom:22%;left:22%;animation-delay:1.1s">✨</span>
     <span class="bv-spark" style="bottom:28%;right:20%;animation-delay:1.6s">🌟</span>
     <div class="crown">👑</div>
-    <h1>BẢNG VÀNG VINH DANH</h1>
-    <p>Nơi gọi tên những chiến binh VinhMath chăm chỉ, kỷ luật và bứt phá nhất. Hãy luyện tập mỗi ngày để khắc tên mình lên bảng vàng! 🚀</p>
+    <h1>BẢNG XẾP HẠNG VINHMATH</h1>
+    <p>Xếp hạng dựa trên hoạt động học tập; cấp bậc và hào quang đi theo XP cá nhân. Hãy luyện tập đều để vừa tiến hạng, vừa tiến hóa linh thú! 🚀</p>
   </section>
 
   <div class="bv-filter">
@@ -257,8 +257,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=8.7"></script>
+<script src="js/vinhmath.js?v=8.7"></script>
+<script src="js/menu-v5.js?v=8.8"></script>
 <script src="js/analytics.js"></script>
 <script>
 var GRADIENTS = [
@@ -276,12 +276,17 @@ var dangLoc = null; // null = toàn bộ, hoặc class_id
 
 function escHtml(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function getRankInfo(score){
-  if (score >= 9) return { title: 'Học thần', badge: '👑 Kim cương', cls: 't-diamond' };
-  if (score >= 8) return { title: 'Đại sư', badge: '💎 Bạch kim', cls: 't-platinum' };
-  if (score >= 6.5) return { title: 'Bứt phá', badge: '🥇 Vàng', cls: 't-gold' };
-  if (score >= 5) return { title: 'Kiên trì', badge: '🥈 Bạc', cls: 't-silver' };
-  return { title: 'Khởi đầu', badge: '🥉 Đồng', cls: 't-bronze' };
+function getRankInfo(level){
+  if (window.VMRank) return VMRank.info(level || 1);
+  return { major:{name:'Tân Binh',symbol:'✦',aura:'earth'}, medal:{name:'Đồng',cls:'bronze'}, label:'Tân Binh · Đồng' };
+}
+function rankBadgeHTML(s){
+  if (window.VMRank) return VMRank.rankPill({level:Number(s.rank_level||1)}, 'leaderboard');
+  var rank = getRankInfo(s.rank_level); return '<span class="tier t-bronze">'+rank.major.symbol+' '+rank.label+'</span>';
+}
+function waitRankSystem(){
+  if (window.VMRank) return Promise.resolve();
+  return new Promise(function(resolve){ window.addEventListener('vm-rank-ready', resolve, {once:true}); setTimeout(resolve, 1800); });
 }
 
 function chuCai(ten){ var p = (ten||'?').trim().split(/\s+/); return (p[p.length-1]||'?').charAt(0).toUpperCase(); }
@@ -299,20 +304,21 @@ function avatarHTML(s, cls, idx){
 }
 
 async function taiBangVang(){
+  await waitRankSystem();
   var pod = document.getElementById('podiumWrap');
   var list = document.getElementById('listWrap');
   var note = document.getElementById('bvNote');
   pod.innerHTML = '';
-  list.innerHTML = '<div class="bv-empty">Đang tải bảng vàng…</div>';
+  list.innerHTML = '<div class="bv-empty">Đang tải bảng xếp hạng…</div>';
   note.textContent = '';
 
   if (!daKetNoi()){ list.innerHTML = '<div class="bv-empty">Web đang ở chế độ xem thử.</div>'; return; }
 
-  var r = await sb.rpc('get_leaderboard', { p_class_id: dangLoc });
-  if (r.error){ list.innerHTML = '<div class="bv-empty">Không tải được bảng vàng: '+escHtml(r.error.message)+'</div>'; return; }
+  var r = await sb.rpc('get_ranked_leaderboard', { p_class_id: dangLoc });
+  if (r.error){ list.innerHTML = '<div class="bv-empty">Không tải được bảng xếp hạng: '+escHtml(r.error.message)+'</div>'; return; }
   var ds = r.data || [];
   if (!ds.length){
-    list.innerHTML = '<div class="bv-empty">🏅 Chưa có học sinh nào trên bảng vàng ở phạm vi này.<br>Hãy chăm chỉ học tập để trở thành người đầu tiên!</div>';
+    list.innerHTML = '<div class="bv-empty">🏅 Chưa có học sinh nào trong phạm vi này.<br>Hãy chăm chỉ học tập để trở thành người đầu tiên!</div>';
     return;
   }
 
@@ -326,16 +332,16 @@ async function taiBangVang(){
   pod.innerHTML = order.map(function(pos){
     var s = top3[pos]; if (!s) return '';
     var rankNo = pos + 1;
-    var tier = getRankInfo(Number(s.score));
+    var tier = getRankInfo(Number(s.rank_level));
     var crown = rankNo === 1 ? '<div class="crown-top">👑</div>' : '';
     var meTag = (s.student_id === myId) ? ' <small style="color:var(--accent);font-weight:800">(Tôi)</small>' : '';
-    return '<div class="pod pod-'+rankNo+'">'+crown+
+    return '<div class="pod pod-'+rankNo+' aura-'+tier.major.aura+'">'+crown+
       '<div class="medal">'+medal[pos]+'</div>'+
       avatarHTML(s, 'pavatar', pos)+
       '<div class="pname">'+escHtml(s.full_name)+meTag+'</div>'+
       '<div class="pclass">'+escHtml(s.class_names||'')+'</div>'+
       '<div class="pscore">'+Number(s.score).toFixed(1)+'<small> /10</small></div>'+
-      '<div class="ptier"><span class="tier '+tier.cls+'">'+tier.badge+'</span></div>'+
+      '<div class="ptier">'+rankBadgeHTML(s)+'</div>'+
     '</div>';
   }).join('');
 
@@ -344,14 +350,14 @@ async function taiBangVang(){
   else {
     list.innerHTML = rest.map(function(s, i){
       var rankNo = i + 4;
-      var tier = getRankInfo(Number(s.score));
+      var tier = getRankInfo(Number(s.rank_level));
       var me = (s.student_id === myId);
       var meTag = me ? ' <small style="color:var(--accent);font-weight:800">(Tôi)</small>' : '';
-      return '<div class="bv-row'+(me?' me':'')+'">'+
+      return '<div class="bv-row aura-'+tier.major.aura+(me?' me':'')+'">'+
         '<div class="bv-rk">'+rankNo+'</div>'+
         avatarHTML(s, 'bv-av', i+3)+
         '<div class="bv-info"><div class="bv-nm">'+escHtml(s.full_name)+meTag+
-          ' <span class="tier '+tier.cls+'" style="font-size:.62rem;padding:1px 7px;vertical-align:middle">'+tier.badge+'</span></div>'+
+          ' '+rankBadgeHTML(s)+'</div>'+
           '<div class="bv-cl">Lớp: '+escHtml(s.class_names||'—')+'</div></div>'+
         '<div class="bv-sc">'+Number(s.score).toFixed(1)+'</div>'+
       '</div>';

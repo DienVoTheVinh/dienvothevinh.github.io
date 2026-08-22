@@ -223,13 +223,15 @@
     title.textContent = 'Cập nhật học tập mới nhất';
     sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
     actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
+      '<div id="vmRankHome" class="vm-rank-home-slot" aria-live="polite"></div>' +
       '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
       '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
-      '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Level</b><small>Bản đồ thành tựu</small></a></div>' +
+      '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cấp bậc</b><small>Bản đồ 44 cấp</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>Bảng xếp hạng</small></a></div>' +
       '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
     moveLiveCards();
     box.classList.add('is-ready');
+    if (window.VMRank) window.VMRank.init();
     bindFeedFilters();
     var snapshot = await loadStudentSnapshot(profile);
     vmStudentFeed = buildStudentFeed(snapshot, profile);
