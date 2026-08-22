@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (!fullName) return jsonRes({ error: "Thieu ho ten" }, 400);
     if (!baseU) return jsonRes({ error: "Ten dang nhap khong hop le" }, 400);
-    if (password.length < 6 || password2.length < 6) return jsonRes({ error: "Mat khau toi thieu 6 ky tu" }, 400);
+    if (password.length < 8 || password2.length < 8) return jsonRes({ error: "Mat khau toi thieu 8 ky tu" }, 400);
 
     async function timU(needPh: boolean): Promise<string | null> {
       for (let i = 1; i <= 60; i++) {
@@ -72,17 +72,26 @@ Deno.serve(async (req) => {
 
     if (type === "portal_hs" || type === "portal_gv") {
       const portalId = String(body.portalId || "");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(portalId)) {
+        return jsonRes({ error: "Portal khong hop le" }, 400);
+      }
       const { data: portal } = await svc.from("exam_portals").select("id,slug,login_suffix,teacher_login_suffix,is_active").eq("id", portalId).maybeSingle();
       if (!portal || !portal.is_active) return jsonRes({ error: "Portal khong ton tai hoac dang tam dung" }, 404);
       const u = await timU(false);
       if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
       const isManager = type === "portal_gv";
       const suffix = isManager ? portal.teacher_login_suffix : portal.login_suffix;
+      if (!new RegExp(isManager ? "^gv[a-z0-9]{2,20}$" : "^hs[a-z0-9]{2,20}$").test(String(suffix || ""))) {
+        return jsonRes({ error: "Hau to portal khong hop le" }, 409);
+      }
       const email = `${u}@${suffix}.vinhmath.com`;
       const { data: acc, error: accErr } = await svc.auth.admin.createUser({
         email, password, email_confirm: true, user_metadata: { full_name: fullName },
       });
-      if (accErr || !acc?.user) return jsonRes({ error: "Tao TK hoc sinh loi: " + (accErr?.message || "unknown") }, 500);
+      if (accErr || !acc?.user) return jsonRes({ error: "Khong tao duoc tai khoan portal" }, 500);
+      // Portal managers stay profile.role=student on purpose. Their manager
+      // permission comes only from exam_portal_members, preventing broad teacher
+      // access to the main VinhMath tenant.
       const profileResult = await svc.from("profiles").update({ full_name: fullName, username: u, role: "student" }).eq("id", acc.user.id);
       const memberResult = await svc.from("exam_portal_members").insert({
         portal_id: portal.id, user_id: acc.user.id, member_role: isManager ? "manager" : "student", portal_only: true,
@@ -91,7 +100,7 @@ Deno.serve(async (req) => {
         await svc.auth.admin.deleteUser(acc.user.id).catch(() => {});
         return jsonRes({ error: "Khong gan duoc tai khoan vao portal" }, 500);
       }
-      return jsonRes({ ok: true, type, login: `${u}@${suffix}` });
+      return jsonRes({ ok: true, type, login: `${u}@${suffix}`, memberRole: isManager ? "manager" : "student" });
     }
 
     if (type === "hs_ph") {
