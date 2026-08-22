@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#9e6100">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Luyện đề & Thi thử — VinhMath</title>
+<title>Luyện tập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
@@ -31,6 +31,7 @@
 .exam-meta span { min-width: 0; line-height: 1.45; }
 .exam-card-action { min-height: 42px; justify-content: center; text-align: center; white-space: normal; line-height: 1.3; }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
+.practice-overview{margin-bottom:22px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-sm)}.practice-overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.practice-overview-head h2{margin:0;font-size:1.05rem}.practice-overview-head p{margin:4px 0 0;color:var(--ink-3);font-size:.82rem}.practice-type-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.practice-type-tabs button{flex:0 0 auto;min-height:38px;padding:7px 12px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface-2);color:var(--ink-2);font:800 .76rem/1.2 inherit;cursor:pointer}.practice-type-tabs button.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff)}.practice-section{margin-top:22px}.practice-section-head{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:10px}.practice-section-head h2{margin:0;font-size:1.15rem}.practice-section-head p{margin:3px 0 0;color:var(--ink-3);font-size:.78rem}.lesson-practice-list{display:grid;gap:10px}.lesson-practice-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:13px;align-items:center;padding:15px 17px;border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:var(--shadow-sm)}.lesson-practice-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:var(--accent-soft);font-size:1.25rem}.lesson-practice-main{min-width:0}.lesson-practice-main h3{margin:4px 0;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lesson-practice-meta{display:flex;gap:6px 12px;flex-wrap:wrap;color:var(--ink-3);font-size:.72rem}.lesson-practice-label{color:var(--accent);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.lesson-practice-status{display:inline-flex;padding:3px 7px;border-radius:999px;background:var(--surface-2);color:var(--ink-3);font-size:.66rem;font-weight:800}.lesson-practice-status.done{background:var(--ok-soft);color:var(--ok)}.lesson-practice-status.pending{background:var(--accent-soft);color:var(--accent)}
 .portal-exam-mode #viewMain > .topbar .navlinks { display: none !important; }
 .portal-exam-mode #viewMain > .topbar .logo small { display: none; }
 .portal-exam-mode #viewMain > .topbar .nav { max-width: 1180px; }
@@ -191,6 +192,7 @@
   .exam-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; margin-top: 8px; font-size: .78rem; }
   .exam-meta span { overflow-wrap: anywhere; }
   .exam-card-action { width: 100%; min-height: 44px; }
+  .practice-overview{padding:14px}.practice-type-tabs{width:100%}.lesson-practice-card{grid-template-columns:42px minmax(0,1fr);padding:13px}.lesson-practice-action{grid-column:1/3;width:100%;justify-content:center}.lesson-practice-icon{width:42px;height:42px}.lesson-practice-main h3{white-space:normal}.practice-section-head{align-items:flex-start;flex-direction:column}
 
   .exam-header {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -242,8 +244,8 @@
     <div class="head">
       <a id="portalExamBack" class="btn btn-secondary btn-sm portal-exam-back" href="thi">← Về cổng thi</a>
       <div class="sec-label" id="labelKhuVuc">Khu vực kiểm tra</div>
-      <h1>Luyện đề & Thi thử</h1>
-      <p style="margin-top:4px" id="subHeadTieuDe">Nơi tổng hợp đề thi thử chất lượng cao, chấm điểm trắc nghiệm trực tuyến.</p>
+      <h1>Luyện tập</h1>
+      <p style="margin-top:4px" id="subHeadTieuDe">Một nơi cho bài tập về nhà, bài kiểm tra trong bài giảng và đề thi trực tuyến.</p>
     </div>
 
     <!-- Trạng thái chưa xếp lớp -->
@@ -258,7 +260,18 @@
 
     <div id="coLopContainer">
       <div class="tab-box" id="tabLopHocSinh" style="display:none; margin-bottom: 24px;"></div>
-      <div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div>
+      <section class="practice-overview" id="vmPracticeOverview">
+        <div class="practice-overview-head"><div><h2>Em muốn luyện gì?</h2><p>Lọc theo loại bài; lớp và khối được chọn ở dải phía trên.</p></div>
+          <div class="practice-type-tabs" id="vmPracticeTypeTabs">
+            <button class="active" type="button" data-practice-filter="all">Tất cả</button>
+            <button type="button" data-practice-filter="homework">Bài tập về nhà</button>
+            <button type="button" data-practice-filter="test">Bài kiểm tra</button>
+            <button type="button" data-practice-filter="exam">Đề thi</button>
+          </div>
+        </div>
+      </section>
+      <section class="practice-section" id="vmLessonPracticeSection"><div class="practice-section-head"><div><h2>Bài tập & kiểm tra trong bài giảng</h2><p>Mở đúng phần cần làm mà không phải tìm lại từng bài giảng.</p></div></div><div id="dsBaiTapBaiGiang" class="lesson-practice-list"><div class="empty card">Đang tải bài tập...</div></div></section>
+      <section class="practice-section" id="vmExamPracticeSection"><div class="practice-section-head"><div><h2>Đề thi & thi thử</h2><p>Đề độc lập, có thời gian làm và kết quả trực tuyến.</p></div></div><div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div></section>
     </div>
   </div>
 </div>
@@ -539,6 +552,10 @@ var canDownloadSolutionPdf = false;
 var vmPortalSlug = '';
 var vmPortalMembership = null;
 var vmPortalExamIds = [];
+var vmPracticeAllClassIds = [];
+var vmPracticeFilter = 'all';
+var vmPracticeLessons = [];
+var vmPracticeSubmissions = [];
 
 async function vmKhoiTaoCheDoPortal() {
   vmPortalSlug = new URLSearchParams(location.search).get('portal') || '';
@@ -627,6 +644,118 @@ function taoDongCham(n) {
   return out;
 }
 
+function vmPracticeEsc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+  });
+}
+
+function vmPracticeHasText(value) {
+  return !!String(value || '').trim();
+}
+
+function vmPracticeHasFiles(value) {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function vmPracticeSubmissionFor(lessonId, kind) {
+  return vmPracticeSubmissions.find(function (row) { return row.lesson_id === lessonId && row.kind === kind; }) || null;
+}
+
+function vmPracticeDueLabel(value) {
+  if (!value) return '';
+  var due = new Date(value);
+  if (isNaN(due.getTime())) return '';
+  var late = due.getTime() < Date.now();
+  return (late ? 'Quá hạn · ' : 'Hạn · ') + dinhDangThoiGian(due);
+}
+
+function vmBuildLessonPracticeItems() {
+  var items = [];
+  vmPracticeLessons.forEach(function (lesson) {
+    var className = lesson.classes && lesson.classes.name || 'Lớp học';
+    var base = { lessonId:lesson.id, title:lesson.title, className:className, grade:lesson.classes && lesson.classes.grade, createdAt:lesson.created_at };
+    if (vmPracticeHasText(lesson.homework_text) || vmPracticeHasText(lesson.homework_latex_content) || vmPracticeHasFiles(lesson.homework_images) || lesson.homework_document_id) {
+      items.push(Object.assign({}, base, {kind:'homework', label:'Bài tập về nhà', icon:'📝', due:lesson.homework_due || lesson.homework_deadline, tab:'btvn'}));
+    }
+    if (vmPracticeHasText(lesson.homework2_text) || vmPracticeHasText(lesson.homework2_latex_content) || vmPracticeHasFiles(lesson.homework2_images) || lesson.homework2_document_id) {
+      items.push(Object.assign({}, base, {kind:'homework', submissionKind:'homework_bonus', label:'Bài tập thêm', icon:'🎁', due:lesson.homework2_due, tab:'btvn'}));
+    }
+    var linkedExam = lesson.linked_exam_id || (Array.isArray(lesson.linked_exam_ids) && lesson.linked_exam_ids.length);
+    if (!linkedExam && (lesson.test_active || vmPracticeHasText(lesson.test_latex_content) || lesson.test_document_id)) {
+      items.push(Object.assign({}, base, {kind:'test', label:'Bài kiểm tra', icon:'🧪', due:lesson.test_deadline, tab:'test'}));
+    }
+  });
+  return items.sort(function (a, b) {
+    var ad = a.due ? new Date(a.due).getTime() : new Date(a.createdAt || 0).getTime();
+    var bd = b.due ? new Date(b.due).getTime() : new Date(b.createdAt || 0).getTime();
+    return bd - ad;
+  });
+}
+
+function vmRenderLessonPractice() {
+  var box = $('dsBaiTapBaiGiang');
+  if (!box) return;
+  var items = vmBuildLessonPracticeItems().filter(function (item) { return vmPracticeFilter === 'all' || item.kind === vmPracticeFilter; });
+  if (!items.length) {
+    box.innerHTML = '<div class="empty card">Chưa có ' + (vmPracticeFilter === 'homework' ? 'bài tập về nhà' : vmPracticeFilter === 'test' ? 'bài kiểm tra' : 'bài tập hoặc bài kiểm tra') + ' trong phạm vi này.</div>';
+    return;
+  }
+  box.innerHTML = items.map(function (item) {
+    var submission = vmPracticeSubmissionFor(item.lessonId, item.submissionKind || item.kind);
+    var status = submission ? (submission.status === 'graded' ? 'Đã chấm' : 'Đã nộp') : 'Chưa nộp';
+    var statusClass = submission ? 'done' : 'pending';
+    return '<article class="lesson-practice-card"><div class="lesson-practice-icon">' + item.icon + '</div><div class="lesson-practice-main">' +
+      '<div><span class="lesson-practice-label">' + vmPracticeEsc(item.label) + '</span> <span class="lesson-practice-status ' + statusClass + '">' + status + '</span></div>' +
+      '<h3>' + vmPracticeEsc(item.title) + '</h3><div class="lesson-practice-meta"><span>🏫 ' + vmPracticeEsc(item.className) + '</span>' + (item.grade ? '<span>Khối ' + vmPracticeEsc(item.grade) + '</span>' : '') + (item.due ? '<span>⏳ ' + vmPracticeEsc(vmPracticeDueLabel(item.due)) + '</span>' : '') + '</div></div>' +
+      '<a class="btn btn-primary btn-sm lesson-practice-action" href="bai-hoc?id=' + encodeURIComponent(item.lessonId) + '&tab=' + encodeURIComponent(item.tab) + '">' + (submission ? 'Xem lại' : 'Vào làm') + ' →</a></article>';
+  }).join('');
+}
+
+function vmApplyPracticeFilter() {
+  var lessonSection = $('vmLessonPracticeSection');
+  var examSection = $('vmExamPracticeSection');
+  if (lessonSection) lessonSection.style.display = vmPracticeFilter === 'exam' ? 'none' : '';
+  if (examSection) examSection.style.display = (vmPracticeFilter === 'homework' || vmPracticeFilter === 'test') ? 'none' : '';
+  vmRenderLessonPractice();
+}
+
+async function vmLoadLessonPractice(classIds) {
+  var box = $('dsBaiTapBaiGiang');
+  if (!box) return;
+  box.innerHTML = '<div class="empty card">Đang tải bài tập...</div>';
+  var isGuest = sessionStorage.getItem('vm-guest-mode') === 'true';
+  if (isGuest) {
+    vmPracticeLessons = [{id:'demo-lesson',title:'Bài tập minh họa',class_id:'demo-class',created_at:new Date().toISOString(),homework_text:'Bài tập',classes:{name:'Lớp minh họa',grade:9}}];
+    vmPracticeSubmissions = [];
+    vmApplyPracticeFilter();
+    return;
+  }
+  if (!classIds || !classIds.length) { vmPracticeLessons = []; vmPracticeSubmissions = []; vmApplyPracticeFilter(); return; }
+  var response = await sb.from('lessons')
+    .select('id,title,class_id,created_at,homework_text,homework_images,homework_document_id,homework_latex_content,homework_due,homework_deadline,homework2_text,homework2_images,homework2_document_id,homework2_latex_content,homework2_due,test_active,test_document_id,test_latex_content,test_deadline,linked_exam_id,linked_exam_ids,classes(id,name,grade)')
+    .in('class_id', classIds)
+    .eq('published', true)
+    .order('created_at', {ascending:false});
+  if (response.error) { box.innerHTML = '<div class="empty card">Chưa tải được bài tập. Em vui lòng thử lại.</div>'; return; }
+  vmPracticeLessons = response.data || [];
+  var lessonIds = vmPracticeLessons.map(function (lesson) { return lesson.id; });
+  vmPracticeSubmissions = [];
+  if (lessonIds.length) {
+    var submissions = await sb.from('submissions').select('id,lesson_id,kind,status,submitted_at,graded_at').eq('student_id', studentInfo.id).in('lesson_id', lessonIds).order('submitted_at', {ascending:false});
+    if (!submissions.error) vmPracticeSubmissions = submissions.data || [];
+  }
+  vmApplyPracticeFilter();
+}
+
+document.addEventListener('click', function (event) {
+  var button = event.target.closest('[data-practice-filter]');
+  if (!button) return;
+  vmPracticeFilter = button.getAttribute('data-practice-filter') || 'all';
+  document.querySelectorAll('[data-practice-filter]').forEach(function (item) { item.classList.toggle('active', item === button); });
+  vmApplyPracticeFilter();
+});
+
 (async function () {
   if (!daKetNoi()) {
     $('dsDeThi').innerHTML = '<div class="empty card">Chưa kết nối Supabase — chế độ xem thử.</div>';
@@ -639,6 +768,7 @@ function taoDongCham(n) {
   
   var isStaff = ['admin', 'teacher'].includes(studentInfo.role);
   var dsHocSinhLop = studentInfo.class_students || [];
+  vmPracticeAllClassIds = dsHocSinhLop.map(function (item) { return item.class_id; }).filter(Boolean);
   
   if (dsHocSinhLop.length === 0 && !isStaff && !portalMode) {
     $('coLopContainer').style.display = 'none';
@@ -649,18 +779,18 @@ function taoDongCham(n) {
   }
   
   // Xác định class_id hoạt động
-  var selectedClassId = null;
+  var selectedClassId = 'all';
   if (dsHocSinhLop.length > 0) {
-    var savedClassId = localStorage.getItem('vm-active-class-id');
-    var exists = dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
-    selectedClassId = (savedClassId && exists) ? savedClassId : dsHocSinhLop[0].class_id;
+    var savedClassId = localStorage.getItem('vm-practice-class-id');
+    var exists = savedClassId === 'all' || dsHocSinhLop.some(function(c) { return c.class_id === savedClassId; });
+    selectedClassId = (savedClassId && exists) ? savedClassId : 'all';
   }
 
   // Vẽ các tab chuyển lớp nếu có lớp và không phải quản trị viên
   if (dsHocSinhLop.length > 0 && !isStaff) {
     var tabsBox = $('tabLopHocSinh');
     tabsBox.style.display = 'flex';
-    tabsBox.innerHTML = dsHocSinhLop.map(function (cs) {
+    tabsBox.innerHTML = '<button class="tab-btn' + (selectedClassId === 'all' ? ' active' : '') + '" onclick="chonLopHocSinh(\'all\')" id="tab-class-all">Tất cả các lớp</button>' + dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
       var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
@@ -675,11 +805,16 @@ function taoDongCham(n) {
   }
   
   if (portalMode) {
+    $('vmPracticeOverview').style.display = 'none';
+    $('vmLessonPracticeSection').style.display = 'none';
     await taiDanhSachDe([]);
   } else if (isStaff) {
+    $('vmPracticeOverview').style.display = 'none';
+    $('vmLessonPracticeSection').style.display = 'none';
     await taiDanhSachDe(null);
   } else {
-    await taiDanhSachDe(selectedClassId ? [selectedClassId] : []);
+    var selectedClassIds = selectedClassId === 'all' ? vmPracticeAllClassIds : [selectedClassId];
+    await Promise.all([taiDanhSachDe(selectedClassIds), vmLoadLessonPractice(selectedClassIds)]);
   }
   
   // Tự động mở đề thi từ tham số URL nếu có (dành cho Giáo viên/Admin xem thử kiểu học sinh)
@@ -708,7 +843,7 @@ function taoDongCham(n) {
 })();
 
 async function chonLopHocSinh(classId) {
-  localStorage.setItem('vm-active-class-id', classId);
+  localStorage.setItem('vm-practice-class-id', classId);
   
   // Cập nhật tab active
   document.querySelectorAll('#tabLopHocSinh .tab-btn').forEach(function (btn) {
@@ -722,7 +857,8 @@ async function chonLopHocSinh(classId) {
     }
   }
   
-  await taiDanhSachDe([classId]);
+  var classIds = classId === 'all' ? vmPracticeAllClassIds : [classId];
+  await Promise.all([taiDanhSachDe(classIds), vmLoadLessonPractice(classIds)]);
 }
 
 function vmDeCoLoiGiai() {
@@ -837,7 +973,7 @@ async function taiDanhSachDe(classIds) {
   } else {
     // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
     var query = sb.from('exams')
-      .select('id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, allow_solution_pdf, exam_questions(count)')
+      .select('id, class_id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, allow_solution_pdf, classes(id,name,grade), exam_questions(count)')
       .eq('published', true);
 
     if (vmPortalSlug) {
@@ -869,6 +1005,7 @@ async function taiDanhSachDe(classIds) {
   
   if (!listExams.length) {
     $('dsDeThi').innerHTML = '<div class="empty card">Lớp em chưa có đề thi/đề kiểm tra nào. Quay lại sau nhé!</div>';
+    vmApplyPracticeFilter();
     return;
   }
   
@@ -938,6 +1075,7 @@ async function taiDanhSachDe(classIds) {
           badgeHTML +
         '</div>' +
         '<div class="exam-meta">' +
+          (e.classes ? '<span>🏫 ' + vmPracticeEsc(e.classes.name || 'Lớp học') + (e.classes.grade ? ' · Khối ' + vmPracticeEsc(e.classes.grade) : '') + '</span>' : '<span>🌐 Đề chung</span>') +
           '<span>⏱️ ' + e.duration_minutes + ' phút</span>' +
           '<span>📋 ' + countQ + ' câu hỏi</span>' +
           (e.opens_at ? '<span>📅 Mở: ' + dinhDangThoiGian(new Date(e.opens_at)) + '</span>' : '') +
@@ -947,6 +1085,7 @@ async function taiDanhSachDe(classIds) {
       '<button class="btn btn-primary btn-sm exam-card-action" onclick="startExam(\'' + e.id + '\')" ' + disabledAttr + '>' + actionBtnText + '</button>' +
       '</div>';
   }).join('');
+  vmApplyPracticeFilter();
 }
 
 /* ----- Phân hệ Làm bài thi ----- */

@@ -69,7 +69,7 @@
 
   var vmStudentFeed = [];
   var vmStudentTodos = [];
-  var vmStudentFeedFilter = 'all';
+  var vmStudentFeedFilter = 'todo';
   function hasText(value) { return typeof value === 'string' && value.trim() !== ''; }
   function hasFiles(value) { return Array.isArray(value) && value.length > 0; }
 
@@ -171,7 +171,7 @@
   function renderStudentFeed() {
     var box = document.getElementById('vmStudentLatest');
     if (!box) return;
-    var rows = vmStudentFeedFilter === 'todo' ? vmStudentTodos.slice(0, 10) : vmStudentFeed.filter(function (item) { return vmStudentFeedFilter === 'all' || item.type === vmStudentFeedFilter; }).slice(0, 10);
+    var rows = vmStudentFeedFilter === 'todo' ? vmStudentTodos.slice(0, 10) : vmStudentFeed.filter(function (item) { return item.type === vmStudentFeedFilter; }).slice(0, 10);
     if (!rows.length) {
       box.innerHTML = vmStudentFeedFilter === 'todo'
         ? '<div class="vm-student-empty"><span>🎉</span><b>Em đã hoàn thành mọi việc</b><small>Việc mới hoặc sắp đến hạn sẽ tự xuất hiện tại đây.</small></div>'
@@ -194,7 +194,7 @@
     filters.addEventListener('click', function (event) {
       var button = event.target.closest('[data-feed-filter]');
       if (!button) return;
-      vmStudentFeedFilter = button.getAttribute('data-feed-filter') || 'all';
+      vmStudentFeedFilter = button.getAttribute('data-feed-filter') || 'todo';
       filters.querySelectorAll('[data-feed-filter]').forEach(function (item) { item.classList.toggle('active', item === button); });
       renderStudentFeed();
     });
@@ -224,7 +224,7 @@
     sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
     actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
       '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
-      '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="active" type="button" data-feed-filter="all">Tất cả</button><button class="vm-student-todo-filter" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
+      '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
       '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Thi</b><small>Luyện tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Level</b><small>Bản đồ thành tựu</small></a></div>' +
       '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
