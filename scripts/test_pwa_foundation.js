@@ -20,11 +20,11 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v32"), 'Service worker cache version must publish the stale-client recovery release');
+expect(worker.includes("vinhmath-shell-v33"), 'Service worker cache version must publish the student reader and font release');
 expect(worker.includes("VM_SHELL_PREFIX = 'vinhmath-shell-'"), 'Service worker must detect every previous application shell, not only one version');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '32'"), 'Open apps must not enter a refresh loop on shell v32');
-expect(worker.includes("target.searchParams.set('vm_refresh', '32'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '33'"), 'Open apps must not enter a refresh loop on shell v33');
+expect(worker.includes("target.searchParams.set('vm_refresh', '33'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("key.indexOf(VM_SHELL_PREFIX) === 0 && key !== VM_CACHE"), 'Any skipped shell generation must trigger a one-time refresh');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
 expect(worker.includes("'/js/portal-classroom.js'"), 'Partner classroom authoring client must be available offline after installation');
@@ -45,7 +45,7 @@ expect(worker.includes("'/icons/vinhmath-512.png'"), 'Service worker must cache 
 expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase traffic');
 
 const sharedJs = read('js/vinhmath.js');
-expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js?v=32'") && sharedJs.includes("updateViaCache: 'none'"), 'Shared JS must bypass stale HTTP cache when updating the service worker');
+expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js?v=33'") && sharedJs.includes("updateViaCache: 'none'"), 'Shared JS must bypass stale HTTP cache when updating the service worker');
 expect(sharedJs.includes('registration.update()'), 'An open application must request a service worker update immediately');
 expect(sharedJs.includes('function vmKhoaHuongDocTrenPwa()'), 'Installed mobile app needs a runtime portrait lock');
 expect(sharedJs.includes("mode === 'landscape' ? 'landscape-primary' : 'portrait-primary'"), 'Runtime orientation lock must support both primary directions');
@@ -145,7 +145,8 @@ for (const file of htmlFiles) {
   const html = read(file);
   expect(html.includes('rel="manifest" href="/manifest.webmanifest"'), `${file}: missing manifest link`);
   expect(html.includes('rel="apple-touch-icon" href="/icons/vinhmath-192.png"'), `${file}: stale Apple app icon`);
-  expect(!/css\/vinhmath\.css\?v=(?!8\.1)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/vinhmath\.css\?v=(?!8\.2)/.test(html), `${file}: stale shared CSS version`);
+  expect(!/css\/tokens\.css\?v=(?!8\.4)/.test(html), `${file}: stale design token version`);
   if (html.includes('js/vinhmath.js')) {
     const sharedVersion = html.match(/js\/vinhmath\.js\?v=([0-9.]+)/);
     expect(sharedVersion && Number(sharedVersion[1]) >= 7.9, `${file}: stale shared JS version`);

@@ -12,9 +12,10 @@
   <title>Kết quả — VinhMath</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/tokens.css?v=7.4">
-  <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
-  <link rel="stylesheet" href="css/student-experience.css?v=4">
+  <link rel="stylesheet" href="css/tokens.css?v=8.4">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+  <link rel="stylesheet" href="css/student-experience.css?v=5">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body class="student-results-page">
   <div class="topbar">
@@ -32,10 +33,10 @@
     <header class="student-results-head">
       <div>
         <div class="sec-label">Phản hồi từ giáo viên</div>
-        <h1>Bài giáo viên đã chấm</h1>
-        <p>Xem điểm, lời phê và file giáo viên đã viết/sửa trực tiếp trên bài của em.</p>
+        <h1>Kết quả & lời giải</h1>
+        <p>Xem điểm, lời phê, file giáo viên sửa và lời giải LaTeX đã được mở sau khi em nộp bài.</p>
       </div>
-      <div class="student-results-count"><strong id="studentResultsCount">—</strong><small>bài đã chấm</small></div>
+      <div class="student-results-count"><strong id="studentResultsCount">—</strong><small>kết quả & lời giải</small></div>
     </header>
 
     <div class="student-results-scope" aria-label="Phạm vi kết quả">
@@ -51,7 +52,7 @@
     </div>
 
     <section id="studentResultsList" class="student-results-list" aria-live="polite">
-      <div class="student-results-empty"><span>⏳</span><b>Đang tải bài đã chấm…</b></div>
+      <div class="student-results-empty"><span>⏳</span><b>Đang tải kết quả và lời giải…</b></div>
     </section>
   </main>
 
@@ -63,6 +64,9 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=8.6"></script>
   <script src="js/menu-v5.js?v=9.1"></script>
-  <script src="js/student-results.js?v=3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script src="js/latex-view.js?v=10.6"></script>
+  <script src="js/student-results.js?v=4"></script>
 </body>
 </html>

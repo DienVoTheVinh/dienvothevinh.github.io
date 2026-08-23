@@ -8,6 +8,8 @@ const expect = (value, message) => { if (!value) throw new Error(message); };
 
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
+const tokens = read('css/tokens.css');
+const vinhCss = read('css/vinhmath.css');
 const homePage = read('trang-chu.html');
 const home = read('js/role-home.js');
 const homeCss = read('css/role-home.css');
@@ -68,7 +70,9 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=8'), 'Trang Hôm nay phải nạp phiên bản việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('css/role-home.css?v=7') && homePage.includes('js/role-home.js?v=9'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('vmStudentClockTime') && home.includes("timeZone: 'Asia/Ho_Chi_Minh'") && home.includes("['khungMeetHoc', 'khungDiemDanhHoc']"), 'Trang Hôm nay phải có đồng hồ Việt Nam và đặt Google Meet trước điểm danh');
+expect(homeCss.includes('.vm-student-live-slot{grid-column:1/-1') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session'), 'Khối Google Meet phải nổi bật toàn hàng và có lịch học rõ ràng');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
 expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
 expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
@@ -91,10 +95,12 @@ for (const href of ['lich-hoc', 'tai-lieu', 'goc-tu-hoc', 'bang-vang', 'blog', '
 expect(personal.includes('href="thanh-tuu"'), 'Trang cá nhân thiếu lối vào Bản đồ thành tựu');
 expect(personal.includes("profileData.role === 'student'") && personal.includes('personalHub.hidden = false'), 'Hub cá nhân chỉ được mở đúng cho học sinh');
 
-expect(resultsPage.includes('Bài giáo viên đã chấm') && resultsPage.includes('data-filter="corrected"'), 'Trang Kết quả thiếu danh sách hoặc lọc file sửa');
-expect(results.includes(".eq('student_id', profile.id)") && results.includes(".eq('status', 'graded')"), 'Truy vấn kết quả phải khóa vào học sinh hiện tại và trạng thái đã chấm');
+expect(resultsPage.includes('Kết quả & lời giải') && resultsPage.includes('data-filter="corrected"'), 'Trang Kết quả thiếu danh sách lời giải hoặc lọc file sửa');
+expect(results.includes(".eq('student_id', profile.id)") && results.includes(".not('submitted_at', 'is', null)"), 'Truy vấn kết quả phải khóa vào học sinh hiện tại và chỉ lấy bài đã nộp');
+expect(results.includes("from('lesson_latex_sources')") && results.includes(".eq('has_solution', true)") && results.includes('showSolutions:true'), 'Trang Kết quả phải tải lời giải LaTeX đã được RLS mở quyền');
+expect(results.includes("item.status === 'graded' || hasUnlockedSolution(item)"), 'Kết quả phải hiện bài đã chấm hoặc bài đã nộp có lời giải');
 expect(results.includes("sessionStorage.getItem('vm-guest-mode') === 'true'"), 'Chế độ trải nghiệm phải có kết quả minh họa mà không đọc dữ liệu thật');
-expect(!results.includes('&action=graded&kind=') && results.includes('Toàn bộ điểm, nhận xét và file sửa được xem ngay tại đây'), 'Trang Kết quả phải xem đầy đủ tại chỗ, không dẫn ngược sang bài giảng');
+expect(!results.includes('&action=graded&kind=') && results.includes('Toàn bộ điểm, nhận xét, file sửa và lời giải đã mở được xem ngay tại đây'), 'Trang Kết quả phải xem đầy đủ tại chỗ, không dẫn ngược sang bài giảng');
 expect(resultsPage.includes('studentResultClassFilter') && resultsPage.includes('studentResultGradeFilter') && results.includes('populateScopes()'), 'Trang Kết quả thiếu lọc theo lớp và khối');
 expect(results.includes('assessment_level') && results.includes("needs_improvement") && results.includes("meets") && results.includes("good"), 'Trang Kết quả thiếu ba mức đánh giá');
 expect(results.includes('student-result-pdf') && results.includes('<iframe'), 'PDF bài sửa phải xem được ngay trong Kết quả');
@@ -115,6 +121,9 @@ expect(rankSystem.includes("data.id==='guest'") && rankSystem.includes("sb.rpc('
 expect(rankCss.includes('prefers-reduced-motion:reduce') && rankCss.includes('.vm-companion-dock'), 'Hiệu ứng linh thú phải tôn trọng chế độ giảm chuyển động');
 expect(rankMigration.includes('rank_level_from_xp') && rankMigration.includes("score >= 8") && rankMigration.includes('student_companion_state'), 'Migration thiếu ánh xạ 44 cấp, ngưỡng đột phá hoặc trạng thái linh thú');
 expect(lessonPage.includes('[data-reader-key]:fullscreen') && lessonPage.includes('[data-reader-key]:-webkit-full-screen'), 'Tài liệu toàn màn hình phải thoát khỏi kích thước cột chia đôi');
+expect(lessonPage.includes('Dùng toàn màn hình CSS riêng trong từng cửa sổ') && !/if \(!mobile && shell\.requestFullscreen\)/.test(lessonPage), 'Trình đọc phải tách toàn màn hình web và PWA, không dùng native fullscreen');
+expect(lessonPage.includes('.vm-tex-kind-document .vm-tex-reader,.vm-tex-kind-test .vm-tex-reader { width:100%; max-width:none; }'), 'Tài liệu và bài kiểm tra LaTeX phải dùng hết bề ngang PC');
+expect(tokens.includes('--font-reading: "Be Vietnam Pro"') && vinhCss.includes('button,input,select,textarea,option{font-family:var(--font-sans)}'), 'Font giao diện và trình đọc phải hỗ trợ đầy đủ tiếng Việt');
 expect(practicePage.includes('Bài tập & kiểm tra trong bài giảng') && practicePage.includes('Đề thi & thi thử') && practicePage.includes('Tất cả các lớp'), 'Luyện tập phải hợp nhất bài tập, kiểm tra, đề thi và có phạm vi mọi lớp');
 expect(practicePage.includes('practice-shell has-class-filter') || (practicePage.includes("classList.add('has-class-filter')") && practicePage.includes('practice-class-filter')), 'Bộ lọc lớp trên PC phải nằm ở thanh bên trái');
 expect(practicePage.includes('practice-specialized-tag') && !practicePage.includes('color:#B8860B;background:rgba(194,125,0,.16)'), 'Nhãn Chuyên phải có màu tương phản riêng');
