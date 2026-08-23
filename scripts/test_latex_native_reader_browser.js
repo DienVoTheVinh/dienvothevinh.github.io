@@ -150,6 +150,9 @@ Tính $1+2+3$.
     if (/functions\.invoke\(['"]latex/.test(docFn) || /functions\.invoke\(['"]latex/.test(testFn)) throw new Error('Opening a LaTeX document still compiles PDF automatically');
     if (!lesson.includes('vmMoPdfExport') || !lesson.includes('vmPdfExportModal') || !lesson.includes('vmCauHinhNoiDungPdf')) throw new Error('Configurable on-demand PDF export is missing');
     if (!lesson.includes('vmDoiZoomReader') || !lesson.includes('vmToggleReaderFullscreen')) throw new Error('Reader zoom/fullscreen controls are missing');
+    const fullscreenFn = extractFunction(lesson, 'vmToggleReaderFullscreen');
+    if (/\.requestFullscreen\s*\(/.test(fullscreenFn) || /\.webkitRequestFullscreen\s*\(/.test(fullscreenFn)) throw new Error('Reader fullscreen still delegates to the browser/PWA native fullscreen lifecycle');
+    if (!lesson.includes('.vm-tex-kind-document .vm-tex-reader,.vm-tex-kind-test .vm-tex-reader { width:100%; max-width:none; }')) throw new Error('Desktop document/test readers are still constrained to the narrow reading column');
     if (!lesson.includes('vmLayKhaiBaoTikz') || !lesson.includes('tkz-euclide,pgfplots')) throw new Error('TikZ compiler preamble support is missing');
     if (!lesson.includes('vmMauDuPhongTikz') || !lesson.includes('providecolor')) throw new Error('TikZ custom-color fallback is missing');
     if (!lesson.includes('vmTikzMaxConcurrent') || !lesson.includes('vmLayTikzPdfNhanh') || !reader.includes('vmTikzPdfDangTai')) throw new Error('Fast TikZ queue/cache deduplication is missing');

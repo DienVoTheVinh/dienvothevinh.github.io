@@ -97,17 +97,23 @@
     return item.kind === activeFilter;
   }
 
+  function hasUnlockedSolution(item) {
+    return !!(item && item.solution_source && item.solution_source.has_solution);
+  }
+
   function render() {
     var box = document.getElementById('studentResultsList');
     var filtered = results.filter(matches);
     if (!filtered.length) {
-      box.innerHTML = '<div class="student-results-empty"><span>📭</span><b>Chưa có bài phù hợp</b><p>Khi giáo viên chấm xong, điểm, lời phê và file sửa sẽ xuất hiện tại đây.</p></div>';
+      box.innerHTML = '<div class="student-results-empty"><span>📭</span><b>Chưa có bài phù hợp</b><p>Khi em nộp bài có lời giải hoặc giáo viên chấm xong, nội dung sẽ xuất hiện tại đây.</p></div>';
       return;
     }
     box.innerHTML = filtered.map(function (item) {
       var corrected = filesOf(item.graded_files).length;
       var assessment = assessmentFor(item.assessment_level);
-      var score = item.score == null ? (assessment ? assessment.icon + ' ' + assessment.label : 'Đã chấm') : esc(item.score) + '/10';
+      var unlockedSolution = hasUnlockedSolution(item);
+      var isGraded = item.status === 'graded';
+      var score = item.score == null ? (assessment ? assessment.icon + ' ' + assessment.label : (isGraded ? 'Đã chấm' : '🔓 Lời giải')) : esc(item.score) + '/10';
       var itemClass = classOf(item);
       return '<article class="student-result-card">' +
         '<div class="student-result-score' + (item.score == null ? ' no-score' : '') + (assessment ? ' ' + assessment.className : '') + '">' + score + '</div>' +
@@ -115,32 +121,59 @@
           (itemClass ? '<span class="student-result-kind">' + esc(itemClass.name) + '</span>' : '') +
           (assessment ? '<span class="student-result-assessment ' + assessment.className + '">' + assessment.icon + ' ' + assessment.label + '</span>' : '') +
           (corrected ? '<span class="student-result-corrected">✍️ Có ' + corrected + ' file sửa</span>' : '') +
-        '</div><h2>' + esc(titleFor(item)) + '</h2><p>Giáo viên chấm ' + esc(formatDate(item.graded_at || item.submitted_at)) +
-          (item.feedback ? ' · Có lời phê' : '') + '</p></div>' +
-        '<div class="student-result-actions"><button class="btn btn-primary btn-sm" type="button" data-result-id="' + esc(item.id) + '">Xem bài sửa →</button></div>' +
+          (unlockedSolution ? '<span class="student-result-solution-badge">🔓 Có lời giải LaTeX</span>' : '') +
+        '</div><h2>' + esc(titleFor(item)) + '</h2><p>' + (isGraded ? 'Giáo viên chấm ' : 'Em nộp bài ') + esc(formatDate(item.graded_at || item.submitted_at)) +
+          (item.feedback ? ' · Có lời phê' : '') + (!isGraded && unlockedSolution ? ' · Em đã nộp bài, lời giải đã mở' : '') + '</p></div>' +
+        '<div class="student-result-actions"><button class="btn btn-primary btn-sm" type="button" data-result-id="' + esc(item.id) + '">' + (isGraded ? 'Xem kết quả' : 'Xem lời giải') + ' →</button></div>' +
       '</article>';
     }).join('');
   }
 
-  function openResult(id) {
+  async function loadSolutionHtml(item) {
+    if (!hasUnlockedSolution(item) || !item.lesson_id) return '';
+    var response = await sb.from('lesson_latex_sources')
+      .select('content,has_solution')
+      .eq('lesson_id', item.lesson_id)
+      .eq('kind', item.kind)
+      .maybeSingle();
+    if (response.error || !response.data || !response.data.has_solution || !response.data.content) {
+      return '<div class="student-result-solution-error">Chưa tải được lời giải. Em thử mở lại sau ít phút.</div>';
+    }
+    if (typeof latexTaiLieuRaHTML !== 'function') {
+      return '<div class="student-result-solution-error">Bộ đọc LaTeX chưa sẵn sàng. Em tải lại trang để xem lời giải.</div>';
+    }
+    return '<section class="student-result-solution"><div class="student-result-solution-head"><span>🔓</span><div><small>LỜI GIẢI ĐÃ MỞ</small><h3>Lời giải LaTeX của bài</h3></div></div>' +
+      latexTaiLieuRaHTML(response.data.content, { title:titleFor(item), kind:item.kind, showSolutions:true }) + '</section>';
+  }
+
+  async function openResult(id) {
     var item = results.find(function (row) { return String(row.id) === String(id); });
     if (!item) return;
     var corrected = filesOf(item.graded_files);
     var submitted = filesOf(item.files);
     var assessment = assessmentFor(item.assessment_level);
     var itemClass = classOf(item);
+    var feedbackHtml = item.status === 'graded'
+      ? '<div class="student-result-feedback"><b>' + (item.score == null ? 'Nhận xét của giáo viên' : 'Điểm ' + esc(item.score) + '/10 · Nhận xét của giáo viên') + '</b><p>' + esc(item.feedback || 'Giáo viên chưa để lại lời phê bằng chữ. Em hãy xem file bài sửa bên dưới.') + '</p></div>'
+      : '<div class="student-result-solution-ready"><span>🔓</span><div><b>Em đã nộp bài — lời giải đã được mở</b><p>Bài đang chờ giáo viên chấm. Em có thể xem lời giải ngay bên dưới để tự đối chiếu.</p></div></div>';
     var inner = document.getElementById('studentResultDialogInner');
+    inner.innerHTML = '<div class="student-results-empty"><span>⏳</span><b>Đang chuẩn bị kết quả và lời giải…</b></div>';
+    var dialog = document.getElementById('studentResultDialog');
+    if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+    else dialog.setAttribute('open', '');
+    var solutionHtml = await loadSolutionHtml(item);
     inner.innerHTML = '<div class="student-result-dialog-head"><div><div class="sec-label">' + esc(labelFor(item.kind)) + '</div><h2 id="studentResultDialogTitle">' + esc(titleFor(item)) + '</h2></div><button class="student-result-dialog-close" type="button" aria-label="Đóng">✕</button></div>' +
       '<div class="student-result-dialog-meta">' + (itemClass ? '<span>🏫 ' + esc(itemClass.name) + '</span>' : '') + '<span>🕐 ' + esc(formatDate(item.graded_at || item.submitted_at)) + '</span>' + '</div>' +
       (assessment ? '<div class="student-result-assessment-banner ' + assessment.className + '"><span>' + assessment.icon + '</span><div><small>Mức đánh giá</small><b>' + assessment.label + '</b></div></div>' : '') +
-      '<div class="student-result-feedback"><b>' + (item.score == null ? 'Nhận xét của giáo viên' : 'Điểm ' + esc(item.score) + '/10 · Nhận xét của giáo viên') + '</b><p>' + esc(item.feedback || 'Giáo viên chưa để lại lời phê bằng chữ. Em hãy xem file bài sửa bên dưới.') + '</p></div>' +
+      feedbackHtml +
       (corrected.length ? '<section class="student-result-file-section"><h3>✍️ Bài giáo viên đã sửa</h3><div class="student-result-files">' + fileCards(corrected) + '</div></section>' : '') +
       (submitted.length ? '<section class="student-result-file-section"><h3>📎 Bài em đã nộp</h3><div class="student-result-files">' + fileCards(submitted) + '</div></section>' : '') +
-      '<p class="student-result-inline-note">Toàn bộ điểm, nhận xét và file sửa được xem ngay tại đây; em không cần quay lại bài giảng.</p>';
-    var dialog = document.getElementById('studentResultDialog');
+      solutionHtml +
+      '<p class="student-result-inline-note">Toàn bộ điểm, nhận xét, file sửa và lời giải đã mở được xem ngay tại đây; em không cần quay lại bài giảng.</p>';
     inner.querySelector('.student-result-dialog-close').addEventListener('click', function () { dialog.close(); });
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
+    if (typeof renderToanTrong === 'function') renderToanTrong(inner);
+    else if (typeof renderLatex === 'function') renderLatex(inner);
+    if (typeof vmRenderTikzTrong === 'function') vmRenderTikzTrong(inner);
   }
 
   async function load() {
@@ -156,11 +189,11 @@
     }
     if (sessionStorage.getItem('vm-guest-mode') === 'true') {
       results = [{
-        id:'demo-graded', lesson_id:'demo-lesson', exam_id:null,
+        id:'demo-graded', lesson_id:'demo-lesson', exam_id:null, status:'graded',
         submitted_at:new Date().toISOString(), graded_at:new Date().toISOString(),
         kind:'homework', score:8.5, assessment_level:'good',
         feedback:'Bài làm trình bày rõ. Em xem phần giáo viên đánh dấu để sửa lại bước biến đổi cuối.',
-        files:[], graded_files:[{name:'Bài sửa minh họa.png',link:'/img/logo.png'}],
+        files:[], graded_files:[{name:'Bài sửa minh họa.png',link:'/img/logo.png'}], solution_source:null,
         lessons:{id:'demo-lesson',title:'Bài đã chấm minh họa',class_id:'guest-class',classes:{id:'guest-class',name:'Lớp minh họa',grade:9}}, exams:null
       }];
       populateScopes();
@@ -169,16 +202,29 @@
       return;
     }
     var response = await sb.from('submissions')
-      .select('id,lesson_id,exam_id,submitted_at,graded_at,kind,score,assessment_level,feedback,files,graded_files,is_late,reviewed_at,lessons(id,title,class_id,classes(id,name,grade)),exams(id,title,class_id,classes(id,name,grade))')
+      .select('id,lesson_id,exam_id,submitted_at,graded_at,status,kind,score,assessment_level,feedback,files,graded_files,is_late,reviewed_at,lessons(id,title,class_id,classes(id,name,grade)),exams(id,title,class_id,classes(id,name,grade))')
       .eq('student_id', profile.id)
-      .eq('status', 'graded')
-      .order('graded_at', {ascending:false});
+      .not('submitted_at', 'is', null)
+      .order('submitted_at', {ascending:false});
     if (response.error) {
       console.error('Không tải được kết quả:', response.error.message);
       document.getElementById('studentResultsList').innerHTML = '<div class="student-results-error"><span>⚠️</span><b>Chưa tải được bài đã chấm</b><p>Vui lòng thử lại sau. Hệ thống không hiển thị dữ liệu của học sinh khác.</p></div>';
       return;
     }
-    results = response.data || [];
+    var rows = response.data || [];
+    var lessonIds = Array.from(new Set(rows.map(function (item) { return item.lesson_id; }).filter(Boolean)));
+    var sourceMap = {};
+    if (lessonIds.length) {
+      var sourceResponse = await sb.from('lesson_latex_sources')
+        .select('lesson_id,kind,has_solution,updated_at')
+        .in('lesson_id', lessonIds)
+        .eq('has_solution', true);
+      if (!sourceResponse.error) (sourceResponse.data || []).forEach(function (source) {
+        sourceMap[String(source.lesson_id) + '|' + source.kind] = source;
+      });
+    }
+    rows.forEach(function (item) { item.solution_source = sourceMap[String(item.lesson_id) + '|' + item.kind] || null; });
+    results = rows.filter(function (item) { return item.status === 'graded' || hasUnlockedSolution(item); });
     populateScopes();
     document.getElementById('studentResultsCount').textContent = results.length;
     render();

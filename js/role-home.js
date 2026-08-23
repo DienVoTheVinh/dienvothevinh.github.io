@@ -208,13 +208,34 @@
     }).join('');
   }
 
+  var vmStudentClockTimer = null;
+  function updateStudentClock() {
+    var time = document.getElementById('vmStudentClockTime');
+    var date = document.getElementById('vmStudentClockDate');
+    if (!time || !date) return;
+    var now = new Date();
+    time.textContent = new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).format(now);
+    date.textContent = new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+    }).format(now);
+  }
+
+  function startStudentClock() {
+    updateStudentClock();
+    if (vmStudentClockTimer) clearInterval(vmStudentClockTimer);
+    vmStudentClockTimer = setInterval(updateStudentClock, 1000);
+  }
+
   function moveLiveCards() {
     var slot = document.getElementById('vmStudentLiveSlot');
     if (!slot) return;
-    ['khungDiemDanhHoc', 'khungMeetHoc'].forEach(function (id) {
+    ['khungMeetHoc', 'khungDiemDanhHoc'].forEach(function (id) {
       var liveCard = document.getElementById(id);
       if (liveCard && liveCard.parentElement !== slot) slot.appendChild(liveCard);
     });
+    startStudentClock();
   }
 
   async function renderStudentHome(profile, box, actions, title, sub) {
@@ -222,13 +243,13 @@
     hideInternalInstallPanel();
     title.textContent = 'Cập nhật học tập mới nhất';
     sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
-    actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
+    actions.innerHTML = '<div class="vm-student-home-grid"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-main-card">' +
       '<div id="vmRankHome" class="vm-rank-home-slot" aria-live="polite"></div>' +
       '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
       '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
       '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
-      '<div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
+      '<section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
     moveLiveCards();
     box.classList.add('is-ready');
     if (window.VMRank) window.VMRank.init();

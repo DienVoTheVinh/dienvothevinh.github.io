@@ -8,10 +8,11 @@
 
 :root {
   /* --- PHÔNG CHỮ --- */
-  --font-sans: "Be Vietnam Pro", -apple-system, sans-serif;
-  --font-serif: "Lora", Georgia, serif;
-  --font-title: "Lora", Georgia, serif;
-  --font-mono: "Fira Code", monospace;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-serif: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-title: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-reading: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-mono: "Fira Code", "Cascadia Mono", Consolas, monospace;
 
   --fs-h1: 2.5rem;
   --fs-h2: 1.75rem;

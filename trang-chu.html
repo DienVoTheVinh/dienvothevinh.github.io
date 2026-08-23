@@ -15,9 +15,9 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=7.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.1">
-<link rel="stylesheet" href="css/role-home.css?v=6">
+<link rel="stylesheet" href="css/tokens.css?v=8.4">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/role-home.css?v=7">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -627,21 +627,29 @@
   </section>
 
   <!-- Banner Link Google Meet cho học sinh lớp Online -->
-  <div id="khungMeetHoc" class="card" style="display:none; margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position: relative; overflow: hidden">
-    <div style="position: absolute; top: -50%; right: -20%; width: 220px; height: 220px; background: radial-gradient(circle, rgba(181,72,58,0.15) 0%, rgba(181,72,58,0) 70%); pointer-events: none"></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 1">
-      <div style="display: flex; gap: 16px; align-items: center">
-        <div style="font-size: 2.2rem; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; color: var(--accent); flex-shrink: 0">🎥</div>
+  <div id="khungMeetHoc" class="card vm-meet-card" style="display:none">
+    <div class="vm-meet-glow" aria-hidden="true"></div>
+    <div class="vm-meet-topline">
+      <span class="vm-meet-live-label"><i aria-hidden="true"></i> HỌC ONLINE</span>
+      <div class="vm-meet-clock" aria-label="Đồng hồ giờ Việt Nam">
+        <span>GIỜ VIỆT NAM</span>
+        <strong id="vmStudentClockTime">--:--:--</strong>
+        <time id="vmStudentClockDate">Đang cập nhật ngày</time>
+      </div>
+    </div>
+    <div class="vm-meet-primary">
+      <div class="vm-meet-copy">
+        <div class="vm-meet-icon" aria-hidden="true">🎥</div>
         <div>
-          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink)">Lớp học trực tuyến Google Meet</h3>
-          <p id="meetSub" style="margin: 4px 0 0; font-size: .9rem; color: var(--ink-2)">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
+          <h3>Lớp học trực tuyến Google Meet</h3>
+          <p id="meetSub">Bấm để tham gia phòng học trực tuyến của lớp em ngay lập tức.</p>
         </div>
       </div>
-      <a id="linkMeetHoc" class="btn btn-primary pulse-btn" href="#" target="_blank" style="padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px">
+      <a id="linkMeetHoc" class="btn btn-primary pulse-btn vm-meet-join" href="#" target="_blank" rel="noopener">
         Vào lớp học ngay 🚀
       </a>
     </div>
-    <div id="meetUpcoming" style="position: relative; z-index: 1; margin-top: 16px;"></div>
+    <div id="meetUpcoming" class="vm-meet-upcoming"></div>
   </div>
 
   <!-- Banner Phím tắt Vào học bài ngay cho học sinh -->
@@ -806,7 +814,7 @@
   .nv-pl-hd b { color:#ffe08a; }
   .nv-pl-bar { height:8px; border-radius:99px; background:rgba(0,0,0,.3); overflow:hidden; }
   .nv-pl-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#ffe08a,#F39C12); box-shadow:0 0 8px rgba(243,156,18,.5); transition:width 1s cubic-bezier(.22,1,.36,1); }
-  .nv-shopbtn { display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:10px 18px; border:none; cursor:pointer;
+  .nv-shopbtn { display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:10px 18px; border:none; cursor:pointer; font-family:var(--font-sans);
     background:linear-gradient(135deg,#ffd76a,#f39c12); color:#3a2560; font-weight:900; font-size:.92rem; border-radius:99px;
     box-shadow:0 5px 16px rgba(243,156,18,.4); position:relative; z-index:2; transition:transform .15s; }
   .nv-shopbtn:hover { transform:translateY(-2px) scale(1.03); }
@@ -1155,7 +1163,7 @@
 <script src="js/vinhmath.js?v=8.7"></script>
 <script src="js/menu-v5.js?v=9.1"></script>
 <script src="js/analytics.js"></script>
-  <script src="js/role-home.js?v=8"></script>
+  <script src="js/role-home.js?v=9"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----
 var hoSoNguoiDung = null;
@@ -2132,7 +2140,17 @@ async function capNhatMeetLinkTheoLop(classId) {
   // tránh trường hợp HS kẹt ở 1 lớp rồi bỏ lỡ buổi học của lớp khác hôm nay.
   var relevantIds = onlineAll;
 
-  if (relevantIds.length === 0) { $('khungMeetHoc').style.display = 'none'; return; }
+  if (relevantIds.length === 0) {
+    if ($('meetSub')) $('meetSub').textContent = 'Chưa có lớp online hoặc phòng Meet được gắn cho tài khoản này.';
+    if ($('linkMeetHoc')) {
+      $('linkMeetHoc').removeAttribute('href');
+      $('linkMeetHoc').style.pointerEvents = 'none';
+      $('linkMeetHoc').style.opacity = '0.55';
+    }
+    if ($('meetUpcoming')) $('meetUpcoming').innerHTML = '<div class="vm-meet-empty">Lịch học online sẽ xuất hiện tại đây ngay khi giáo viên cập nhật.</div>';
+    $('khungMeetHoc').style.display = 'block';
+    return;
+  }
 
   // Link chung dự phòng + link riêng theo lớp
   var lkCommon = '';
@@ -2222,25 +2240,21 @@ async function capNhatMeetLinkTheoLop(classId) {
     var gio = o.gio ? o.gio.slice(0, 5) : '';
     var link = linkCuaBuoi(s);
     var aHtml = link
-      ? '<a href="' + link + '" target="_blank" style="color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap;font-size:.85rem">Vào phòng →</a>'
-      : '<span style="color:var(--ink-3);font-size:.8rem;white-space:nowrap">chưa có link</span>';
-    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2)">' +
-      '<div style="font-size:.86rem;color:var(--ink-2);min-width:0">' +
-        '<b style="color:' + (o.delta === 0 ? 'var(--ok)' : 'var(--ink)') + '">' + nhanThu + (gio ? (' · ' + gio) : '') + '</b>' + (o.makeup ? ' <span style="color:var(--ok);font-size:.72rem;font-weight:700">(bù)</span>' : '') + ' — ' + (moTaBuoi(s) || 'Lớp học') +
+      ? '<a href="' + link + '" target="_blank" rel="noopener" class="vm-meet-session-link">Vào phòng →</a>'
+      : '<span class="vm-meet-session-link is-disabled">chưa có link</span>';
+    return '<div class="vm-meet-session' + (o.delta === 0 ? ' is-today' : '') + '">' +
+      '<div class="vm-meet-session-copy">' +
+        '<b>' + nhanThu + (gio ? (' · ' + gio) : '') + '</b>' + (o.makeup ? ' <span>(bù)</span>' : '') + ' — ' + (moTaBuoi(s) || 'Lớp học') +
       '</div>' + aHtml +
     '</div>';
   }).join('');
   if ($('meetUpcoming')) {
     $('meetUpcoming').innerHTML = upHtml
-      ? ('<div style="font-size:.74rem;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">🗓️ Các buổi học sắp tới</div>' + upHtml)
+      ? ('<div class="vm-meet-upcoming-title">🗓️ Các buổi học sắp tới</div>' + upHtml)
       : '';
   }
 
-  if (meetLink || sessions.length > 0) {
-    $('khungMeetHoc').style.display = 'block';
-  } else {
-    $('khungMeetHoc').style.display = 'none';
-  }
+  $('khungMeetHoc').style.display = 'block';
 }
 
 async function doiLopHocSinhHoatDong(classId) {

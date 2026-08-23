@@ -18,12 +18,29 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('http://127.0.0.1:8000/trang-chu?preview=1', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#vmRankHome .vm-rank-home-card', { timeout: 15000 });
+    await page.waitForSelector('#khungMeetHoc.vm-meet-card', { state:'visible', timeout: 15000 });
     await page.waitForSelector('#vmCompanionDock .vm-pet-egg', { timeout: 15000 });
     if (await page.locator('.vm-egg-choice').count()) throw new Error('Guest preview must not open a state-changing egg chooser');
     if (!await page.getByText('BXH', { exact: true }).count()) throw new Error('BXH is missing from student navigation');
     if (!await page.getByText('Bài tập', { exact: true }).count()) throw new Error('Bài tập is missing from student navigation');
     const homeText = await page.locator('#vmRankHome').innerText();
     if (!homeText.includes('Tân Thủ') || !homeText.includes('Kim Cương')) throw new Error(`Current rank is missing on Today: ${homeText}`);
+    const studentHome = await page.evaluate(() => {
+      const live = document.querySelector('#vmStudentLiveSlot').getBoundingClientRect();
+      const grid = document.querySelector('.vm-student-home-grid').getBoundingClientRect();
+      const main = document.querySelector('.vm-student-main-card').getBoundingClientRect();
+      const time = document.querySelector('#vmStudentClockTime')?.textContent || '';
+      const progress = document.querySelector('.vm-rank-home-progress');
+      return {
+        liveBeforeFeed: live.top < main.top,
+        liveFullWidth: Math.abs(live.width - grid.width) < 2,
+        time,
+        progressValue: Number(progress?.getAttribute('aria-valuenow')),
+        progressWidth: progress?.querySelector('i')?.getBoundingClientRect().width || 0,
+        auraVisible: (document.querySelector('.vm-rank-home-aura')?.getBoundingClientRect().width || 0) > 100,
+      };
+    });
+    if (!studentHome.liveBeforeFeed || !studentHome.liveFullWidth || !/^\d{2}:\d{2}:\d{2}$/.test(studentHome.time) || studentHome.progressValue !== 14 || studentHome.progressWidth <= 0 || !studentHome.auraVisible) throw new Error(`Student home priority blocks are incomplete: ${JSON.stringify(studentHome)}`);
     const toolbar = await page.evaluate(() => ({
       roleBadges: document.querySelectorAll('.topbar .logo > .role-badge').length,
       title: document.querySelector('.vm-rank-logo-tag .vm-rank-pill b')?.textContent || '',
@@ -37,6 +54,7 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     if (toolbar.roleBadges || toolbar.title !== 'Tân Thủ' || toolbar.medalLabelVisible || toolbar.medalAria !== 'Huy chương Kim Cương' || toolbar.overflow > 1) {
       throw new Error(`Student toolbar is not compact: ${JSON.stringify(toolbar)}`);
     }
+    if (process.env.VM_HOME_SCREENSHOT) await page.screenshot({ path: process.env.VM_HOME_SCREENSHOT, fullPage: true });
 
     await page.goto('http://127.0.0.1:8000/thanh-tuu?preview=1', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.realm-landmark', { timeout: 15000 });
@@ -137,6 +155,7 @@ if (!executablePath || !fs.existsSync(executablePath)) {
       };
     });
     if (mobile.overflow > 1 || !mobile.dockInside || !mobile.brandVisible || mobile.logoOverflow > 1 || mobile.rankTitleVisible || mobile.rankWidth > 31 || mobile.rankLabel !== 'Cấp bậc Tân Thủ · Kim Cương') throw new Error(`Mobile rank UI overflows or hides the brand: ${JSON.stringify(mobile)}`);
+    if (process.env.VM_HOME_MOBILE_SCREENSHOT) await page.screenshot({ path: process.env.VM_HOME_MOBILE_SCREENSHOT, fullPage: true });
     if (process.env.VM_RANK_MOBILE_SCREENSHOT) await page.screenshot({ path: process.env.VM_RANK_MOBILE_SCREENSHOT, fullPage: false });
     await page.goto('http://127.0.0.1:8000/thanh-tuu?preview=1', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.timeline-entry', { timeout: 15000 });
