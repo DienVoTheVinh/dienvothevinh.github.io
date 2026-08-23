@@ -140,9 +140,13 @@ function apDungLogoBadge(role) {
   if (oldSmall) oldSmall.remove();
   var oldBadge = logoEl.querySelector('.role-badge');
   if (oldBadge) oldBadge.remove();
+
+  // Học sinh đã có danh hiệu/cấp bậc ngay cạnh logo. Không lặp thêm
+  // nhãn vai trò để thanh công cụ còn đủ chỗ cho các mục chính.
+  if (!role || role === 'student') return;
   
-  var roleLabel = 'Học sinh';
-  var badgeClass = 'badge-student';
+  var roleLabel = '';
+  var badgeClass = '';
   if (role === 'admin') { roleLabel = 'Quản trị'; badgeClass = 'badge-admin'; }
   else if (role === 'teacher') { roleLabel = 'Giáo viên'; badgeClass = 'badge-teacher'; }
   else if (role === 'assistant') { roleLabel = 'Trợ giảng'; badgeClass = 'badge-assistant'; }
@@ -211,7 +215,7 @@ function napHeThongCapBac() {
   if (document.getElementById('vmRankSystemScript')) return;
   var sc = document.createElement('script');
   sc.id = 'vmRankSystemScript';
-  sc.src = 'js/rank-system.js?v=1';
+  sc.src = 'js/rank-system.js?v=2';
   sc.onload = function () { if (window.VMRank) window.VMRank.init(); };
   document.body.appendChild(sc);
 }

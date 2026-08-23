@@ -2,7 +2,7 @@
   'use strict';
 
   var MAJORS = [
-    {name:'Tân Binh',symbol:'✦',color:'#9b6b43',aura:'earth',motto:'Khởi đầu một hành trình lớn.'},
+    {name:'Tân Thủ',symbol:'✦',color:'#9b6b43',aura:'earth',motto:'Khởi đầu một hành trình lớn.'},
     {name:'Chăm Học',symbol:'🌱',color:'#2d9b68',aura:'leaf',motto:'Đều đặn mỗi ngày là một loại siêu năng lực.'},
     {name:'Học Khá',symbol:'📘',color:'#2587bd',aura:'water',motto:'Nền tảng vững, bước chân chắc.'},
     {name:'Học Giỏi',symbol:'🏅',color:'#d79008',aura:'gold',motto:'Hiểu sâu hơn một chút mỗi ngày.'},
@@ -15,10 +15,10 @@
     {name:'Vô Cực',symbol:'∞',color:'#2a49ad',aura:'infinite',motto:'Không ngừng học, không ngừng lớn.'}
   ];
   var MEDALS = [
-    {name:'Đồng',icon:'●',cls:'bronze'},
-    {name:'Bạc',icon:'◐',cls:'silver'},
-    {name:'Vàng',icon:'◆',cls:'gold'},
-    {name:'Kim Cương',icon:'◇',cls:'diamond'}
+    {name:'Đồng',icon:'🥉',cls:'bronze'},
+    {name:'Bạc',icon:'🥈',cls:'silver'},
+    {name:'Vàng',icon:'🥇',cls:'gold'},
+    {name:'Kim Cương',icon:'💎',cls:'diamond'}
   ];
   var PETS = {
     kim_ho:{name:'Kim Hồ',sheet:'assets/companions/kim-ho-evolution.png',color:'#e9a20a'},
@@ -38,7 +38,7 @@
   function xpFloor(level) { var l=Math.max(1,Number(level)||1); return 100*(l-1)+25*(l-1)*(l-2); }
   function addCss() {
     if (document.getElementById('vmRankCss')) return;
-    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=1'; document.head.appendChild(link);
+    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=2'; document.head.appendChild(link);
   }
   function guestData() {
     return {id:'guest',rank:{xp:485,level:4,raw_level:4,unlocked_major:1,xp_floor:450,xp_next:700,streak:4,counts:{lesson:8,btvn:5,test:2,review:3},badges:[],breakthrough:null},companion:{chosen:false,hatched:false,incubation_stage:4,owned:[],coins:85},missions:{tasks:[]}};
@@ -61,7 +61,7 @@
   }
   function rankPill(rank, extra) {
     var meta=info(rank.level);
-    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'"><span class="vm-rank-symbol">'+meta.major.symbol+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'">'+meta.medal.icon+' '+esc(meta.medal.name)+'</span></span>';
+    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'"><span class="vm-rank-symbol" aria-hidden="true">'+meta.major.symbol+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'" title="Huy chương '+esc(meta.medal.name)+'" aria-label="Huy chương '+esc(meta.medal.name)+'"><span aria-hidden="true">'+meta.medal.icon+'</span><span class="vm-rank-medal-label">'+esc(meta.medal.name)+'</span></span></span>';
   }
   function injectLogo(rank) {
     var logo=document.querySelector('.topbar .logo'); if(!logo) return;

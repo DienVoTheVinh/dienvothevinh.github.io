@@ -22,7 +22,20 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     if (await page.locator('.vm-egg-choice').count()) throw new Error('Guest preview must not open a state-changing egg chooser');
     if (!await page.getByText('Bảng xếp hạng', { exact: true }).count()) throw new Error('Leaderboard is missing from student navigation');
     const homeText = await page.locator('#vmRankHome').innerText();
-    if (!homeText.includes('Tân Binh') || !homeText.includes('Kim Cương')) throw new Error(`Current rank is missing on Today: ${homeText}`);
+    if (!homeText.includes('Tân Thủ') || !homeText.includes('Kim Cương')) throw new Error(`Current rank is missing on Today: ${homeText}`);
+    const toolbar = await page.evaluate(() => ({
+      roleBadges: document.querySelectorAll('.topbar .logo > .role-badge').length,
+      title: document.querySelector('.vm-rank-logo-tag .vm-rank-pill b')?.textContent || '',
+      medalLabelVisible: (() => {
+        const label = document.querySelector('.vm-rank-logo-tag .vm-rank-medal-label');
+        return label ? getComputedStyle(label).display !== 'none' : true;
+      })(),
+      medalAria: document.querySelector('.vm-rank-logo-tag .vm-rank-medal')?.getAttribute('aria-label') || '',
+      overflow: document.querySelector('.topbar .nav')?.scrollWidth - document.querySelector('.topbar .nav')?.clientWidth,
+    }));
+    if (toolbar.roleBadges || toolbar.title !== 'Tân Thủ' || toolbar.medalLabelVisible || toolbar.medalAria !== 'Huy chương Kim Cương' || toolbar.overflow > 1) {
+      throw new Error(`Student toolbar is not compact: ${JSON.stringify(toolbar)}`);
+    }
 
     await page.goto('http://127.0.0.1:8000/thanh-tuu?preview=1', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.achievement-region', { timeout: 15000 });
