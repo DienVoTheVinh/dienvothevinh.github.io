@@ -38,7 +38,7 @@
   function xpFloor(level) { var l=Math.max(1,Number(level)||1); return 100*(l-1)+25*(l-1)*(l-2); }
   function addCss() {
     if (document.getElementById('vmRankCss')) return;
-    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=2'; document.head.appendChild(link);
+    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=3'; document.head.appendChild(link);
   }
   function guestData() {
     return {id:'guest',rank:{xp:485,level:4,raw_level:4,unlocked_major:1,xp_floor:450,xp_next:700,streak:4,counts:{lesson:8,btvn:5,test:2,review:3},badges:[],breakthrough:null},companion:{chosen:false,hatched:false,incubation_stage:4,owned:[],coins:85},missions:{tasks:[]}};
@@ -61,7 +61,7 @@
   }
   function rankPill(rank, extra) {
     var meta=info(rank.level);
-    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'"><span class="vm-rank-symbol" aria-hidden="true">'+meta.major.symbol+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'" title="Huy chương '+esc(meta.medal.name)+'" aria-label="Huy chương '+esc(meta.medal.name)+'"><span aria-hidden="true">'+meta.medal.icon+'</span><span class="vm-rank-medal-label">'+esc(meta.medal.name)+'</span></span></span>';
+    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'" title="'+esc(meta.label)+'" aria-label="Cấp bậc '+esc(meta.label)+'"><span class="vm-rank-symbol" aria-hidden="true">'+meta.major.symbol+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'" title="Huy chương '+esc(meta.medal.name)+'" aria-label="Huy chương '+esc(meta.medal.name)+'"><span aria-hidden="true">'+meta.medal.icon+'</span><span class="vm-rank-medal-label">'+esc(meta.medal.name)+'</span></span></span>';
   }
   function injectLogo(rank) {
     var logo=document.querySelector('.topbar .logo'); if(!logo) return;
