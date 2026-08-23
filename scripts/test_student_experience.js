@@ -58,6 +58,7 @@ for (const item of [
 ]) expect(menu.includes(item), `Thiếu mục điều hướng học sinh: ${item}`);
 expect(!/MENU CỦA HỌC SINH[\s\S]{0,900}type:\s*'dropdown'/.test(menu), 'Menu học sinh không được giấu công cụ trong dropdown dài');
 expect(menu.includes("sessionStorage.getItem('vm-guest-mode') === 'true'") && menu.includes("apDungMenu('student', null)"), 'Chế độ trải nghiệm phải hiển thị đủ menu học sinh mới');
+expect(menu.includes("if (!role || role === 'student') return"), 'Thanh công cụ học sinh phải bỏ nhãn vai trò trùng lặp');
 
 expect(shared.includes("tools.insertBefore(btn, themeBtn)"), 'Nút cài ứng dụng nội bộ phải nằm cạnh nút sáng/tối');
 expect(shared.includes("attributeFilter: ['style', 'class', 'open']"), 'Đóng native dialog phải gỡ khóa cuộn của trang');
@@ -105,6 +106,8 @@ expect(achievementsPage.includes('Bản đồ cấp bậc VinhMath') && achievem
 expect(achievements.includes('VMRank.majors.map') && achievements.includes('VMRank.medals.map') && achievements.includes('companionSanctuary'), 'Bản đồ phải dựng đủ 11 đại cấp, 4 huy chương và khu linh thú');
 expect(rankSystem.includes("sb.rpc('student_rank_snapshot')") && rankSystem.includes("sb.rpc('companion_snapshot')"), 'Hệ cấp bậc phải tải ảnh chụp riêng theo người dùng');
 expect(rankSystem.indexOf("sb.rpc('hs_ho_so')") < rankSystem.indexOf("sb.rpc('student_rank_snapshot')"), 'XP phải được làm mới trước khi tính cấp bậc');
+expect(rankSystem.includes("{name:'Tân Thủ'") && rankSystem.includes("{name:'Kim Cương',icon:'💎'") && rankSystem.includes('vm-rank-medal-label'), 'Thanh công cụ phải dùng danh hiệu Tân Thủ và huy chương Kim Cương dạng biểu tượng');
+expect(rankCss.includes('.vm-rank-pill.compact .vm-rank-medal-label{display:none}') && rankCss.includes('.vm-role-student .topbar .logo>.role-badge{display:none!important}'), 'CSS thanh công cụ chưa ẩn chữ huy chương hoặc nhãn Học sinh');
 expect(rankSystem.includes("data.id==='guest'") && rankSystem.includes("sb.rpc('choose_companion_egg'"), 'Chọn trứng phải chỉ hoạt động với học sinh đã xác thực');
 expect(rankCss.includes('prefers-reduced-motion:reduce') && rankCss.includes('.vm-companion-dock'), 'Hiệu ứng linh thú phải tôn trọng chế độ giảm chuyển động');
 expect(rankMigration.includes('rank_level_from_xp') && rankMigration.includes("score >= 8") && rankMigration.includes('student_companion_state'), 'Migration thiếu ánh xạ 44 cấp, ngưỡng đột phá hoặc trạng thái linh thú');
