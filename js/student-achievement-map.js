@@ -3,10 +3,15 @@
 
   var current = null;
   var journey = { submissions: [], attempts: [], gates: [] };
+  var selectedRealm = 0;
   var badges = [
     ['first_btvn','🎬','Bài nộp đầu tiên','Khởi động hành trình bằng bài nộp đầu tiên.'],['no_debt','✅','Không nợ bài','Hoàn tất sạch danh sách bài tập.'],['streak_3','🔥','Giữ lửa 3 ngày','Học tập 3 ngày liên tiếp.'],['streak_7','⚡','Một tuần bền bỉ','Giữ chuỗi học tập 7 ngày.'],['streak_14','🌋','Hai tuần rực lửa','Giữ chuỗi học tập 14 ngày.'],['streak_30','☀️','Tháng không ngừng nghỉ','Giữ chuỗi học tập 30 ngày.'],['test_5','🛡️','Chiến binh kiểm tra','Hoàn thành 5 bài kiểm tra.'],['test_10','⚔️','Không ngán đề','Hoàn thành 10 bài kiểm tra.'],['btvn_10','✍️','Máy cày BTVN','Nộp đủ 10 bài tập về nhà.'],['btvn_25','🚜','Siêu máy cày','Nộp đủ 25 bài tập về nhà.'],['review_10','🔍','Bậc thầy sửa sai','Xem lại 10 bài giáo viên đã chấm.'],['explorer_10','🧭','Nhà thám hiểm','Mở 10 bài học khác nhau.'],['diligent','📚','Siêng năng chăm chỉ','Hoàn thành 20 hoạt động học tập.'],['score_80','🏆','Học lực giỏi','Điểm tổng quát đạt từ 80.'],['perfect10','💯','Điểm 10 tuyệt đối','Chinh phục một bài với điểm tuyệt đối.'],['xp_1000','🌟','Ngàn sao kinh nghiệm','Tích lũy 1.000 XP.'],['coin_300','🪙','Nhà sưu tập xu','Tích lũy 300 xu trong hành trình.'],['nuoc_den_chan','⏰','Thánh nước đến chân','Ba lần về đích sát giờ — lần tới mình đi sớm nhé!'],['vua_cup_hoc','🫣','Vua cúp học đang hoàn lương','Một danh hiệu riêng để nhắc mình quay lại lớp đều hơn.'],['vua_luoi_lam_bai','🦥','Vua lười làm bài bị bắt quả tang','Linh thú nhắc khéo: xử lý từng bài một là hết ngay!']
   ];
   var realmScenes = ['🏫','🌱','📖','🏅','🏛️','🧠','🔭','⚡','🌌','☀️','∞'];
+  var realmPositions = [
+    {x:11,y:84},{x:29,y:74},{x:48,y:82},{x:70,y:70},{x:87,y:58},{x:68,y:49},
+    {x:47,y:59},{x:24,y:47},{x:37,y:30},{x:61,y:22},{x:84,y:12}
+  ];
 
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function dateText(v) { if (!v) return ''; var d = new Date(v); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('vi-VN'); }
@@ -53,12 +58,47 @@
     return '🔒 Chưa mở đường tới vùng này';
   }
 
+  function mapStateLabel(state) {
+    return state === 'completed' ? 'Đã qua' : state === 'current' ? 'Em ở đây' : state === 'awaiting' ? 'Chờ thi' : 'Chưa mở';
+  }
+
+  function mapArtwork(progress) {
+    return '<svg class="realm-map-art" viewBox="0 0 1000 720" preserveAspectRatio="none" aria-hidden="true">'+
+      '<defs><linearGradient id="vmIsland" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#dce9be"/><stop offset=".52" stop-color="#f2e5b6"/><stop offset="1" stop-color="#dbe6c6"/></linearGradient><linearGradient id="vmWater" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c7e7e8"/><stop offset="1" stop-color="#9fcfd5"/></linearGradient></defs>'+
+      '<rect class="realm-map-paper" x="8" y="8" width="984" height="704" rx="34"/>'+
+      '<path class="realm-map-water" d="M28 485C118 449 169 479 230 523c87 64 174 69 246 35 63-30 125-17 184 26 89 65 180 52 312-4v132H28Z"/>'+
+      '<path class="realm-map-island" d="M63 600c35-91 94-159 165-207 51-35 71-80 103-145 33-67 100-99 182-91 93 9 139-56 238-70 86-12 169 26 195 102 20 59-14 109-48 151-29 36-25 77 3 113 31 41 46 95 15 135-39 50-121 46-180 40-90-8-145 29-228 45-110 21-179-17-249-47-71-30-165 31-196-26Z"/>'+
+      '<path class="realm-map-river" d="M824 91c-86 77-43 128-121 177-68 43-151 28-195 95-47 72-10 130-104 177-72 36-128 25-202 69"/>'+
+      '<path class="realm-route-shadow" pathLength="100" d="M110 605C178 600 219 522 290 533S402 615 480 590 621 540 700 504 845 474 870 418 798 348 680 355 539 418 470 430 307 381 240 340 278 232 370 216 518 195 610 160 749 102 840 85"/>'+
+      '<path class="realm-route" pathLength="100" d="M110 605C178 600 219 522 290 533S402 615 480 590 621 540 700 504 845 474 870 418 798 348 680 355 539 418 470 430 307 381 240 340 278 232 370 216 518 195 610 160 749 102 840 85"/>'+
+      '<path class="realm-route-progress" pathLength="100" style="stroke-dasharray:'+progress+' 100" d="M110 605C178 600 219 522 290 533S402 615 480 590 621 540 700 504 845 474 870 418 798 348 680 355 539 418 470 430 307 381 240 340 278 232 370 216 518 195 610 160 749 102 840 85"/>'+
+      '<g class="realm-map-mountains"><path d="M438 207l55-82 55 82Z"/><path d="M495 207l43-62 48 62Z"/><path d="M733 185l42-66 49 66Z"/></g>'+
+      '<g class="realm-map-hills"><ellipse cx="138" cy="421" rx="72" ry="38"/><ellipse cx="603" cy="507" rx="95" ry="42"/><ellipse cx="861" cy="333" rx="69" ry="34"/></g>'+
+      '</svg>'+
+      '<span class="map-place map-place-school" aria-hidden="true">🏫</span><span class="map-place map-place-library" aria-hidden="true">📚</span><span class="map-place map-place-observatory" aria-hidden="true">🔭</span><span class="map-place map-place-trees-a" aria-hidden="true">🌳</span><span class="map-place map-place-trees-b" aria-hidden="true">🌲</span><span class="map-place map-place-summit" aria-hidden="true">🏆</span>';
+  }
+
+  function renderRealmDetail(majorIndex) {
+    var major=VMRank.majors[majorIndex],zoneState=realmStatus(majorIndex);
+    var nodes=VMRank.medals.map(function(medal,medalIndex){var level=majorIndex*4+medalIndex+1,s=status(level),icon=s==='completed'?'✓':s==='awaiting'?'⚡':medal.icon;return '<button class="achievement-node '+s+' medal-'+medal.cls+'" data-achievement-level="'+level+'" style="--rank-color:'+major.color+';--region:'+major.color+'"><span class="achievement-node-orb">'+icon+'</span><b>'+esc(medal.name)+'</b><small>'+VMRank.xpFloor(level)+' XP</small></button>';}).join('');
+    var detail=document.getElementById('realmDetail');
+    detail.style.setProperty('--region',major.color);
+    detail.innerHTML='<div class="realm-detail-head"><span>'+realmScenes[majorIndex]+'</span><div><em>CẢNH GIỚI '+(majorIndex+1)+'/11</em><h3>'+esc(major.name)+'</h3><p>'+esc(major.motto)+' · Cấp '+(majorIndex*4+1)+'–'+(majorIndex*4+4)+'</p></div></div><div class="realm-detail-status realm-'+zoneState+'"><span>'+(zoneState==='completed'?'👣':zoneState==='current'?'📍':zoneState==='awaiting'?'⚡':'🔒')+'</span><b>'+esc(gateNote(majorIndex,zoneState))+'</b></div><div class="realm-detail-medals">'+nodes+'</div>'+(majorIndex<10?'<div class="achievement-gate"><span>⚡</span><small>Đạt từ 8/10 để mở cảnh giới kế tiếp</small></div>':'<div class="achievement-gate summit"><span>🏆</span><small>Đỉnh cao nhất của hành trình 44 cấp</small></div>');
+  }
+
+  function selectRealm(majorIndex) {
+    selectedRealm=majorIndex;
+    document.querySelectorAll('.realm-landmark').forEach(function(button){var selected=Number(button.dataset.realmIndex)===majorIndex;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',selected?'true':'false');});
+    renderRealmDetail(majorIndex);
+  }
+
   function renderMap() {
-    document.getElementById('achievementMap').innerHTML=VMRank.majors.map(function(major,majorIndex){
-      var zoneState=realmStatus(majorIndex);
-      var nodes=VMRank.medals.map(function(medal,medalIndex){var level=majorIndex*4+medalIndex+1,s=status(level),icon=s==='completed'?'✓':s==='awaiting'?'⚡':medal.icon;return '<button class="achievement-node '+s+' medal-'+medal.cls+'" data-achievement-level="'+level+'" style="--rank-color:'+major.color+'"><span class="achievement-node-orb">'+icon+'</span><b>'+esc(medal.name)+'</b><small>'+VMRank.xpFloor(level)+' XP</small></button>';}).join('');
-      return '<article class="achievement-region realm-zone realm-'+zoneState+' aura-'+major.aura+'" style="--region:'+major.color+';--realm-order:'+(majorIndex+1)+'"><div class="realm-landscape" aria-hidden="true"><span>'+realmScenes[majorIndex]+'</span><i></i></div><div class="achievement-region-head"><span class="achievement-region-icon">'+major.symbol+'</span><span><em>CẢNH GIỚI '+(majorIndex+1)+'</em><b>'+esc(major.name)+'</b><small>'+esc(major.motto)+' · Cấp '+(majorIndex*4+1)+'–'+(majorIndex*4+4)+'</small></span></div><div class="realm-trail-note"><span>'+(zoneState==='completed'?'👣':zoneState==='current'?'📍':zoneState==='awaiting'?'⚡':'🔒')+'</span><b>'+esc(gateNote(majorIndex,zoneState))+'</b></div><div class="achievement-track">'+nodes+'</div>'+(majorIndex<10?'<div class="achievement-gate"><span>⚡</span><small>Qua cổng bằng bài kiểm tra từ 8/10</small></div>':'')+'</article>';
-    }).join('');
+    var currentMajor=Math.max(0,Math.min(10,Math.floor((Number(current.rank.level||1)-1)/4)));
+    selectedRealm=currentMajor;
+    var progress=Math.round(currentMajor/10*100);
+    var landmarks=VMRank.majors.map(function(major,majorIndex){var state=realmStatus(majorIndex),pos=realmPositions[majorIndex];return '<button class="realm-landmark realm-'+state+(majorIndex===selectedRealm?' selected':'')+'" data-realm-index="'+majorIndex+'" aria-pressed="'+(majorIndex===selectedRealm?'true':'false')+'" aria-label="Cảnh giới '+(majorIndex+1)+': '+esc(major.name)+', '+mapStateLabel(state)+'" style="--x:'+pos.x+'%;--y:'+pos.y+'%;--region:'+major.color+'"><span class="realm-landmark-pin"><i>'+major.symbol+'</i><small>'+(majorIndex+1)+'</small></span><b>'+esc(major.name)+'</b><em>'+mapStateLabel(state)+'</em></button>';}).join('');
+    document.getElementById('achievementMap').innerHTML=mapArtwork(progress)+'<div class="realm-map-key"><span>Khởi hành</span><i></i><span>Đỉnh tri thức</span></div>'+landmarks;
+    renderRealmDetail(selectedRealm);
   }
 
   function assessmentText(level) { return level==='good'?'Tốt':level==='meets'?'Đạt':level==='needs_improvement'?'Cần cố gắng':''; }
@@ -84,5 +124,5 @@
   function bindCompanion(box){box.querySelectorAll('[data-pet]').forEach(function(btn){btn.addEventListener('click',async function(){var code=btn.dataset.pet,owned=current.companion.owned||[],rpc=owned.indexOf(code)!==-1?'select_companion':'purchase_companion',res=await sb.rpc(rpc,{p_companion_code:code});if(res.error||!res.data||!res.data.ok){alert((res.data&&res.data.message)||(res.error&&res.error.message));return;}location.reload();});});var shop=box.querySelector('[data-pet-shop]');if(shop)shop.addEventListener('click',function(){var ownedBox=box.querySelector('.companion-owned');if(ownedBox)ownedBox.scrollIntoView({behavior:'smooth'});});}
   function openLevel(level){var m=VMRank.info(level),s=status(level),text=s==='completed'?'✓ Em đã chinh phục huy chương này.':s==='current'?'◉ Đây là cấp hiện tại của em.':s==='awaiting'?'⚡ XP đã đủ. Em cần vượt bài kiểm tra đột phá cảnh giới.':'🔒 Cần thêm '+Math.max(0,VMRank.xpFloor(level)-Number(current.rank.xp||0))+' XP.';var d=document.getElementById('achievementDialog');document.getElementById('achievementDialogBody').innerHTML='<div class="achievement-dialog-head"><span>'+m.major.symbol+'</span><button class="achievement-dialog-close">✕</button></div><span class="vm-modal-kicker">CẢNH GIỚI '+(m.majorIndex+1)+'/11</span><h3 id="achievementDialogTitle">'+esc(m.label)+'</h3><p>Cấp '+level+'/44 · mốc '+VMRank.xpFloor(level)+' XP. Em nhận XP khi học bài, nộp bài, làm kiểm tra và xem lại bài giáo viên đã sửa.</p><div class="achievement-dialog-status">'+esc(text)+'</div>';d.querySelector('button').onclick=function(){d.close();};d.showModal();}
   async function load(){if(!window.VMRank){setTimeout(load,60);return;}current=await VMRank.load();if(!current)return;journey=await loadJourney();renderHero();renderMap();renderPortfolio();renderBadges();renderCompanion();document.querySelectorAll('.companion-owned button[disabled]').forEach(function(button){button.disabled=false;button.classList.add('locked');});}
-  document.addEventListener('click',function(e){var n=e.target.closest('[data-achievement-level]');if(n&&current)openLevel(Number(n.dataset.achievementLevel));});var dialog=document.getElementById('achievementDialog');if(dialog)dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close();});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
+  document.addEventListener('click',function(e){var landmark=e.target.closest('[data-realm-index]');if(landmark&&current){selectRealm(Number(landmark.dataset.realmIndex));return;}var n=e.target.closest('[data-achievement-level]');if(n&&current)openLevel(Number(n.dataset.achievementLevel));});var dialog=document.getElementById('achievementDialog');if(dialog)dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close();});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
 })();

@@ -39,16 +39,20 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     }
 
     await page.goto('http://127.0.0.1:8000/thanh-tuu?preview=1', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.achievement-region', { timeout: 15000 });
+    await page.waitForSelector('.realm-landmark', { timeout: 15000 });
     const map = {
-      regions: await page.locator('.achievement-region').count(),
-      levels: await page.locator('.achievement-node').count(),
+      landmarks: await page.locator('.realm-landmark').count(),
+      levels: await page.locator('.realm-detail .achievement-node').count(),
       gates: await page.locator('.achievement-gate').count(),
+      route: await page.locator('.realm-route-progress').count(),
+      detail: await page.locator('#realmDetail').isVisible(),
       sanctuary: await page.locator('#companionSanctuary').isVisible(),
       badges: await page.locator('.achievement-badge').count(),
       timeline: await page.locator('.timeline-entry').count(),
-      currentRealms: await page.locator('.realm-current').count(),
+      currentRealms: await page.locator('.realm-landmark.realm-current').count(),
+      selectedRealms: await page.locator('.realm-landmark.selected').count(),
       openDialogs: await page.locator('dialog[open]').count(),
+      sunkenEffect: await page.evaluate(() => getComputedStyle(document.querySelector('.achievement-map'), '::before').content),
     };
     if (process.env.VM_RANK_DIAGNOSTIC) {
       map.fixedLayers = await page.evaluate(() => Array.from(document.querySelectorAll('body *')).map((element) => {
@@ -66,9 +70,26 @@ if (!executablePath || !fs.existsSync(executablePath)) {
       console.log(`DIAGNOSTIC ${JSON.stringify(map.fixedLayers)}`);
       console.log(`THEME ${JSON.stringify(await page.evaluate(() => ({ html:document.documentElement.getAttribute('data-theme'), body:document.body.getAttribute('data-theme'), bg:getComputedStyle(document.body).backgroundColor, ink:getComputedStyle(document.body).getPropertyValue('--ink-2'), heading:getComputedStyle(document.querySelector('.achievement-map-head h2')).color })))}`);
     }
-    if (map.regions !== 11 || map.levels !== 44 || map.gates !== 10 || !map.sanctuary || map.badges < 15 || map.timeline < 2 || map.currentRealms !== 1 || map.openDialogs !== 0) {
+    if (map.landmarks !== 11 || map.levels !== 4 || map.gates !== 1 || map.route !== 1 || !map.detail || !map.sanctuary || map.badges < 15 || map.timeline < 2 || map.currentRealms !== 1 || map.selectedRealms !== 1 || map.openDialogs !== 0 || map.sunkenEffect !== 'none') {
       throw new Error(`Rank map is incomplete: ${JSON.stringify(map)}`);
     }
+    await page.locator('.realm-landmark[data-realm-index="3"]').click();
+    const selectedRealm = await page.evaluate(() => ({
+      title: document.querySelector('#realmDetail h3')?.textContent || '',
+      medals: document.querySelectorAll('#realmDetail .achievement-node').length,
+      selected: document.querySelectorAll('.realm-landmark.selected').length,
+    }));
+    if (selectedRealm.title !== 'Học Giỏi' || selectedRealm.medals !== 4 || selectedRealm.selected !== 1) throw new Error(`Realm detail selection failed: ${JSON.stringify(selectedRealm)}`);
+    await page.locator('.realm-landmark.realm-current').click();
+    const themeBefore = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    await page.locator('#themeBtn').click();
+    const themeAfter = await page.evaluate(() => ({
+      theme: document.documentElement.getAttribute('data-theme'),
+      mapBackground: getComputedStyle(document.querySelector('.achievement-map')).backgroundColor,
+      detailBackground: getComputedStyle(document.querySelector('#realmDetail')).backgroundColor,
+    }));
+    if (themeAfter.theme === themeBefore || themeAfter.mapBackground === 'rgba(0, 0, 0, 0)' || themeAfter.detailBackground === 'rgba(0, 0, 0, 0)') throw new Error(`Realm map theme switch failed: ${JSON.stringify({themeBefore, themeAfter})}`);
+    await page.locator('#themeBtn').click();
     if (process.env.VM_RANK_SCREENSHOT) {
       await page.screenshot({ path: process.env.VM_RANK_SCREENSHOT, fullPage: true });
     }
@@ -121,13 +142,15 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     await page.waitForSelector('.timeline-entry', { timeout: 15000 });
     const mobileMap = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      regionInside: Array.from(document.querySelectorAll('.achievement-region')).every((item) => { const r=item.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
+      landmarksInside: Array.from(document.querySelectorAll('.realm-landmark')).every((item) => { const r=item.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
+      detailInside: (() => { const r=document.querySelector('#realmDetail').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })(),
       timelineInside: Array.from(document.querySelectorAll('.timeline-entry')).every((item) => { const r=item.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
     }));
-    if (mobileMap.overflow > 1 || !mobileMap.regionInside || !mobileMap.timelineInside) throw new Error(`Realm map overflows on mobile: ${JSON.stringify(mobileMap)}`);
+    if (mobileMap.overflow > 1 || !mobileMap.landmarksInside || !mobileMap.detailInside || !mobileMap.timelineInside) throw new Error(`Realm map overflows on mobile: ${JSON.stringify(mobileMap)}`);
+    if (process.env.VM_RANK_MAP_MOBILE_SCREENSHOT) await page.screenshot({ path: process.env.VM_RANK_MAP_MOBILE_SCREENSHOT, fullPage: true });
     if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(' | ')}`);
 
-    console.log(`PASS rank system browser: ${map.regions} major ranks, ${map.levels} levels, companion and mobile layout`);
+    console.log(`PASS rank system browser: ${map.landmarks} map landmarks, focused medal detail, companion and mobile layout`);
   } finally {
     await browser.close();
   }

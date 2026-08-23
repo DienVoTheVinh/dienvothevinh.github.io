@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=7.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
   <link rel="stylesheet" href="css/student-experience.css?v=3">
-  <link rel="stylesheet" href="css/rank-map.css?v=2">
+  <link rel="stylesheet" href="css/rank-map.css?v=3">
 </head>
 <body class="achievement-page">
   <div class="topbar">
@@ -48,11 +48,16 @@
     </section>
 
     <div class="achievement-map-head">
-      <div><div class="sec-label">11 cảnh giới · 44 huy chương</div><h2>Hành trình từ sân trường tới đỉnh tri thức</h2><p>Vùng đã đi qua lưu lại dấu chân; bấm vào huy chương để xem mốc XP và trạng thái đột phá.</p></div>
+      <div><div class="sec-label">11 cảnh giới · 44 huy chương</div><h2>Hành trình từ sân trường tới đỉnh tri thức</h2><p>Đi theo con đường trên bản đồ; bấm một địa danh để xem bốn huy chương và dấu mốc của cảnh giới đó.</p></div>
       <div class="achievement-legend"><span>✓ Đã chinh phục</span><span>◉ Hiện tại</span><span>⚡ Chờ đột phá</span><span>🔒 Chưa mở</span></div>
     </div>
-    <section class="achievement-map" id="achievementMap" aria-label="Bản đồ 11 cảnh giới và 44 huy chương">
-      <div class="student-results-empty"><span>🗺️</span><b>Đang dựng bản đồ của em…</b></div>
+    <section class="realm-map-layout" aria-label="Bản đồ 11 cảnh giới và 44 huy chương">
+      <div class="achievement-map" id="achievementMap" aria-label="Bản đồ hành trình 11 cảnh giới">
+        <div class="student-results-empty"><span>🗺️</span><b>Đang dựng bản đồ của em…</b></div>
+      </div>
+      <aside class="realm-detail" id="realmDetail" aria-live="polite">
+        <div class="student-results-empty"><span>🏅</span><b>Đang mở dấu mốc cảnh giới…</b></div>
+      </aside>
     </section>
 
     <section class="learning-portfolio" aria-labelledby="learningPortfolioTitle">
@@ -78,6 +83,6 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=8.7"></script>
   <script src="js/menu-v5.js?v=9.1"></script>
-  <script src="js/student-achievement-map.js?v=3"></script>
+  <script src="js/student-achievement-map.js?v=4"></script>
 </body>
 </html>
