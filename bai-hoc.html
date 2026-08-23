@@ -991,7 +991,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.6"></script>
+<script src="js/vinhmath.js?v=8.7"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1057,7 +1057,13 @@ var coTest = false;
   await taiChiTietBaiHoc();
   await vmMoDichDenThongBao(params);
   khoiTaoResizer();
-})();
+})().catch(function (error) {
+  console.error('Không tải được bài học:', error);
+  var than = $('thanNoiDung');
+  if (than) {
+    than.innerHTML = '<div class="no-content" style="background:var(--surface)"><div class="ic">⚠️</div><h3>Chưa tải được bài học</h3><p>Kết nối vừa bị gián đoạn. Em có thể thử tải lại mà không mất bài.</p><button class="btn btn-primary" onclick="location.reload()">↻ Tải lại</button></div>';
+  }
+});
 
 async function vmMoDichDenThongBao(params) {
   if (!params) return;
@@ -1553,7 +1559,7 @@ window.addEventListener('resize', function() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_deadline, homework_late_policy, test_late_policy, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, linked_exam_id, linked_exam_ids, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_latex_content, test_deadline, homework_late_policy, test_late_policy, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, linked_exam_id, linked_exam_ids, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -2954,9 +2960,15 @@ function renderPDFWithJS(pdfUrl, container) {
   var seq = ++vmPdfViewerSeq;
   var canvasId = 'pdfCanvasContainer-' + seq;
   var labelId = 'pdfzLbl-' + seq;
+  var viewerClosed = false;
+  var loadTimer = setTimeout(function () { fallbackToIframe('Tài liệu tải lâu hơn dự kiến'); }, 20000);
   vmTaiPdfJs().then(startRendering).catch(fallbackToIframe);
   
-  function fallbackToIframe() {
+  function fallbackToIframe(reason) {
+    if (viewerClosed) return;
+    viewerClosed = true;
+    clearTimeout(loadTimer);
+    if (reason) console.warn('Chuyển sang trình xem PDF của trình duyệt:', reason && reason.message ? reason.message : reason);
     container.innerHTML = '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
   }
   
@@ -2981,36 +2993,76 @@ function renderPDFWithJS(pdfUrl, container) {
     
     var loadingTask = pdfjsLib.getDocument(fetchUrl);
     loadingTask.promise.then(function(pdf) {
-      for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        (function(num) {
-          var canvas = document.createElement('canvas');
-          canvas.className = 'pdfjs-page';
-          canvas.style.width = '100%'; canvas.style.maxWidth = '800px';
-          canvas.style.borderRadius = '8px';
-          canvas.style.border = '1px solid var(--line)';
-          canvas.style.boxShadow = 'var(--shadow)';
-          canvas.style.background = '#fff';
-          canvasContainer.appendChild(canvas);
-          
-          pdf.getPage(num).then(function(page) {
-            // Vẽ theo mật độ điểm ảnh màn hình (Retina) để PDF sắc nét như xem trực tiếp
-            var dpr = window.devicePixelRatio || 1;
-            var scale = Math.min(4, Math.max(2.5, 2 * dpr));
-            var viewport = page.getViewport({ scale: scale });
-            canvas.height = Math.floor(viewport.height);
-            canvas.width = Math.floor(viewport.width);
+      if (viewerClosed) return;
+      clearTimeout(loadTimer);
 
-            var renderContext = {
-              canvasContext: canvas.getContext('2d', { alpha: false }),
-              viewport: viewport
-            };
-            page.render(renderContext);
+      function renderPage(num, canvas) {
+        if (!canvas || canvas.dataset.renderState) return Promise.resolve();
+        canvas.dataset.renderState = 'loading';
+        return pdf.getPage(num).then(function(page) {
+          if (viewerClosed || !canvas.isConnected) return;
+          var base = page.getViewport({ scale: 1 });
+          var cssWidth = Math.min(800, Math.max(300, (canvasContainer.clientWidth || 832) - 32));
+          // Chỉ dùng mật độ vừa đủ cho khung đang xem. Bản cũ ép 2.5-4x cho
+          // mọi trang cùng lúc, khiến đề dài chiếm hàng trăm MB bộ nhớ.
+          var dpr = Math.min(1.75, window.devicePixelRatio || 1);
+          var scale = Math.min(2.5, Math.max(0.75, (cssWidth / base.width) * dpr));
+          var viewport = page.getViewport({ scale: scale });
+          canvas.height = Math.floor(viewport.height);
+          canvas.width = Math.floor(viewport.width);
+          canvas.style.minHeight = '0';
+          canvas.style.width = '100%';
+          canvas.style.maxWidth = '800px';
+          return page.render({
+            canvasContext: canvas.getContext('2d', { alpha: false }),
+            viewport: viewport
+          }).promise;
+        }).then(function () {
+          canvas.dataset.renderState = 'done';
+        }).catch(function (error) {
+          canvas.dataset.renderState = 'error';
+          canvas.style.minHeight = '120px';
+          canvas.title = 'Không dựng được trang ' + num;
+          console.error('Không dựng được trang PDF ' + num + ':', error);
+        });
+      }
+
+      var canvases = [];
+      for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        var canvas = document.createElement('canvas');
+        canvas.className = 'pdfjs-page';
+        canvas.dataset.pageNumber = String(pageNum);
+        canvas.style.width = '100%'; canvas.style.maxWidth = '800px';
+        canvas.style.minHeight = '520px';
+        canvas.style.borderRadius = '8px';
+        canvas.style.border = '1px solid var(--line)';
+        canvas.style.boxShadow = 'var(--shadow)';
+        canvas.style.background = '#fff';
+        canvasContainer.appendChild(canvas);
+        canvases.push(canvas);
+      }
+
+      // Vẽ hai trang đầu ngay; phần còn lại chỉ vẽ khi gần vùng nhìn thấy.
+      renderPage(1, canvases[0]);
+      if (canvases[1]) renderPage(2, canvases[1]);
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (!entry.isIntersecting) return;
+            var cv = entry.target;
+            observer.unobserve(cv);
+            renderPage(parseInt(cv.dataset.pageNumber, 10), cv);
           });
-        })(pageNum);
+        }, { root: canvasContainer, rootMargin: '1200px 0px' });
+        canvases.slice(2).forEach(function(cv) { observer.observe(cv); });
+      } else {
+        canvases.slice(2).reduce(function(chain, cv) {
+          return chain.then(function() { return renderPage(parseInt(cv.dataset.pageNumber, 10), cv); });
+        }, Promise.resolve());
       }
     }).catch(function(err) {
       console.error("PDF.js render error:", err);
-      fallbackToIframe();
+      fallbackToIframe(err);
     });
   }
 }
@@ -3247,6 +3299,12 @@ async function checkDaLamTest() {
   return false;
 }
 
+function vmTrangThaiMoTest() {
+  if (!details || !details.test_active) return 'hidden';
+  if (details.test_deadline && new Date(details.test_deadline).getTime() <= Date.now()) return 'ended';
+  return 'open';
+}
+
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
   ['LyThuyet', 'TaiLieu', 'Bang', 'BTVN', 'Test'].forEach(function (t) {
@@ -3301,9 +3359,10 @@ async function chonNoiDung(loai) {
     if (!coTest) {
       than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
         '<div class="no-content" style="background:var(--surface)"><div class="ic">📝</div><h3>Chưa có bài kiểm tra</h3></div>';
-    } else if (!details.test_active && !laQuanTriBaiHoc() && !daLamTest) {
+    } else if (vmTrangThaiMoTest() !== 'open' && !laQuanTriBaiHoc() && !daLamTest) {
+      var testEnded = vmTrangThaiMoTest() === 'ended';
       than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
-        '<div class="no-content"><div class="ic">🔒</div><h3>Bài kiểm tra chưa được mở</h3><p>Thầy sẽ kích hoạt bài kiểm tra khi tới giờ làm bài. Em quay lại sau nhé!</p></div>';
+        '<div class="no-content"><div class="ic">🔒</div><h3>' + (testEnded ? 'Ca kiểm tra đã kết thúc' : 'Bài kiểm tra chưa được mở') + '</h3><p>' + (testEnded ? 'Hạn nhận bài của ca này đã hết. Em liên hệ thầy/cô nếu cần được mở lại.' : 'Thầy/cô sẽ kích hoạt đề khi tới giờ làm bài. Em quay lại sau nhé!') + '</p></div>';
     } else if (interactiveQuestions.length > 0) {
       renderInteractiveQuiz();
     } else if (details.test_latex_content) {
@@ -3626,9 +3685,14 @@ function renderInteractiveQuiz() {
 }
 
 var testTimerInterval = null;
+var testDeadlineTimeout = null;
 
 function kiemTraVaChayTestTimer() {
   if (!details) return;
+  if (testDeadlineTimeout) {
+    clearTimeout(testDeadlineTimeout);
+    testDeadlineTimeout = null;
+  }
   
   var banner = document.getElementById('divTestTimer');
   
@@ -3639,6 +3703,20 @@ function kiemTraVaChayTestTimer() {
     }
     $('boChuyen').style.display = 'flex';
     if (banner) banner.remove();
+    if (details.test_active && details.test_deadline) {
+      var deadlineDelay = new Date(details.test_deadline).getTime() - Date.now();
+      if (deadlineDelay > 0) {
+        testDeadlineTimeout = setTimeout(function () {
+          testDeadlineTimeout = null;
+          if (new Date(details.test_deadline).getTime() > Date.now()) {
+            kiemTraVaChayTestTimer();
+            return;
+          }
+          capNhatAdminTestBar();
+          if (noiDungDangChon === 'test') chonNoiDung('test');
+        }, Math.min(deadlineDelay + 250, 2147483000));
+      }
+    }
     return;
   }
 
@@ -3678,9 +3756,10 @@ function kiemTraVaChayTestTimer() {
       setTimeout(function () {
         banner.remove();
         $('boChuyen').style.display = 'flex';
-        if (!testAttempt) {
+        if (!testAttempt && interactiveQuestions.length > 0) {
           nopBaiTracNghiem(true);
         }
+        if (noiDungDangChon === 'test') chonNoiDung('test');
       }, 1500);
     } else {
       var p = Math.floor(conLaiReal / 60000);
@@ -3700,6 +3779,8 @@ function dangKyRealtimeTest() {
           details.test_started_at = payload.new.test_started_at;
           details.test_duration_minutes = payload.new.test_duration_minutes;
           details.test_active = payload.new.test_active;
+          details.test_deadline = payload.new.test_deadline;
+          details.test_late_policy = payload.new.test_late_policy;
           kiemTraVaChayTestTimer();
           // Nếu trạng thái mở/đóng thay đổi và đang xem tab Kiểm tra → vẽ lại
           if (truocActive !== details.test_active && noiDungDangChon === 'test') {
@@ -3728,7 +3809,7 @@ function capNhatAdminTestBar() {
   if (!bar) return;
   if (noiDungDangChon !== 'test' || !coTheBatTatTest()) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
-  if (details.test_active) {
+  if (vmTrangThaiMoTest() === 'open') {
     bar.style.background = 'var(--ok-soft)';
     bar.style.borderBottom = '1px solid var(--ok)';
     bar.innerHTML =
@@ -3738,8 +3819,8 @@ function capNhatAdminTestBar() {
     bar.style.background = 'var(--warn-soft)';
     bar.style.borderBottom = '1px solid var(--warn)';
     bar.innerHTML =
-      '<span style="color:var(--warn); font-weight:700">🔒 Đang ẨN — học sinh chưa xem được đề kiểm tra</span>' +
-      '<button class="btn btn-primary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(true)">🔓 Kích hoạt cho HS xem</button>';
+      '<span style="color:var(--warn); font-weight:700">🔒 Đang đóng — học sinh chưa xem được đề kiểm tra</span>' +
+      '<button class="btn btn-primary btn-sm" style="padding:5px 12px" onclick="batTatKichHoatTest(true)">⏱ Bắt đầu ca ' + (details.test_duration_minutes || 15) + ' phút</button>';
   }
 }
 
@@ -3748,7 +3829,13 @@ async function batTatKichHoatTest(batLen) {
   var bar = $('adminTestBar');
   if (bar) bar.innerHTML = '<span style="color:var(--ink-2)">⏳ Đang cập nhật…</span>';
   var updates = { test_active: batLen };
-  if (!batLen) {
+  if (batLen) {
+    var now = new Date();
+    var duration = details.test_duration_minutes || 15;
+    updates.test_started_at = now.toISOString();
+    updates.test_deadline = new Date(now.getTime() + duration * 60000).toISOString();
+    updates.test_late_policy = 'lock';
+  } else {
     updates.test_started_at = null;
   }
   var r = await sb.from('lessons').update(updates).eq('id', lessonId);
@@ -3758,10 +3845,16 @@ async function batTatKichHoatTest(batLen) {
     return;
   }
   details.test_active = batLen;
-  if (!batLen) {
+  if (batLen) {
+    details.test_started_at = updates.test_started_at;
+    details.test_deadline = updates.test_deadline;
+    details.test_late_policy = 'lock';
+    kiemTraVaChayTestTimer();
+  } else {
     details.test_started_at = null;
   }
   capNhatAdminTestBar();
+  if (noiDungDangChon === 'test') chonNoiDung('test');
 }
 
 function khoiTaoResizer() {

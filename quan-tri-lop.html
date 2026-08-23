@@ -709,13 +709,15 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
         </div>
 
         <div class="field">
-          <label>⏱ Thời gian làm bài kiểm tra mặc định (phút)</label>
+          <label>⏱ Thời lượng một ca kiểm tra (phút)</label>
           <input type="number" class="input" id="bhTestDuration" value="15" min="1">
+          <small style="color:var(--ink-3);margin-top:4px;display:block">Chỉ bắt đầu đếm khi thầy/cô bấm “Kích hoạt test”.</small>
         </div>
 
         <div class="field" style="background:rgba(224,160,32,.05);border:1px solid rgba(224,160,32,.25);border-radius:10px;padding:12px 14px">
-          <label>⏰ Hạn nộp bài kiểm tra <small style="color:var(--ink-3);font-weight:400">(để trống nếu không giới hạn)</small></label>
+          <label>⏰ Hạn đóng đề khi mở tự do <small style="color:var(--ink-3);font-weight:400">(để trống nếu sẽ mở/đóng thủ công)</small></label>
           <input type="datetime-local" class="input" id="bhTestDue" style="max-width:260px">
+          <small style="color:var(--ink-3);margin-top:5px;display:block">Nếu chọn ca có đếm ngược, hệ thống tự đặt hạn đóng = giờ kích hoạt + thời lượng và bỏ qua mốc này.</small>
           <div style="margin-top:10px">
             <label style="font-size:.85rem">Khi quá hạn:</label>
             <select class="input" id="bhTestLate" style="max-width:320px">
@@ -886,19 +888,32 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <div class="modal" id="modalKichHoatTest" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px">
   <div class="modal-content" style="max-width: 400px; padding: 24px;">
     <button onclick="$('modalKichHoatTest').style.display='none'" style="position:absolute;top:12px;right:14px;font-size:1.4rem;background:none;border:none;cursor:pointer;color:var(--ink-3)">×</button>
-    <h3 style="margin-top:0;margin-bottom:8px">⏱ Kích hoạt kiểm tra cuối giờ</h3>
+    <h3 style="margin-top:0;margin-bottom:8px">⏱ Mở bài kiểm tra cho học sinh</h3>
     <p style="font-size:0.88rem;color:var(--ink-2);margin-bottom:16px;line-height:1.4" id="khtTenBai"></p>
     
     <input type="hidden" id="khtLessonId">
     
-    <div class="field" style="margin-bottom:20px">
-      <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px">Thời gian làm bài (phút)</label>
+    <div class="field" style="margin-bottom:14px">
+      <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px">Cách mở đề</label>
+      <select class="input" id="khtMode" onchange="khtCapNhatMode()">
+        <option value="timed">Ca kiểm tra có đếm ngược</option>
+        <option value="deadline">Mở tự do đến hạn đã chọn</option>
+      </select>
+    </div>
+    <div class="field" id="khtDurationField" style="margin-bottom:14px">
+      <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px">Thời lượng ca (phút)</label>
       <input type="number" class="input" id="khtDuration" value="15" min="1" style="width:100%">
+      <small style="color:var(--ink-3);display:block;margin-top:5px">Hạn đóng đề sẽ tự tính từ lúc bấm kích hoạt.</small>
+    </div>
+    <div class="field" id="khtDeadlineField" style="display:none;margin-bottom:14px">
+      <label style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px">Mở đến</label>
+      <input type="datetime-local" class="input" id="khtDeadline" style="width:100%">
+      <small style="color:var(--ink-3);display:block;margin-top:5px">Để trống nếu muốn tự đóng đề bằng nút “Đóng test”.</small>
     </div>
     
     <div style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-secondary btn-sm" onclick="$('modalKichHoatTest').style.display='none'">Huỷ</button>
-      <button class="btn btn-primary btn-sm" id="btnXacNhanKichHoat" onclick="xacNhanKichHoatTest()">🚀 Kích hoạt ngay</button>
+      <button class="btn btn-primary btn-sm" id="btnXacNhanKichHoat" onclick="xacNhanKichHoatTest()">🚀 Mở đề ngay</button>
     </div>
   </div>
 </div>
@@ -1213,7 +1228,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.7"></script>
 <script src="js/latex-view.js?v=10.6"></script>
 <script src="js/menu-v5.js?v=8.7"></script>
 <script src="js/analytics.js"></script>
@@ -1809,7 +1824,7 @@ async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, linked_exam_ids, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_active, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, linked_exam_ids, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
 
   var lessons = r.data || [];
@@ -1911,11 +1926,11 @@ function renderLessonAcc(b, mauChuyenDe) {
   var glitter = isNew ? ' <span class="new-lesson-badge" title="Bài mới nhất">MỚI ✨</span>' : '';
   var tenJs = b.title.replace(/'/g, "\\'");
 
-  var isTestRunning = false;
-  if (b.test_started_at) { var end = new Date(b.test_started_at).getTime() + (b.test_duration_minutes || 15) * 60000; if (end > Date.now()) isTestRunning = true; }
-  var testBtn = isTestRunning
-    ? '<button class="btn btn-sm chi-gv" style="background:#e74c3c;color:#fff;border-color:#e74c3c;padding:4px 10px" onclick="dungTest(\'' + b.id + '\', \'' + tenJs + '\')">⏹ Dừng test</button>'
-    : '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px" onclick="moKichHoatTest(\'' + b.id + '\', \'' + tenJs + '\')">⏱ Kích hoạt test</button>';
+  var testEnd = b.test_deadline ? new Date(b.test_deadline).getTime() : null;
+  var isTestOpen = !!b.test_active && (!testEnd || testEnd > Date.now());
+  var testBtn = isTestOpen
+    ? '<button class="btn btn-sm chi-gv" style="background:#e74c3c;color:#fff;border-color:#e74c3c;padding:4px 10px" onclick="dungTest(\'' + b.id + '\', \'' + tenJs + '\')">⏹ Đóng test</button>'
+    : '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px" onclick="moKichHoatTest(\'' + b.id + '\', \'' + tenJs + '\')">⏱ Mở test</button>';
 
   var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
 
@@ -2135,18 +2150,33 @@ async function moKichHoatTest(lessonId, title) {
   $('khtLessonId').value = lessonId;
   $('khtTenBai').textContent = 'Bài giảng: ' + title;
   
-  var r = await sb.from('lessons').select('test_duration_minutes').eq('id', lessonId).single();
+  var r = await sb.from('lessons').select('test_duration_minutes, test_deadline').eq('id', lessonId).single();
   var duration = (r.data && r.data.test_duration_minutes) ? r.data.test_duration_minutes : 15;
   
   $('khtDuration').value = duration;
+  $('khtDeadline').value = r.data && r.data.test_deadline ? isoToLocalInput(r.data.test_deadline) : '';
+  $('khtMode').value = 'timed';
+  khtCapNhatMode();
   $('modalKichHoatTest').style.display = 'flex';
+}
+
+function khtCapNhatMode() {
+  var timed = $('khtMode').value === 'timed';
+  $('khtDurationField').style.display = timed ? '' : 'none';
+  $('khtDeadlineField').style.display = timed ? 'none' : '';
 }
 
 async function xacNhanKichHoatTest() {
   var lessonId = $('khtLessonId').value;
+  var mode = $('khtMode').value;
   var duration = parseInt($('khtDuration').value);
-  if (!duration || duration <= 0) {
+  if (mode === 'timed' && (!duration || duration <= 0)) {
     alert('Thời gian không hợp lệ.');
+    return;
+  }
+  var deadline = $('khtDeadline').value ? new Date($('khtDeadline').value) : null;
+  if (mode === 'deadline' && deadline && deadline.getTime() <= Date.now()) {
+    alert('Hạn đóng đề phải ở tương lai.');
     return;
   }
   
@@ -2154,23 +2184,33 @@ async function xacNhanKichHoatTest() {
   btn.disabled = true;
   btn.textContent = '⏳ Đang kích hoạt...';
   
-  await kichHoatTest(lessonId, duration);
+  await kichHoatTest(lessonId, mode, duration, deadline);
   
   btn.disabled = false;
-  btn.textContent = '🚀 Kích hoạt ngay';
+  btn.textContent = '🚀 Mở đề ngay';
   $('modalKichHoatTest').style.display = 'none';
 }
 
-async function kichHoatTest(lessonId, duration) {
-  var r = await sb.from('lessons').update({
-    test_started_at: new Date().toISOString(),
-    test_duration_minutes: duration
-  }).eq('id', lessonId);
+async function kichHoatTest(lessonId, mode, duration, deadline) {
+  var now = new Date();
+  var updates = { test_active: true };
+  if (mode === 'timed') {
+    updates.test_started_at = now.toISOString();
+    updates.test_duration_minutes = duration;
+    updates.test_deadline = new Date(now.getTime() + duration * 60000).toISOString();
+    updates.test_late_policy = 'lock';
+  } else {
+    updates.test_started_at = null;
+    updates.test_deadline = deadline ? deadline.toISOString() : null;
+  }
+  var r = await sb.from('lessons').update(updates).eq('id', lessonId);
   
   if (r.error) {
     alert('Lỗi kích hoạt: ' + r.error.message);
   } else {
-    alert('Đã kích hoạt bài test thành công! Học sinh đang xem bài giảng này sẽ tự động đếm ngược.');
+    alert(mode === 'timed'
+      ? 'Đã mở ca kiểm tra. Hệ thống tự đóng sau ' + duration + ' phút.'
+      : 'Đã mở đề cho học sinh' + (deadline ? ' đến hạn đã chọn.' : ' cho tới khi thầy/cô đóng lại.'));
     taiLessonsLop();
   }
 }
@@ -2178,6 +2218,7 @@ async function kichHoatTest(lessonId, duration) {
 async function dungTest(lessonId, title) {
   if (!confirm('Thầy/Cô có chắc chắn muốn dừng sớm bài kiểm tra của bài "' + title + '" không?')) return;
   var r = await sb.from('lessons').update({
+    test_active: false,
     test_started_at: null
   }).eq('id', lessonId);
   
