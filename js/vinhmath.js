@@ -1076,8 +1076,15 @@ async function layHoSo() {
     }
     
     // Tự động khởi chạy poller điểm danh nếu là học sinh
-    if (r.data.role === 'student' && !window.pollerDiemDanhInterval) {
-      setTimeout(function () { khoiChayPollerDiemDanh(r.data); }, 1000);
+    if (r.data.role === 'student' && !window.pollerDiemDanhInterval && !window.pollerDiemDanhDangKhoiDong) {
+      // Nhiều thành phần giao diện có thể gọi layHoSo() cùng lúc. Đánh dấu ngay
+      // trước khi hẹn giờ để không vô tình tạo 3-4 poller điểm danh song song.
+      window.pollerDiemDanhDangKhoiDong = true;
+      setTimeout(function () {
+        khoiChayPollerDiemDanh(r.data).finally(function () {
+          window.pollerDiemDanhDangKhoiDong = false;
+        });
+      }, 1000);
     }
   }
   return r.data || null;
@@ -1107,12 +1114,15 @@ function chao() { // lời chào theo giờ trong ngày
 
 /* ---------- 5. ĐIỂM DANH POP-UP TỰ ĐỘNG CHO HỌC SINH ---------- */
 window.pollerDiemDanhInterval = null;
+window.pollerDiemDanhDangKhoiDong = false;
+window.pollerDiemDanhDangChay = false;
 var studentActiveSession = null;
 var studentActiveId = null;
 
 async function khoiChayPollerDiemDanh(hoSo) {
   if (!hoSo || hoSo.role !== 'student') return;
   if (!hoSo.class_students || hoSo.class_students.length === 0) return;
+  if (window.pollerDiemDanhInterval) return;
   
   var classIds = hoSo.class_students.map(function (c) { return c.class_id; });
   var studentId = hoSo.id;
@@ -1125,38 +1135,44 @@ async function khoiChayPollerDiemDanh(hoSo) {
 
 async function kiemTraDiemDanhPoller(classIds, studentId) {
   if (!daKetNoi()) return;
+  if (window.pollerDiemDanhDangChay) return;
+  window.pollerDiemDanhDangChay = true;
   
-  var nowIso = new Date().toISOString();
-  var r = await sb.from('class_sessions')
-    .select('id, title, qr_expires, class_id')
-    .in('class_id', classIds)
-    .eq('attendance_open', true)
-    .gt('qr_expires', nowIso)
-    .order('created_at', { ascending: false });
+  try {
+    var nowIso = new Date().toISOString();
+    var r = await sb.from('class_sessions')
+      .select('id, title, qr_expires, class_id')
+      .in('class_id', classIds)
+      .eq('attendance_open', true)
+      .gt('qr_expires', nowIso)
+      .order('created_at', { ascending: false });
+
+    if (r.error || !r.data || r.data.length === 0) {
+      dongModalDiemDanhStudent();
+      return;
+    }
     
-  if (r.error || !r.data || r.data.length === 0) {
-    dongModalDiemDanhStudent();
-    return;
-  }
-  
-  var buoi = r.data[0];
-  
-  if (sessionStorage.getItem('vm-dismissed-session-' + buoi.id) === 'true') {
-    return;
-  }
-  
-  var att = await sb.from('attendance')
-    .select('session_id')
-    .eq('session_id', buoi.id)
-    .eq('student_id', studentId)
-    .maybeSingle();
+    var buoi = r.data[0];
+
+    if (sessionStorage.getItem('vm-dismissed-session-' + buoi.id) === 'true') {
+      return;
+    }
+
+    var att = await sb.from('attendance')
+      .select('session_id')
+      .eq('session_id', buoi.id)
+      .eq('student_id', studentId)
+      .maybeSingle();
+
+    if (att.data) {
+      dongModalDiemDanhStudent();
+      return;
+    }
     
-  if (att.data) {
-    dongModalDiemDanhStudent();
-    return;
+    hienModalDiemDanhStudent(buoi, studentId);
+  } finally {
+    window.pollerDiemDanhDangChay = false;
   }
-  
-  hienModalDiemDanhStudent(buoi, studentId);
 }
 
 function hienModalDiemDanhStudent(buoi, studentId) {
