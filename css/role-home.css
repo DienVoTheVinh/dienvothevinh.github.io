@@ -13,49 +13,55 @@
 @media(max-width:900px){.vm-student-home-grid{grid-template-columns:1fr}.vm-student-side{display:contents}.vm-student-live-slot{order:-2}.vm-student-main-card{order:-1}.vm-student-quick-grid,.vm-student-notices{order:0;min-width:0}.vm-student-quick-grid{grid-column:auto}}
 @media(max-width:620px){.vm-role-focus-head{align-items:stretch;flex-direction:column}.vm-student-card-head{align-items:stretch;flex-direction:column}.vm-student-card-head .btn{width:100%;justify-content:center}.vm-student-side{grid-template-columns:1fr}.vm-student-quick-grid{grid-column:auto}.vm-student-lesson-row{grid-template-columns:32px minmax(0,1fr)}.vm-student-lesson-row strong{grid-column:2}.vm-student-live-slot #khungMeetHoc>div:nth-child(2),.vm-student-live-slot #khungDiemDanhHoc>div:nth-child(2){align-items:stretch!important;flex-direction:column}.vm-student-live-slot #khungMeetHoc .btn{width:100%;justify-content:center}.vm-student-live-slot #formDiemDanhHoc{width:100%}.vm-student-live-slot #formDiemDanhHoc input{flex:1}}
 
-/* Học online là hành động quan trọng nhất trên trang Hôm nay. */
-.vm-student-live-slot{grid-column:1/-1;display:grid;gap:12px;min-width:0}
-.vm-student-live-slot #khungMeetHoc.vm-meet-card{position:relative;isolation:isolate;display:none;margin:0!important;padding:20px 22px!important;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));border-radius:20px!important;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 8%,var(--surface)) 0%,var(--surface) 50%,color-mix(in srgb,var(--ok) 8%,var(--surface)) 100%);box-shadow:0 18px 44px color-mix(in srgb,var(--accent) 13%,transparent)}
+/* Desktop: việc cần làm ở trái, lớp online và thông tin nhanh ở phải. */
+.vm-student-home-grid{grid-template-columns:minmax(0,1.62fr) minmax(350px,.78fr);grid-template-areas:"main live" "main side";gap:16px;align-items:start}
+.vm-student-main-card{grid-area:main}
+.vm-student-live-slot{grid-area:live;display:grid;gap:12px;min-width:0}
+.vm-student-side{grid-area:side}
+.vm-student-live-slot #khungMeetHoc.vm-meet-card{position:relative;isolation:isolate;display:none;margin:0!important;padding:16px!important;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));border-radius:18px!important;background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 8%,var(--surface)),var(--surface));box-shadow:0 13px 32px color-mix(in srgb,var(--accent) 12%,transparent)}
 .vm-student-live-slot #khungMeetHoc.vm-meet-card>div{display:block}
-.vm-meet-glow{position:absolute!important;z-index:-1;inset:-65% -8% auto 58%;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 22%,transparent),transparent 68%);pointer-events:none}
-.vm-meet-topline{position:relative;z-index:1;display:flex!important;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid color-mix(in srgb,var(--accent) 22%,var(--line))}
-.vm-meet-live-label{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:.7rem;font-weight:900;letter-spacing:.13em}
-.vm-meet-live-label i{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 5px color-mix(in srgb,var(--ok) 13%,transparent),0 0 15px color-mix(in srgb,var(--ok) 60%,transparent);animation:vmMeetPulse 1.8s ease-in-out infinite}
-.vm-meet-clock{display:grid;grid-template-columns:auto auto;align-items:baseline;column-gap:10px;text-align:right}
-.vm-meet-clock>span{grid-row:1/3;color:var(--ink-3);font-size:.56rem;font-weight:900;letter-spacing:.12em;writing-mode:vertical-rl;transform:rotate(180deg)}
-.vm-meet-clock strong{font:800 clamp(1.3rem,2.7vw,2rem)/1 var(--font-mono);color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.035em}
-.vm-meet-clock time{margin-top:4px;color:var(--ink-3);font-size:.65rem;text-transform:capitalize}
-.vm-meet-primary{position:relative;z-index:1;display:flex!important;align-items:center;justify-content:space-between;gap:22px}
-.vm-meet-copy{display:flex!important;align-items:center;gap:15px;min-width:0}
-.vm-meet-icon{display:grid!important;place-items:center;width:62px;height:62px;flex:0 0 auto;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:18px;background:linear-gradient(135deg,var(--accent-soft),var(--surface));font-size:1.8rem;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 12%,transparent)}
-.vm-student-live-slot #khungMeetHoc h3{margin:0!important;color:var(--ink)!important;font-size:1.12rem!important;font-weight:800!important}
-.vm-student-live-slot #khungMeetHoc p{margin:5px 0 0!important;color:var(--ink-2)!important;font-size:.82rem!important;line-height:1.55}
-.vm-meet-join{min-height:48px;padding:12px 20px!important;flex:0 0 auto;justify-content:center;font-size:.82rem!important;font-weight:800!important;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 25%,transparent)}
-.vm-meet-upcoming{position:relative;z-index:1;margin-top:15px!important;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 88%,transparent)}
-.vm-meet-upcoming:empty{display:none!important}
-.vm-meet-upcoming-title{margin-bottom:4px;color:var(--ink-3);font-size:.66rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
-.vm-meet-session{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line-2)}
-.vm-meet-session:first-of-type{border-top:0}
-.vm-meet-session-copy{min-width:0;color:var(--ink-2);font-size:.76rem;line-height:1.45}
-.vm-meet-session-copy b{color:var(--ink);font-weight:800}
-.vm-meet-session.is-today .vm-meet-session-copy b{color:var(--ok)}
-.vm-meet-session-link{color:var(--accent);font-size:.72rem;font-weight:850;text-decoration:none;white-space:nowrap}
+.vm-meet-glow{position:absolute!important;z-index:-1;right:-100px;top:-130px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 18%,transparent),transparent 67%);pointer-events:none}
+.vm-meet-topline{position:relative;z-index:1;display:flex!important;align-items:center;min-height:22px;margin-bottom:10px}
+.vm-meet-live-label{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:.66rem;font-weight:900;letter-spacing:.12em}
+.vm-meet-live-label i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 13%,transparent);animation:vmMeetPulse 1.8s ease-in-out infinite}
+.vm-meet-primary{position:relative;z-index:1;display:grid!important;grid-template-columns:1fr;gap:12px!important;padding-bottom:14px}
+.vm-meet-copy{display:flex!important;align-items:flex-start;gap:11px;min-width:0}
+.vm-meet-icon{display:grid!important;place-items:center;width:44px;height:44px;flex:0 0 44px;border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);border-radius:13px;background:var(--accent-soft);font-size:1.3rem}
+.vm-student-live-slot #khungMeetHoc h3{margin:1px 0 0!important;color:var(--ink)!important;font-size:.94rem!important;font-weight:850!important;line-height:1.35}
+.vm-student-live-slot #khungMeetHoc p{margin:4px 0 0!important;color:var(--ink-2)!important;font-size:.7rem!important;line-height:1.5}
+.vm-meet-join{width:100%;min-height:43px;padding:10px 14px!important;justify-content:center;font-size:.75rem!important;font-weight:850!important;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 22%,transparent)}
+.vm-meet-schedule-panel{position:relative;z-index:1;padding:11px 12px 7px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 91%,transparent)}
+.vm-meet-schedule-head{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding-bottom:9px;border-bottom:1px solid var(--line-2)}
+.vm-meet-schedule-head>div:first-child{display:grid;gap:2px}
+.vm-meet-schedule-head small{color:var(--accent);font-size:.57rem;font-weight:900;letter-spacing:.11em}
+.vm-meet-schedule-head b{color:var(--ink);font-size:.78rem}
+.vm-meet-clock{display:grid;justify-items:end;gap:2px;min-width:104px;padding-left:11px;border-left:1px solid var(--line-2);text-align:right}
+.vm-meet-clock strong{font:800 1.08rem/1 var(--font-mono);color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.vm-meet-clock time{max-width:130px;color:var(--ink-3);font-size:.53rem;line-height:1.25;text-transform:capitalize}
+.vm-meet-upcoming{position:relative;z-index:1;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+.vm-meet-session{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line-2)}
+.vm-meet-session:first-child{border-top:0}
+.vm-meet-session-copy{min-width:0;display:grid;gap:5px;color:var(--ink-2);font-size:.68rem;line-height:1.4}
+.vm-meet-session-time b{color:var(--ink);font-size:.7rem;font-weight:900}
+.vm-meet-session.is-today .vm-meet-session-time b{color:var(--ok)}
+.vm-meet-session-context{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.vm-meet-class,.vm-meet-teacher{display:inline-flex;min-width:0;padding:3px 6px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-size:.58rem;font-weight:700}
+.vm-meet-teacher{background:color-mix(in srgb,var(--ok) 9%,var(--surface));color:color-mix(in srgb,var(--ok) 80%,var(--ink))}
+.vm-meet-session-link{color:var(--accent);font-size:.62rem;font-weight:900;text-decoration:none;white-space:nowrap}
 .vm-meet-session-link.is-disabled{color:var(--ink-3)}
-@keyframes vmMeetPulse{50%{transform:scale(.78);opacity:.65;box-shadow:0 0 0 8px color-mix(in srgb,var(--ok) 7%,transparent),0 0 22px color-mix(in srgb,var(--ok) 68%,transparent)}}
-@media(max-width:720px){
-  .vm-student-home-grid{grid-template-columns:1fr}
+.vm-meet-empty{padding:12px 2px;color:var(--ink-3);font-size:.66rem;line-height:1.45;text-align:center}
+@keyframes vmMeetPulse{50%{transform:scale(.78);opacity:.65;box-shadow:0 0 0 7px color-mix(in srgb,var(--ok) 7%,transparent)}}
+@media(max-width:900px){
+  .vm-student-home-grid{grid-template-columns:1fr;grid-template-areas:"live" "main" "side"}
   .vm-student-live-slot{order:-2}
-  .vm-student-live-slot #khungMeetHoc.vm-meet-card{padding:16px!important}
-  .vm-meet-topline{align-items:flex-start}
-  .vm-meet-clock{grid-template-columns:auto;justify-items:end}
-  .vm-meet-clock>span{display:none}
-  .vm-meet-clock strong{font-size:1.35rem}
-  .vm-meet-clock time{max-width:145px;line-height:1.35}
-  .vm-meet-primary{align-items:stretch!important;flex-direction:column;gap:13px!important}
-  .vm-meet-copy{align-items:flex-start}
-  .vm-meet-icon{width:48px;height:48px;border-radius:14px;font-size:1.45rem}
-  .vm-student-live-slot #khungMeetHoc h3{font-size:.98rem!important}
-  .vm-meet-join{width:100%}
+  .vm-student-main-card{order:-1}
+}
+@media(max-width:620px){
+  .vm-student-live-slot #khungMeetHoc.vm-meet-card{padding:14px!important}
+  .vm-meet-schedule-head{align-items:start}
+  .vm-meet-clock{min-width:98px}
+  .vm-meet-session{align-items:start}
+  .vm-meet-session-link{padding-top:2px}
 }
 @media(prefers-reduced-motion:reduce){.vm-meet-live-label i{animation:none}}
 @media(max-width:460px){.vm-role-actions{grid-template-columns:1fr}.vm-role-action{min-height:auto}.vm-student-quick-grid a{padding:10px 4px}}

@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.2">
-<link rel="stylesheet" href="css/role-home.css?v=7">
+<link rel="stylesheet" href="css/role-home.css?v=8">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -631,11 +631,6 @@
     <div class="vm-meet-glow" aria-hidden="true"></div>
     <div class="vm-meet-topline">
       <span class="vm-meet-live-label"><i aria-hidden="true"></i> HỌC ONLINE</span>
-      <div class="vm-meet-clock" aria-label="Đồng hồ giờ Việt Nam">
-        <span>GIỜ VIỆT NAM</span>
-        <strong id="vmStudentClockTime">--:--:--</strong>
-        <time id="vmStudentClockDate">Đang cập nhật ngày</time>
-      </div>
     </div>
     <div class="vm-meet-primary">
       <div class="vm-meet-copy">
@@ -649,7 +644,16 @@
         Vào lớp học ngay 🚀
       </a>
     </div>
-    <div id="meetUpcoming" class="vm-meet-upcoming"></div>
+    <div class="vm-meet-schedule-panel">
+      <div class="vm-meet-schedule-head">
+        <div><small>LỊCH HỌC</small><b>Buổi học sắp tới</b></div>
+        <div class="vm-meet-clock" aria-label="Đồng hồ hiện tại">
+          <strong id="vmStudentClockTime">--:--:--</strong>
+          <time id="vmStudentClockDate">Đang cập nhật ngày</time>
+        </div>
+      </div>
+      <div id="meetUpcoming" class="vm-meet-upcoming"></div>
+    </div>
   </div>
 
   <!-- Banner Phím tắt Vào học bài ngay cho học sinh -->
@@ -1161,7 +1165,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.7"></script>
-<script src="js/menu-v5.js?v=9.1"></script>
+<script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/analytics.js"></script>
   <script src="js/role-home.js?v=9"></script>
 <script>
@@ -2180,6 +2184,11 @@ async function capNhatMeetLinkTheoLop(classId) {
   if (tIds.length) { try { var tp = await sb.from('profiles').select('id, full_name').in('id', tIds); (tp.data || []).forEach(function (p) { teacherMap[p.id] = p.full_name; }); } catch (e) {} }
 
   function linkCuaBuoi(s) { return s.meet_link || classLinkMap[s.class_id] || lkCommon || ''; }
+  function escMeet(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char];
+    });
+  }
   function moTaBuoi(s) {
     var parts = [];
     if (classNameMap[s.class_id]) parts.push('Lớp ' + classNameMap[s.class_id]);
@@ -2238,20 +2247,21 @@ async function capNhatMeetLinkTheoLop(classId) {
     var s = o.s;
     var nhanThu = o.delta === 0 ? 'Hôm nay' : (o.delta === 1 ? 'Ngày mai' : (THU[o.weekday] || ''));
     var gio = o.gio ? o.gio.slice(0, 5) : '';
+    var className = classNameMap[s.class_id] || 'Lớp học';
+    var teacherName = (s.teacher_id && teacherMap[s.teacher_id]) ? teacherMap[s.teacher_id] : 'Giáo viên phụ trách';
     var link = linkCuaBuoi(s);
     var aHtml = link
       ? '<a href="' + link + '" target="_blank" rel="noopener" class="vm-meet-session-link">Vào phòng →</a>'
       : '<span class="vm-meet-session-link is-disabled">chưa có link</span>';
     return '<div class="vm-meet-session' + (o.delta === 0 ? ' is-today' : '') + '">' +
       '<div class="vm-meet-session-copy">' +
-        '<b>' + nhanThu + (gio ? (' · ' + gio) : '') + '</b>' + (o.makeup ? ' <span>(bù)</span>' : '') + ' — ' + (moTaBuoi(s) || 'Lớp học') +
+        '<div class="vm-meet-session-time"><b>' + escMeet(nhanThu + (gio ? (' · ' + gio) : '')) + '</b>' + (o.makeup ? ' <span>(bù)</span>' : '') + '</div>' +
+        '<div class="vm-meet-session-context"><span class="vm-meet-class">🏫 ' + escMeet(className) + '</span><span class="vm-meet-teacher">👨‍🏫 ' + escMeet(teacherName) + '</span></div>' +
       '</div>' + aHtml +
     '</div>';
   }).join('');
   if ($('meetUpcoming')) {
-    $('meetUpcoming').innerHTML = upHtml
-      ? ('<div class="vm-meet-upcoming-title">🗓️ Các buổi học sắp tới</div>' + upHtml)
-      : '';
+    $('meetUpcoming').innerHTML = upHtml || '<div class="vm-meet-empty">Chưa có buổi học online sắp tới.</div>';
   }
 
   $('khungMeetHoc').style.display = 'block';
