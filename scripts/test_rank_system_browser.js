@@ -20,7 +20,8 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     await page.waitForSelector('#vmRankHome .vm-rank-home-card', { timeout: 15000 });
     await page.waitForSelector('#vmCompanionDock .vm-pet-egg', { timeout: 15000 });
     if (await page.locator('.vm-egg-choice').count()) throw new Error('Guest preview must not open a state-changing egg chooser');
-    if (!await page.getByText('Bảng xếp hạng', { exact: true }).count()) throw new Error('Leaderboard is missing from student navigation');
+    if (!await page.getByText('BXH', { exact: true }).count()) throw new Error('BXH is missing from student navigation');
+    if (!await page.getByText('Bài tập', { exact: true }).count()) throw new Error('Bài tập is missing from student navigation');
     const homeText = await page.locator('#vmRankHome').innerText();
     if (!homeText.includes('Tân Thủ') || !homeText.includes('Kim Cương')) throw new Error(`Current rank is missing on Today: ${homeText}`);
     const toolbar = await page.evaluate(() => ({
@@ -45,6 +46,8 @@ if (!executablePath || !fs.existsSync(executablePath)) {
       gates: await page.locator('.achievement-gate').count(),
       sanctuary: await page.locator('#companionSanctuary').isVisible(),
       badges: await page.locator('.achievement-badge').count(),
+      timeline: await page.locator('.timeline-entry').count(),
+      currentRealms: await page.locator('.realm-current').count(),
       openDialogs: await page.locator('dialog[open]').count(),
     };
     if (process.env.VM_RANK_DIAGNOSTIC) {
@@ -63,12 +66,30 @@ if (!executablePath || !fs.existsSync(executablePath)) {
       console.log(`DIAGNOSTIC ${JSON.stringify(map.fixedLayers)}`);
       console.log(`THEME ${JSON.stringify(await page.evaluate(() => ({ html:document.documentElement.getAttribute('data-theme'), body:document.body.getAttribute('data-theme'), bg:getComputedStyle(document.body).backgroundColor, ink:getComputedStyle(document.body).getPropertyValue('--ink-2'), heading:getComputedStyle(document.querySelector('.achievement-map-head h2')).color })))}`);
     }
-    if (map.regions !== 11 || map.levels !== 44 || map.gates !== 10 || !map.sanctuary || map.badges < 15 || map.openDialogs !== 0) {
+    if (map.regions !== 11 || map.levels !== 44 || map.gates !== 10 || !map.sanctuary || map.badges < 15 || map.timeline < 2 || map.currentRealms !== 1 || map.openDialogs !== 0) {
       throw new Error(`Rank map is incomplete: ${JSON.stringify(map)}`);
     }
     if (process.env.VM_RANK_SCREENSHOT) {
       await page.screenshot({ path: process.env.VM_RANK_SCREENSHOT, fullPage: true });
     }
+
+    await page.goto('http://127.0.0.1:8000/luyen-de?preview=1', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#vmPracticeClassFilter', { state: 'visible', timeout: 15000 });
+    const practice = await page.evaluate(() => {
+      const filter = document.querySelector('#vmPracticeClassFilter').getBoundingClientRect();
+      const content = document.querySelector('.practice-content').getBoundingClientRect();
+      const tag = document.querySelector('.practice-specialized-tag');
+      const tagStyle = tag && getComputedStyle(tag);
+      return {
+        filterBeforeContent: filter.right < content.left,
+        columns: getComputedStyle(document.querySelector('.practice-shell')).gridTemplateColumns,
+        specializedVisible: !tag || tag.getBoundingClientRect().width > 20,
+        specializedContrast: !tagStyle || tagStyle.color !== tagStyle.backgroundColor,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+    if (!practice.filterBeforeContent || !practice.specializedVisible || !practice.specializedContrast || practice.overflow > 1) throw new Error(`Practice desktop layout is incomplete: ${JSON.stringify(practice)}`);
+    if (process.env.VM_PRACTICE_SCREENSHOT) await page.screenshot({ path: process.env.VM_PRACTICE_SCREENSHOT, fullPage: true });
 
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('http://127.0.0.1:8000/trang-chu?preview=1', { waitUntil: 'domcontentloaded' });
@@ -96,6 +117,14 @@ if (!executablePath || !fs.existsSync(executablePath)) {
     });
     if (mobile.overflow > 1 || !mobile.dockInside || !mobile.brandVisible || mobile.logoOverflow > 1 || mobile.rankTitleVisible || mobile.rankWidth > 31 || mobile.rankLabel !== 'Cấp bậc Tân Thủ · Kim Cương') throw new Error(`Mobile rank UI overflows or hides the brand: ${JSON.stringify(mobile)}`);
     if (process.env.VM_RANK_MOBILE_SCREENSHOT) await page.screenshot({ path: process.env.VM_RANK_MOBILE_SCREENSHOT, fullPage: false });
+    await page.goto('http://127.0.0.1:8000/thanh-tuu?preview=1', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.timeline-entry', { timeout: 15000 });
+    const mobileMap = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      regionInside: Array.from(document.querySelectorAll('.achievement-region')).every((item) => { const r=item.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
+      timelineInside: Array.from(document.querySelectorAll('.timeline-entry')).every((item) => { const r=item.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
+    }));
+    if (mobileMap.overflow > 1 || !mobileMap.regionInside || !mobileMap.timelineInside) throw new Error(`Realm map overflows on mobile: ${JSON.stringify(mobileMap)}`);
     if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(' | ')}`);
 
     console.log(`PASS rank system browser: ${map.regions} major ranks, ${map.levels} levels, companion and mobile layout`);

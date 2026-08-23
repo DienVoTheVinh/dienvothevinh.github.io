@@ -58,9 +58,9 @@ function apDungMenu(role, portalContext) {
     muc = [
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
       { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
-      { type: 'link', path: 'luyen-de', label: 'Luyện tập' },
+      { type: 'link', path: 'luyen-de', label: 'Bài tập' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả' },
-      { type: 'link', path: 'bang-vang', label: 'Bảng xếp hạng' },
+      { type: 'link', path: 'bang-vang', label: 'BXH' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
@@ -215,7 +215,7 @@ function napHeThongCapBac() {
   if (document.getElementById('vmRankSystemScript')) return;
   var sc = document.createElement('script');
   sc.id = 'vmRankSystemScript';
-  sc.src = 'js/rank-system.js?v=3';
+  sc.src = 'js/rank-system.js?v=4';
   sc.onload = function () { if (window.VMRank) window.VMRank.init(); };
   document.body.appendChild(sc);
 }

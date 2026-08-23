@@ -9,13 +9,13 @@
   <link rel="icon" type="image/png" href="favicon.png?v=3">
   <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <title>Bản đồ cấp bậc & Linh thú — VinhMath</title>
+  <title>Bản đồ cảnh giới & Hồ sơ học tập — VinhMath</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=7.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.1">
   <link rel="stylesheet" href="css/student-experience.css?v=3">
-  <link rel="stylesheet" href="css/rank-map.css?v=1">
+  <link rel="stylesheet" href="css/rank-map.css?v=2">
 </head>
 <body class="achievement-page">
   <div class="topbar">
@@ -32,9 +32,9 @@
   <main class="wrap">
     <section class="achievement-hero" aria-live="polite">
       <div class="achievement-hero-main">
-        <div class="sec-label">Hành trình 44 cấp của em</div>
-        <h1>Bản đồ cấp bậc VinhMath</h1>
-        <p>11 đại cấp, mỗi đại cấp gồm Đồng, Bạc, Vàng và Kim Cương. XP đưa em tiến lên; bài kiểm tra đột phá mở cánh cửa sang đại cấp mới.</p>
+        <div class="sec-label">Hồ sơ hành trình học tập</div>
+        <h1>Bản đồ cảnh giới VinhMath</h1>
+        <p>11 cảnh giới trải thành những vùng học đường từ thấp lên cao. Mỗi cảnh giới có bốn huy chương Đồng, Bạc, Vàng và Kim Cương; XP cùng bài kiểm tra đột phá mở đường tới vùng tiếp theo.</p>
         <div class="achievement-summary" id="achievementSummary">
           <div><b>—</b><small>Bài học đã mở</small></div><div><b>—</b><small>Bài tập đã nộp</small></div><div><b>—</b><small>Bài kiểm tra</small></div><div><b>—</b><small>Chuỗi ngày</small></div>
         </div>
@@ -48,11 +48,17 @@
     </section>
 
     <div class="achievement-map-head">
-      <div><div class="sec-label">11 đại cấp · 44 huy chương</div><h2>Con đường phía trước</h2><p>Bấm vào từng huy chương để xem XP và trạng thái đột phá.</p></div>
+      <div><div class="sec-label">11 cảnh giới · 44 huy chương</div><h2>Hành trình từ sân trường tới đỉnh tri thức</h2><p>Vùng đã đi qua lưu lại dấu chân; bấm vào huy chương để xem mốc XP và trạng thái đột phá.</p></div>
       <div class="achievement-legend"><span>✓ Đã chinh phục</span><span>◉ Hiện tại</span><span>⚡ Chờ đột phá</span><span>🔒 Chưa mở</span></div>
     </div>
-    <section class="achievement-map" id="achievementMap" aria-label="Bản đồ 44 cấp bậc">
+    <section class="achievement-map" id="achievementMap" aria-label="Bản đồ 11 cảnh giới và 44 huy chương">
       <div class="student-results-empty"><span>🗺️</span><b>Đang dựng bản đồ của em…</b></div>
+    </section>
+
+    <section class="learning-portfolio" aria-labelledby="learningPortfolioTitle">
+      <div class="learning-portfolio-head"><div><div class="sec-label">Dấu chân đã đi qua</div><h2 id="learningPortfolioTitle">Nhật ký hồ sơ học tập</h2><p>Điểm số, lần đột phá và huy hiệu được sắp theo thời gian từ dữ liệu học tập thật của em.</p></div><span class="portfolio-private">🔒 Chỉ em, phụ huynh và thầy/cô được phép xem</span></div>
+      <div class="portfolio-highlights" id="portfolioHighlights"><div><b>—</b><small>Điểm nổi bật</small></div><div><b>—</b><small>Cảnh giới đã qua</small></div><div><b>—</b><small>Huy hiệu đã đạt</small></div></div>
+      <div class="learning-timeline" id="learningTimeline"><div class="student-results-empty"><span>📖</span><b>Đang mở nhật ký của em…</b></div></div>
     </section>
 
     <section class="companion-sanctuary" id="companionSanctuary" aria-label="Linh thú đồng hành"></section>
@@ -71,7 +77,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=8.7"></script>
-  <script src="js/menu-v5.js?v=9.0"></script>
-  <script src="js/student-achievement-map.js?v=2"></script>
+  <script src="js/menu-v5.js?v=9.1"></script>
+  <script src="js/student-achievement-map.js?v=3"></script>
 </body>
 </html>

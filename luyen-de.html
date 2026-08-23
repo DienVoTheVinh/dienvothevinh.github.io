@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#9e6100">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Luyện tập — VinhMath</title>
+<title>Bài tập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=7.4">
@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <style>
-.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 96px; }
+.wrap { max-width: 1220px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 44px 0 20px; }
 .exam-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 20px; align-items: center; padding: 18px 24px; margin-bottom: 14px; transition: all .2s; }
 .exam-card:hover { border-color: var(--accent); transform: translateY(-1px); }
@@ -32,6 +32,7 @@
 .exam-card-action { min-height: 42px; justify-content: center; text-align: center; white-space: normal; line-height: 1.3; }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 .practice-overview{margin-bottom:22px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-sm)}.practice-overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.practice-overview-head h2{margin:0;font-size:1.05rem}.practice-overview-head p{margin:4px 0 0;color:var(--ink-3);font-size:.82rem}.practice-type-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.practice-type-tabs button{flex:0 0 auto;min-height:38px;padding:7px 12px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface-2);color:var(--ink-2);font:800 .76rem/1.2 inherit;cursor:pointer}.practice-type-tabs button.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff)}.practice-section{margin-top:22px}.practice-section-head{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:10px}.practice-section-head h2{margin:0;font-size:1.15rem}.practice-section-head p{margin:3px 0 0;color:var(--ink-3);font-size:.78rem}.lesson-practice-list{display:grid;gap:10px}.lesson-practice-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:13px;align-items:center;padding:15px 17px;border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:var(--shadow-sm)}.lesson-practice-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:var(--accent-soft);font-size:1.25rem}.lesson-practice-main{min-width:0}.lesson-practice-main h3{margin:4px 0;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lesson-practice-meta{display:flex;gap:6px 12px;flex-wrap:wrap;color:var(--ink-3);font-size:.72rem}.lesson-practice-label{color:var(--accent);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.lesson-practice-status{display:inline-flex;padding:3px 7px;border-radius:999px;background:var(--surface-2);color:var(--ink-3);font-size:.66rem;font-weight:800}.lesson-practice-status.done{background:var(--ok-soft);color:var(--ok)}.lesson-practice-status.pending{background:var(--accent-soft);color:var(--accent)}
+.practice-shell{grid-template-columns:1fr}.practice-shell.has-class-filter{grid-template-columns:220px minmax(0,1fr)}
 .portal-exam-mode #viewMain > .topbar .navlinks { display: none !important; }
 .portal-exam-mode #viewMain > .topbar .logo small { display: none; }
 .portal-exam-mode #viewMain > .topbar .nav { max-width: 1180px; }
@@ -57,6 +58,7 @@
   white-space: nowrap;
   scroll-snap-align: start;
 }
+.practice-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start}.practice-class-filter{position:sticky;top:88px;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm)}.practice-class-filter-head{margin-bottom:12px}.practice-class-filter-head span{display:block;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.practice-class-filter-head b{display:block;margin-top:4px;font:700 1rem/1.3 var(--font-title)}#tabLopHocSinh.practice-class-tabs{display:grid!important;gap:7px;overflow:visible;padding:0;margin:0!important}#tabLopHocSinh.practice-class-tabs .tab-btn{width:100%;min-height:42px;padding:9px 10px;text-align:left;white-space:normal;line-height:1.35;border-radius:11px}#tabLopHocSinh.practice-class-tabs .tab-btn.active{box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 20%,transparent)}.practice-specialized-tag{display:inline-flex;align-items:center;margin-left:4px;padding:2px 6px;border:1px solid #6750a4;border-radius:999px;background:#eee9ff;color:#4c358b;font-size:.55rem;font-weight:900;letter-spacing:.03em;vertical-align:middle}.tab-btn.active .practice-specialized-tag{border-color:#fff;background:#fff;color:#5b3fa0}.practice-content{min-width:0}
 
 /* Workspace thi thử */
 .exam-workspace { display: none; position: fixed; inset: 0 !important; width: 100% !important; height: 100vh !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
@@ -193,6 +195,7 @@
   .exam-meta span { overflow-wrap: anywhere; }
   .exam-card-action { width: 100%; min-height: 44px; }
   .practice-overview{padding:14px}.practice-type-tabs{width:100%}.lesson-practice-card{grid-template-columns:42px minmax(0,1fr);padding:13px}.lesson-practice-action{grid-column:1/3;width:100%;justify-content:center}.lesson-practice-icon{width:42px;height:42px}.lesson-practice-main h3{white-space:normal}.practice-section-head{align-items:flex-start;flex-direction:column}
+  .practice-shell{display:block}.practice-class-filter{position:static;margin-bottom:18px;padding:12px}.practice-class-filter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.practice-class-filter-head b{font-size:.9rem}#tabLopHocSinh.practice-class-tabs{display:flex!important;gap:7px;overflow-x:auto;padding:2px 0 6px}#tabLopHocSinh.practice-class-tabs .tab-btn{width:auto;min-height:40px;white-space:nowrap;text-align:center}
 
   .exam-header {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -243,8 +246,8 @@
   <div class="wrap">
     <div class="head">
       <a id="portalExamBack" class="btn btn-secondary btn-sm portal-exam-back" href="thi">← Về cổng thi</a>
-      <div class="sec-label" id="labelKhuVuc">Khu vực kiểm tra</div>
-      <h1>Luyện tập</h1>
+      <div class="sec-label" id="labelKhuVuc">Khu vực bài tập</div>
+      <h1>Bài tập</h1>
       <p style="margin-top:4px" id="subHeadTieuDe">Một nơi cho bài tập về nhà, bài kiểm tra trong bài giảng và đề thi trực tuyến.</p>
     </div>
 
@@ -258,8 +261,12 @@
       <a href="ca-nhan" class="btn btn-secondary">Xem trang cá nhân</a>
     </div>
 
-    <div id="coLopContainer">
-      <div class="tab-box" id="tabLopHocSinh" style="display:none; margin-bottom: 24px;"></div>
+    <div id="coLopContainer" class="practice-shell">
+      <aside class="practice-class-filter" id="vmPracticeClassFilter" style="display:none">
+        <div class="practice-class-filter-head"><span>Lọc nội dung</span><b>Lớp của em</b></div>
+        <div class="tab-box practice-class-tabs" id="tabLopHocSinh"></div>
+      </aside>
+      <div class="practice-content">
       <section class="practice-overview" id="vmPracticeOverview">
         <div class="practice-overview-head"><div><h2>Em muốn luyện gì?</h2><p>Lọc theo loại bài; lớp và khối được chọn ở dải phía trên.</p></div>
           <div class="practice-type-tabs" id="vmPracticeTypeTabs">
@@ -272,6 +279,7 @@
       </section>
       <section class="practice-section" id="vmLessonPracticeSection"><div class="practice-section-head"><div><h2>Bài tập & kiểm tra trong bài giảng</h2><p>Mở đúng phần cần làm mà không phải tìm lại từng bài giảng.</p></div></div><div id="dsBaiTapBaiGiang" class="lesson-practice-list"><div class="empty card">Đang tải bài tập...</div></div></section>
       <section class="practice-section" id="vmExamPracticeSection"><div class="practice-section-head"><div><h2>Đề thi & thi thử</h2><p>Đề độc lập, có thời gian làm và kết quả trực tuyến.</p></div></div><div id="dsDeThi"><div class="empty card">Đang tải đề thi...</div></div></section>
+      </div>
     </div>
   </div>
 </div>
@@ -536,7 +544,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=8.4"></script>
-<script src="js/menu-v5.js?v=9.0"></script>
+<script src="js/menu-v5.js?v=9.1"></script>
 <script src="js/latex-view.js?v=10.8"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -789,10 +797,11 @@ document.addEventListener('click', function (event) {
   // Vẽ các tab chuyển lớp nếu có lớp và không phải quản trị viên
   if (dsHocSinhLop.length > 0 && !isStaff) {
     var tabsBox = $('tabLopHocSinh');
-    tabsBox.style.display = 'flex';
+    $('vmPracticeClassFilter').style.display = 'block';
+    $('coLopContainer').classList.add('has-class-filter');
     tabsBox.innerHTML = '<button class="tab-btn' + (selectedClassId === 'all' ? ' active' : '') + '" onclick="chonLopHocSinh(\'all\')" id="tab-class-all">Tất cả các lớp</button>' + dsHocSinhLop.map(function (cs) {
       var name = cs.classes ? cs.classes.name : 'Khác';
-      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span style="font-size:.6rem;font-weight:800;color:#B8860B;background:rgba(194,125,0,.16);border:1px solid rgba(194,125,0,.4);padding:1px 6px;border-radius:99px;vertical-align:middle">CHUYÊN</span>' : '';
+      var chuyen = (cs.classes && cs.classes.is_specialized) ? ' <span class="practice-specialized-tag">CHUYÊN</span>' : '';
       var active = cs.class_id === selectedClassId ? ' active' : '';
       return '<button class="tab-btn' + active + '" onclick="chonLopHocSinh(\'' + cs.class_id + '\')" id="tab-class-' + cs.class_id + '">' + name + chuyen + '</button>';
     }).join('');

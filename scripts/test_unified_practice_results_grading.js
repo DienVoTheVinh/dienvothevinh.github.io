@@ -51,6 +51,8 @@ expect(items.filter((item) => item.kind === 'homework').length === 2, 'Bài tậ
 expect(items.filter((item) => item.kind === 'test').length === 1, 'Bài kiểm tra đã liên kết đề thi không được hiển thị lặp.');
 
 expect(practice.includes("selectedClassId = 'all'") && practice.includes('vmPracticeAllClassIds'), 'Học sinh nhiều lớp phải mở được phạm vi Tất cả các lớp.');
+expect(practice.includes("classList.add('has-class-filter')") && practice.includes('practice-class-filter'), 'Bộ lọc lớp trên PC phải nằm ở thanh bên trái.');
+expect(practice.includes('practice-specialized-tag') && practice.includes('background:#eee9ff'), 'Nhãn Chuyên phải có màu tương phản riêng.');
 expect(practice.includes("data-practice-filter=\"homework\"") && practice.includes("data-practice-filter=\"test\"") && practice.includes("data-practice-filter=\"exam\""), 'Luyện tập thiếu bộ lọc loại bài.');
 expect(results.includes('studentResultClassFilter') && results.includes('studentResultGradeFilter'), 'Kết quả thiếu lọc lớp hoặc khối.');
 expect(!results.includes('&action=graded&kind=') && results.includes('student-result-pdf'), 'Kết quả phải xem bài sửa và PDF tại chỗ.');
