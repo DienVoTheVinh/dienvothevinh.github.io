@@ -70,17 +70,32 @@ if (!executablePath || !fs.existsSync(executablePath)) {
       await page.screenshot({ path: process.env.VM_RANK_SCREENSHOT, fullPage: true });
     }
 
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('http://127.0.0.1:8000/trang-chu?preview=1', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#vmCompanionDock', { timeout: 15000 });
     const mobile = await page.evaluate(() => {
       const dock = document.querySelector('#vmCompanionDock').getBoundingClientRect();
+      const logo = document.querySelector('.topbar .logo');
+      const brandVinh = document.querySelector('.topbar .brand-vinh');
+      const brandMath = document.querySelector('.topbar .brand-math');
+      const pill = document.querySelector('.vm-rank-logo-tag .vm-rank-pill');
+      const title = pill && pill.querySelector('b');
+      const brandRight = brandMath && brandMath.getBoundingClientRect().right;
+      const pillLeft = pill && pill.getBoundingClientRect().left;
       return {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         dockInside: dock.left >= 0 && dock.right <= innerWidth && dock.top >= 0 && dock.bottom <= innerHeight,
+        brandVisible: !!(brandVinh && brandMath && brandVinh.getBoundingClientRect().width > 8 && brandMath.getBoundingClientRect().width > 8 && brandRight <= pillLeft),
+        logoOverflow: logo ? logo.scrollWidth - logo.clientWidth : 999,
+        logoWidth: logo ? logo.getBoundingClientRect().width : 0,
+        logoScrollWidth: logo ? logo.scrollWidth : 0,
+        rankTitleVisible: title ? getComputedStyle(title).display !== 'none' : true,
+        rankWidth: pill ? pill.getBoundingClientRect().width : 999,
+        rankLabel: pill ? pill.getAttribute('aria-label') : '',
       };
     });
-    if (mobile.overflow > 1 || !mobile.dockInside) throw new Error(`Mobile rank UI overflows: ${JSON.stringify(mobile)}`);
+    if (mobile.overflow > 1 || !mobile.dockInside || !mobile.brandVisible || mobile.logoOverflow > 1 || mobile.rankTitleVisible || mobile.rankWidth > 31 || mobile.rankLabel !== 'Cấp bậc Tân Thủ · Kim Cương') throw new Error(`Mobile rank UI overflows or hides the brand: ${JSON.stringify(mobile)}`);
+    if (process.env.VM_RANK_MOBILE_SCREENSHOT) await page.screenshot({ path: process.env.VM_RANK_MOBILE_SCREENSHOT, fullPage: false });
     if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(' | ')}`);
 
     console.log(`PASS rank system browser: ${map.regions} major ranks, ${map.levels} levels, companion and mobile layout`);
