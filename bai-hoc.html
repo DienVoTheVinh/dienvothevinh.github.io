@@ -35,6 +35,26 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-class-answer-preview img { display:block; width:100%; height:150px; object-fit:contain; background:var(--surface-2); }
 .vm-class-answer-preview span { display:block; padding:7px; color:var(--ink-2); font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+/* ===== Chọn nhiều ảnh bài nộp: chọn trước, gửi sau ===== */
+.vm-submit-picker { display:grid; gap:10px; }
+.vm-submit-file-native { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+.vm-submit-pick-button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:10px 14px; border:2px dashed var(--accent); border-radius:13px; background:var(--accent-soft); color:var(--accent); font-weight:800; cursor:pointer; transition:.16s ease; }
+.vm-submit-pick-button:hover { background:color-mix(in srgb,var(--accent) 16%,var(--surface)); transform:translateY(-1px); }
+.vm-submit-file-native:disabled + .vm-submit-pick-button { opacity:.48; cursor:not-allowed; transform:none; }
+.vm-submit-help { margin:0; padding:10px 12px; border-radius:11px; background:var(--surface-2); color:var(--ink-2); font-size:.78rem; line-height:1.55; }
+.vm-submit-selection-summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:24px; color:var(--ink-2); font-size:.78rem; }
+.vm-submit-selection-summary strong { color:var(--ok); }
+.vm-submit-file-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; }
+.vm-submit-file-empty { grid-column:1/-1; padding:18px 12px; border:1px dashed var(--line-2); border-radius:12px; color:var(--ink-3); text-align:center; font-size:.78rem; }
+.vm-submit-file-card { position:relative; min-width:0; padding:6px; border:2px solid var(--ok); border-radius:13px; background:var(--surface); box-shadow:0 7px 18px rgba(15,23,42,.08); }
+.vm-submit-file-preview { position:relative; display:grid; place-items:center; height:94px; overflow:hidden; border-radius:9px; background:var(--surface-2); }
+.vm-submit-file-preview img { width:100%; height:100%; object-fit:cover; }
+.vm-submit-file-preview .vm-submit-pdf-icon { font-size:2.2rem; }
+.vm-submit-file-check { position:absolute; top:6px; right:6px; display:grid; place-items:center; width:28px; height:28px; border:3px solid #fff; border-radius:50%; background:var(--ok); color:#fff; font-size:1rem; font-weight:900; box-shadow:0 2px 9px rgba(0,0,0,.3); }
+.vm-submit-file-name { display:block; overflow:hidden; margin-top:6px; padding-right:28px; color:var(--ink); font-size:.69rem; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.vm-submit-file-remove { position:absolute; right:6px; bottom:5px; display:grid; place-items:center; width:25px; height:25px; padding:0; border:1px solid rgba(192,57,43,.3); border-radius:8px; background:var(--surface); color:#c0392b; cursor:pointer; font-size:1rem; font-weight:900; }
+@media(max-width:520px){.vm-submit-file-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.vm-submit-file-preview{height:82px}.vm-submit-pick-button{min-height:52px}.vm-submit-help{font-size:.75rem}}
+
 /* ===== Thanh trên cùng ===== */
 .topbar-lesson {
   display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -855,13 +875,18 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       <div id="nbDeadlineBanner" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:10px;font-size:.85rem;line-height:1.5"></div>
       <div id="nbDaNop"></div>
       <div class="field" style="margin-top:14px">
-        <label style="display:block;font-size:.875rem;font-weight:500;margin-bottom:6px">Chọn ảnh bài làm hoặc file PDF (chọn được nhiều)</label>
-        <input type="file" class="input" id="nbFiles" accept="image/*,application/pdf" multiple onchange="vmRenderFileList('nbFiles','nbFileList')" style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm)">
-        <div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">📋 Em có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> ngay vào đây.</div>
-        <div id="nbFileList"></div>
+        <label style="display:block;font-size:.875rem;font-weight:700;margin-bottom:7px">1. Chọn ảnh bài làm hoặc file PDF</label>
+        <div class="vm-submit-picker">
+          <input type="file" class="vm-submit-file-native" id="nbFiles" accept="image/*,application/pdf" multiple onchange="vmThemFileDaChon('nbFiles','nbFileList')">
+          <label class="vm-submit-pick-button" for="nbFiles"><span aria-hidden="true">📷</span><span id="nbFilePickerText">Chọn ảnh / PDF</span></label>
+          <p class="vm-submit-help">📌 <b>Nộp nhiều ảnh:</b> trong thư viện, chọn <b>“Chọn nhiều”</b> hoặc bấm giữ ảnh đầu tiên rồi tick các ảnh còn lại. Nếu điện thoại chỉ cho chọn từng ảnh, cứ quay lại bấm <b>“Thêm ảnh / PDF”</b> — những ảnh đã chọn trước đó vẫn được giữ.</p>
+          <div class="vm-submit-selection-summary" id="nbSelectionSummary" aria-live="polite"><span>Chưa chọn tệp nào</span><span>Tối đa 12 tệp</span></div>
+          <div id="nbFileList" class="vm-submit-file-grid" role="list"><div class="vm-submit-file-empty">Ảnh đã chọn sẽ hiện ở đây với dấu ✓ rõ ràng.</div></div>
+        </div>
+        <div style="font-size:.78rem;color:var(--ink-3);margin-top:7px">📋 Trên máy tính, em cũng có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> vào đây.</div>
         <div id="nbDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
       </div>
-      <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">Gửi bài cho thầy</button>
+      <button class="btn btn-primary" id="nbGui" onclick="guiBaiNop()" style="width:100%;justify-content:center">2. Gửi bài cho thầy</button>
       <div id="nbThongBao" style="margin-top:12px;font-size:.875rem"></div>
     </div>
   </div>
@@ -1099,6 +1124,9 @@ async function vmMoDichDenThongBao(params) {
 var nguoiDung = null;
 
 var nopBaiPhanLoai = 'test';
+var vmFileSelections = Object.create(null);
+var vmFilePreviewUrls = Object.create(null);
+var VM_MAX_SUBMISSION_FILES = 12;
 function moNopBai(phanloai) {
   nopBaiPhanLoai = (phanloai === 'homework') ? 'homework' : (phanloai === 'homework_bonus') ? 'homework_bonus' : 'test';
   var laBonus = nopBaiPhanLoai === 'homework_bonus';
@@ -1118,7 +1146,7 @@ function moNopBai(phanloai) {
   if (gui) {
     gui.disabled = false;
     gui.style.display = '';
-    gui.textContent = 'Gửi bài cho thầy';
+    gui.textContent = '2. Gửi bài cho thầy';
   }
   if (inp) {
     inp.disabled = false;
@@ -1151,6 +1179,51 @@ function moNopBai(phanloai) {
 }
 function dongNopBai() { $('modalNopBai').style.display = 'none'; }
 
+function vmFileKey(file) {
+  return [file && file.name, file && file.size, file && file.lastModified, file && file.type].join('|');
+}
+function vmFileNameEsc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+  });
+}
+function vmGanFilesVaoInput(inp, files) {
+  var dt = new DataTransfer();
+  files.forEach(function (file) { dt.items.add(file); });
+  inp.files = dt.files;
+}
+function vmThemFileDaChon(inputId, listId) {
+  var inp = document.getElementById(inputId); if (!inp) return;
+  var daChon = vmFileSelections[inputId] || [];
+  var keys = new Set(daChon.map(vmFileKey));
+  var moi = Array.from(inp.files || []);
+  var boQua = 0;
+  moi.forEach(function (file) {
+    var hopLe = file && ((file.type || '').indexOf('image/') === 0 || file.type === 'application/pdf');
+    var key = vmFileKey(file);
+    if (!hopLe || keys.has(key)) { boQua++; return; }
+    if (daChon.length >= VM_MAX_SUBMISSION_FILES) { boQua++; return; }
+    keys.add(key); daChon.push(file);
+  });
+  vmFileSelections[inputId] = daChon;
+  vmGanFilesVaoInput(inp, daChon);
+  vmRenderFileList(inputId, listId);
+  if (inputId === 'nbFiles') {
+    var st = $('nbDanAnhTrangThai');
+    if (st) {
+      st.style.color = boQua ? 'var(--warn)' : 'var(--ok)';
+      st.textContent = boQua ? '⚠️ Một số tệp bị trùng, không đúng định dạng hoặc vượt quá giới hạn 12 tệp.' : (daChon.length ? '✓ Ảnh có dấu tick sẽ được gửi cùng nhau khi em bấm nút Gửi bài.' : '');
+    }
+  }
+}
+function vmDatLaiFileDaChon(inputId, listId) {
+  var inp = document.getElementById(inputId); if (!inp) return;
+  vmFileSelections[inputId] = [];
+  inp.value = '';
+  vmRenderFileList(inputId, listId);
+  if (inputId === 'nbFiles') { var st = $('nbDanAnhTrangThai'); if (st) st.textContent = ''; }
+}
+
 /* ===== Dán ảnh (Ctrl/⌘+V) vào ô chọn file ===== */
 function vmPasteAnhVaoInput(inputId, statusId) {
   window.addEventListener('paste', function (e) {
@@ -1174,7 +1247,7 @@ function vmPasteAnhVaoInput(inputId, statusId) {
     inp.files = dt.files;
     inp.dispatchEvent(new Event('change', { bubbles: true }));
     var st = statusId && document.getElementById(statusId);
-    if (st) st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
+    if (st && inputId !== 'nbFiles') st.textContent = '✓ Đã thêm ' + imgs.length + ' ảnh dán · tổng ' + inp.files.length + ' tệp';
   });
 }
 vmPasteAnhVaoInput('nbFiles', 'nbDanAnhTrangThai');
@@ -1183,7 +1256,36 @@ function vmRenderFileList(inputId, listId) {
   var inp = document.getElementById(inputId), box = document.getElementById(listId);
   if (!box) return;
   var fs = inp ? inp.files : null;
-  if (!fs || !fs.length) { box.innerHTML = ''; return; }
+  (vmFilePreviewUrls[inputId] || []).forEach(function (url) { URL.revokeObjectURL(url); });
+  vmFilePreviewUrls[inputId] = [];
+  if (!fs || !fs.length) {
+    box.innerHTML = inputId === 'nbFiles' ? '<div class="vm-submit-file-empty">Ảnh đã chọn sẽ hiện ở đây với dấu ✓ rõ ràng.</div>' : '';
+    if (inputId === 'nbFiles') {
+      var emptySummary = $('nbSelectionSummary'); if (emptySummary) emptySummary.innerHTML = '<span>Chưa chọn tệp nào</span><span>Tối đa 12 tệp</span>';
+      var emptyPicker = $('nbFilePickerText'); if (emptyPicker) emptyPicker.textContent = 'Chọn ảnh / PDF';
+    }
+    return;
+  }
+  if (inputId === 'nbFiles') {
+    var cards = '';
+    for (var n = 0; n < fs.length; n++) {
+      var selected = fs[n]; var safeName = vmFileNameEsc(selected.name || ('Tệp ' + (n + 1)));
+      var isImage = (selected.type || '').indexOf('image/') === 0;
+      var preview = '<span class="vm-submit-pdf-icon" aria-hidden="true">📄</span>';
+      if (isImage) {
+        var objectUrl = URL.createObjectURL(selected); vmFilePreviewUrls[inputId].push(objectUrl);
+        preview = '<img src="' + objectUrl + '" alt="Ảnh đã chọn: ' + safeName + '">';
+      }
+      cards += '<div class="vm-submit-file-card" role="listitem" aria-label="Đã chọn ' + safeName + '">' +
+        '<div class="vm-submit-file-preview">' + preview + '<span class="vm-submit-file-check" aria-hidden="true">✓</span></div>' +
+        '<span class="vm-submit-file-name" title="' + safeName + '">' + (n + 1) + '. ' + safeName + '</span>' +
+        '<button type="button" class="vm-submit-file-remove" aria-label="Bỏ chọn ' + safeName + '" title="Bỏ chọn" onclick="vmXoaFile(\'' + inputId + '\',' + n + ',\'' + listId + '\')">×</button></div>';
+    }
+    box.innerHTML = cards;
+    var summary = $('nbSelectionSummary'); if (summary) summary.innerHTML = '<strong>✓ Đã chọn ' + fs.length + ' tệp</strong><span>Có thể thêm ' + Math.max(0, VM_MAX_SUBMISSION_FILES - fs.length) + ' tệp</span>';
+    var picker = $('nbFilePickerText'); if (picker) picker.textContent = fs.length >= VM_MAX_SUBMISSION_FILES ? 'Đã đủ 12 tệp' : 'Thêm ảnh / PDF';
+    return;
+  }
   var html = '';
   for (var i = 0; i < fs.length; i++) {
     var f = fs[i];
@@ -1198,9 +1300,9 @@ function vmRenderFileList(inputId, listId) {
 }
 function vmXoaFile(inputId, idx, listId) {
   var inp = document.getElementById(inputId); if (!inp) return;
-  var dt = new DataTransfer();
-  for (var i = 0; i < inp.files.length; i++) { if (i !== idx) dt.items.add(inp.files[i]); }
-  inp.files = dt.files;
+  var conLai = Array.from(inp.files || []).filter(function (_, i) { return i !== idx; });
+  vmFileSelections[inputId] = conLai;
+  vmGanFilesVaoInput(inp, conLai);
   vmRenderFileList(inputId, listId);
 }
 
@@ -1218,7 +1320,7 @@ async function taiBaiDaNop() {
     $('nbDaNop').innerHTML = '';
     if (nutGui) {
       nutGui.style.display = window._vmNopBaiKhoaHan ? 'none' : '';
-      if (!window._vmNopBaiKhoaHan) nutGui.textContent = 'Gửi bài cho thầy';
+      if (!window._vmNopBaiKhoaHan) nutGui.textContent = '2. Gửi bài cho thầy';
     }
     return;
   }
@@ -1281,8 +1383,7 @@ async function guiBaiNop() {
     fd.append('lesson_id', lessonId);
     for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
     await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
-    $('nbFiles').value = '';
-    if (typeof vmRenderFileList === 'function') vmRenderFileList('nbFiles', 'nbFileList');
+    vmDatLaiFileDaChon('nbFiles', 'nbFileList');
     var nguonDaMo = await vmLayNguonLatexTheoQuyen(nopBaiPhanLoai, '');
     var coLoiGiaiDaMo = !!(nguonDaMo.unlocked && nguonDaMo.hasSolution);
     tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div>' +
