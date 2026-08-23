@@ -38,7 +38,7 @@
   function xpFloor(level) { var l=Math.max(1,Number(level)||1); return 100*(l-1)+25*(l-1)*(l-2); }
   function addCss() {
     if (document.getElementById('vmRankCss')) return;
-    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=4'; document.head.appendChild(link);
+    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=5'; document.head.appendChild(link);
   }
   function guestData() {
     return {id:'guest',rank:{xp:485,level:4,raw_level:4,unlocked_major:1,xp_floor:450,xp_next:700,streak:4,counts:{lesson:8,btvn:5,test:2,review:3},badges:[],breakthrough:null},companion:{chosen:false,hatched:false,incubation_stage:4,owned:[],coins:85},missions:{tasks:[]}};
@@ -74,10 +74,9 @@
     var remain=next==null?0:Math.max(0,next-xp), span=next==null?1:Math.max(1,next-floor), progress=next==null?100:Math.max(0,Math.min(100,Math.round(((xp-floor)/span)*100)));
     var progressLabel=next==null?'Đã hoàn thành hành trình hiện tại':progress+'% tới huy chương kế';
     slot.innerHTML='<a href="thanh-tuu" class="vm-rank-home-card aura-'+meta.major.aura+'" style="--rank-color:'+meta.major.color+';--rank-progress:'+progress+'%">'+
-      '<span class="vm-rank-home-aura" aria-hidden="true"></span><span class="vm-rank-home-icon" aria-hidden="true">'+meta.major.symbol+'</span>'+
-      '<span class="vm-rank-home-copy"><small>CẢNH GIỚI HIỆN TẠI</small><b>'+esc(meta.major.name)+' <i class="vm-rank-home-medal medal-'+meta.medal.cls+'">'+meta.medal.icon+' '+esc(meta.medal.name)+'</i></b>'+
+      '<span class="vm-rank-home-copy"><span class="vm-rank-home-heading"><small>CẢNH GIỚI</small><b>'+esc(meta.major.name)+'</b><i class="vm-rank-home-medal medal-'+meta.medal.cls+'">'+meta.medal.icon+' '+esc(meta.medal.name)+'</i></span>'+
       '<span class="vm-rank-home-progress" role="progressbar" aria-label="'+esc(progressLabel)+'" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i></i></span>'+
-      '<em><strong>'+xp+' XP</strong><span>'+(next==null?'Đã chạm Vô Cực':'Còn '+remain+' XP tới huy chương kế')+'</span></em></span><span class="vm-rank-home-link">Xem bản đồ →</span></a>';
+      '<em><strong>'+xp+' XP</strong><span>'+(next==null?'Đã chạm Vô Cực':'Còn '+remain+' XP tới huy chương kế')+'</span></em></span><span class="vm-rank-home-link">Hành trình →</span></a>';
     var quick=document.querySelector('.vm-student-quick-grid a[href="thanh-tuu"]');
     if(quick){var b=quick.querySelector('b'),s=quick.querySelector('small');if(b)b.textContent=meta.major.name;if(s)s.textContent=meta.medal.name;}
   }

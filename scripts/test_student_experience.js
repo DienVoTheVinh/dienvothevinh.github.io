@@ -70,10 +70,13 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=7') && homePage.includes('js/role-home.js?v=9'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('css/role-home.css?v=8') && homePage.includes('js/role-home.js?v=9'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
 expect(homePage.includes('vmStudentClockTime') && home.includes("timeZone: 'Asia/Ho_Chi_Minh'") && home.includes("['khungMeetHoc', 'khungDiemDanhHoc']"), 'Trang Hôm nay phải có đồng hồ Việt Nam và đặt Google Meet trước điểm danh');
-expect(homeCss.includes('.vm-student-live-slot{grid-column:1/-1') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session'), 'Khối Google Meet phải nổi bật toàn hàng và có lịch học rõ ràng');
+expect(homeCss.includes('grid-template-areas:"main live" "main side"') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session-context'), 'Desktop phải đặt việc cần làm bên trái, Google Meet bên phải và có lịch học rõ ràng');
+expect(homePage.includes('<small>LỊCH HỌC</small><b>Buổi học sắp tới</b>') && !homePage.includes('GIỜ VIỆT NAM') && homePage.includes('vm-meet-schedule-panel'), 'Đồng hồ phải nằm gọn trong vùng lịch học và không còn nhãn giờ Việt Nam');
+expect(homePage.includes('vm-meet-teacher') && homePage.includes('vm-meet-class') && homePage.includes('escMeet'), 'Mỗi buổi online phải nêu rõ lớp và giáo viên, đồng thời escape dữ liệu');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
+expect(rankSystem.includes('vm-rank-home-heading') && !rankSystem.includes('vm-rank-home-icon') && rankCss.includes('min-height:76px'), 'Dải cảnh giới phải gọn và không còn ô biểu tượng ngôi sao lớn');
 expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
 expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
 expect(home.includes("var vmStudentFeedFilter = 'todo'") && !home.includes('data-feed-filter="all"'), 'Dòng cập nhật phải mặc định Cần làm và không còn tab Tất cả');

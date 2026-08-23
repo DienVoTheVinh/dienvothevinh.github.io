@@ -7,22 +7,17 @@
 @media(max-width:720px){.vm-rank-home-card{align-items:flex-start}.vm-rank-home-card strong{display:none}.vm-companion-dock{width:88px;height:88px;left:5px;bottom:62px}.vm-companion-speech{left:70px;bottom:65px;width:min(220px,calc(100vw - 90px))}.vm-egg-grid{gap:6px}.vm-egg-grid .vm-pet-egg{width:55px;height:66px}.vm-rank-modal-card{padding:27px 18px}}@media(prefers-reduced-motion:reduce){.vm-pet-sprite,.vm-pet-egg,.vm-breakthrough-orb,.vm-celebrate-icon{animation:none!important}.vm-confetti{display:none}}
 .aura-earth{filter:drop-shadow(0 0 4px rgba(155,107,67,.24))}.aura-water{filter:drop-shadow(0 0 6px rgba(37,135,189,.3))}.aura-rose{filter:drop-shadow(0 0 7px rgba(224,84,114,.34))}.aura-storm{filter:drop-shadow(0 0 9px rgba(70,118,232,.4))}
 
-/* Thẻ cảnh giới trên trang Hôm nay: EXP thật và hào quang theo cảnh giới. */
-.vm-rank-home-card{position:relative;isolation:isolate;min-height:122px;margin:0;padding:20px 22px;gap:16px;overflow:hidden;border-width:1px;box-shadow:0 16px 38px color-mix(in srgb,var(--rank-color) 19%,transparent)}
-.vm-rank-home-aura{position:absolute;z-index:-1;right:-42px;top:-82px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--rank-color) 34%,transparent) 0 9%,color-mix(in srgb,var(--rank-color) 16%,transparent) 10% 34%,transparent 64%);filter:blur(2px);animation:vmRankAura 5.4s ease-in-out infinite}
-.vm-rank-home-aura:before,.vm-rank-home-aura:after{content:"";position:absolute;inset:38px;border:1px solid color-mix(in srgb,var(--rank-color) 28%,transparent);border-radius:50%}
-.vm-rank-home-aura:after{inset:72px;border-style:dashed;animation:vmRankOrbit 16s linear infinite}
-.vm-rank-home-card .vm-rank-home-icon{position:relative;display:grid!important;place-items:center;width:60px;height:60px;flex:0 0 60px;border:1px solid color-mix(in srgb,var(--rank-color) 42%,transparent);border-radius:20px;background:color-mix(in srgb,var(--rank-color) 14%,var(--surface));font-size:1.85rem;box-shadow:inset 0 0 22px color-mix(in srgb,var(--rank-color) 14%,transparent),0 0 24px color-mix(in srgb,var(--rank-color) 24%,transparent)}
-.vm-rank-home-copy{position:relative;display:grid!important;gap:5px;min-width:0;flex:1}
-.vm-rank-home-card .vm-rank-home-copy small{font-size:.62rem;letter-spacing:.12em}
-.vm-rank-home-card .vm-rank-home-copy>b{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:1.1rem;line-height:1.35}
-.vm-rank-home-medal{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font:800 .62rem/1 var(--font-sans);font-style:normal}
-.vm-rank-home-progress{display:block;width:100%;height:10px;margin-top:2px;overflow:hidden;border:1px solid color-mix(in srgb,var(--rank-color) 18%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--rank-color) 7%,var(--surface-2));box-shadow:inset 0 1px 4px rgba(0,0,0,.1)}
-.vm-rank-home-progress>i{display:block;width:var(--rank-progress);height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--rank-color) 72%,#fff),var(--rank-color));box-shadow:0 0 12px color-mix(in srgb,var(--rank-color) 62%,transparent);transition:width .8s cubic-bezier(.22,1,.36,1)}
-.vm-rank-home-card .vm-rank-home-copy em{display:flex;justify-content:space-between;gap:12px;color:var(--ink-3);font-size:.65rem;font-style:normal}
-.vm-rank-home-card .vm-rank-home-copy em strong{display:inline;color:var(--rank-color);font-size:.68rem;font-weight:900}
-.vm-rank-home-link{position:relative;color:var(--rank-color);font-size:.7rem;font-weight:850;white-space:nowrap}
-@keyframes vmRankAura{50%{transform:scale(1.09);opacity:.72}}
-@keyframes vmRankOrbit{to{transform:rotate(360deg)}}
-@media(max-width:720px){.vm-rank-home-card{min-height:116px;padding:16px}.vm-rank-home-card .vm-rank-home-icon{width:50px;height:50px;flex-basis:50px;border-radius:17px;font-size:1.55rem}.vm-rank-home-link{display:none}.vm-rank-home-card .vm-rank-home-copy em{align-items:flex-start;flex-direction:column;gap:2px}.vm-rank-home-card .vm-rank-home-copy em strong{display:inline}.vm-rank-home-aura{right:-100px}}
-@media(prefers-reduced-motion:reduce){.vm-rank-home-aura,.vm-rank-home-aura:after{animation:none}}
+/* Dải cảnh giới gọn: ưu tiên danh hiệu, huy chương và tiến độ. */
+.vm-rank-home-card{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;min-height:76px;margin:0;padding:12px 15px;gap:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--rank-color) 30%,var(--line));border-radius:14px;background:linear-gradient(105deg,color-mix(in srgb,var(--rank-color) 7%,var(--surface)),var(--surface) 68%);box-shadow:0 8px 22px color-mix(in srgb,var(--rank-color) 10%,transparent)}
+.vm-rank-home-card:before{content:"";position:absolute;z-index:-1;inset:auto 0 0;height:3px;background:linear-gradient(90deg,var(--rank-color),color-mix(in srgb,var(--rank-color) 8%,transparent));box-shadow:0 0 12px color-mix(in srgb,var(--rank-color) 34%,transparent)}
+.vm-rank-home-copy{display:grid!important;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0}
+.vm-rank-home-heading{display:flex!important;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
+.vm-rank-home-card .vm-rank-home-heading small{color:var(--rank-color);font-size:.56rem;letter-spacing:.1em;font-weight:900}
+.vm-rank-home-card .vm-rank-home-heading b{font-size:.9rem;line-height:1.25}
+.vm-rank-home-medal{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;font:800 .56rem/1 var(--font-sans);font-style:normal}
+.vm-rank-home-progress{display:block;width:100%;height:6px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--rank-color) 8%,var(--surface-2));box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}
+.vm-rank-home-progress>i{display:block;width:var(--rank-progress);height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--rank-color) 76%,#fff),var(--rank-color));box-shadow:0 0 8px color-mix(in srgb,var(--rank-color) 46%,transparent);transition:width .8s cubic-bezier(.22,1,.36,1)}
+.vm-rank-home-card .vm-rank-home-copy em{display:flex;justify-content:space-between;gap:12px;color:var(--ink-3);font-size:.58rem;font-style:normal}
+.vm-rank-home-card .vm-rank-home-copy em strong{display:inline;color:var(--rank-color);font-size:.6rem;font-weight:900}
+.vm-rank-home-link{color:var(--rank-color);font-size:.64rem;font-weight:850;white-space:nowrap}
+@media(max-width:620px){.vm-rank-home-card{min-height:72px;padding:11px 12px}.vm-rank-home-link{display:none}.vm-rank-home-card .vm-rank-home-copy em{gap:6px}.vm-rank-home-card .vm-rank-home-copy em span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
