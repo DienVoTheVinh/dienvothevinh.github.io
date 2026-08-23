@@ -51,9 +51,9 @@ expect(todoOrder[0] === 'todo-reminder-late' && todoOrder[1] === 'todo-reminder-
 for (const item of [
   "path: 'trang-chu', label: 'Hôm nay'",
   "path: 'lop-hoc', label: 'Lớp học'",
-  "path: 'luyen-de', label: 'Luyện tập'",
+  "path: 'luyen-de', label: 'Bài tập'",
   "path: 'ket-qua', label: 'Kết quả'",
-  "path: 'bang-vang', label: 'Bảng xếp hạng'",
+  "path: 'bang-vang', label: 'BXH'",
   "path: 'ca-nhan', label: 'Cá nhân'"
 ]) expect(menu.includes(item), `Thiếu mục điều hướng học sinh: ${item}`);
 expect(!/MENU CỦA HỌC SINH[\s\S]{0,900}type:\s*'dropdown'/.test(menu), 'Menu học sinh không được giấu công cụ trong dropdown dài');
@@ -68,7 +68,7 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=7'), 'Trang Hôm nay phải nạp phiên bản việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('css/role-home.css?v=6') && homePage.includes('js/role-home.js?v=8'), 'Trang Hôm nay phải nạp phiên bản việc cần làm và cấp bậc mới nhất');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
 expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
 expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
@@ -102,8 +102,9 @@ expect(results.includes("url.protocol === 'https:' || url.protocol === 'http:'")
 expect(results.includes("replace(/[&<>\"']/g"), 'Dữ liệu kết quả phải được escape trước khi render');
 expect(experienceCss.includes('width:min(1180px,calc(100% - 40px))') && experienceCss.includes('margin-inline:auto!important'), 'Trang Kết quả phải căn giữa trên màn hình rộng');
 expect(experienceCss.includes('.student-result-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto!important'), 'Hộp chi tiết kết quả phải nằm giữa viewport');
-expect(achievementsPage.includes('Bản đồ cấp bậc VinhMath') && achievementsPage.includes('aria-label="Bản đồ 44 cấp bậc"'), 'Thiếu bản đồ 44 cấp bậc');
-expect(achievements.includes('VMRank.majors.map') && achievements.includes('VMRank.medals.map') && achievements.includes('companionSanctuary'), 'Bản đồ phải dựng đủ 11 đại cấp, 4 huy chương và khu linh thú');
+expect(achievementsPage.includes('Bản đồ cảnh giới VinhMath') && achievementsPage.includes('aria-label="Bản đồ 11 cảnh giới và 44 huy chương"'), 'Thiếu Bản đồ cảnh giới 44 huy chương');
+expect(achievements.includes('VMRank.majors.map') && achievements.includes('VMRank.medals.map') && achievements.includes('companionSanctuary'), 'Bản đồ phải dựng đủ 11 cảnh giới, 4 huy chương và khu linh thú');
+expect(achievementsPage.includes('Nhật ký hồ sơ học tập') && achievements.includes("from('rank_breakthrough_attempts')") && achievements.includes("from('submissions')") && achievements.includes("from('attempts')"), 'Hồ sơ hành trình phải dùng điểm, huy hiệu và lịch sử đột phá thật');
 expect(rankSystem.includes("sb.rpc('student_rank_snapshot')") && rankSystem.includes("sb.rpc('companion_snapshot')"), 'Hệ cấp bậc phải tải ảnh chụp riêng theo người dùng');
 expect(rankSystem.indexOf("sb.rpc('hs_ho_so')") < rankSystem.indexOf("sb.rpc('student_rank_snapshot')"), 'XP phải được làm mới trước khi tính cấp bậc');
 expect(rankSystem.includes("{name:'Tân Thủ'") && rankSystem.includes("{name:'Kim Cương',icon:'💎'") && rankSystem.includes('vm-rank-medal-label'), 'Thanh công cụ phải dùng danh hiệu Tân Thủ và huy chương Kim Cương dạng biểu tượng');
@@ -113,9 +114,11 @@ expect(rankCss.includes('prefers-reduced-motion:reduce') && rankCss.includes('.v
 expect(rankMigration.includes('rank_level_from_xp') && rankMigration.includes("score >= 8") && rankMigration.includes('student_companion_state'), 'Migration thiếu ánh xạ 44 cấp, ngưỡng đột phá hoặc trạng thái linh thú');
 expect(lessonPage.includes('[data-reader-key]:fullscreen') && lessonPage.includes('[data-reader-key]:-webkit-full-screen'), 'Tài liệu toàn màn hình phải thoát khỏi kích thước cột chia đôi');
 expect(practicePage.includes('Bài tập & kiểm tra trong bài giảng') && practicePage.includes('Đề thi & thi thử') && practicePage.includes('Tất cả các lớp'), 'Luyện tập phải hợp nhất bài tập, kiểm tra, đề thi và có phạm vi mọi lớp');
+expect(practicePage.includes('practice-shell has-class-filter') || (practicePage.includes("classList.add('has-class-filter')") && practicePage.includes('practice-class-filter')), 'Bộ lọc lớp trên PC phải nằm ở thanh bên trái');
+expect(practicePage.includes('practice-specialized-tag') && !practicePage.includes('color:#B8860B;background:rgba(194,125,0,.16)'), 'Nhãn Chuyên phải có màu tương phản riêng');
 expect(practicePage.includes("vmPracticeFilter = 'all'") && practicePage.includes("kind:'homework'") && practicePage.includes("kind:'test'"), 'Luyện tập thiếu phân loại bài tập và bài kiểm tra');
 expect(gradingPage.includes('assessment_level') && gradingPage.includes('Cần cố gắng') && gradingPage.includes('Không dùng mức'), 'Màn chấm bài thiếu chế độ đánh giá ba mức có thể bỏ chọn');
-expect(gradingPage.includes("sb.rpc('staff_rank_breakthrough_queue')") && gradingPage.includes("sb.rpc('review_rank_breakthrough'") && gradingPage.includes('Từ 8/10 hệ thống tự mở đại cấp mới'), 'Màn chấm bài thiếu hàng đợi và phê duyệt kiểm tra đột phá');
+expect(gradingPage.includes("sb.rpc('staff_rank_breakthrough_queue')") && gradingPage.includes("sb.rpc('review_rank_breakthrough'") && gradingPage.includes('Từ 8/10 hệ thống tự mở cảnh giới mới'), 'Màn chấm bài thiếu hàng đợi và phê duyệt kiểm tra đột phá');
 expect(leaderboardPage.includes("sb.rpc('get_ranked_leaderboard'") && leaderboardPage.includes('VMRank.rankPill'), 'Bảng xếp hạng chưa dùng cấp bậc và hào quang mới');
 expect(assessmentMigration.includes('add column if not exists assessment_level text') && assessmentMigration.includes('submissions_assessment_level_check') && assessmentMigration.includes("'needs_improvement', 'meets', 'good'"), 'Migration đánh giá mức phải cộng thêm, idempotent và có CHECK constraint');
 expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY|postgres(?:ql)?:\/\//i.test([menu, shared, home, classPage, personal, resultsPage, results].join('\n')), 'Mã giao diện không được chứa credential đặc quyền');
