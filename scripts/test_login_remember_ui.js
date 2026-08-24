@@ -18,8 +18,11 @@ expect(/M3 3l18 18/.test(login), 'A crossed-eye SVG icon is required for the hid
 expect(/vmDatNhoDangNhap\(remember\)[\s\S]*?dangNhap\(username, \$\('pass'\)\.value\)/.test(login), 'Remember preference must be applied before Supabase creates the session');
 
 expect(/var VM_REMEMBER_KEY = 'vm-auth-remember'/.test(core), 'Shared auth storage needs a persistent remember preference');
-expect(/if \(LS && vmCoNhoDangNhap\(\)\) LS\.setItem\(VM_SHARED_KEY, val\)/.test(core), 'Persistent session may only be mirrored when remember-login is enabled');
-expect(/else if \(LS\) \{ LS\.removeItem\(VM_SHARED_KEY\); LS\.removeItem\(VM_OLD_KEY\); \}/.test(core), 'Disabling remember-login must clear persistent session copies');
+expect(/storageKey: VM_SHARED_KEY/.test(core), 'All tabs must share one stable Supabase storage key');
+expect(!/storageKey:\s*'vmauth-'\s*\+\s*vmTabId/.test(core), 'Per-tab refresh-token copies must not be recreated');
+expect(/if \(LS && vmCoNhoDangNhap\(\)\)[\s\S]*?LS\.setItem\(k, val\)/.test(core), 'Remember-login must persist the shared session');
+expect(/if \(SS\) SS\.setItem\(k, val\)[\s\S]*?LS\.removeItem\(k\)/.test(core), 'Session-only login must not leave a persistent session copy');
+expect(/function vmLayPhienAnToan/.test(core) && /refresh_token_not_found/.test(core), 'Invalid refresh tokens need bounded local recovery');
 
 expect(!/localStorage\.setItem\([^\n]*(pass|password)/i.test(login), 'The page must never save a password in localStorage');
 expect(!/VM_SAVED_PASSWORD|remembered-password/i.test(login + core), 'No application-managed password storage is allowed');
