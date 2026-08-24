@@ -9,6 +9,7 @@ const classPage = read('lop-hoc.html');
 const docsPage = read('tai-lieu.html');
 const migration = read('supabase/migrations/20260824074535_secure_exam_content_and_private_assets.sql');
 const lockdown = read('supabase/migrations/20260824075720_lock_exam_and_course_asset_access.sql');
+const courseAssetReadFix = read('supabase/migrations/20260824171002_restore_authenticated_course_asset_read.sql');
 
 expect(examPage.includes("sb.rpc('vm_exam_load'"), 'Exam content must load through the sanitized server RPC.');
 expect(examPage.includes("sb.rpc('vm_exam_save_answer'"), 'Official answers must be saved through the grading RPC.');
@@ -27,5 +28,8 @@ expect(migration.includes('exam_time_expired'), 'Server must enforce exam timing
 expect(lockdown.includes("update storage.buckets set public = false where id in ('tai-lieu', 'hinh-anh')"), 'Course buckets are not switched to private.');
 expect(lockdown.includes('private.vm_can_read_course_asset(bucket_id, name)'), 'Storage access is not linked to course authorization.');
 expect(lockdown.includes('from anon;'), 'Anonymous table grants are not revoked.');
+expect(courseAssetReadFix.includes('grant usage on schema private to authenticated'), 'Authenticated users cannot resolve the private course-asset authorization helper.');
+expect(courseAssetReadFix.includes('grant execute on function private.vm_can_read_course_asset(text, text) to authenticated'), 'Authenticated users cannot invoke the course-asset authorization helper.');
+expect(!/to\s+(?:public|anon)\s*;/i.test(courseAssetReadFix), 'Anonymous users must not receive access to the private course-asset helper.');
 
 console.log('PASS security hardening: server-side exam grading, private assets, anonymous lockout');
