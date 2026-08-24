@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#9e6100">
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>VMTool — Công cụ Toán trực quan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css?v=8.4">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+  <link rel="stylesheet" href="css/vmtool.css?v=1">
+</head>
+<body class="vmtool-page">
+  <header class="topbar">
+    <div class="nav">
+      <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span><span class="brand-vinh">Vinh</span><span class="brand-math">Math</span></span></a>
+      <nav class="navlinks"><a class="active" href="vmtool">VMTool</a></nav>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="themeBtn" type="button" aria-label="Đổi giao diện">🌙</button>
+        <button class="btn btn-secondary btn-sm" id="logoutBtn" type="button">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="vmtool-wrap">
+    <section class="vmtool-hero">
+      <div>
+        <div class="vmtool-kicker">Phòng thí nghiệm Toán học VinhMath</div>
+        <h1>VMTool</h1>
+        <p>Biến ý tưởng Toán học thành hình vẽ trực quan mà không cần nhớ lệnh LaTeX. Nhập dữ liệu, quan sát, tương tác và xuất hình đẹp để đưa vào bài giảng.</p>
+      </div>
+      <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b>Miền nghiệm 2D</b><small>Đồ thị · PNG · TikZ</small></div></div>
+    </section>
+
+    <nav class="vmtool-tabs" aria-label="Danh sách công cụ">
+      <button class="vmtool-tab active" type="button">▧ Miền nghiệm 2D</button>
+      <button class="vmtool-tab" type="button" disabled>△ Hình phẳng <span class="vmtool-soon">Sắp ra mắt</span></button>
+      <button class="vmtool-tab" type="button" disabled>◇ Hình không gian <span class="vmtool-soon">Sắp ra mắt</span></button>
+    </nav>
+
+    <section class="vmtool-workspace">
+      <aside class="vmtool-panel">
+        <div class="vmtool-panel-head"><h2>Hệ bất phương trình</h2><p>Mỗi dòng có dạng <strong>ax + by ≤ c</strong>. Em chỉ cần nhập các hệ số.</p></div>
+        <div class="vmtool-controls">
+          <div>
+            <div class="vmtool-section-label"><span>Các điều kiện</span><span id="inequalityCount">0/8</span></div>
+            <div class="vmtool-equations" id="equationList"></div>
+            <button class="vmtool-add" id="addInequality" type="button">＋ Thêm bất phương trình</button>
+          </div>
+          <div class="vmtool-subsection">
+            <div class="vmtool-section-label"><span>Ví dụ nhanh</span></div>
+            <div class="vmtool-presets">
+              <button class="vmtool-preset" type="button" data-preset="triangle">Tam giác</button>
+              <button class="vmtool-preset" type="button" data-preset="strip">Dải nghiệm</button>
+              <button class="vmtool-preset" type="button" data-preset="quadrant">Góc phần tư</button>
+            </div>
+          </div>
+          <div class="vmtool-summary" id="formulaSummary" aria-live="polite"></div>
+          <div class="vmtool-actions">
+            <button class="vmtool-action primary" id="downloadPng" type="button">Tải hình PNG</button>
+            <button class="vmtool-action" id="copyTikz" type="button">Sao chép TikZ</button>
+            <button class="vmtool-action" id="downloadTikz" type="button">Tải tệp .tex</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="vmtool-stage">
+        <div class="vmtool-canvas-card">
+          <div class="vmtool-canvas-head">
+            <div class="vmtool-canvas-title"><b>Miền nghiệm chung</b><span>Kéo để di chuyển · Cuộn để phóng to/thu nhỏ</span></div>
+            <div class="vmtool-view-actions">
+              <button class="vmtool-icon-btn" id="zoomOut" type="button" aria-label="Thu nhỏ">−</button>
+              <button class="vmtool-icon-btn" id="resetView" type="button">Về tâm</button>
+              <button class="vmtool-icon-btn" id="zoomIn" type="button" aria-label="Phóng to">＋</button>
+            </div>
+          </div>
+          <div class="vmtool-canvas-wrap" id="canvasWrap">
+            <canvas id="graphCanvas" aria-label="Đồ thị miền nghiệm hệ bất phương trình"></canvas>
+            <div class="vmtool-legend"><span class="vmtool-legend-swatch"></span> Miền thỏa mãn đồng thời mọi điều kiện</div>
+            <div class="vmtool-empty" id="emptyRegion">Hệ bất phương trình không có miền nghiệm trong vùng đang quan sát.</div>
+          </div>
+        </div>
+        <div class="vmtool-guide">
+          <article><b>1. Nhập hệ số</b><p>Ví dụ 2x + y ≤ 6: nhập lần lượt 2, 1, chọn ≤ và nhập 6.</p></article>
+          <article><b>2. Quan sát trực tiếp</b><p>Miền màu vàng là phần thỏa mãn đồng thời mọi bất phương trình.</p></article>
+          <article><b>3. Đưa vào bài giảng</b><p>Tải PNG để chèn nhanh hoặc xuất TikZ cho tài liệu LaTeX sắc nét.</p></article>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="vmtool-toast" id="vmtoolToast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vinhmath.js?v=8.4"></script>
+  <script src="js/menu-v5.js?v=9.2"></script>
+  <script src="js/vmtool.js?v=1"></script>
+  <script src="js/analytics.js"></script>
+</body>
+</html>
