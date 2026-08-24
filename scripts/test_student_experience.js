@@ -63,6 +63,7 @@ expect(menu.includes("if (!role || role === 'student') return"), 'Thanh công c�
 
 expect(shared.includes("tools.insertBefore(btn, themeBtn)"), 'Nút cài ứng dụng nội bộ phải nằm cạnh nút sáng/tối');
 expect(shared.includes("var isCanonicalVinhMath = preset === 'vinhmath' && isCanonicalPreset") && shared.includes('if (isBrandRecord && !isCanonicalVinhMath) vmApDungBienThuongHieu(theme)'), 'Thương hiệu VinhMath gốc không được nhận màu tùy biến từ kho template');
+expect(shared.includes("img.src = isCanonicalVinhMath ? 'img/logo.png' : vmUrlLogoThuongHieu(theme)"), 'Thương hiệu VinhMath gốc phải luôn dùng lại logo vàng–đen chuẩn');
 expect(shared.includes("brandSlug === preset") && shared.includes("brandTextEl.innerHTML = '<span class=\"brand-vinh\"") && shared.includes('<span class="brand-math"'), 'Wordmark VinhMath gốc phải giữ hai phần vàng–đen, còn template khác vẫn tùy biến');
 expect(shared.includes("attributeFilter: ['style', 'class', 'open']"), 'Đóng native dialog phải gỡ khóa cuộn của trang');
 expect(shared.includes("m.target.tagName === 'DIALOG'") && shared.includes('boPopupMo(m.target)'), 'Native dialog đã đóng phải được loại khỏi danh sách popup đang mở');
