@@ -2658,7 +2658,7 @@ function themNutChupManHinh() {
    BỘ NHẬN DIỆN LỚP HỌC
    Nhận cả chuỗi theme cũ lẫn bản ghi public.brand_templates.
    ============================================================ */
-var VM_BRAND_COLUMNS = 'id,slug,name,short_name,tagline,logo_path,preset,primary_color,secondary_color,accent_color,accent_soft_color,surface_color,text_color,topbar_color,topbar_text_color,logo_scale,logo_x,logo_y,radius_px,is_active';
+var VM_BRAND_COLUMNS = 'id,slug,name,short_name,wordmark_primary_text,wordmark_secondary_text,wordmark_primary_color,wordmark_secondary_color,tagline,logo_path,preset,primary_color,secondary_color,accent_color,accent_soft_color,surface_color,text_color,topbar_color,topbar_text_color,logo_scale,logo_x,logo_y,radius_px,is_active';
 var VM_BRAND_RELATION = 'brand:brand_templates(' + VM_BRAND_COLUMNS + ')';
 window.VM_ACTIVE_BRAND = null;
 
@@ -2727,6 +2727,37 @@ function vmMauDuSangTrenNenToi(hex) {
     if ((vmDoSangTuongDoi(mixed) + .05) / (background + .05) >= 4.5) break;
   }
   return vmHexTuRgb(mixed);
+}
+
+function vmTachWordmarkThuongHieu(brand) {
+  var shortName = String((brand && (brand.short_name || brand.name)) || 'VinhMath').trim();
+  var primary = brand && brand.wordmark_primary_text;
+  var secondary = brand && brand.wordmark_secondary_text;
+  if (primary != null) return [String(primary).trim(), String(secondary || '').trim()];
+  var math = shortName.match(/^(.+?)(MATH)$/i);
+  if (math) return [math[1], math[2]];
+  var splitAt = shortName.lastIndexOf(' ');
+  return splitAt > 0 ? [shortName.slice(0, splitAt), shortName.slice(splitAt + 1)] : [shortName, ''];
+}
+
+function vmMauWordmarkThuongHieu(value, fallback) {
+  var color = /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value).toUpperCase() : fallback;
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? vmMauDuSangTrenNenToi(color) : color;
+}
+
+function vmVeWordmarkThuongHieu(container, brand) {
+  var parts = vmTachWordmarkThuongHieu(brand);
+  var primaryColor = vmMauWordmarkThuongHieu(brand.wordmark_primary_color, brand.primary_color || brand.accent_color || '#DD9400');
+  var secondaryColor = vmMauWordmarkThuongHieu(brand.wordmark_secondary_color, brand.topbar_text_color || brand.text_color || '#111111');
+  var first = document.createElement('span');
+  first.className = 'brand-vinh';
+  first.style.setProperty('color', primaryColor, 'important');
+  first.textContent = parts[0];
+  var second = document.createElement('span');
+  second.className = 'brand-math';
+  second.style.setProperty('color', secondaryColor, 'important');
+  second.textContent = parts[1];
+  container.replaceChildren(first, second);
 }
 
 function vmBangMauToiThuongHieu(brand, primary, secondary, accent) {
@@ -2856,12 +2887,7 @@ function vmApDungThuongHieu(theme) {
       }
 
       if (isCustom) {
-        brandTextEl.replaceChildren();
-        var customName = document.createElement('span');
-        customName.className = 'brand-vinh';
-        customName.style.setProperty('color', 'var(--accent)', 'important');
-        customName.textContent = theme.short_name || theme.name || 'VinhMath';
-        brandTextEl.appendChild(customName);
+        vmVeWordmarkThuongHieu(brandTextEl, theme);
       } else if (isMap) {
         brandTextEl.innerHTML = '<span class="brand-vinh" style="color: var(--accent) !important;">M.A.P</span>';
       } else if (isDM) {
@@ -3601,7 +3627,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=46', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=47', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
