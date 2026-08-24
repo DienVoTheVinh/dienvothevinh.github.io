@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/vmtool.css?v=1">
+  <link rel="stylesheet" href="css/vmtool.css?v=2">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -80,13 +80,13 @@
           </div>
           <div class="vmtool-canvas-wrap" id="canvasWrap">
             <canvas id="graphCanvas" aria-label="Đồ thị miền nghiệm hệ bất phương trình"></canvas>
-            <div class="vmtool-legend"><span class="vmtool-legend-swatch"></span> Miền thỏa mãn đồng thời mọi điều kiện</div>
+            <div class="vmtool-legend"><span class="vmtool-legend-swatch"></span> Phần bị loại · miền nghiệm là vùng trắng</div>
             <div class="vmtool-empty" id="emptyRegion">Hệ bất phương trình không có miền nghiệm trong vùng đang quan sát.</div>
           </div>
         </div>
         <div class="vmtool-guide">
           <article><b>1. Nhập hệ số</b><p>Ví dụ 2x + y ≤ 6: nhập lần lượt 2, 1, chọn ≤ và nhập 6.</p></article>
-          <article><b>2. Quan sát trực tiếp</b><p>Miền màu vàng là phần thỏa mãn đồng thời mọi bất phương trình.</p></article>
+          <article><b>2. Quan sát trực tiếp</b><p>Phần gạch sọc bị loại; miền trắng còn lại thỏa mãn đồng thời mọi bất phương trình.</p></article>
           <article><b>3. Đưa vào bài giảng</b><p>Tải PNG để chèn nhanh hoặc xuất TikZ cho tài liệu LaTeX sắc nét.</p></article>
         </div>
       </div>
@@ -98,7 +98,7 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/menu-v5.js?v=9.3"></script>
-  <script src="js/vmtool.js?v=2"></script>
+  <script src="js/vmtool.js?v=3"></script>
   <script src="js/analytics.js"></script>
 </body>
 </html>

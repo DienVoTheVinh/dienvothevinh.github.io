@@ -94,15 +94,29 @@
     return output;
   }
 
-  function solveRegion(rows, bounds) {
-    var polygon = [
+  function boundsPolygon(bounds) {
+    return [
       { x: bounds.xMin, y: bounds.yMin },
       { x: bounds.xMax, y: bounds.yMin },
       { x: bounds.xMax, y: bounds.yMax },
       { x: bounds.xMin, y: bounds.yMax }
     ];
+  }
+
+  function oppositeRow(row) {
+    row = normalizeRow(row);
+    var opposite = { '<=': '>', '<': '>=', '>=': '<', '>': '<=' };
+    return { a: row.a, b: row.b, op: opposite[row.op], c: row.c };
+  }
+
+  function solveRegion(rows, bounds) {
+    var polygon = boundsPolygon(bounds);
     rows.map(normalizeRow).forEach(function (row) { polygon = clipPolygon(polygon, row); });
     return polygon;
+  }
+
+  function rejectedRegion(row, bounds) {
+    return clipPolygon(boundsPolygon(bounds), oppositeRow(row));
   }
 
   function boundaryPoints(row, bounds) {
@@ -223,13 +237,40 @@
     if (zero.x >= 0 && zero.x <= size.width) ctx.fillText('y', Math.min(size.width - 15, zero.x + 8), 16);
   }
 
+  function addPolygonPath(polygon, size) {
+    polygon.forEach(function (point, index) {
+      var screen = toScreen(point, size);
+      if (!index) ctx.moveTo(screen.x, screen.y); else ctx.lineTo(screen.x, screen.y);
+    });
+    ctx.closePath();
+  }
+
+  function createHatchPattern() {
+    var tile = document.createElement('canvas');
+    var tileSize = 12;
+    tile.width = tileSize; tile.height = tileSize;
+    var tileCtx = tile.getContext('2d');
+    tileCtx.strokeStyle = cssColor('--vmtool-hatch', '#4f9858');
+    tileCtx.globalAlpha = .58; tileCtx.lineWidth = 1.15;
+    tileCtx.beginPath();
+    for (var x = -tileSize; x <= tileSize; x += tileSize) {
+      tileCtx.moveTo(x, tileSize); tileCtx.lineTo(x + tileSize, 0);
+    }
+    tileCtx.stroke();
+    return ctx.createPattern(tile, 'repeat');
+  }
+
+  function drawRejectedAreas(size, rows, bounds) {
+    var regions = rows.map(function (row) { return rejectedRegion(row, bounds); }).filter(function (polygon) { return polygon.length; });
+    if (!regions.length) return;
+    ctx.save(); ctx.beginPath();
+    regions.forEach(function (polygon) { addPolygonPath(polygon, size); });
+    ctx.fillStyle = createHatchPattern(); ctx.fill(); ctx.restore();
+  }
+
   function drawRegion(size, rows, bounds) {
     state.polygon = solveRegion(rows, bounds); state.bounds = bounds;
-    if (state.polygon.length) {
-      ctx.save(); ctx.beginPath();
-      state.polygon.forEach(function (point, index) { var s = toScreen(point, size); if (!index) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y); });
-      ctx.closePath(); ctx.fillStyle = cssColor('--accent', '#c27d00'); ctx.globalAlpha = .2; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = cssColor('--accent', '#c27d00'); ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
-    }
+    drawRejectedAreas(size, rows, bounds);
     rows.forEach(function (row, index) {
       var points = boundaryPoints(row, bounds); if (points.length < 2) return;
       var p1 = toScreen(points[0], size), p2 = toScreen(points[1], size);
@@ -280,12 +321,15 @@
   function generateTikz() {
     var size = dimensions(); var bounds = visibleBounds(size); var rows = currentRows(); var polygon = solveRegion(rows, bounds);
     var xMin = Math.floor(bounds.xMin), xMax = Math.ceil(bounds.xMax), yMin = Math.floor(bounds.yMin), yMax = Math.ceil(bounds.yMax);
-    var lines = ['% Tạo bởi VMTool - VinhMath', '\\documentclass[tikz,border=5pt]{standalone}', '\\usepackage{xcolor}', '\\definecolor{vmGold}{HTML}{C27D00}', '\\begin{document}', '\\begin{tikzpicture}[x=.8cm,y=.8cm,>=stealth]', '  \\clip (' + xMin + ',' + yMin + ') rectangle (' + xMax + ',' + yMax + ');', '  \\draw[step=1,gray!18,very thin] (' + xMin + ',' + yMin + ') grid (' + xMax + ',' + yMax + ');'];
-    if (polygon.length) lines.push('  \\fill[vmGold,opacity=.20] ' + polygon.map(function (p) { return '(' + texNumber(p.x) + ',' + texNumber(p.y) + ')'; }).join(' -- ') + ' -- cycle;');
+    var lines = ['% Tạo bởi VMTool - VinhMath', '\\documentclass[tikz,border=5pt]{standalone}', '\\usepackage{xcolor}', '\\usetikzlibrary{patterns}', '\\definecolor{vmHatch}{HTML}{4F9858}', '\\begin{document}', '\\begin{tikzpicture}[x=.8cm,y=.8cm,>=stealth]', '  \\clip (' + xMin + ',' + yMin + ') rectangle (' + xMax + ',' + yMax + ');', '  \\draw[step=1,gray!18,very thin] (' + xMin + ',' + yMin + ') grid (' + xMax + ',' + yMax + ');'];
+    rows.forEach(function (row) {
+      var rejected = rejectedRegion(row, bounds);
+      if (rejected.length) lines.push('  \\fill[pattern=north east lines,pattern color=vmHatch] ' + rejected.map(function (p) { return '(' + texNumber(p.x) + ',' + texNumber(p.y) + ')'; }).join(' -- ') + ' -- cycle;');
+    });
     rows.forEach(function (row, index) {
       var points = boundaryPoints(row, bounds); if (points.length < 2) return;
       var style = (row.op === '<' || row.op === '>') ? 'dashed' : 'solid';
-      lines.push('  \\draw[thick,' + style + '] (' + texNumber(points[0].x) + ',' + texNumber(points[0].y) + ') -- (' + texNumber(points[1].x) + ',' + texNumber(points[1].y) + ') node[pos=.78,fill=white,inner sep=1.5pt,font=\\scriptsize] {$' + rowSentence(row).replace(/≤/g, '\\le').replace(/≥/g, '\\ge').replace(/−/g, '-') + '$};');
+      lines.push('  \\draw[thick,vmHatch,' + style + '] (' + texNumber(points[0].x) + ',' + texNumber(points[0].y) + ') -- (' + texNumber(points[1].x) + ',' + texNumber(points[1].y) + ') node[pos=.78,fill=white,inner sep=1.5pt,font=\\scriptsize] {$' + rowSentence(row).replace(/≤/g, '\\le').replace(/≥/g, '\\ge').replace(/−/g, '-') + '$};');
     });
     lines.push('  \\draw[->,thick] (' + xMin + ',0) -- (' + xMax + ',0) node[right] {$x$};', '  \\draw[->,thick] (0,' + yMin + ') -- (0,' + yMax + ') node[above] {$y$};', '\\end{tikzpicture}', '\\end{document}');
     return lines.join('\n');
@@ -330,6 +374,6 @@
     try { await initAuth(); } catch (error) { console.warn('Không thể xác minh phiên VMTool:', error); }
   }
 
-  window.VMToolMath = { normalizeRow: normalizeRow, inside: inside, clipPolygon: clipPolygon, solveRegion: solveRegion, boundaryPoints: boundaryPoints, rowSentence: rowSentence };
+  window.VMToolMath = { normalizeRow: normalizeRow, inside: inside, clipPolygon: clipPolygon, solveRegion: solveRegion, rejectedRegion: rejectedRegion, oppositeRow: oppositeRow, boundaryPoints: boundaryPoints, rowSentence: rowSentence };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
