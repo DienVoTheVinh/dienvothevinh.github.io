@@ -16,6 +16,7 @@ const { chromium } = require('playwright');
     const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
     await page.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
       <style>:root{--surface:#fff;--surface-2:#f5f4f1;--line:#ddd;--accent:#d79008;--accent-soft:#fff3d6;--ink:#171717;--ink-2:#444;--ink-3:#666}${css}</style>
+      <div class="sub-card"><div class="chb-assignment-body"><h3>Đề tham chiếu</h3><p>Cho tam giác ABC, chứng minh hệ thức đã cho.</p></div><div id="sub-sub"></div></div>
       <div id="danchamtt-sub"></div>`);
     await page.addScriptTag({ content: `
       window.$ = (id) => document.getElementById(id);
@@ -67,9 +68,22 @@ const { chromium } = require('playwright');
     state = await page.evaluate(() => {
       const modal = document.getElementById('chbDrawModal');
       const dialog = modal.querySelector('.chb-draw-dialog').getBoundingClientRect();
-      return { fullscreen:modal.classList.contains('fullscreen'), width:Math.round(dialog.width), height:Math.round(dialog.height), label:document.getElementById('chbDrawFullscreen').textContent };
+      const prompt = document.getElementById('chbDrawPrompt').getBoundingClientRect();
+      return { fullscreen:modal.classList.contains('fullscreen'), width:Math.round(dialog.width), height:Math.round(dialog.height), label:document.getElementById('chbDrawFullscreen').textContent, promptWidth:Math.round(prompt.width), promptText:document.getElementById('chbDrawPromptBody').textContent };
     });
-    if (!state.fullscreen || state.width !== 1600 || state.height !== 1000 || !state.label.includes('Thu nhỏ')) throw new Error(`Fullscreen annotation does not fill the viewport: ${JSON.stringify(state)}`);
+    if (!state.fullscreen || state.width !== 1600 || state.height !== 1000 || !state.label.includes('Thu nhỏ') || state.promptWidth < 220 || !state.promptText.includes('Đề tham chiếu')) throw new Error(`Fullscreen annotation or prompt reference panel is wrong: ${JSON.stringify(state)}`);
+    const resizeBox = await page.locator('#chbDrawPromptResizer').boundingBox();
+    if (!resizeBox) throw new Error('Prompt resize handle is not visible');
+    await page.mouse.move(resizeBox.x + resizeBox.width / 2, resizeBox.y + 80);
+    await page.mouse.down();
+    await page.mouse.move(resizeBox.x + 90, resizeBox.y + 80, { steps:5 });
+    await page.mouse.up();
+    state = await page.evaluate(() => ({ promptWidth:Math.round(document.getElementById('chbDrawPrompt').getBoundingClientRect().width) }));
+    if (state.promptWidth < 360) throw new Error(`Prompt panel did not resize: ${JSON.stringify(state)}`);
+    await page.click('#chbDrawPromptToggle');
+    state = await page.evaluate(() => ({ collapsed:document.getElementById('chbDrawModal').classList.contains('prompt-collapsed'), width:Math.round(document.getElementById('chbDrawPrompt').getBoundingClientRect().width) }));
+    if (!state.collapsed || state.width > 60) throw new Error(`Prompt panel did not collapse: ${JSON.stringify(state)}`);
+    await page.click('#chbDrawPromptToggle');
     if (process.env.VM_SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.VM_SCREENSHOT_DIR, { recursive:true });
       await page.screenshot({ path:`${process.env.VM_SCREENSHOT_DIR}/grading-annotation-fullscreen.png`, fullPage:false });
