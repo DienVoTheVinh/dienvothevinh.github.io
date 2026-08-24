@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/vmtool.css?v=2">
+  <link rel="stylesheet" href="css/vmtool.css?v=3">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -30,8 +30,7 @@
     <section class="vmtool-hero">
       <div>
         <div class="vmtool-kicker">Phòng thí nghiệm Toán học VinhMath</div>
-        <h1>VMTool</h1>
-        <p>Biến ý tưởng Toán học thành hình vẽ trực quan mà không cần nhớ lệnh LaTeX. Nhập dữ liệu, quan sát, tương tác và xuất hình đẹp để đưa vào bài giảng.</p>
+        <div class="vmtool-hero-line"><h1>VMTool</h1><p>Nhập dữ liệu, quan sát trực tiếp và xuất hình Toán học đẹp mà không cần nhớ lệnh LaTeX.</p></div>
       </div>
       <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b>Miền nghiệm 2D</b><small>Đồ thị · PNG · TikZ</small></div></div>
     </section>
@@ -60,27 +59,32 @@
             </div>
           </div>
           <div class="vmtool-summary" id="formulaSummary" aria-live="polite"></div>
-          <div class="vmtool-actions">
-            <button class="vmtool-action primary" id="downloadPng" type="button">Tải hình PNG</button>
-            <button class="vmtool-action" id="copyTikz" type="button">Sao chép TikZ</button>
-            <button class="vmtool-action" id="downloadTikz" type="button">Tải tệp .tex</button>
-          </div>
         </div>
       </aside>
 
       <div class="vmtool-stage">
         <div class="vmtool-canvas-card">
           <div class="vmtool-canvas-head">
-            <div class="vmtool-canvas-title"><b>Miền nghiệm chung</b><span>Kéo để di chuyển · Cuộn để phóng to/thu nhỏ</span></div>
-            <div class="vmtool-view-actions">
-              <button class="vmtool-icon-btn" id="zoomOut" type="button" aria-label="Thu nhỏ">−</button>
-              <button class="vmtool-icon-btn" id="resetView" type="button">Về tâm</button>
-              <button class="vmtool-icon-btn" id="zoomIn" type="button" aria-label="Phóng to">＋</button>
+            <div class="vmtool-canvas-title"><b>Miền nghiệm chung</b><span>Kéo nền để di chuyển · Cuộn chuột để phóng to</span></div>
+            <div class="vmtool-view-actions" aria-label="Thanh công cụ đồ thị">
+              <div class="vmtool-tool-group" aria-label="Điều khiển khung nhìn">
+                <button class="vmtool-icon-btn" id="zoomOut" type="button" aria-label="Thu nhỏ">−</button>
+                <span class="vmtool-zoom-status" id="zoomStatus">100%</span>
+                <button class="vmtool-icon-btn" id="zoomIn" type="button" aria-label="Phóng to">＋</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="resetView" type="button">◎ Về O</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="fullscreenView" type="button">⛶ Toàn màn hình</button>
+              </div>
+              <div class="vmtool-tool-divider" aria-hidden="true"></div>
+              <div class="vmtool-tool-group vmtool-export-tools" aria-label="Xuất hình">
+                <button class="vmtool-action primary" id="downloadPng" type="button">⇩ PNG</button>
+                <button class="vmtool-action" id="copyTikz" type="button">⧉ TikZ</button>
+                <button class="vmtool-action" id="downloadTikz" type="button">⇩ .tex</button>
+              </div>
             </div>
           </div>
           <div class="vmtool-canvas-wrap" id="canvasWrap">
             <canvas id="graphCanvas" aria-label="Đồ thị miền nghiệm hệ bất phương trình"></canvas>
-            <div class="vmtool-legend"><span class="vmtool-legend-swatch"></span> Phần bị loại · miền nghiệm là vùng trắng</div>
+            <div class="vmtool-legend"><span class="vmtool-legend-swatch"></span> Sọc cùng màu với từng đường · miền nghiệm là vùng trắng</div>
             <div class="vmtool-empty" id="emptyRegion">Hệ bất phương trình không có miền nghiệm trong vùng đang quan sát.</div>
           </div>
         </div>
@@ -98,7 +102,7 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/menu-v5.js?v=9.3"></script>
-  <script src="js/vmtool.js?v=3"></script>
+  <script src="js/vmtool.js?v=4"></script>
   <script src="js/analytics.js"></script>
 </body>
 </html>
