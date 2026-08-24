@@ -2,18 +2,31 @@
   'use strict';
 
   var MAJORS = [
-    {name:'Tân Thủ',symbol:'✦',color:'#9b6b43',aura:'earth',motto:'Khởi đầu một hành trình lớn.'},
-    {name:'Chăm Học',symbol:'🌱',color:'#2d9b68',aura:'leaf',motto:'Đều đặn mỗi ngày là một loại siêu năng lực.'},
-    {name:'Học Khá',symbol:'📘',color:'#2587bd',aura:'water',motto:'Nền tảng vững, bước chân chắc.'},
-    {name:'Học Giỏi',symbol:'🏅',color:'#d79008',aura:'gold',motto:'Hiểu sâu hơn một chút mỗi ngày.'},
-    {name:'Học Bá',symbol:'👑',color:'#e05472',aura:'rose',motto:'Bản lĩnh được tạo nên từ luyện tập.'},
-    {name:'Cao Thủ',symbol:'⚔',color:'#8257c7',aura:'violet',motto:'Bình tĩnh trước mọi thử thách.'},
-    {name:'Kỳ Tài',symbol:'✧',color:'#1b9f9a',aura:'teal',motto:'Tìm ra cách giải của riêng mình.'},
-    {name:'Thiên Tài',symbol:'⚡',color:'#4676e8',aura:'storm',motto:'Tò mò là động cơ của trí tuệ.'},
-    {name:'Học Thần',symbol:'🔮',color:'#783fd1',aura:'cosmic',motto:'Kiến thức kết nối thành sức mạnh.'},
-    {name:'Đại Thần',symbol:'☀',color:'#ef7b17',aura:'solar',motto:'Dẫn đường bằng sự tử tế và hiểu biết.'},
-    {name:'Vô Cực',symbol:'∞',color:'#2a49ad',aura:'infinite',motto:'Không ngừng học, không ngừng lớn.'}
+    {name:'Tân Thủ',symbol:'◇',mark:'origin',color:'#9b6b43',aura:'earth',motto:'Khởi đầu một hành trình lớn.'},
+    {name:'Chăm Học',symbol:'♧',mark:'sprout',color:'#2d9b68',aura:'leaf',motto:'Đều đặn mỗi ngày là một loại siêu năng lực.'},
+    {name:'Học Khá',symbol:'▤',mark:'book',color:'#2587bd',aura:'water',motto:'Nền tảng vững, bước chân chắc.'},
+    {name:'Học Giỏi',symbol:'★',mark:'laurel',color:'#d79008',aura:'gold',motto:'Hiểu sâu hơn một chút mỗi ngày.'},
+    {name:'Học Bá',symbol:'♛',mark:'crown',color:'#e05472',aura:'rose',motto:'Bản lĩnh được tạo nên từ luyện tập.'},
+    {name:'Cao Thủ',symbol:'⌁',mark:'rulers',color:'#8257c7',aura:'violet',motto:'Bình tĩnh trước mọi thử thách.'},
+    {name:'Kỳ Tài',symbol:'△',mark:'prism',color:'#1b9f9a',aura:'teal',motto:'Tìm ra cách giải của riêng mình.'},
+    {name:'Thiên Tài',symbol:'ϟ',mark:'orbit',color:'#4676e8',aura:'storm',motto:'Tò mò là động cơ của trí tuệ.'},
+    {name:'Học Thần',symbol:'⁙',mark:'constellation',color:'#783fd1',aura:'cosmic',motto:'Kiến thức kết nối thành sức mạnh.'},
+    {name:'Đại Thần',symbol:'☼',mark:'radiance',color:'#ef7b17',aura:'solar',motto:'Dẫn đường bằng sự tử tế và hiểu biết.'},
+    {name:'Vô Cực',symbol:'∞',mark:'infinity',color:'#2a49ad',aura:'infinite',motto:'Không ngừng học, không ngừng lớn.'}
   ];
+  var REALM_MARKS = {
+    origin:'<circle cx="32" cy="32" r="21"/><path d="M32 13l8 19-8 19-8-19Z"/><circle class="mark-fill" cx="32" cy="32" r="3.5"/>',
+    sprout:'<path d="M32 51V29"/><path d="M31 31c-12 0-16-7-16-14 10-1 17 3 17 13M33 35c12 0 17-7 17-15-11-1-18 4-18 14"/><path d="M20 51h24"/>',
+    book:'<path d="M10 18c9-3 16-1 22 5v27c-6-6-13-8-22-5Z"/><path d="M54 18c-9-3-16-1-22 5v27c6-6 13-8 22-5Z"/><path d="M17 27c5 0 9 1 12 4M47 27c-5 0-9 1-12 4"/>',
+    laurel:'<path d="M19 48c-9-8-10-21-3-31M45 48c9-8 10-21 3-31"/><path d="M17 39l-8-3M20 31l-8-6M23 23l-5-8M47 39l8-3M44 31l8-6M41 23l5-8"/><path class="mark-fill" d="m32 17 4.2 8.4 9.3 1.3-6.7 6.6 1.6 9.2-8.4-4.4-8.4 4.4 1.6-9.2-6.7-6.6 9.3-1.3Z"/>',
+    crown:'<path d="M13 22l10 9 9-17 9 17 10-9-4 26H17Z"/><path d="M19 41h26"/><circle class="mark-fill" cx="13" cy="20" r="3"/><circle class="mark-fill" cx="32" cy="12" r="3"/><circle class="mark-fill" cx="51" cy="20" r="3"/>',
+    rulers:'<path d="M14 17l33 33 7-7-33-33Z"/><path d="M50 15 15 50M42 17l5 5M34 25l5 5M26 33l5 5M18 41l5 5"/><path d="M13 47l4 4"/>',
+    prism:'<path d="M32 10 53 49H11Z"/><path d="M32 10v39M18 37h28"/><path d="M8 22h12M44 22h12M5 30h12M47 30h12"/>',
+    orbit:'<ellipse cx="32" cy="32" rx="24" ry="11" transform="rotate(-28 32 32)"/><circle class="mark-fill" cx="13" cy="43" r="4"/><path class="mark-fill" d="m35 8-13 24h10l-4 24 15-29H33Z"/>',
+    constellation:'<path d="M14 44 25 21l17 9 9-16M25 21l7 31 10-22"/><circle class="mark-fill" cx="14" cy="44" r="4"/><circle class="mark-fill" cx="25" cy="21" r="4"/><circle class="mark-fill" cx="32" cy="52" r="4"/><circle class="mark-fill" cx="42" cy="30" r="4"/><circle class="mark-fill" cx="51" cy="14" r="4"/>',
+    radiance:'<circle cx="32" cy="32" r="12"/><path d="M32 5v10M32 49v10M5 32h10M49 32h10M13 13l7 7M44 44l7 7M51 13l-7 7M20 44l-7 7"/><path class="mark-fill" d="m32 22 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/>',
+    infinity:'<path d="M8 32c7-17 18-17 24 0s17 17 24 0c-7-17-18-17-24 0S15 49 8 32Z"/><path class="mark-fill" d="m32 22 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/>'
+  };
   var MEDALS = [
     {name:'Đồng',icon:'🥉',cls:'bronze'},
     {name:'Bạc',icon:'🥈',cls:'silver'},
@@ -36,9 +49,13 @@
     return {level:value,majorIndex:majorIndex,medalIndex:medalIndex,major:MAJORS[majorIndex],medal:MEDALS[medalIndex],label:MAJORS[majorIndex].name + ' · ' + MEDALS[medalIndex].name};
   }
   function xpFloor(level) { var l=Math.max(1,Number(level)||1); return 100*(l-1)+25*(l-1)*(l-2); }
+  function majorMark(major, extra) {
+    var value=typeof major==='number'?MAJORS[major]:major,index=MAJORS.indexOf(value),body=REALM_MARKS[(value&&value.mark)||'origin']||REALM_MARKS.origin;
+    return '<svg class="vm-realm-mark realm-mark-'+Math.max(0,index)+' '+(extra||'')+'" viewBox="0 0 64 64" aria-hidden="true" focusable="false">'+body+'</svg>';
+  }
   function addCss() {
     if (document.getElementById('vmRankCss')) return;
-    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=5'; document.head.appendChild(link);
+    var link=document.createElement('link'); link.id='vmRankCss'; link.rel='stylesheet'; link.href='css/rank-system.css?v=6'; document.head.appendChild(link);
   }
   function guestData() {
     return {id:'guest',rank:{xp:485,level:4,raw_level:4,unlocked_major:1,xp_floor:450,xp_next:700,streak:4,counts:{lesson:8,btvn:5,test:2,review:3},badges:[],breakthrough:null},companion:{chosen:false,hatched:false,incubation_stage:4,owned:[],coins:85},missions:{tasks:[]}};
@@ -61,7 +78,7 @@
   }
   function rankPill(rank, extra) {
     var meta=info(rank.level);
-    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'" title="'+esc(meta.label)+'" aria-label="Cấp bậc '+esc(meta.label)+'"><span class="vm-rank-symbol" aria-hidden="true">'+meta.major.symbol+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'" title="Huy chương '+esc(meta.medal.name)+'" aria-label="Huy chương '+esc(meta.medal.name)+'"><span aria-hidden="true">'+meta.medal.icon+'</span><span class="vm-rank-medal-label">'+esc(meta.medal.name)+'</span></span></span>';
+    return '<span class="vm-rank-pill aura-'+meta.major.aura+' '+(extra||'')+'" style="--rank-color:'+meta.major.color+'" title="'+esc(meta.label)+'" aria-label="Cấp bậc '+esc(meta.label)+'"><span class="vm-rank-symbol" aria-hidden="true">'+majorMark(meta.major,'rank-mark')+'</span><b>'+esc(meta.major.name)+'</b><span class="vm-rank-medal medal-'+meta.medal.cls+'" title="Huy chương '+esc(meta.medal.name)+'" aria-label="Huy chương '+esc(meta.medal.name)+'"><span aria-hidden="true">'+meta.medal.icon+'</span><span class="vm-rank-medal-label">'+esc(meta.medal.name)+'</span></span></span>';
   }
   function injectLogo(rank) {
     var logo=document.querySelector('.topbar .logo'); if(!logo) return;
@@ -127,13 +144,13 @@
   }
   function maybeCelebrate(data) {
     if(!data.id||data.id==='guest')return; var key='vm-rank-seen:'+data.id,now=Number(data.rank.level||1),prev=Number(localStorage.getItem(key)||0);localStorage.setItem(key,String(now));
-    if(prev>0&&now>prev){var meta=info(now);showCelebration(meta.major.symbol,'Đã thăng cấp: '+meta.label,'Linh thú và hào quang của em vừa nhận một hình thái mới!');}
+    if(prev>0&&now>prev){var meta=info(now);showCelebration(majorMark(meta.major,'celebrate-mark'),'Đã thăng cấp: '+meta.label,'Linh thú và hào quang của em vừa nhận một hình thái mới!');}
   }
   function maybeBreakthrough(data) {
     var b=data.rank.breakthrough;if(!b||!b.eligible)return;var target=MAJORS[Number(b.target_major)-1],status=b.status||'ready',key='vm-breakthrough:'+data.id+':'+b.target_major+':'+status;
     if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');
     var failed=status==='failed',requested=status==='requested';
-    var html='<button class="vm-modal-x" data-close-rank-modal>×</button><div class="vm-breakthrough-orb">'+target.symbol+'</div><span class="vm-modal-kicker">CỘT MỐC ĐỘT PHÁ</span><h2>'+esc(requested?'Thầy/cô đã nhận yêu cầu':failed?'Mình sẽ thử lại nhé!':'Em sắp đột phá '+target.name)+'</h2><p>'+(requested?'Hãy ôn tập và chờ thầy/cô giao bài kiểm tra riêng.':failed?'Lần trước em đạt <b>'+esc(b.score)+'/10</b>. Cần từ 8 điểm; XP vẫn được giữ nguyên.':'XP đã đủ, nhưng cần vượt bài kiểm tra riêng với điểm từ <b>8/10</b> để mở cảnh giới mới.')+'</p>';
+    var html='<button class="vm-modal-x" data-close-rank-modal>×</button><div class="vm-breakthrough-orb">'+majorMark(target,'breakthrough-mark')+'</div><span class="vm-modal-kicker">CỘT MỐC ĐỘT PHÁ</span><h2>'+esc(requested?'Thầy/cô đã nhận yêu cầu':failed?'Mình sẽ thử lại nhé!':'Em sắp đột phá '+target.name)+'</h2><p>'+(requested?'Hãy ôn tập và chờ thầy/cô giao bài kiểm tra riêng.':failed?'Lần trước em đạt <b>'+esc(b.score)+'/10</b>. Cần từ 8 điểm; XP vẫn được giữ nguyên.':'XP đã đủ, nhưng cần vượt bài kiểm tra riêng với điểm từ <b>8/10</b> để mở cảnh giới mới.')+'</p>';
     if(!requested)html+='<button class="btn btn-primary" data-request-breakthrough>'+(failed?'Xin kiểm tra lại':'Báo thầy/cô em đã sẵn sàng')+'</button>';html+='<a class="vm-modal-link" href="thanh-tuu">Xem cột mốc trên bản đồ</a>';
     var layer=modal(html,'vm-breakthrough-modal'),button=layer.querySelector('[data-request-breakthrough]');
     if(button)button.addEventListener('click',async function(){button.disabled=true;button.textContent='Đang gửi…';var r=await sb.rpc('request_rank_breakthrough');if(r.error||!r.data||!r.data.ok){button.disabled=false;button.textContent='Thử lại';alert((r.data&&r.data.message)||(r.error&&r.error.message)||'Chưa gửi được yêu cầu');return;}layer.remove();showCelebration('⚡','Đã gửi yêu cầu',r.data.message);});
@@ -142,5 +159,5 @@
     addCss(); current=await load(); if(!current)return; injectLogo(current.rank);injectHome(current.rank);renderCompanion(current);showEggChoice(current);maybeCelebrate(current);maybeBreakthrough(current);
     window.dispatchEvent(new CustomEvent('vm-rank-ready',{detail:current}));
   }
-  window.VMRank={majors:MAJORS,medals:MEDALS,pets:PETS,info:info,xpFloor:xpFloor,rankPill:rankPill,petVisual:petVisual,load:load,init:init,getCurrent:function(){return current;},refresh:function(){snapshotPromise=null;return init();}};
+  window.VMRank={majors:MAJORS,medals:MEDALS,pets:PETS,info:info,xpFloor:xpFloor,majorMark:majorMark,rankPill:rankPill,petVisual:petVisual,load:load,init:init,getCurrent:function(){return current;},refresh:function(){snapshotPromise=null;return init();}};
 })();
