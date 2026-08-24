@@ -59,14 +59,18 @@ function apDungMenu(role, portalContext) {
     ];
   } else {
     // ----- MENU CỦA HỌC SINH -----
+    // Giữ nguyên mọi khu vực cũ, nhưng ưu tiên 5 điểm đến dùng hằng ngày.
+    // Công cụ mở rộng nằm trong "Thêm" để thanh đầu thoáng trên màn hình nhỏ.
     muc = [
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
-      { type: 'link', path: 'lop-hoc', label: 'Lớp học' },
+      { type: 'link', path: 'lop-hoc', label: 'Bài học' },
       { type: 'link', path: 'luyen-de', label: 'Bài tập' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả' },
-      { type: 'link', path: 'bang-vang', label: 'BXH' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' },
+      { type: 'dropdown', label: 'Thêm', items: [
+        { path: 'bang-vang', label: '🏆 Bảng xếp hạng' },
+        { path: 'vmtool', label: '🧰 VMTool' }
+      ] }
     ];
   }
 

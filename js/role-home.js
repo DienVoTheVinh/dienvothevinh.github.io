@@ -70,6 +70,7 @@
   var vmStudentFeed = [];
   var vmStudentTodos = [];
   var vmStudentFeedFilter = 'todo';
+  var vmStudentPriorityVisible = false;
   function hasText(value) { return typeof value === 'string' && value.trim() !== ''; }
   function hasFiles(value) { return Array.isArray(value) && value.length > 0; }
 
@@ -171,7 +172,9 @@
   function renderStudentFeed() {
     var box = document.getElementById('vmStudentLatest');
     if (!box) return;
-    var rows = vmStudentFeedFilter === 'todo' ? vmStudentTodos.slice(0, 10) : vmStudentFeed.filter(function (item) { return item.type === vmStudentFeedFilter; }).slice(0, 10);
+    var rows = vmStudentFeedFilter === 'todo'
+      ? vmStudentTodos.slice(vmStudentPriorityVisible ? 1 : 0, vmStudentPriorityVisible ? 11 : 10)
+      : vmStudentFeed.filter(function (item) { return item.type === vmStudentFeedFilter; }).slice(0, 10);
     if (!rows.length) {
       box.innerHTML = vmStudentFeedFilter === 'todo'
         ? '<div class="vm-student-empty"><span>🎉</span><b>Em đã hoàn thành mọi việc</b><small>Việc mới hoặc sắp đến hạn sẽ tự xuất hiện tại đây.</small></div>'
@@ -185,6 +188,27 @@
         '<span class="vm-student-feed-copy"><span class="vm-student-feed-meta"><b>' + esc(item.label) + '</b><small>' + esc(timeLabel) + '</small></span>' +
         '<strong>' + esc(item.title) + '</strong><small>' + esc(item.className) + ' · ' + esc(item.detail || '') + '</small></span><span class="vm-student-feed-open">Mở →</span></a>';
     }).join('');
+  }
+
+  function renderStudentPriority() {
+    var box = document.getElementById('vmStudentPriority');
+    if (!box) return;
+    var item = vmStudentTodos[0] || vmStudentFeed.find(function (row) { return row.type === 'lesson'; }) || vmStudentFeed[0];
+    vmStudentPriorityVisible = !!item;
+    if (!item) {
+      box.hidden = true;
+      box.innerHTML = '';
+      return;
+    }
+    var isTodo = item.type === 'todo';
+    var label = isTodo ? (item.priorityLabel || item.label) : 'Bài mới nên xem';
+    var action = item.type === 'test' ? 'Làm bài ngay' : (item.type === 'homework' || (isTodo && item.label === 'Bài tập về nhà') ? 'Làm ngay' : 'Mở ngay');
+    box.hidden = false;
+    box.className = 'vm-student-priority priority-' + esc(item.priorityState || 'normal');
+    box.innerHTML = '<span class="vm-student-priority-icon" aria-hidden="true">' + item.icon + '</span>' +
+      '<span class="vm-student-priority-copy"><span class="vm-student-priority-label">NÊN LÀM TRƯỚC · ' + esc(label) + '</span>' +
+      '<strong>' + esc(item.title) + '</strong><small>' + esc(item.className || 'Lớp học') + (item.detail ? ' · ' + esc(item.detail) : '') + '</small></span>' +
+      '<a class="btn btn-primary btn-sm" href="' + esc(item.href) + '">' + action + ' →</a>';
   }
 
   function bindFeedFilters() {
@@ -245,7 +269,8 @@
     sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
     actions.innerHTML = '<div class="vm-student-home-grid"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-main-card">' +
       '<div id="vmRankHome" class="vm-rank-home-slot" aria-live="polite"></div>' +
-      '<div class="vm-student-card-head"><div><span class="vm-student-kicker">MỚI TỪ CÁC LỚP CỦA EM</span><h3>Dòng cập nhật học tập</h3><p>Thông tin mới nhất được gom theo thời gian, không trùng lặp giữa các lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài giảng →</a></div>' +
+      '<div class="vm-student-card-head"><div><span class="vm-student-kicker">HÔM NAY CỦA EM</span><h3>Việc cần làm & cập nhật</h3><p>Ưu tiên việc quan trọng trước, vẫn giữ đầy đủ thông tin từ mọi lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài học →</a></div>' +
+      '<section id="vmStudentPriority" class="vm-student-priority" hidden aria-label="Việc nên làm trước"></section>' +
       '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
       '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
@@ -259,6 +284,7 @@
     vmStudentTodos = buildStudentTodos(snapshot, profile);
     var todoCount = document.getElementById('vmStudentTodoCount');
     if (todoCount) todoCount.textContent = vmStudentTodos.length;
+    renderStudentPriority();
     renderStudentFeed();
     var posts = document.getElementById('vmStudentPosts');
     if (posts) posts.innerHTML = renderPosts(snapshot, profile);
