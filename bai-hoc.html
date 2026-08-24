@@ -369,6 +369,14 @@ body.vm-video-locked { overflow:hidden !important; }
 .vm-tex-zoom button:hover { background:var(--accent-soft); color:var(--accent); }
 .vm-tex-zoom .vm-tex-zoom-label { width:auto; min-width:58px; padding:0 8px; border-right:0; color:var(--ink-2); font-size:.76rem; font-weight:800; }
 .vm-tex-fullscreen { position:relative; z-index:1; min-height:40px; border-color:var(--accent) !important; color:var(--accent) !important; font-weight:800; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.vm-tex-fullscreen-exit {
+  display:none; position:fixed; top:max(12px,env(safe-area-inset-top)); left:max(12px,env(safe-area-inset-left)); z-index:6;
+  min-width:108px; min-height:46px; padding:10px 15px; align-items:center; justify-content:center; gap:8px;
+  border:1px solid var(--line-2); border-radius:13px; background:color-mix(in srgb,var(--surface-solid) 96%,var(--accent-soft));
+  color:var(--ink); box-shadow:0 10px 30px rgba(15,23,42,.2); font:800 .86rem/1 inherit; cursor:pointer;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+.vm-tex-fullscreen-exit:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
 .vm-tex-theme-toggle {
   display:none; position:static; min-width:0; min-height:40px; padding:8px 12px !important; align-items:center; justify-content:center; gap:8px;
   border:1px solid var(--line-2) !important; border-radius:10px !important; background:var(--surface) !important;
@@ -458,6 +466,8 @@ body.vm-video-locked { overflow:hidden !important; }
   pointer-events:none;
 }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-toolbar-toggle,[data-reader-key]:fullscreen .vm-tex-toolbar-toggle { display:inline-flex; margin-left:auto; pointer-events:auto; }
+[data-reader-key].vm-tex-fullscreen-active > .vm-tex-fullscreen-exit,[data-reader-key]:fullscreen > .vm-tex-fullscreen-exit,[data-reader-key]:-webkit-full-screen > .vm-tex-fullscreen-exit { display:inline-flex; }
+[data-reader-key].vm-tex-fullscreen-active .vm-tex-fullscreen,[data-reader-key]:fullscreen .vm-tex-fullscreen,[data-reader-key]:-webkit-full-screen .vm-tex-fullscreen { display:none !important; }
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-actions-copy,[data-reader-key]:fullscreen .vm-tex-actions-copy,
 [data-reader-key].vm-tex-fullscreen-active .vm-tex-action-tools,[data-reader-key]:fullscreen .vm-tex-action-tools { display:none; }
 [data-reader-key].vm-tex-fullscreen-active.vm-tex-tools-open .vm-tex-actions,[data-reader-key]:fullscreen.vm-tex-tools-open .vm-tex-actions {
@@ -2077,7 +2087,8 @@ function vmReaderBuildConHieuLuc(than, token) {
 function vmLatexActionHTML(key, rawTex, fileName, kind) {
   vmLatexDownloads[key] = { tex: rawTex || '', fileName: fileName || 'tai-lieu.pdf', kind: kind || 'document' };
   vmReaderZoomLevels[key] = vmReaderZoomLevels[key] || 1;
-  return '<div class="vm-tex-actions">' +
+  return '<button type="button" class="vm-tex-fullscreen-exit" data-vm-reader-control="fullscreen" data-vm-reader-key="' + key + '" data-vm-fullscreen-exit="' + key + '" aria-label="Thoát chế độ toàn màn hình" aria-hidden="true" tabindex="-1"><span aria-hidden="true">←</span> Thoát</button>' +
+    '<div class="vm-tex-actions">' +
     '<button type="button" class="vm-tex-toolbar-toggle" data-vm-reader-control="toolbar" data-vm-reader-key="' + key + '" aria-expanded="false" aria-label="Hiện công cụ đọc"><span aria-hidden="true">⚙</span><span data-vm-toolbar-label="' + key + '">Tùy chỉnh</span></button>' +
     '<div class="vm-tex-actions-copy"><b>Đang đọc trực tiếp trên web</b><br>PDF chỉ được tạo khi em cần tải về.' +
       '<br><span class="vm-tex-build-status" data-vm-reader-status="' + key + '"><span class="vm-tex-build-dot"></span><span>Nội dung đã sẵn sàng</span></span></div>' +
@@ -2263,9 +2274,14 @@ function vmCapNhatNutFullscreen(shell, active) {
   if (!shell) return;
   var key = shell.getAttribute('data-reader-key');
   var btn = shell.querySelector('[data-vm-fullscreen-btn="' + key + '"]');
+  var exitBtn = shell.querySelector('[data-vm-fullscreen-exit="' + key + '"]');
   if (btn) {
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    btn.textContent = active ? '✕ Thoát' : '⛶ Toàn màn hình';
+    btn.textContent = '⛶ Toàn màn hình';
+  }
+  if (exitBtn) {
+    exitBtn.setAttribute('aria-hidden', active ? 'false' : 'true');
+    exitBtn.tabIndex = active ? 0 : -1;
   }
 }
 

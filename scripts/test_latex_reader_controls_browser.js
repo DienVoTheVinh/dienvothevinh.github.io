@@ -114,7 +114,11 @@ function between(source, from, to) {
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
-      text: document.querySelector('[data-vm-fullscreen-btn="reader-test"]').textContent,
+      enterHidden: document.querySelector('[data-vm-fullscreen-btn="reader-test"]').offsetParent === null,
+      exitVisible: document.querySelector('[data-vm-fullscreen-exit="reader-test"]').offsetParent !== null,
+      exitText: document.querySelector('[data-vm-fullscreen-exit="reader-test"]').textContent,
+      exitOutsideTools: !document.querySelector('.vm-tex-actions').contains(document.querySelector('[data-vm-fullscreen-exit="reader-test"]')),
+      exitPosition: (() => { const r = document.querySelector('[data-vm-fullscreen-exit="reader-test"]').getBoundingClientRect(); return { left: Math.round(r.left), top: Math.round(r.top) }; })(),
       directChild: document.querySelector('[data-reader-key="reader-test"]').parentElement === document.body,
       chromeHidden: getComputedStyle(document.getElementById('site-chrome')).visibility === 'hidden',
       copyHidden: getComputedStyle(document.querySelector('.vm-tex-actions-copy')).display === 'none',
@@ -124,7 +128,7 @@ function between(source, from, to) {
       toolbarExpanded: document.querySelector('.vm-tex-toolbar-toggle').getAttribute('aria-expanded'),
       themeVisible: document.querySelector('.vm-tex-theme-toggle').offsetParent !== null,
     }));
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.enterHidden || !state.exitVisible || !state.exitText.includes('Thoát') || !state.exitOutsideTools || state.exitPosition.left > 20 || state.exitPosition.top > 20 || !state.directChild || !state.chromeHidden || !state.copyHidden || !state.toolsHidden || !state.toolbarVisible || state.toolbarExpanded !== 'false' || state.themeVisible) throw new Error(`Collapsed fullscreen reading mode failed: ${JSON.stringify(state)}`);
     await page.click('.vm-tex-toolbar-toggle');
     state = await page.evaluate(() => ({
       open: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-tools-open'),
@@ -158,7 +162,7 @@ function between(source, from, to) {
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-mobile-fullscreen.png`, fullPage: false });
     }
 
-    await page.click('[data-vm-fullscreen-btn="reader-test"]');
+    await page.click('[data-vm-fullscreen-exit="reader-test"]');
     state = await page.evaluate(() => ({
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
@@ -258,13 +262,15 @@ function between(source, from, to) {
       return {
         active: root.classList.contains('vm-tex-fullscreen-active'),
         locked: document.body.classList.contains('vm-reader-locked'),
-        text: root.querySelector('[data-vm-fullscreen-btn="lesson-theory"]').textContent,
+        enterHidden: root.querySelector('[data-vm-fullscreen-btn="lesson-theory"]').offsetParent === null,
+        exitVisible: root.querySelector('[data-vm-fullscreen-exit="lesson-theory"]').offsetParent !== null,
+        exitOutsideTools: !root.querySelector('.vm-tex-actions').contains(root.querySelector('[data-vm-fullscreen-exit="lesson-theory"]')),
         readingOverflow: getComputedStyle(reading).overflowY,
       };
     });
-    if (!state.active || !state.locked || !state.text.includes('Thoát') || state.readingOverflow !== 'auto') throw new Error(`Split theory reader fullscreen fallback failed: ${JSON.stringify(state)}`);
+    if (!state.active || !state.locked || !state.enterHidden || !state.exitVisible || !state.exitOutsideTools || state.readingOverflow !== 'auto') throw new Error(`Split theory reader fullscreen fallback failed: ${JSON.stringify(state)}`);
     await page.click('.vm-tex-toolbar-toggle');
-    await page.click('[data-vm-fullscreen-btn="lesson-theory"]');
+    await page.click('[data-vm-fullscreen-exit="lesson-theory"]');
     console.log('PASS reader zoom, mobile fullscreen and configurable PDF popup controls');
   } finally {
     await browser.close();
