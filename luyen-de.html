@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <link rel="stylesheet" href="css/exam-portal.css?v=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -543,7 +543,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/latex-view.js?v=10.8"></script>
 <script src="js/analytics.js"></script>
@@ -837,9 +837,10 @@ document.addEventListener('click', function (event) {
     var exExists = listExams.some(function (e) { return e.id === autoExamId; });
     if (!exExists) {
       try {
-        var rSingle = await sb.from('exams').select('*').eq('id', autoExamId).single();
-        if (rSingle.data) {
-          listExams.push(rSingle.data);
+        var rSingle = await sb.rpc('vm_exam_catalog', { p_exam_id: autoExamId });
+        var singleExam = Array.isArray(rSingle.data) ? rSingle.data[0] : null;
+        if (singleExam) {
+          listExams.push(singleExam);
           startExam(autoExamId);
         }
       } catch (e) {
@@ -980,10 +981,17 @@ async function taiDanhSachDe(classIds) {
       }
     ];
   } else {
-    // Tải danh sách đề thi đã xuất bản của các lớp học sinh (hoặc chung null)
-    var query = sb.from('exams')
-      .select('id, class_id, title, duration_minutes, opens_at, closes_at, de_type, essay_prompt, allow_solution_pdf, classes(id,name,grade), exam_questions(count)')
-      .eq('published', true);
+    // Chỉ tải metadata an toàn. Nội dung đề và đáp án đi qua RPC riêng để
+    // không bao giờ xuất hiện trong payload trước khi học sinh nộp bài.
+    var r = await sb.rpc('vm_exam_catalog');
+    if (r.error) {
+      console.error('Không tải được danh sách đề an toàn:', r.error);
+      listExams = [];
+    } else {
+      listExams = (Array.isArray(r.data) ? r.data : []).filter(function (exam) {
+        return exam && exam.published !== false;
+      });
+    }
 
     if (vmPortalSlug) {
       if (!vmPortalExamIds.length) {
@@ -991,17 +999,14 @@ async function taiDanhSachDe(classIds) {
         $('dsDeThi').innerHTML = '<div class="empty card">Đơn vị chưa giao kỳ thi nào. Em quay lại sau nhé!</div>';
         return;
       }
-      query = query.in('id', vmPortalExamIds);
+      listExams = listExams.filter(function (exam) { return vmPortalExamIds.indexOf(exam.id) !== -1; });
     } else if (!isStaff) {
       if (classIds && classIds.length > 0) {
-        query = query.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
+        listExams = listExams.filter(function (exam) { return !exam.class_id || classIds.indexOf(exam.class_id) !== -1; });
       } else {
-        query = query.is('class_id', null);
+        listExams = listExams.filter(function (exam) { return !exam.class_id; });
       }
     }
-    
-    var r = await query.order('created_at', { ascending: false });
-    listExams = r.data || [];
     
     if (listExams.length > 0) {
       var rAttempts = await sb.from('attempts')
@@ -1122,13 +1127,14 @@ async function startExam(examId) {
     return;
   }
   
-  // Tải câu hỏi đề thi
-  var rQ = await sb.from('exam_questions')
-    .select('sort, questions(id, content_latex, choices, solution_latex)')
-    .eq('exam_id', examId)
-    .order('sort');
-    
-  examQuestions = (rQ.data || []).map(function (item) { return item.questions; }).filter(Boolean);
+  // Máy chủ chỉ trả câu hỏi đã gỡ cờ đáp án/lời giải trước khi nộp.
+  var rQ = await sb.rpc('vm_exam_load', { p_exam_id: examId });
+  if (rQ.error || !rQ.data) {
+    alert('Không tải được đề thi an toàn. Em hãy tải lại trang rồi thử lại.');
+    return;
+  }
+  if (rQ.data.exam) currentExam = Object.assign({}, currentExam, rQ.data.exam);
+  examQuestions = (rQ.data.questions || []).map(function (item) { return item.questions; }).filter(Boolean);
   vmCapNhatNutPdfWorkspace('exam');
 
   // Nếu là Giáo viên/Admin: vào thẳng chế độ làm bài preview (lượt luyện tập ảo) không lưu CSDL
@@ -1156,13 +1162,8 @@ async function startExam(examId) {
   }
 
   // Lấy lịch sử lượt làm bài thi của học sinh
-  var rAtt = await sb.from('attempts')
-    .select('id, score, started_at, submitted_at, attempt_answers(question_id, chosen_key, is_correct)')
-    .eq('exam_id', examId)
-    .eq('student_id', studentInfo.id)
-    .order('started_at', { ascending: false });
-    
-  var atts = rAtt.data || [];
+  var rAtt = await sb.rpc('vm_exam_state', { p_exam_id: examId });
+  var atts = Array.isArray(rAtt.data) ? rAtt.data : [];
   // Lượt CHÍNH THỨC = lượt đã nộp ĐẦU TIÊN (sớm nhất) — đây là lượt được lưu & tính điểm.
   var submittedAtts = atts.filter(function (a) { return a.submitted_at; })
     .sort(function (a, b) { return new Date(a.started_at) - new Date(b.started_at); });
@@ -1206,17 +1207,13 @@ async function startExam(examId) {
     timeLeftSeconds = Math.max(0, totalSeconds - elapsed);
   } else {
     // Lượt làm mới hoàn toàn
-    var rNewAtt = await sb.from('attempts').insert({
-      student_id: studentInfo.id,
-      exam_id: examId,
-      started_at: new Date().toISOString()
-    }).select('id, started_at').single();
+    var rNewAtt = await sb.rpc('vm_exam_start', { p_exam_id: examId });
     
     if (rNewAtt.error) {
       alert('Không khởi tạo được lượt làm bài: ' + rNewAtt.error.message);
       return;
     }
-    currentAttempt = rNewAtt.data;
+    currentAttempt = Object.assign({ attempt_answers: [] }, rNewAtt.data);
     timeLeftSeconds = ex.duration_minutes * 60;
   }
   
@@ -1761,45 +1758,21 @@ async function chonDapAnExam(qId, key) {
   renderExamNav(false);
   
   try {
-    var isCorrect = false;
-    if (q) {
-      var isPartI = q.choices && q.choices.length === 4 && ['A', 'B', 'C', 'D'].includes(q.choices[0].key);
-      var isPartII = q.choices && q.choices.length === 4 && ['a', 'b', 'c', 'd'].includes(q.choices[0].key);
-      var isPartIII = !q.choices || q.choices.length === 1 || q.choices[0].key === 'short';
-      
-      if (isPartI) {
-        var correctChoice = q.choices.find(function (c) { return c.correct; });
-        if (correctChoice && correctChoice.key === key) isCorrect = true;
-      } else if (isPartII) {
-        var tfAns = {};
-        try { tfAns = JSON.parse(key); } catch (e) {}
-        var allCorrect = true;
-        q.choices.forEach(function (c) {
-          var correctVal = c.correct ? 'D' : 'S';
-          if (tfAns[c.key] !== correctVal) allCorrect = false;
-        });
-        isCorrect = allCorrect;
-      } else if (isPartIII) {
-        var correctVal = q.choices[0] ? q.choices[0].latex : '';
-        isCorrect = isShortAnswerCorrect(key, correctVal);
-      }
-    }
-    
     // Cập nhật đáp án trong bộ nhớ (dùng cho cả lượt chính thức lẫn luyện tập)
     if (!currentAttempt.attempt_answers) currentAttempt.attempt_answers = [];
     var memo = currentAttempt.attempt_answers.find(function (a) { return a.question_id === qId; });
-    if (memo) { memo.chosen_key = key; memo.is_correct = isCorrect; }
-    else currentAttempt.attempt_answers.push({ question_id: qId, chosen_key: key, is_correct: isCorrect });
+    if (memo) { memo.chosen_key = key; memo.is_correct = null; }
+    else currentAttempt.attempt_answers.push({ question_id: qId, chosen_key: key, is_correct: null });
 
     // Lượt luyện tập: KHÔNG ghi vào cơ sở dữ liệu
     if (currentAttempt.is_practice || !currentAttempt.id) return;
 
-    await sb.from('attempt_answers').upsert({
-      attempt_id: currentAttempt.id,
-      question_id: qId,
-      chosen_key: key,
-      is_correct: isCorrect
+    var saved = await sb.rpc('vm_exam_save_answer', {
+      p_attempt_id: currentAttempt.id,
+      p_question_id: qId,
+      p_chosen_key: key
     });
+    if (saved.error) throw saved.error;
   } catch (err) {
     console.error('Lỗi tự động lưu đáp án:', err);
   }
@@ -1853,9 +1826,7 @@ async function nopBaiExam(isAuto) {
       return;
     }
 
-    var rAtt = await vmCapNhatVaXacNhanLuotLam({
-      submitted_at: new Date().toISOString()
-    }, 'id, submitted_at');
+    var rAtt = await sb.rpc('vm_exam_submit', { p_attempt_id: currentAttempt.id });
     
     if (rAtt.error) {
       alert('Lỗi nộp bài: ' + rAtt.error.message);
@@ -1865,7 +1836,7 @@ async function nopBaiExam(isAuto) {
       return;
     }
     
-    currentAttempt = rAtt.data;
+    currentAttempt = Object.assign({ attempt_answers: [] }, rAtt.data);
     currentAttempt.attempt_answers = [];
     alert('✓ Bài làm tự luận của em đã được nộp thành công!');
     moPhongTuLuan(currentExam, true); // true = isSubmitted
@@ -1880,6 +1851,29 @@ async function nopBaiExam(isAuto) {
   
   var btn = $('wkSubmitBtn');
   btn.disabled = true; btn.textContent = '⏳ Đang nộp bài...';
+
+  // Lượt chính thức luôn được chấm ở máy chủ. Trình duyệt chỉ gửi lựa chọn,
+  // không có đáp án đúng để tự tính hay sửa điểm.
+  if (!currentAttempt.is_practice && currentAttempt.id) {
+    var secureSubmit = await sb.rpc('vm_exam_submit', { p_attempt_id: currentAttempt.id });
+    if (secureSubmit.error) {
+      alert('Lỗi nộp bài: ' + secureSubmit.error.message);
+      btn.disabled = false; btn.textContent = 'Nộp bài thi';
+      return;
+    }
+    var refreshedQuestions = await sb.rpc('vm_exam_load', { p_exam_id: currentExam.id });
+    if (!refreshedQuestions.error && refreshedQuestions.data) {
+      currentExam = Object.assign({}, currentExam, refreshedQuestions.data.exam || {});
+      examQuestions = (refreshedQuestions.data.questions || []).map(function (item) { return item.questions; }).filter(Boolean);
+    }
+    var refreshedState = await sb.rpc('vm_exam_state', { p_exam_id: currentExam.id });
+    var secureAttempts = Array.isArray(refreshedState.data) ? refreshedState.data : [];
+    currentAttempt = secureAttempts.find(function (item) { return item.id === secureSubmit.data.id; }) || secureSubmit.data;
+    currentAttempt.attempt_answers = currentAttempt.attempt_answers || [];
+    window.justSubmitted = true;
+    showExamResults();
+    return;
+  }
   
   var sumEarned = 0;
   var sumMax = 0;
@@ -2138,8 +2132,7 @@ async function huyLamBai() {
   
   if (currentAttempt && currentAttempt.id && !currentAttempt.is_practice) {
     try {
-      await sb.from('attempt_answers').delete().eq('attempt_id', currentAttempt.id);
-      await sb.from('attempts').delete().eq('id', currentAttempt.id);
+      await sb.rpc('vm_exam_cancel', { p_attempt_id: currentAttempt.id });
     } catch (e) {
       console.error('Lỗi khi hủy lượt làm bài:', e);
     }

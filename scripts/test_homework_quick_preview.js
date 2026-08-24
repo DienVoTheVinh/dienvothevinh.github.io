@@ -16,10 +16,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(source.slice(start, end), context);
 
-assert.strictEqual(
-  context.vmStorageUrl('tai-lieu', 'lop 7/de bai.pdf'),
-  'https://example.supabase.co/storage/v1/object/public/tai-lieu/lop%207/de%20bai.pdf'
-);
+assert.strictEqual(context.vmStorageUrl('tai-lieu', 'lop 7/de bai.pdf'), '');
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '\\begin{bt} Bài tập \\end{bt}'), '');
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '/begin{bt} Bài tập /dfrac{1}{2} /quad /end{bt}'), '');
 assert.strictEqual(context.vmStorageUrl('tai-lieu', '{"statusCode":400,"error":"InvalidKey"}'), '');

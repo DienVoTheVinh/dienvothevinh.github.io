@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <link rel="stylesheet" href="css/student-experience.css?v=3">
 <!-- Thư viện biểu đồ Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -524,7 +524,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.7"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1697,14 +1697,10 @@ async function taiDuLieuTheoDoi() {
     allAttendance = {};
     attList.forEach(function (a) { allAttendance[a.session_id] = a; });
     
-    var queryEx = sb.from('exams').select('id, title, opens_at, closes_at').eq('published', true);
-    if (classIds.length > 0) {
-      queryEx = queryEx.or('class_id.is.null,class_id.in.(' + classIds.join(',') + ')');
-    } else {
-      queryEx = queryEx.is('class_id', null);
-    }
-    var rEx = await queryEx;
-    allExams = rEx.data || [];
+    var safeExams = await vmSafeExamCatalog();
+    allExams = safeExams.filter(function (exam) {
+      return !exam.class_id || classIds.indexOf(exam.class_id) !== -1;
+    });
     
     // Áp dụng bộ lọc giáo viên hiện tại nếu có
     var gvChon = $('locGiaoVienBaoCao') ? $('locGiaoVienBaoCao').value : '';

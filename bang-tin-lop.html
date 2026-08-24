@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <script>
   window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
 </script>
@@ -164,7 +164,7 @@ body.theme-duyminh { --accent:#C81E27; --accent-soft:#FCEBEC; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -265,6 +265,7 @@ async function taiTatCa(){
   var rp = await sb.from('class_posts').select('*').eq('class_id', classId).order('pinned',{ascending:false}).order('created_at',{ascending:false});
   if(rp.error){ box.innerHTML='<div class="bt-empty">Lỗi tải bảng tin: '+esc(rp.error.message)+'</div>'; return; }
   postsCache = rp.data || [];
+  await Promise.all(postsCache.map(chuanBiAnhBangTin));
 
   reactMap={}; myReacts={}; cmtMap={};
   var rr = await sb.from('class_post_reactions').select('post_id, user_id').eq('class_id', classId);
@@ -287,7 +288,7 @@ function veMotBai(p){
   var likes = reactMap[p.id]||0;
   var liked = !!myReacts[p.id];
   var cmts = cmtMap[p.id]||[];
-  var cover = p.cover_url ? '<img class="cover" src="'+esc(p.cover_url)+'" alt="">' : '';
+  var cover = p._coverDisplay ? '<img class="cover" src="'+esc(p._coverDisplay)+'" alt="">' : '';
   var pin = p.pinned ? '<span class="pin">📌 Ghim</span>' : '';
   var adminBtns = canManage ? '<div class="bt-admin">'+
       '<button onclick="ghim(\''+p.id+'\','+(p.pinned?'false':'true')+')">'+(p.pinned?'Bỏ ghim':'📌 Ghim')+'</button>'+
@@ -305,7 +306,7 @@ function veMotBai(p){
     '<div class="pad">'+
       '<div class="meta">'+pin+'<span class="who">'+esc(p.author_name||'Giáo viên')+'</span> · <span>'+ngay+'</span></div>'+
       '<h2 class="title">'+esc(p.title)+'</h2>'+
-      '<div class="article">'+renderBlog(p.body||'')+'</div>'+
+      '<div class="article">'+renderBlog(p._bodyDisplay||p.body||'')+'</div>'+
       '<div class="bt-bar">'+
         '<button class="bt-like'+(liked?' on':'')+'" id="like-'+p.id+'" onclick="thaTim(\''+p.id+'\')">'+(liked?'❤️':'🤍')+' <span id="likec-'+p.id+'">'+likes+'</span></button>'+
         '<button class="bt-cmttoggle" onclick="moBinhLuan(\''+p.id+'\')">💬 <span>'+cmts.length+'</span> bình luận</button>'+
@@ -375,23 +376,43 @@ function chen(before, after, ph){
 function chonAnhChen(){ $('fileChen').click(); }
 function chonAnhBia(){ $('fileBia').click(); }
 function tenFileAn(name){ return Date.now()+'-'+String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9.\-]+/g,'-').toLowerCase(); }
+function vmBangTinMarker(path){ return 'vmasset:hinh-anh:'+encodeURIComponent(path); }
+function vmBangTinPath(value){
+  var raw=String(value||'');
+  var prefix='vmasset:hinh-anh:';
+  if(raw.indexOf(prefix)===0){ try{return decodeURIComponent(raw.slice(prefix.length));}catch(_){return raw.slice(prefix.length);} }
+  return raw;
+}
+async function chuanBiAnhBangTin(p){
+  var body=String(p.body||'');
+  var refs=[];
+  body.replace(/vmasset:hinh-anh:[^\s)]+/g,function(x){refs.push(x);return x;});
+  body.replace(/https?:\/\/[^\s)]+\/storage\/v1\/object\/public\/hinh-anh\/[^\s)]+/g,function(x){refs.push(x);return x;});
+  var unique=Array.from(new Set(refs));
+  for(var i=0;i<unique.length;i++){
+    var signed=await vmSignedCourseAsset('hinh-anh',vmBangTinPath(unique[i]));
+    if(signed) body=body.split(unique[i]).join(signed);
+  }
+  p._bodyDisplay=body;
+  p._coverDisplay=p.cover_url ? await vmSignedCourseAsset('hinh-anh',vmBangTinPath(p.cover_url)) : '';
+}
 async function uploadAnh(file){
   var path='bang-tin/'+tenFileAn(file.name);
   var up=await sb.storage.from('hinh-anh').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
   if(up.error) throw new Error(up.error.message);
-  return sb.storage.from('hinh-anh').getPublicUrl(path).data.publicUrl;
+  return {stored:vmBangTinMarker(path),preview:await vmSignedCourseAsset('hinh-anh',path)};
 }
 async function chenAnh(file){
   var st=$('upStatus'); st.textContent='⏳ Đang tải ảnh…';
-  try{ var url=await uploadAnh(file); chen('\n![]('+url+')\n','',''); st.textContent='✓ Đã chèn ảnh.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
+  try{ var asset=await uploadAnh(file); chen('\n![]('+asset.stored+')\n','',''); st.textContent='✓ Đã chèn ảnh.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
 }
 async function taiAnhBia(file){
   var st=$('upStatus'); st.textContent='⏳ Đang tải ảnh bìa…';
-  try{ var url=await uploadAnh(file); coverUrl=url; veAnhBia(); st.textContent='✓ Đã đặt ảnh bìa.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
+  try{ var asset=await uploadAnh(file); coverUrl=asset.stored; veAnhBia(asset.preview); st.textContent='✓ Đã đặt ảnh bìa.'; setTimeout(function(){st.textContent='';},2000);}catch(e){ st.textContent='❌ '+e.message; }
 }
-function veAnhBia(){
+async function veAnhBia(preview){
   var box=$('coverBox');
-  if(coverUrl){ box.classList.add('has'); $('coverPlaceholder').style.display='none'; var im=$('coverImg'); im.src=coverUrl; im.style.display='block'; $('coverRm').style.display='block'; }
+  if(coverUrl){ box.classList.add('has'); $('coverPlaceholder').style.display='none'; var im=$('coverImg'); im.src=preview||await vmSignedCourseAsset('hinh-anh',vmBangTinPath(coverUrl)); im.style.display='block'; $('coverRm').style.display='block'; }
   else { box.classList.remove('has'); $('coverPlaceholder').style.display='block'; $('coverImg').style.display='none'; $('coverRm').style.display='none'; }
 }
 function xoaAnhBia(ev){ ev.stopPropagation(); coverUrl=''; veAnhBia(); }

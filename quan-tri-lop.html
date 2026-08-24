@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -1228,7 +1228,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.7"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/latex-view.js?v=10.6"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/analytics.js"></script>
@@ -3218,9 +3218,8 @@ function veAnhHienCo() {
   var html = '';
   // Ảnh cũ đã lưu
   html += anhDaCo.map(function (p, i) {
-    var u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
     return '<div style="position:relative">' +
-      '<img src="' + u + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<img ' + vmPrivateAssetImageAttrs('hinh-anh', p) + ' style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
       '<button type="button" onclick="boAnh(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
       '</div>';
   }).join('');
@@ -3236,6 +3235,7 @@ function veAnhHienCo() {
   }).join('');
   
   box.innerHTML = html;
+  vmHydratePrivateAssets(box);
 }
 function boAnh(i) { anhDaCo.splice(i, 1); veAnhHienCo(); }
 function boAnhMoi(i) { selectedImageFiles.splice(i, 1); veAnhHienCo(); }
@@ -3251,22 +3251,20 @@ function veBtvnAnh() {
     .concat(hwSelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
     
   box.innerHTML = combined.map(function (item, i) {
-    var u = '';
-    if (item.type === 'old') {
-      u = VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + item.value;
-    } else {
-      u = URL.createObjectURL(item.value);
-    }
+    var imageAttrs = item.type === 'old'
+      ? vmPrivateAssetImageAttrs('hinh-anh', item.value)
+      : 'src="' + URL.createObjectURL(item.value) + '"';
     
     var prevBtn = i > 0 ? '<button type="button" onclick="dichChuyenBtvnAnh(' + i + ', -1)" title="Di chuyển lên trước" style="position:absolute;bottom:4px;left:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">◀</button>' : '';
     var nextBtn = i < combined.length - 1 ? '<button type="button" onclick="dichChuyenBtvnAnh(' + i + ', 1)" title="Di chuyển ra sau" style="position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(2px)">▶</button>' : '';
     
     return '<div draggable="true" ondragstart="keoBtvnAnh(event, ' + i + ')" ondragover="event.preventDefault()" ondrop="thaBtvnAnh(event, ' + i + ')" style="position:relative;width:72px;height:72px;border-radius:8px;cursor:move;overflow:visible">' +
-      '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
+      '<img ' + imageAttrs + ' style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
       prevBtn + nextBtn +
       '<button type="button" onclick="boBtvnAnhMoi(' + i + ')" title="Gỡ ảnh" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.2)">×</button>' +
       '</div>';
   }).join('');
+  vmHydratePrivateAssets(box);
 }
 function dichChuyenBtvnAnh(index, huong) {
   var combined = hwAnhDaCo.map(function (p) { return { type: 'old', value: p }; })
@@ -3357,15 +3355,18 @@ function veBtvn2Anh() {
   var combined = hw2AnhDaCo.map(function (p) { return { type: 'old', value: p }; })
     .concat(hw2SelectedFiles.map(function (f) { return { type: 'new', value: f }; }));
   box.innerHTML = combined.map(function (item, i) {
-    var u = item.type === 'old' ? (VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + item.value) : URL.createObjectURL(item.value);
+    var imageAttrs = item.type === 'old'
+      ? vmPrivateAssetImageAttrs('hinh-anh', item.value)
+      : 'src="' + URL.createObjectURL(item.value) + '"';
     var prevBtn = i > 0 ? '<button type="button" onclick="dichChuyenBtvn2Anh(' + i + ', -1)" style="position:absolute;bottom:4px;left:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem">◀</button>' : '';
     var nextBtn = i < combined.length - 1 ? '<button type="button" onclick="dichChuyenBtvn2Anh(' + i + ', 1)" style="position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:.6rem">▶</button>' : '';
     return '<div draggable="true" ondragstart="keoBtvn2Anh(event, ' + i + ')" ondragover="event.preventDefault()" ondrop="thaBtvn2Anh(event, ' + i + ')" style="position:relative;width:72px;height:72px;border-radius:8px;cursor:move;overflow:visible">' +
-      '<img src="' + u + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
+      '<img ' + imageAttrs + ' style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)" draggable="false">' +
       prevBtn + nextBtn +
       '<button type="button" onclick="boBtvn2AnhMoi(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center">×</button>' +
       '</div>';
   }).join('');
+  vmHydratePrivateAssets(box);
 }
 function _btvn2Rebuild(combined) {
   hw2AnhDaCo = []; hw2SelectedFiles = [];
@@ -5330,7 +5331,7 @@ function chenDongCau(id) {
 function buildPdfUrl(p) {
   if (!p) return '';
   if (p.startsWith('http://') || p.startsWith('https://')) return p;
-  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + p;
+  return '';
 }
 
 async function taiTaiLieuLop() {
@@ -5346,6 +5347,9 @@ async function taiTaiLieuLop() {
     .order('created_at', { ascending: false });
 
   var docs = rDocs.data || [];
+  await Promise.all(docs.map(async function (doc) {
+    doc.file_path = await vmSignedCourseAsset('tai-lieu', doc.file_path);
+  }));
 
   var rLessons = await sb.from('lessons')
     .select('id, title, topic_id, document_id, test_document_id, homework_document_id, topics(id, name, sort)')
@@ -5498,8 +5502,7 @@ async function luuTailieuLop(e) {
       var rUpload = await sb.storage.from('tai-lieu').upload(filePath, file);
       if (rUpload.error) throw new Error('Lỗi tải tệp lên: ' + rUpload.error.message);
       
-      var rUrl = sb.storage.from('tai-lieu').getPublicUrl(filePath);
-      path = rUrl.data.publicUrl;
+      path = filePath;
     } else {
       path = $('tlUrl').value.trim();
       if (!path) throw new Error('Vui lòng nhập đường dẫn URL.');

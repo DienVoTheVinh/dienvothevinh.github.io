@@ -1930,6 +1930,49 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
   * { scroll-behavior: auto !important; }
 }
 
+/* Performance budget: transitions stay on compositor-friendly properties. */
+.btn, .tab-btn, .navlinks a, .nav-dropdown-btn, .card, .vm-install-btn {
+  transition-property: transform, opacity, color, background-color, border-color, box-shadow !important;
+  transition-duration: .18s !important;
+  transition-timing-function: cubic-bezier(.2,.8,.2,1) !important;
+}
+.vm-smooth-enter {
+  opacity: 0;
+  transform: translate3d(0, 7px, 0);
+}
+.vm-smooth-enter.is-ready {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: opacity .24s ease-out, transform .24s cubic-bezier(.2,.8,.2,1);
+}
+.vm-page-hidden *, .vm-page-hidden *::before, .vm-page-hidden *::after {
+  animation-play-state: paused !important;
+}
+.student-results-list > *, #dsDeThi > .exam-card, .learning-timeline > *, .submission-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+html.vm-lite-motion body::before,
+html.vm-lite-motion body::after,
+html.vm-lite-motion .vm-aurora span {
+  animation: none !important;
+  filter: blur(56px) !important;
+}
+html.vm-lite-motion .card,
+html.vm-lite-motion .topbar,
+html.vm-lite-motion .modal-content {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.vm-lite-motion [class*="glow"],
+html.vm-lite-motion [class*="pulse"],
+html.vm-lite-motion [class*="shimmer"] {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vm-smooth-enter, .vm-smooth-enter.is-ready { opacity: 1; transform: none; }
+}
+
 /* Cuộn mượt toàn trang */
 html { scroll-behavior: smooth; }
 

@@ -43,9 +43,9 @@
       sb.from('lessons')
         .select('id,title,class_id,created_at,homework_text,homework_images,homework_document_id,homework_latex_content,homework_due,test_document_id,test_latex_content,test_active,test_started_at,test_deadline,linked_exam_id,linked_exam_ids,topics(name)')
         .in('class_id', ids).eq('published', true).order('created_at', {ascending:false}).limit(14),
-      sb.from('exams')
-        .select('id,title,class_id,created_at,opens_at,closes_at,de_type')
-        .in('class_id', ids).eq('published', true).order('created_at', {ascending:false}).limit(10),
+      vmSafeExamCatalog().then(function (rows) {
+        return rows.filter(function (exam) { return !exam.class_id || ids.indexOf(exam.class_id) !== -1; }).slice(0, 10);
+      }),
       sb.from('class_posts')
         .select('id,title,class_id,created_at')
         .in('class_id', ids).order('pinned', {ascending:false}).order('created_at', {ascending:false}).limit(3),
@@ -55,7 +55,7 @@
     ]);
     var missionData = results[4] && results[4].data && !results[4].data.error ? results[4].data : {};
     if (missionData && Object.keys(missionData).length) window._nvData = missionData;
-    return {lessons:results[0].data || [], exams:results[1].data || [], posts:results[2].data || [], graded:results[3] || 0,
+    return {lessons:results[0].data || [], exams:results[1] || [], posts:results[2].data || [], graded:results[3] || 0,
       tasks:Array.isArray(missionData.tasks) ? missionData.tasks : [], reminders:results[5].data || []};
   }
 

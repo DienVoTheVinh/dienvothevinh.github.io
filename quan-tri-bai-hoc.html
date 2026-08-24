@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -402,7 +402,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/latex-view.js?v=10.6"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
@@ -922,7 +922,7 @@ var anhDaCo = []; // đường dẫn các ảnh đang gắn với bài (khi sử
 var selectedImageFiles = [];
 
 function urlAnh(p) {
-  return VM.SUPABASE_URL + '/storage/v1/object/public/hinh-anh/' + p;
+  return /^https?:\/\//i.test(String(p || '')) ? p : '';
 }
 
 function veAnhHienCo() {
@@ -934,7 +934,7 @@ function veAnhHienCo() {
   // Ảnh cũ đã lưu
   html += anhDaCo.map(function (p, i) {
     return '<div style="position:relative">' +
-      '<img src="' + urlAnh(p) + '" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
+      '<img ' + vmPrivateAssetImageAttrs('hinh-anh', p) + ' style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2)">' +
       '<button type="button" onclick="boAnh(' + i + ')" title="Gỡ ảnh này" ' +
         'style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--err);color:#fff;cursor:pointer;font-size:.75rem;line-height:1">×</button>' +
       '</div>';
@@ -952,6 +952,7 @@ function veAnhHienCo() {
   }).join('');
   
   box.innerHTML = html;
+  vmHydratePrivateAssets(box);
 }
 function boAnh(i) { anhDaCo.splice(i, 1); veAnhHienCo(); }
 function boAnhMoi(i) { selectedImageFiles.splice(i, 1); veAnhHienCo(); }
