@@ -146,6 +146,25 @@
       latexTaiLieuRaHTML(response.data.content, { title:titleFor(item), kind:item.kind, showSolutions:true }) + '</section>';
   }
 
+  function lessonResultHref(item) {
+    if (!item || !item.lesson_id) return '';
+    var query = new URLSearchParams({
+      id:String(item.lesson_id),
+      action:'graded',
+      kind:String(item.kind || 'homework'),
+      submission:String(item.id || ''),
+      from:'ket-qua'
+    });
+    return 'bai-hoc?' + query.toString();
+  }
+
+  function closeResultDialog() {
+    var dialog = document.getElementById('studentResultDialog');
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+    else dialog.removeAttribute('open');
+  }
+
   async function openResult(id) {
     var item = results.find(function (row) { return String(row.id) === String(id); });
     if (!item) return;
@@ -162,15 +181,19 @@
     if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
     else dialog.setAttribute('open', '');
     var solutionHtml = await loadSolutionHtml(item);
-    inner.innerHTML = '<div class="student-result-dialog-head"><div><div class="sec-label">' + esc(labelFor(item.kind)) + '</div><h2 id="studentResultDialogTitle">' + esc(titleFor(item)) + '</h2></div><button class="student-result-dialog-close" type="button" aria-label="Đóng">✕</button></div>' +
+    var contextHref = lessonResultHref(item);
+    inner.innerHTML = '<header class="student-result-viewer-bar"><div class="student-result-viewer-context"><span class="student-result-viewer-kicker">KẾT QUẢ</span><div class="student-result-viewer-crumbs"><span>' + esc(itemClass ? itemClass.name : 'Lớp học') + '</span><b>›</b><strong>' + esc(titleFor(item)) + '</strong></div></div><div class="student-result-viewer-actions">' +
+      (contextHref ? '<a class="btn btn-secondary btn-sm" href="' + esc(contextHref) + '">Mở đúng vị trí trong bài học ↗</a>' : '') +
+      '<button class="student-result-dialog-close" type="button" aria-label="Đóng và quay lại danh sách Kết quả"><span>✕</span><b>Đóng</b></button></div></header>' +
+      '<main class="student-result-viewer-content"><section class="student-result-viewer-title"><div><div class="sec-label">' + esc(labelFor(item.kind)) + '</div><h2 id="studentResultDialogTitle">' + esc(titleFor(item)) + '</h2></div><p>Đang xem toàn bộ phản hồi tại đúng bài đã nộp. Đóng cửa sổ để tiếp tục xem các kết quả khác.</p></section>' +
       '<div class="student-result-dialog-meta">' + (itemClass ? '<span>🏫 ' + esc(itemClass.name) + '</span>' : '') + '<span>🕐 ' + esc(formatDate(item.graded_at || item.submitted_at)) + '</span>' + '</div>' +
       (assessment ? '<div class="student-result-assessment-banner ' + assessment.className + '"><span>' + assessment.icon + '</span><div><small>Mức đánh giá</small><b>' + assessment.label + '</b></div></div>' : '') +
       feedbackHtml +
       (corrected.length ? '<section class="student-result-file-section"><h3>✍️ Bài giáo viên đã sửa</h3><div class="student-result-files">' + fileCards(corrected) + '</div></section>' : '') +
       (submitted.length ? '<section class="student-result-file-section"><h3>📎 Bài em đã nộp</h3><div class="student-result-files">' + fileCards(submitted) + '</div></section>' : '') +
       solutionHtml +
-      '<p class="student-result-inline-note">Toàn bộ điểm, nhận xét, file sửa và lời giải đã mở được xem ngay tại đây; em không cần quay lại bài giảng.</p>';
-    inner.querySelector('.student-result-dialog-close').addEventListener('click', function () { dialog.close(); });
+      '<p class="student-result-inline-note">Điểm, nhận xét, file sửa và lời giải đã mở được tập trung trong một không gian xem; dữ liệu của bài khác vẫn giữ nguyên ở danh sách Kết quả.</p></main>';
+    inner.querySelector('.student-result-dialog-close').addEventListener('click', closeResultDialog);
     if (typeof renderToanTrong === 'function') renderToanTrong(inner);
     else if (typeof renderLatex === 'function') renderLatex(inner);
     if (typeof vmRenderTikzTrong === 'function') vmRenderTikzTrong(inner);
@@ -261,7 +284,7 @@
   });
 
   document.getElementById('studentResultDialog').addEventListener('click', function (event) {
-    if (event.target === this) this.close();
+    if (event.target === this) closeResultDialog();
   });
 
   document.getElementById('studentResultClassFilter').addEventListener('change', function () { activeClass = this.value; render(); });

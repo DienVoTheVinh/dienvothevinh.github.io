@@ -265,15 +265,15 @@
   async function renderStudentHome(profile, box, actions, title, sub) {
     document.body.classList.add('vm-home-student');
     hideInternalInstallPanel();
-    title.textContent = 'Cập nhật học tập mới nhất';
-    sub.textContent = 'Mọi bài giảng, bài tập và bài kiểm tra từ các lớp của em — không cần chọn từng lớp.';
-    actions.innerHTML = '<div class="vm-student-home-grid"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><section class="vm-student-main-card">' +
+    title.textContent = '';
+    sub.textContent = '';
+    actions.innerHTML = '<div class="vm-student-home-grid"><section class="vm-student-main-card">' +
       '<div id="vmRankHome" class="vm-rank-home-slot" aria-live="polite"></div>' +
       '<div class="vm-student-card-head"><div><span class="vm-student-kicker">HÔM NAY CỦA EM</span><h3>Việc cần làm & cập nhật</h3><p>Ưu tiên việc quan trọng trước, vẫn giữ đầy đủ thông tin từ mọi lớp.</p></div><a class="btn btn-primary btn-sm" href="lop-hoc">Xem tất cả bài học →</a></div>' +
       '<section id="vmStudentPriority" class="vm-student-priority" hidden aria-label="Việc nên làm trước"></section>' +
       '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
-      '<aside class="vm-student-side"><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
+      '<aside class="vm-student-side"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
       '<section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
     moveLiveCards();
     box.classList.add('is-ready');
