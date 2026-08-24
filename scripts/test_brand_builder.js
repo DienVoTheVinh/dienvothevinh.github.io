@@ -25,6 +25,7 @@ const lesson = compileInline('bai-hoc.html');
 const classNews = compileInline('bang-tin-lop.html');
 const migration = read('supabase/migrations/20260820160031_brand_template_builder.sql');
 const goldMigration = read('supabase/migrations/20260822065653_restore_vinhmath_signature_gold.sql');
+const wordmarkMigration = read('supabase/migrations/20260824161736_add_brand_wordmark_colors.sql');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
 
@@ -34,6 +35,9 @@ expect(manager.includes('id="previewLogoBox"') && manager.includes("addEventList
 expect(manager.includes("PRESETS={") && manager.includes('vinhmath:') && manager.includes('map:') && manager.includes('duyminh:'), 'Brand presets are incomplete');
 expect(manager.includes("primary_color:'#FFD21A'") && manager.includes("secondary_color:'#DD9400'") && manager.includes("accent_color:'#DD9400'") && manager.includes("accent_soft_color:'#FCF4E6'"), 'VinhMath signature gold preset has regressed');
 expect(manager.includes("map:{label:'M.A.P'") && manager.includes("primary_color:'#1B2644'") && manager.includes("duyminh:{label:'Duy Minh'") && manager.includes("primary_color:'#C81E27'"), 'M.A.P or Duy Minh preset was changed unexpectedly');
+expect(manager.includes('id="brandWordmarkPrimary"') && manager.includes('id="brandWordmarkSecondary"'), 'Independent wordmark text fields are missing');
+expect(manager.includes("['wordmark_primary_color','Chữ thương hiệu — vế đầu']") && manager.includes("['wordmark_secondary_color','Chữ thương hiệu — vế sau']"), 'Independent wordmark color controls are missing');
+expect(manager.includes('wordmark.replaceChildren(first,second)'), 'Wordmark preview must render both parts safely');
 expect(manager.includes("file.size>2097152") && manager.includes("image/webp"), 'Client logo validation is incomplete');
 expect(manager.includes("profile.role!=='admin'"), 'Brand manager must be admin-only');
 expect(manager.includes("location.hostname==='127.0.0.1'") && manager.includes("get('preview')==='1'"), 'Local visual preview must be host-restricted');
@@ -46,6 +50,9 @@ for (const [name, source] of [['lop-hoc.html', studentClass], ['bai-hoc.html', l
   expect(source.includes('vmThuongHieuTuLop'), `${name} does not apply the selected brand`);
 }
 expect(shared.includes('function vmApDungBienThuongHieu') && shared.includes('function vmUrlLogoThuongHieu'), 'Shared dynamic brand runtime is incomplete');
+expect(shared.includes('function vmVeWordmarkThuongHieu') && shared.includes('function vmTachWordmarkThuongHieu'), 'Shared two-part wordmark runtime is missing');
+expect(shared.includes('wordmark_primary_text,wordmark_secondary_text,wordmark_primary_color,wordmark_secondary_color'), 'Brand queries do not include the wordmark columns');
+expect(shared.includes('container.replaceChildren(first, second)'), 'Custom wordmarks must use safe DOM rendering');
 expect(shared.includes("document.documentElement.getAttribute('data-theme') === 'dark'"), 'Dynamic brands must distinguish light and dark mode');
 expect(shared.includes('function vmBangMauToiThuongHieu') && shared.includes('function vmMauDuSangTrenNenToi'), 'Dark brand palette adaptation is missing');
 expect(shared.includes("window.addEventListener('theme-change'") && shared.includes('window.VM_ACTIVE_BRAND'), 'Active brand must be reapplied after a theme switch');
@@ -59,5 +66,13 @@ expect(migration.includes('classes_brand_id_fkey') && migration.includes('classe
 expect(migration.includes('grant select on table public.brand_templates to anon, authenticated'), 'Data API grants for brand reads are missing');
 expect(goldMigration.includes("where slug = 'vinhmath'") && goldMigration.includes("and preset = 'vinhmath'"), 'Gold repair migration must target only the canonical VinhMath template');
 expect(!/where\s+slug\s+in/i.test(goldMigration) && !/slug\s*=\s*'(?:map|duyminh)'/i.test(goldMigration), 'Gold repair migration must not modify M.A.P or Duy Minh');
+expect(wordmarkMigration.includes('add column wordmark_primary_text text') && wordmarkMigration.includes('add column wordmark_secondary_color text'), 'Wordmark schema columns are incomplete');
+expect(wordmarkMigration.includes('brand_templates_wordmark_primary_color_hex') && wordmarkMigration.includes("~ '^#[0-9A-Fa-f]{6}$'"), 'Wordmark colors need database hex constraints');
+expect(wordmarkMigration.includes("where slug = 'vinhmath'") && wordmarkMigration.includes("wordmark_primary_text = 'Vinh'"), 'Canonical VinhMath wordmark backfill is missing');
+
+for (const logo of ['uyenmath-apple-um-final.png']) {
+  const stat = fs.statSync(path.join(root, 'logo', 'uyenmath', logo));
+  expect(stat.size > 0 && stat.size <= 2097152, `${logo} must be ready for the 2 MB upload limit`);
+}
 
 console.log('PASS brand builder: schema/RLS, admin editor, logo workflow, class selection and student branding');
