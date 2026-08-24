@@ -168,9 +168,10 @@
       <div id="ttBulkResultsWrap" hidden>
         <div class="tt-bulk-results" id="ttBulkResults"></div>
         <div class="tt-bulk-actions">
-          <button class="btn btn-secondary btn-sm" id="ttBulkCopy" type="button" onclick="ttBulkSaoChep()">📋 Sao chép danh sách</button>
+          <button class="btn btn-secondary btn-sm" id="ttBulkCopy" type="button" onclick="ttBulkSaoChep()">📋 Sao chép để gửi</button>
           <button class="btn btn-secondary btn-sm" id="ttBulkDownload" type="button" onclick="ttBulkTaiCsv()">⬇ Tải file CSV</button>
         </div>
+        <p style="margin:8px 0 0;color:var(--ink-3);font-size:.78rem">Bản sao chép được chia thành từng học sinh và đánh số rõ ràng khi dán vào Zalo, Messenger hoặc email. File CSV vẫn giữ dạng bảng để lưu trữ.</p>
         <small class="tt-scope-note">Danh sách và mật khẩu chỉ nằm trong phiên trang này, không được lưu trong trình duyệt. Hãy tải hoặc sao chép trước khi rời trang.</small>
       </div>
     </div>
@@ -707,9 +708,30 @@ function ttBulkTsv() {
   return rows.map(function (row) { return row.join('\t'); }).join('\n');
 }
 
+function ttBulkVanBanChiaSe() {
+  var portal = window.ttBulkPortalDaTao;
+  var password = window.ttBulkPasswordDaTao || '';
+  var lines = ['DANH SÁCH TÀI KHOẢN HỌC SINH', 'Tổng số: ' + window.ttBulkResultsData.length + ' học sinh', ''];
+  window.ttBulkResultsData.forEach(function (item, index) {
+    var number = String(index + 1).padStart(2, '0');
+    lines.push(number + '. ' + String(item.fullName || '').toUpperCase());
+    lines.push('• Tài khoản HS: ' + (item.studentLogin || '—'));
+    lines.push('• Mật khẩu HS: ' + (item.ok ? password : '—'));
+    if (portal) {
+      lines.push('• Phân hiệu: ' + (portal.name || portal.short_name || portal.slug || '—'));
+    } else {
+      lines.push('• Tài khoản PH: ' + (item.parentLogin || '—'));
+      lines.push('• Mật khẩu PH: ' + (item.ok ? password : '—'));
+    }
+    lines.push('• Trạng thái: ' + (item.ok ? 'Đã tạo' : ('Lỗi — ' + (item.error || 'Không xác định'))));
+    if (index < window.ttBulkResultsData.length - 1) lines.push('────────────────────', '');
+  });
+  return lines.join('\n');
+}
+
 async function ttBulkSaoChep() {
   if (!window.ttBulkResultsData.length) return;
-  var textValue = ttBulkTsv();
+  var textValue = ttBulkVanBanChiaSe();
   try {
     await navigator.clipboard.writeText(textValue);
   } catch (error) {

@@ -109,7 +109,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 100000;
+  z-index: 100180;
   background: rgba(0, 0, 0, 0.75);
   align-items: center;
   justify-content: center;
@@ -334,7 +334,9 @@
 .chb-assignment-resizer:hover,.chb-assignment-resizer.is-dragging { color:var(--accent); background:var(--accent-soft); }
 .chb-assignment-note { white-space:pre-wrap; line-height:1.6; margin-bottom:12px; }
 .chb-assignment-images { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:10px; }
-.chb-assignment-images img { width:100%; max-height:260px; object-fit:contain; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
+.chb-assignment-image-button{display:block;width:100%;padding:0;border:0;border-radius:9px;background:transparent;cursor:zoom-in;text-align:inherit}
+.chb-assignment-image-button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.chb-assignment-images img { display:block;width:100%; max-height:260px; object-fit:contain; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
 .chb-assignment-latex .vm-tex-reader { padding:0; }
 .chb-assignment-latex .vm-tex-reader { width:100%; color:var(--ink); line-height:1.65; }
 .chb-assignment-latex .vm-tex-reader-head { margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--line); }
@@ -1133,7 +1135,7 @@ function veDanhSach() {
     if (images.length) {
       html += '<div class="chb-assignment-images">' + images.map(function (path, index) {
         var src = vmStorageUrl('hinh-anh', path);
-        return '<a href="' + chamEsc(src) + '" target="_blank" rel="noopener" title="Mở ảnh đề số ' + (index + 1) + '"><img src="' + chamEsc(src) + '" alt="Ảnh đề bài ' + (index + 1) + '" loading="lazy"></a>';
+        return '<button type="button" class="chb-assignment-image-button" data-url="' + chamEsc(src) + '" onclick="chbXemUrl(this.getAttribute(\'data-url\'))" title="Xem lớn ảnh đề số ' + (index + 1) + '"><img src="' + chamEsc(src) + '" alt="Ảnh đề bài ' + (index + 1) + '" loading="lazy"></button>';
       }).join('') + '</div>';
     }
     html += '<div class="chb-assignment-actions"><a class="btn btn-secondary btn-sm" href="bai-hoc?id=' + encodeURIComponent(s.lesson_id) + '&tab=' + (isTest ? 'test' : 'btvn') + '" target="_blank" rel="noopener">↗ Mở nguyên bài giảng</a></div>';
@@ -1521,7 +1523,15 @@ function chbLightboxEl() {
 }
 function chbDongLightbox() {
   var lb = document.getElementById('chbLightbox');
-  if (lb) { lb.style.display = 'none'; lb.classList.remove('is-fullscreen'); }
+  if (lb) {
+    lb.style.display = 'none'; lb.classList.remove('is-fullscreen');
+    var full = document.getElementById('chbLbFullscreen');
+    if (full) full.textContent = '⛶ Toàn màn hình';
+    var title = lb.querySelector('.lb-title');
+    if (title) title.textContent = '🖼️ Chi tiết ảnh bài làm';
+  }
+  if (window._chbReturnFocus && typeof window._chbReturnFocus.focus === 'function') window._chbReturnFocus.focus();
+  window._chbReturnFocus = null;
 }
 function chbApplyRot() {
   var img = document.getElementById('chbLbImg'); if (!img) return;
@@ -1595,6 +1605,7 @@ function chbLbNav(dir) { if (!window._chbCur) return; window._chbCur.idx += dir;
 function chbXemDrive(id) { window._chbGalleries = window._chbGalleries || {}; window._chbGalleries['_single'] = [{ id: id }]; window._chbCur = { gid: '_single', idx: 0 }; chbLbShow(); }
 function chbXemUrl(url) {
   var lb = chbLightboxEl();
+  window._chbReturnFocus = document.activeElement;
   window._chbRot = 0; window._chbZoom = 100;
   var lbImg = document.getElementById('chbLbImg');
   lbImg.onload = chbApplyRot;
@@ -1605,7 +1616,18 @@ function chbXemUrl(url) {
   if (pv) pv.style.display = 'none'; if (nx) nx.style.display = 'none';
   var fpv = document.getElementById('chbLbFooterPrev'), fnx = document.getElementById('chbLbFooterNext');
   if (fpv) fpv.style.display = 'none'; if (fnx) fnx.style.display = 'none';
+  var title = lb.querySelector('.lb-title');
+  if (title) title.textContent = '↩ Ảnh đề bài · Đóng để quay lại chấm bài';
+  lb.classList.add('is-fullscreen');
+  var full = document.getElementById('chbLbFullscreen');
+  if (full) full.textContent = '↙ Thu nhỏ';
   lb.style.display = 'flex';
+  if (window.vmCanhPopup) window.vmCanhPopup(lb, { position: 'native' });
+  requestAnimationFrame(function () {
+    chbApplyRot();
+    var close = lb.querySelector('.lb-close-btn');
+    if (close) close.focus();
+  });
 }
 
 /* ===== Viết trực tiếp lên ảnh bài nộp: canvas nền + lớp nét riêng ===== */

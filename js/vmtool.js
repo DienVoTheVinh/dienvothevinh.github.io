@@ -9,6 +9,74 @@
   var drag = { active: false, x: 0, y: 0 };
   var toastTimer = 0;
 
+  function createFullscreenController(card, button, onResize) {
+    var fallbackClass = 'vmtool-pseudo-fullscreen';
+    var fallbackAnchor = null;
+    function nativeElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+    function isActive() { return nativeElement() === card || card.classList.contains(fallbackClass); }
+    function sync() {
+      var active = isActive();
+      var anyActive = !!nativeElement() || !!document.querySelector('.' + fallbackClass);
+      document.documentElement.classList.toggle('vmtool-fullscreen-open', anyActive);
+      card.classList.toggle('vmtool-native-fullscreen', nativeElement() === card);
+      if (button) {
+        button.textContent = active ? '↙ Thu nhỏ' : '⛶ Toàn màn hình';
+        button.setAttribute('aria-pressed', String(active));
+        button.title = active ? 'Thoát toàn màn hình' : 'Mở toàn màn hình';
+      }
+      if (typeof onResize === 'function') requestAnimationFrame(function () { onResize(); });
+    }
+    function enterFallback() {
+      if (!fallbackAnchor && card.parentNode) {
+        fallbackAnchor = document.createComment('vmtool-fullscreen-anchor');
+        card.parentNode.insertBefore(fallbackAnchor, card);
+        document.body.appendChild(card);
+      }
+      card.classList.add(fallbackClass);
+      sync();
+    }
+    function exitFallback() {
+      card.classList.remove(fallbackClass);
+      if (fallbackAnchor && fallbackAnchor.parentNode) {
+        fallbackAnchor.parentNode.insertBefore(card, fallbackAnchor);
+        fallbackAnchor.remove();
+        fallbackAnchor = null;
+      }
+      sync();
+    }
+    function toggle() {
+      if (card.classList.contains(fallbackClass)) { exitFallback(); return; }
+      var current = nativeElement();
+      if (current) {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) {
+          try {
+            var exitResult = exit.call(document);
+            if (exitResult && exitResult.catch) exitResult.catch(exitFallback);
+          } catch (_error) { exitFallback(); }
+        } else exitFallback();
+        return;
+      }
+      var request = card.requestFullscreen || card.webkitRequestFullscreen;
+      if (!request) { enterFallback(); return; }
+      try {
+        var result = request.call(card, { navigationUI: 'hide' });
+        if (result && result.then) result.then(sync).catch(enterFallback);
+        else setTimeout(function () { if (!nativeElement()) enterFallback(); else sync(); }, 80);
+      } catch (_error) { enterFallback(); }
+    }
+    function onKeydown(event) {
+      if (event.key === 'Escape' && card.classList.contains(fallbackClass)) exitFallback();
+    }
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    document.addEventListener('keydown', onKeydown);
+    sync();
+    return { toggle: toggle, sync: sync, isActive: isActive };
+  }
+
+  window.VMToolFullscreen = { create: createFullscreenController };
+
   function $(id) { return document.getElementById(id); }
   function numberValue(value, fallback) {
     var result = Number(String(value).replace(',', '.'));
@@ -409,20 +477,6 @@
     canvas.addEventListener('pointerup', stop); canvas.addEventListener('pointercancel', stop);
   }
 
-  function toggleFullscreen() {
-    var card = document.querySelector('.vmtool-canvas-card');
-    if (!document.fullscreenElement) {
-      var request = card.requestFullscreen || card.webkitRequestFullscreen;
-      if (request) {
-        var result = request.call(card);
-        if (result && result.catch) result.catch(function () { showToast('Trình duyệt không cho mở toàn màn hình.'); });
-      }
-    } else {
-      var exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) exit.call(document);
-    }
-  }
-
   async function initAuth() {
     if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') return;
     if (sessionStorage.getItem('vm-guest-mode') === 'true') return;
@@ -436,8 +490,8 @@
     $('addInequality').addEventListener('click', function () { addRow({ a: 1, b: 1, op: '<=', c: 4 }); });
     document.querySelectorAll('[data-preset]').forEach(function (button) { button.addEventListener('click', function () { applyPreset(button.dataset.preset); }); });
     $('zoomIn').addEventListener('click', function () { zoom(1.18); }); $('zoomOut').addEventListener('click', function () { zoom(1 / 1.18); }); $('resetView').addEventListener('click', resetView);
-    $('fullscreenView').addEventListener('click', toggleFullscreen);
-    document.addEventListener('fullscreenchange', function () { $('fullscreenView').textContent = document.fullscreenElement ? '⛶ Thu nhỏ' : '⛶ Toàn màn hình'; setTimeout(resizeCanvas, 40); });
+    var fullscreenController = createFullscreenController(document.querySelector('#inequalityTool .vmtool-canvas-card'), $('fullscreenView'), resizeCanvas);
+    $('fullscreenView').addEventListener('click', fullscreenController.toggle);
     $('downloadPng').addEventListener('click', downloadPng); $('copyTikz').addEventListener('click', copyTikz); $('downloadTikz').addEventListener('click', downloadTikz);
     bindCanvas(); applyPreset('triangle'); resizeCanvas();
     new ResizeObserver(resizeCanvas).observe(wrap);

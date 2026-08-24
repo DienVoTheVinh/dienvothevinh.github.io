@@ -470,7 +470,6 @@
   }
   function setView(yaw,pitch,label){state.yaw=yaw;state.pitch=pitch;$('cameraHint').textContent=label;draw();}
   function downloadPng(){var link=document.createElement('a');link.download='vinhmath-'+state.model.name.toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.png';link.href=canvas.toDataURL('image/png');link.click();}
-  function fullscreen(){var request=card.requestFullscreen||card.webkitRequestFullscreen;if(request)request.call(card);}
   function runDemo(step) {
     if(state.type!=='pyramid'){state.type='pyramid';document.querySelectorAll('[data-solid-preset]').forEach(function(button){button.classList.toggle('active',button.getAttribute('data-solid-preset')==='pyramid');});updateModel(false);}
     fillPlaneSelects('planeASelects',['S','A','B']);fillPlaneSelects('planeBSelects',['S','C','D']);
@@ -491,7 +490,7 @@
     $('showFaces').addEventListener('change',function(){state.showFaces=this.checked;draw();});$('showHiddenEdges').addEventListener('change',function(){state.showHidden=this.checked;draw();});$('showGrid3d').addEventListener('change',function(){state.showGrid=this.checked;draw();});$('usePerspective').addEventListener('change',function(){state.perspective=this.checked;draw();});
     $('findIntersection').addEventListener('click',findIntersection);$('clearIntersection').addEventListener('click',function(){state.demoStep=0;document.querySelectorAll('[data-demo-step]').forEach(function(item){item.classList.remove('active');});clearResult();});
     $('runPyramidDemo').addEventListener('click',function(){runDemo(1);});document.querySelectorAll('[data-demo-step]').forEach(function(item){item.querySelector('button').addEventListener('click',function(){runDemo(Number(item.getAttribute('data-demo-step')));});});
-    $('viewIso').addEventListener('click',function(){setView(-.62,-.32,'Đang ở góc nhìn phối cảnh');});$('viewFront').addEventListener('click',function(){setView(0,0,'Đang nhìn chính diện');});$('viewTop').addEventListener('click',function(){setView(0,-Math.PI/2+.02,'Đang nhìn từ trên');});$('reset3dView').addEventListener('click',function(){state.zoom=1;setView(-.62,-.32,'Đang ở góc nhìn phối cảnh');});$('fullscreen3d').addEventListener('click',fullscreen);$('download3dPng').addEventListener('click',downloadPng);
+    $('viewIso').addEventListener('click',function(){setView(-.62,-.32,'Đang ở góc nhìn phối cảnh');});$('viewFront').addEventListener('click',function(){setView(0,0,'Đang nhìn chính diện');});$('viewTop').addEventListener('click',function(){setView(0,-Math.PI/2+.02,'Đang nhìn từ trên');});$('reset3dView').addEventListener('click',function(){state.zoom=1;setView(-.62,-.32,'Đang ở góc nhìn phối cảnh');});var fullscreenController=global.VMToolFullscreen&&global.VMToolFullscreen.create(card,$('fullscreen3d'),resizeCanvas);if(fullscreenController)$('fullscreen3d').addEventListener('click',fullscreenController.toggle);$('download3dPng').addEventListener('click',downloadPng);
     canvas.addEventListener('pointerdown',function(event){
       activePointers[event.pointerId]={x:event.clientX,y:event.clientY};canvas.setPointerCapture(event.pointerId);canvas.classList.add('dragging');
       var ids=Object.keys(activePointers);if(ids.length===2){var p=activePointers[ids[0]],q=activePointers[ids[1]];pinchDistance=Math.hypot(p.x-q.x,p.y-q.y);pinchZoom=state.zoom;state.drag.active=false;}
@@ -504,7 +503,7 @@
     });
     function endDrag(event){delete activePointers[event.pointerId];if(Object.keys(activePointers).length<2)pinchDistance=0;if(!Object.keys(activePointers).length){state.drag.active=false;canvas.classList.remove('dragging');}}
     canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('wheel',function(event){event.preventDefault();state.zoom=Math.max(.55,Math.min(2.4,state.zoom*(event.deltaY > 0 ? .9 : 1.1)));draw();},{passive:false});
-    document.addEventListener('fullscreenchange',resizeCanvas);global.addEventListener('resize',resizeCanvas);if(global.ResizeObserver){resizeObserver=new ResizeObserver(resizeCanvas);resizeObserver.observe(wrap);}
+    global.addEventListener('resize',resizeCanvas);if(global.ResizeObserver){resizeObserver=new ResizeObserver(resizeCanvas);resizeObserver.observe(wrap);}
     if(global.MutationObserver){themeObserver=new MutationObserver(function(mutations){if(mutations.some(function(item){return item.attributeName==='data-theme';}))draw();});themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}
     state.model=createModel(state.type,state);defaultPlanes();clearResult(false);setTimeout(resizeCanvas,0);
     global.VMTool3DState=state;
