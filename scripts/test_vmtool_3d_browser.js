@@ -26,11 +26,29 @@ const { chromium } = require('playwright');
         hidden2d: document.getElementById('inequalityTool').hidden,
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
         points: Object.keys(window.VMTool3DState.model.points),
+        alphaSelects: document.querySelectorAll('#planeASelects select').length,
+        betaSelects: document.querySelectorAll('#planeBSelects select').length,
       };
     });
-    if (!result.hidden2d || result.overflow || result.canvas.width < 1000 || result.canvas.height < 580 || result.stageWidth <= result.panelWidth) {
+    if (!result.hidden2d || result.overflow || result.canvas.width < 1000 || result.canvas.height < 580 || result.stageWidth <= result.panelWidth || result.alphaSelects !== 4 || result.betaSelects !== 4) {
       throw new Error(`Desktop 3D workspace is not using the screen well: ${JSON.stringify(result)}`);
     }
+
+    await page.evaluate(() => {
+      const s = window.VMTool3DState;
+      s.yaw = -.62; s.pitch = .32;
+      window.dispatchEvent(new Event('resize'));
+    });
+    await page.waitForTimeout(60);
+    const frontC = await page.evaluate(() => window.VMTool3DState.renderMeta.hiddenEdges.slice());
+    for (const edge of ['S-A', 'A-B', 'D-A']) if (!frontC.includes(edge)) throw new Error(`Missing rear edge ${edge}: ${frontC.join(', ')}`);
+    for (const edge of ['S-C', 'B-C', 'C-D']) if (frontC.includes(edge)) throw new Error(`Front edge ${edge} is dashed: ${frontC.join(', ')}`);
+
+    await page.selectOption('#planeASelects select:nth-child(4)', 'D');
+    await page.click('#findIntersection');
+    const invalidFourth = await page.locator('#intersectionResult').innerText();
+    if (!invalidFourth.includes('không đồng phẳng')) throw new Error(`Fourth-point coplanarity was not validated: ${invalidFourth}`);
+    await page.selectOption('#planeASelects select:nth-child(4)', '');
 
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
     await page.waitForTimeout(50);
@@ -103,7 +121,7 @@ const { chromium } = require('playwright');
 
     const relevantErrors = pageErrors.filter(message => !/supabase|Failed to fetch|NetworkError/i.test(message));
     if (relevantErrors.length) throw new Error(`Browser errors: ${relevantErrors.join(' | ')}`);
-    console.log('PASS VMTool 3D desktop/mobile, fixed face colors, dynamic hidden edges, dark theme and clipped plane intersection');
+    console.log('PASS VMTool 3D desktop/mobile, depth-based hidden edges, optional coplanar fourth point, dark theme and clipped plane intersection');
   } finally {
     await browser.close();
   }

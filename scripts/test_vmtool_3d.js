@@ -50,12 +50,30 @@ for (const endpoint of [clipped.a, clipped.b]) {
   }
 }
 
-const projected = {};
-for (const [name, point] of Object.entries(model.points)) {
-  projected[name] = math.projectPoint(point, { center: { x: .1, y: 1.2, z: 0 }, width: 1000, height: 700, scale: 70, yaw: -.62, pitch: -.32, cameraDistance: 20 });
+function hiddenAt(yaw, pitch) {
+  const projected = {};
+  for (const [name, point] of Object.entries(model.points)) {
+    projected[name] = math.projectPoint(point, { center: { x: .1, y: 1.2, z: 0 }, width: 1000, height: 700, scale: 70, yaw, pitch, cameraDistance: 20 });
+  }
+  return math.hiddenEdges(model, projected).map(edge => edge.join('-'));
 }
-const hidden = math.hiddenEdges(model, projected).map(edge => edge.join('-'));
-if (!hidden.includes('S-C') || hidden.includes('S-A')) throw new Error(`Phân loại cạnh khuất theo góc nhìn chưa đúng: ${hidden.join(', ')}`);
+
+// Góc hồi quy từ phản hồi thực tế: C nằm phía trước, A nằm sau khối.
+// SC, BC, CD phải là nét liền; SA, AB, DA bị các mặt trước che và phải là nét đứt.
+const frontC = hiddenAt(-.62, .32);
+for (const edge of ['S-A', 'A-B', 'D-A']) {
+  if (!frontC.includes(edge)) throw new Error(`Thiếu cạnh khuất ${edge} ở góc nhìn phía C: ${frontC.join(', ')}`);
+}
+for (const edge of ['S-C', 'B-C', 'C-D']) {
+  if (frontC.includes(edge)) throw new Error(`Cạnh trực diện ${edge} bị vẽ nét đứt sai: ${frontC.join(', ')}`);
+}
+
+// Khi xoay sang phía đối diện, tập cạnh khuất phải đổi theo độ sâu chứ không phụ thuộc
+// thứ tự khai báo đỉnh của từng mặt.
+const opposite = hiddenAt(2.2, -.32);
+if (!opposite.includes('S-C') || opposite.includes('S-A')) {
+  throw new Error(`Cạnh khuất không đổi đúng theo góc camera đối diện: ${opposite.join(', ')}`);
+}
 
 const html = fs.readFileSync(path.join(root, 'vmtool.html'), 'utf8');
 for (const marker of ['Hình không gian 3D', 'spatialCanvas', 'runPyramidDemo', 'planeASelects', 'planeBSelects', 'fullscreen3d', 'download3dPng']) {

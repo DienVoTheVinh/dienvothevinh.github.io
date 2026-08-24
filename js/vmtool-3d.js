@@ -114,7 +114,9 @@
       x: (options.width || 800) / 2 + rotated.x * scale,
       y: (options.height || 600) * .54 - rotated.y * scale,
       depth: rotated.z,
-      factor: factor
+      factor: factor,
+      cameraDistance: distanceToCamera,
+      perspective: perspective
     };
   }
 
@@ -127,18 +129,69 @@
     return area / 2;
   }
 
+  function barycentric2d(point, a, b, c) {
+    var denominator = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+    if (Math.abs(denominator) < EPS) return null;
+    var wa = ((b.y - c.y) * (point.x - c.x) + (c.x - b.x) * (point.y - c.y)) / denominator;
+    var wb = ((c.y - a.y) * (point.x - c.x) + (a.x - c.x) * (point.y - c.y)) / denominator;
+    var wc = 1 - wa - wb;
+    var tolerance = 1e-5;
+    return wa >= -tolerance && wb >= -tolerance && wc >= -tolerance
+      ? [wa, wb, wc]
+      : null;
+  }
+
+  function depthFromScreenWeights(points, weights) {
+    var perspective = points.some(function (point) { return point.perspective !== false && Math.abs(point.factor - 1) > 1e-7; });
+    if (!perspective) {
+      return points.reduce(function (sum, point, index) { return sum + point.depth * weights[index]; }, 0);
+    }
+    var cameraDistance = points.find(function (point) { return Number.isFinite(point.cameraDistance); });
+    cameraDistance = cameraDistance ? cameraDistance.cameraDistance : null;
+    if (!Number.isFinite(cameraDistance)) {
+      var reference = points.find(function (point) { return Math.abs(point.factor - 1) > 1e-7; });
+      cameraDistance = reference ? reference.factor * reference.depth / (reference.factor - 1) : null;
+    }
+    if (!Number.isFinite(cameraDistance)) {
+      return points.reduce(function (sum, point, index) { return sum + point.depth * weights[index]; }, 0);
+    }
+    var inverseDistance = points.reduce(function (sum, point, index) {
+      return sum + weights[index] / Math.max(EPS, cameraDistance - point.depth);
+    }, 0);
+    return inverseDistance > EPS ? cameraDistance - 1 / inverseDistance : -Infinity;
+  }
+
+  function faceDepthAtPoint(face, projected, point) {
+    var anchor = projected[face[0]];
+    for (var i = 1; i < face.length - 1; i++) {
+      var b = projected[face[i]], c = projected[face[i + 1]];
+      var weights = barycentric2d(point, anchor, b, c);
+      if (weights) return depthFromScreenWeights([anchor, b, c], weights);
+    }
+    return null;
+  }
+
   function hiddenEdges(model, projected) {
     if (!model || !projected) return [];
-    var frontFaces = model.faces.map(function (face) {
-      var area = polygonArea2d(face.map(function (name) { return projected[name]; }));
-      return area <= .5;
-    });
+    var samplePositions = [.18, .38, .62, .82];
     return model.edges.filter(function (edge) {
-      var adjacent = [];
-      model.faces.forEach(function (face, index) {
-        if (face.indexOf(edge[0]) !== -1 && face.indexOf(edge[1]) !== -1) adjacent.push(index);
-      });
-      return adjacent.length > 0 && adjacent.every(function (index) { return !frontFaces[index]; });
+      var a = projected[edge[0]], b = projected[edge[1]];
+      if (!a || !b) return false;
+      var hiddenSamples = samplePositions.filter(function (position) {
+        var point = {
+          x: a.x + (b.x - a.x) * position,
+          y: a.y + (b.y - a.y) * position
+        };
+        var edgeDepth = depthFromScreenWeights([a, b], [1 - position, position]);
+        return model.faces.some(function (face) {
+          // A face containing this edge meets it at the surface; it cannot hide the edge itself.
+          if (face.indexOf(edge[0]) !== -1 && face.indexOf(edge[1]) !== -1) return false;
+          var coveringDepth = faceDepthAtPoint(face, projected, point);
+          return coveringDepth != null && coveringDepth > edgeDepth + 1e-5;
+        });
+      }).length;
+      // Requiring a majority avoids flicker when a projected sample touches a face boundary.
+      return hiddenSamples >= Math.ceil(samplePositions.length / 2);
     });
   }
 
@@ -367,10 +420,25 @@
   }
 
   function planeNames(containerId) { return Array.prototype.map.call($(containerId).querySelectorAll('select'),function(select){return select.value;}); }
-  function selectedPlane(containerId) { var selected=planeNames(containerId);return planeFromPoints(state.model.points[selected[0]],state.model.points[selected[1]],state.model.points[selected[2]]); }
+  function selectedPlaneData(containerId) {
+    var selected=planeNames(containerId), plane=planeFromPoints(state.model.points[selected[0]],state.model.points[selected[1]],state.model.points[selected[2]]);
+    if(!plane)return{plane:null,error:'Ba điểm đầu đang thẳng hàng.'};
+    if(selected[3]&&Math.abs(pointOnPlane(plane,state.model.points[selected[3]]))>1e-6){
+      return{plane:null,error:'Điểm '+selected[3]+' không đồng phẳng với '+selected.slice(0,3).join(', ')+'.'};
+    }
+    return{plane:plane,error:''};
+  }
+  function selectedPlane(containerId) { return selectedPlaneData(containerId).plane; }
   function fillPlaneSelects(containerId, values) {
     var container=$(containerId);container.textContent='';
-    for(var i=0;i<3;i++){var select=document.createElement('select');select.setAttribute('aria-label',(containerId==='planeASelects'?'Mặt alpha':'Mặt beta')+', điểm '+(i+1));names().forEach(function(name){var option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);});select.value=names().indexOf(values[i])>=0?values[i]:names()[i];select.addEventListener('change',function(){state.demoStep=0;clearResult(false);});container.appendChild(select);}
+    for(var i=0;i<4;i++){
+      var select=document.createElement('select'),optional=i===3;
+      select.setAttribute('aria-label',(containerId==='planeASelects'?'Mặt alpha':'Mặt beta')+', điểm '+(i+1)+(optional?' tùy chọn':''));
+      if(optional){var empty=document.createElement('option');empty.value='';empty.textContent='—';select.appendChild(empty);}
+      names().forEach(function(name){var option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);});
+      select.value=names().indexOf(values[i])>=0?values[i]:(optional?'':names()[i]);
+      select.addEventListener('change',function(){state.demoStep=0;clearResult(false);});container.appendChild(select);
+    }
   }
   function defaultPlanes() {
     var defaults=state.type==='pyramid'?[['S','A','B'],['S','C','D']]:state.type==='tetrahedron'?[['S','A','B'],['S','B','C']]:[['A','B','B′'],['D','C','C′']];
@@ -378,8 +446,8 @@
   }
   function setResult(title, text, success) { var box=$('intersectionResult');box.classList.toggle('success',!!success);box.querySelector('b').textContent=title;box.querySelector('p').textContent=text; }
   function findIntersection() {
-    var a=selectedPlane('planeASelects'),b=selectedPlane('planeBSelects');
-    if(!a||!b){state.planes=null;state.intersection=null;setResult('Ba điểm đang thẳng hàng','Hãy chọn ba điểm không thẳng hàng cho mỗi mặt phẳng.',false);draw();return null;}
+    var alpha=selectedPlaneData('planeASelects'),beta=selectedPlaneData('planeBSelects'),a=alpha.plane,b=beta.plane;
+    if(!a||!b){state.planes=null;state.intersection=null;setResult('Chưa dựng được mặt phẳng',!a?'Mặt α: '+alpha.error:'Mặt β: '+beta.error,false);draw();return null;}
     var line=planeIntersection(a,b);state.planes=[a,b];state.intersection=line;state.demoStep=0;
     if(!line){setResult('Hai mặt phẳng song song','Hai mặt không có giao tuyến duy nhất trong không gian.',false);draw();return null;}
     var segment=clipLineToBounds(line,modelBounds(state.model.points,.55));

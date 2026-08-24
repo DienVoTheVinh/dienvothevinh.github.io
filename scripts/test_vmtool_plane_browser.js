@@ -13,6 +13,10 @@ const { chromium } = require('playwright');
     await page.goto(`${baseUrl}/vmtool`, { waitUntil:'domcontentloaded' });
     let lazy = await page.evaluate(() => ({plane:!!window.VMToolPlaneState,spatial:!!window.VMTool3DState,scripts:[...document.scripts].map(s=>s.src)}));
     if (lazy.plane || lazy.spatial || lazy.scripts.some(s=>/vmtool-(plane|3d)\.js/.test(s))) throw new Error('Geometry modules loaded before tab selection');
+    await page.evaluate(()=>document.documentElement.setAttribute('data-theme','dark'));
+    await page.waitForTimeout(60);
+    let darkPixel=await page.evaluate(()=>{const c=document.getElementById('graphCanvas'),x=c.getContext('2d').getImageData(8,8,1,1).data;return [...x];});
+    if(darkPixel[0]+darkPixel[1]+darkPixel[2]>230)throw new Error(`Inequality canvas stayed light in dark theme: ${darkPixel}`);
     await page.click('[data-vmtool-tab="plane"]');
     await page.waitForFunction(() => window.VMToolPlaneState && document.getElementById('planeCanvas').width > 500);
     let result=await page.evaluate(()=>({
@@ -26,6 +30,10 @@ const { chromium } = require('playwright');
       latex:window.VMToolPlaneExport.latex()
     }));
     if(result.width<1000||result.height<540||result.overflow||!result.planeVisible||!result.inequalityHidden||result.pointCount<3||result.objectCount<1)throw new Error(`Desktop plane workspace failed: ${JSON.stringify(result)}`);
+    darkPixel=await page.evaluate(()=>{const c=document.getElementById('planeCanvas'),x=c.getContext('2d').getImageData(8,8,1,1).data;return [...x];});
+    if(darkPixel[0]+darkPixel[1]+darkPixel[2]>230)throw new Error(`Plane canvas stayed light in dark theme: ${darkPixel}`);
+    await page.evaluate(()=>document.documentElement.setAttribute('data-theme','light'));
+    await page.waitForTimeout(50);
     if(!result.latex.includes('\\begin{tikzpicture}')||!result.latex.includes('\\documentclass'))throw new Error('LaTeX export is incomplete');
     await page.click('[data-plane-preset="medians"]');
     result=await page.evaluate(()=>({points:window.VMToolPlaneState.points.length,objects:window.VMToolPlaneState.objects.length,derived:window.VMToolPlaneState.points.filter(p=>p.kind!=='free').length}));

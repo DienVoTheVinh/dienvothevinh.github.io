@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
     const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
     await page.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
       <style>:root{--surface:#fff;--surface-2:#f5f4f1;--line:#ddd;--accent:#d79008;--accent-soft:#fff3d6;--ink:#171717;--ink-2:#444;--ink-3:#666}${css}</style>
-      <div class="sub-card"><div class="chb-assignment-body"><h3>Đề tham chiếu</h3><p>Cho tam giác ABC, chứng minh hệ thức đã cho.</p></div><div id="sub-sub"></div></div>
+      <div class="sub-card"><div class="chb-assignment-body"><h3>Đề tham chiếu</h3><p>Cho tam giác ABC, chứng minh hệ thức đã cho.</p><img alt="Đề ảnh" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='500'%3E%3Crect width='800' height='500' fill='white'/%3E%3Ctext x='40' y='90' font-size='42'%3EBài 1: Chứng minh ABC%3C/text%3E%3C/svg%3E"></div><div id="sub-sub"></div></div>
       <div id="danchamtt-sub"></div>`);
     await page.addScriptTag({ content: `
       window.$ = (id) => document.getElementById(id);
@@ -72,6 +72,13 @@ const { chromium } = require('playwright');
       return { fullscreen:modal.classList.contains('fullscreen'), width:Math.round(dialog.width), height:Math.round(dialog.height), label:document.getElementById('chbDrawFullscreen').textContent, promptWidth:Math.round(prompt.width), promptText:document.getElementById('chbDrawPromptBody').textContent };
     });
     if (!state.fullscreen || state.width !== 1600 || state.height !== 1000 || !state.label.includes('Thu nhỏ') || state.promptWidth < 220 || !state.promptText.includes('Đề tham chiếu')) throw new Error(`Fullscreen annotation or prompt reference panel is wrong: ${JSON.stringify(state)}`);
+    const promptImage = page.locator('.chb-draw-prompt-image-wrap>img');
+    await promptImage.hover({ position:{ x:110, y:70 } });
+    state = await page.evaluate(() => ({ lensVisible:document.querySelector('.chb-draw-magnifier').classList.contains('visible'), zoom:document.getElementById('chbDrawPromptZoom').textContent, hint:document.querySelector('.chb-draw-prompt-hint').textContent }));
+    if (!state.lensVisible || state.zoom !== '2.5×' || !state.hint.includes('phóng đại')) throw new Error(`Prompt magnifier did not open: ${JSON.stringify(state)}`);
+    await page.click('[aria-label="Tăng độ phóng đại kính lúp"]');
+    state = await page.evaluate(() => ({ zoom:document.getElementById('chbDrawPromptZoom').textContent, factor:chamVeState.promptZoom }));
+    if (state.zoom !== '3×' || state.factor !== 3) throw new Error(`Prompt magnifier zoom control failed: ${JSON.stringify(state)}`);
     const resizeBox = await page.locator('#chbDrawPromptResizer').boundingBox();
     if (!resizeBox) throw new Error('Prompt resize handle is not visible');
     await page.mouse.move(resizeBox.x + resizeBox.width / 2, resizeBox.y + 80);
@@ -108,7 +115,7 @@ const { chromium } = require('playwright');
     state = await page.evaluate(() => ({ files:window._attachedFiles.map((file) => ({ name:file.name, type:file.type, size:file.size })), open:document.getElementById('chbDrawModal').classList.contains('open'), status:document.getElementById('danchamtt-sub').textContent, alerts:window._alerts }));
     if (state.open || state.files.length !== 2 || state.files.some((file) => file.type !== 'image/jpeg' || file.size < 1000) || !state.status.includes('2 bản viết trực tiếp') || state.alerts.length) throw new Error(`Multi-image annotation export failed: ${JSON.stringify(state)}`);
 
-    console.log('PASS fullscreen multi-image grading annotation, arrows, preserved strokes and batch export');
+    console.log('PASS fullscreen multi-image grading annotation, prompt magnifier, arrows, preserved strokes and batch export');
   } finally {
     await browser.close();
   }
