@@ -118,6 +118,54 @@
     };
   }
 
+  function polygonArea2d(points) {
+    var area = 0;
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i], q = points[(i + 1) % points.length];
+      area += p.x * q.y - q.x * p.y;
+    }
+    return area / 2;
+  }
+
+  function hiddenEdges(model, projected) {
+    if (!model || !projected) return [];
+    var frontFaces = model.faces.map(function (face) {
+      var area = polygonArea2d(face.map(function (name) { return projected[name]; }));
+      return area <= .5;
+    });
+    return model.edges.filter(function (edge) {
+      var adjacent = [];
+      model.faces.forEach(function (face, index) {
+        if (face.indexOf(edge[0]) !== -1 && face.indexOf(edge[1]) !== -1) adjacent.push(index);
+      });
+      return adjacent.length > 0 && adjacent.every(function (index) { return !frontFaces[index]; });
+    });
+  }
+
+  function clipLineToBounds(line, bounds) {
+    if (!line || !bounds) return null;
+    var tMin = -Infinity, tMax = Infinity;
+    ['x', 'y', 'z'].forEach(function (axis) {
+      if (tMin > tMax) return;
+      var origin = line.point[axis], direction = line.direction[axis];
+      if (Math.abs(direction) < EPS) {
+        if (origin < bounds.min[axis] - EPS || origin > bounds.max[axis] + EPS) { tMin = 1; tMax = 0; }
+        return;
+      }
+      var a = (bounds.min[axis] - origin) / direction;
+      var b = (bounds.max[axis] - origin) / direction;
+      if (a > b) { var swap = a; a = b; b = swap; }
+      tMin = Math.max(tMin, a); tMax = Math.min(tMax, b);
+    });
+    if (!Number.isFinite(tMin) || !Number.isFinite(tMax) || tMin > tMax + EPS) return null;
+    return {
+      a: add(line.point, mul(line.direction, tMin)),
+      b: add(line.point, mul(line.direction, tMax)),
+      tMin: tMin,
+      tMax: tMax
+    };
+  }
+
   function createModel(type, dimensions) {
     dimensions = dimensions || {};
     var width = Number(dimensions.width) || 6;
@@ -153,7 +201,8 @@
     vector: v, add: add, sub: sub, dot: dot, cross: cross, normalize: normalize, distance: distance,
     planeFromPoints: planeFromPoints, pointOnPlane: pointOnPlane, planeIntersection: planeIntersection,
     distancePointToLine: distancePointToLine, modelBounds: modelBounds, planeBoxPolygon: planeBoxPolygon,
-    rotatePoint: rotatePoint, projectPoint: projectPoint, createModel: createModel
+    rotatePoint: rotatePoint, projectPoint: projectPoint, polygonArea2d: polygonArea2d,
+    hiddenEdges: hiddenEdges, clipLineToBounds: clipLineToBounds, createModel: createModel
   };
   global.VMTool3DMath = api;
 
@@ -166,7 +215,7 @@
     model: null, planes: null, intersection: null, demoStep: 0,
     drag: { active:false, x:0, y:0, moved:false }
   };
-  var canvas, ctx, wrap, card, resizeObserver;
+  var canvas, ctx, wrap, card, resizeObserver, themeObserver;
   var activePointers = {}, pinchDistance = 0, pinchZoom = 1;
 
   function $(id) { return document.getElementById(id); }
@@ -215,11 +264,12 @@
   }
   function drawGround() {
     if (!state.showGrid) return;
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     var radius = modelRadius() * 1.4;
     ctx.save(); ctx.lineWidth = 1;
     for (var i = -5; i <= 5; i++) {
       var alpha = i === 0 ? .19 : .08;
-      ctx.strokeStyle = 'rgba(55,85,112,' + alpha + ')';
+      ctx.strokeStyle = dark ? 'rgba(178,205,226,' + (alpha * 1.35) + ')' : 'rgba(55,85,112,' + alpha + ')';
       var a = pointProjection(v(-radius,0,i*radius/5)), b = pointProjection(v(radius,0,i*radius/5));
       var c = pointProjection(v(i*radius/5,0,-radius)), d = pointProjection(v(i*radius/5,0,radius));
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.moveTo(c.x,c.y); ctx.lineTo(d.x,d.y); ctx.stroke();
@@ -227,28 +277,35 @@
     ctx.restore();
   }
   function faceDepth(face, projected) { return face.reduce(function (sum, name) { return sum + projected[name].depth; }, 0) / face.length; }
-  function faceArea(face, projected) {
-    var area = 0;
-    for (var i = 0; i < face.length; i++) { var p=projected[face[i]], q=projected[face[(i+1)%face.length]]; area += p.x*q.y-q.x*p.y; }
-    return area / 2;
-  }
   function drawSolid(projected) {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (state.showHidden) {
-      ctx.save(); ctx.setLineDash([6,6]); ctx.strokeStyle = dark ? 'rgba(204,220,234,.3)' : 'rgba(35,58,80,.25)'; ctx.lineWidth = 1.4;
-      state.model.edges.forEach(function (edge) { var a=projected[edge[0]], b=projected[edge[1]]; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }); ctx.restore();
-    }
+    var hidden = hiddenEdges(state.model, projected);
+    function isHidden(edge) { return hidden.some(function (item) { return item[0] === edge[0] && item[1] === edge[1]; }); }
+    var faceColors = dark
+      ? ['rgba(79,139,183,.18)','rgba(64,125,174,.22)','rgba(88,148,190,.17)','rgba(54,111,158,.20)','rgba(104,157,193,.16)','rgba(70,130,176,.18)']
+      : ['rgba(104,166,207,.16)','rgba(81,148,195,.20)','rgba(119,178,214,.14)','rgba(67,132,181,.18)','rgba(132,184,215,.14)','rgba(91,155,199,.16)'];
     var faces = state.model.faces.slice().sort(function (a,b) { return faceDepth(a,projected)-faceDepth(b,projected); });
-    if (state.showFaces) faces.forEach(function (face, index) {
+    if (state.showFaces) faces.forEach(function (face) {
       var pts = face.map(function (name) { return projected[name]; });
       polygonPath(pts);
-      var front = faceArea(face, projected) < 0;
-      ctx.fillStyle = dark ? (front ? 'rgba(60,132,185,.20)' : 'rgba(90,119,142,.10)') : (front ? 'rgba(101,174,222,.18)' : 'rgba(148,174,194,.10)');
-      if (index % 3 === 1) ctx.fillStyle = dark ? 'rgba(231,168,67,.13)' : 'rgba(240,181,74,.13)';
+      var stableIndex = state.model.faces.indexOf(face);
+      ctx.fillStyle = faceColors[stableIndex % faceColors.length];
       ctx.fill();
     });
-    ctx.save(); ctx.setLineDash([]); ctx.strokeStyle = dark ? '#d5e4f0' : '#24445f'; ctx.lineWidth = 2.1; ctx.lineJoin = 'round';
-    state.model.edges.forEach(function (edge) { var a=projected[edge[0]], b=projected[edge[1]]; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }); ctx.restore();
+    ctx.save(); ctx.lineJoin = 'round';
+    state.model.edges.forEach(function (edge) {
+      var hiddenEdge = isHidden(edge);
+      if (hiddenEdge && !state.showHidden) return;
+      var a=projected[edge[0]], b=projected[edge[1]];
+      ctx.setLineDash(hiddenEdge ? [7,6] : []);
+      ctx.strokeStyle = hiddenEdge ? (dark ? 'rgba(183,207,225,.52)' : 'rgba(46,73,98,.42)') : (dark ? '#d5e4f0' : '#24445f');
+      ctx.lineWidth = hiddenEdge ? 1.55 : 2.15;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    });
+    ctx.restore();
+    state.renderMeta = state.renderMeta || {};
+    state.renderMeta.hiddenEdges = hidden.map(function (edge) { return edge.join('-'); });
+    state.renderMeta.faceColors = faceColors.slice(0, state.model.faces.length);
   }
   function drawPlane(plane, color) {
     if (!plane) return;
@@ -259,12 +316,21 @@
   }
   function drawIntersection() {
     if (!state.intersection || state.demoStep && state.demoStep < 3) return;
-    var radius = modelRadius() * 1.55;
-    var a = pointProjection(add(state.intersection.point,mul(state.intersection.direction,-radius)));
-    var b = pointProjection(add(state.intersection.point,mul(state.intersection.direction,radius)));
-    ctx.save(); ctx.strokeStyle='rgba(242,92,42,.22)'; ctx.lineWidth=11; ctx.lineCap='round'; ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-    ctx.strokeStyle='#ef5527';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-    var mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};ctx.font='900 15px "Be Vietnam Pro",sans-serif';ctx.fillStyle='#ef5527';ctx.fillText('d = α ∩ β',mid.x+10,mid.y-10);ctx.restore();
+    var segment = clipLineToBounds(state.intersection, modelBounds(state.model.points, .55));
+    if (!segment) return;
+    var a = pointProjection(segment.a), b = pointProjection(segment.b);
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.save(); ctx.strokeStyle=dark?'rgba(255,135,77,.26)':'rgba(242,92,42,.20)'; ctx.lineWidth=10; ctx.lineCap='round'; ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    ctx.strokeStyle=dark?'#ff7c43':'#ef5527';ctx.lineWidth=3.6;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    [a,b].forEach(function(point){ctx.fillStyle=dark?'#ffe1d3':'#fff';ctx.strokeStyle=dark?'#ff7c43':'#ef5527';ctx.lineWidth=2;ctx.beginPath();ctx.arc(point.x,point.y,4.2,0,Math.PI*2);ctx.fill();ctx.stroke();});
+    var label={x:a.x+(b.x-a.x)*.24,y:a.y+(b.y-a.y)*.24};
+    var dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy));label.x+=-dy/len*16;label.y+=dx/len*16;
+    ctx.font='900 14px "Be Vietnam Pro",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    var labelText='d = α ∩ β', labelWidth=ctx.measureText(labelText).width+18;
+    ctx.fillStyle=dark?'rgba(29,21,19,.9)':'rgba(255,250,247,.94)';ctx.beginPath();ctx.roundRect(label.x-labelWidth/2,label.y-13,labelWidth,26,9);ctx.fill();
+    ctx.strokeStyle=dark?'rgba(255,124,67,.72)':'rgba(239,85,39,.55)';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=dark?'#ff9a6b':'#ef5527';ctx.fillText(labelText,label.x,label.y);ctx.restore();
+    state.renderMeta = state.renderMeta || {};
+    state.renderMeta.intersectionSegment = { a: segment.a, b: segment.b };
   }
   function drawDemoHighlights(projected) {
     if (state.demoStep < 1 || state.type !== 'pyramid') return;
@@ -292,7 +358,11 @@
     if (!ctx || !canvas || canvas.width < 2) return;
     var rect=canvas.getBoundingClientRect();ctx.clearRect(0,0,rect.width,rect.height);
     drawGround();var projected=projectedNames();
-    if (state.planes) { drawPlane(state.planes[0],{fill:'rgba(25,118,210,.18)',stroke:'rgba(25,118,210,.82)'}); drawPlane(state.planes[1],{fill:'rgba(190,65,154,.16)',stroke:'rgba(190,65,154,.82)'}); }
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (state.planes) {
+      drawPlane(state.planes[0],{fill:dark?'rgba(42,135,221,.15)':'rgba(25,118,210,.14)',stroke:dark?'rgba(102,181,255,.92)':'rgba(25,118,210,.82)'});
+      drawPlane(state.planes[1],{fill:dark?'rgba(222,91,185,.13)':'rgba(190,65,154,.13)',stroke:dark?'rgba(246,128,211,.9)':'rgba(190,65,154,.82)'});
+    }
     drawSolid(projected);drawDemoHighlights(projected);drawIntersection();drawPoints(projected);
   }
 
@@ -312,7 +382,8 @@
     if(!a||!b){state.planes=null;state.intersection=null;setResult('Ba điểm đang thẳng hàng','Hãy chọn ba điểm không thẳng hàng cho mỗi mặt phẳng.',false);draw();return null;}
     var line=planeIntersection(a,b);state.planes=[a,b];state.intersection=line;state.demoStep=0;
     if(!line){setResult('Hai mặt phẳng song song','Hai mặt không có giao tuyến duy nhất trong không gian.',false);draw();return null;}
-    setResult('Đã dựng giao tuyến d','Đường màu cam là giao tuyến duy nhất của hai mặt phẳng α và β.',true);draw();return line;
+    var segment=clipLineToBounds(line,modelBounds(state.model.points,.55));
+    setResult('Đã dựng giao tuyến d',segment?'Đoạn màu cam là phần giao tuyến của α và β nằm trong vùng mô hình đang quan sát.':'Giao tuyến nằm ngoài vùng mô hình đang quan sát.',!!segment);draw();return line;
   }
   function clearResult(redraw) { state.planes=null;state.intersection=null;setResult('Chọn hai mặt phẳng','Giao tuyến và giải thích sẽ hiện tại đây.',false);if(redraw!==false)draw(); }
   function updateModel(keepPlanes) {
@@ -366,6 +437,7 @@
     function endDrag(event){delete activePointers[event.pointerId];if(Object.keys(activePointers).length<2)pinchDistance=0;if(!Object.keys(activePointers).length){state.drag.active=false;canvas.classList.remove('dragging');}}
     canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('wheel',function(event){event.preventDefault();state.zoom=Math.max(.55,Math.min(2.4,state.zoom*(event.deltaY > 0 ? .9 : 1.1)));draw();},{passive:false});
     document.addEventListener('fullscreenchange',resizeCanvas);global.addEventListener('resize',resizeCanvas);if(global.ResizeObserver){resizeObserver=new ResizeObserver(resizeCanvas);resizeObserver.observe(wrap);}
+    if(global.MutationObserver){themeObserver=new MutationObserver(function(mutations){if(mutations.some(function(item){return item.attributeName==='data-theme';}))draw();});themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}
     state.model=createModel(state.type,state);defaultPlanes();clearResult(false);setTimeout(resizeCanvas,0);
     global.VMTool3DState=state;
   }
