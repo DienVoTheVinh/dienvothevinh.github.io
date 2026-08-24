@@ -20,7 +20,7 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v48"), 'Service worker cache version must publish VMTool depth, dark-canvas and grading magnifier fixes');
+expect(worker.includes("vinhmath-shell-v49"), 'Service worker cache version must publish fullscreen, grading viewer and bulk-copy fixes');
 expect(worker.includes("'/js/vmtool-loader.js'") && !worker.includes("'/js/vmtool-plane.js'") && !worker.includes("'/js/vmtool-3d.js'"), 'Heavy geometry modules must be fetched only when their tabs are opened');
 expect(worker.includes("VM_SHELL_PREFIX = 'vinhmath-shell-'"), 'Service worker must detect every previous application shell, not only one version');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');

@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
 (async () => {
   const html = fs.readFileSync('quan-tri-cham-bai.html', 'utf8');
   const css = [...html.matchAll(/<style>([\s\S]*?)<\/style>/gi)].map((match) => match[1]).join('\n');
-  const start = html.indexOf('/* ===== Viết trực tiếp lên ảnh bài nộp');
+  const start = html.indexOf('/* ===== Ảnh nộp / ảnh chấm: thumbnail Drive + lightbox');
   const end = html.indexOf('/* ===== Ảnh chấm trả', start);
   if (start < 0 || end < 0) throw new Error('Cannot extract the image annotation module');
   const moduleSource = html.slice(start, end);
@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
     const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
     await page.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
       <style>:root{--surface:#fff;--surface-2:#f5f4f1;--line:#ddd;--accent:#d79008;--accent-soft:#fff3d6;--ink:#171717;--ink-2:#444;--ink-3:#666}${css}</style>
-      <div class="sub-card"><div class="chb-assignment-body"><h3>Đề tham chiếu</h3><p>Cho tam giác ABC, chứng minh hệ thức đã cho.</p><img alt="Đề ảnh" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='500'%3E%3Crect width='800' height='500' fill='white'/%3E%3Ctext x='40' y='90' font-size='42'%3EBài 1: Chứng minh ABC%3C/text%3E%3C/svg%3E"></div><div id="sub-sub"></div></div>
+      <div class="sub-card"><div class="chb-assignment-body"><h3>Đề tham chiếu</h3><p>Cho tam giác ABC, chứng minh hệ thức đã cho.</p><button type="button" class="chb-assignment-image-button" onclick="chbXemUrl(this.querySelector('img').src)"><img alt="Đề ảnh" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='500'%3E%3Crect width='800' height='500' fill='white'/%3E%3Ctext x='40' y='90' font-size='42'%3EBài 1: Chứng minh ABC%3C/text%3E%3C/svg%3E"></button></div><div id="sub-sub"></div></div>
       <div id="danchamtt-sub"></div>`);
     await page.addScriptTag({ content: `
       window.$ = (id) => document.getElementById(id);
@@ -79,6 +79,18 @@ const { chromium } = require('playwright');
     await page.click('[aria-label="Tăng độ phóng đại kính lúp"]');
     state = await page.evaluate(() => ({ zoom:document.getElementById('chbDrawPromptZoom').textContent, factor:chamVeState.promptZoom }));
     if (state.zoom !== '3×' || state.factor !== 3) throw new Error(`Prompt magnifier zoom control failed: ${JSON.stringify(state)}`);
+    await page.locator('.chb-draw-prompt-image-wrap').click({ position:{ x:40, y:40 } });
+    state = await page.evaluate(() => ({
+      viewerOpen:getComputedStyle(document.getElementById('chbLightbox')).display === 'flex',
+      viewerFullscreen:document.getElementById('chbLightbox').classList.contains('is-fullscreen'),
+      title:document.querySelector('#chbLightbox .lb-title').textContent,
+      closeVisible:document.querySelector('#chbLightbox .lb-close-btn').getBoundingClientRect().width > 0,
+      annotationOpen:document.getElementById('chbDrawModal').classList.contains('open')
+    }));
+    if (!state.viewerOpen || !state.viewerFullscreen || !state.closeVisible || !state.annotationOpen || !state.title.includes('quay lại chấm bài')) throw new Error(`Prompt image viewer has no safe return path: ${JSON.stringify(state)}`);
+    await page.click('#chbLightbox .lb-close-btn');
+    state = await page.evaluate(() => ({ viewerDisplay:getComputedStyle(document.getElementById('chbLightbox')).display, annotationOpen:document.getElementById('chbDrawModal').classList.contains('open'), annotationFullscreen:document.getElementById('chbDrawModal').classList.contains('fullscreen') }));
+    if (state.viewerDisplay !== 'none' || !state.annotationOpen || !state.annotationFullscreen) throw new Error(`Closing prompt viewer did not return to annotation: ${JSON.stringify(state)}`);
     const resizeBox = await page.locator('#chbDrawPromptResizer').boundingBox();
     if (!resizeBox) throw new Error('Prompt resize handle is not visible');
     await page.mouse.move(resizeBox.x + resizeBox.width / 2, resizeBox.y + 80);
@@ -115,7 +127,7 @@ const { chromium } = require('playwright');
     state = await page.evaluate(() => ({ files:window._attachedFiles.map((file) => ({ name:file.name, type:file.type, size:file.size })), open:document.getElementById('chbDrawModal').classList.contains('open'), status:document.getElementById('danchamtt-sub').textContent, alerts:window._alerts }));
     if (state.open || state.files.length !== 2 || state.files.some((file) => file.type !== 'image/jpeg' || file.size < 1000) || !state.status.includes('2 bản viết trực tiếp') || state.alerts.length) throw new Error(`Multi-image annotation export failed: ${JSON.stringify(state)}`);
 
-    console.log('PASS fullscreen multi-image grading annotation, prompt magnifier, arrows, preserved strokes and batch export');
+    console.log('PASS fullscreen multi-image grading annotation, internal prompt viewer, magnifier, arrows, preserved strokes and batch export');
   } finally {
     await browser.close();
   }

@@ -89,6 +89,22 @@ const { chromium } = require('playwright');
     if (result.step !== 3 || !result.hasPlanes || !result.hasLine || !result.segment || result.distanceS > 1e-6 || result.activeSteps !== 3 || !result.resultText.includes('d qua S')) {
       throw new Error(`Pyramid intersection demo failed: ${JSON.stringify(result)}`);
     }
+    await page.evaluate(() => {
+      const card = document.getElementById('spatialCanvasCard');
+      Object.defineProperty(card, 'requestFullscreen', { configurable:true, value:() => Promise.reject(new Error('blocked in regression test')) });
+    });
+    await page.click('#fullscreen3d');
+    await page.waitForFunction(() => document.getElementById('spatialCanvasCard').classList.contains('vmtool-pseudo-fullscreen'));
+    result = await page.evaluate(() => {
+      const card = document.getElementById('spatialCanvasCard');
+      const rect = card.getBoundingClientRect();
+      return { left:Math.round(rect.left), top:Math.round(rect.top), width:Math.round(rect.width), height:Math.round(rect.height), innerWidth, innerHeight, label:document.getElementById('fullscreen3d').textContent, locked:document.documentElement.classList.contains('vmtool-fullscreen-open') };
+    });
+    if (result.left !== 0 || result.top !== 0 || result.width !== result.innerWidth || result.height !== result.innerHeight || !result.label.includes('Thu nhỏ') || !result.locked) throw new Error(`3D fullscreen fallback did not cover the viewport: ${JSON.stringify(result)}`);
+    await page.click('#fullscreen3d');
+    await page.waitForFunction(() => !document.getElementById('spatialCanvasCard').classList.contains('vmtool-pseudo-fullscreen'));
+    result = await page.evaluate(() => ({ label:document.getElementById('fullscreen3d').textContent, locked:document.documentElement.classList.contains('vmtool-fullscreen-open') }));
+    if (!result.label.includes('Toàn màn hình') || result.locked) throw new Error(`3D fullscreen fallback did not exit cleanly: ${JSON.stringify(result)}`);
     result = await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       const wrap = document.getElementById('spatialCanvasWrap');
@@ -121,7 +137,7 @@ const { chromium } = require('playwright');
 
     const relevantErrors = pageErrors.filter(message => !/supabase|Failed to fetch|NetworkError/i.test(message));
     if (relevantErrors.length) throw new Error(`Browser errors: ${relevantErrors.join(' | ')}`);
-    console.log('PASS VMTool 3D desktop/mobile, depth-based hidden edges, optional coplanar fourth point, dark theme and clipped plane intersection');
+    console.log('PASS VMTool 3D desktop/mobile, viewport fullscreen fallback, depth-based hidden edges, optional coplanar fourth point, dark theme and clipped plane intersection');
   } finally {
     await browser.close();
   }
