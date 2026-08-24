@@ -32,7 +32,13 @@ const { chromium } = require('playwright');
       throw new Error(`Desktop 3D workspace is not using the screen well: ${JSON.stringify(result)}`);
     }
 
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+    await page.waitForTimeout(50);
     const yawBefore = await page.evaluate(() => window.VMTool3DState.yaw);
+    const renderBefore = await page.evaluate(() => ({
+      hidden: window.VMTool3DState.renderMeta.hiddenEdges.slice(),
+      colors: window.VMTool3DState.renderMeta.faceColors.slice(),
+    }));
     const box = await page.locator('#spatialCanvas').boundingBox();
     await page.mouse.move(box.x + box.width * .55, box.y + box.height * .5);
     await page.mouse.down();
@@ -40,6 +46,12 @@ const { chromium } = require('playwright');
     await page.mouse.up();
     const yawAfter = await page.evaluate(() => window.VMTool3DState.yaw);
     if (Math.abs(yawAfter - yawBefore) < .1) throw new Error('Drag did not rotate the solid');
+    const renderAfter = await page.evaluate(() => ({
+      hidden: window.VMTool3DState.renderMeta.hiddenEdges.slice(),
+      colors: window.VMTool3DState.renderMeta.faceColors.slice(),
+    }));
+    if (JSON.stringify(renderBefore.hidden) === JSON.stringify(renderAfter.hidden)) throw new Error('Hidden-edge set did not react to the camera angle');
+    if (JSON.stringify(renderBefore.colors) !== JSON.stringify(renderAfter.colors)) throw new Error(`Face colors changed after rotation: ${JSON.stringify({ before: renderBefore.colors, after: renderAfter.colors })}`);
 
     await page.click('#runPyramidDemo');
     await page.click('[data-demo-step="3"] button');
@@ -53,11 +65,23 @@ const { chromium } = require('playwright');
         distanceS: math.distancePointToLine(s.model.points.S, s.intersection),
         resultText: document.getElementById('intersectionResult').textContent,
         activeSteps: document.querySelectorAll('[data-demo-step].active').length,
+        segment: s.renderMeta.intersectionSegment,
       };
     });
-    if (result.step !== 3 || !result.hasPlanes || !result.hasLine || result.distanceS > 1e-6 || result.activeSteps !== 3 || !result.resultText.includes('d qua S')) {
+    if (result.step !== 3 || !result.hasPlanes || !result.hasLine || !result.segment || result.distanceS > 1e-6 || result.activeSteps !== 3 || !result.resultText.includes('d qua S')) {
       throw new Error(`Pyramid intersection demo failed: ${JSON.stringify(result)}`);
     }
+    result = await page.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      const wrap = document.getElementById('spatialCanvasWrap');
+      const status = document.querySelector('.vmtool-3d-status');
+      return { wrapBackground: getComputedStyle(wrap).backgroundImage, statusBackground: getComputedStyle(status).backgroundColor };
+    });
+    await page.waitForTimeout(50);
+    if (!/rgb\(23, 35, 49\)|rgb\(16, 24, 33\)|rgb\(10, 17, 24\)/.test(result.wrapBackground) || !/rgba\(10, 20, 29/.test(result.statusBackground)) {
+      throw new Error(`Dark 3D workspace did not apply: ${JSON.stringify(result)}`);
+    }
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
     if (screenshotDir) {
       fs.mkdirSync(screenshotDir, { recursive: true });
       await page.screenshot({ path: `${screenshotDir}/vmtool-3d-pyramid-desktop.png`, fullPage: true });
@@ -79,7 +103,7 @@ const { chromium } = require('playwright');
 
     const relevantErrors = pageErrors.filter(message => !/supabase|Failed to fetch|NetworkError/i.test(message));
     if (relevantErrors.length) throw new Error(`Browser errors: ${relevantErrors.join(' | ')}`);
-    console.log('PASS VMTool 3D desktop/mobile, drag rotation and pyramid plane-intersection demo');
+    console.log('PASS VMTool 3D desktop/mobile, fixed face colors, dynamic hidden edges, dark theme and clipped plane intersection');
   } finally {
     await browser.close();
   }

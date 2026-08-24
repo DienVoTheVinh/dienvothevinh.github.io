@@ -38,6 +38,25 @@ for (const kind of ['tetrahedron', 'box']) {
 const projection = math.projectPoint({ x: 1, y: 2, z: 3 }, { width: 800, height: 600, scale: 60, yaw: -.6, pitch: -.3, cameraDistance: 15 });
 if (![projection.x, projection.y, projection.depth].every(Number.isFinite)) throw new Error('Phép chiếu 3D sinh tọa độ không hợp lệ');
 
+const bounds = math.modelBounds(model.points, .55);
+const clipped = math.clipLineToBounds(line, bounds);
+if (!clipped) throw new Error('Giao tuyến không được cắt theo vùng mô hình');
+for (const endpoint of [clipped.a, clipped.b]) {
+  if (Math.abs(math.pointOnPlane(p1, endpoint)) > 1e-7 || Math.abs(math.pointOnPlane(p2, endpoint)) > 1e-7) {
+    throw new Error('Đầu mút giao tuyến cắt không còn nằm trên hai mặt phẳng');
+  }
+  for (const axis of ['x', 'y', 'z']) {
+    if (endpoint[axis] < bounds.min[axis] - 1e-7 || endpoint[axis] > bounds.max[axis] + 1e-7) throw new Error('Giao tuyến vượt khỏi vùng quan sát');
+  }
+}
+
+const projected = {};
+for (const [name, point] of Object.entries(model.points)) {
+  projected[name] = math.projectPoint(point, { center: { x: .1, y: 1.2, z: 0 }, width: 1000, height: 700, scale: 70, yaw: -.62, pitch: -.32, cameraDistance: 20 });
+}
+const hidden = math.hiddenEdges(model, projected).map(edge => edge.join('-'));
+if (!hidden.includes('S-C') || hidden.includes('S-A')) throw new Error(`Phân loại cạnh khuất theo góc nhìn chưa đúng: ${hidden.join(', ')}`);
+
 const html = fs.readFileSync(path.join(root, 'vmtool.html'), 'utf8');
 for (const marker of ['Hình không gian 3D', 'spatialCanvas', 'runPyramidDemo', 'planeASelects', 'planeBSelects', 'fullscreen3d', 'download3dPng']) {
   if (!html.includes(marker)) throw new Error(`Giao diện 3D thiếu mốc ${marker}`);
@@ -53,4 +72,4 @@ for (const marker of ['.vmtool-spatial-workspace', '.vmtool-3d-canvas-wrap', '.v
   if (!css.includes(marker)) throw new Error(`CSS 3D thiếu ${marker}`);
 }
 
-console.log('VMTool 3D OK: solids, projection, plane patches and pyramid intersection demo');
+console.log('VMTool 3D OK: solids, stable projection, dynamic hidden edges, clipped intersection and pyramid demo');
