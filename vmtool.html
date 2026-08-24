@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/vmtool.css?v=3">
+  <link rel="stylesheet" href="css/vmtool.css?v=4">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -32,16 +32,16 @@
         <div class="vmtool-kicker">Phòng thí nghiệm Toán học VinhMath</div>
         <div class="vmtool-hero-line"><h1>VMTool</h1><p>Nhập dữ liệu, quan sát trực tiếp và xuất hình Toán học đẹp mà không cần nhớ lệnh LaTeX.</p></div>
       </div>
-      <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b>Miền nghiệm 2D</b><small>Đồ thị · PNG · TikZ</small></div></div>
+      <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b id="vmtoolModeName">Miền nghiệm 2D</b><small id="vmtoolModeMeta">Đồ thị · PNG · TikZ</small></div></div>
     </section>
 
     <nav class="vmtool-tabs" aria-label="Danh sách công cụ">
-      <button class="vmtool-tab active" type="button">▧ Miền nghiệm 2D</button>
+      <button class="vmtool-tab active" type="button" data-vmtool-tab="inequality" aria-controls="inequalityTool" aria-selected="true">▧ Miền nghiệm 2D</button>
       <button class="vmtool-tab" type="button" disabled>△ Hình phẳng <span class="vmtool-soon">Sắp ra mắt</span></button>
-      <button class="vmtool-tab" type="button" disabled>◇ Hình không gian <span class="vmtool-soon">Sắp ra mắt</span></button>
+      <button class="vmtool-tab" type="button" data-vmtool-tab="spatial" aria-controls="spatialTool" aria-selected="false">◇ Hình không gian 3D <span class="vmtool-new">Mới</span></button>
     </nav>
 
-    <section class="vmtool-workspace">
+    <section class="vmtool-workspace vmtool-tool-panel" id="inequalityTool" data-vmtool-panel="inequality">
       <aside class="vmtool-panel">
         <div class="vmtool-panel-head"><h2>Hệ bất phương trình</h2><p>Mỗi dòng có dạng <strong>ax + by ≤ c</strong>. Em chỉ cần nhập các hệ số.</p></div>
         <div class="vmtool-controls">
@@ -95,6 +95,93 @@
         </div>
       </div>
     </section>
+
+    <section class="vmtool-workspace vmtool-tool-panel vmtool-spatial-workspace" id="spatialTool" data-vmtool-panel="spatial" hidden>
+      <aside class="vmtool-panel vmtool-3d-panel">
+        <div class="vmtool-panel-head"><h2>Dựng hình không gian</h2><p>Chọn mẫu, kéo thông số và quan sát ngay. Không cần nhập lệnh hình học hay LaTeX.</p></div>
+        <div class="vmtool-controls vmtool-3d-controls">
+          <div>
+            <div class="vmtool-section-label"><span>Mẫu khối</span><span id="solidPointCount">5 điểm</span></div>
+            <div class="vmtool-solid-presets" role="group" aria-label="Mẫu hình không gian">
+              <button class="vmtool-preset active" type="button" data-solid-preset="pyramid">Chóp tứ giác</button>
+              <button class="vmtool-preset" type="button" data-solid-preset="tetrahedron">Tứ diện</button>
+              <button class="vmtool-preset" type="button" data-solid-preset="box">Hình hộp</button>
+            </div>
+          </div>
+
+          <div class="vmtool-subsection vmtool-shape-settings">
+            <div class="vmtool-section-label"><span>Tùy chỉnh hình</span></div>
+            <label class="vmtool-range-row"><span>Chiều rộng đáy</span><input id="solidWidth" type="range" min="3" max="9" step="0.2" value="6"><output id="solidWidthValue">6,0</output></label>
+            <label class="vmtool-range-row"><span>Chiều sâu đáy</span><input id="solidDepth" type="range" min="2" max="7" step="0.2" value="4"><output id="solidDepthValue">4,0</output></label>
+            <label class="vmtool-range-row"><span>Chiều cao</span><input id="solidHeight" type="range" min="2.5" max="9" step="0.2" value="6"><output id="solidHeightValue">6,0</output></label>
+            <label class="vmtool-range-row"><span>Lệch đỉnh S</span><input id="apexOffset" type="range" min="-2.5" max="2.5" step="0.1" value="0.5"><output id="apexOffsetValue">0,5</output></label>
+            <div class="vmtool-toggle-grid">
+              <label><input id="showFaces" type="checkbox" checked> Mặt khối</label>
+              <label><input id="showHiddenEdges" type="checkbox" checked> Nét khuất</label>
+              <label><input id="usePerspective" type="checkbox" checked> Phối cảnh</label>
+              <label><input id="showGrid3d" type="checkbox" checked> Mặt phẳng đáy</label>
+            </div>
+          </div>
+
+          <div class="vmtool-subsection vmtool-intersection-builder">
+            <div class="vmtool-section-label"><span>Giao tuyến hai mặt</span><span class="vmtool-math-badge">α ∩ β</span></div>
+            <p class="vmtool-helper">Mỗi mặt được xác định bởi 3 điểm. Chọn điểm, VMTool sẽ tự dựng hai mặt và tính giao tuyến.</p>
+            <div class="vmtool-plane-row"><b>Mặt α</b><div id="planeASelects" class="vmtool-point-selects"></div></div>
+            <div class="vmtool-plane-row"><b>Mặt β</b><div id="planeBSelects" class="vmtool-point-selects"></div></div>
+            <div class="vmtool-plane-actions">
+              <button class="vmtool-action primary" id="findIntersection" type="button">Tìm giao tuyến</button>
+              <button class="vmtool-action" id="clearIntersection" type="button">Ẩn kết quả</button>
+            </div>
+            <div class="vmtool-intersection-result" id="intersectionResult" aria-live="polite">
+              <span class="vmtool-result-icon">↗</span><div><b>Chọn hai mặt phẳng</b><p>Giao tuyến và giải thích sẽ hiện tại đây.</p></div>
+            </div>
+          </div>
+
+          <button class="vmtool-demo-button" id="runPyramidDemo" type="button"><span>▶</span><div><b>Demo bài hình chóp</b><small>Tìm (SAB) ∩ (SCD) từng bước</small></div></button>
+        </div>
+      </aside>
+
+      <div class="vmtool-stage vmtool-3d-stage">
+        <div class="vmtool-canvas-card vmtool-3d-card" id="spatialCanvasCard">
+          <div class="vmtool-canvas-head">
+            <div class="vmtool-canvas-title"><b>Mô hình tương tác</b><span>Kéo để xoay · Cuộn hoặc chụm hai ngón để phóng to</span></div>
+            <div class="vmtool-view-actions" aria-label="Thanh công cụ hình không gian">
+              <div class="vmtool-tool-group">
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="viewIso" type="button">◇ Phối cảnh</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="viewFront" type="button">▣ Mặt trước</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="viewTop" type="button">⌄ Nhìn từ trên</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="reset3dView" type="button">↻ Đặt lại</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="fullscreen3d" type="button">⛶ Toàn màn hình</button>
+              </div>
+              <div class="vmtool-tool-divider" aria-hidden="true"></div>
+              <div class="vmtool-tool-group vmtool-export-tools">
+                <button class="vmtool-action primary" id="download3dPng" type="button">⇩ PNG</button>
+              </div>
+            </div>
+          </div>
+          <div class="vmtool-canvas-wrap vmtool-3d-canvas-wrap" id="spatialCanvasWrap">
+            <canvas id="spatialCanvas" aria-label="Mô hình hình học không gian có thể xoay và phóng to"></canvas>
+            <div class="vmtool-3d-status"><span class="vmtool-status-dot"></span><span id="solidName">Hình chóp S.ABCD</span><small id="cameraHint">Đang ở góc nhìn phối cảnh</small></div>
+            <div class="vmtool-3d-legend"><span><i class="plane-alpha"></i>Mặt α</span><span><i class="plane-beta"></i>Mặt β</span><span><i class="line-intersection"></i>Giao tuyến</span></div>
+          </div>
+        </div>
+
+        <article class="vmtool-demo-card" id="pyramidDemoCard">
+          <div class="vmtool-demo-problem"><span class="vmtool-demo-label">Bài mẫu trực quan</span><h3>Cho hình chóp S.ABCD có đáy ABCD là hình bình hành. Tìm giao tuyến của (SAB) và (SCD).</h3><p>Nhấn từng bước để thấy lập luận xuất hiện ngay trên mô hình.</p></div>
+          <ol class="vmtool-demo-steps">
+            <li data-demo-step="1"><button type="button"><span>1</span><div><b>Tìm điểm chung</b><small>S cùng thuộc hai mặt phẳng.</small></div></button></li>
+            <li data-demo-step="2"><button type="button"><span>2</span><div><b>Tìm phương chung</b><small>AB ∥ CD vì ABCD là hình bình hành.</small></div></button></li>
+            <li data-demo-step="3"><button type="button"><span>3</span><div><b>Kết luận</b><small>Giao tuyến là d qua S và song song AB, CD.</small></div></button></li>
+          </ol>
+        </article>
+
+        <div class="vmtool-guide vmtool-3d-guide">
+          <article><b>1. Chọn khối</b><p>Dùng mẫu chóp, tứ diện hoặc hình hộp rồi kéo kích thước theo đề bài.</p></article>
+          <article><b>2. Chọn hai mặt</b><p>Mỗi mặt chỉ cần ba điểm. Hệ thống kiểm tra và dựng giao tuyến tự động.</p></article>
+          <article><b>3. Giảng trực quan</b><p>Xoay hình, đổi góc nhìn, bật nét khuất và tải PNG để đưa vào bài giảng.</p></article>
+        </div>
+      </div>
+    </section>
   </main>
   <div class="vmtool-toast" id="vmtoolToast" role="status" aria-live="polite"></div>
 
@@ -103,6 +190,7 @@
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/menu-v5.js?v=9.3"></script>
   <script src="js/vmtool.js?v=4"></script>
+  <script src="js/vmtool-3d.js?v=1"></script>
   <script src="js/analytics.js"></script>
 </body>
 </html>
