@@ -57,7 +57,7 @@ for (const item of [
   "path: 'ket-qua', label: 'Kết quả'",
   "path: 'ca-nhan', label: 'Cá nhân'"
 ]) expect(menu.includes(item), `Thiếu mục điều hướng học sinh: ${item}`);
-expect(menu.includes("type: 'dropdown', label: 'Thêm'") && menu.includes("path: 'bang-vang', label: '🏆 Bảng xếp hạng'") && menu.includes("path: 'vmtool', label: '🧰 VMTool'"), 'Menu học sinh phải giữ BXH và VMTool trong nhóm Thêm gọn');
+expect(menu.includes("path: 'bang-vang', label: 'BXH'") && menu.includes("path: 'vmtool', label: 'VMTool'") && !menu.includes("type: 'dropdown', label: 'Thêm'"), 'BXH và VMTool phải nằm trực tiếp trên thanh chính của học sinh');
 expect(menu.includes("sessionStorage.getItem('vm-guest-mode') === 'true'") && menu.includes("apDungMenu('student', null)"), 'Chế độ trải nghiệm phải hiển thị đủ menu học sinh mới');
 expect(menu.includes("if (!role || role === 'student') return"), 'Thanh công cụ học sinh phải bỏ nhãn vai trò trùng lặp');
 
@@ -68,13 +68,13 @@ expect(shared.includes("brandSlug === preset") && shared.includes("brandTextEl.i
 expect(shared.includes("attributeFilter: ['style', 'class', 'open']"), 'Đóng native dialog phải gỡ khóa cuộn của trang');
 expect(shared.includes("m.target.tagName === 'DIALOG'") && shared.includes('boPopupMo(m.target)'), 'Native dialog đã đóng phải được loại khỏi danh sách popup đang mở');
 expect(home.includes('hideInternalInstallPanel()') && homeCss.includes('#vmInstallHero'), 'Banner cài đặt lớn phải được ẩn sau đăng nhập');
-expect(home.includes('Cập nhật học tập mới nhất') && home.includes('vmStudentLatest') && home.includes('vmStudentLiveSlot'), 'Trang Hôm nay chưa có dòng cập nhật học tập tập trung');
+expect(!home.includes("title.textContent = 'Cập nhật học tập mới nhất'") && home.includes('vmStudentLatest') && home.includes('vmStudentLiveSlot') && homeCss.includes('.vm-home-student .vm-role-focus-head{display:none}'), 'Trang Hôm nay phải bỏ tiêu đề cập nhật lặp nhưng vẫn giữ dòng học tập tập trung');
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=9') && homePage.includes('js/role-home.js?v=10'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('css/role-home.css?v=10') && homePage.includes('js/role-home.js?v=11'), 'Trang Hôm nay phải nạp phiên bản bố cục học online và việc cần làm mới nhất');
 expect(homePage.includes('vmStudentClockTime') && home.includes("timeZone: 'Asia/Ho_Chi_Minh'") && home.includes("['khungMeetHoc', 'khungDiemDanhHoc']"), 'Trang Hôm nay phải có đồng hồ Việt Nam và đặt Google Meet trước điểm danh');
-expect(homeCss.includes('grid-template-areas:"main live" "main side"') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session-context'), 'Desktop phải đặt việc cần làm bên trái, Google Meet bên phải và có lịch học rõ ràng');
+expect(home.includes('<aside class="vm-student-side"><div id="vmStudentLiveSlot"') && homeCss.includes('.vm-student-side{display:grid;gap:12px;min-width:0}') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session-context'), 'Desktop phải đặt việc cần làm bên trái, Google Meet và bốn ô nhanh trong cùng cột phải');
 expect(homePage.includes('<small>LỊCH HỌC</small><b>Buổi học sắp tới</b>') && !homePage.includes('GIỜ VIỆT NAM') && homePage.includes('vm-meet-schedule-panel'), 'Đồng hồ phải nằm gọn trong vùng lịch học và không còn nhãn giờ Việt Nam');
 expect(homePage.includes('vm-meet-teacher') && homePage.includes('vm-meet-class') && homePage.includes('escMeet'), 'Mỗi buổi online phải nêu rõ lớp và giáo viên, đồng thời escape dữ liệu');
 expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-student-side{display:contents}') && homeCss.includes('.vm-student-live-slot{order:-2}') && homeCss.includes('.vm-student-main-card{order:-1}'), 'Khi trang Hôm nay xếp dọc, Google Meet phải đứng trước dòng cập nhật học tập');
@@ -106,14 +106,14 @@ expect(results.includes(".eq('student_id', profile.id)") && results.includes(".n
 expect(results.includes("from('lesson_latex_sources')") && results.includes(".eq('has_solution', true)") && results.includes('showSolutions:true'), 'Trang Kết quả phải tải lời giải LaTeX đã được RLS mở quyền');
 expect(results.includes("item.status === 'graded' || hasUnlockedSolution(item)"), 'Kết quả phải hiện bài đã chấm hoặc bài đã nộp có lời giải');
 expect(results.includes("sessionStorage.getItem('vm-guest-mode') === 'true'"), 'Chế độ trải nghiệm phải có kết quả minh họa mà không đọc dữ liệu thật');
-expect(!results.includes('&action=graded&kind=') && results.includes('Toàn bộ điểm, nhận xét, file sửa và lời giải đã mở được xem ngay tại đây'), 'Trang Kết quả phải xem đầy đủ tại chỗ, không dẫn ngược sang bài giảng');
+expect(results.includes("action:'graded'") && results.includes("from:'ket-qua'") && results.includes('student-result-viewer-bar') && results.includes('Đóng cửa sổ để tiếp tục xem các kết quả khác'), 'Trang Kết quả phải mở toàn màn hình, giữ ngữ cảnh bài học và quay lại danh sách bằng nút đóng');
 expect(resultsPage.includes('studentResultClassFilter') && resultsPage.includes('studentResultGradeFilter') && results.includes('populateScopes()'), 'Trang Kết quả thiếu lọc theo lớp và khối');
 expect(results.includes('assessment_level') && results.includes("needs_improvement") && results.includes("meets") && results.includes("good"), 'Trang Kết quả thiếu ba mức đánh giá');
 expect(results.includes('student-result-pdf') && results.includes('<iframe'), 'PDF bài sửa phải xem được ngay trong Kết quả');
 expect(results.includes("url.protocol === 'https:' || url.protocol === 'http:'"), 'Tệp bài sửa phải chặn giao thức URL không an toàn');
 expect(results.includes("replace(/[&<>\"']/g"), 'Dữ liệu kết quả phải được escape trước khi render');
 expect(experienceCss.includes('width:min(1180px,calc(100% - 40px))') && experienceCss.includes('margin-inline:auto!important'), 'Trang Kết quả phải căn giữa trên màn hình rộng');
-expect(experienceCss.includes('.student-result-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto!important'), 'Hộp chi tiết kết quả phải nằm giữa viewport');
+expect(experienceCss.includes('width:100vw!important') && experienceCss.includes('height:100dvh') && experienceCss.includes('.student-result-viewer-bar{position:sticky'), 'Trình xem kết quả phải chiếm toàn màn hình và giữ thanh đóng cố định');
 expect(achievementsPage.includes('Bản đồ cảnh giới VinhMath') && achievementsPage.includes('aria-label="Bản đồ 11 cảnh giới và 44 huy chương"'), 'Thiếu Bản đồ cảnh giới 44 huy chương');
 expect(achievements.includes('VMRank.majors.map') && achievements.includes('VMRank.medals.map') && achievements.includes('companionSanctuary'), 'Bản đồ phải dựng đủ 11 cảnh giới, 4 huy chương và khu linh thú');
 expect(achievements.includes('realm-landmark') && achievements.includes('renderRealmDetail') && achievements.includes('realm-route-progress'), 'Bản đồ phải là một địa hình liền mạch với địa danh và bảng chi tiết riêng');

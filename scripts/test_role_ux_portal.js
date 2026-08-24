@@ -36,7 +36,7 @@ const roleHome = read('js/role-home.js');
 
 expect(menu.includes("path: 'trang-chu', label: 'Hôm nay'") && menu.includes("path: 'quan-tri', label: 'Quản trị'"), 'Role navigation is not task-focused');
 expect(hub.includes('Trung tâm quản trị') && hub.includes('quan-tri-portal-thi'), 'Admin tools are not grouped in one hub');
-expect(roleHome.includes('Việc cần ưu tiên') && roleHome.includes('Cập nhật học tập mới nhất'), 'Teacher/student home priorities are incomplete');
+expect(roleHome.includes('Việc cần ưu tiên') && roleHome.includes('Việc cần làm & cập nhật'), 'Teacher/student home priorities are incomplete');
 expect(classAdmin.includes("localStorage.getItem('vm-admin-active-class-id')") && classAdmin.includes("dsLop[0] && dsLop[0].id"), 'Class manager must select a valid class immediately');
 expect(classAdmin.includes("currentUrl.searchParams.set('tab', tab)"), 'Class tab state must survive reloads');
 expect(shared.includes('/@hs$/') && shared.includes('/@(hs|gv)[a-z0-9]{2,20}$/') && shared.includes('/@hs\\.[a-z0-9]+(?:-[a-z0-9]+)*$/') && login.includes('vmDichDangNhap'), 'Default, compact student/teacher and legacy login routing is missing');
