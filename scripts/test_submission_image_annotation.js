@@ -13,12 +13,16 @@ for (const fragment of [
   '✎ Viết lên ảnh', 'chb-draw-modal', 'function chamMoVe', 'function chamVeBatDau',
   'function chamVeUndo', 'function chamVeRedo', 'function chamVeXoaHet',
   "vmGoiHamFormDataBlob('nop-bai'", "out.toBlob(resolve,'image/jpeg',.94)",
-  "chamThemFile(chamVeState.subId,[file])", 'Lưu & trả bài'
+  'function chamVeToanManHinh', 'function chamDoiAnhVe', 'chbDrawPrev', 'chbDrawNext',
+  "chamThemFile(chamVeState.subId,files)", 'Lưu & trả bài'
 ]) expect(html.includes(fragment), `Missing annotation workflow: ${fragment}`);
 
 expect(html.includes("globalCompositeOperation=stroke.tool==='eraser'?'destination-out':'source-over'"), 'Eraser must remove only annotation strokes');
 expect(html.includes("maxSide=2400"), 'Large phone photos need a bounded annotation canvas');
 expect(html.includes("touch-action:none"), 'Stylus/touch drawing must not scroll the page');
+expect(html.includes("e.key==='ArrowLeft'") && html.includes("e.key==='ArrowRight'"), 'Keyboard arrows must switch between submission images');
+expect(html.includes("chb-draw-modal.fullscreen") && html.includes("width:100vw;height:100dvh"), 'Desktop annotation fullscreen must use the whole viewport');
+expect(html.includes("pages=(chamVeState.gallery||[])") && html.includes("files.push(await chamTaoFileTrang"), 'Annotations from multiple images must be attached together');
 
 for (const fragment of [
   '"submission_file"', 'Ảnh không thuộc bài nộp này.', 'coQuyenQuanLyLop',
