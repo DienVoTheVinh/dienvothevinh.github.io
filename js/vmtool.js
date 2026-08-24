@@ -209,6 +209,7 @@
   function cssColor(name, fallback) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
   }
+  function isDarkTheme() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
   function resizeCanvas() {
     if (!canvas || !wrap) return;
     var rect = wrap.getBoundingClientRect();
@@ -235,7 +236,7 @@
   }
 
   function drawGrid(size, bounds) {
-    var line = 'rgba(24,50,74,.13)';
+    var line = isDarkTheme() ? 'rgba(183,207,225,.13)' : 'rgba(24,50,74,.13)';
     var step = niceStep();
     ctx.lineWidth = 1; ctx.strokeStyle = line;
     ctx.beginPath();
@@ -247,7 +248,7 @@
   }
 
   function drawAxes(size, bounds) {
-    var axis = '#18324b'; var ink3 = '#68717d'; var step = niceStep();
+    var axis = isDarkTheme() ? '#d6e5ef' : '#18324b'; var ink3 = isDarkTheme() ? '#aebfcb' : '#68717d'; var step = niceStep();
     var xStart = Math.ceil(bounds.xMin / step) * step;
     var yStart = Math.ceil(bounds.yMin / step) * step;
     ctx.strokeStyle = axis; ctx.lineWidth = 1.7; ctx.font = '11px "Be Vietnam Pro", sans-serif';
@@ -321,7 +322,7 @@
       var t = .68, lx = p1.x + (p2.x - p1.x) * t, ly = p1.y + (p2.y - p1.y) * t;
       lx = Math.max(24, Math.min(size.width - 24, lx)); ly = Math.max(20, Math.min(size.height - 20, ly));
       var label = lineName(index); ctx.setLineDash([]); ctx.font = 'italic 800 14px Georgia, serif';
-      var labelWidth = ctx.measureText(label).width + 12; ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 1;
+      var labelWidth = ctx.measureText(label).width + 12; ctx.fillStyle = isDarkTheme() ? '#101821' : '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 1;
       ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(lx - labelWidth / 2, ly - 13, labelWidth, 24, 7); else ctx.rect(lx - labelWidth / 2, ly - 13, labelWidth, 24); ctx.fill(); ctx.stroke();
       ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, lx, ly - 1); ctx.restore();
     });
@@ -332,7 +333,7 @@
     if (!ctx) return;
     var size = dimensions(); if (!size.width || !size.height) return;
     ctx.clearRect(0, 0, size.width, size.height);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size.width, size.height);
+    ctx.fillStyle = isDarkTheme() ? '#101821' : '#fff'; ctx.fillRect(0, 0, size.width, size.height);
     var bounds = visibleBounds(size); drawGrid(size, bounds); drawRegion(size, currentRows(), bounds); drawAxes(size, bounds);
     if (zoomStatusEl) zoomStatusEl.textContent = Math.round(state.scale / 48 * 100) + '%';
   }

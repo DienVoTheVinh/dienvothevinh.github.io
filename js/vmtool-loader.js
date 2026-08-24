@@ -2,8 +2,8 @@
   'use strict';
 
   var modules = {
-    plane: { src: 'js/vmtool-plane.js?v=2', ready: false, loading: null },
-    spatial: { src: 'js/vmtool-3d.js?v=4', ready: false, loading: null }
+    plane: { src: 'js/vmtool-plane.js?v=3', ready: false, loading: null },
+    spatial: { src: 'js/vmtool-3d.js?v=5', ready: false, loading: null }
   };
 
   function setLoading(name, loading) {
