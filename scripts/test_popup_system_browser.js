@@ -200,6 +200,30 @@ function extractPopupManager(source) {
     const unlockedAfterRemove = await page.evaluate(() => !document.documentElement.classList.contains('vm-popup-open'));
     if (!unlockedAfterRemove) throw new Error('Removed popup left the page scroll locked');
 
+    // Ambient full-screen decoration must never be mistaken for a modal. This
+    // regression previously locked scrolling on every mobile page during the
+    // Mid-Autumn theme.
+    await page.evaluate(() => {
+      document.body.style.minHeight = '2400px';
+      const passive = document.createElement('div');
+      passive.id = 'passiveFestivalLayer';
+      passive.setAttribute('data-vm-passive-overlay', 'true');
+      passive.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:8';
+      passive.innerHTML = '<span>Trang trí lễ hội</span>';
+      document.body.appendChild(passive);
+    });
+    await page.waitForTimeout(60);
+    await page.evaluate(() => scrollTo(0, 640));
+    await page.waitForTimeout(60);
+    const passiveLayerSafe = await page.evaluate(() => ({
+      unlocked: !document.documentElement.classList.contains('vm-popup-open'),
+      scrolled: scrollY >= 600,
+      bodyOverflow: getComputedStyle(document.body).overflow,
+    }));
+    if (!passiveLayerSafe.unlocked || !passiveLayerSafe.scrolled || passiveLayerSafe.bodyOverflow === 'hidden') {
+      throw new Error(`Passive festival layer blocked scrolling: ${JSON.stringify(passiveLayerSafe)}`);
+    }
+
     console.log(`PASS shared popup system: ${modalCount} modal overlays rendered on mobile + desktop across ${modalPages.length} pages; ${htmlFiles.length} pages scanned`);
   } finally {
     await browser.close();

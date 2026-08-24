@@ -181,7 +181,7 @@
     var link = document.createElement('link');
     link.id = 'vmFestivalStyles';
     link.rel = 'stylesheet';
-    link.href = '/css/festival-theme.css?v=1.0';
+    link.href = '/css/festival-theme.css?v=1.1';
     document.head.appendChild(link);
   }
 
@@ -219,17 +219,20 @@
     removeLayer();
     if (!(options && options.force) && !isActive(cfg, new Date())) return false;
     ensureStyles();
-    var count = cfg.intensity === 'subtle' ? 9 : (cfg.intensity === 'festive' ? 24 : 16);
+    var mobile = !!(global.matchMedia && global.matchMedia('(max-width: 760px)').matches);
+    var count = mobile ? 4 : (cfg.intensity === 'subtle' ? 9 : (cfg.intensity === 'festive' ? 24 : 16));
     var layer = document.createElement('div');
     layer.id = 'vmFestivalLayer';
     layer.className = 'vm-festival-layer intensity-' + cfg.intensity;
     layer.setAttribute('aria-hidden', 'true');
+    layer.setAttribute('data-vm-passive-overlay', 'true');
+    layer.setAttribute('inert', '');
     layer.innerHTML =
       '<div class="vm-festival-sky"><span class="vm-festival-stars">' + stars(count) + '</span></div>' +
       '<div class="vm-festival-moon"><span class="vm-moon-crater one"></span><span class="vm-moon-crater two"></span><span class="vm-moon-crater three"></span><i class="vm-moon-cloud"></i></div>' +
-      lantern('left', 'red') + lantern('right', 'gold') +
+      lantern('left', 'red') + (mobile ? '' : lantern('right', 'gold') +
       '<div class="vm-festival-cloud is-left"></div><div class="vm-festival-cloud is-right"></div>' +
-      '<div class="vm-festival-wish"><span>☾</span><b>Trung thu đoàn viên</b><small>Trăng sáng · lòng vui · học tốt</small></div>';
+      '<div class="vm-festival-wish"><span>☾</span><b>Trung thu đoàn viên</b><small>Trăng sáng · lòng vui · học tốt</small></div>');
     document.body.appendChild(layer);
     document.documentElement.setAttribute('data-vm-festival', cfg.festival);
     document.body.classList.add('vm-festival-active');

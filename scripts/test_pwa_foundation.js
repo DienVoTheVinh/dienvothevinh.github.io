@@ -20,11 +20,11 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v37"), 'Service worker cache version must publish the festival release');
+expect(worker.includes("vinhmath-shell-v38"), 'Service worker cache version must publish the mobile festival hotfix');
 expect(worker.includes("VM_SHELL_PREFIX = 'vinhmath-shell-'"), 'Service worker must detect every previous application shell, not only one version');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '37'"), 'Open apps must not enter a refresh loop on shell v37');
-expect(worker.includes("target.searchParams.set('vm_refresh', '37'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '38'"), 'Open apps must not enter a refresh loop on shell v38');
+expect(worker.includes("target.searchParams.set('vm_refresh', '38'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("key.indexOf(VM_SHELL_PREFIX) === 0 && key !== VM_CACHE"), 'Any skipped shell generation must trigger a one-time refresh');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
 expect(worker.includes("'/js/portal-classroom.js'"), 'Partner classroom authoring client must be available offline after installation');
@@ -45,7 +45,7 @@ expect(worker.includes("'/icons/vinhmath-512.png'"), 'Service worker must cache 
 expect(!worker.includes('supabase.co'), 'Service worker must not cache Supabase traffic');
 
 const sharedJs = read('js/vinhmath.js');
-expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js?v=37'") && sharedJs.includes("updateViaCache: 'none'"), 'Shared JS must bypass stale HTTP cache when updating the service worker');
+expect(sharedJs.includes("navigator.serviceWorker.register('/sw.js?v=38'") && sharedJs.includes("updateViaCache: 'none'"), 'Shared JS must bypass stale HTTP cache when updating the service worker');
 expect(worker.includes("'/js/festival-theme.js'") && worker.includes("'/css/festival-theme.css'"), 'Festival runtime and styles must be available offline after the first visit');
 expect(sharedJs.includes('registration.update()'), 'An open application must request a service worker update immediately');
 expect(sharedJs.includes('function vmKhoaHuongDocTrenPwa()'), 'Installed mobile app needs a runtime portrait lock');
