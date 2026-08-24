@@ -27,6 +27,34 @@
 .tt-dialog::backdrop { background:rgba(0,0,0,.55); backdrop-filter:blur(3px); }
 .tt-dialog-body { padding:22px; }
 .tt-dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+.tt-create-card { transition:max-width .2s ease; }
+.tt-create-card.is-bulk { max-width:720px !important; }
+.tt-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin-bottom:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.tt-mode-btn { border:0; border-radius:9px; padding:11px 12px; color:var(--ink-2); background:transparent; font:inherit; font-weight:700; cursor:pointer; }
+.tt-mode-btn.is-active { color:var(--accent-ink, var(--ink)); background:var(--surface); box-shadow:var(--shadow-sm); }
+.tt-bulk-panel[hidden], .tt-single-panel[hidden] { display:none !important; }
+.tt-bulk-intro { padding:13px 14px; margin-bottom:14px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius:11px; background:color-mix(in srgb, var(--accent) 7%, var(--surface)); font-size:.82rem; line-height:1.55; }
+.tt-bulk-input { min-height:190px; resize:vertical; font-family:var(--font-sans); line-height:1.55; }
+.tt-bulk-meta { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-top:7px; color:var(--ink-3); font-size:.78rem; }
+.tt-bulk-preview { max-height:220px; overflow:auto; margin:10px 0 16px; border:1px solid var(--line); border-radius:11px; background:var(--surface-2); }
+.tt-bulk-preview-row { display:grid; grid-template-columns:32px minmax(0,1fr) minmax(150px,.9fr); gap:9px; align-items:center; padding:9px 11px; border-bottom:1px solid var(--line); font-size:.8rem; }
+.tt-bulk-preview-row:last-child { border-bottom:0; }
+.tt-bulk-preview-row code { overflow:hidden; color:var(--accent); text-overflow:ellipsis; white-space:nowrap; }
+.tt-bulk-progress { height:8px; overflow:hidden; margin:10px 0 6px; border-radius:999px; background:var(--surface-3, var(--line)); }
+.tt-bulk-progress > span { display:block; width:0; height:100%; border-radius:inherit; background:var(--accent); transition:width .2s ease; }
+.tt-bulk-results { margin-top:16px; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.tt-bulk-result-row { display:grid; grid-template-columns:minmax(120px,1.2fr) minmax(180px,1.4fr) 92px; gap:9px; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line); font-size:.8rem; }
+.tt-bulk-result-row:last-child { border-bottom:0; }
+.tt-bulk-result-row.is-ok { border-left:3px solid var(--ok); }
+.tt-bulk-result-row.is-error { border-left:3px solid var(--err); }
+.tt-bulk-result-login { min-width:0; color:var(--ink-2); overflow-wrap:anywhere; }
+.tt-bulk-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+@media (max-width:640px) {
+  .tt-bulk-preview-row { grid-template-columns:28px minmax(0,1fr); }
+  .tt-bulk-preview-row code { grid-column:2; }
+  .tt-bulk-result-row { grid-template-columns:1fr auto; }
+  .tt-bulk-result-login { grid-column:1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -49,7 +77,12 @@
     <p style="margin-top:6px">Tạo tài khoản VinhMath hoặc tài khoản riêng cho từng phân hiệu/thương hiệu. Tên đăng nhập và hậu tố được tạo tự động theo nơi sử dụng đã chọn.</p>
   </div>
 
-  <div class="card" style="padding:24px; max-width:560px">
+  <div class="card tt-create-card" id="ttCreateCard" style="padding:24px; max-width:560px">
+    <div class="tt-mode-switch" role="tablist" aria-label="Chế độ tạo tài khoản">
+      <button class="tt-mode-btn is-active" id="ttModeSingle" type="button" role="tab" aria-selected="true" onclick="ttDoiCheDo('single')">Một tài khoản</button>
+      <button class="tt-mode-btn" id="ttModeBulk" type="button" role="tab" aria-selected="false" onclick="ttDoiCheDo('bulk')">Tạo học sinh hàng loạt</button>
+    </div>
+
     <div class="field">
       <label>Nơi sử dụng tài khoản</label>
       <select class="input" id="ttPhamVi" onchange="ttDoiPhamVi()" style="width:100%">
@@ -58,7 +91,7 @@
       <small class="tt-scope-note" id="ttPhamViMoTa">Tài khoản VinhMath đầy đủ; học sinh có thể dùng các lớp và tính năng chính.</small>
     </div>
 
-    <div class="field">
+    <div class="field" id="ttLoaiField">
       <label>Loại tài khoản</label>
       <select class="input" id="ttLoai" onchange="ttDoiLoai()" style="width:100%">
         <option value="hs_ph">Học sinh + Phụ huynh (tự liên kết)</option>
@@ -67,46 +100,79 @@
       </select>
     </div>
 
-    <div class="field">
-      <label id="ttLblTen">Họ và tên học sinh</label>
-      <input class="input" id="ttHoTen" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%" oninput="ttXemTruoc()">
-    </div>
+    <div class="tt-single-panel" id="ttSinglePanel">
+      <div class="field">
+        <label id="ttLblTen">Họ và tên học sinh</label>
+        <input class="input" id="ttHoTen" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%" oninput="ttXemTruoc()">
+      </div>
 
-    <div class="preview-box">
-      <div id="ttRowHS">🎓 Đăng nhập HS: <b id="ttPreviewHS">—</b></div>
-      <div id="ttRowPH">👪 Đăng nhập PH: <b id="ttPreviewPH">—</b></div>
-      <div id="ttRowOne" style="display:none">🔑 Đăng nhập: <b id="ttPreviewOne">—</b></div>
-    </div>
+      <div class="preview-box">
+        <div id="ttRowHS">🎓 Đăng nhập HS: <b id="ttPreviewHS">—</b></div>
+        <div id="ttRowPH">👪 Đăng nhập PH: <b id="ttPreviewPH">—</b></div>
+        <div id="ttRowOne" style="display:none">🔑 Đăng nhập: <b id="ttPreviewOne">—</b></div>
+      </div>
 
-    <div class="field">
+      <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
       <div style="display:flex;gap:8px"><input class="input" id="ttMkHS" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkHS')">Tạo mạnh</button></div>
       <small class="tt-scope-note">Mật khẩu chung mặc định đã được điền sẵn; nút “Tạo mạnh” dùng khi cần mật khẩu riêng.</small>
-    </div>
+      </div>
 
-    <div class="field" id="ttRowDungChung">
+      <div class="field" id="ttRowDungChung">
       <label style="display:flex; align-items:center; gap:8px; font-size:.88rem; cursor:pointer; font-weight:400">
         <input type="checkbox" id="ttDungChung" checked onchange="ttToggleMkPH()" style="width:16px;height:16px;accent-color:var(--accent)">
         Phụ huynh dùng chung mật khẩu với học sinh
       </label>
-    </div>
+      </div>
 
-    <div class="field" id="ttFieldMkPH" style="display:none">
+      <div class="field" id="ttFieldMkPH" style="display:none">
       <label>Mật khẩu phụ huynh</label>
       <div style="display:flex;gap:8px"><input class="input" id="ttMkPH" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkPH')">Tạo mạnh</button></div>
-    </div>
+      </div>
 
-    <div id="ttThongBao" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
+      <div id="ttThongBao" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
 
-    <button class="btn btn-primary" id="ttNutTao" onclick="taoTaiKhoan()" style="width:100%; justify-content:center">Tạo tài khoản</button>
+      <button class="btn btn-primary" id="ttNutTao" onclick="taoTaiKhoan()" style="width:100%; justify-content:center">Tạo tài khoản</button>
 
     <!-- Hộp chứa thông tin tài khoản để copy nhanh -->
-    <div id="ttResultBox" style="display:none; margin-top:20px; padding:16px; border:1px solid var(--ok); border-radius:var(--r-md); background:var(--surface-2); flex-direction:column; gap:12px">
+      <div id="ttResultBox" style="display:none; margin-top:20px; padding:16px; border:1px solid var(--ok); border-radius:var(--r-md); background:var(--surface-2); flex-direction:column; gap:12px">
       <div style="font-weight:800; color:var(--ok); font-size:.9rem; display:flex; align-items:center; gap:6px">
         <span>✅ ĐÃ TẠO TÀI KHOẢN THÀNH CÔNG!</span>
       </div>
       <textarea id="ttCopyArea" readonly style="width:100%; min-height:120px; resize:none; font-family:monospace; font-size:.86rem; padding:10px; border:1px solid var(--line-2); border-radius:var(--r-sm); background:var(--surface); color:var(--ink); line-height:1.5; outline:none;"></textarea>
       <button class="btn btn-secondary btn-sm" id="ttNutSaoChep" onclick="ttSaoChepInfo()" style="width:100%; justify-content:center; font-weight:700">📋 Sao chép thông tin</button>
+      </div>
+    </div>
+
+    <div class="tt-bulk-panel" id="ttBulkPanel" hidden>
+      <div class="tt-bulk-intro">
+        <b>Dán mỗi học sinh một dòng.</b> Có thể dán trực tiếp từ Excel, kể cả cột số thứ tự. VinhMath sẽ tạo lần lượt để tên trùng được tự thêm số an toàn. Tối đa 60 học sinh mỗi lượt.
+      </div>
+      <div class="field">
+        <label for="ttBulkNames">Danh sách họ và tên học sinh</label>
+        <textarea class="input tt-bulk-input" id="ttBulkNames" placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;Lê Minh C" oninput="ttBulkCapNhat()"></textarea>
+        <div class="tt-bulk-meta"><span id="ttBulkCount">0 học sinh hợp lệ</span><span id="ttBulkLimit">Tối đa 60</span></div>
+      </div>
+      <div class="tt-bulk-preview" id="ttBulkPreview" aria-live="polite"></div>
+      <div class="field">
+        <label for="ttBulkPassword">Mật khẩu chung <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
+        <div style="display:flex;gap:8px"><input class="input" id="ttBulkPassword" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttBulkPassword')">Tạo mạnh</button></div>
+        <small class="tt-scope-note" id="ttBulkScopeNote">Mỗi học sinh VinhMath sẽ được tạo kèm tài khoản phụ huynh tự liên kết và dùng chung mật khẩu.</small>
+      </div>
+      <div id="ttBulkNotice" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
+      <button class="btn btn-primary" id="ttBulkCreate" type="button" onclick="ttBulkTaoTaiKhoan()" style="width:100%; justify-content:center" disabled>Tạo học sinh hàng loạt</button>
+      <div id="ttBulkProgressWrap" hidden>
+        <div class="tt-bulk-progress"><span id="ttBulkProgressBar"></span></div>
+        <div class="tt-bulk-meta"><span id="ttBulkProgressText">Đang chuẩn bị…</span><span id="ttBulkProgressCount">0/0</span></div>
+      </div>
+      <div id="ttBulkResultsWrap" hidden>
+        <div class="tt-bulk-results" id="ttBulkResults"></div>
+        <div class="tt-bulk-actions">
+          <button class="btn btn-secondary btn-sm" id="ttBulkCopy" type="button" onclick="ttBulkSaoChep()">📋 Sao chép danh sách</button>
+          <button class="btn btn-secondary btn-sm" id="ttBulkDownload" type="button" onclick="ttBulkTaiCsv()">⬇ Tải file CSV</button>
+        </div>
+        <small class="tt-scope-note">Danh sách và mật khẩu chỉ nằm trong phiên trang này, không được lưu trong trình duyệt. Hãy tải hoặc sao chép trước khi rời trang.</small>
+      </div>
     </div>
   </div>
 
@@ -186,9 +252,13 @@
 
 var TT_MAT_KHAU_MAC_DINH = 'VinhMath2026#';
 window.ttPortals = [];
+window.ttCheDo = 'single';
+window.ttBulkResultsData = [];
+window.ttBulkPasswordDaTao = '';
+window.ttBulkPortalDaTao = null;
 
 function ttDatMatKhauMacDinh() {
-  ['ttMkHS', 'ttMkPH'].forEach(function (id) {
+  ['ttMkHS', 'ttMkPH', 'ttBulkPassword'].forEach(function (id) {
     var input = $(id);
     if (!input) return;
     input.value = TT_MAT_KHAU_MAC_DINH;
@@ -217,6 +287,106 @@ function ttEscapeHtml(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
   });
+}
+
+function ttDoiCheDo(mode) {
+  var isBulk = mode === 'bulk';
+  window.ttCheDo = isBulk ? 'bulk' : 'single';
+  $('ttSinglePanel').hidden = isBulk;
+  $('ttBulkPanel').hidden = !isBulk;
+  $('ttCreateCard').classList.toggle('is-bulk', isBulk);
+  $('ttModeSingle').classList.toggle('is-active', !isBulk);
+  $('ttModeBulk').classList.toggle('is-active', isBulk);
+  $('ttModeSingle').setAttribute('aria-selected', String(!isBulk));
+  $('ttModeBulk').setAttribute('aria-selected', String(isBulk));
+  ttDoiPhamVi();
+  if (isBulk) {
+    ttBulkCapNhat();
+    setTimeout(function () { $('ttBulkNames').focus(); }, 0);
+  }
+}
+
+function ttBulkLamSachDong(line) {
+  var raw = String(line || '').trim();
+  if (!raw) return '';
+  var cells = raw.split('\t').map(function (cell) {
+    return cell.trim().replace(/^\s*(?:\d+\s*[.)\-:]?|[-•*])\s*/, '').replace(/\s+/g, ' ');
+  }).filter(Boolean);
+  if (!cells.length) return '';
+  var nameCells = cells.filter(function (cell) { return /\p{L}/u.test(cell) && !/@/.test(cell); });
+  var pool = nameCells.length ? nameCells : cells;
+  // Khi dán từ bảng tính, cột chữ đầu tiên sau STT thường là họ tên;
+  // không chọn theo độ dài vì cột lớp/ghi chú có thể dài hơn tên học sinh.
+  return pool[0].trim();
+}
+
+function ttBulkDanhSach() {
+  return String($('ttBulkNames').value || '').split(/\r?\n/).map(ttBulkLamSachDong).filter(function (name) {
+    return name && ttSlug(name);
+  });
+}
+
+function ttBulkSuffix() {
+  var portal = ttPortalDangChon();
+  return portal ? portal.login_suffix : 'hs.vinhmath';
+}
+
+function ttBulkCapNhat() {
+  var names = ttBulkDanhSach();
+  var validNames = names.slice(0, 60);
+  var suffix = ttBulkSuffix();
+  var duplicateSlugs = {};
+  var preview = $('ttBulkPreview');
+  $('ttBulkCount').textContent = names.length + ' học sinh hợp lệ';
+  $('ttBulkLimit').textContent = names.length > 60 ? 'Vượt giới hạn ' + (names.length - 60) + ' dòng' : 'Tối đa 60';
+  preview.innerHTML = '';
+  if (!validNames.length) {
+    preview.innerHTML = '<div style="padding:13px;color:var(--ink-3);font-size:.8rem">Danh sách xem trước sẽ hiện ở đây.</div>';
+  } else {
+    validNames.slice(0, 12).forEach(function (name, index) {
+      var slug = ttSlug(name);
+      duplicateSlugs[slug] = (duplicateSlugs[slug] || 0) + 1;
+      var row = document.createElement('div');
+      row.className = 'tt-bulk-preview-row';
+      var login = slug + '@' + suffix;
+      row.innerHTML = '<span>' + (index + 1) + '</span><strong>' + ttEscapeHtml(name) + '</strong><code title="Tên thực tế có thể được thêm số nếu đã tồn tại">' + ttEscapeHtml(login) + '</code>';
+      preview.appendChild(row);
+    });
+    if (validNames.length > 12) {
+      var more = document.createElement('div');
+      more.style.cssText = 'padding:10px 12px;color:var(--ink-3);font-size:.78rem;text-align:center';
+      more.textContent = 'Và ' + (validNames.length - 12) + ' học sinh khác…';
+      preview.appendChild(more);
+    }
+  }
+  var hasDuplicate = Object.keys(duplicateSlugs).some(function (key) { return duplicateSlugs[key] > 1; });
+  var baseLabel = validNames.length ? ('Tạo ' + validNames.length + ' học sinh') : 'Tạo học sinh hàng loạt';
+  $('ttBulkCreate').textContent = baseLabel;
+  $('ttBulkCreate').disabled = !validNames.length || names.length > 60;
+  if (hasDuplicate) ttBulkBao('Có học sinh trùng tên; hệ thống sẽ tự thêm số vào tên đăng nhập thực tế.', 'ok');
+  else if (names.length > 60) ttBulkBao('Mỗi lượt tối đa 60 học sinh. Vui lòng chia danh sách thành hai lượt.');
+  else $('ttBulkNotice').style.display = 'none';
+}
+
+function ttBulkBao(message, type) {
+  var el = $('ttBulkNotice');
+  el.style.display = 'block';
+  el.textContent = message;
+  if (type === 'ok') {
+    el.style.background = 'var(--ok-soft, rgba(40,167,69,.12))';
+    el.style.color = 'var(--ok)';
+  } else {
+    el.style.background = 'rgba(220,53,69,.12)';
+    el.style.color = 'var(--err)';
+  }
+}
+
+function ttBulkCapNhatPhamVi() {
+  var portal = ttPortalDangChon();
+  $('ttBulkScopeNote').textContent = portal
+    ? 'Mỗi dòng sẽ tạo một học sinh chỉ dùng vùng ' + (portal.name || portal.short_name || portal.slug) + ' với hậu tố @' + portal.login_suffix + '.'
+    : 'Mỗi học sinh VinhMath sẽ được tạo kèm tài khoản phụ huynh tự liên kết và dùng chung mật khẩu.';
+  ttBulkCapNhat();
 }
 
 async function ttTaiPhamViTaiKhoan() {
@@ -268,11 +438,18 @@ function ttDoiPhamVi() {
     option.textContent = item.label;
     loai.appendChild(option);
   });
-  if (options.some(function (item) { return item.value === selected; })) loai.value = selected;
+  if (window.ttCheDo === 'bulk') {
+    loai.value = portal ? 'portal_hs' : 'hs_ph';
+    loai.disabled = true;
+  } else {
+    loai.disabled = false;
+    if (options.some(function (item) { return item.value === selected; })) loai.value = selected;
+  }
   $('ttPhamViMoTa').textContent = portal
     ? 'Tài khoản chỉ vào vùng ' + (portal.name || portal.short_name || portal.slug) + '; hậu tố học sinh @' + portal.login_suffix + ', giáo viên @' + portal.teacher_login_suffix + '.'
     : 'Tài khoản VinhMath đầy đủ; học sinh có thể dùng các lớp và tính năng chính.';
   ttDoiLoai();
+  if (window.ttCheDo === 'bulk') ttBulkCapNhatPhamVi();
 }
 
 function ttDoiLoai() {
@@ -288,6 +465,7 @@ function ttDoiLoai() {
   $('ttFieldMkPH').style.display = (laHSPH && !$('ttDungChung').checked) ? 'block' : 'none';
   $('ttLblMk').innerHTML = (laHocSinh ? 'Mật khẩu học sinh' : 'Mật khẩu') + ' <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span>';
   ttXemTruoc();
+  if (window.ttCheDo === 'bulk') ttBulkCapNhatPhamVi();
 }
 
 function ttToggleMkPH() {
@@ -398,6 +576,178 @@ async function taoTaiKhoan() {
     ttBao('❌ ' + (e.message || e));
     btn.disabled = false; btn.textContent = 'Tạo tài khoản';
   }
+}
+
+async function ttBulkGoiTao(requestBody) {
+  var response = await sb.functions.invoke('tao-tai-khoan', { body: requestBody });
+  var data = response.data || {};
+  if (!response.error && !data.error) return data;
+  var message = data.error || (response.error && response.error.message) || 'Không tạo được tài khoản';
+  try {
+    if (response.error && response.error.context && typeof response.error.context.json === 'function') {
+      var body = await response.error.context.json();
+      if (body && body.error) message = body.error;
+    }
+  } catch (error) {}
+  throw new Error(message);
+}
+
+function ttBulkSetBusy(busy) {
+  ['ttModeSingle', 'ttModeBulk', 'ttPhamVi', 'ttBulkNames', 'ttBulkPassword'].forEach(function (id) {
+    if ($(id)) $(id).disabled = busy;
+  });
+  $('ttLoai').disabled = busy || window.ttCheDo === 'bulk';
+  $('ttBulkCreate').disabled = busy;
+  if (!busy) ttBulkCapNhat();
+}
+
+function ttBulkRenderResults() {
+  var target = $('ttBulkResults');
+  target.innerHTML = '';
+  window.ttBulkResultsData.forEach(function (item) {
+    var row = document.createElement('div');
+    row.className = 'tt-bulk-result-row ' + (item.ok ? 'is-ok' : 'is-error');
+    var loginText = item.ok
+      ? ('HS: ' + item.studentLogin + (item.parentLogin ? ' · PH: ' + item.parentLogin : ''))
+      : item.error;
+    row.innerHTML = '<strong>' + ttEscapeHtml(item.fullName) + '</strong>' +
+      '<span class="tt-bulk-result-login">' + ttEscapeHtml(loginText) + '</span>' +
+      '<b style="color:' + (item.ok ? 'var(--ok)' : 'var(--err)') + '">' + (item.ok ? '✓ Đã tạo' : '✕ Lỗi') + '</b>';
+    target.appendChild(row);
+  });
+}
+
+async function ttBulkTaoTaiKhoan() {
+  var allNames = ttBulkDanhSach();
+  var names = allNames.slice(0, 60);
+  var password = $('ttBulkPassword').value;
+  var portal = ttPortalDangChon();
+  var type = portal ? 'portal_hs' : 'hs_ph';
+  if (!names.length) { ttBulkBao('Vui lòng dán ít nhất một họ tên học sinh.'); return; }
+  if (allNames.length > 60) { ttBulkBao('Mỗi lượt tối đa 60 học sinh. Vui lòng chia danh sách thành hai lượt.'); return; }
+  if (password.length < 8) { ttBulkBao('Mật khẩu chung phải có ít nhất 8 ký tự.'); return; }
+  if (portal && !portal.id) { ttBulkBao('Phân hiệu đã chọn không hợp lệ.'); return; }
+  if (!window.confirm('Tạo ngay ' + names.length + ' học sinh' + (portal ? ' cho ' + (portal.name || portal.short_name || portal.slug) : ' kèm tài khoản phụ huynh') + '?\n\nCác tài khoản tạo thành công sẽ có hiệu lực ngay.')) return;
+
+  window.ttBulkResultsData = [];
+  window.ttBulkPasswordDaTao = password;
+  window.ttBulkPortalDaTao = portal ? {
+    id: portal.id,
+    name: portal.name,
+    short_name: portal.short_name,
+    slug: portal.slug
+  } : null;
+  $('ttBulkResultsWrap').hidden = false;
+  $('ttBulkProgressWrap').hidden = false;
+  $('ttBulkProgressBar').style.width = '0%';
+  $('ttBulkProgressText').textContent = 'Đang bắt đầu…';
+  $('ttBulkProgressCount').textContent = '0/' + names.length;
+  $('ttBulkResults').innerHTML = '';
+  ttBulkSetBusy(true);
+
+  for (var index = 0; index < names.length; index += 1) {
+    var fullName = names[index];
+    $('ttBulkProgressText').textContent = 'Đang tạo: ' + fullName;
+    try {
+      var requestBody = {
+        type: type,
+        fullName: fullName,
+        username: ttSlug(fullName),
+        password: password,
+        password2: password
+      };
+      if (portal) requestBody.portalId = portal.id;
+      var data = await ttBulkGoiTao(requestBody);
+      window.ttBulkResultsData.push({
+        fullName: fullName,
+        ok: true,
+        studentLogin: data.type === 'hs_ph' ? data.student.login : data.login,
+        parentLogin: data.type === 'hs_ph' ? data.parent.login : '',
+        error: ''
+      });
+    } catch (error) {
+      window.ttBulkResultsData.push({
+        fullName: fullName,
+        ok: false,
+        studentLogin: '',
+        parentLogin: '',
+        error: error && error.message ? error.message : String(error)
+      });
+    }
+    ttBulkRenderResults();
+    var done = index + 1;
+    $('ttBulkProgressBar').style.width = ((done / names.length) * 100).toFixed(1) + '%';
+    $('ttBulkProgressCount').textContent = done + '/' + names.length;
+  }
+
+  var successCount = window.ttBulkResultsData.filter(function (item) { return item.ok; }).length;
+  var errorCount = names.length - successCount;
+  $('ttBulkProgressText').textContent = errorCount
+    ? ('Hoàn tất: ' + successCount + ' thành công, ' + errorCount + ' lỗi')
+    : ('Hoàn tất ' + successCount + ' học sinh');
+  ttBulkBao(errorCount
+    ? ('Đã tạo ' + successCount + '/' + names.length + ' học sinh. Xem từng dòng lỗi bên dưới; các tài khoản thành công vẫn dùng được ngay.')
+    : ('✅ Đã tạo thành công ' + successCount + ' học sinh. Hãy sao chép hoặc tải danh sách trước khi rời trang.'), errorCount ? '' : 'ok');
+  ttBulkSetBusy(false);
+  if (window._hoSo && window._hoSo.role === 'admin') taiDanhSachTaiKhoan();
+}
+
+function ttBulkTsv() {
+  var portal = window.ttBulkPortalDaTao;
+  var rows = portal
+    ? [['Họ và tên', 'Tài khoản học sinh', 'Mật khẩu', 'Phân hiệu', 'Trạng thái / ghi chú']]
+    : [['Họ và tên', 'Tài khoản học sinh', 'Mật khẩu HS', 'Tài khoản phụ huynh', 'Mật khẩu PH', 'Trạng thái / ghi chú']];
+  window.ttBulkResultsData.forEach(function (item) {
+    if (portal) {
+      rows.push([item.fullName, item.studentLogin, item.ok ? window.ttBulkPasswordDaTao : '', portal.name || portal.short_name || portal.slug, item.ok ? 'Đã tạo' : item.error]);
+    } else {
+      rows.push([item.fullName, item.studentLogin, item.ok ? window.ttBulkPasswordDaTao : '', item.parentLogin, item.ok ? window.ttBulkPasswordDaTao : '', item.ok ? 'Đã tạo' : item.error]);
+    }
+  });
+  return rows.map(function (row) { return row.join('\t'); }).join('\n');
+}
+
+async function ttBulkSaoChep() {
+  if (!window.ttBulkResultsData.length) return;
+  var textValue = ttBulkTsv();
+  try {
+    await navigator.clipboard.writeText(textValue);
+  } catch (error) {
+    var helper = document.createElement('textarea');
+    helper.value = textValue;
+    helper.style.position = 'fixed';
+    helper.style.opacity = '0';
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand('copy');
+    helper.remove();
+  }
+  var button = $('ttBulkCopy');
+  var oldText = button.textContent;
+  button.textContent = '✓ Đã sao chép';
+  setTimeout(function () { button.textContent = oldText; }, 1800);
+}
+
+function ttBulkCsvEscape(value) {
+  var textValue = String(value == null ? '' : value);
+  return /[",\r\n]/.test(textValue) ? ('"' + textValue.replace(/"/g, '""') + '"') : textValue;
+}
+
+function ttBulkTaiCsv() {
+  if (!window.ttBulkResultsData.length) return;
+  var csv = ttBulkTsv().split('\n').map(function (line) {
+    return line.split('\t').map(ttBulkCsvEscape).join(',');
+  }).join('\r\n');
+  var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  var stamp = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = 'vinhmath-tai-khoan-hoc-sinh-' + stamp + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
 function ttSaoChepInfo() {
