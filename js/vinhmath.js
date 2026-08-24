@@ -2796,15 +2796,22 @@ function vmApDungThuongHieu(theme) {
     theme = theme || 'vinhmath';
     window.VM_ACTIVE_BRAND = theme;
     var preset = vmPresetThuongHieu(theme);
+    var isBrandRecord = !!theme && typeof theme === 'object';
+    var brandSlug = isBrandRecord ? String(theme.slug || '').trim().toLowerCase() : preset;
+    var isCanonicalPreset = !isBrandRecord || brandSlug === preset;
+    // VinhMath gốc luôn dùng bảng màu và wordmark vàng–đen chuẩn của hệ thống.
+    // Các template mới dựa trên preset VinhMath vẫn là thương hiệu tùy biến và
+    // tiếp tục nhận đầy đủ màu/logo do người quản trị cấu hình.
+    var isCanonicalVinhMath = preset === 'vinhmath' && isCanonicalPreset;
     var isMap = preset === 'map';
     var isDM = preset === 'duyminh';
-    var isCustom = typeof theme === 'object';
+    var isCustom = isBrandRecord && !isCanonicalPreset;
     document.body.classList.toggle('theme-map', isMap);
     document.body.classList.toggle('theme-duyminh', isDM);
     document.body.classList.toggle('theme-custom', isCustom);
     document.body.dataset.vmBrand = isCustom ? (theme.slug || theme.id || 'custom') : preset;
     vmXoaBienThuongHieu();
-    if (isCustom) vmApDungBienThuongHieu(theme);
+    if (isBrandRecord && !isCanonicalVinhMath) vmApDungBienThuongHieu(theme);
 
     // Bỏ logo chìm nền (gây khó nhìn) — xoá nếu còn tồn tại từ phiên trước
     var wm = document.getElementById('mapWatermarkGlobal');
@@ -2818,7 +2825,7 @@ function vmApDungThuongHieu(theme) {
         img.src = vmUrlLogoThuongHieu(theme);
         img.alt = vmTenThuongHieu(theme);
         img.style.objectFit = 'contain';
-        if (isCustom) {
+        if (isBrandRecord && !isCanonicalVinhMath) {
           var logoX = Number(theme.logo_x), logoY = Number(theme.logo_y);
           if (!Number.isFinite(logoX)) logoX = 50;
           if (!Number.isFinite(logoY)) logoY = 50;
@@ -3594,7 +3601,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=42', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=43', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
