@@ -52,13 +52,12 @@ expect(todoOrder[0] === 'todo-reminder-late' && todoOrder[1] === 'todo-reminder-
 
 for (const item of [
   "path: 'trang-chu', label: 'Hôm nay'",
-  "path: 'lop-hoc', label: 'Lớp học'",
+  "path: 'lop-hoc', label: 'Bài học'",
   "path: 'luyen-de', label: 'Bài tập'",
   "path: 'ket-qua', label: 'Kết quả'",
-  "path: 'bang-vang', label: 'BXH'",
   "path: 'ca-nhan', label: 'Cá nhân'"
 ]) expect(menu.includes(item), `Thiếu mục điều hướng học sinh: ${item}`);
-expect(!/MENU CỦA HỌC SINH[\s\S]{0,900}type:\s*'dropdown'/.test(menu), 'Menu học sinh không được giấu công cụ trong dropdown dài');
+expect(menu.includes("type: 'dropdown', label: 'Thêm'") && menu.includes("path: 'bang-vang', label: '🏆 Bảng xếp hạng'") && menu.includes("path: 'vmtool', label: '🧰 VMTool'"), 'Menu học sinh phải giữ BXH và VMTool trong nhóm Thêm gọn');
 expect(menu.includes("sessionStorage.getItem('vm-guest-mode') === 'true'") && menu.includes("apDungMenu('student', null)"), 'Chế độ trải nghiệm phải hiển thị đủ menu học sinh mới');
 expect(menu.includes("if (!role || role === 'student') return"), 'Thanh công cụ học sinh phải bỏ nhãn vai trò trùng lặp');
 
@@ -70,7 +69,7 @@ expect(home.includes('Cập nhật học tập mới nhất') && home.includes('
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=8') && homePage.includes('js/role-home.js?v=9'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
+expect(homePage.includes('css/role-home.css?v=9') && homePage.includes('js/role-home.js?v=10'), 'Trang Hôm nay phải nạp phiên bản học online, việc cần làm và cấp bậc mới nhất');
 expect(homePage.includes('vmStudentClockTime') && home.includes("timeZone: 'Asia/Ho_Chi_Minh'") && home.includes("['khungMeetHoc', 'khungDiemDanhHoc']"), 'Trang Hôm nay phải có đồng hồ Việt Nam và đặt Google Meet trước điểm danh');
 expect(homeCss.includes('grid-template-areas:"main live" "main side"') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session-context'), 'Desktop phải đặt việc cần làm bên trái, Google Meet bên phải và có lịch học rõ ràng');
 expect(homePage.includes('<small>LỊCH HỌC</small><b>Buổi học sắp tới</b>') && !homePage.includes('GIỜ VIỆT NAM') && homePage.includes('vm-meet-schedule-panel'), 'Đồng hồ phải nằm gọn trong vùng lịch học và không còn nhãn giờ Việt Nam');
@@ -79,6 +78,7 @@ expect(homeCss.includes('@media(max-width:900px)') && homeCss.includes('.vm-stud
 expect(rankSystem.includes('vm-rank-home-heading') && !rankSystem.includes('vm-rank-home-icon') && rankCss.includes('min-height:76px'), 'Dải cảnh giới phải gọn và không còn ô biểu tượng ngôi sao lớn');
 expect(home.includes("sb.rpc('hs_ho_so')") && home.includes("sb.rpc('get_my_reminders')"), 'Dòng cập nhật phải dùng nguồn nhiệm vụ và nhắc nhở hiện có của học sinh');
 expect(home.includes('buildStudentTodos(snapshot, profile)') && home.includes('data-feed-filter="todo"') && home.includes('vmStudentTodoCount'), 'Dòng cập nhật thiếu mục Cần làm gọn kèm số lượng');
+expect(home.includes('renderStudentPriority()') && home.includes('NÊN LÀM TRƯỚC') && homeCss.includes('.vm-student-priority'), 'Trang Hôm nay phải nêu rõ một việc ưu tiên nhưng vẫn giữ dòng cập nhật đầy đủ');
 expect(home.includes("var vmStudentFeedFilter = 'todo'") && !home.includes('data-feed-filter="all"'), 'Dòng cập nhật phải mặc định Cần làm và không còn tab Tất cả');
 expect(home.includes("priority:0, label:'Quá hạn") && home.includes("priority:1, label:'Hôm nay'") && home.includes("priority:2, label:'Ngày mai'"), 'Việc cần làm chưa được sắp theo hạn ưu tiên');
 expect(homePage.includes('if (window._nvData && !window._nvData.error) r = { data: window._nvData }'), 'Trang Hôm nay không được gọi lặp RPC hồ sơ khi đã có dữ liệu nhiệm vụ');
@@ -127,6 +127,7 @@ expect(lessonPage.includes('[data-reader-key]:fullscreen') && lessonPage.include
 expect(lessonPage.includes('Dùng toàn màn hình CSS riêng trong từng cửa sổ') && !/if \(!mobile && shell\.requestFullscreen\)/.test(lessonPage), 'Trình đọc phải tách toàn màn hình web và PWA, không dùng native fullscreen');
 expect(lessonPage.includes('.vm-tex-kind-document .vm-tex-reader,.vm-tex-kind-test .vm-tex-reader { width:100%; max-width:none; }'), 'Tài liệu và bài kiểm tra LaTeX phải dùng hết bề ngang PC');
 expect(lessonPage.includes('.theory-reading-container { width:100%; max-width:1520px;') && lessonPage.includes('.theory-reading-container > .vm-tex-reader { width:100%; max-width:none; }'), 'Phần đọc lý thuyết phải tận dụng bề ngang màn hình PC');
+expect(lessonPage.includes('id="vmLessonJourney"') && lessonPage.includes('function vmCapNhatHanhTrinhBaiHoc()') && lessonPage.includes("vmChonBuocHanhTrinh(nextStep.key)"), 'Bài giảng phải có hành trình tuyến tính bổ sung trên các nút nội dung cũ');
 expect(tokens.includes('--font-reading: "Be Vietnam Pro"') && vinhCss.includes('button,input,select,textarea,option{font-family:var(--font-sans)}'), 'Font giao diện và trình đọc phải hỗ trợ đầy đủ tiếng Việt');
 expect(practicePage.includes('Bài tập & kiểm tra trong bài giảng') && practicePage.includes('Đề thi & thi thử') && practicePage.includes('Tất cả các lớp'), 'Luyện tập phải hợp nhất bài tập, kiểm tra, đề thi và có phạm vi mọi lớp');
 expect(practicePage.includes('practice-shell has-class-filter') || (practicePage.includes("classList.add('has-class-filter')") && practicePage.includes('practice-class-filter')), 'Bộ lọc lớp trên PC phải nằm ở thanh bên trái');

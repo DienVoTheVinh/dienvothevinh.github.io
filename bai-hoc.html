@@ -83,6 +83,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .sw-btn:hover { color:var(--ink); border-color:var(--ink-3); }
 .sw-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 .sw-btn:disabled { opacity:.4; cursor:not-allowed; }
+.lesson-journey{display:none;align-items:center;gap:10px;margin:10px 20px 0;padding:9px 11px;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.lesson-journey.is-ready{display:flex}.lesson-journey-intro{display:grid;gap:1px;min-width:128px}.lesson-journey-intro b{font-size:.72rem;color:var(--ink)}.lesson-journey-intro small{font-size:.58rem;color:var(--ink-3)}
+.lesson-journey-track{display:flex;align-items:center;gap:5px;min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}.lesson-journey-track::-webkit-scrollbar{display:none}.lesson-journey-step{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 9px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--ink-2);font:750 .65rem/1.15 var(--font-sans);white-space:nowrap;cursor:pointer}.lesson-journey-step:hover{background:var(--surface);border-color:var(--line)}.lesson-journey-step.is-active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 38%,var(--line));color:var(--accent)}.lesson-journey-step .step-no{display:grid;place-items:center;width:20px;height:20px;border-radius:7px;background:var(--surface-2);font-size:.58rem;font-weight:900}.lesson-journey-step.is-active .step-no{background:var(--accent);color:var(--on-accent,#fff)}.lesson-journey-next{flex:0 0 auto;min-height:34px;padding:7px 11px!important;font-size:.64rem!important}
 /* Bỏ thanh nút tính năng trên đỉnh — mọi tính năng nằm trong mục lục trái */
 #boChuyen { display:none !important; }
 .lesson-header-actions { margin-left:auto; }
@@ -634,6 +637,7 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   .switcher { order:3; flex-basis:100%; width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; justify-content:flex-start; }
   .switcher::-webkit-scrollbar { display:none; }
   .sw-btn { flex-shrink:0; padding:7px 12px; }
+  .lesson-journey{margin:8px 10px 0;padding:8px}.lesson-journey-intro{display:none}.lesson-journey-next{display:none!important}.lesson-journey-step{min-height:36px;padding:7px 10px}
   .mobile-tabs { height:44px; background:var(--surface-solid); }
   .mobile-tab-btn { font-size:.82rem; }
   .sidebar { top:60px; padding-top:10px; }
@@ -836,6 +840,12 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </header>
+
+  <nav class="lesson-journey" id="vmLessonJourney" aria-label="Hành trình bài học">
+    <span class="lesson-journey-intro"><b>Hành trình bài học</b><small id="vmLessonJourneyStatus">Chọn chặng để học</small></span>
+    <span class="lesson-journey-track" id="vmLessonJourneyTrack"></span>
+    <button class="btn btn-primary btn-sm lesson-journey-next" id="vmLessonJourneyNext" type="button">Tiếp theo →</button>
+  </nav>
   
   <!-- 📌 Dặn dò chung của thầy (hiện cho tất cả, kể cả học sinh) — thu gọn được -->
   <div id="lessonNoteBanner" style="display:none; margin:12px 20px 0; padding:12px 18px 13px; border-radius:16px; background:linear-gradient(135deg, rgba(224,160,32,0.14), rgba(181,96,52,0.06)); border:1px solid rgba(224,160,32,0.32); box-shadow:0 4px 18px rgba(224,160,32,0.10); position:relative; overflow:hidden">
@@ -1055,7 +1065,7 @@ var coTest = false;
     var style = document.createElement('style');
     style.innerHTML = `
       body { background: transparent !important; padding: 0 !important; overflow: auto !important; }
-      header.header, .switcher, #coTeachBanner, .layout-resizer, .container-split, #modalBuoiHS, #modalNopBai { display: none !important; }
+      header.header, .switcher, #vmLessonJourney, #coTeachBanner, .layout-resizer, .container-split, #modalBuoiHS, #modalNopBai { display: none !important; }
       #modalHub {
         position: relative !important;
         inset: auto !important;
@@ -3428,8 +3438,67 @@ function vmTrangThaiMoTest() {
   return 'open';
 }
 
+var vmBuocHanhTrinhDangChon = null;
+function vmDanhSachBuocHanhTrinh() {
+  var steps = [];
+  if (!window.khongCoVideo) steps.push({key:'video', icon:'▶', label:'Xem bài'});
+  [
+    {key:'lythuyet', id:'swLyThuyet', icon:'📖', label:'Lý thuyết'},
+    {key:'tailieu', id:'swTaiLieu', icon:'📄', label:'Tài liệu'},
+    {key:'bang', id:'swBang', icon:'🖼', label:'Ảnh bảng'},
+    {key:'btvn', id:'swBTVN', icon:'✍️', label:'Bài tập'},
+    {key:'test', id:'swTest', icon:'📝', label:'Kiểm tra'}
+  ].forEach(function (step) {
+    var control = $(step.id);
+    if (control && control.style.display !== 'none') steps.push(step);
+  });
+  return steps;
+}
+
+function vmChonBuocHanhTrinh(key) {
+  vmBuocHanhTrinhDangChon = key;
+  if (key === 'video') {
+    if (window.innerWidth <= 820) hienMobilePane('video');
+    else {
+      var pane = $('khungTrangVideo');
+      if (pane) { pane.scrollIntoView({behavior:'smooth', block:'nearest'}); pane.focus && pane.focus({preventScroll:true}); }
+    }
+    vmCapNhatHanhTrinhBaiHoc();
+    return;
+  }
+  chonNoiDung(key);
+}
+
+function vmCapNhatHanhTrinhBaiHoc() {
+  var shell = $('vmLessonJourney'), track = $('vmLessonJourneyTrack'), next = $('vmLessonJourneyNext');
+  if (!shell || !track || !next || !nguoiDung || laQuanTriBaiHoc()) {
+    if (shell) shell.classList.remove('is-ready');
+    return;
+  }
+  var steps = vmDanhSachBuocHanhTrinh();
+  if (!steps.length) { shell.classList.remove('is-ready'); return; }
+  var activeKey = vmBuocHanhTrinhDangChon || noiDungDangChon || steps[0].key;
+  var activeIndex = steps.findIndex(function (step) { return step.key === activeKey; });
+  if (activeIndex < 0) { activeIndex = 0; activeKey = steps[0].key; }
+  shell.classList.add('is-ready');
+  track.innerHTML = steps.map(function (step, index) {
+    return '<button type="button" class="lesson-journey-step' + (step.key === activeKey ? ' is-active' : '') + '" data-lesson-step="' + step.key + '" aria-current="' + (step.key === activeKey ? 'step' : 'false') + '"><span class="step-no">' + (index + 1) + '</span>' + step.icon + ' ' + step.label + '</button>';
+  }).join('');
+  track.querySelectorAll('[data-lesson-step]').forEach(function (button) {
+    button.addEventListener('click', function () { vmChonBuocHanhTrinh(button.getAttribute('data-lesson-step')); });
+  });
+  var status = $('vmLessonJourneyStatus');
+  if (status) status.textContent = 'Chặng ' + (activeIndex + 1) + '/' + steps.length + ' · vẫn dùng đủ nội dung cũ';
+  var nextStep = steps[activeIndex + 1];
+  next.textContent = nextStep ? 'Tiếp: ' + nextStep.label + ' →' : 'Xem kết quả →';
+  next.onclick = function () { if (nextStep) vmChonBuocHanhTrinh(nextStep.key); else location.href = 'ket-qua'; };
+  var activeButton = track.querySelector('.is-active');
+  if (activeButton) activeButton.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
 async function chonNoiDung(loai) {
   noiDungDangChon = loai;
+  vmBuocHanhTrinhDangChon = loai;
   ['LyThuyet', 'TaiLieu', 'Bang', 'BTVN', 'Test'].forEach(function (t) {
     var el = $('sw' + t);
     if (el) el.classList.remove('active');
@@ -3510,6 +3579,7 @@ async function chonNoiDung(loai) {
   if (['lythuyet', 'tailieu', 'bang', 'btvn', 'test'].indexOf(loai) !== -1 && nguoiDung && !laQuanTriBaiHoc()) {
     vmDanhDauDaXem(lessonId, loai).then(function () { if (typeof taiMucLuc === 'function') taiMucLuc(); });
   }
+  vmCapNhatHanhTrinhBaiHoc();
 }
 
 function btvnEsc(s) {
@@ -4089,6 +4159,8 @@ function hienMobilePane(loai) {
   if (loai === 'video') {
     kg.className = 'workspace show-video';
     $('tabVideo').classList.add('active'); $('tabNoiDung').classList.remove('active');
+    vmBuocHanhTrinhDangChon = 'video';
+    vmCapNhatHanhTrinhBaiHoc();
   } else {
     kg.className = 'workspace show-content';
     $('tabNoiDung').classList.add('active'); $('tabVideo').classList.remove('active');
