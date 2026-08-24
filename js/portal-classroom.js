@@ -348,9 +348,13 @@
   }
 
   async function refreshPortalExams() {
-    var result = await sb.from('exam_portal_exams').select('portal_id,exam_id,class_id,published,show_result,available_from,available_until,sort,exam:exams(id,title,duration_minutes,opens_at,closes_at,de_type,exam_questions(count))').eq('portal_id', vmPortalState.portal.id).order('sort').order('available_from', {ascending:true, nullsFirst:true});
+    var result = await sb.from('exam_portal_exams').select('portal_id,exam_id,class_id,published,show_result,available_from,available_until,sort').eq('portal_id', vmPortalState.portal.id).order('sort').order('available_from', {ascending:true, nullsFirst:true});
     if (result.error) return;
     vmPortalState.assignments = result.data || [];
+    var safeExams = await vmSafeExamCatalog();
+    var safeExamMap = {};
+    safeExams.forEach(function (exam) { safeExamMap[exam.id] = exam; });
+    vmPortalState.assignments.forEach(function (item) { item.exam = safeExamMap[item.exam_id] || null; });
     if (typeof vmPortalRenderExams === 'function') vmPortalRenderExams();
     if (typeof vmPortalRenderResults === 'function') vmPortalRenderResults();
   }

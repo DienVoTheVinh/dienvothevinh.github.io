@@ -246,6 +246,15 @@
     var bounds = visibleBounds(size); drawGrid(size, bounds); drawRegion(size, currentRows(), bounds);
   }
 
+  var drawFrame = 0;
+  function scheduleDraw() {
+    if (drawFrame) return;
+    drawFrame = requestAnimationFrame(function () {
+      drawFrame = 0;
+      draw();
+    });
+  }
+
   function update() {
     if (!countEl) return;
     var rows = currentRows(); var valid = true;
@@ -259,7 +268,7 @@
     var lead = document.createElement('strong'); lead.textContent = 'Hệ đang vẽ: ';
     summaryEl.appendChild(lead); summaryEl.appendChild(document.createTextNode(rows.map(rowSentence).join('  ·  ')));
     if (!valid) summaryEl.appendChild(document.createTextNode(' — Hãy sửa dòng không hợp lệ.'));
-    draw();
+    scheduleDraw();
   }
 
   function resetView() { state.centerX = 0; state.centerY = 0; state.scale = 48; draw(); }
@@ -296,7 +305,7 @@
   function bindCanvas() {
     canvas.addEventListener('wheel', function (event) { event.preventDefault(); var rect = canvas.getBoundingClientRect(); zoom(event.deltaY < 0 ? 1.13 : 1 / 1.13, { x: event.clientX - rect.left, y: event.clientY - rect.top }); }, { passive: false });
     canvas.addEventListener('pointerdown', function (event) { drag.active = true; drag.x = event.clientX; drag.y = event.clientY; canvas.setPointerCapture(event.pointerId); canvas.classList.add('dragging'); });
-    canvas.addEventListener('pointermove', function (event) { if (!drag.active) return; var dx = event.clientX - drag.x, dy = event.clientY - drag.y; drag.x = event.clientX; drag.y = event.clientY; state.centerX -= dx / state.scale; state.centerY += dy / state.scale; draw(); });
+    canvas.addEventListener('pointermove', function (event) { if (!drag.active) return; var dx = event.clientX - drag.x, dy = event.clientY - drag.y; drag.x = event.clientX; drag.y = event.clientY; state.centerX -= dx / state.scale; state.centerY += dy / state.scale; scheduleDraw(); });
     function stop(event) { drag.active = false; canvas.classList.remove('dragging'); if (event && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); }
     canvas.addEventListener('pointerup', stop); canvas.addEventListener('pointercancel', stop);
   }
@@ -317,7 +326,7 @@
     $('downloadPng').addEventListener('click', downloadPng); $('copyTikz').addEventListener('click', copyTikz); $('downloadTikz').addEventListener('click', downloadTikz);
     bindCanvas(); applyPreset('triangle'); resizeCanvas();
     new ResizeObserver(resizeCanvas).observe(wrap);
-    new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(scheduleDraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     try { await initAuth(); } catch (error) { console.warn('Không thể xác minh phiên VMTool:', error); }
   }
 

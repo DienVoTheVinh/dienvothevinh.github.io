@@ -27,6 +27,146 @@
   try { var saved = localStorage.getItem('vm-theme-color'); if (saved) window.vmApplyThemeColor(saved); } catch(e){}
 })();
 
+/* ===== PRIVATE COURSE ASSETS + SAFE EXAM CATALOG =====
+   Tệp bài học không dùng URL public. Sau khi RLS cho phép đọc bản ghi chứa
+   đường dẫn, client mới xin URL ký ngắn hạn cho đúng phiên đăng nhập. */
+(function () {
+  var signedAssetCache = new Map();
+
+  function cleanStoragePath(value, bucket) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        var parsed = new URL(raw);
+        var publicMarker = '/storage/v1/object/public/' + bucket + '/';
+        var signedMarker = '/storage/v1/object/sign/' + bucket + '/';
+        var markerAt = parsed.pathname.indexOf(publicMarker);
+        var markerLength = publicMarker.length;
+        if (markerAt < 0) {
+          markerAt = parsed.pathname.indexOf(signedMarker);
+          markerLength = signedMarker.length;
+        }
+        if (markerAt < 0) return raw;
+        raw = parsed.pathname.slice(markerAt + markerLength);
+      } catch (_) { return raw; }
+    }
+    raw = raw.replace(/^\/+/, '');
+    var marker = bucket + '/';
+    var markerIndex = raw.indexOf(marker);
+    if (markerIndex >= 0) raw = raw.slice(markerIndex + marker.length);
+    try { raw = decodeURIComponent(raw); } catch (_) {}
+    return raw;
+  }
+
+  window.vmSignedCourseAsset = async function (bucket, value, expiresIn) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (!window.sb || !sb.storage) return '';
+    var path = cleanStoragePath(raw, bucket);
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    var ttl = Math.max(60, Math.min(Number(expiresIn) || 900, 3600));
+    var cacheKey = bucket + ':' + path;
+    var cached = signedAssetCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now() + 30000) return cached.url;
+    var result = await sb.storage.from(bucket).createSignedUrl(path, ttl);
+    if (result.error || !result.data || !result.data.signedUrl) {
+      console.warn('Không cấp được quyền xem tệp học tập:', bucket, result.error && result.error.message);
+      return '';
+    }
+    signedAssetCache.set(cacheKey, { url: result.data.signedUrl, expiresAt: Date.now() + ttl * 1000 });
+    return result.data.signedUrl;
+  };
+
+  function assetAttrEscape(value) {
+    return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  window.vmPrivateAssetImageAttrs = function (bucket, value) {
+    var raw = String(value || '').trim();
+    if (!raw) return 'src=""';
+    var path = cleanStoragePath(raw, bucket);
+    if (/^https?:\/\//i.test(path)) return 'src="' + assetAttrEscape(path) + '"';
+    return 'src="" data-vm-private-bucket="' + assetAttrEscape(bucket) +
+      '" data-vm-private-path="' + assetAttrEscape(raw) + '"';
+  };
+
+  window.vmHydratePrivateAssets = async function (root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    var nodes = Array.prototype.slice.call(scope.querySelectorAll('[data-vm-private-bucket][data-vm-private-path]'));
+    await Promise.all(nodes.map(async function (node) {
+      var url = await window.vmSignedCourseAsset(node.dataset.vmPrivateBucket, node.dataset.vmPrivatePath);
+      if (url) node.src = url;
+      node.removeAttribute('data-vm-private-bucket');
+      node.removeAttribute('data-vm-private-path');
+    }));
+  };
+
+  window.vmSecureLessonAssets = async function (lesson) {
+    if (!lesson) return lesson;
+    var documentKeys = ['documents', 'bai_test', 'bai_btvn', 'bai_btvn2'];
+    await Promise.all(documentKeys.map(async function (key) {
+      var documentRow = lesson[key];
+      if (documentRow && documentRow.file_path && !/^https?:\/\//i.test(documentRow.file_path)) {
+        documentRow.file_path = await window.vmSignedCourseAsset('tai-lieu', documentRow.file_path);
+      }
+    }));
+    var imageKeys = ['images', 'homework_images', 'homework2_images'];
+    await Promise.all(imageKeys.map(async function (key) {
+      var list = lesson[key];
+      if (typeof list === 'string') {
+        try { list = JSON.parse(list); } catch (_) { list = []; }
+      }
+      if (!Array.isArray(list)) return;
+      lesson[key] = await Promise.all(list.map(function (path) {
+        return /^https?:\/\//i.test(String(path || ''))
+          ? path
+          : window.vmSignedCourseAsset('hinh-anh', path);
+      }));
+    }));
+    return lesson;
+  };
+
+  window.vmSafeExamCatalog = async function (examId) {
+    if (!window.sb || !sb.rpc) return [];
+    var args = examId ? { p_exam_id: examId } : {};
+    var result = await sb.rpc('vm_exam_catalog', args);
+    if (result.error) throw result.error;
+    return Array.isArray(result.data) ? result.data : [];
+  };
+})();
+
+/* ===== SMOOTH UI BUDGET =====
+   Chỉ dùng transform/opacity cho chuyển động; tự giảm hiệu ứng trên máy yếu và
+   dừng animation khi tab bị ẩn để không chiếm CPU/GPU nền. */
+(function () {
+  var root = document.documentElement;
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var lowMemory = Number(navigator.deviceMemory || 8) <= 4;
+  var lowCpu = Number(navigator.hardwareConcurrency || 8) <= 4;
+  if (reduced || lowMemory || lowCpu) root.classList.add('vm-lite-motion');
+
+  function updateVisibilityBudget() {
+    root.classList.toggle('vm-page-hidden', document.hidden);
+  }
+  document.addEventListener('visibilitychange', updateVisibilityBudget, { passive: true });
+  updateVisibilityBudget();
+
+  function revealPage() {
+    var main = document.querySelector('main, .wrap, #viewMain');
+    if (!main || main.dataset.vmSmoothReady) return;
+    main.dataset.vmSmoothReady = '1';
+    main.classList.add('vm-smooth-enter');
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { main.classList.add('is-ready'); });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealPage, { once: true });
+  else revealPage();
+})();
+
 /* ---------- CHỌN ĐÚNG CA GOOGLE MEET THEO NGÀY/GIỜ ---------- */
 function vmGioThanhPhut(value) {
   if (!value) return null;
@@ -2772,9 +2912,7 @@ function vmStorageUrl(bucket, path) {
   var value = vmStoragePathHopLe(path);
   if (!value) return '';
   if (/^https?:\/\//i.test(value)) return value;
-  var encodedPath = value.split('/').filter(Boolean).map(function (part) { return encodeURIComponent(part); }).join('/');
-  if (!encodedPath) return '';
-  return (VM.SUPABASE_URL || '') + '/storage/v1/object/public/' + encodeURIComponent(bucket) + '/' + encodedPath;
+  return '';
 }
 function vmEscQ(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function vmYtIdQ(u) { if (!u) return ''; var m = String(u).match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ''; }
@@ -2857,13 +2995,14 @@ function checkGuestAction(e) {
   return true;
 }
 
-function vmMoXemNhanh(id, item) {
+async function vmMoXemNhanh(id, item) {
   if (sessionStorage.getItem('vm-guest-mode') === 'true') {
     checkGuestAction();
     return;
   }
   var b = window.vmBaiMap[id];
   if (!b) return;
+  await vmSecureLessonAssets(b);
   // Học sinh xem nhanh mục "xem" (video/lý thuyết/tài liệu/bảng) => tính đã hoàn thành
   if (typeof window.vmXemNhanhEdit !== 'function' && ['video', 'lythuyet', 'tailieu', 'bang'].indexOf(item) !== -1) {
     if (typeof vmDanhDauDaXem === 'function') vmDanhDauDaXem(id, item);
@@ -3390,7 +3529,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=35', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=36', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }

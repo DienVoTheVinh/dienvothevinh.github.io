@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.2">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.3">
 <style>
 .wrap{max-width:880px;margin:0 auto;padding:0 24px 96px}
 .head{padding:48px 0 24px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
@@ -59,7 +59,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=8.4"></script>
+<script src="js/vinhmath.js?v=8.8"></script>
 <script src="js/menu-v5.js?v=9.2"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -67,10 +67,10 @@ var dsHocSinhLop = [];
 var selectedClassId = null;
 var isStaff = false;
 
-function urlPdf(path) {
+async function urlPdf(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return VM.SUPABASE_URL + '/storage/v1/object/public/tai-lieu/' + path;
+  return vmSignedCourseAsset('tai-lieu', path);
 }
 
 async function taiTaiLieuHocSinh() {
@@ -93,7 +93,11 @@ async function taiTaiLieuHocSinh() {
     $('dsTaiLieu').innerHTML = '<div class="empty card">Chưa có tài liệu nào — quay lại sau nhé!</div>';
     return;
   }
-  $('dsTaiLieu').innerHTML = ds.map(function (d) {
+  var signedRows = await Promise.all(ds.map(async function (d) {
+    return { document: d, url: await urlPdf(d.file_path) };
+  }));
+  $('dsTaiLieu').innerHTML = signedRows.map(function (row) {
+    var d = row.document;
     var ngay = new Date(d.created_at).toLocaleDateString('vi-VN');
     var classText = d.classes ? 'Lớp ' + d.classes.name + (d.classes.is_specialized ? ' (Chuyên)' : ' (Đại trà)') : 'Mọi lớp';
     var meta = [d.topics && d.topics.name, classText, ngay]
@@ -101,8 +105,8 @@ async function taiTaiLieuHocSinh() {
     return '<div class="card doc">' +
       '<span class="ic">📄</span>' +
       '<div class="info"><h3>' + d.title + '</h3><div class="meta">' + meta + '</div></div>' +
-      '<a class="btn btn-primary btn-sm" target="_blank" href="' + urlPdf(d.file_path) + '">Xem</a>' +
-      '<a class="btn btn-secondary btn-sm" download href="' + urlPdf(d.file_path) + '">Tải về</a>' +
+      '<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="' + row.url + '">Xem</a>' +
+      '<a class="btn btn-secondary btn-sm" download href="' + row.url + '">Tải về</a>' +
       '</div>';
   }).join('');
 }
