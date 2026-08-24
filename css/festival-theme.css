@@ -1,7 +1,7 @@
 /* VinhMath festival layer: decorative only, never blocks interaction or layout. */
 .vm-festival-layer{
   position:fixed;inset:0;z-index:12;overflow:hidden;pointer-events:none;user-select:none;
-  contain:layout paint style;isolation:isolate;color:#f5b51b
+  touch-action:auto;contain:layout paint style;isolation:isolate;color:#f5b51b
 }
 .vm-festival-sky{position:absolute;inset:62px 0 auto;height:min(48vh,520px);overflow:hidden;opacity:.74;mask-image:linear-gradient(to bottom,#000 0 58%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,#000 0 58%,transparent 100%)}
 .vm-festival-stars{position:absolute;inset:0}
@@ -39,5 +39,16 @@
 
 html.vm-lite-motion .vm-festival-layer *,html.vm-page-hidden .vm-festival-layer *{animation-play-state:paused!important}
 html.vm-lite-motion .vm-festival-stars i{filter:none}.vm-lite-motion .vm-festival-cloud{display:none}
-@media(max-width:760px){.vm-festival-layer{z-index:8}.vm-festival-sky{top:58px;height:34vh}.vm-festival-moon{width:58px;right:-8px;top:76px;opacity:.72}.vm-festival-lantern{width:44px;height:118px;top:70px}.vm-festival-lantern.is-left{left:-16px}.vm-festival-lantern.is-right,.vm-festival-wish,.vm-festival-cloud{display:none}.vm-lantern-cord{top:-70px;height:72px}.vm-lantern-body{height:54px}.vm-lantern-tail{top:65px;height:46px}.vm-lantern-tail i{height:42px}.vm-festival-stars i:nth-child(even){display:none}.vm-festival-preview{min-height:280px}.vm-preview-copy{left:8%;bottom:34px}.vm-preview-moon{right:8%;width:82px}.vm-preview-lantern.left{left:5%}}
+@media(max-width:760px){
+  /* Mobile hotfix: keep the decoration bounded and in normal document space.
+     No viewport-fixed compositor layer, filters or perpetual animations may
+     compete with touch scrolling on low/mid-range phones. */
+  .vm-festival-layer{position:absolute;inset:0 0 auto;height:320px;z-index:8;contain:paint;isolation:auto;pointer-events:none!important;touch-action:auto!important}
+  .vm-festival-layer *{animation:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .vm-festival-sky{top:58px;height:210px;opacity:.54;mask-image:none;-webkit-mask-image:none}
+  .vm-festival-moon{width:54px;right:-8px;top:76px;opacity:.68;box-shadow:0 0 24px rgba(255,205,80,.24)}
+  .vm-festival-lantern{width:40px;height:108px;top:70px}.vm-festival-lantern.is-left{left:-16px}.vm-festival-lantern.is-right,.vm-festival-wish,.vm-festival-cloud{display:none}
+  .vm-lantern-cord{top:-70px;height:72px}.vm-lantern-body{height:50px;box-shadow:inset 0 0 12px rgba(255,246,180,.58)}.vm-lantern-tail{top:61px;height:43px}.vm-lantern-tail i{height:39px}
+  .vm-festival-preview{min-height:280px}.vm-preview-copy{left:8%;bottom:34px}.vm-preview-moon{right:8%;width:82px}.vm-preview-lantern.left{left:5%}
+}
 @media(prefers-reduced-motion:reduce){.vm-festival-layer *,.vm-festival-preview *{animation:none!important}.vm-festival-stars i{opacity:.55}.vm-festival-cloud{display:none}}

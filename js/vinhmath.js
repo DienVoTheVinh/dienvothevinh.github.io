@@ -255,6 +255,9 @@ function vmChonBuoiMeetTheoGio(schedules, nowValue) {
   function laOverlayFull(el) {
     try {
       if (!el || el.nodeType !== 1 || !el.style) return false;
+      // Decorative full-viewport layers (festival, confetti, ambient effects)
+      // are not dialogs. Treating one as a popup locks html/body scrolling.
+      if (el.matches && (el.matches('[data-vm-passive-overlay]') || el.closest('[data-vm-passive-overlay]'))) return false;
       var cs = getComputedStyle(el);
       if (cs.position !== 'fixed') return false;
       if (cs.top === '0px' && cs.left === '0px' && cs.right === '0px' && cs.bottom === '0px') return true;
@@ -3529,7 +3532,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=37', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=38', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
@@ -3556,7 +3559,7 @@ function layEmojiGiaoVien(fullName) {
   var style = document.getElementById('vmFestivalStyles');
   var script = document.createElement('script');
   script.id = 'vmFestivalScript';
-  script.src = '/js/festival-theme.js?v=1.0';
+  script.src = '/js/festival-theme.js?v=1.1';
   script.defer = true;
 
   function taiRuntime() {
@@ -3571,7 +3574,7 @@ function layEmojiGiaoVien(fullName) {
   style = document.createElement('link');
   style.id = 'vmFestivalStyles';
   style.rel = 'stylesheet';
-  style.href = '/css/festival-theme.css?v=1.0';
+  style.href = '/css/festival-theme.css?v=1.1';
   style.onload = taiRuntime;
   style.onerror = taiRuntime;
   document.head.appendChild(style);
