@@ -219,6 +219,7 @@ function between(source, from, to) {
       await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-desktop-fullscreen.png`, fullPage: false });
     }
 
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.evaluate(() => {
       const root = document.getElementById('root');
       root.className = 'content-body';
@@ -226,6 +227,20 @@ function between(source, from, to) {
       root.innerHTML = vmLatexActionHTML('lesson-theory', String.raw`\\documentclass{article}\\begin{document}Noi dung\\end{document}`, 'ly-thuyet.pdf', 'theory') +
         '<div class="theory-reading-container"><article class="vm-tex-reader">Nội dung lý thuyết</article></div>';
     });
+    state = await page.evaluate(() => {
+      const reading = document.querySelector('.theory-reading-container');
+      const article = reading.querySelector('.vm-tex-reader');
+      const style = getComputedStyle(reading);
+      return {
+        readingWidth: Math.round(reading.getBoundingClientRect().width),
+        articleWidth: Math.round(article.getBoundingClientRect().width),
+        contentWidth: Math.round(reading.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)),
+        viewportWidth: innerWidth,
+        overflow: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    if (state.readingWidth < 1450 || Math.abs(state.articleWidth - state.contentWidth) > 1 || state.overflow) throw new Error(`Theory reader does not use the wide desktop canvas: ${JSON.stringify(state)}`);
+    if (process.env.VM_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.VM_SCREENSHOT_DIR}/latex-reader-wide-desktop.png`, fullPage: false });
     await page.click('[data-vm-reader-key="lesson-theory"][data-vm-reader-delta=".1"]');
     state = await page.evaluate(() => {
       const root = document.getElementById('root');

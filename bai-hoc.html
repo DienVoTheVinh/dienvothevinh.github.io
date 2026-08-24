@@ -693,7 +693,8 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
 .quiz-sol { margin-top: 14px; padding: 16px; background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .9rem; line-height: 1.6; }
 
 /* Gated Active Reading Styles */
-.theory-reading-container { width:100%; max-width:900px; box-sizing:border-box; margin:0 auto; padding:24px; overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; display:flex; flex-direction:column; gap:24px; background:var(--bg); -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y pinch-zoom; }
+.theory-reading-container { width:100%; max-width:1520px; box-sizing:border-box; margin:0 auto; padding:clamp(18px,2vw,32px); overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; display:flex; flex-direction:column; gap:24px; background:var(--bg); -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y pinch-zoom; }
+.theory-reading-container > .vm-tex-reader { width:100%; max-width:none; }
 .theory-section-card { min-width:0; max-width:100%; overflow:visible; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:24px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(10px); animation:slideUp .3s forwards ease-out; }
 @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
 .theory-content { font-size: 1.05rem; line-height: 1.7; color: var(--ink); }
