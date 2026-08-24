@@ -919,18 +919,10 @@ function apdungMauAccent(el, color, isDark) {
 var VM = window.VINHMATH_CONFIG || {};
 var sb = null;
 
-// Bộ nhớ phiên ĐĂNG NHẬP THEO TỪNG TAB (cho phép đăng nhập nhiều tài khoản ở các tab khác nhau):
-// - Mỗi tab có storageKey RIÊNG (theo id tab) -> vừa cô lập bộ nhớ, vừa tách kênh đồng bộ
-//   đa-tab của Supabase, nên tab admin không bị "nhảy" sang tài khoản HS khi tab khác đăng nhập.
-// - Vẫn giữ đăng nhập bền: mỗi lần lưu phiên có mirror sang localStorage (khóa chung),
-//   tab mới / mở lại trình duyệt sẽ tự đăng nhập bằng phiên gần nhất; phiên cũ được migrate.
+// Một khóa phiên ổn định dùng chung cho các tab. Supabase cần cùng storageKey để phối hợp
+// việc xoay refresh token; sao chép cùng một refresh token sang nhiều khóa theo-tab sẽ làm
+// các tab tranh nhau làm mới và khiến những bản sao còn lại trở thành phiên hỏng.
 function vmRefDuAn() { try { return (new URL(VM.SUPABASE_URL)).hostname.split('.')[0]; } catch (e) { return 'app'; } }
-function vmTabId() {
-  var id = null;
-  try { id = window.sessionStorage.getItem('vm-tab-id'); } catch (e) {}
-  if (!id) { id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try { window.sessionStorage.setItem('vm-tab-id', id); } catch (e) {} }
-  return id;
-}
 var VM_SHARED_KEY = 'vmauth-shared';
 var VM_OLD_KEY = 'sb-' + vmRefDuAn() + '-auth-token';
 var VM_REMEMBER_KEY = 'vm-auth-remember';
@@ -952,40 +944,104 @@ function vmTaoBoNhoPhien() {
   var LS, SS;
   try { LS = window.localStorage; } catch (e) { LS = null; }
   try { SS = window.sessionStorage; } catch (e) { SS = null; }
-  if (!SS) return LS || undefined; // trình duyệt chặn sessionStorage -> quay lại mặc định
   return {
     getItem: function (k) {
       try {
-        var v = SS.getItem(k);
-        if (v !== null && v !== undefined) return v;
         if (LS && vmCoNhoDangNhap()) {
-          var lv = LS.getItem(VM_SHARED_KEY);
-          if (lv === null || lv === undefined) lv = LS.getItem(VM_OLD_KEY); // migrate phiên đã đăng nhập từ trước
-          if (lv !== null && lv !== undefined) { try { SS.setItem(k, lv); } catch (e) {} return lv; }
+          var lv = LS.getItem(k);
+          if ((lv === null || lv === undefined) && k === VM_SHARED_KEY) lv = LS.getItem(VM_OLD_KEY);
+          return lv;
         }
-        return null;
+        return SS ? SS.getItem(k) : null;
       } catch (e) { return null; }
     },
     setItem: function (k, val) {
-      try { SS.setItem(k, val); } catch (e) {}
       try {
-        if (LS && vmCoNhoDangNhap()) LS.setItem(VM_SHARED_KEY, val);
-        else if (LS) { LS.removeItem(VM_SHARED_KEY); LS.removeItem(VM_OLD_KEY); }
-      } catch (e) {} // chỉ mirror khi người dùng chọn ghi nhớ đăng nhập
+        if (LS && vmCoNhoDangNhap()) {
+          LS.setItem(k, val);
+          LS.removeItem(VM_OLD_KEY);
+          if (SS) SS.removeItem(k);
+        } else {
+          if (SS) SS.setItem(k, val);
+          if (LS) { LS.removeItem(k); LS.removeItem(VM_OLD_KEY); }
+        }
+      } catch (e) {}
     },
     removeItem: function (k) {
-      try { SS.removeItem(k); } catch (e) {}
-      try { if (LS) { LS.removeItem(VM_SHARED_KEY); LS.removeItem(VM_OLD_KEY); } } catch (e) {}
+      try { if (SS) SS.removeItem(k); } catch (e) {}
+      try { if (LS) { LS.removeItem(k); LS.removeItem(VM_OLD_KEY); } } catch (e) {}
     }
   };
+}
+
+function vmLaLoiPhienKhongHopLe(error) {
+  var code = String(error && error.code || '').toLowerCase();
+  var message = String(error && error.message || error || '').toLowerCase();
+  return code === 'refresh_token_not_found' || code === 'refresh_token_already_used' ||
+    message.indexOf('invalid refresh token') !== -1 ||
+    message.indexOf('refresh token not found') !== -1 ||
+    message.indexOf('refresh token already used') !== -1;
+}
+
+function vmXoaPhienHongCucBo() {
+  try {
+    window.localStorage.removeItem(VM_SHARED_KEY);
+    window.localStorage.removeItem(VM_OLD_KEY);
+  } catch (e) {}
+  try {
+    window.sessionStorage.removeItem(VM_SHARED_KEY);
+    // Dọn các khóa phiên theo-tab của bản cũ trong đúng tab hiện tại.
+    for (var i = window.sessionStorage.length - 1; i >= 0; i--) {
+      var key = window.sessionStorage.key(i);
+      if (key && key.indexOf('vmauth-') === 0) window.sessionStorage.removeItem(key);
+    }
+  } catch (e) {}
+}
+
+function vmChoCoGioiHan(promise, timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    var done = false;
+    var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      var error = new Error('Máy chủ phản hồi quá lâu. Vui lòng thử lại.');
+      error.code = 'vm_session_timeout';
+      reject(error);
+    }, Math.max(1000, Number(timeoutMs) || 8000));
+    Promise.resolve(promise).then(function (value) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(value);
+    }, function (error) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
+async function vmLayPhienAnToan(timeoutMs) {
+  if (!sb) return { data: { session: null }, error: null };
+  try {
+    var result = await vmChoCoGioiHan(sb.auth.getSession(), timeoutMs || 8000);
+    if (result && result.error && vmLaLoiPhienKhongHopLe(result.error)) vmXoaPhienHongCucBo();
+    return result || { data: { session: null }, error: null };
+  } catch (error) {
+    if (vmLaLoiPhienKhongHopLe(error)) vmXoaPhienHongCucBo();
+    return { data: { session: null }, error: error };
+  }
 }
 
 if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
   sb = window.supabase.createClient(VM.SUPABASE_URL, VM.SUPABASE_ANON_KEY, {
     auth: {
       storage: vmTaoBoNhoPhien(),
-      storageKey: 'vmauth-' + vmTabId(),
-      persistSession: true, autoRefreshToken: true, detectSessionInUrl: true
+      storageKey: VM_SHARED_KEY,
+      persistSession: true,
+      autoRefreshToken: !/^\/dang-nhap(?:\.html)?$/.test(window.location.pathname),
+      detectSessionInUrl: true
     }
   });
 }
@@ -997,7 +1053,7 @@ function daKetNoi() { return sb !== null; }
 async function vmGoiHamFormData(tenHam, formData, tuyChon) {
   tuyChon = tuyChon || {};
   if (!sb) throw new Error('Chưa kết nối được máy chủ VinhMath.');
-  var phien = await sb.auth.getSession();
+  var phien = await vmLayPhienAnToan();
   var accessToken = phien && phien.data && phien.data.session && phien.data.session.access_token;
   if (!accessToken) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang và đăng nhập lại.');
 
@@ -1036,7 +1092,7 @@ async function vmGoiHamFormData(tenHam, formData, tuyChon) {
 async function vmGoiHamFormDataBlob(tenHam, formData, tuyChon) {
   tuyChon = tuyChon || {};
   if (!sb) throw new Error('Chưa kết nối được máy chủ VinhMath.');
-  var phien = await sb.auth.getSession();
+  var phien = await vmLayPhienAnToan();
   var accessToken = phien && phien.data && phien.data.session && phien.data.session.access_token;
   if (!accessToken) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang và đăng nhập lại.');
 
@@ -1129,7 +1185,13 @@ async function dangNhap(username, password) {
   var candidates = vmUngVienMatKhauDangNhap(password);
   var r = null;
   for (var i = 0; i < candidates.length; i++) {
-    r = await sb.auth.signInWithPassword({ email: email, password: candidates[i] });
+    try {
+      r = await vmChoCoGioiHan(sb.auth.signInWithPassword({ email: email, password: candidates[i] }), 15000);
+    } catch (error) {
+      return { error: error && error.code === 'vm_session_timeout'
+        ? 'Máy chủ đang phản hồi chậm. Em kiểm tra mạng rồi bấm đăng nhập lại nhé.'
+        : 'Không kết nối được máy chủ đăng nhập. Em thử lại sau ít phút nhé.' };
+    }
     if (!r.error) break;
     var code = r.error.code || '';
     var message = r.error.message || '';
@@ -1191,7 +1253,7 @@ async function layHoSo() {
     };
   }
   if (!daKetNoi()) return null;
-  var s = await sb.auth.getSession();
+  var s = await vmLayPhienAnToan();
   if (!s.data.session) return null;
   var r = await sb.from('profiles')
     .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id))')
@@ -1240,7 +1302,7 @@ async function yeuCauDangNhap() {
     return layHoSo();
   }
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
-  var s = await sb.auth.getSession();
+  var s = await vmLayPhienAnToan();
   if (!s.data.session) { window.location.href = 'dang-nhap'; return null; }
   return layHoSo();
 }
@@ -2404,7 +2466,7 @@ async function khoiDongTrang() {
   window.VM_USER_ROLE = 'guest';
   if (daKetNoi()) {
     try {
-      var s = await sb.auth.getSession();
+      var s = await vmLayPhienAnToan();
       if (s.data.session) {
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
         if (rp.data) {
@@ -3532,7 +3594,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=38', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=39', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
