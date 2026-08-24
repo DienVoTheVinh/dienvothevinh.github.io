@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/vmtool.css?v=4">
+  <link rel="stylesheet" href="css/vmtool.css?v=5">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -37,7 +37,7 @@
 
     <nav class="vmtool-tabs" aria-label="Danh sách công cụ">
       <button class="vmtool-tab active" type="button" data-vmtool-tab="inequality" aria-controls="inequalityTool" aria-selected="true">▧ Miền nghiệm 2D</button>
-      <button class="vmtool-tab" type="button" disabled>△ Hình phẳng <span class="vmtool-soon">Sắp ra mắt</span></button>
+      <button class="vmtool-tab" type="button" data-vmtool-tab="plane" aria-controls="planeTool" aria-selected="false">△ Hình phẳng <span class="vmtool-new">Mới</span></button>
       <button class="vmtool-tab" type="button" data-vmtool-tab="spatial" aria-controls="spatialTool" aria-selected="false">◇ Hình không gian 3D <span class="vmtool-new">Mới</span></button>
     </nav>
 
@@ -92,6 +92,85 @@
           <article><b>1. Nhập hệ số</b><p>Ví dụ 2x + y ≤ 6: nhập lần lượt 2, 1, chọn ≤ và nhập 6.</p></article>
           <article><b>2. Quan sát trực tiếp</b><p>Phần gạch sọc bị loại; miền trắng còn lại thỏa mãn đồng thời mọi bất phương trình.</p></article>
           <article><b>3. Đưa vào bài giảng</b><p>Tải PNG để chèn nhanh hoặc xuất TikZ cho tài liệu LaTeX sắc nét.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="vmtool-workspace vmtool-tool-panel vmtool-plane-workspace" id="planeTool" data-vmtool-panel="plane" hidden>
+      <aside class="vmtool-panel vmtool-plane-panel">
+        <div class="vmtool-panel-head"><h2>Dựng hình phẳng</h2><p>Chọn công cụ rồi nhấp trực tiếp lên vùng vẽ. Kéo các điểm để hình tự cập nhật như mô hình động.</p></div>
+        <div class="vmtool-controls vmtool-plane-controls">
+          <div class="vmtool-plane-help" id="planeToolHelp" aria-live="polite"><span id="planeHelpIcon">↖</span><div><b id="planeHelpTitle">Di chuyển</b><p id="planeHelpText">Kéo điểm để biến đổi hình; kéo nền để di chuyển khung nhìn.</p></div></div>
+          <div>
+            <div class="vmtool-section-label"><span>Mẫu dựng nhanh</span><span>1 chạm</span></div>
+            <div class="vmtool-plane-presets">
+              <button class="vmtool-preset" type="button" data-plane-preset="triangle">Tam giác</button>
+              <button class="vmtool-preset" type="button" data-plane-preset="medians">Ba trung tuyến</button>
+              <button class="vmtool-preset" type="button" data-plane-preset="circumcircle">Ngoại tiếp</button>
+              <button class="vmtool-preset" type="button" data-plane-preset="square">Hình vuông</button>
+            </div>
+          </div>
+          <div class="vmtool-subsection vmtool-plane-settings">
+            <div class="vmtool-section-label"><span>Hiển thị</span></div>
+            <div class="vmtool-toggle-grid">
+              <label><input id="planeGrid" type="checkbox" checked> Lưới</label>
+              <label><input id="planeSnap" type="checkbox" checked> Bắt điểm</label>
+              <label><input id="planeAxes" type="checkbox" checked> Trục tọa độ</label>
+              <label><input id="planeLabels" type="checkbox" checked> Tên điểm</label>
+            </div>
+          </div>
+          <div class="vmtool-subsection vmtool-plane-object-section">
+            <div class="vmtool-section-label"><span>Đối tượng</span><span id="planeObjectCount">0</span></div>
+            <div class="vmtool-plane-object-list" id="planeObjectList"><p>Chưa có hình. Chọn mẫu hoặc bắt đầu bằng một điểm.</p></div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="vmtool-stage vmtool-plane-stage">
+        <div class="vmtool-canvas-card vmtool-plane-card" id="planeCanvasCard">
+          <div class="vmtool-canvas-head vmtool-plane-head">
+            <div class="vmtool-canvas-title"><b>Bàn dựng hình động</b><span id="planeStatus">Sẵn sàng · Chọn một công cụ để bắt đầu</span></div>
+            <div class="vmtool-view-actions" aria-label="Thao tác hình phẳng">
+              <div class="vmtool-tool-group">
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="planeUndo" type="button" disabled>↶ Hoàn tác</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="planeRedo" type="button" disabled>↷ Làm lại</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="planeFit" type="button">◎ Vừa hình</button>
+                <button class="vmtool-icon-btn vmtool-labeled-btn" id="planeFullscreen" type="button">⛶ Toàn màn hình</button>
+              </div>
+              <div class="vmtool-tool-divider" aria-hidden="true"></div>
+              <div class="vmtool-tool-group vmtool-export-tools">
+                <button class="vmtool-action primary" id="planePng" type="button">⇩ PNG</button>
+                <button class="vmtool-action" id="planeSvg" type="button">⇩ SVG</button>
+                <button class="vmtool-action" id="planeTikz" type="button">⇩ TikZ</button>
+                <button class="vmtool-action vmtool-compile-action" id="planeCompile" type="button">⚙ Biên dịch PDF</button>
+              </div>
+            </div>
+          </div>
+          <div class="vmtool-plane-toolbar" id="planeToolbar" role="toolbar" aria-label="Công cụ dựng hình">
+            <button class="active" type="button" data-plane-tool="move"><span>↖</span>Di chuyển</button>
+            <button type="button" data-plane-tool="point"><span>●</span>Điểm</button>
+            <button type="button" data-plane-tool="segment"><span>╱</span>Đoạn</button>
+            <button type="button" data-plane-tool="line"><span>⟋</span>Đường</button>
+            <button type="button" data-plane-tool="circle"><span>○</span>Tròn</button>
+            <button type="button" data-plane-tool="polygon"><span>△</span>Đa giác</button>
+            <span class="vmtool-plane-toolbar-separator" aria-hidden="true"></span>
+            <button type="button" data-plane-tool="midpoint"><span>◉</span>Trung điểm</button>
+            <button type="button" data-plane-tool="intersection"><span>×</span>Giao điểm</button>
+            <button type="button" data-plane-tool="parallel"><span>∥</span>Song song</button>
+            <button type="button" data-plane-tool="perpendicular"><span>⊥</span>Vuông góc</button>
+            <button type="button" data-plane-tool="angle"><span>∠</span>Góc</button>
+            <button type="button" data-plane-tool="delete"><span>⌫</span>Xóa</button>
+          </div>
+          <div class="vmtool-canvas-wrap vmtool-plane-canvas-wrap" id="planeCanvasWrap">
+            <canvas id="planeCanvas" aria-label="Bàn dựng hình học phẳng tương tác"></canvas>
+            <div class="vmtool-plane-tip" id="planeTip">Mẹo: nhấp điểm đã có để dùng lại; nhấp vị trí trống để tạo điểm mới.</div>
+            <button class="vmtool-plane-finish" id="finishPolygon" type="button" hidden>✓ Khép đa giác</button>
+          </div>
+        </div>
+        <div class="vmtool-guide vmtool-plane-guide">
+          <article><b>1. Chọn công cụ</b><p>Mỗi công cụ cho biết rõ cần nhấp điểm hay đường nào tiếp theo.</p></article>
+          <article><b>2. Kéo để khám phá</b><p>Điểm gốc kéo được; trung điểm và các đường dựng tự chạy theo hình.</p></article>
+          <article><b>3. Đưa vào tài liệu</b><p>Xuất PNG, SVG hoặc TikZ với tên điểm và nét hình sắc nét.</p></article>
         </div>
       </div>
     </section>
@@ -185,12 +264,23 @@
   </main>
   <div class="vmtool-toast" id="vmtoolToast" role="status" aria-live="polite"></div>
 
+  <dialog class="vmtool-latex-dialog" id="planeLatexDialog" aria-labelledby="planeLatexTitle">
+    <form method="dialog" class="vmtool-latex-shell">
+      <header><div><span class="vmtool-kicker">Xuất bản LaTeX</span><h2 id="planeLatexTitle">Hình TikZ sẵn sàng biên dịch</h2><p>Sửa mã nếu cần, xem PDF trực tiếp rồi tải về máy.</p></div><button class="vmtool-icon-btn" value="cancel" type="submit" aria-label="Đóng">×</button></header>
+      <div class="vmtool-latex-body">
+        <section class="vmtool-latex-source"><label for="planeLatexSource">Mã LaTeX hoàn chỉnh</label><textarea id="planeLatexSource" spellcheck="false"></textarea><div class="vmtool-latex-actions"><button class="vmtool-action" id="planeCopyLatex" type="button">⧉ Sao chép</button><button class="vmtool-action" id="planeDownloadTex" type="button">⇩ Tải .tex</button><button class="vmtool-action primary" id="planeRunLatex" type="button">▶ Biên dịch PDF</button></div><p class="vmtool-latex-note">Trình biên dịch chỉ được gọi khi thầy/cô bấm nút; VMTool không tải thư viện nặng khi mở trang.</p></section>
+        <section class="vmtool-latex-preview" id="planeLatexPreview"><div class="vmtool-latex-empty"><span>PDF</span><b>Chưa biên dịch</b><p>Bản xem trước sẽ hiện tại đây.</p></div></section>
+      </div>
+      <footer><span id="planeLatexStatus" role="status" aria-live="polite">Sẵn sàng</span><a class="vmtool-action primary" id="planePdfDownload" hidden>Tải PDF</a></footer>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/menu-v5.js?v=9.3"></script>
   <script src="js/vmtool.js?v=4"></script>
-  <script src="js/vmtool-3d.js?v=1"></script>
+  <script src="js/vmtool-loader.js?v=1"></script>
   <script src="js/analytics.js"></script>
 </body>
 </html>

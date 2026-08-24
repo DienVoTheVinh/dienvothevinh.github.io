@@ -3594,7 +3594,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=39', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=41', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }

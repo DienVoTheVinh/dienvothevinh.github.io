@@ -323,8 +323,11 @@
   function showTab(name) {
     document.querySelectorAll('[data-vmtool-panel]').forEach(function(panel){panel.hidden=panel.getAttribute('data-vmtool-panel')!==name;});
     document.querySelectorAll('[data-vmtool-tab]').forEach(function(tab){var active=tab.getAttribute('data-vmtool-tab')===name;tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));});
-    if($('vmtoolModeName')){$('vmtoolModeName').textContent=name==='spatial'?'Hình không gian 3D':'Miền nghiệm 2D';$('vmtoolModeMeta').textContent=name==='spatial'?'Dựng hình · Giao tuyến · PNG':'Đồ thị · PNG · TikZ';}
-    if(name==='spatial')setTimeout(resizeCanvas,0);else global.dispatchEvent(new Event('resize'));
+    if($('vmtoolModeName')){
+      var mode=name==='spatial'?['Hình không gian 3D','Dựng hình · Giao tuyến · PNG']:(name==='plane'?['Hình phẳng','Dựng động · SVG · TikZ']:['Miền nghiệm 2D','Đồ thị · PNG · TikZ']);
+      $('vmtoolModeName').textContent=mode[0];$('vmtoolModeMeta').textContent=mode[1];
+    }
+    if(name==='spatial')setTimeout(resizeCanvas,0);else global.dispatchEvent(new CustomEvent('vmtool:tab',{detail:{name:name}}));
   }
   function setView(yaw,pitch,label){state.yaw=yaw;state.pitch=pitch;$('cameraHint').textContent=label;draw();}
   function downloadPng(){var link=document.createElement('a');link.download='vinhmath-'+state.model.name.toLowerCase().replace(/[^a-z0-9]+/gi,'-')+'.png';link.href=canvas.toDataURL('image/png');link.click();}
@@ -342,7 +345,8 @@
 
   function init() {
     canvas=$('spatialCanvas');wrap=$('spatialCanvasWrap');card=$('spatialCanvasCard');if(!canvas||!wrap)return;ctx=canvas.getContext('2d');
-    document.querySelectorAll('[data-vmtool-tab]').forEach(function(tab){tab.addEventListener('click',function(){showTab(tab.getAttribute('data-vmtool-tab'));});});
+    // Tab switching and lazy loading are handled by vmtool-loader.js. Keeping
+    // this module focused on 3D avoids loading it on the default 2D tool.
     document.querySelectorAll('[data-solid-preset]').forEach(function(button){button.addEventListener('click',function(){state.type=button.getAttribute('data-solid-preset');state.demoStep=0;document.querySelectorAll('[data-solid-preset]').forEach(function(item){item.classList.toggle('active',item===button);});updateModel(false);});});
     [['solidWidth','width','solidWidthValue'],['solidDepth','depth','solidDepthValue'],['solidHeight','height','solidHeightValue'],['apexOffset','offset','apexOffsetValue']].forEach(function(entry){$(entry[0]).addEventListener('input',function(){state[entry[1]]=Number(this.value);$(entry[2]).textContent=format(this.value);updateModel(true);});});
     $('showFaces').addEventListener('change',function(){state.showFaces=this.checked;draw();});$('showHiddenEdges').addEventListener('change',function(){state.showHidden=this.checked;draw();});$('showGrid3d').addEventListener('change',function(){state.showGrid=this.checked;draw();});$('usePerspective').addEventListener('change',function(){state.perspective=this.checked;draw();});
