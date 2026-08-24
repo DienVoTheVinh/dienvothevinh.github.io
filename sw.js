@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v36';
+const VM_CACHE = 'vinhmath-shell-v37';
 const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
@@ -12,11 +12,13 @@ const VM_SHELL = [
   '/manifest.webmanifest',
   '/css/tokens.css',
   '/css/vinhmath.css',
+  '/css/festival-theme.css',
   '/css/exam-portal.css',
   '/css/role-home.css',
   '/css/student-experience.css',
   '/js/config.js',
   '/js/vinhmath.js',
+  '/js/festival-theme.js',
   '/js/menu-v5.js',
   '/js/exam-portal.js',
   '/js/portal-classroom.js',
@@ -66,8 +68,8 @@ self.addEventListener('activate', function (event) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '36') return null;
-                target.searchParams.set('vm_refresh', '36');
+                if (target.searchParams.get('vm_refresh') === '37') return null;
+                target.searchParams.set('vm_refresh', '37');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

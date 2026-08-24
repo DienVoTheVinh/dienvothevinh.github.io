@@ -76,6 +76,8 @@ function apDungMenu(role, portalContext) {
       var menuPage = m.path.split('?')[0].split('#')[0];
       if (menuPage === trang) {
         activeClass = ' class="active"';
+      } else if (m.path === 'quan-tri' && trang === 'quan-tri-le-hoi') {
+        activeClass = ' class="active"';
       } else if (m.path === 'lop-hoc' && trang === 'bai-hoc') {
         activeClass = ' class="active"';
       } else if (m.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
