@@ -3529,7 +3529,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=36', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=37', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
@@ -3547,4 +3547,32 @@ function layEmojiGiaoVien(fullName) {
 
   window.vmMoCaiDatUngDung = vmBatDauCaiPwa;
   window.vmCapNhatNutCaiDatPwa = vmCapNhatNutCaiDat;
+})();
+
+/* Lễ hội theo mùa là một layer độc lập, tải sau giao diện lõi để không làm chậm
+   thời điểm nội dung chính xuất hiện. */
+(function vmTaiBoGiaoDienLeHoi() {
+  if (document.getElementById('vmFestivalScript')) return;
+  var style = document.getElementById('vmFestivalStyles');
+  var script = document.createElement('script');
+  script.id = 'vmFestivalScript';
+  script.src = '/js/festival-theme.js?v=1.0';
+  script.defer = true;
+
+  function taiRuntime() {
+    if (!document.getElementById('vmFestivalScript')) document.head.appendChild(script);
+  }
+
+  if (style) {
+    taiRuntime();
+    return;
+  }
+
+  style = document.createElement('link');
+  style.id = 'vmFestivalStyles';
+  style.rel = 'stylesheet';
+  style.href = '/css/festival-theme.css?v=1.0';
+  style.onload = taiRuntime;
+  style.onerror = taiRuntime;
+  document.head.appendChild(style);
 })();
