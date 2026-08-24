@@ -27,6 +27,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri', label: 'Quản trị' }
     ];
   } else if (role === 'teacher') {
@@ -35,6 +36,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
       { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
@@ -44,6 +46,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp được giao' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
       { type: 'link', path: 'quan-tri-hoc-sinh', label: 'Học sinh' },
+      { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   } else if (role === 'parent') {
@@ -51,6 +54,7 @@ function apDungMenu(role, portalContext) {
     muc = [
       { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
       { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
+      { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'bang-vang', label: 'Bảng vàng' }
     ];
   } else {
@@ -61,6 +65,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'luyen-de', label: 'Bài tập' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả' },
       { type: 'link', path: 'bang-vang', label: 'BXH' },
+      { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
     ];
   }
