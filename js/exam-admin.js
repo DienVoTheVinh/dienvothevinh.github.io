@@ -31,7 +31,17 @@
       sourceCatalogResultTotal: 0,
       sourceCatalogHasMore: false,
       sourceCategory: '',
+      sourceOrigin: '',
       sourceItems: [],
+      repositoryItems: [],
+      repositoryLoaded: false,
+      repositoryLoading: false,
+      repositoryOffset: 0,
+      repositoryPageSize: 25,
+      repositoryFilterKey: '',
+      repositoryResultTotal: 0,
+      repositoryHasMore: false,
+      repositoryRequestToken: 0,
       searchItems: [],
       selectedSourceId: null,
       selectedSourceMode: 'assign',
@@ -47,7 +57,14 @@
       activeView: 'overview',
       blueprintSeq: 1,
       access: { canUse: false, canAdmin: false },
-      preview: { title: '', questions: [], showAnswers: false, showSolutions: false, editableSource: '', fullSource: '', editorMode: 'append', pdfUrl: '', mode: 'html', requestToken: 0 }
+      preview: {
+        title: '', questions: [], showAnswers: false, showSolutions: false,
+        editableSource: '', fullSource: '', editorMode: 'append', pdfUrl: '',
+        mode: 'html', requestToken: 0, historyActive: false, fullscreen: false,
+        sidebarOpen: false, sidebarQuery: '', activeKind: '', activeId: '',
+        targetType: '', targetId: '', documentId: '', examId: '',
+        pendingIssue: null, adminIssue: null
+      }
     }
   };
 
@@ -255,18 +272,43 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var requestedView=bankViewFromLocation();
       bankSetView(requestedView||state.bank.activeView,{history:requestedView?'none':'replace',normalizeHash:true,scroll:false});
       if (state.bank.access.canAdmin && !state.bank.statsLoaded) bankLoadStats(true);
+      if (state.bank.access.canAdmin && state.bank.activeView === 'repository' && !state.bank.repositoryLoaded) bankLoadRepository();
       if (state.bank.access.canUse && !state.bank.sourceCatalogLoaded) bankLoadSourceCatalog();
     }
   }
 
+  function bankWriteWorkspaceTab(name,mode) {
+    if(!window.history||typeof history.pushState!=='function')return;
+    var url=new URL(location.href);
+    url.searchParams.set('tab',name);
+    if(name!=='bank'){
+      url.searchParams.delete('preview');
+      url.hash='';
+    }
+    var next=url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash;
+    var nextState=Object.assign({},history.state||{},name!=='bank'?{vmBankPreview:false}:{});
+    if(mode==='replace')history.replaceState(nextState,'',next);
+    else history.pushState(nextState,'',next);
+  }
+
+  function bankSyncWorkspaceFromLocation() {
+    var params=new URLSearchParams(location.search);
+    if(params.get('preview')!=='bank'&&state.bank.preview.historyActive)bankClosePreview({fromHistory:true});
+    var requested=bankViewFromLocation()?'bank':params.get('tab');
+    if(['compose','bank','library','analytics'].indexOf(requested)<0)return;
+    if(requested==='bank'&&!state.bank.access.canUse)return;
+    switchTab(requested);
+    if(requested==='bank')bankSyncViewFromLocation();
+  }
+
   function bankViewFromLocation() {
-    var match=/^#bank-(overview|create|import|manage)$/.exec(String(location.hash||''));
+    var match=/^#bank-(overview|create|import|repository|manage)$/.exec(String(location.hash||''));
     return match ? match[1] : '';
   }
 
   function bankAllowedView(name) {
     var allowed=['overview','create','manage'];
-    if(state.bank.access.canAdmin)allowed.push('import');
+    if(state.bank.access.canAdmin)allowed.push('import','repository');
     return allowed.indexOf(name)>=0?name:'overview';
   }
 
@@ -311,6 +353,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         window.scrollTo({top:bankWorkspaceTop(),behavior:reduced?'auto':'smooth'});
       });
     }
+    if(key==='repository'&&state.bank.access.canAdmin&&!state.bank.repositoryLoaded)bankLoadRepository();
     return key;
   }
 
@@ -636,9 +679,44 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (result.error) throw result.error;
     state.exams = result.data || [];
     if (state.profile.role !== 'admin') state.exams = state.exams.filter(function (x) { return x.class_id===null || state.classes.some(function (c) { return c.id===x.class_id; }); });
+    bankRenderPreviewSidebar();
     var qCount = state.exams.reduce(function (sum,x) { return sum + (x.exam_questions&&x.exam_questions[0]?x.exam_questions[0].count:0); },0);
     el('kpiExams').textContent = state.exams.length; el('kpiQuestions').textContent = qCount;
     renderLibrary(); fillAnalyticsExamOptions();
+  }
+
+  async function bankLoadExamCatalog(silent) {
+    if (!state.bank.access.canUse || !window.sb || typeof window.sb.rpc !== 'function') return;
+    try {
+      var response = await sb.rpc('vm_bank_exam_catalog',{p_limit:120});
+      if (response.error) throw response.error;
+      var data = response.data || {}, rows = Array.isArray(data) ? data : (data.items || []);
+      state.exams = rows.map(function (item) {
+        var count = Math.max(0,Number(item.question_count || 0));
+        return {
+          id:item.id,
+          title:item.title || 'Đề đã tạo',
+          duration_minutes:Number(item.duration_minutes || 0),
+          published:!!item.published,
+          class_id:item.class_id || null,
+          de_type:item.de_type || 'mc',
+          bank_generated:!!item.bank_generated,
+          source_bank_document_id:item.source_bank_document_id || null,
+          classes:item.class_name ? {name:item.class_name} : null,
+          exam_questions:[{count:count}]
+        };
+      });
+      bankRenderPreviewSidebar();
+      var questionCount = state.exams.reduce(function (sum,exam) {
+        return sum + Number(exam.exam_questions[0].count || 0);
+      },0);
+      if (el('kpiExams')) el('kpiExams').textContent = state.exams.length;
+      if (el('kpiQuestions')) el('kpiQuestions').textContent = questionCount;
+    } catch (error) {
+      state.exams = [];
+      bankRenderPreviewSidebar();
+      if (!silent && !bankRpcMissing(error)) toast('Chưa tải được danh sách đề đã tạo.','err');
+    }
   }
 
   function classOptions(includeAll) {
@@ -725,6 +803,16 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return text;
   }
 
+  // Nguon ngan hang cu thuong mo tep dap an phu de in o mot tai lieu khac.
+  // Khi VinhMath boc mot manh de thanh PDF xem truoc, tep/phu luc do khong
+  // duoc su dung va dich vu bien dich khong co thu muc `ans/`. Chi bo cac moc
+  // quan ly tep o nhanh fragment; tai lieu day du van duoc giu nguyen ben duoi.
+  function normalizeLegacyPdfFragment(raw) {
+    return String(raw || '')
+      .replace(/\\Opensolutionfile\s*\{[^{}]*\}\s*(?:\[[^\]]*\])?/g, '')
+      .replace(/\\Closesolutionfile\s*\{[^{}]*\}/g, '');
+  }
+
   async function buildPdfSource(rawOverride, titleOverride, typeOverride) {
     var hasOverride=arguments.length>0;
     var raw=hasOverride?String(rawOverride||'').trim():el('exLatex').value.trim();
@@ -732,7 +820,11 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var type=hasOverride?(typeOverride||'thpt'):el('exType').value;
     if(!hasOverride&&type==='essay') raw=el('exEssayPrompt').value.trim();
     if(!raw) throw new Error('Chưa có nội dung để biên dịch.');
-    if(/\\documentclass(?:\[[^\]]*\])?\{/.test(raw)) return typeof vmChenPreambleMoiTruongTex==='function'?vmChenPreambleMoiTruongTex(raw):raw;
+    if(/\\documentclass(?:\[[^\]]*\])?\{/.test(raw)) {
+      var complete=typeof vmChenPreambleMoiTruongTex==='function'?vmChenPreambleMoiTruongTex(raw):raw;
+      return typeof vmChenLegacyTexCompatPreamble==='function'?vmChenLegacyTexCompatPreamble(complete):complete;
+    }
+    raw=normalizeLegacyPdfFragment(raw);
     // The bundled ex_test version has neither `bt` nor `choiceTF`. Keep the
     // authoring syntax intact for HTML, but normalize it for PDF compilation.
     raw=raw.replace(/\\begin\{bt\}/g,'\\begin{ex}').replace(/\\end\{bt\}/g,'\\end{ex}');
@@ -745,10 +837,13 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     raw=normalizeSolutionParagraphs(raw);
     var sty=await fetch('ex_test.sty').then(function(r){if(!r.ok)throw new Error('Không tải được ex_test.sty');return r.text();});
     var env=typeof vmPreambleMoiTruongTex==='function'?vmPreambleMoiTruongTex():'';
+    var legacy=typeof vmLegacyTexCompatPreamble==='function'?vmLegacyTexCompatPreamble(raw):'';
     var optionalPackages='';
     if(/\\tkzTab(?:Init|Line|Var|Val|Ima|Slope|Setup)\b/.test(raw)) optionalPackages+='\\usepackage{tkz-tab}\n';
     if(/\\begin\{forest\}/.test(raw)) optionalPackages+='\\usepackage{forest}\n';
     if(/\\begin\{circuitikz\}/.test(raw)) optionalPackages+='\\usepackage{circuitikz}\n';
+    if(/\\faCube\b/.test(raw)) optionalPackages+='\\usepackage{fontawesome5}\n';
+    if(/\\begin\{axis\}|\\addplot\b/.test(raw)) optionalPackages+='\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}\n';
     if(/\\includegraphics\b/.test(raw)) optionalPackages+='\\usepackage{graphicx}\n';
     if(/\\begin\{longtable\}/.test(raw)) optionalPackages+='\\usepackage{longtable}\n';
     if(/\\begin\{tabularx\}/.test(raw)) optionalPackages+='\\usepackage{tabularx}\n';
@@ -757,7 +852,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       '\\providecommand{\\vmTFItem}[2]{\\par\\noindent\\hangindent=1.9em\\hangafter=1\\textbf{#1)}\\ #2\\par}\n'+
       '\\providecommand{\\choiceTF}[5][]{}\n'+
       '\\renewcommand{\\choiceTF}[5][]{\\begingroup\\let\\True\\relax\\vmTFItem{a}{#2}\\vmTFItem{b}{#3}\\vmTFItem{c}{#4}\\vmTFItem{d}{#5}\\endgroup}\n'+
-      env+'\n\\begin{document}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
+      env+'\n'+legacy+'\n\\begin{document}\n\\shorthandoff{"}\n\\begin{center}{\\Large\\bfseries '+escapeTex(title)+'}\\end{center}\n\\vspace{0.3cm}\n'+raw+'\n\\end{document}';
   }
 
   async function compilePdf() {
@@ -808,10 +903,14 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       question_type: kind === 'tf' ? 'true_false' : kind === 'short' ? 'short_answer' : 'multiple_choice',
       content_latex: String(item.content_latex != null ? item.content_latex : item.content_tex || ''),
       choices: choices,
-      _vmFullSource: fullSource
+      report_sort: Number.isFinite(Number(item.sort)) ? Number(item.sort) :
+        (Number.isFinite(Number(item.source_ordinal)) ? Number(item.source_ordinal) : null)
     };
     if (state.bank.access.canAdmin) {
-      normalizedQuestion.display_id = String(item.stable_id || item.legacy_code || item.question_id || '').trim();
+      normalizedQuestion._vmFullSource = fullSource;
+      normalizedQuestion.item_id = String(item.item_id || item.id || '').trim();
+      normalizedQuestion.display_id = String(item.legacy_code || item.question_id || '').trim();
+      normalizedQuestion.technical_id = String(item.stable_id || '').trim();
     }
     if (options.showSolutions) normalizedQuestion.solution_latex = String(item.solution_latex != null ? item.solution_latex : item.solution_tex || '');
     return normalizedQuestion;
@@ -832,10 +931,17 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       if (questions.length > 1) paper += '<div class="exam-section-heading">'+section.title+'</div>';
       rows.forEach(function (question) {
         number += 1;
-        if (state.bank.access.canAdmin && question.display_id) {
-          paper += '<div class="bank-preview-question-id" aria-label="ID nội bộ câu hỏi">ID · '+esc(question.display_id)+'</div>';
+        var reportId = state.bank.access.canAdmin ? String(question.item_id || '') : '';
+        var reportSort = Number.isFinite(Number(question.report_sort)) ? Number(question.report_sort) : number;
+        paper += '<section class="bank-preview-question-block" id="bankPreviewQuestion-'+number+'" data-bank-preview-question-number="'+number+'" data-bank-preview-item-id="'+esc(reportId)+'" data-bank-preview-report-sort="'+reportSort+'">';
+        if (state.bank.access.canUse && !state.bank.access.canAdmin && state.bank.preview.targetType) {
+          paper += '<div class="bank-preview-question-actions"><button class="bank-preview-question-report" type="button" data-bank-preview-report-id="'+esc(reportId)+'" data-bank-preview-report-number="'+number+'" data-bank-preview-report-sort="'+reportSort+'" aria-label="Báo lỗi ở câu '+number+'"><span aria-hidden="true">⚑</span> Báo lỗi</button></div>';
+        }
+        if (state.bank.access.canAdmin) {
+          paper += '<div class="bank-preview-question-id" aria-label="Mã phân loại câu hỏi"'+(question.technical_id?' title="Mã hệ thống: '+esc(question.technical_id)+'"':'')+'>Mã phân loại · '+esc(question.display_id||'Chưa gán')+'</div>';
         }
         paper += renderQuestion(question, number, {showAnswers:options.showAnswers,showSolutions:options.showSolutions,fullSource:question._vmFullSource || options.fullSource});
+        paper += '</section>';
       });
     });
     return paper + '</div>';
@@ -851,11 +957,149 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (button) { button.disabled = false; button.textContent = '▶ Biên dịch PDF'; }
   }
 
+  function bankBindPreviewQuestionReports(pane) {
+    if (!pane) return;
+    pane.querySelectorAll('[data-bank-preview-report-number]').forEach(function (button) {
+      button.addEventListener('click',function () {
+        if (window.VMExamAdmin && typeof window.VMExamAdmin.bankOpenIssueReport === 'function') {
+          window.VMExamAdmin.bankOpenIssueReport(
+            button.dataset.bankPreviewReportId || '',
+            Number(button.dataset.bankPreviewReportNumber || 0),
+            Number(button.dataset.bankPreviewReportSort || 0)
+          );
+        }
+      });
+    });
+  }
+
+  function bankPreviewCandidates() {
+    var seen = Object.create(null), rows = [];
+    (state.bank.sourceItems || []).forEach(function (item) {
+      var id = String(item && item.id || '').trim(), key = 'source:'+id;
+      if (!id || seen[key]) return;
+      seen[key] = true;
+      var meta = [];
+      if (item.grade) meta.push('Khối '+item.grade);
+      if (item.exam_year) meta.push(String(item.exam_year));
+      if (Number(item.question_count || 0)) meta.push(Number(item.question_count)+' câu');
+      rows.push({key:key,kind:'source',id:id,title:String(item.title || 'Đề nguồn'),meta:meta.join(' · '),badge:String(item.source_origin || '') === 'authored' ? 'Tự biên' : 'Đề nguồn'});
+    });
+    (state.exams || []).filter(function (exam) {
+      return !!(exam && (exam.bank_generated || exam.source_bank_document_id));
+    }).forEach(function (exam) {
+      var id = String(exam.id || '').trim(), key = 'exam:'+id;
+      if (!id || seen[key]) return;
+      seen[key] = true;
+      var count = exam.exam_questions && exam.exam_questions[0] ? Number(exam.exam_questions[0].count || 0) : 0;
+      rows.push({key:key,kind:'exam',id:id,title:String(exam.title || 'Đề đã tạo'),meta:(count ? count+' câu · ' : '')+(exam.published ? 'Đang mở' : 'Bản nháp'),badge:'Đã tạo'});
+    });
+    return rows;
+  }
+
+  function bankPreviewIsMobile() {
+    return !!(window.matchMedia && window.matchMedia('(max-width: 760px)').matches);
+  }
+
+  function bankRenderPreviewSidebar() {
+    var list = el('bankPreviewSourceList'), search = el('bankPreviewSourceSearch'), count = el('bankPreviewSourceCount');
+    if (!list) return;
+    var query = String(state.bank.preview.sidebarQuery || '').trim().toLowerCase();
+    var all = bankPreviewCandidates();
+    var rows = all.filter(function (item) {
+      return !query || (item.title+' '+item.meta+' '+item.badge).toLowerCase().indexOf(query) >= 0;
+    });
+    if (search && search.value !== state.bank.preview.sidebarQuery) search.value = state.bank.preview.sidebarQuery;
+    if (count) count.textContent = rows.length+(query ? ' / '+all.length : '')+' đề';
+    if (!rows.length) {
+      list.innerHTML = '<div class="bank-preview-source-empty"><span aria-hidden="true">⌕</span><strong>'+(query?'Không tìm thấy đề':'Chưa có đề khác')+'</strong><small>'+(query?'Thử từ khóa ngắn hơn.':'Danh sách sẽ hiện sau khi tải kho đề.')+'</small></div>';
+      return;
+    }
+    list.innerHTML = rows.map(function (item) {
+      var active = state.bank.preview.activeKind === item.kind && String(state.bank.preview.activeId) === item.id;
+      return '<button type="button" role="listitem" class="bank-preview-source-item'+(active?' active':'')+'" data-bank-preview-switch-kind="'+esc(item.kind)+'" data-bank-preview-switch-id="'+esc(item.id)+'" aria-current="'+(active?'true':'false')+'"><span class="bank-preview-source-badge">'+esc(item.badge)+'</span><strong>'+esc(item.title)+'</strong><small>'+esc(item.meta || 'Mở bản xem trước')+'</small></button>';
+    }).join('');
+    list.querySelectorAll('[data-bank-preview-switch-kind]').forEach(function (button) {
+      button.addEventListener('click',function () {
+        bankSwitchPreviewSource(button.dataset.bankPreviewSwitchKind,button.dataset.bankPreviewSwitchId);
+      });
+    });
+    var activeButton = list.querySelector('.bank-preview-source-item.active');
+    if (activeButton && state.bank.preview.fullscreen) activeButton.scrollIntoView({block:'nearest'});
+  }
+
+  function bankSyncPreviewLayout() {
+    var dialog = el('bankPreviewDialog'), button = el('bankPreviewFullscreenButton'), sidebar = el('bankPreviewSidebar'), toggle = el('bankPreviewSourcesToggle');
+    if (!dialog) return;
+    dialog.classList.toggle('is-fullscreen',!!state.bank.preview.fullscreen);
+    dialog.classList.toggle('sidebar-open',!!state.bank.preview.sidebarOpen);
+    if (button) {
+      button.setAttribute('aria-pressed',state.bank.preview.fullscreen?'true':'false');
+      button.setAttribute('aria-label',state.bank.preview.fullscreen?'Thu gọn cửa sổ xem trước':'Mở toàn màn hình');
+      var label = button.querySelector('[data-bank-fullscreen-label]');
+      if (label) label.textContent = state.bank.preview.fullscreen ? 'Thu gọn' : 'Toàn màn hình';
+    }
+    if (toggle) {
+      toggle.hidden = !state.bank.preview.fullscreen;
+      toggle.setAttribute('aria-expanded',state.bank.preview.sidebarOpen?'true':'false');
+    }
+    if (sidebar) {
+      var visible = state.bank.preview.fullscreen && (!bankPreviewIsMobile() || state.bank.preview.sidebarOpen);
+      sidebar.setAttribute('aria-hidden',visible?'false':'true');
+    }
+  }
+
+  function bankTogglePreviewFullscreen(force) {
+    var next = typeof force === 'boolean' ? force : !state.bank.preview.fullscreen;
+    state.bank.preview.fullscreen = next;
+    if (!next) state.bank.preview.sidebarOpen = false;
+    if (next && bankPreviewIsMobile()) state.bank.preview.sidebarOpen = false;
+    bankRenderPreviewSidebar();
+    bankSyncPreviewLayout();
+  }
+
+  function bankTogglePreviewSidebar(force) {
+    if (!state.bank.preview.fullscreen) return;
+    state.bank.preview.sidebarOpen = typeof force === 'boolean' ? force : !state.bank.preview.sidebarOpen;
+    bankSyncPreviewLayout();
+    if (state.bank.preview.sidebarOpen) {
+      var search = el('bankPreviewSourceSearch');
+      if (search) window.setTimeout(function () { search.focus(); },0);
+    }
+  }
+
+  function bankFilterPreviewSources(value) {
+    state.bank.preview.sidebarQuery = String(value || '');
+    bankRenderPreviewSidebar();
+  }
+
+  function bankSwitchPreviewSource(kind, id) {
+    if (!state.bank.access.canUse || !id) return;
+    state.bank.preview.sidebarOpen = false;
+    bankSyncPreviewLayout();
+    if (kind === 'exam') bankOpenExamPreview(id);
+    else bankOpenSourcePreview(id);
+  }
+
+  function bankSetPreviewActive(kind, id) {
+    state.bank.preview.activeKind = kind || '';
+    state.bank.preview.activeId = id == null ? '' : String(id);
+    bankRenderPreviewSidebar();
+  }
+
   function bankShowPreviewDialog() {
     var dialog = el('bankPreviewDialog');
     if (!dialog) return;
+    var url = new URL(location.href);
+    if (!state.bank.preview.historyActive && url.searchParams.get('preview') !== 'bank') {
+      url.searchParams.set('preview','bank');
+      var next = url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash;
+      history.pushState(Object.assign({},history.state||{},{vmBankPreview:true}),'',next);
+    }
+    state.bank.preview.historyActive = true;
     if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
     else dialog.setAttribute('open','');
+    bankRenderPreviewSidebar();
+    bankSyncPreviewLayout();
   }
 
   function bankSwitchPreview(mode) {
@@ -873,8 +1117,26 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     });
   }
 
+  function bankSetPreviewTarget(context) {
+    context = context || {};
+    var preview = state.bank.preview;
+    preview.targetType = String(context.targetType || '');
+    preview.targetId = String(context.targetId || '');
+    preview.documentId = String(context.documentId || '');
+    preview.examId = String(context.examId || '');
+    preview.pendingIssue = null;
+    preview.adminIssue = null;
+    var reportButton = el('bankPreviewReportButton');
+    if (reportButton) {
+      reportButton.hidden = state.bank.access.canAdmin || !state.bank.access.canUse ||
+        ['source_document','exam'].indexOf(preview.targetType) < 0 || !preview.targetId;
+    }
+    if (el('bankPreviewResolveButton')) el('bankPreviewResolveButton').hidden = true;
+  }
+
   function bankOpenPreview(title, rawQuestions, options) {
     options = options || {};
+    if (Object.prototype.hasOwnProperty.call(options,'targetContext')) bankSetPreviewTarget(options.targetContext);
     var questions = (rawQuestions || []).map(function (question) {
       return bankNormalizePreviewQuestion(question,options);
     }).filter(function (question) { return !!question.content_latex.trim(); });
@@ -893,9 +1155,10 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     el('bankPreviewTitle').textContent = state.bank.preview.title;
     el('bankPreviewHtml').innerHTML = bankPreviewPaper(state.bank.preview.title,questions,{showAnswers:state.bank.preview.showAnswers,showSolutions:state.bank.preview.showSolutions,fullSource:state.bank.preview.fullSource});
     renderMath(el('bankPreviewHtml'));
+    bankBindPreviewQuestionReports(el('bankPreviewHtml'));
     el('bankPreviewStatus').textContent = 'HTML tức thời · '+questions.length+' câu';
     if (el('bankPreviewToEditor')) {
-      el('bankPreviewToEditor').hidden = !state.bank.preview.editableSource;
+      el('bankPreviewToEditor').hidden = !state.bank.access.canAdmin || !state.bank.preview.editableSource;
       el('bankPreviewToEditor').textContent = questions.length > 1 ? '⇢ Mở đề trong Soạn thảo' : '⇢ Đưa câu vào Soạn thảo';
     }
     bankSwitchPreview('html');
@@ -911,9 +1174,11 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       fullSource:preview.fullSource
     });
     renderMath(pane);
+    bankBindPreviewQuestionReports(pane);
+    if (preview.adminIssue) bankHighlightIssueTarget(preview.adminIssue);
   }
 
-  function bankOpenPreviewLoading(title) {
+  function bankOpenPreviewLoading(title, targetContext) {
     state.bank.preview.requestToken += 1;
     state.bank.preview.title = String(title || 'Đang tải nội dung');
     state.bank.preview.questions = [];
@@ -922,6 +1187,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     state.bank.preview.editableSource = '';
     state.bank.preview.fullSource = '';
     state.bank.preview.editorMode = 'append';
+    bankSetPreviewTarget(targetContext);
     bankResetPreviewPdf();
     el('bankPreviewTitle').textContent = state.bank.preview.title;
     el('bankPreviewHtml').innerHTML = '<div class="bank-preview-empty"><div class="exam-spinner"></div><strong>Đang tải bản xem trước an toàn…</strong></div>';
@@ -939,15 +1205,19 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return {title:payload.title || payload.exam_title || (payload.exam && payload.exam.title) || '',questions:rows};
   }
 
-  async function bankLoadRemotePreview(rpcName, args, fallbackTitle) {
+  async function bankLoadRemotePreview(rpcName, args, fallbackTitle, targetContext) {
     if (!state.bank.access.canUse) return;
-    var requestToken = bankOpenPreviewLoading(fallbackTitle);
+    var requestToken = bankOpenPreviewLoading(fallbackTitle,targetContext);
     try {
       var response = await sb.rpc(rpcName,args);
       if (requestToken !== state.bank.preview.requestToken) return;
       if (response.error) throw response.error;
       var payload = bankPreviewPayload(response.data);
-      bankOpenPreview(payload.title || fallbackTitle,payload.questions,{showAnswers:false,showSolutions:false});
+      bankOpenPreview(payload.title || fallbackTitle,payload.questions,{
+        showAnswers:false,
+        showSolutions:false,
+        targetContext:targetContext
+      });
       bankSetServerState(true);
     } catch (error) {
       if (requestToken !== state.bank.preview.requestToken) return;
@@ -966,6 +1236,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (!question.content_tex && item.content_latex) question.content_tex = item.content_latex;
     question.stable_id = item.stable_id || question.stable_id || '';
     question.legacy_code = item.legacy_code || question.legacy_code || '';
+    question.item_id = item.id || item.item_id || question.item_id || '';
+    if (item.source_ordinal != null) question.source_ordinal = Number(item.source_ordinal);
     if (!question.question_id && item.legacy_code) question.question_id = item.legacy_code;
     if (item.solution_latex != null) question.solution_tex = String(item.solution_latex || '');
     var answer = item.answer && typeof item.answer === 'object' ? item.answer : {};
@@ -1020,9 +1292,10 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return {questions:questions,editableSource:editableSource};
   }
 
-  async function bankLoadAdminDocumentPreview(documentId, fallbackTitle) {
+  async function bankLoadAdminDocumentPreview(documentId, fallbackTitle, targetContext) {
     if (!state.bank.access.canAdmin) return;
-    var requestToken = bankOpenPreviewLoading(fallbackTitle);
+    targetContext = targetContext || {targetType:'source_document',targetId:documentId,documentId:documentId};
+    var requestToken = bankOpenPreviewLoading(fallbackTitle,targetContext);
     try {
       var response = await sb.rpc('vm_bank_admin_document',{p_document_id:documentId});
       if (requestToken !== state.bank.preview.requestToken) return;
@@ -1034,7 +1307,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         showSolutions:true,
         editableSource:fullPreview.editableSource,
         fullSource:String(payload.raw_tex || fullPreview.editableSource || ''),
-        editorMode:'replace'
+        editorMode:'replace',
+        targetContext:targetContext
       });
       bankSetServerState(true);
     } catch (error) {
@@ -1048,15 +1322,17 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
 
   function bankOpenLocalPreview(index) {
     if (!state.bank.access.canAdmin || !state.bank.items[index]) return;
+    bankSetPreviewActive('', '');
     var question = state.bank.items[index];
     var source = state.bank.documents[question._bankDocumentIndex] || {};
     try {
-      bankOpenPreview((source.fileName || source.path || 'Tệp TeX')+' · Câu '+(Number(question.source_index||index)+1),[question],{showAnswers:true,showSolutions:true,editableSource:question.canonical_tex||question.raw_tex||'',fullSource:source.text||question.canonical_tex||question.raw_tex||''});
+      bankOpenPreview((source.fileName || source.path || 'Tệp TeX')+' · Câu '+(Number(question.source_index||index)+1),[question],{showAnswers:true,showSolutions:true,editableSource:question.canonical_tex||question.raw_tex||'',fullSource:source.text||question.canonical_tex||question.raw_tex||'',targetContext:null});
     } catch (error) { toast(error.message||String(error),'err'); }
   }
 
   function bankOpenImportPreview() {
     if (!state.bank.access.canAdmin || !state.bank.items.length) return;
+    bankSetPreviewActive('', '');
     var title = String(el('bankImportTitle') && el('bankImportTitle').value || '').trim() || bankDefaultPastedTitle();
     var source = state.bank.items.map(function (question) {
       return question.canonical_tex || question.raw_tex || '';
@@ -1074,27 +1350,34 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         showSolutions:true,
         editableSource:source,
         fullSource:fullSource,
-        editorMode:'replace'
+        editorMode:'replace',
+        targetContext:null
       });
     } catch (error) { toast(error.message||String(error),'err'); }
   }
 
   function bankOpenSearchPreview(index) {
     if (!state.bank.access.canUse || !state.bank.searchItems[index]) return;
-    try { bankOpenPreview('Câu tìm thấy trong ngân hàng',[state.bank.searchItems[index]],{showAnswers:false,showSolutions:false}); }
+    bankSetPreviewActive('', '');
+    try { bankOpenPreview('Câu tìm thấy trong ngân hàng',[state.bank.searchItems[index]],{showAnswers:false,showSolutions:false,targetContext:null}); }
     catch (error) { toast(error.message||String(error),'err'); }
   }
 
   function bankOpenSourcePreview(documentId) {
     var item = state.bank.sourceItems.find(function (entry) { return String(entry.id) === String(documentId); });
-    if (state.bank.access.canAdmin) return bankLoadAdminDocumentPreview(documentId,item && item.title || 'Đề nguồn');
-    return bankLoadRemotePreview('vm_bank_source_exam_preview',{p_document_id:documentId},item && item.title || 'Đề nguồn');
+    bankSetPreviewActive('source',documentId);
+    var targetContext={targetType:'source_document',targetId:String(documentId),documentId:String(documentId)};
+    if (state.bank.access.canAdmin) return bankLoadAdminDocumentPreview(documentId,item && item.title || 'Đề nguồn',targetContext);
+    return bankLoadRemotePreview('vm_bank_source_exam_preview',{p_document_id:documentId},item && item.title || 'Đề nguồn',targetContext);
   }
 
   function bankOpenExamPreview(examId, title) {
     if (!examId) return;
     var exam = state.exams.find(function (entry) { return String(entry.id) === String(examId); });
-    return bankLoadRemotePreview('vm_bank_exam_preview',{p_exam_id:examId},title || (exam && exam.title) || 'Đề đã tạo');
+    bankSetPreviewActive('exam',examId);
+    return bankLoadRemotePreview('vm_bank_exam_preview',{p_exam_id:examId},title || (exam && exam.title) || 'Đề đã tạo',{
+      targetType:'exam',targetId:String(examId),examId:String(examId)
+    });
   }
 
   async function bankCompilePreviewPdf() {
@@ -1134,15 +1417,39 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     } finally { if (requestToken === preview.requestToken) button.disabled = false; }
   }
 
-  function bankClosePreview() {
+  function bankClosePreview(options) {
+    options = options || {};
     state.bank.preview.requestToken += 1;
     state.bank.preview.editableSource = '';
     state.bank.preview.fullSource = '';
     state.bank.preview.editorMode = 'append';
+    state.bank.preview.fullscreen = false;
+    state.bank.preview.sidebarOpen = false;
+    state.bank.preview.sidebarQuery = '';
+    state.bank.preview.activeKind = '';
+    state.bank.preview.activeId = '';
+    state.bank.preview.targetType = '';
+    state.bank.preview.targetId = '';
+    state.bank.preview.documentId = '';
+    state.bank.preview.examId = '';
+    state.bank.preview.pendingIssue = null;
+    state.bank.preview.adminIssue = null;
     if (el('bankPreviewToEditor')) el('bankPreviewToEditor').hidden = true;
+    if (el('bankPreviewReportButton')) el('bankPreviewReportButton').hidden = true;
+    if (el('bankPreviewResolveButton')) el('bankPreviewResolveButton').hidden = true;
     var dialog = el('bankPreviewDialog');
     if (dialog) { if (dialog.close) dialog.close(); else dialog.removeAttribute('open'); }
     bankResetPreviewPdf();
+    bankSyncPreviewLayout();
+    if (!options.fromHistory) {
+      var url = new URL(location.href);
+      if (url.searchParams.get('preview') === 'bank') {
+        url.searchParams.delete('preview');
+        var next = url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash;
+        history.replaceState(Object.assign({},history.state||{},{vmBankPreview:false}),'',next);
+      }
+    }
+    state.bank.preview.historyActive = false;
   }
 
   function bankSetupPreviewDialog() {
@@ -1150,7 +1457,154 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (!dialog || dialog._bankBound) return;
     dialog._bankBound = true;
     dialog.addEventListener('click',function (event) { if (event.target === dialog) bankClosePreview(); });
-    dialog.addEventListener('cancel',function (event) { event.preventDefault(); bankClosePreview(); });
+    dialog.addEventListener('cancel',function (event) {
+      event.preventDefault();
+      if (state.bank.preview.sidebarOpen) { bankTogglePreviewSidebar(false); return; }
+      if (state.bank.preview.fullscreen) { bankTogglePreviewFullscreen(false); return; }
+      bankClosePreview();
+    });
+  }
+
+  function bankCloseIssueReport() {
+    state.bank.preview.pendingIssue = null;
+    var dialog = el('bankIssueDialog');
+    if (dialog) { if (dialog.close) dialog.close(); else dialog.removeAttribute('open'); }
+    var form = el('bankIssueForm');
+    if (form && typeof form.reset === 'function') form.reset();
+  }
+
+  function bankOpenIssueReport(itemId, questionNumber, reportSort) {
+    if (!state.bank.access.canUse || state.bank.access.canAdmin) return;
+    var preview = state.bank.preview;
+    if (['source_document','exam'].indexOf(preview.targetType) < 0 || !preview.targetId) {
+      toast('Chưa xác định được đề đang xem để gửi báo lỗi.','err');
+      return;
+    }
+    var isQuestion = Number(questionNumber) > 0;
+    var targetType = isQuestion ? 'question' : preview.targetType;
+    var target = {};
+    if (preview.targetType === 'source_document') {
+      target.document_id = preview.documentId || preview.targetId;
+      if (isQuestion) target.source_ordinal = Number(reportSort);
+    } else {
+      target.exam_id = preview.examId || preview.targetId;
+      if (isQuestion) target.exam_sort = Number(reportSort);
+    }
+    // The locator visible to a teacher is deliberately limited to the current
+    // document/exam and its ordinal. The server resolves and verifies the
+    // private bank item; no TeX, answer or technical ID is submitted.
+    state.bank.preview.pendingIssue = {
+      targetType:targetType,
+      target:target,
+      questionNumber:isQuestion ? Number(questionNumber) : 0,
+      title:preview.title
+    };
+    var context = el('bankIssueContext');
+    if (context) context.textContent = isQuestion
+      ? 'Phản hồi sẽ được gắn với câu '+Number(questionNumber)+' trong “'+preview.title+'”.'
+      : 'Phản hồi sẽ được gắn với đề “'+preview.title+'”.';
+    var description = el('bankIssueDescription');
+    if (description) description.value = '';
+    var dialog = el('bankIssueDialog');
+    if (dialog) {
+      if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+      else dialog.setAttribute('open','');
+      window.setTimeout(function () { if (description) description.focus(); },0);
+    }
+  }
+
+  async function bankSubmitIssueReport(event) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    var pending = state.bank.preview.pendingIssue;
+    if (!pending || !state.bank.access.canUse || state.bank.access.canAdmin) return;
+    var issueType = String(el('bankIssueType') && el('bankIssueType').value || 'other');
+    if (issueType === 'answer') issueType = 'answer_suspected';
+    var description = String(el('bankIssueDescription') && el('bankIssueDescription').value || '').trim();
+    if (description.length < 3) { toast('Hãy mô tả ngắn vấn đề cần kiểm tra.','err'); return; }
+    var button = el('bankIssueSubmitButton');
+    if (button) { button.disabled = true; button.textContent = 'Đang gửi…'; }
+    try {
+      var response = await sb.rpc('vm_bank_report_issue',{
+        p_target_type:pending.targetType,
+        p_target:pending.target,
+        p_issue_type:issueType,
+        p_description:description
+      });
+      if (response.error) throw response.error;
+      var data = response.data || {};
+      bankCloseIssueReport();
+      toast(data.duplicate ? 'Phản hồi này đã được gửi trước đó.' : 'Đã gửi vị trí cần kiểm tra.','ok');
+    } catch (error) {
+      toast('Chưa gửi được phản hồi: '+bankSafeError(error),'err');
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Gửi báo lỗi'; }
+    }
+  }
+
+  function bankHighlightIssueTarget(report) {
+    report = report || {};
+    state.bank.preview.adminIssue = report;
+    var focus = report.focus || {}, pane = el('bankPreviewHtml'), target = null;
+    if (pane && focus.item_id) target = pane.querySelector('[data-bank-preview-item-id="'+String(focus.item_id).replace(/"/g,'')+'"]');
+    var sort = focus.source_ordinal != null ? focus.source_ordinal : focus.exam_sort;
+    if (!target && pane && sort != null) target = pane.querySelector('[data-bank-preview-report-sort="'+Number(sort)+'"]');
+    if (target) {
+      target.classList.add('is-issue-target');
+      requestAnimationFrame(function () { target.scrollIntoView({behavior:'smooth',block:'center'}); });
+    }
+    var status = el('bankPreviewStatus');
+    if (status) {
+      var summary = '⚑ '+String(report.reporter_name || 'Giáo viên')+': '+String(report.description || 'Nội dung cần kiểm tra');
+      status.textContent = summary;
+      status.title = summary;
+    }
+    var resolveButton = el('bankPreviewResolveButton');
+    if (resolveButton) resolveButton.hidden = !state.bank.access.canAdmin || ['open','in_review'].indexOf(String(report.status || '')) < 0;
+  }
+
+  async function bankOpenIssueFromLocation() {
+    if (!state.bank.access.canAdmin) return null;
+    var reportId = String(new URLSearchParams(location.search).get('bank_report') || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reportId)) return null;
+    try {
+      var response = await sb.rpc('vm_bank_admin_issue_report',{p_report_id:reportId});
+      if (response.error) throw response.error;
+      var report = response.data || {}, focus = report.focus || {};
+      switchTab('bank');
+      bankSetView('repository',{history:'replace',normalizeHash:true,scroll:false});
+      if (focus.document_id) {
+        await bankLoadAdminDocumentPreview(focus.document_id,report.target_label || 'Nguồn cần kiểm tra',{
+          targetType:'source_document',targetId:String(focus.document_id),documentId:String(focus.document_id)
+        });
+      } else if (focus.exam_id) {
+        await bankOpenExamPreview(focus.exam_id,report.target_label || 'Đề cần kiểm tra');
+      } else {
+        throw new Error('Báo lỗi chưa còn liên kết tới nguồn dữ liệu.');
+      }
+      bankHighlightIssueTarget(report);
+      toast('Đã mở đúng vị trí giáo viên báo lỗi.','ok');
+      return report;
+    } catch (error) {
+      toast('Chưa mở được báo lỗi: '+bankSafeError(error),'err');
+      return null;
+    }
+  }
+
+  async function bankResolveCurrentIssue() {
+    var report = state.bank.preview.adminIssue;
+    if (!state.bank.access.canAdmin || !report || !report.id) return;
+    var button = el('bankPreviewResolveButton');
+    if (button) { button.disabled = true; button.textContent = 'Đang lưu…'; }
+    try {
+      var response = await sb.rpc('vm_bank_admin_resolve_issue',{
+        p_report_id:report.id,p_status:'resolved',p_resolution_note:'Đã kiểm tra và xử lý trên Ngân hàng đề.'
+      });
+      if (response.error) throw response.error;
+      report.status = 'resolved';
+      if (button) button.hidden = true;
+      toast('Đã đánh dấu báo lỗi là đã xử lý.','ok');
+    } catch (error) { toast('Chưa cập nhật được báo lỗi: '+bankSafeError(error),'err'); }
+    finally { if (button) { button.disabled = false; button.textContent = '✓ Đã xử lý'; } }
   }
 
   function openBankFromEditor() {
@@ -1159,6 +1613,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var selected = area && area.selectionStart !== area.selectionEnd ? area.value.slice(area.selectionStart,area.selectionEnd) : '';
     var query = stripLatex(selected).replace(/\s+/g,' ').trim().slice(0,120);
     if (query && el('bankSearchQuery')) el('bankSearchQuery').value = query;
+    bankWriteWorkspaceTab('bank','push');
     switchTab('bank');
     bankSetView('manage',{history:'push',normalizeHash:true,scroll:false});
     var target = el('bankSearchCard');
@@ -1214,7 +1669,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (replace || !el('exTitle').value.trim()) el('exTitle').value = state.bank.preview.title || 'Nội dung từ ngân hàng';
     if (el('exType').value === 'essay') { el('exType').value = 'combo'; updateExamType(); }
     state.templateKey = 'custom';
-    bankClosePreview();
+    bankWriteWorkspaceTab('compose','replace');
+    bankClosePreview({fromHistory:true});
     switchTab('compose');
     renderPreview(true);
     area.focus();
@@ -1241,6 +1697,14 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     node.textContent = value == null ? '—' : Number(value).toLocaleString('vi-VN');
   }
 
+  function bankSetGenerationSourceCount(id,value,unit) {
+    var node=el(id);if(!node)return;
+    var count=value==null||Number.isNaN(Number(value))?null:Number(value);
+    node.textContent=count==null?'Chưa rõ dữ liệu':count.toLocaleString('vi-VN')+' '+unit+' hiện có';
+    var label=node.closest('label');
+    if(label){label.classList.toggle('bank-source-empty',count===0);label.title=count===0?'Nguồn này chưa có dữ liệu phù hợp; có thể chọn cùng nguồn khác để hệ thống tự cân bằng.':'';}
+  }
+
   function bankUpdateOverview() {
     var stats = state.bank.stats || {}, sources = state.bank.sourceItems || [];
     var complete = bankPickNumber(stats,['complete_exams','mock_exam_documents']);
@@ -1249,6 +1713,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var thpt = bankPickNumber(stats,['thpt_exam_documents','official_mock_documents','thpt_exams']);
     var semester = bankPickNumber(stats,['semester_documents','semester_exams']);
     var other = bankPickNumber(stats,['other_documents','other_sources','mock_other_documents','mock_exam_other_documents']);
+    var province = bankPickNumber(stats,['province_exam_documents']);
+    var authored = bankPickNumber(stats,['authored_documents']);
     if (sources.length && !state.bank.sourceCategory) {
       var sourceKinds = {thpt:0,semester:0,other:0};
       sources.forEach(function (item) {
@@ -1261,14 +1727,21 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       if (thpt == null) thpt = sourceKinds.thpt;
       if (semester == null) semester = sourceKinds.semester;
       if (other == null) other = sourceKinds.other;
+      if (province == null) province = sources.filter(function(item){return String(item.source_origin||'')==='province_exam';}).length;
+      if (authored == null) authored = sources.filter(function(item){return String(item.source_origin||'')==='authored';}).length;
     }
     bankSetOverviewValue('bankOverviewComplete',complete);
     bankSetOverviewValue('bankOverviewTopic',topic);
     bankSetOverviewValue('bankOverviewThpt',thpt);
     bankSetOverviewValue('bankOverviewSemester',semester);
     bankSetOverviewValue('bankOverviewOther',other);
+    bankSetOverviewValue('bankOverviewProvince',province);
+    bankSetOverviewValue('bankOverviewAuthored',authored);
     bankSetOverviewValue('bankOverviewActive',bankPickNumber(stats,['inventory_active','active']));
     bankSetOverviewValue('bankOverviewReview',bankPickNumber(stats,['inventory_quarantined','quarantined']));
+    bankSetGenerationSourceCount('bankGenerationSourceProvinceCount',province,'đề');
+    bankSetGenerationSourceCount('bankGenerationSourceAuthoredCount',authored,'đề');
+    bankSetGenerationSourceCount('bankGenerationSourceTopicCount',topic,'câu');
   }
 
   function bankInventoryCategoryTotals(items,key) {
@@ -1291,12 +1764,15 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var response=responses[0];if(response.error)throw response.error;
       var canonicalResponse=responses[1]||{},canonicalData=canonicalResponse.error?{}:(canonicalResponse.data||{});
       var canonicalItems=Array.isArray(canonicalData.items)?canonicalData.items:[];
+      var canonicalOrigins=Array.isArray(canonicalData.origins)?canonicalData.origins:[];
       var data=response.data||{},items=Array.isArray(data.items)?data.items:[],summary=data.summary||{};
       var thpt=bankInventoryCategoryTotals(items,'thptqg'),semester=bankInventoryCategoryTotals(items,'semester'),otherExam=bankInventoryCategoryTotals(items,'other_exam');
       var canonicalTopic=canonicalItems.find(function(item){return String(item.key||'')==='topic_pack';});
       var canonicalTopicQuestions=canonicalResponse.error
         ? bankPickNumber(state.bank.stats,['topic_pack_questions'])
         : Number(canonicalTopic?canonicalTopic.active_questions:0);
+      var provinceOrigin=canonicalOrigins.find(function(item){return String(item.key||'')==='province_exam';});
+      var authoredOrigin=canonicalOrigins.find(function(item){return String(item.key||'')==='authored';});
       state.bank.inventory=data;state.bank.inventoryLoaded=true;
       state.bank.stats=Object.assign({},state.bank.stats,{
         complete_exams:Number(summary.full_exams==null?thpt.documents+semester.documents+otherExam.documents:summary.full_exams),
@@ -1304,6 +1780,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         thpt_exam_documents:thpt.documents,
         semester_documents:semester.documents,
         other_documents:otherExam.documents,
+        province_exam_documents:canonicalResponse.error?bankPickNumber(state.bank.stats,['province_exam_documents']):Number(provinceOrigin?provinceOrigin.active_documents:0),
+        authored_documents:canonicalResponse.error?bankPickNumber(state.bank.stats,['authored_documents']):Number(authoredOrigin?authoredOrigin.active_documents:0),
         inventory_active:Number(summary.active||0),
         inventory_quarantined:Number(summary.quarantined||0)
       });
@@ -1314,15 +1792,19 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
 
   function bankRenderSourceCategoryTabs() {
     document.querySelectorAll('[data-bank-source-category]').forEach(function(button){
-      var active=button.getAttribute('data-bank-source-category')===state.bank.sourceCategory;
+      var category=button.getAttribute('data-bank-source-category')||'';
+      var origin=button.getAttribute('data-bank-source-origin')||'';
+      var active=category===state.bank.sourceCategory&&origin===state.bank.sourceOrigin;
       button.classList.toggle('active',active);
       button.setAttribute('aria-pressed',active?'true':'false');
     });
   }
 
   function bankSetSourceCategory(category) {
+    var origin=['authored','province_exam'].indexOf(category)>=0?category:'';
     category=['thptqg','semester','other_exam'].indexOf(category)>=0?category:'';
     state.bank.sourceCategory=category;
+    state.bank.sourceOrigin=origin;
     bankRenderSourceCategoryTabs();
     if(el('bankSourceType'))el('bankSourceType').value='';
     bankLoadSourceCatalog();
@@ -1334,6 +1816,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       setTimeout(function(){if(el('bankSearchGrade'))el('bankSearchGrade').focus({preventScroll:true});},260);
       return;
     }
+    if(kind==='repository'){bankScrollZone('repository');return;}
     bankScrollZone('create');
     setTimeout(function(){bankSetSourceCategory(kind==='complete'?'':kind);},180);
   }
@@ -1574,12 +2057,15 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
 
   function bankConfigureAccess(profile) {
     state.bank.access = bankAccessFor(profile);
+    document.body.classList.add('bank-access-ready');
+    document.body.classList.toggle('bank-admin-mode',state.bank.access.canAdmin);
     bankSetupPreviewDialog();
     var tab = el('bankTab');
     if (tab) tab.hidden = !state.bank.access.canUse;
     if (el('editorToBankButton')) el('editorToBankButton').hidden = !state.bank.access.canAdmin;
     if (el('bankAdminWorkbench')) el('bankAdminWorkbench').hidden = !state.bank.access.canAdmin;
     if (el('bankImportNav')) el('bankImportNav').hidden = !state.bank.access.canAdmin;
+    if (el('bankRepositoryNav')) el('bankRepositoryNav').hidden = !state.bank.access.canAdmin;
     if (el('bankOverviewReviewCard')) el('bankOverviewReviewCard').hidden = !state.bank.access.canAdmin;
     if (!state.bank.access.canUse) {
       document.body.classList.remove('bank-teacher-mode');
@@ -1588,6 +2074,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     bankSetView(bankViewFromLocation()||state.bank.activeView,{history:'none',normalizeHash:true,scroll:false});
     bankFillClassOptions();
     bankNewSeed();
+    bankUpdateGenerationKind();
     bankUpdateOverview();
     bankRenderBrowseHierarchy('grade');
     bankRenderMatrix([],0,'Toàn bộ kho câu đang dùng');
@@ -1610,6 +2097,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       bankSetupDropzone();
       bankSetImportMode('topic_pack');
       bankLoadTaxonomyCatalog(true);
+      if (state.bank.activeView === 'repository') bankLoadRepository();
     }
   }
 
@@ -1617,6 +2105,84 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (!el('bankGenSeed')) return;
     var day = new Date().toISOString().slice(0,10).replace(/-/g,'');
     el('bankGenSeed').value = 'vm-'+day+'-'+Math.random().toString(36).slice(2,8);
+  }
+
+  function bankGenerationKind() {
+    var selected = document.querySelector('input[name="bankGenerationKind"]:checked');
+    return selected ? selected.value : 'practice_topic';
+  }
+
+  var BANK_SEMESTER_PERIODS = {
+    midterm_1:'Giữa kỳ I',
+    final_1:'Cuối kỳ I',
+    midterm_2:'Giữa kỳ II',
+    final_2:'Cuối kỳ II'
+  };
+
+  function bankSemesterPeriod() {
+    var selected = document.querySelector('input[name="bankSemesterPeriod"]:checked');
+    if (!selected || !BANK_SEMESTER_PERIODS[selected.value]) return null;
+    return {value:selected.value,label:BANK_SEMESTER_PERIODS[selected.value]};
+  }
+
+  function bankUpdateSemesterPeriod() {
+    var fieldset=el('bankSemesterPeriodFieldset'),selected=bankSemesterPeriod();
+    document.querySelectorAll('input[name="bankSemesterPeriod"]').forEach(function(input){
+      var label=input.closest('label');if(label)label.classList.toggle('active',input.checked);
+    });
+    if(fieldset)fieldset.setAttribute('aria-invalid','false');
+    if(selected&&bankGenerationKind()==='semester_exam'&&el('bankGenTitle')){
+      el('bankGenTitle').placeholder='Ví dụ: '+selected.label+' · Toán 11';
+    }
+    return selected;
+  }
+
+  function bankGenerationSources() {
+    return Array.from(document.querySelectorAll('input[name="bankGenerationSource"]:checked'))
+      .map(function (input) { return input.value; })
+      .filter(function (value,index,all) {
+        return ['province_exam','authored','topic_pack'].indexOf(value) >= 0 && all.indexOf(value) === index;
+      });
+  }
+
+  function bankUpdateGenerationKind() {
+    var kind = bankGenerationKind();
+    document.querySelectorAll('input[name="bankGenerationKind"]').forEach(function (input) {
+      input.closest('label').classList.toggle('active',input.checked);
+    });
+    var presets = {
+      practice_topic:{placeholder:'Ví dụ: Chuyên đề Hàm số · Lớp 12',duration:45,count:20,type:''},
+      semester_exam:{placeholder:'Ví dụ: Đề cuối học kỳ I · Toán 11',duration:90,count:20,type:'multiple_choice'},
+      thptqg_exam:{placeholder:'Ví dụ: Đề luyện thi THPTQG · Số 01',duration:90,count:12,type:'multiple_choice'}
+    };
+    var preset = presets[kind] || presets.practice_topic;
+    var semesterFieldset=el('bankSemesterPeriodFieldset'),isSemester=kind==='semester_exam';
+    if(semesterFieldset){semesterFieldset.hidden=!isSemester;semesterFieldset.setAttribute('aria-invalid','false');}
+    document.querySelectorAll('input[name="bankSemesterPeriod"]').forEach(function(input){
+      input.disabled=!isSemester;input.required=isSemester;
+    });
+    if (el('bankGenTitle')) el('bankGenTitle').placeholder = preset.placeholder;
+    if (el('bankGenDuration')) el('bankGenDuration').value = preset.duration;
+    if (el('bankGenCount')) el('bankGenCount').value = preset.count;
+    if (el('bankGenType')) el('bankGenType').value = preset.type;
+    if (el('bankBlueprintRows')) el('bankBlueprintRows').innerHTML = '';
+    if (kind === 'thptqg_exam') {
+      if (el('bankGenGrade')) el('bankGenGrade').value = '12';
+      bankUpdateGeneratorHierarchy('grade');
+      bankAddBlueprintRow({grade:12,question_type:'true_false',count:4});
+      bankAddBlueprintRow({grade:12,question_type:'short_answer',count:6});
+    } else if (kind === 'semester_exam') {
+      var grade = parseInt(el('bankGenGrade') && el('bankGenGrade').value,10) || null;
+      bankAddBlueprintRow({grade:grade,question_type:'true_false',count:4});
+      bankAddBlueprintRow({grade:grade,question_type:'short_answer',count:6});
+    }
+    bankRenumberBlueprintRows();
+    bankUpdateBlueprintTotal();
+    var button = el('bankGenerateButton');
+    if (button) button.textContent = kind === 'practice_topic'
+      ? '✨ Tạo chuyên đề bài tập'
+      : kind === 'semester_exam' ? '✨ Tạo đề học kỳ' : '✨ Tạo đề THPTQG';
+    bankUpdateSemesterPeriod();
   }
 
   function bankBlueprintSelect(className,label,options,value,onchange,disabled) {
@@ -1708,7 +2274,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (state.bank.access.canAdmin) return String(error && error.message || error || 'Lỗi không xác định');
     return bankRpcMissing(error)
       ? 'Chức năng đang được cập nhật trên máy chủ. Vui lòng thử lại sau.'
-      : 'Máy chủ chưa hoàn tất yêu cầu. Vui lòng thử lại hoặc báo quản trị viên.';
+      : 'Máy chủ chưa hoàn tất yêu cầu. Vui lòng thử lại; khi đang xem một nguồn, có thể dùng nút Báo lỗi.';
   }
 
   function bankSetImportMode(mode) {
@@ -1749,6 +2315,18 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if(needsTerm&&el('bankImportSchoolYear')&&!el('bankImportSchoolYear').value.trim())el('bankImportSchoolYear').value=bankDefaultAcademicYear();
     if(kind==='semester_1'&&el('bankImportTerm'))el('bankImportTerm').value='1';
     if(kind==='semester_2'&&el('bankImportTerm'))el('bankImportTerm').value='2';
+    bankUpdateImportOrigin(false);
+  }
+
+  function bankUpdateImportOrigin(fromUser) {
+    if(!state.bank.access.canAdmin)return;
+    var select=el('bankImportOrigin'),title=String(el('bankImportTitle')&&el('bankImportTitle').value||'').trim();
+    if(!select)return;
+    if(fromUser)select.dataset.userSelected='true';
+    if(select.dataset.userSelected!=='true')select.value=/^dethamkhao\s*\d{1,2}(?:\D|$)/i.test(title)?'authored':'province_exam';
+    var authored=select.value==='authored',label=el('bankImportUnitLabel'),input=el('bankImportUnit');
+    if(label)label.textContent=authored?'Tác giả / nguồn nội bộ':'Tỉnh / đơn vị';
+    if(input)input.placeholder=authored?'Ví dụ: Nhóm biên soạn VinhMath':'Ví dụ: Sở GD&ĐT TP.HCM';
   }
 
   function bankFocusImport() {
@@ -1765,7 +2343,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   function bankImportActionHtml(label) {
     return state.bank.access.canAdmin
       ? '<div><button class="btn btn-primary btn-sm" type="button" onclick="VMExamAdmin.bankFocusImport()">'+esc(label || 'Nhập dữ liệu vào kho')+'</button></div>'
-      : '<div><small>Hãy báo quản trị viên nhập thêm dữ liệu vào ngân hàng đề.</small></div>';
+      : '';
   }
 
   function bankIsAvailabilityError(error) {
@@ -1785,7 +2363,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         : 'Đề đang yêu cầu '+Number(requestedCount || 0)+' câu nhưng kho không có đủ câu khớp khối, dạng câu và mức độ đã chọn.';
       var nextStep = state.bank.access.canAdmin
         ? 'Hãy nhập một đề TeX hoặc gói câu theo chủ đề, gán mã phân loại rồi bấm “Nhập các câu vào kho”. Nếu kho đã có dữ liệu, hãy giảm số câu hoặc nới bộ lọc.'
-        : 'Hãy giảm số câu hoặc chọn bộ lọc rộng hơn. Nếu vẫn gặp lỗi, quản trị viên cần nhập thêm câu vào kho.';
+        : 'Hãy giảm số câu, chọn bộ lọc rộng hơn hoặc chọn thêm nguồn lấy câu.';
       return '<strong>'+title+'</strong><p>'+guidance+' '+nextStep+'</p>'+bankImportActionHtml('↓ Nhập câu / đề TeX vào kho');
     }
     return '<strong>Chưa tạo được đề</strong><p>'+esc(bankSafeError(error))+'</p>';
@@ -1802,7 +2380,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   function bankSourceEmptyHtml() {
     var guidance = state.bank.access.canAdmin
       ? 'Danh mục này chỉ hiện tệp được nhập dưới dạng “Đề hoàn chỉnh · có thể giao nguyên đề”. Kho câu theo chủ đề không xuất hiện ở đây. Hãy nhập một đề thi thử hoặc đề chính thức dạng .tex và điền tỉnh, năm, loại kỳ thi.'
-      : 'Quản trị viên chưa nhập đề thi thử hoặc đề chính thức hoàn chỉnh nào. Các câu rời trong kho không tự trở thành một đề gốc.';
+      : 'Danh mục này chưa có đề hoàn chỉnh phù hợp. Các câu rời trong kho không tự trở thành một đề gốc.';
     return '<div class="exam-empty" style="min-height:150px"><div><strong>Chưa có đề hoàn chỉnh trong kho</strong>'+guidance+bankImportActionHtml('↓ Nhập đề hoàn chỉnh (.tex)')+'</div></div>';
   }
 
@@ -2419,13 +2997,16 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var year=parseInt(el('bankImportYear')&&el('bankImportYear').value,10)||null;
     if(mode==='topic_pack'){
       var chapter=bankImportChapterParts(),skill=parseInt(el('bankImportTopicLesson')&&el('bankImportTopicLesson').value,10)||null;
-      return {mode:mode,source_kind:'topic_pack',exam_kind:'topic_pack',grade:parseInt(el('bankImportTopicGrade')&&el('bankImportTopicGrade').value,10)||null,area:chapter.area,chapter:chapter.chapter,skill:skill,unit:null,year:null,tags:['topic_pack'].concat(chapter.area?['area_'+chapter.area]:[],chapter.chapter?['chapter_'+chapter.chapter]:[],skill?['skill_'+skill]:[])};
+      return {mode:mode,source_kind:'topic_pack',source_origin:'topic_pack',exam_kind:'topic_pack',grade:parseInt(el('bankImportTopicGrade')&&el('bankImportTopicGrade').value,10)||null,area:chapter.area,chapter:chapter.chapter,skill:skill,unit:null,year:null,tags:['topic_pack'].concat(chapter.area?['area_'+chapter.area]:[],chapter.chapter?['chapter_'+chapter.chapter]:[],skill?['skill_'+skill]:[])};
     }
     var kind=String(el('bankImportExamType')&&el('bankImportExamType').value||'other');
     var schoolYear=String(el('bankImportSchoolYear')&&el('bankImportSchoolYear').value||'').trim()||null;
     var term=parseInt(el('bankImportTerm')&&el('bankImportTerm').value,10)||null;
     if(kind==='semester_1')term=1;if(kind==='semester_2')term=2;
-    return {mode:mode,source_kind:'mock_exam',exam_kind:kind,grade:parseInt(el('bankImportExamGrade')&&el('bankImportExamGrade').value,10)||null,area:null,chapter:null,skill:null,unit:String(el('bankImportUnit')&&el('bankImportUnit').value||'').trim()||null,year:year,school_year:schoolYear,term:term,tags:['complete_exam'].concat(bankExamKindTags(kind),schoolYear?['school_year_'+schoolYear]:[],term?['term_'+term]:[])};
+    var title=String(el('bankImportTitle')&&el('bankImportTitle').value||'').trim();
+    var origin=String(el('bankImportOrigin')&&el('bankImportOrigin').value||'province_exam');
+    if(/^dethamkhao\s*\d+/i.test(title))origin='authored';
+    return {mode:mode,source_kind:'mock_exam',source_origin:origin,exam_kind:kind,grade:parseInt(el('bankImportExamGrade')&&el('bankImportExamGrade').value,10)||null,area:null,chapter:null,skill:null,unit:String(el('bankImportUnit')&&el('bankImportUnit').value||'').trim()||null,year:year,school_year:schoolYear,term:term,tags:['complete_exam','origin_'+origin].concat(bankExamKindTags(kind),schoolYear?['school_year_'+schoolYear]:[],term?['term_'+term]:[])};
   }
 
   function bankValidateImportMetadata() {
@@ -2487,7 +3068,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       tags:importMeta.tags,
       original_filename:document.fileName,
       content_hash:document.contentHash, raw_tex:document.text,
-      metadata:{source_title:title,content_mode:importMeta.mode,import_state:importState,expected_count:expectedCount,province_or_unit:unit,exam_year:year,academic_year:importMeta.school_year||(year?String(year):null),school_year:importMeta.school_year||null,term:importMeta.term||null,exam_type:examType,grade:importMeta.grade,area:importMeta.area,chapter:importMeta.chapter,topic:importMeta.skill,skill:importMeta.skill,parser_version:(window.VinhMathQuestionBank&&window.VinhMathQuestionBank.VERSION)||'unknown',question_count:(document.parsed.questions||[]).length,parse_errors:document.parsed.errors||[]},
+      metadata:{source_title:title,source_origin:importMeta.source_origin,content_mode:importMeta.mode,import_state:importState,expected_count:expectedCount,province_or_unit:unit,exam_year:year,academic_year:importMeta.school_year||(year?String(year):null),school_year:importMeta.school_year||null,term:importMeta.term||null,exam_type:examType,grade:importMeta.grade,area:importMeta.area,chapter:importMeta.chapter,topic:importMeta.skill,skill:importMeta.skill,parser_version:(window.VinhMathQuestionBank&&window.VinhMathQuestionBank.VERSION)||'unknown',question_count:(document.parsed.questions||[]).length,parse_errors:document.parsed.errors||[]},
       provenance:{relative_path:document.path,input_method:document.inputMethod||'file',size:document.file&&document.file.size||document.text.length,last_modified:document.file&&document.file.lastModified||null}
     };
   }
@@ -2562,6 +3143,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       await bankLoadStats(false);
       await bankLoadInventory(true);
       await bankLoadSourceCatalog();
+      state.bank.repositoryLoaded=false;
+      await bankLoadRepository();
       await bankLoadMatrix({status:'active'},true);
     } catch (error) {
       if (bankRpcMissing(error)) bankSetServerState(false,error);
@@ -2630,8 +3213,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       if (!items.length) results.innerHTML = '<div class="exam-empty" style="min-height:150px"><div><strong>Không có câu phù hợp</strong>Thử nới bộ lọc chuyên đề hoặc mức độ.</div></div>';
       else results.innerHTML = items.map(function (item,itemIndex) {
         var choices = Array.isArray(item.choices) ? item.choices : [];
-        var identityLabel = item.legacy_code||item.stable_id||('Câu hỏi '+(itemIndex+1));
-        var identityChip=state.bank.access.canAdmin?'<span class="bank-chip bank-internal-id">ID · '+esc(identityLabel)+'</span>':'';
+        var identityLabel = item.legacy_code||'Chưa gán';
+        var identityChip=state.bank.access.canAdmin?'<span class="bank-chip bank-internal-id"'+(item.stable_id?' title="Mã hệ thống: '+esc(item.stable_id)+'"':'')+'>Mã phân loại · '+esc(identityLabel)+'</span>':'';
         var route=['Khối '+(item.grade||'—'),item.chapter_label||(item.chapter?'Chương '+item.chapter:''),item.skill_label||(item.skill?'Bài / Chủ đề '+item.skill:'')].filter(Boolean).join(' → ');
         return '<article class="bank-result-item"><div class="bank-result-top">'+identityChip+'<span class="bank-chip">'+esc(bankTypeLabel(item.question_type))+'</span><span class="bank-chip">'+esc(item.difficulty||'—')+'</span></div><div class="bank-result-route">'+esc(route)+'</div><p>'+renderLatexFragment(item.content_latex||'',{showSolutions:false})+'</p>'+(choices.length?'<div class="bank-result-meta">'+choices.map(function(choice,choiceIndex){return '<span><b>'+esc(choice.key||choice.label||String.fromCharCode(65+choiceIndex))+'.</b> '+renderLatexFragment(choice.latex||choice.tex||'',{showSolutions:false})+'</span>';}).join(' · ')+'</div>':'')+'<div class="bank-result-meta">'+esc(item.source_label||'Nguồn đã ẩn')+'</div><button class="btn btn-secondary btn-sm bank-preview-open" type="button" data-bank-search-preview="'+itemIndex+'">🌐 Xem HTML / PDF</button></article>';
       }).join('');
@@ -2649,10 +3232,26 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (!state.bank.access.canUse) return;
     var title = el('bankGenTitle').value.trim(), classId = el('bankGenClass').value;
     if (!title || !classId) { toast('Hãy nhập tiêu đề và chọn lớp.','err'); return; }
+    var outputKind=bankGenerationKind(),sourceOrigins=bankGenerationSources();
+    if(!sourceOrigins.length){toast('Hãy chọn ít nhất một nguồn lấy câu.','err');return;}
+    var semesterPeriod=outputKind==='semester_exam'?bankSemesterPeriod():null;
+    if(outputKind==='semester_exam'&&!semesterPeriod){
+      var semesterFieldset=el('bankSemesterPeriodFieldset');
+      if(semesterFieldset){semesterFieldset.setAttribute('aria-invalid','true');semesterFieldset.scrollIntoView({behavior:'smooth',block:'nearest'});}
+      var firstSemesterPeriod=document.querySelector('input[name="bankSemesterPeriod"]:not(:disabled)');
+      if(firstSemesterPeriod)firstSemesterPeriod.focus();
+      toast('Hãy chọn Giữa kỳ I, Cuối kỳ I, Giữa kỳ II hoặc Cuối kỳ II.','err');return;
+    }
+    if(outputKind==='thptqg_exam'&&String(el('bankGenGrade').value||'')!=='12'){
+      toast('Đề THPTQG cần chọn khối 12.','err');return;
+    }
     var prefix=state.bank.access.canAdmin&&el('bankGenPrefix')?el('bankGenPrefix').value.trim().toUpperCase():'', blueprint=bankCollectBlueprint();
     var total=blueprint.reduce(function(sum,segment){return sum+segment.count;},0);
     if(total>200){toast('Một đề tối đa 200 câu. Hãy giảm số câu trong các nhóm.','err');return;}
-    var spec = {title:title,class_id:classId,portal_id:state.portal?state.portal.id:null,duration_minutes:Math.max(1,parseInt(el('bankGenDuration').value,10)||45),published:!!el('bankGenPublished').checked,seed:el('bankGenSeed').value.trim(),filters:{taxonomy_codes:prefix?[prefix]:[],legacy_prefix:prefix||null,source_kinds:[]},blueprint:blueprint,exclude_question_ids:[]};
+    var generationFilters={taxonomy_codes:prefix?[prefix]:[],legacy_prefix:prefix||null,source_origins:sourceOrigins};
+    if(semesterPeriod)generationFilters.semester_period=semesterPeriod.value;
+    var spec = {title:title,class_id:classId,portal_id:state.portal?state.portal.id:null,duration_minutes:Math.max(1,parseInt(el('bankGenDuration').value,10)||45),published:!!el('bankGenPublished').checked,seed:el('bankGenSeed').value.trim(),output_kind:outputKind,source_origins:sourceOrigins,filters:generationFilters,blueprint:blueprint,exclude_question_ids:[]};
+    if(semesterPeriod){spec.semester_period=semesterPeriod.value;spec.semester_period_label=semesterPeriod.label;}
     var button=el('bankGenerateButton'),status=el('bankGenerateStatus'),box=el('bankGenerateResult');
     button.disabled=true;status.textContent='Đang chọn và cân bằng câu…';box.hidden=true;
     try {
@@ -2661,11 +3260,14 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var response=await sb.rpc('vm_bank_generate_exam',{p_spec:spec});
       if(response.error)throw response.error;if(response.data&&response.data.error)throw new Error(response.data.error);
       var data=response.data||{},query=state.portal?'portal='+encodeURIComponent(state.portal.slug)+'&':'';
-      box.innerHTML='<b>✓ Đã tạo “'+esc(data.title||title)+'”</b><br>'+Number(data.question_count||0)+' câu · mã trộn '+esc(data.seed||spec.seed)+bankGenerationWarningsHtml(data.warnings)+(data.exam_id?'<div class="bank-preview-result-actions"><button class="btn btn-primary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">🌐 Xem HTML / PDF</button><a class="btn btn-secondary btn-sm" href="luyen-de?'+query+'exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">Mở trang làm đề ↗</a></div>':'');
+      var sourceLabels={province_exam:'đề tỉnh / kỳ thi',authored:'tác giả / tự biên',topic_pack:'kho chuyên đề'};
+      var usedSources=Array.isArray(data.source_origins)&&data.source_origins.length?data.source_origins:sourceOrigins;
+      var periodSummary=data.semester_period_label||spec.semester_period_label||'';
+      box.innerHTML='<b>✓ Đã tạo “'+esc(data.title||title)+'”</b><br>'+Number(data.question_count||0)+' câu'+(periodSummary?' · '+esc(periodSummary):'')+' · '+esc(usedSources.map(function(value){return sourceLabels[value]||value;}).join(' + '))+' · mã trộn '+esc(data.seed||spec.seed)+bankGenerationWarningsHtml(data.warnings)+(data.exam_id?'<div class="bank-preview-result-actions"><button class="btn btn-primary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">🌐 Xem HTML / PDF</button><a class="btn btn-secondary btn-sm" href="luyen-de?'+query+'exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">Mở trang làm đề ↗</a></div>':'');
       if(data.matrix){var generatedMatrix=Array.isArray(data.matrix)?{items:data.matrix}:data.matrix;bankRenderMatrix(generatedMatrix.items||[],Number(generatedMatrix.question_count==null?data.question_count:generatedMatrix.question_count),'Ma trận đề vừa tạo');}
       var generatedPreview=box.querySelector('[data-bank-preview-exam]');if(generatedPreview)generatedPreview.addEventListener('click',function(){bankOpenExamPreview(generatedPreview.dataset.bankPreviewExam,data.title||title);});
       box.hidden=false;status.textContent='Hoàn tất';bankSetServerState(true);bankNewSeed();
-      if(state.bank.access.canAdmin)await loadExams();
+      if(state.bank.access.canAdmin)await loadExams();else await bankLoadExamCatalog(true);
     }catch(error){
       if(bankRpcMissing(error))bankSetServerState(false,error);
       var availability=bankIsAvailabilityError(error)||(state.bank.access.canAdmin&&state.bank.statsLoaded&&Number(state.bank.stats.active||0)===0);
@@ -2695,6 +3297,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if(!select)return;
     var semantic=bankSourceSemantic(select.value||'');
     state.bank.sourceCategory=semantic?semantic.category:'';
+    state.bank.sourceOrigin='';
     bankRenderSourceCategoryTabs();
   }
 
@@ -2709,6 +3312,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       exam_kind:semantic?null:(selected||null),
       bank_category:semantic?semantic.category:(state.bank.sourceCategory||null),
       bank_variant:semantic?semantic.variant:null,
+      source_origin:state.bank.sourceOrigin||null,
       tags:[]
     };
   }
@@ -2741,7 +3345,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if(item.id!=null&&String(item.id)!=='')return 'id:'+String(item.id);
     return 'fallback:'+[
       item.title||'',item.province||'',item.grade||'',item.exam_year||'',
-      item.bank_category||'',item.bank_variant||'',item.exam_kind||'',item.question_count||''
+      item.bank_category||'',item.bank_variant||'',item.source_origin||'',item.exam_kind||'',item.question_count||''
     ].join('|');
   }
 
@@ -2773,11 +3377,22 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if(!box)return;
     if(!items.length)box.innerHTML=bankSourceEmptyHtml();
     else {
-      box.innerHTML=items.map(function(item){var assignable=item.assignable!==false;return '<article class="bank-source-item"><div class="bank-result-top"><span class="bank-chip">'+esc(item.grade?'Khối '+item.grade:'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(item.exam_year||'Chưa rõ năm')+'</span><span class="bank-chip">'+esc(bankSourceExamKindLabel(item))+'</span><span class="bank-chip">'+Number(item.question_count||0)+' câu</span></div><h3>'+esc(item.title||'Đề chưa đặt tên')+'</h3><p>'+esc(item.province||'Chưa ghi tỉnh / đơn vị')+'</p>'+(!assignable?'<div class="bank-source-warning">Nguồn chưa đủ câu hợp lệ để giao. Admin cần hoàn tất kiểm duyệt.</div>':'')+'<div class="bank-source-actions"><button class="btn btn-primary bank-source-preview" type="button" data-source-preview-id="'+esc(item.id)+'">🌐 Xem HTML / PDF</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="assign"'+(assignable?'':' disabled aria-disabled="true"')+'>Giao nguyên đề</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="clone"'+(assignable?'':' disabled aria-disabled="true"')+'>Tạo đề cùng cấu trúc</button></div></article>';}).join('');
+      box.innerHTML=items.map(function(item){
+        var assignable=item.assignable!==false,authored=String(item.source_origin||'')==='authored';
+        var pending=Math.max(0,Number(item.total_question_count||item.question_count||0)-Number(item.question_count||0));
+        var sourceLabel=authored?'Tác giả / tự biên':bankRepositoryKindLabel(item);
+        var unitLabel=authored?(item.province||'Nguồn tự biên VinhMath'):(item.province||'Chưa ghi tỉnh / đơn vị');
+        var readiness=!assignable?'<div class="bank-source-note review">'+(authored?'Đề tự biên đang được chuẩn hóa'+(state.bank.access.canAdmin&&pending?' · còn '+pending+' câu cần phân loại':'')+'. Có thể mở HTML/PDF để kiểm tra.':'Nguồn đang được chuẩn hóa. Có thể mở HTML/PDF để kiểm tra.')+'</div>':'';
+        var useActions=assignable||state.bank.access.canAdmin
+          ? '<button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="assign"'+(assignable?'':' disabled aria-disabled="true"')+'>Giao nguyên đề</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="clone"'+(assignable?'':' disabled aria-disabled="true"')+'>Tạo đề cùng cấu trúc</button>'
+          : '';
+        return '<article class="bank-source-item"><div class="bank-result-top"><span class="bank-chip">'+esc(sourceLabel)+'</span><span class="bank-chip">'+esc(item.grade?'Khối '+item.grade:'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(item.exam_year||'Chưa rõ năm')+'</span><span class="bank-chip">'+esc(bankSourceExamKindLabel(item))+'</span><span class="bank-chip">'+Number(item.question_count||0)+' câu</span></div><h3>'+esc(item.title||'Đề chưa đặt tên')+'</h3><p>'+esc(unitLabel)+'</p>'+readiness+'<div class="bank-source-actions"><button class="btn btn-primary bank-source-preview" type="button" data-source-preview-id="'+esc(item.id)+'">🌐 Xem HTML / PDF</button>'+useActions+'</div></article>';
+      }).join('');
       box.querySelectorAll('[data-source-preview-id]').forEach(function(button){button.addEventListener('click',function(){bankOpenSourcePreview(button.dataset.sourcePreviewId);});});
       box.querySelectorAll('[data-source-exam-id]').forEach(function(button){button.addEventListener('click',function(){bankChooseSourceExam(button.dataset.sourceExamId,button.dataset.sourceMode);});});
     }
     bankUpdateSourcePagination();
+    bankRenderPreviewSidebar();
   }
 
   async function bankLoadSourceCatalog(event,options) {
@@ -2823,6 +3438,143 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return bankLoadSourceCatalog(event,{append:true});
   }
 
+  function bankRepositoryFilters() {
+    var origin=el('bankRepositoryGroup')&&el('bankRepositoryGroup').value||'';
+    return {
+      query:String(el('bankRepositoryQuery')&&el('bankRepositoryQuery').value||'').trim(),
+      source_origin:origin||null,
+      repository_status:String(el('bankRepositoryStatus')&&el('bankRepositoryStatus').value||'')||null,
+      grade:parseInt(el('bankRepositoryGrade')&&el('bankRepositoryGrade').value,10)||null
+    };
+  }
+
+  function bankRepositoryKindLabel(item) {
+    var origin=String(item&&item.source_origin||'').toLowerCase();
+    if(origin==='authored')return 'Tác giả / tự biên';
+    if(origin==='province_exam')return 'Đề tỉnh / kỳ thi';
+    if(origin==='topic_pack'||String(item&&item.source_kind||'')==='topic_pack')return 'Gói câu chuyên đề';
+    return 'Nguồn khác';
+  }
+
+  function bankRepositoryStatusInfo(item) {
+    var status=String(item&&item.repository_status||'').toLowerCase();
+    if(!status){
+      var importState=String(item&&item.import_state||'').toLowerCase();
+      if(String(item&&item.status||'')==='archived')status='archived';
+      else if(Number(item&&item.error_count||0)>0)status='error';
+      else if(importState&&importState!=='complete'&&importState!=='legacy_complete')status='staging';
+      else if(Number(item&&item.quarantined_count||0)>0||Number(item&&item.active_count||0)<Number(item&&item.total_count||0))status='review';
+      else status='ready';
+    }
+    return {
+      ready:{label:'Sẵn sàng',className:'ready'},
+      review:{label:'Cần phân loại',className:'review'},
+      staging:{label:'Đang nạp dở',className:'staging'},
+      error:{label:'Lỗi nguồn',className:'error'},
+      archived:{label:'Đã lưu trữ',className:'archived'}
+    }[status]||{label:'Đã lưu',className:'archived'};
+  }
+
+  function bankFormatBytes(value) {
+    var bytes=Math.max(0,Number(value||0));
+    if(bytes<1024)return bytes+' B';
+    if(bytes<1048576)return (bytes/1024).toFixed(bytes<10240?1:0)+' KB';
+    return (bytes/1048576).toFixed(1)+' MB';
+  }
+
+  function bankRepositoryDate(value) {
+    if(!value)return 'Chưa rõ thời điểm';
+    var date=new Date(value);
+    return isNaN(date.getTime())?'Chưa rõ thời điểm':date.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+
+  function bankRenderRepository() {
+    var box=el('bankRepositoryResults'),items=state.bank.repositoryItems||[];
+    if(!box)return;
+    if(!items.length){
+      box.innerHTML='<div class="exam-empty bank-repository-empty"><div><strong>Không có tệp nguồn phù hợp</strong>Đổi bộ lọc hoặc nạp một tệp TeX mới ở trạm Nạp &amp; chuẩn hóa.</div></div>';
+      return;
+    }
+    box.innerHTML=items.map(function(item){
+      var status=bankRepositoryStatusInfo(item),total=Number(item.total_count||0),active=Number(item.active_count||0);
+      var fileName=item.original_filename||item.relative_path||'Tệp TeX đã lưu';
+      var grade=item.grade?'Khối '+item.grade:(item.source_origin==='authored'?'Nhiều khối / chưa gán':'Chưa rõ khối');
+      var route=bankRepositoryKindLabel(item)+' · '+grade+(item.exam_year?' · '+item.exam_year:'');
+      var countText=total?(active+' / '+total+' câu dùng được'):'Chưa tách câu';
+      return '<button class="bank-repository-item" type="button" data-bank-repository-document="'+esc(item.id)+'" aria-label="Mở và biên dịch '+esc(item.title||fileName)+'">'+
+        '<span class="bank-repository-file"><span class="bank-repository-icon" aria-hidden="true">TeX</span><span><strong>'+esc(item.title||fileName)+'</strong><small>'+esc(fileName)+'</small></span></span>'+
+        '<span class="bank-repository-route"><b>'+esc(route)+'</b><small>'+esc(countText)+'</small></span>'+
+        '<span class="bank-repository-meta"><span class="bank-repository-state '+status.className+'">'+esc(status.label)+'</span><small>'+esc(bankFormatBytes(item.raw_size))+' · '+esc(bankRepositoryDate(item.updated_at||item.created_at))+'</small></span>'+
+        '<span class="bank-repository-open">Mở HTML/PDF <i aria-hidden="true">→</i></span></button>';
+    }).join('');
+    box.querySelectorAll('[data-bank-repository-document]').forEach(function(button){
+      button.addEventListener('click',function(){bankOpenRepositoryDocument(button.dataset.bankRepositoryDocument);});
+    });
+  }
+
+  function bankUpdateRepositoryPagination() {
+    var prev=el('bankRepositoryPrev'),next=el('bankRepositoryNext'),status=el('bankRepositoryPageStatus');
+    if(!prev||!next||!status)return;
+    var offset=Math.max(0,Number(state.bank.repositoryOffset||0)),size=state.bank.repositoryPageSize||25,total=Math.max(0,Number(state.bank.repositoryResultTotal||0));
+    var start=total&&state.bank.repositoryItems.length?offset+1:0,end=Math.min(total,offset+state.bank.repositoryItems.length);
+    status.textContent=start+'–'+end+' / '+total+' tệp';
+    prev.disabled=state.bank.repositoryLoading||offset<=0;
+    next.disabled=state.bank.repositoryLoading||offset+size>=total;
+  }
+
+  async function bankLoadRepository(event,options) {
+    if(event&&event.preventDefault)event.preventDefault();
+    if(!state.bank.access.canAdmin)return;
+    options=options||{};
+    var filters=bankRepositoryFilters(),filterKey=JSON.stringify(filters),size=state.bank.repositoryPageSize||25;
+    var offset=Number(options.offset);
+    if(!Number.isFinite(offset))offset=state.bank.repositoryFilterKey===filterKey?state.bank.repositoryOffset:0;
+    offset=Math.max(0,Math.floor(offset/size)*size);
+    var token=++state.bank.repositoryRequestToken;
+    state.bank.repositoryLoading=true;state.bank.repositoryFilterKey=filterKey;
+    var box=el('bankRepositoryResults'),button=el('bankRepositorySearchButton');
+    if(button)button.disabled=true;
+    if(box)box.innerHTML='<div class="exam-empty bank-repository-empty"><div><div class="exam-spinner"></div><strong>Đang mở kho nguồn</strong>Chỉ tải thông tin tệp; TeX gốc chỉ được lấy khi admin bấm mở.</div></div>';
+    bankUpdateRepositoryPagination();
+    try{
+      var response=await sb.rpc('vm_bank_admin_document_catalog',{p_filters:filters,p_limit:size,p_offset:offset});
+      if(response.error)throw response.error;
+      if(token!==state.bank.repositoryRequestToken)return;
+      var data=response.data||{},items=Array.isArray(data)?data:(Array.isArray(data.items)?data.items:[]);
+      state.bank.repositoryItems=items;
+      state.bank.repositoryOffset=offset;
+      state.bank.repositoryResultTotal=Math.max(items.length,Number(data.total==null?items.length:data.total));
+      state.bank.repositoryHasMore=offset+items.length<state.bank.repositoryResultTotal;
+      state.bank.repositoryLoaded=true;
+      bankRenderRepository();bankSetServerState(true);
+    }catch(error){
+      if(token!==state.bank.repositoryRequestToken)return;
+      state.bank.repositoryItems=[];state.bank.repositoryResultTotal=0;state.bank.repositoryLoaded=false;
+      if(box)box.innerHTML='<div class="exam-empty bank-repository-empty error"><div><strong>Chưa mở được kho nguồn</strong>'+esc(bankSafeError(error))+'</div></div>';
+      if(bankRpcMissing(error))bankSetServerState(false,error);
+    }finally{
+      if(token===state.bank.repositoryRequestToken){state.bank.repositoryLoading=false;if(button)button.disabled=false;bankUpdateRepositoryPagination();}
+    }
+  }
+
+  function bankRepositoryPage(direction) {
+    if(state.bank.repositoryLoading)return;
+    var size=state.bank.repositoryPageSize||25;
+    return bankLoadRepository(null,{offset:Math.max(0,state.bank.repositoryOffset+(direction<0?-size:size))});
+  }
+
+  function bankResetRepositoryFilters() {
+    ['bankRepositoryQuery','bankRepositoryGroup','bankRepositoryStatus','bankRepositoryGrade'].forEach(function(id){if(el(id))el(id).value='';});
+    state.bank.repositoryFilterKey='';state.bank.repositoryOffset=0;
+    return bankLoadRepository();
+  }
+
+  function bankOpenRepositoryDocument(documentId) {
+    if(!state.bank.access.canAdmin||!documentId)return;
+    var item=(state.bank.repositoryItems||[]).find(function(entry){return String(entry.id)===String(documentId);});
+    return bankLoadAdminDocumentPreview(documentId,item&&item.title||'Tệp nguồn');
+  }
+
   function bankChooseSourceExam(id,mode) {
     if(!state.bank.access.canUse)return;var item=state.bank.sourceItems.find(function(entry){return String(entry.id)===String(id);});if(!item)return;
     if(item.assignable===false){toast('Nguồn này chưa đủ câu hợp lệ hoặc chưa hoàn tất kiểm duyệt.','err');return;}
@@ -2848,7 +3600,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         ?await sb.rpc('vm_bank_clone_source_structure',{p_document_id:state.bank.selectedSourceId,p_spec:spec})
         :await sb.rpc('vm_bank_assign_source_exam',{p_document_id:state.bank.selectedSourceId,p_spec:spec});
       if(response.error)throw response.error;if(response.data&&response.data.error)throw new Error(response.data.error);var data=response.data||{},warnings=Array.isArray(data.warnings)?data.warnings.length:0;
-      status.innerHTML='✓ '+(mode==='clone'?'Đã tạo đề mới ':'Đã giao ')+Number(data.question_count||0)+' câu'+(data.skipped?' · bỏ qua '+Number(data.skipped)+' câu chưa hợp lệ':'')+(warnings?' · '+warnings+' vị trí chưa có câu tương đương':'')+(data.exam_id?' · <button class="btn btn-secondary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">Xem HTML / PDF</button> · <a href="luyen-de?exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">mở trang làm đề ↗</a>':'');var assignedPreview=status.querySelector('[data-bank-preview-exam]');if(assignedPreview)assignedPreview.addEventListener('click',function(){bankOpenExamPreview(assignedPreview.dataset.bankPreviewExam,title);});bankSetServerState(true);if(state.bank.access.canAdmin)await loadExams();
+      status.innerHTML='✓ '+(mode==='clone'?'Đã tạo đề mới ':'Đã giao ')+Number(data.question_count||0)+' câu'+(data.skipped?' · bỏ qua '+Number(data.skipped)+' câu chưa hợp lệ':'')+(warnings?' · '+warnings+' vị trí chưa có câu tương đương':'')+(data.exam_id?' · <button class="btn btn-secondary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">Xem HTML / PDF</button> · <a href="luyen-de?exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">mở trang làm đề ↗</a>':'');var assignedPreview=status.querySelector('[data-bank-preview-exam]');if(assignedPreview)assignedPreview.addEventListener('click',function(){bankOpenExamPreview(assignedPreview.dataset.bankPreviewExam,title);});bankSetServerState(true);if(state.bank.access.canAdmin)await loadExams();else await bankLoadExamCatalog(true);
     }catch(error){if(bankRpcMissing(error))bankSetServerState(false,error);status.textContent='Chưa giao được đề: '+bankSafeError(error);}
     finally{button.disabled=false;}
   }
@@ -2902,7 +3654,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if(typeof vmTaiMoiTruongTex==='function')await vmTaiMoiTruongTex();
     bankConfigureAccess(profile);
     if(!bankAccess.canAdmin){
-      el('kpiExams').textContent='—';el('kpiQuestions').textContent='—';el('kpiAttempts').textContent='—';
+      await bankLoadExamCatalog(true);
+      el('kpiAttempts').textContent='—';
       return;
     }
     var engineSetting=await sb.from('app_settings').select('value').eq('key','latex_engine_default').maybeSingle();
@@ -2922,14 +3675,28 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     else if(!requestedTab||requestedTab==='compose')applyTemplate('worksheet-mixed');
     if(['compose','bank','library','analytics'].indexOf(requestedTab)>=0)switchTab(requestedTab);
     if(requestedTab==='library'&&['published','draft'].indexOf(requestedState)>=0){el('libraryState').value=requestedState;renderLibrary();}
+    await bankOpenIssueFromLocation();
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankAssignSourceExam:bankAssignSourceExam,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateImportOrigin:bankUpdateImportOrigin,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankAssignSourceExam:bankAssignSourceExam,bankLoadRepository:bankLoadRepository,bankRepositoryPage:bankRepositoryPage,bankResetRepositoryFilters:bankResetRepositoryFilters,bankOpenRepositoryDocument:bankOpenRepositoryDocument,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_normalizeLegacyPdfFragment:normalizeLegacyPdfFragment,_buildPdfSource:buildPdfSource,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
+  Object.assign(window.VMExamAdmin,{
+    bankTogglePreviewFullscreen:bankTogglePreviewFullscreen,
+    bankTogglePreviewSidebar:bankTogglePreviewSidebar,
+    bankFilterPreviewSources:bankFilterPreviewSources,
+    bankSwitchPreviewSource:bankSwitchPreviewSource,
+    bankOpenIssueReport:bankOpenIssueReport,
+    bankSubmitIssueReport:bankSubmitIssueReport,
+    bankCloseIssueReport:bankCloseIssueReport,
+    bankOpenIssueFromLocation:bankOpenIssueFromLocation,
+    bankResolveCurrentIssue:bankResolveCurrentIssue,
+    bankUpdateGenerationKind:bankUpdateGenerationKind,
+    bankUpdateSemesterPeriod:bankUpdateSemesterPeriod
+  });
   window.addEventListener('resize',scheduleAuthoringRailSync,{passive:true});
   window.addEventListener('scroll',scheduleAuthoringRailSync,{passive:true});
-  window.addEventListener('popstate',bankSyncViewFromLocation);
-  window.addEventListener('hashchange',bankSyncViewFromLocation);
+  window.addEventListener('popstate',bankSyncWorkspaceFromLocation);
+  window.addEventListener('hashchange',bankSyncWorkspaceFromLocation);
   window.addEventListener('vm:tex-environments-ready',bankRefreshPreviewHtml);
   document.addEventListener('DOMContentLoaded',function(){var bankNav=el('bankWorkspaceNav');if(bankNav)bankNav.addEventListener('keydown',bankHandleViewNavigationKey);syncAuthoringRail();init().catch(function(error){toast('Không khởi tạo được trình soạn thảo: '+error.message,'err');});});
 })();

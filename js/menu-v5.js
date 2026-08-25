@@ -359,18 +359,33 @@ async function veDanhSachThongBao() {
     khung.innerHTML = '<div class="bell-item" style="color:var(--ink-3); cursor:default">Chưa có thông báo nào.</div>';
     return;
   }
-  khung.innerHTML = ds.map(function (t) {
+  khung.replaceChildren();
+  ds.forEach(function (t) {
     var luc = new Date(t.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' });
-    return '<div class="bell-item' + (t.read_at ? '' : ' unread') + '" data-id="' + t.id + '" data-link="' + (t.link || '') + '" data-kind="' + (t.kind || '') + '" data-body="' + encodeURIComponent(t.body || '') + '">' +
-      '<b>' + t.title + '</b>' +
-      (t.body ? '<span>' + t.body + '</span>' : '') +
-      '<small>' + luc + '</small></div>';
-  }).join('');
+    var item = document.createElement('div');
+    item.className = 'bell-item' + (t.read_at ? '' : ' unread');
+    item.dataset.id = String(t.id || '');
+    item.dataset.link = String(t.link || '');
+    item.dataset.kind = String(t.kind || '');
+    item.dataset.body = String(t.body || '');
+    var title = document.createElement('b');
+    title.textContent = String(t.title || 'Thông báo');
+    item.appendChild(title);
+    if (t.body) {
+      var body = document.createElement('span');
+      body.textContent = String(t.body);
+      item.appendChild(body);
+    }
+    var time = document.createElement('small');
+    time.textContent = luc;
+    item.appendChild(time);
+    khung.appendChild(item);
+  });
   khung.querySelectorAll('.bell-item[data-id]').forEach(function (el) {
     el.onclick = async function () {
       await sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', el.getAttribute('data-id'));
-      var l = vmDichDenThongBao(el.getAttribute('data-link'), el.getAttribute('data-kind'), decodeURIComponent(el.getAttribute('data-body') || ''));
-      if (l && l.indexOf('http') === 0) { window.open(l, '_blank'); demThongBao(); veDanhSachThongBao(); }
+      var l = vmDichDenThongBao(el.dataset.link, el.dataset.kind, el.dataset.body);
+      if (l && /^https?:\/\//i.test(l)) { window.open(l, '_blank', 'noopener'); demThongBao(); veDanhSachThongBao(); }
       else if (l) { window.location.href = l; }
       else { demThongBao(); veDanhSachThongBao(); }
     };
@@ -381,6 +396,7 @@ function vmDichDenThongBao(link, kind, body) {
   if (!link) return '';
   try {
     var url = new URL(link, window.location.origin);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return '';
     if (url.origin === window.location.origin && kind === 'graded' && /\/bai-hoc(?:\.html)?$/.test(url.pathname)) {
       url.searchParams.set('action', 'graded');
       if (!url.searchParams.has('kind')) {
@@ -389,7 +405,7 @@ function vmDichDenThongBao(link, kind, body) {
       }
     }
     return url.origin === window.location.origin ? (url.pathname + url.search + url.hash) : url.href;
-  } catch (e) { return link; }
+  } catch (e) { return ''; }
 }
 
 // Đóng mở dropdown khi click (dành cho mobile và đóng khi click ngoài)

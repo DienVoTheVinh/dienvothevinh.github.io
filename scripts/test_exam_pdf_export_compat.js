@@ -47,7 +47,8 @@ pages.forEach((file) => {
   expect((source.match(/vmChuanHoaLoiGiaiPdf\(q\.solution_latex\)/g) || []).length === 4, `${path.basename(file)} does not normalize every generated MC/TF solution`);
   expect((source.match(/vmTaoLoiGiaiNganPdf\(shortAns, q\.solution_latex \|\| ''\)/g) || []).length === 2, `${path.basename(file)} does not normalize both short-answer export paths`);
   expect(source.includes('body = vmChuanHoaNoiDungDePdf(body);'), `${path.basename(file)} does not normalize the shared PDF pipeline`);
-  expect((source.match(/var tex = ghepTexCode\(styExTest, styTitleDot, preamble, body\)/g) || []).length === 2, `${path.basename(file)} side and download PDF paths no longer share one builder`);
+  const sharedBuilderCalls = source.match(/var tex = ghepTexCode\([^;\r\n]+\);/g) || [];
+  expect(sharedBuilderCalls.length === 2, `${path.basename(file)} side and download PDF paths no longer share one builder`);
 });
 
 expect(admin.includes('\\\\providecommand{\\\\choiceTF}[5][]'), 'Admin PDF export does not support four true/false statements');

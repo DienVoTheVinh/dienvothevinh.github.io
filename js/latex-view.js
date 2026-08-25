@@ -260,6 +260,119 @@ function vmChuanHoaTikzSource(source) {
     .replace(/\\big\(/g, '(').replace(/\\big\)/g, ')');
 }
 
+// Small, audited compatibility map for commands that occur in legacy author
+// sources without their original package preamble. Keep this list explicit:
+// unknown commands must stay visible instead of being silently rewritten.
+var vmLegacyMacroCompatibility = Object.freeze({
+  vv: Object.freeze({
+    command: '\\vv',
+    arguments: 1,
+    katex: '\\overrightarrow{#1}',
+    tex: '\\providecommand{\\vv}[1]{\\overrightarrow{#1}}',
+    sourcePackage: 'esvect'
+  }),
+  indam: Object.freeze({
+    command: '\\indam',
+    arguments: 1,
+    katex: '\\textbf{#1}',
+    tex: '\\providecommand{\\indam}[1]{\\textbf{#1}}',
+    sourcePackage: 'legacy-author-preamble'
+  }),
+  vect: Object.freeze({
+    command: '\\vect',
+    arguments: 1,
+    katex: '\\overrightarrow{#1}',
+    tex: '\\providecommand{\\vect}[1]{\\overrightarrow{#1}}',
+    sourcePackage: 'legacy-author-preamble'
+  }),
+  heva: Object.freeze({
+    command: '\\heva',
+    arguments: 1,
+    katex: '\\left\\{\\begin{aligned}#1\\end{aligned}\\right.',
+    tex: '\\providecommand{\\heva}[1]{\\left\\{\\begin{aligned}#1\\end{aligned}\\right.}',
+    sourcePackage: 'legacy-author-preamble'
+  }),
+  hoac: Object.freeze({
+    command: '\\hoac',
+    arguments: 1,
+    katex: '\\left[\\begin{aligned}#1\\end{aligned}\\right.',
+    tex: '\\providecommand{\\hoac}[1]{\\mathopen{\\lbrack}\\begin{array}{ll}#1\\end{array}}',
+    sourcePackage: 'legacy-author-preamble'
+  }),
+  faCube: Object.freeze({
+    command: '\\faCube',
+    arguments: 0,
+    katex: '\\blacksquare',
+    tex: '\\providecommand{\\faCube}{\\ensuremath{\\blacksquare}}',
+    sourcePackage: 'fontawesome'
+  }),
+  shortans: Object.freeze({
+    command: '\\shortans',
+    arguments: 2,
+    katex: null,
+    tex: '\\providecommand{\\shortans}[2][]{\\par\\noindent\\textbf{Đáp án: }\\fbox{\\strut #2}\\par}',
+    sourcePackage: 'legacy-exam-preamble'
+  })
+});
+window.vmLegacyMacroCompatibility = vmLegacyMacroCompatibility;
+
+function vmLegacyKatexMacros() {
+  var macros = {};
+  Object.keys(vmLegacyMacroCompatibility).forEach(function (key) {
+    var item = vmLegacyMacroCompatibility[key];
+    if (typeof item.katex === 'string' && item.katex) macros[item.command] = item.katex;
+  });
+  return macros;
+}
+window.vmLegacyKatexMacros = vmLegacyKatexMacros;
+
+function vmCoLenhLegacyTex(source, command) {
+  var name = String(command || '').replace(/^\\+/, '');
+  if (!name) return false;
+  var text = String(source || '');
+  // Follow TeX control-sequence/comment boundaries closely enough to avoid
+  // treating a comment, \% or the second slash in \\ as a live command.
+  for (var index = 0; index < text.length; index += 1) {
+    var current = text.charAt(index);
+    if (current === '%') {
+      while (index < text.length && text.charAt(index) !== '\n') index += 1;
+      continue;
+    }
+    if (current !== '\\' || index + 1 >= text.length) continue;
+    index += 1;
+    if (!/[A-Za-z@]/.test(text.charAt(index))) continue;
+    var start = index;
+    while (index < text.length && /[A-Za-z@]/.test(text.charAt(index))) index += 1;
+    if (text.slice(start, index) === name) return true;
+    index -= 1;
+  }
+  return false;
+}
+
+// PDF/TikZ callers can insert this immediately before \begin{document}. The
+// fallback is conditional and uses \providecommand, so an author's esvect or
+// custom \vv definition always wins. Never renew a source command globally.
+function vmLegacyTexCompatPreamble(source) {
+  var lines = [];
+  Object.keys(vmLegacyMacroCompatibility).forEach(function (key) {
+    var item = vmLegacyMacroCompatibility[key];
+    if (vmCoLenhLegacyTex(source, item.command)) lines.push(item.tex);
+  });
+  if (!lines.length) return '';
+  return '% VM_LEGACY_MACROS_BEGIN\n' + lines.join('\n') + '\n% VM_LEGACY_MACROS_END\n';
+}
+window.vmLegacyTexCompatPreamble = vmLegacyTexCompatPreamble;
+
+function vmChenLegacyTexCompatPreamble(source) {
+  var tex = String(source || '');
+  if (tex.indexOf('% VM_LEGACY_MACROS_BEGIN') !== -1) return tex;
+  var block = vmLegacyTexCompatPreamble(tex);
+  if (!block) return tex;
+  var at = tex.search(/\\begin\s*\{document\}/);
+  return at >= 0 ? tex.slice(0, at) + block + tex.slice(at) : block + tex;
+}
+window.vmChenLegacyTexCompatPreamble = vmChenLegacyTexCompatPreamble;
+
 // Mot so bo de ex_test dinh nghia cac lenh ve khoang trong file .sty thay vi
 // trong tep .tex. Trinh doc dung standalone nen can lop tuong thich nho nay.
 // Chi chen khi hinh thuc su dung ho lenh Interval, khong lam cham cac hinh TikZ khac.
@@ -298,7 +411,8 @@ function vmTexTikzPreview(items, batch) {
     vmMauTikzPreview(preamble + '\n' + sources) + vmTikzCompatPreamble(sources) + '\\pgfplotsset{compat=1.18}\n' +
     '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,patterns.meta,positioning,shapes,shapes.geometric,decorations.pathmorphing,decorations.markings,decorations.text,backgrounds,fit,matrix,snakes,shadows,lindenmayersystems,shadings,fadings}\n' +
     '\\usepgfplotslibrary{fillbetween}\n' +
-    vmKhaiBaoTikzPreview(preamble) + '\n\\begin{document}\n' + sources + '\n\\end{document}';
+    vmKhaiBaoTikzPreview(preamble) + '\n' + vmLegacyTexCompatPreamble(preamble + '\n' + sources) +
+    '\\begin{document}\n' + sources + '\n\\end{document}';
 }
 
 function vmTaiPdfJsTikz() {
@@ -1061,13 +1175,13 @@ function thayMoiTruongKhoiLatex(src, environment, replacer) {
 function tachLoiGiaiKhoiNoiDung(src) {
   var text = String(src || '');
   var solutions = [];
-  ['loigiai', 'solution', 'answer'].forEach(function (command) {
+  ['loigiai', 'giaibai', 'solution', 'answer', 'sol'].forEach(function (command) {
     text = thayLenhKhoiLatex(text, command, function (content) {
       solutions.push(content);
       return '';
     });
   });
-  ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+  ['loigiai', 'giaibai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
     text = thayMoiTruongKhoiLatex(text, environment, function (content) {
       solutions.push(content);
       return '';
@@ -1079,14 +1193,14 @@ function tachLoiGiaiKhoiNoiDung(src) {
 function dinhDangVanBanTaiLieuLatex(src) {
   var solutionBlocks = [];
   var text = vmChuanHoaMoiTruongVanBan(String(src || ''), { showSolutions:true });
-  ['loigiai', 'solution', 'answer'].forEach(function (command) {
+  ['loigiai', 'giaibai', 'solution', 'answer', 'sol'].forEach(function (command) {
     text = thayLenhKhoiLatex(text, command, function (content) {
       var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
       solutionBlocks.push(content);
       return token;
     });
   });
-  ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+  ['loigiai', 'giaibai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
     text = thayMoiTruongKhoiLatex(text, environment, function (content) {
       var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
       solutionBlocks.push(content);
@@ -1127,10 +1241,10 @@ function vmLatexFragmentRaHTML(src, options) {
   var showSolutions = options.showSolutions !== false;
   var text = vmChuanHoaMoiTruongVanBan(String(src || ''), { showSolutions:showSolutions });
   if (!showSolutions) {
-    ['loigiai', 'solution', 'answer'].forEach(function (command) {
+    ['loigiai', 'giaibai', 'solution', 'answer', 'sol'].forEach(function (command) {
       text = xoaLenhKhoiLatex(text, command);
     });
-    ['loigiai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
+    ['loigiai', 'giaibai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
       text = thayMoiTruongKhoiLatex(text, environment, '');
     });
   }
@@ -1148,9 +1262,11 @@ function latexTaiLieuRaHTML(src, options) {
   var body = vmChuanHoaMoiTruongVanBan(tachNoiDungTaiLieuLatex(src || ''), { showSolutions:!!options.showSolutions });
   if (!options.showSolutions) {
     body = xoaLenhKhoiLatex(body, 'loigiai');
+    body = xoaLenhKhoiLatex(body, 'giaibai');
     body = xoaLenhKhoiLatex(body, 'solution');
     body = xoaLenhKhoiLatex(body, 'answer');
-    ['loigiai', 'solution', 'answer', 'sol'].forEach(function (environment) {
+    body = xoaLenhKhoiLatex(body, 'sol');
+    ['loigiai', 'giaibai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
       body = thayMoiTruongKhoiLatex(body, environment, '');
     });
   }
@@ -1303,6 +1419,15 @@ function dichMoiTruongDanhSach(s) {
 }
 
 function vmTuyChonRenderToan() {
+  var macros = {
+    "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right.",
+    "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+    "\\N": "\\mathbb{N}", "\\Z": "\\mathbb{Z}", "\\Q": "\\mathbb{Q}",
+    "\\R": "\\mathbb{R}", "\\C": "\\mathbb{C}",
+    "\\vect": "\\overrightarrow{#1}"
+  };
+  var legacy = vmLegacyKatexMacros();
+  Object.keys(legacy).forEach(function (command) { macros[command] = legacy[command]; });
   return {
     delimiters: [
       { left: '$$', right: '$$', display: true },
@@ -1310,13 +1435,7 @@ function vmTuyChonRenderToan() {
       { left: '$', right: '$', display: false },
       { left: '\\(', right: '\\)', display: false }
     ],
-    macros: {
-      "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right.",
-      "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
-      "\\N": "\\mathbb{N}", "\\Z": "\\mathbb{Z}", "\\Q": "\\mathbb{Q}",
-      "\\R": "\\mathbb{R}", "\\C": "\\mathbb{C}",
-      "\\vect": "\\overrightarrow{#1}"
-    },
+    macros: macros,
     throwOnError: false,
     strict: 'ignore',
     trust: false

@@ -6,6 +6,12 @@ const migrationPath = path.join(root, 'supabase', 'migrations', '20260825113000_
 const sql = fs.readFileSync(migrationPath, 'utf8');
 const hardeningPath = path.join(root, 'supabase', 'migrations', '20260825162000_question_bank_staff_review_hardening.sql');
 const hardeningSql = fs.readFileSync(hardeningPath, 'utf8');
+const migrationDirectory = path.join(root, 'supabase', 'migrations');
+const effectiveSql = fs.readdirSync(migrationDirectory)
+  .filter((name) => /^\d+.*\.sql$/i.test(name))
+  .sort()
+  .map((name) => fs.readFileSync(path.join(migrationDirectory, name), 'utf8'))
+  .join('\n');
 
 function ok(condition, message) {
   if (!condition) throw new Error(message);
@@ -33,6 +39,16 @@ function hardeningFunctionBody(name) {
   const end = hardeningSql.indexOf('$function$;', bodyStart + 13);
   ok(bodyStart >= 0 && end > bodyStart, `unclosed hardening function ${name}`);
   return hardeningSql.slice(start, end + '$function$;'.length);
+}
+
+function effectiveFunctionBody(name) {
+  const marker = `create or replace function ${name}`;
+  const start = effectiveSql.toLowerCase().lastIndexOf(marker.toLowerCase());
+  ok(start >= 0, `missing effective function ${name}`);
+  const bodyStart = effectiveSql.indexOf('as $function$', start);
+  const end = effectiveSql.indexOf('$function$;', bodyStart + 13);
+  ok(bodyStart >= 0 && end > bodyStart, `unclosed effective function ${name}`);
+  return effectiveSql.slice(start, end + '$function$;'.length);
 }
 
 [
@@ -95,6 +111,27 @@ has(/create policy exams_bank_direct_scope[\s\S]*as restrictive[\s\S]*vm_bank_di
   'bank exam rows need a restrictive direct-table policy');
 has(/create policy exam_questions_bank_direct_scope[\s\S]*as restrictive[\s\S]*vm_bank_direct_exam_question_allowed/i,
   'bank exam composition needs a restrictive direct-table policy');
+
+const effectiveExamQuestionBoundary = effectiveFunctionBody('private.vm_bank_direct_exam_question_allowed');
+ok(/when private\.vm_bank_exam_is_protected\([\s\S]*?\) then public\.is_admin\(\)/i.test(effectiveExamQuestionBoundary),
+  'protected bank exam composition must be directly visible and mutable only to admins');
+const protectedBranch = (effectiveExamQuestionBoundary.match(/when private\.vm_bank_exam_is_protected\([\s\S]*?\) then ([\s\S]*?)when not private\.vm_bank_direct_question_allowed/i) || [])[1] || '';
+ok(protectedBranch && !/vm_bank_target_is_manageable|vm_bank_can_manage_exam/i.test(protectedBranch),
+  'a managing teacher must not receive protected exam question UUIDs or direct composition CRUD');
+ok(/when not private\.vm_bank_direct_question_allowed\(p_question_id\)\s+then public\.is_admin\(\)[\s\S]*else true/i.test(effectiveExamQuestionBoundary),
+  'legacy normal exam composition must remain compatible while bank snapshots stay admin-only');
+
+const safeExamCatalog = effectiveFunctionBody('public.vm_bank_exam_catalog');
+ok(/auth\.uid\(\) is null or not public\.is_teacher\(\)/i.test(safeExamCatalog)
+    && /private\.vm_bank_can_manage_exam\(exam\.id\)/i.test(safeExamCatalog),
+  'safe generated-exam catalogue must require teacher role and exact managed scope');
+ok(/select count\(\*\)::integer[\s\S]*from public\.exam_questions composition[\s\S]*composition\.exam_id=exam\.id/i.test(safeExamCatalog),
+  'safe generated-exam catalogue may expose only a server-computed question count');
+for (const secret of ["'question_id'", "'item_id'", "'raw_tex'", "'canonical_tex'", "'answer_key'", "'solution_latex'", "'legacy_code'"]) {
+  ok(!safeExamCatalog.toLowerCase().includes(secret), `safe generated-exam catalogue leaks ${secret}`);
+}
+ok(/revoke all on function public\.vm_bank_exam_catalog\(integer\)[\s\S]*from public, anon[\s\S]*grant execute[\s\S]*to authenticated/i.test(effectiveSql),
+  'safe generated-exam catalogue grants must be authenticated-only');
 
 const targetBody = functionBody('private.vm_bank_target_is_manageable');
 ok(/public\.is_teacher\(\)/i.test(targetBody), 'assistants must not manage bank targets');

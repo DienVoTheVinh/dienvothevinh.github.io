@@ -29,7 +29,7 @@ expect(!html.includes('localStorage.setItem(\'ttBulk') && !html.includes('sessio
 expect(edge.includes('prof.role !== "admin"') && edge.includes('svc.auth.admin.createUser'), 'Account creation must remain server-side and admin-authorized');
 expect(!edge.includes('console.log(password)') && !edge.includes('console.log(body)'), 'Credentials must never be logged');
 
-const shareFunction = html.match(/function ttBulkVanBanChiaSe\(\) \{[\s\S]*?\n\}\n\nasync function ttBulkSaoChep/);
+const shareFunction = html.match(/function ttBulkVanBanChiaSe\(\) \{[\s\S]*?\r?\n\}\r?\n\r?\nasync function ttBulkSaoChep/);
 expect(shareFunction, 'Cannot extract chat-friendly copy formatter');
 const shareContext = { window: { ttBulkPortalDaTao:null, ttBulkPasswordDaTao:'VinhMath2026#', ttBulkResultsData:[
   { fullName:'Hồ Văn Chí', studentLogin:'hovanchi@hs.vinhmath', parentLogin:'hovanchi@ph.vinhmath', ok:true },

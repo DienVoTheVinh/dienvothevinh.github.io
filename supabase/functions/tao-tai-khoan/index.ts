@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const type = String(body.type || "hs_ph");
+    const allowedTypes = new Set(["hs_ph", "gv", "tg", "portal_hs", "portal_gv", "reset_password"]);
+    if (!allowedTypes.has(type)) return jsonRes({ error: "Loai tai khoan khong hop le" }, 400);
     const fullName = String(body.fullName || "").trim();
     const baseU = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
     const password = String(body.password || "");
@@ -86,7 +88,9 @@ Deno.serve(async (req) => {
       }
       const email = `${u}@${suffix}.vinhmath.com`;
       const { data: acc, error: accErr } = await svc.auth.admin.createUser({
-        email, password, email_confirm: true, user_metadata: { full_name: fullName },
+        email, password, email_confirm: true,
+        user_metadata: { full_name: fullName },
+        app_metadata: { vinhmath_role: "student" },
       });
       if (accErr || !acc?.user) return jsonRes({ error: "Khong tao duoc tai khoan portal" }, 500);
       // Portal managers stay profile.role=student on purpose. Their manager
@@ -109,11 +113,15 @@ Deno.serve(async (req) => {
       const hsEmail = u + "@" + DOMAIN.hs;
       const phEmail = u + "@" + DOMAIN.ph;
       const { data: hs, error: hsErr } = await svc.auth.admin.createUser({
-        email: hsEmail, password, email_confirm: true, user_metadata: { full_name: fullName },
+        email: hsEmail, password, email_confirm: true,
+        user_metadata: { full_name: fullName },
+        app_metadata: { vinhmath_role: "student" },
       });
       if (hsErr || !hs?.user) return jsonRes({ error: "Tao TK hoc sinh loi: " + (hsErr?.message || "unknown") }, 500);
       const { data: ph, error: phErr } = await svc.auth.admin.createUser({
-        email: phEmail, password: password2, email_confirm: true, user_metadata: { full_name: "Phụ huynh " + fullName },
+        email: phEmail, password: password2, email_confirm: true,
+        user_metadata: { full_name: "Phụ huynh " + fullName },
+        app_metadata: { vinhmath_role: "parent" },
       });
       if (phErr || !ph?.user) {
         await svc.auth.admin.deleteUser(hs.user.id).catch(() => {});
@@ -131,13 +139,16 @@ Deno.serve(async (req) => {
     const u = await timU(false);
     if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
     const email = u + "@" + DOMAIN[key];
+    const accountRole = type === "gv" ? "teacher" : "assistant";
     const { data: acc, error: accErr } = await svc.auth.admin.createUser({
-      email, password, email_confirm: true, user_metadata: { full_name: fullName },
+      email, password, email_confirm: true,
+      user_metadata: { full_name: fullName },
+      app_metadata: { vinhmath_role: accountRole },
     });
     if (accErr || !acc?.user) return jsonRes({ error: "Tao TK loi: " + (accErr?.message || "unknown") }, 500);
     await svc.from("profiles").update({ full_name: fullName }).eq("id", acc.user.id);
     return jsonRes({ ok: true, type,
-      account: { id: acc.user.id, login: u + "@" + key + ".vinhmath", email, role: type === "gv" ? "teacher" : "assistant" },
+      account: { id: acc.user.id, login: u + "@" + key + ".vinhmath", email, role: accountRole },
     });
   } catch (e) {
     return jsonRes({ error: String((e as Error).message || e) }, 500);

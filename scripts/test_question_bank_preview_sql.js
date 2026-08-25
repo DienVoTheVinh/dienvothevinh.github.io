@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
+const migrationDirectory = path.join(root, 'supabase', 'migrations');
 const migrationPath = path.join(
   root,
   'supabase',
@@ -18,6 +19,11 @@ const hardening = fs.readFileSync(path.join(
   'migrations',
   '20260825171000_question_bank_preview_search_hardening.sql'
 ), 'utf8');
+const effectiveSql = fs.readdirSync(migrationDirectory)
+  .filter((name) => /^\d+.*\.sql$/i.test(name))
+  .sort()
+  .map((name) => fs.readFileSync(path.join(migrationDirectory, name), 'utf8'))
+  .join('\n');
 
 function bodyFrom(sql, name) {
   const marker = `create or replace function ${name}`;
@@ -29,6 +35,15 @@ function bodyFrom(sql, name) {
   return sql.slice(start, end + '$function$;'.length);
 }
 function body(name) { return bodyFrom(migration, name); }
+function lastBodyFrom(sql, name) {
+  const marker = `create or replace function ${name}`;
+  const start = sql.toLowerCase().lastIndexOf(marker.toLowerCase());
+  assert.ok(start >= 0, `missing effective function ${name}`);
+  const bodyStart = sql.indexOf('as $function$', start);
+  const end = sql.indexOf('$function$;', bodyStart + 13);
+  assert.ok(bodyStart >= 0 && end > bodyStart, `unclosed effective function ${name}`);
+  return sql.slice(start, end + '$function$;'.length);
+}
 
 const choiceSanitizer = body('private.vm_bank_preview_choices');
 assert.match(choiceSanitizer, /p_question_type='short_answer'[\s\S]*'key','short','latex',''/,
@@ -114,6 +129,15 @@ assert.match(hardenedContent,
   'teacher-safe previews must remove short-answer commands, including optional display arguments');
 assert.match(hardenedContent, /replace\(v_content,E'\\\\True',''\)/,
   'teacher-safe previews must remove stray answer markers from legacy content');
+const effectiveSolutionStripper = lastBodyFrom(effectiveSql, 'public.vm_strip_latex_solutions');
+for (const environment of ['loigiai','giaibai','solution','answer','sol','onlysolution']) {
+  assert.match(effectiveSolutionStripper, new RegExp(`vm_remove_latex_environment\\(v_out,\\s*'${environment}'\\)`, 'i'),
+    `teacher-safe previews must strip legacy \\begin{${environment}} solution environments`);
+}
+for (const command of ['loigiai','giaibai','solution','answer','sol']) {
+  assert.match(effectiveSolutionStripper, new RegExp(`vm_remove_latex_group_command\\(v_out,\\s*'${command}'\\)`, 'i'),
+    `teacher-safe previews must strip legacy \\${command}{...} solution commands`);
+}
 const hardenedSearch = bodyFrom(hardening, 'public.vm_bank_search');
 assert.match(hardenedSearch,
   /else[\s\S]*'content_latex',private\.vm_bank_preview_content\(i\.content_latex\)[\s\S]*'choices',private\.vm_bank_preview_choices\(i\.question_type,i\.public_choices\)/i,

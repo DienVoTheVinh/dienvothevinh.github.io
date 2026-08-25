@@ -13,7 +13,12 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({executablePath,headless:true});
   try {
     const page = await browser.newPage({viewport:{width:1500,height:900}});
-    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${body}</body></html>`);
+    await page.route('http://vinhmath.test/**', (route) => route.fulfill({
+      status:200,
+      contentType:'text/html',
+      body:`<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${body}</body></html>`
+    }));
+    await page.goto('http://vinhmath.test/quan-tri-de?tab=bank#bank-overview');
     await page.addScriptTag({path:'js/question-bank.js'});
     await page.addScriptTag({path:'js/latex-view.js'});
     await page.addScriptTag({path:'js/exam-admin.js'});

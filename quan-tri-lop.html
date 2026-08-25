@@ -1228,8 +1228,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.2"></script>
-<script src="js/latex-view.js?v=11.1"></script>
-<script src="js/menu-v5.js?v=9.7"></script>
+<script src="js/latex-view.js?v=11.4"></script>
+<script src="js/menu-v5.js?v=9.8"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -2759,26 +2759,17 @@ async function toggleDiemDanhLop(studentId, trangThai) {
 /* ----- Báo cả lớp: thầy đã vào phòng Meet ----- */
 async function baoLopBatDau(classId, meetLink) {
   try {
-    // chống dội chuông: 20 phút gần đây đã báo lớp này thì thôi
-    var moc = new Date(Date.now() - 20 * 60000).toISOString();
-    var daBao = await sb.from('notifications').select('id', { count: 'exact', head: true })
-      .eq('kind', 'class_start').eq('class_ref', classId).gte('created_at', moc);
-    if ((daBao.count || 0) > 0) return;
-    var hs = await sb.from('class_students').select('student_id').eq('class_id', classId);
-    var tenLop = classDangChon ? classDangChon.name : 'của em';
-    var ds = (hs.data || []).map(function (x) {
-      return {
-        user_id: x.student_id,
-        title: '🔴 Lớp ' + tenLop + ' đã bắt đầu!',
-        body: 'Thầy đã vào phòng học trực tuyến. Em vào lớp ngay nhé!',
-        link: meetLink,
-        kind: 'class_start',
-        class_ref: classId
-      };
+    // Máy chủ kiểm tra đúng quyền quản lý lớp, chống dội 20 phút và chỉ gửi
+    // cho học sinh thực sự thuộc lớp. Trình duyệt không còn quyền tự chèn
+    // thông báo hoặc đọc danh sách người nhận.
+    var r = await sb.rpc('vm_notify_class_start', {
+      p_class_id: classId,
+      p_meet_link: meetLink
     });
-    if (ds.length) {
-      var r2 = await sb.from('notifications').insert(ds);
-      if (!r2.error) console.log('Đã báo ' + ds.length + ' học sinh vào lớp.');
+    if (r.error) throw r.error;
+    var ketQua = r.data || {};
+    if (!ketQua.duplicate) {
+      console.log('Đã báo ' + (ketQua.notified || 0) + ' học sinh vào lớp.');
     }
   } catch (e) { console.error('Lỗi báo lớp bắt đầu:', e); }
 }
