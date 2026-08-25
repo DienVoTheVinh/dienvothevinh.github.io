@@ -54,7 +54,7 @@
     </div></section>
   </div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.0"></script><script src="js/menu-v5.js?v=9.5"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.0"></script><script src="js/menu-v5.js?v=9.6"></script>
 <script>
 (async function(){if(!daKetNoi())return;var me=await yeuCauDangNhap();if(!me)return;if(me.role!=='admin'){location.href='trang-chu';return;}})();
 document.getElementById('adminToolSearch').addEventListener('input',function(){var q=this.value.trim().toLocaleLowerCase('vi');document.querySelectorAll('.admin-tool').forEach(function(tool){tool.hidden=q&&((tool.textContent+' '+(tool.dataset.key||'')).toLocaleLowerCase('vi').indexOf(q)===-1);});document.querySelectorAll('.admin-group').forEach(function(group){group.hidden=!group.querySelector('.admin-tool:not([hidden])');});});

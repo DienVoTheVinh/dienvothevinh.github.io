@@ -10,6 +10,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Trung tâm nội dung — VinhMath</title>
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  if (params.get('hub') !== '1') {
+    location.replace('quan-tri-de?tab=compose&template=thpt-standard');
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
@@ -156,7 +164,7 @@ select.input{width:auto}
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.0"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
-<script src="js/menu-v5.js?v=9.5"></script>
+<script src="js/menu-v5.js?v=9.6"></script>
 <script src="js/analytics.js"></script>
 <script>
 var pdfBlob = null; // PDF vừa biên dịch xong, chờ lưu

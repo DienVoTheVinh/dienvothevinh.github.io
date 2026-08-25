@@ -413,7 +413,7 @@ Thể tích bằng $3^3=27$.}
       if (eq.error) throw eq.error;
       var data = detail.data, questions = (eq.data||[]).map(function (x) { return x.questions; }).filter(Boolean);
       state.editingId = id; state.templateKey = data.template_key || 'custom';
-      el('formTitle').textContent = '1. Chỉnh sửa đề thi'; el('editBadge').textContent = 'Đang chỉnh sửa';
+      el('formTitle').textContent = '3. Chỉnh sửa đề thi'; el('editBadge').textContent = 'Đang chỉnh sửa';
       el('exTitle').value = data.title || ''; el('exLop').value = data.class_id || '';
       el('exDuration').value = data.duration_minutes || 90; el('exType').value = data.de_type || 'mc';
       el('exOpens').value = toLocalInput(data.opens_at); el('exCloses').value = toLocalInput(data.closes_at);
@@ -431,7 +431,7 @@ Thể tích bằng $3^3=27$.}
     state.editingId = null; state.templateKey = 'custom'; state.parsed = [];
     el('examForm').reset(); el('exDuration').value = 90; el('exShuffle').checked = true; el('exPublished').checked = true; el('exAllowSolutionPdf').checked = false;
     el('exType').value = 'mc'; el('exLatex').value = ''; el('exEssayPrompt').value = '';
-    el('formTitle').textContent = '1. Thiết lập đề thi'; el('editBadge').textContent = 'Đề mới';
+    el('formTitle').textContent = '3. Thiết lập đề thi'; el('editBadge').textContent = 'Đề mới';
     el('btnCancelEdit').hidden = true; el('btnSave').textContent = '💾 Lưu đề thi'; el('saveStatus').textContent = 'Đề chưa lưu.';
     updateExamType(); switchPreview('html'); renderPreview(false);
     document.documentElement.style.removeProperty('overflow'); document.body.style.removeProperty('overflow');

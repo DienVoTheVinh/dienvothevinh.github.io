@@ -6,6 +6,7 @@ const page = fs.readFileSync(path.join(root, 'quan-tri-de.html'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'js', 'exam-admin.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'css', 'exam-admin.css'), 'utf8');
 const sql = fs.readFileSync(path.join(root, 'web', 'supabase', 'exam_authoring_analytics.sql'), 'utf8');
+const solutionParserSql = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260825024500_linear_latex_solution_parser.sql'), 'utf8');
 
 function expect(pattern, text, message) {
   if (!pattern.test(text)) throw new Error(message);
@@ -17,6 +18,9 @@ expect(/value="thpt">Chuẩn THPTQG/, page, 'The THPTQG three-part exam type is 
 expect(/HTML trực tiếp[\s\S]*PDF/, page, 'HTML and PDF preview modes must both be visible.');
 expect(/thpt-standard[\s\S]*thpt-practice/, page, 'Both THPTQG templates must be available.');
 expect(/exam-toolbox-card[\s\S]*Trắc nghiệm 4 phương án[\s\S]*Đúng\/Sai 4 ý[\s\S]*Trả lời ngắn/, page, 'Question tools must live in the left authoring rail.');
+expect(/exam-quick-start-card[\s\S]*thpt-standard[\s\S]*exam-toolbox-card/, page, 'Quick templates and authoring tools must live in the left rail.');
+expect(/exam-quick-start-card\{order:1\}[\s\S]*exam-toolbox-card\{order:2\}[\s\S]*exam-settings-card\{order:3\}/, css, 'Quick templates and tools must appear before detailed settings.');
+expect(/quan-tri-tai-lieu\?hub=1/, page, 'The previous content hub must remain available as a secondary destination.');
 expect(/width:min\(1880px,100%\)/, css, 'The authoring workspace must use large PC screens.');
 expect(/\\choiceTF/, js, 'The true/false template must use ex_test choiceTF syntax.');
 expect(/providecommand\{\\\\choiceTF\}/, js, 'PDF export must define a choiceTF fallback for the bundled ex_test version.');
@@ -40,5 +44,10 @@ expect(/security definer[\s\S]*set search_path = ''/i, sql, 'Analytics RPC must 
 expect(/v_role not in \('admin', 'teacher'\)/, sql, 'Analytics RPC must reject non-teacher roles.');
 expect(/revoke all on function public\.gv_thong_ke_luyen_de/, sql, 'Analytics RPC execute privileges are not restricted.');
 expect(/attempts_exam_submitted_student_idx/, sql, 'Analytics query index is missing.');
+expect(/string_to_array\(v_source, null\)/, solutionParserSql, 'The exam sanitizer must parse long UTF-8 sources through a fixed character array.');
+expect(/v_read := v_cursor;[\s\S]*continue;/, solutionParserSql, 'The exam sanitizer must move forward after removing a solution group.');
+if (/substr\(v_source,\s*v_cursor,\s*1\)/.test(solutionParserSql)) {
+  throw new Error('The exam sanitizer must not perform repeated UTF-8 text slicing inside the character loop.');
+}
 
 console.log('Exam admin upgrade static regression checks passed.');

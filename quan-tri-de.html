@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=2.0">
+  <link rel="stylesheet" href="css/exam-admin.css?v=2.1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -57,7 +57,7 @@
       <div class="exam-workflow">
         <aside class="exam-stack">
           <article class="exam-card exam-settings-card">
-            <div class="exam-card-head"><div><h2 id="formTitle">1. Thiết lập đề thi</h2><p>Thông tin xuất bản và đối tượng học sinh.</p></div><span class="exam-badge draft" id="editBadge">Đề mới</span></div>
+            <div class="exam-card-head"><div><h2 id="formTitle">3. Thiết lập đề thi</h2><p>Thông tin xuất bản và đối tượng học sinh.</p></div><span class="exam-badge draft" id="editBadge">Đề mới</span></div>
             <div class="exam-card-body">
               <form id="examForm" onsubmit="VMExamAdmin.saveExam(event)">
                 <div class="exam-form-grid">
@@ -78,17 +78,17 @@
             </div>
           </article>
 
-          <article class="exam-card">
-            <div class="exam-card-head"><div><h3>2. Mẫu đề dùng nhanh</h3><p>Chèn cấu trúc chuẩn rồi thay nội dung câu hỏi.</p></div></div>
+          <article class="exam-card exam-quick-start-card">
+            <div class="exam-card-head"><div><h3>1. Chọn nhanh mẫu đề</h3><p>Chèn cấu trúc chuẩn rồi thay nội dung câu hỏi.</p></div><span class="exam-badge live">Mặc định</span></div>
             <div class="exam-card-body exam-template-list">
-              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('thpt-standard')"><span class="exam-template-icon">🇻🇳</span><span><b>THPTQG · Đề thi chuẩn</b><small>Ba phần, bố cục gọn để tổ chức thi thật.</small></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template featured" onclick="VMExamAdmin.applyTemplate('thpt-standard')"><span class="exam-template-icon">🇻🇳</span><span><b>THPTQG · Đề thi chuẩn</b><small>Ba phần, bố cục gọn để tổ chức thi thật.</small></span><span class="exam-template-arrow">→</span></button>
               <button class="exam-template" onclick="VMExamAdmin.applyTemplate('thpt-practice')"><span class="exam-template-icon">🧠</span><span><b>THPTQG · Luyện tập có lời giải</b><small>Ba phần kèm khung lời giải và đáp số mẫu.</small></span><span class="exam-template-arrow">→</span></button>
               <button class="exam-template" onclick="VMExamAdmin.applyTemplate('tf')"><span class="exam-template-icon">✓</span><span><b>Đúng/Sai 4 ý</b><small>Mẫu riêng cho câu hỏi dạng mới.</small></span><span class="exam-template-arrow">→</span></button>
             </div>
           </article>
 
           <article class="exam-card exam-toolbox-card">
-            <div class="exam-card-head"><div><h3>3. Công cụ câu hỏi</h3><p>Bấm một lần để chèn đúng cấu trúc tại vị trí con trỏ.</p></div></div>
+            <div class="exam-card-head"><div><h3>2. Công cụ soạn nhanh</h3><p>Bấm một lần để chèn đúng cấu trúc tại vị trí con trỏ.</p></div></div>
             <div class="exam-card-body exam-toolbox">
               <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('mc')"><span>＋</span> Trắc nghiệm 4 phương án</button>
               <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('tf')"><span>＋</span> Đúng/Sai 4 ý</button>
@@ -96,6 +96,7 @@
               <div class="exam-toolbox-divider"></div>
               <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.formatSource()">⌁ Dàn mã dễ đọc</button>
               <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.renderPreview(true)">↻ Phân tích lại</button>
+              <a class="btn btn-ghost exam-hub-link" href="quan-tri-tai-lieu?hub=1">📚 Kho nội dung & LaTeX</a>
             </div>
           </article>
         </aside>
@@ -164,8 +165,8 @@
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/tex-environments.js?v=1.0"></script>
   <script src="js/latex-view.js?v=10.8"></script>
-  <script src="js/menu-v5.js?v=9.5"></script>
+  <script src="js/menu-v5.js?v=9.6"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/exam-admin.js?v=2.0"></script>
+  <script src="js/exam-admin.js?v=2.1"></script>
 </body>
 </html>
