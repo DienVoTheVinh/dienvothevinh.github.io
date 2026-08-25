@@ -1611,11 +1611,22 @@ function buildAdminPackageRecords(packages, taxonomyCatalog, options = {}) {
         record_type: 'document_chunk',
         client_document_key: pkg.document.client_document_key,
         document: chunkIndex === 0
-          ? pkg.document
+          ? {
+              ...pkg.document,
+              metadata: {
+                ...(pkg.document.metadata || {}),
+                import_state: chunks === 1 ? 'complete' : 'staged',
+                expected_count: pkg.items.length
+              }
+            }
           : {
               client_document_key: pkg.document.client_document_key,
               content_hash: pkg.document.content_hash,
-              raw_tex: ''
+              raw_tex: '',
+              metadata: {
+                import_state: chunkIndex + 1 === chunks ? 'complete' : 'staged',
+                expected_count: pkg.items.length
+              }
             },
         items: pkg.items.slice(offset, offset + itemChunkSize),
         item_offset: offset,

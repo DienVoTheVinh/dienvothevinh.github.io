@@ -6,7 +6,9 @@ const js = fs.readFileSync('js/exam-admin.js','utf8');
 const css = fs.readFileSync('css/exam-admin.css','utf8');
 
 for (const marker of ['bankBlueprintRows','bankAddBlueprintButton','bankBlueprintTotal','Thêm nhóm câu']) assert(html.includes(marker), marker);
+for (const marker of ['bankGenChapter','bankGenTopic','bankUpdateGeneratorHierarchy']) assert(html.includes(marker), marker);
 for (const marker of ['bankAddBlueprintRow','bankRemoveBlueprintRow','bankCollectBlueprint','bankUpdateBlueprintTotal','blueprint:blueprint']) assert(js.includes(marker), marker);
+for (const marker of ['bank-blueprint-chapter','bank-blueprint-topic','bankUpdateBlueprintHierarchy','area:chapter.area','chapter:chapter.chapter','skill:parseInt']) assert(js.includes(marker), marker);
 assert(js.includes("if(total>200)"));
 assert(js.includes("state.bank.access.canAdmin&&el('bankGenPrefix')"));
 assert(!js.includes('blueprint:[{count:count'));

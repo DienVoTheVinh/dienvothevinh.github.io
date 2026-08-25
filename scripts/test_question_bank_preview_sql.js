@@ -118,11 +118,12 @@ const hardenedSearch = bodyFrom(hardening, 'public.vm_bank_search');
 assert.match(hardenedSearch,
   /else[\s\S]*'content_latex',private\.vm_bank_preview_content\(i\.content_latex\)[\s\S]*'choices',private\.vm_bank_preview_choices\(i\.question_type,i\.public_choices\)/i,
   'teacher bank search results must use the same answer-free preview sanitizers');
-const teacherPayloadStart = hardenedSearch.lastIndexOf('\n      else\n        jsonb_build_object(');
-const teacherPayloadEnd = hardenedSearch.indexOf('\n      end row_data', teacherPayloadStart);
+const normalizedHardenedSearch = hardenedSearch.replace(/\r\n/g, '\n');
+const teacherPayloadStart = normalizedHardenedSearch.lastIndexOf('\n      else\n        jsonb_build_object(');
+const teacherPayloadEnd = normalizedHardenedSearch.indexOf('\n      end row_data', teacherPayloadStart);
 assert.ok(teacherPayloadStart >= 0 && teacherPayloadEnd > teacherPayloadStart,
   'teacher bank search payload branch is missing');
-const teacherPayload = hardenedSearch.slice(teacherPayloadStart, teacherPayloadEnd);
+const teacherPayload = normalizedHardenedSearch.slice(teacherPayloadStart, teacherPayloadEnd);
 assert.doesNotMatch(teacherPayload,
   /'content_latex',i\.content_latex|'choices',i\.public_choices/i,
   'teacher bank search results must never return raw legacy preview fields');
