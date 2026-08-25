@@ -107,9 +107,35 @@ Giá trị của $2^3$ bằng
       source:window.VMExamAdmin._bankState.preview.questions,
       editable:!document.getElementById('bankPreviewToEditor').hidden
     }));
-    if (/ĐÚNG|SAI|Lời giải/.test(teacherSafe.html) || teacherSafe.editable || /correct|solution|answer|\\True/i.test(JSON.stringify(teacherSafe.source))) {
+    if (/ĐÚNG|SAI|Lời giải/.test(teacherSafe.html) || !teacherSafe.editable || /correct|solution|answer|\\True/i.test(JSON.stringify(teacherSafe.source))) {
       throw new Error(`Sanitized TF preview leaked answers: ${JSON.stringify(teacherSafe)}`);
     }
+    await page.click('#bankPreviewToEditor');
+    const openedInEditor = await page.evaluate(() => ({
+      dialog:document.getElementById('bankPreviewDialog').open,
+      compose:document.getElementById('panel-compose').classList.contains('active'),
+      source:document.getElementById('exLatex').value
+    }));
+    if (openedInEditor.dialog || !openedInEditor.compose || !openedInEditor.source.includes('Xét các mệnh đề') || /\\True|\\loigiai/.test(openedInEditor.source)) {
+      throw new Error(`Safe preview did not open in authoring correctly: ${JSON.stringify(openedInEditor)}`);
+    }
+
+    await page.evaluate(() => {
+      window.VMExamAdmin._bankConfigureAccess({role:'teacher'});
+      window.VMExamAdmin.bankOpenSearchPreview(0);
+    });
+    const teacherPreview = await page.evaluate(() => ({
+      editable:!document.getElementById('bankPreviewToEditor').hidden,
+      admin:window.VMExamAdmin._bankState.access.canAdmin,
+      html:document.getElementById('bankPreviewHtml').textContent
+    }));
+    if (teacherPreview.admin || teacherPreview.editable || !teacherPreview.html.includes('Xét các mệnh đề')) {
+      throw new Error(`Teacher preview exposed authoring handoff: ${JSON.stringify(teacherPreview)}`);
+    }
+    await page.evaluate(() => {
+      window.VMExamAdmin.bankClosePreview();
+      window.VMExamAdmin._bankConfigureAccess({role:'teacher'});
+    });
 
     await page.evaluate(() => window.VMExamAdmin.bankOpenSourcePreview('source-1'));
     await page.waitForFunction(() => document.getElementById('bankPreviewStatus').textContent.includes('2 câu'));
@@ -130,6 +156,7 @@ Giá trị của $2^3$ bằng
 
     await page.evaluate(() => {
       window.VMExamAdmin.bankClosePreview();
+      window.VMExamAdmin._bankConfigureAccess({role:'admin'});
       window.VMExamAdmin.switchTab('compose');
       document.getElementById('exTitle').value = 'Đề liên kết hai chiều';
       document.getElementById('exLatex').value = String.raw`\begin{ex}Câu chuyển sang kho\choice{1}{2}{\True 3}{4}\end{ex}`;

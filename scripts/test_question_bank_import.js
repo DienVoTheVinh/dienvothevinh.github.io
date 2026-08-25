@@ -359,10 +359,20 @@ const firstDocumentRecord = adminRecords.records.find((record) => record.record_
 assert.ok(firstDocumentRecord.document.raw_tex);
 assert.ok(firstDocumentRecord.items.length <= 180);
 assert.ok(firstDocumentRecord.items.every((item) => item.source_ordinal >= 1));
+assert.strictEqual(firstDocumentRecord.document.metadata.expected_count, firstDocumentRecord.document_total_items);
+assert.strictEqual(
+  firstDocumentRecord.document.metadata.import_state,
+  firstDocumentRecord.document_chunks === 1 ? 'complete' : 'staged'
+);
 const continuationRecord = adminRecords.records.find((record) =>
   record.record_type === 'document_chunk' && record.document_chunk > 1
 );
 assert.strictEqual(continuationRecord.document.raw_tex, '');
+assert.strictEqual(continuationRecord.document.metadata.expected_count, continuationRecord.document_total_items);
+assert.strictEqual(
+  continuationRecord.document.metadata.import_state,
+  continuationRecord.document_chunk === continuationRecord.document_chunks ? 'complete' : 'staged'
+);
 assert.deepStrictEqual(Builder.parseArgs(['--summary', '--chunk', '2', '--size', '50', '--clean-dir', 'tmp']), {
   archive: Builder.DEFAULT_ARCHIVE,
   output: null,

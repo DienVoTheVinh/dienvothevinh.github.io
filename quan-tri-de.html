@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=2.8">
+  <link rel="stylesheet" href="css/exam-admin.css?v=3.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -134,6 +134,27 @@
     </section>
 
     <section class="exam-panel" id="panel-bank">
+      <nav class="bank-workspace-nav" aria-label="Các khu vực của Ngân hàng đề">
+        <button class="active" type="button" data-bank-zone-nav="overview" onclick="VMExamAdmin.bankScrollZone('overview')"><span>01</span>Tổng quan kho</button>
+        <button type="button" data-bank-zone-nav="create" onclick="VMExamAdmin.bankScrollZone('create')"><span>02</span>Tạo &amp; giao đề</button>
+        <button id="bankImportNav" type="button" data-bank-zone-nav="import" onclick="VMExamAdmin.bankScrollZone('import')" hidden><span>03</span>Nạp &amp; chuẩn hóa</button>
+        <button type="button" data-bank-zone-nav="manage" onclick="VMExamAdmin.bankScrollZone('manage')"><span>04</span>Kho câu &amp; ma trận</button>
+      </nav>
+
+      <section class="bank-zone bank-overview-zone" id="bankZoneOverview" data-bank-zone="overview">
+        <header class="bank-zone-head">
+          <div><span>Tổng quan kho</span><h2>Nguồn đề và trạng thái sử dụng</h2></div>
+          <small>Các nhóm dữ liệu được tách rõ để chọn đúng luồng làm việc.</small>
+        </header>
+        <div class="bank-overview-grid" aria-label="Tổng quan dữ liệu ngân hàng đề">
+          <button type="button" class="bank-overview-card primary" onclick="VMExamAdmin.bankOpenOverview('complete')"><span class="bank-overview-icon" aria-hidden="true">▤</span><span><b id="bankOverviewComplete">—</b><strong>Đề hoàn chỉnh</strong><small>Xem và giao nguyên đề</small></span></button>
+          <button type="button" class="bank-overview-card" onclick="VMExamAdmin.bankOpenOverview('topic')"><span class="bank-overview-icon" aria-hidden="true">◫</span><span><b id="bankOverviewTopic">—</b><strong>Câu theo chủ đề</strong><small>Lọc và tạo đề mới</small></span></button>
+          <button type="button" class="bank-overview-card" onclick="VMExamAdmin.bankOpenOverview('thptqg')"><span class="bank-overview-icon" aria-hidden="true">THPT</span><span><b id="bankOverviewThpt">—</b><strong>THPTQG &amp; tham khảo</strong><small>Mở danh mục luyện thi</small></span></button>
+          <button type="button" class="bank-overview-card" onclick="VMExamAdmin.bankOpenOverview('semester')"><span class="bank-overview-icon" aria-hidden="true">HK</span><span><b id="bankOverviewSemester">—</b><strong>Đề học kỳ</strong><small>Mở đề kiểm tra định kỳ</small></span></button>
+          <button type="button" class="bank-overview-card muted" onclick="VMExamAdmin.bankOpenOverview('other_exam')"><span class="bank-overview-icon" aria-hidden="true">KHÁC</span><span><b id="bankOverviewOther">—</b><strong>Đề / nguồn khác</strong><small>Ôn chương và nguồn riêng</small></span></button>
+          <article class="bank-overview-card review bank-admin-overview" id="bankOverviewReviewCard" hidden><span class="bank-overview-icon" aria-hidden="true">✓</span><div><b><span id="bankOverviewActive">—</span><i>/</i><span id="bankOverviewReview">—</span></b><strong>Đang dùng / Cần duyệt</strong><small>Chỉ quản trị viên thấy kiểm duyệt</small></div></article>
+        </div>
+
       <details class="bank-usage-guide" id="bankUsageGuide">
         <summary>
           <span class="bank-usage-icon" aria-hidden="true">?</span>
@@ -170,6 +191,13 @@
       <div class="bank-server-notice" id="bankServerNotice" hidden>
         <span>ℹ️</span><div><b>Ngân hàng đề đang được cập nhật</b><p>Bạn vẫn có thể kiểm tra tệp. Tìm kiếm, nhập kho và tạo đề sẽ hoạt động lại ngay khi máy chủ hoàn tất cập nhật.</p></div>
       </div>
+      </section>
+
+      <section class="bank-zone" id="bankZoneCreate" data-bank-zone="create">
+        <header class="bank-zone-head">
+          <div><span>Tạo &amp; giao đề</span><h2>Dựng đề mới hoặc dùng lại đề nguồn</h2></div>
+          <small>Chọn một trong hai luồng; bản nháp chỉ xuất bản khi thầy cô quyết định.</small>
+        </header>
 
       <section class="exam-card bank-generator-card" id="bankGeneratorCard">
         <div class="exam-card-head"><div><h2>1. Trích xuất câu và tạo đề mới</h2><p>Chọn tiêu chí; máy chủ tự lấy câu phù hợp mà không gửi đáp án hay nguyên liệu TeX về trình duyệt.</p></div><span class="exam-badge live">An toàn</span></div>
@@ -178,7 +206,9 @@
             <div class="exam-field bank-field-wide"><label for="bankGenTitle">Tiêu đề đề *</label><input class="input" id="bankGenTitle" required placeholder="Ví dụ: Ôn tập Hàm số · Tuần 3"></div>
             <div class="exam-field"><label for="bankGenClass">Lớp áp dụng *</label><select class="input" id="bankGenClass" required><option value="">Chọn lớp</option></select></div>
             <div class="bank-blueprint-heading"><div><b>Cấu trúc câu hỏi</b><span>Nhóm 1</span></div><small>Chia đề thành nhiều nhóm để cân bằng dạng câu và mức độ.</small></div>
-            <div class="exam-field"><label for="bankGenGrade">Khối</label><select class="input" id="bankGenGrade" onchange="VMExamAdmin.bankUpdateBlueprintTotal()"><option value="">Theo lớp / mọi khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
+            <div class="exam-field"><label for="bankGenGrade">Khối</label><select class="input" id="bankGenGrade" onchange="VMExamAdmin.bankUpdateGeneratorHierarchy('grade')"><option value="">Theo lớp / mọi khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
+            <div class="exam-field"><label for="bankGenChapter">Chương</label><select class="input" id="bankGenChapter" onchange="VMExamAdmin.bankUpdateGeneratorHierarchy('chapter')" disabled><option value="">Chọn khối trước</option></select></div>
+            <div class="exam-field"><label for="bankGenTopic">Bài / Chủ đề</label><select class="input" id="bankGenTopic" onchange="VMExamAdmin.bankUpdateGeneratorHierarchy('topic')" disabled><option value="">Chọn chương trước</option></select></div>
             <div class="exam-field"><label for="bankGenType">Dạng câu</label><select class="input" id="bankGenType"><option value="">Hỗn hợp</option><option value="multiple_choice">Trắc nghiệm 4 phương án</option><option value="true_false">Đúng/Sai 4 ý</option><option value="short_answer">Trả lời ngắn</option></select></div>
             <div class="exam-field"><label for="bankGenDifficulty">Mức độ</label><select class="input" id="bankGenDifficulty"><option value="">Cân bằng</option><option value="NB">Nhận biết</option><option value="TH">Thông hiểu</option><option value="VD">Vận dụng</option><option value="VDC">Vận dụng cao</option></select></div>
             <div class="exam-field bank-admin-taxonomy-filter"><label for="bankGenPrefix">Mã phân loại nội bộ</label><input class="input" id="bankGenPrefix" autocomplete="off" placeholder="Ví dụ: 2D1"></div>
@@ -197,11 +227,18 @@
       <section class="exam-card bank-source-card" id="bankSourceCatalogCard">
         <div class="exam-card-head"><div><h2>2. Chọn nguyên đề đã nhập</h2><p>Duyệt theo tỉnh, năm và loại kỳ thi; giữ nguyên thứ tự câu của đề nguồn rồi giao thẳng cho lớp.</p></div><span class="exam-badge">Đề gốc</span></div>
         <div class="exam-card-body">
+          <div class="bank-source-category-tabs" aria-label="Nhóm đề hoàn chỉnh">
+            <button type="button" class="active" data-bank-source-category="" onclick="VMExamAdmin.bankSetSourceCategory('')">Tất cả đề hoàn chỉnh</button>
+            <button type="button" data-bank-source-category="thptqg" onclick="VMExamAdmin.bankSetSourceCategory('thptqg')">THPTQG &amp; tham khảo</button>
+            <button type="button" data-bank-source-category="semester" onclick="VMExamAdmin.bankSetSourceCategory('semester')">Học kỳ</button>
+            <button type="button" data-bank-source-category="other_exam" onclick="VMExamAdmin.bankSetSourceCategory('other_exam')">Đề khác</button>
+          </div>
           <form class="bank-source-filters" onsubmit="VMExamAdmin.bankLoadSourceCatalog(event)">
             <div class="exam-field bank-field-wide"><label for="bankSourceQuery">Tên đề / đơn vị</label><input class="input" id="bankSourceQuery" placeholder="Ví dụ: Sở GD&ĐT Đồng Nai"></div>
             <div class="exam-field"><label for="bankSourceUnit">Tỉnh / đơn vị</label><input class="input" id="bankSourceUnit" placeholder="Tất cả"></div>
+            <div class="exam-field"><label for="bankSourceGrade">Khối</label><select class="input" id="bankSourceGrade"><option value="">Tất cả</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
             <div class="exam-field"><label for="bankSourceYear">Năm</label><input class="input" id="bankSourceYear" type="number" min="2000" max="2100" placeholder="Tất cả"></div>
-            <div class="exam-field"><label for="bankSourceType">Loại kỳ thi</label><select class="input" id="bankSourceType"><option value="">Tất cả</option><option value="official">Đề chính thức</option><option value="mock">Thi thử</option><option value="semester">Học kỳ</option><option value="chapter">Ôn chương</option><option value="other">Khác</option></select></div>
+            <div class="exam-field"><label for="bankSourceType">Loại kỳ thi</label><select class="input" id="bankSourceType"><option value="">Tất cả</option><option value="thpt_official">THPTQG chính thức</option><option value="thpt_reference">THPTQG tham khảo</option><option value="thpt_mock">THPTQG thi thử</option><option value="midterm">Giữa kỳ</option><option value="final">Cuối kỳ</option><option value="chapter">Kiểm tra chương</option><option value="other">Khác</option></select></div>
             <button class="btn btn-secondary bank-search-button" id="bankSourceSearchButton" type="submit">🔎 Tìm đề gốc</button>
           </form>
           <div class="bank-source-results" id="bankSourceResults"><div class="exam-empty" style="min-height:150px"><div><div class="exam-spinner"></div><strong>Đang tải danh mục đề hoàn chỉnh</strong></div></div></div>
@@ -216,23 +253,52 @@
           </form>
         </div>
       </section>
+      </section>
+
+      <section class="bank-zone" id="bankZoneManage" data-bank-zone="manage">
+        <header class="bank-zone-head">
+          <div><span>Quản trị câu &amp; ma trận</span><h2>Lọc theo chương, kiểm tra cơ cấu câu</h2></div>
+          <small>ID nội bộ chỉ hiện với admin; giáo viên dùng nhãn chương và bài học.</small>
+        </header>
+
+        <section class="exam-card bank-matrix-card" id="bankMatrixCard">
+          <div class="exam-card-head"><div><h2>Ma trận câu hỏi</h2><p>Tổng hợp dạng câu và mức độ của kết quả đang lọc.</p></div><span class="exam-badge" id="bankMatrixCount">0 câu</span></div>
+          <div class="exam-card-body">
+            <div class="bank-matrix-meta"><span id="bankMatrixScope">Chọn Khối → Chương → Bài / Chủ đề rồi tìm câu.</span><small id="bankMatrixNote">Ma trận dùng tối đa 50 kết quả đang hiển thị.</small></div>
+            <div class="bank-matrix-table-wrap">
+              <table class="bank-matrix-table">
+                <thead><tr><th>Dạng câu</th><th>Nhận biết</th><th>Thông hiểu</th><th>Vận dụng</th><th>Vận dụng cao</th><th>Tổng</th></tr></thead>
+                <tbody id="bankMatrixBody"></tbody>
+                <tfoot><tr id="bankMatrixTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+        </section>
 
       <section class="exam-card bank-search-card" id="bankSearchCard">
-        <div class="exam-card-head"><div><h2>Tìm câu trong ngân hàng</h2><p>Kết quả chỉ gồm nội dung hiển thị và nhãn phân loại; đáp án, lời giải và tệp nguồn luôn được giữ kín.</p></div><span class="exam-badge" id="bankSearchTotal">0 câu</span></div>
+        <div class="exam-card-head"><div><h2>Lọc và tìm câu</h2><p>Duyệt từ khối đến bài học; đáp án và tệp nguồn vẫn được giữ kín.</p></div><span class="exam-badge" id="bankSearchTotal">0 câu</span></div>
         <div class="exam-card-body">
           <form class="bank-search-tools" onsubmit="VMExamAdmin.bankSearch(event)">
-            <div class="exam-field bank-field-wide"><label for="bankSearchQuery">Từ khóa</label><input class="input" id="bankSearchQuery" placeholder="Nhập nội dung hoặc mã câu"></div>
-            <div class="exam-field"><label for="bankSearchGrade">Khối</label><select class="input" id="bankSearchGrade"><option value="">Tất cả</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div>
+            <div class="exam-field bank-field-wide"><label for="bankSearchQuery">Từ khóa</label><input class="input" id="bankSearchQuery" placeholder="Nội dung, dạng toán hoặc tên chủ đề"></div>
+            <div class="exam-field"><label for="bankSearchGrade">1. Khối</label><select class="input" id="bankSearchGrade" onchange="VMExamAdmin.bankUpdateBrowseHierarchy('grade')"><option value="">Tất cả khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
+            <div class="exam-field"><label for="bankSearchChapter">2. Chương</label><select class="input" id="bankSearchChapter" onchange="VMExamAdmin.bankUpdateBrowseHierarchy('chapter')" disabled><option value="">Chọn khối trước</option></select></div>
+            <div class="exam-field"><label for="bankSearchTopic">3. Bài / Chủ đề</label><select class="input" id="bankSearchTopic" onchange="VMExamAdmin.bankUpdateBrowseHierarchy('topic')" disabled><option value="">Chọn chương trước</option></select></div>
             <div class="exam-field"><label for="bankSearchType">Dạng câu</label><select class="input" id="bankSearchType"><option value="">Tất cả</option><option value="multiple_choice">Trắc nghiệm</option><option value="true_false">Đúng/Sai</option><option value="short_answer">Trả lời ngắn</option></select></div>
             <div class="exam-field"><label for="bankSearchDifficulty">Mức độ</label><select class="input" id="bankSearchDifficulty"><option value="">Tất cả</option><option value="NB">NB</option><option value="TH">TH</option><option value="VD">VD</option><option value="VDC">VDC</option></select></div>
             <div class="exam-field bank-admin-taxonomy-filter"><label for="bankSearchPrefix">Tiền tố mã phân loại</label><input class="input" id="bankSearchPrefix" placeholder="Ví dụ: 1D7"></div>
-            <button class="btn btn-secondary bank-search-button" id="bankSearchButton" type="submit">🔎 Tìm câu</button>
+            <div class="bank-search-actions"><button class="btn btn-ghost bank-search-reset" type="button" onclick="VMExamAdmin.bankResetSearchFilters()">Đặt lại</button><button class="btn btn-primary bank-search-button" id="bankSearchButton" type="submit">🔎 Tìm câu</button></div>
           </form>
           <div class="bank-search-results" id="bankSearchResults"><div class="exam-empty" style="min-height:160px"><div><strong>Chọn bộ lọc để tìm câu</strong>Kết quả không chứa đáp án hoặc raw TeX.</div></div></div>
         </div>
       </section>
+      </section>
 
-      <div id="bankAdminWorkbench" hidden>
+      <section class="bank-zone bank-admin-import-zone" id="bankZoneImport" data-bank-zone="import" hidden>
+        <header class="bank-zone-head">
+          <div><span>Chỉ quản trị viên</span><h2>Nạp &amp; chuẩn hóa nội dung</h2></div>
+          <small>Dán TeX, gắn ID và kiểm tra trước khi đưa vào kho.</small>
+        </header>
+      <div id="bankAdminWorkbench">
         <section class="bank-stat-grid" aria-label="Thống kê ngân hàng">
           <div class="bank-stat"><b id="bankStatDocuments">—</b><span>Tệp nguồn</span></div>
           <div class="bank-stat"><b id="bankStatItems">—</b><span>Tổng số câu</span></div>
@@ -242,25 +308,65 @@
         </section>
 
         <section class="exam-card bank-import-card" id="bankImportCard">
-          <div class="exam-card-head"><div><h2>Nhập tệp TeX</h2><p>Chọn hoặc kéo nhiều tệp. Mỗi câu được chuẩn hóa về môi trường VinhMath trước khi gửi lên kho riêng.</p></div><span class="exam-badge draft">Chỉ admin</span></div>
+          <div class="exam-card-head"><div><h2>Nạp nội dung vào ngân hàng</h2><p>Dán đề có sẵn hoặc chọn tệp TeX, kiểm tra từng câu, gắn ID rồi mới đưa vào kho riêng.</p></div><span class="exam-badge draft">Chỉ admin</span></div>
           <div class="exam-card-body">
-            <div class="bank-source-metadata">
-              <div class="exam-field bank-field-wide"><label for="bankImportTitle">Tên đề nguồn</label><input class="input" id="bankImportTitle" placeholder="Để trống sẽ dùng tên từng tệp"></div>
-              <div class="exam-field"><label for="bankImportSourceKind">Dùng tệp theo cách</label><select class="input" id="bankImportSourceKind"><option value="mock_exam" selected>Đề hoàn chỉnh · có thể giao nguyên đề</option><option value="topic_pack">Kho câu theo chủ đề · chỉ dùng để trích</option><option value="manual">Nguồn soạn riêng</option></select></div>
-              <div class="exam-field"><label for="bankImportUnit">Tỉnh / đơn vị</label><input class="input" id="bankImportUnit" placeholder="Ví dụ: Sở GD&ĐT TP.HCM"></div>
-              <div class="exam-field"><label for="bankImportYear">Năm</label><input class="input" id="bankImportYear" type="number" min="2000" max="2100" value="2026"></div>
-              <div class="exam-field"><label for="bankImportExamType">Loại kỳ thi</label><select class="input" id="bankImportExamType"><option value="official">Đề chính thức</option><option value="mock">Thi thử</option><option value="semester">Học kỳ</option><option value="chapter" selected>Ôn chương</option><option value="other">Khác</option></select></div>
+            <div class="bank-import-mode-switch" role="tablist" aria-label="Kiểu nội dung cần nạp">
+              <button class="bank-import-mode active" id="bankImportTopicMode" type="button" role="tab" aria-selected="true" aria-controls="bankImportTopicPanel" data-bank-import-mode="topic_pack" onclick="VMExamAdmin.bankSetImportMode('topic_pack')"><span aria-hidden="true">▦</span><b>Gói câu theo chuyên đề</b><small>Phân loại theo khối → chương → bài / chủ đề</small></button>
+              <button class="bank-import-mode" id="bankImportExamMode" type="button" role="tab" aria-selected="false" aria-controls="bankImportExamPanel" data-bank-import-mode="complete_exam" onclick="VMExamAdmin.bankSetImportMode('complete_exam')"><span aria-hidden="true">▤</span><b>Nguyên đề có sẵn</b><small>THPTQG, thi thử, giữa kỳ, cuối kỳ hoặc đề khác</small></button>
+              <input id="bankImportSourceKind" type="hidden" value="topic_pack">
             </div>
-            <div class="bank-dropzone" id="bankDropzone" tabindex="0" role="button" aria-label="Chọn hoặc kéo tệp TeX" onclick="document.getElementById('bankTexFiles').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('bankTexFiles').click()}">
-              <input id="bankTexFiles" type="file" accept=".tex,text/x-tex,text/plain" multiple hidden onchange="VMExamAdmin.bankSelectFiles(this.files);this.value=''">
-              <span class="bank-drop-icon">⇧</span><div><b>Thả các tệp .tex vào đây</b><small>Hoặc bấm để chọn nhiều tệp cùng lúc</small></div>
+
+            <div class="exam-field bank-import-title"><label id="bankImportTitleLabel" for="bankImportTitle">Tên gói câu *</label><input class="input" id="bankImportTitle" placeholder="Ví dụ: Khối 12 · Chương 1 · Hàm số"></div>
+
+            <section class="bank-import-mode-panel" id="bankImportTopicPanel" role="tabpanel" aria-labelledby="bankImportTopicMode">
+              <div class="bank-import-panel-head"><div><b>Phạm vi kiến thức</b><small>Chỉ chọn các mục thật đang có trong danh mục VinhMath; không tự tạo chương giả.</small></div><span id="bankImportTopicScope">Chưa chọn phạm vi</span></div>
+              <div class="bank-source-metadata bank-topic-metadata">
+                <div class="exam-field"><label for="bankImportTopicGrade">1. Khối *</label><select class="input" id="bankImportTopicGrade" onchange="VMExamAdmin.bankUpdateImportHierarchy('grade')"><option value="">Chọn khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
+                <div class="exam-field"><label for="bankImportTopicChapter">2. Chương *</label><select class="input" id="bankImportTopicChapter" onchange="VMExamAdmin.bankUpdateImportHierarchy('chapter')" disabled><option value="">Chọn khối trước</option></select></div>
+                <div class="exam-field bank-field-wide"><label for="bankImportTopicLesson">3. Bài / Chủ đề</label><select class="input" id="bankImportTopicLesson" onchange="VMExamAdmin.bankUpdateImportHierarchy('topic')" disabled><option value="">Chọn chương trước</option></select></div>
+              </div>
+            </section>
+
+            <section class="bank-import-mode-panel" id="bankImportExamPanel" role="tabpanel" aria-labelledby="bankImportExamMode" hidden>
+              <div class="bank-import-panel-head"><div><b>Thông tin đề nguồn</b><small>Các trường này giúp tách rõ đề THPTQG, đề thi thử, giữa kỳ và cuối kỳ.</small></div></div>
+              <div class="bank-source-metadata bank-exam-metadata">
+                <div class="exam-field"><label for="bankImportExamType">Loại đề *</label><select class="input" id="bankImportExamType" onchange="VMExamAdmin.bankUpdateImportExamKind()"><option value="thpt_official">THPTQG · chính thức</option><option value="thpt_reference">THPTQG · tham khảo / minh họa</option><option value="thpt_mock" selected>THPTQG · thi thử</option><option value="midterm">Đề giữa kỳ</option><option value="final">Đề cuối kỳ</option><option value="chapter">Đề kiểm tra chương</option><option value="other">Đề khác</option></select></div>
+                <div class="exam-field"><label for="bankImportExamGrade">Khối *</label><select class="input" id="bankImportExamGrade"><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12" selected>Khối 12</option></select></div>
+                <div class="exam-field"><label for="bankImportUnit">Tỉnh / đơn vị</label><input class="input" id="bankImportUnit" placeholder="Ví dụ: Sở GD&ĐT TP.HCM"></div>
+                <div class="exam-field"><label for="bankImportYear">Năm *</label><input class="input" id="bankImportYear" type="number" min="2000" max="2100" value="2026"></div>
+                <div class="bank-import-school-context" id="bankImportSchoolContext" hidden>
+                  <div class="exam-field"><label for="bankImportSchoolYear">Niên khóa *</label><input class="input" id="bankImportSchoolYear" placeholder="Ví dụ: 2025-2026"></div>
+                  <div class="exam-field"><label for="bankImportTerm">Học kỳ *</label><select class="input" id="bankImportTerm"><option value="1">Học kỳ I</option><option value="2">Học kỳ II</option></select></div>
+                </div>
+              </div>
+            </section>
+
+            <div class="bank-import-input-grid">
+              <section class="bank-paste-card" aria-labelledby="bankPasteTitle">
+                <div class="bank-input-card-head"><div><b id="bankPasteTitle">Dán TeX chưa có ID</b><small>Copy toàn bộ đề hoặc gói câu; hệ thống tự tách các môi trường câu hỏi VinhMath.</small></div><span>Nhanh nhất</span></div>
+                <textarea class="input bank-paste-textarea" id="bankPasteTex" spellcheck="false" placeholder="Dán các khối \begin{ex}...\end{ex}, \begin{bt}...\end{bt} vào đây…"></textarea>
+                <div class="bank-paste-asset-warning" id="bankPasteAssetWarning" hidden>⚠ Có ảnh ngoài qua <code>\includegraphics</code>. Hãy thay bằng TikZ nhúng trực tiếp hoặc đóng gói tài nguyên trước; hệ thống sẽ chưa cho nhập khi còn thiếu ảnh.</div>
+                <div class="bank-paste-actions"><button class="btn btn-primary" id="bankParsePasteButton" type="button" onclick="VMExamAdmin.bankParsePastedTex()">Tách câu &amp; gắn ID</button><button class="btn btn-ghost" type="button" onclick="VMExamAdmin.bankClearPastedTex()">Xóa nội dung dán</button></div>
+              </section>
+
+              <section class="bank-file-card" aria-labelledby="bankFileTitle">
+                <div class="bank-input-card-head"><div><b id="bankFileTitle">Hoặc chọn tệp TeX</b><small>Giữ nguyên đường dẫn nguồn và hỗ trợ nhiều tệp cùng lúc.</small></div></div>
+                <div class="bank-dropzone" id="bankDropzone" tabindex="0" role="button" aria-label="Chọn hoặc kéo tệp TeX" onclick="document.getElementById('bankTexFiles').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('bankTexFiles').click()}">
+                  <input id="bankTexFiles" type="file" accept=".tex,text/x-tex,text/plain" multiple hidden onchange="VMExamAdmin.bankSelectFiles(this.files);this.value=''">
+                  <span class="bank-drop-icon">⇧</span><div><b>Thả các tệp .tex vào đây</b><small>Hoặc bấm để chọn nhiều tệp</small></div>
+                </div>
+              </section>
             </div>
             <div class="bank-package-import">
               <div><b>Kho lớn đã chuẩn hóa</b><span>Đọc tuần tự trên máy, gửi từng lô riêng tư và có thể nhập lại an toàn khi mạng gián đoạn.</span></div>
               <input id="bankPackageFile" type="file" accept=".jsonl,application/x-ndjson" hidden onchange="VMExamAdmin.bankImportAdminPackage(this.files);this.value=''">
               <button class="btn btn-secondary" id="bankPackageButton" type="button" onclick="document.getElementById('bankPackageFile').click()">Nhập gói ngân hàng lớn</button>
             </div>
-            <div class="bank-local-summary" id="bankLocalSummary"><span>Chưa chọn tệp</span></div>
+            <div class="bank-local-toolbar">
+              <div class="bank-local-summary" id="bankLocalSummary"><span>Chưa có nội dung chờ nhập</span></div>
+              <button class="btn btn-secondary" id="bankImportPreviewButton" type="button" onclick="VMExamAdmin.bankOpenImportPreview()" hidden>🌐 Xem toàn bộ HTML / PDF</button>
+            </div>
+            <div class="bank-local-matrix" id="bankLocalMatrix" hidden aria-label="Ma trận nội dung đang chờ nhập"></div>
 
             <aside class="bank-taxonomy-guide" aria-label="Chuẩn mã phân loại câu hỏi">
               <div><strong>Chuẩn mã phân loại</strong><code>&lt;khối&gt;&lt;mảng&gt;&lt;chương&gt;&lt;mức&gt;&lt;kỹ năng&gt;-&lt;biến thể&gt;</code></div>
@@ -285,7 +391,7 @@
 
               <div class="bank-taxonomy-preview"><span>Mã sẽ áp dụng</span><code id="bankTaxonomyPreview">Chọn đủ 6 tiêu chí</code></div>
               <div class="bank-taxonomy-actions">
-                <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankSelectMissingIds()">☑ Chọn tất cả câu thiếu mã</button>
+                <button class="btn btn-secondary" id="bankSelectMissingButton" type="button" onclick="VMExamAdmin.bankSelectMissingIds()">☑ Chọn tất cả câu thiếu mã</button>
                 <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankClearSelection()">Bỏ chọn</button>
                 <button class="btn btn-primary" type="button" onclick="VMExamAdmin.bankApplyClassification()">Áp dụng phân loại cho câu đã chọn</button>
                 <span id="bankTaxonomySelectionStatus" role="status">Chưa chọn câu nào</span>
@@ -301,6 +407,7 @@
           </div>
         </section>
       </div>
+      </section>
     </section>
 
     <section class="exam-panel" id="panel-library">
@@ -379,6 +486,6 @@
   <script src="js/menu-v5.js?v=9.7"></script>
   <script src="js/analytics.js"></script>
   <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=2.7"></script>
+  <script src="js/exam-admin.js?v=3.0"></script>
 </body>
 </html>
