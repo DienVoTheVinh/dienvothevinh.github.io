@@ -74,5 +74,6 @@ assert.ok(css.includes('.bank-question-list'));
 assert.ok(css.includes('.bank-taxonomy-manual-grid'));
 assert.ok(css.includes('body.bank-teacher-mode .bank-admin-taxonomy-filter'));
 assert.ok(css.includes('.bank-usage-guide') && css.includes('.bank-usage-grid'));
+assert.ok(css.includes('.bank-server-notice[hidden]{display:none}'), 'hidden server notice must not be forced visible by its flex layout');
 
 console.log('question-bank admin UI: static contract passed');
