@@ -16,9 +16,10 @@ expect(/data-tab="compose"[\s\S]*data-tab="library"[\s\S]*data-tab="analytics"/,
 expect(/value="tf">Chỉ Đúng\/Sai/, page, 'The dedicated true/false exam type is missing.');
 expect(/value="thpt">Chuẩn THPTQG/, page, 'The THPTQG three-part exam type is missing.');
 expect(/HTML trực tiếp[\s\S]*PDF/, page, 'HTML and PDF preview modes must both be visible.');
-expect(/thpt-standard[\s\S]*thpt-practice/, page, 'Both THPTQG templates must be available.');
+expect(/worksheet-mixed[\s\S]*thpt-standard[\s\S]*mc-quiz[\s\S]*applyTemplate\('tf'\)[\s\S]*applyTemplate\('essay'\)/, page, 'The quick-template rail must cover worksheets, THPTQG, multiple choice, true/false and essay authoring.');
+if (/Đề THPTQG làm trung tâm|Soạn nhanh trên màn hình lớn|thpt-practice/.test(page)) throw new Error('The authoring workspace must not remain THPTQG-centric or expose duplicate THPTQG templates.');
 expect(/exam-toolbox-card[\s\S]*Trắc nghiệm 4 phương án[\s\S]*Đúng\/Sai 4 ý[\s\S]*Trả lời ngắn/, page, 'Question tools must live in the left authoring rail.');
-expect(/exam-quick-start-card[\s\S]*thpt-standard[\s\S]*exam-toolbox-card/, page, 'Quick templates and authoring tools must live in the left rail.');
+expect(/exam-quick-start-card[\s\S]*worksheet-mixed[\s\S]*exam-toolbox-card/, page, 'Quick templates and authoring tools must live in the left rail.');
 expect(/exam-quick-start-card\{order:1\}[\s\S]*exam-toolbox-card\{order:2\}[\s\S]*exam-settings-card\{order:3\}/, css, 'Quick templates and tools must appear before detailed settings.');
 expect(/quan-tri-tai-lieu\?hub=1/, page, 'The previous content hub must remain available as a secondary destination.');
 expect(/width:min\(1880px,100%\)/, css, 'The authoring workspace must use large PC screens.');

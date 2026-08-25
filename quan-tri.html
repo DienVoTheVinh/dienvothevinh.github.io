@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
   <style>
-    .admin-hub{max-width:1160px;margin:0 auto;padding:42px 22px 88px}.admin-hub-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}.admin-hub-head h1{margin:4px 0 6px}.admin-hub-head p{margin:0;color:var(--ink-2)}
+    .admin-hub{max-width:1160px;margin:0 auto;padding:42px 22px 88px}.admin-hub-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}.admin-hub-head h1{margin:4px 0 6px}
     .admin-search{width:min(390px,100%);position:relative}.admin-search input{width:100%;padding:12px 44px 12px 14px}.admin-search span{position:absolute;right:14px;top:11px;color:var(--ink-3)}
-    .admin-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.admin-group{padding:20px}.admin-group h2{font-size:1.08rem;margin:0 0 5px}.admin-group>p{font-size:.84rem;color:var(--ink-3);margin:0 0 14px}.admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-tool{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink);background:var(--surface);transition:.18s}.admin-tool:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}.admin-tool .ic{font-size:1.2rem}.admin-tool b{display:block;font-size:.88rem}.admin-tool small{display:block;color:var(--ink-3);font-size:.72rem;margin-top:2px}.admin-tool[hidden]{display:none}
+    .admin-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.admin-group{padding:20px}.admin-group h2{font-size:1.08rem;margin:0 0 14px}.admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-tool{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink);background:var(--surface);transition:.18s}.admin-tool:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}.admin-tool .ic{font-size:1.2rem}.admin-tool b{display:block;font-size:.88rem}.admin-tool small{display:block;color:var(--ink-3);font-size:.72rem;margin-top:2px}.admin-tool[hidden]{display:none}
     @media(max-width:760px){.admin-hub{padding:26px 14px 72px}.admin-hub-head{align-items:stretch;flex-direction:column}.admin-groups{grid-template-columns:1fr}.admin-tools{grid-template-columns:1fr}}
   </style>
 </head>
@@ -19,42 +19,42 @@
 <header class="topbar"><div class="nav"><a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span><b>Vinh</b>Math</span></a><nav class="navlinks"></nav><button class="btn btn-ghost btn-sm" id="themeBtn" onclick="vmDoiTheme()">☼</button><button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button></div></header>
 <main class="admin-hub">
   <div class="admin-hub-head">
-    <div><div class="sec-label">Điều hành hệ thống</div><h1>Trung tâm quản trị</h1><p>Mọi công cụ được gom theo công việc; thanh đầu chỉ giữ những việc dùng hằng ngày.</p></div>
+    <div><div class="sec-label">Điều hành hệ thống</div><h1>Trung tâm quản trị</h1></div>
     <label class="admin-search"><span>⌕</span><input class="input" id="adminToolSearch" type="search" placeholder="Tìm lớp, tài khoản, video, thương hiệu…" aria-label="Tìm công cụ quản trị"></label>
   </div>
   <div class="admin-groups" id="adminGroups">
-    <section class="card admin-group"><h2>🏫 Lớp & con người</h2><p>Tổ chức lớp, tài khoản và quyền truy cập.</p><div class="admin-tools">
+    <section class="card admin-group"><h2>🏫 Lớp & con người</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-lop" data-key="lớp bài giảng học sinh"><span class="ic">🏫</span><span><b>Lớp học</b><small>Bài giảng, học sinh, bảng tin</small></span></a>
       <a class="admin-tool" href="quan-tri-hoc-sinh" data-key="học sinh tài khoản báo cáo"><span class="ic">👥</span><span><b>Học sinh</b><small>Danh sách và báo cáo</small></span></a>
       <a class="admin-tool" href="quan-tri-tai-khoan" data-key="tạo tài khoản giáo viên trợ giảng phụ huynh"><span class="ic">🔑</span><span><b>Tài khoản</b><small>Tạo và quản lý đăng nhập</small></span></a>
       <a class="admin-tool" href="quan-tri-bao-cao-hoc-sinh" data-key="báo cáo phụ huynh tiến độ"><span class="ic">📈</span><span><b>Báo cáo học sinh</b><small>Theo tuần hoặc tháng</small></span></a>
     </div></section>
-    <section class="card admin-group"><h2>📚 Nội dung học tập</h2><p>Soạn, xuất bản và kiểm tra tài nguyên.</p><div class="admin-tools">
+    <section class="card admin-group"><h2>📚 Nội dung học tập</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-tai-lieu" data-key="soạn tài liệu latex"><span class="ic">📄</span><span><b>Soạn tài liệu</b><small>PDF, LaTeX và kho dùng chung</small></span></a>
       <a class="admin-tool" href="quan-tri-de" data-key="luyện đề đề thi câu hỏi"><span class="ic">🧪</span><span><b>Đề & câu hỏi</b><small>Ngân hàng và kỳ thi</small></span></a>
       <a class="admin-tool" href="quan-tri-bai-hoc" data-key="khóa bài giảng xuất bản"><span class="ic">🔐</span><span><b>Quyền bài giảng</b><small>Mở, khoá và xem thử</small></span></a>
       <a class="admin-tool" href="quan-tri-tex" data-key="tex môi trường latex"><span class="ic">∑</span><span><b>Môi trường TeX</b><small>Mẫu biên dịch nâng cao</small></span></a>
     </div></section>
-    <section class="card admin-group"><h2>✅ Vận hành hằng ngày</h2><p>Dạy học, chấm bài và đồng bộ lớp.</p><div class="admin-tools">
+    <section class="card admin-group"><h2>✅ Vận hành hằng ngày</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-cham-bai" data-key="chấm bài nộp đáp án"><span class="ic">✍️</span><span><b>Chấm bài</b><small>Bài chờ chấm và đáp án chung</small></span></a>
       <a class="admin-tool" href="quan-tri-lich" data-key="lịch dạy điểm danh"><span class="ic">🗓️</span><span><b>Lịch học</b><small>Buổi dạy và lịch thay đổi</small></span></a>
       <a class="admin-tool" href="quan-tri-video-meet" data-key="video google meet drive"><span class="ic">🎥</span><span><b>Video Google Meet</b><small>Đồng bộ và gợi ý gắn bài</small></span></a>
       <a class="admin-tool" href="quan-tri-buoi-day" data-key="giám sát buổi dạy"><span class="ic">🧭</span><span><b>Giám sát buổi</b><small>Theo dõi hoạt động lớp</small></span></a>
     </div></section>
-    <section class="card admin-group"><h2>🎨 Giao diện & đối tác</h2><p>Tùy biến nhận diện, lễ hội và khu vực cộng tác.</p><div class="admin-tools">
+    <section class="card admin-group"><h2>🎨 Giao diện & đối tác</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-thuong-hieu" data-key="tạo thương hiệu logo màu sắc"><span class="ic">🎨</span><span><b>Tạo thương hiệu</b><small>Logo và bảng màu lớp</small></span></a>
       <a class="admin-tool" href="quan-tri-le-hoi" data-key="lễ hội trung thu trang trí mùa lịch"><span class="ic">🏮</span><span><b>Giao diện lễ hội</b><small>Tự động, đặt lịch và xem thử</small></span></a>
       <a class="admin-tool" href="quan-tri-portal-thi" data-key="cổng thi đối tác portal thi thử"><span class="ic">🏁</span><span><b>Cổng thi đối tác</b><small>Portal, tài khoản và đề được giao</small></span></a>
       <a class="admin-tool" href="quan-tri-thuong" data-key="phần thưởng xu huy hiệu"><span class="ic">🏆</span><span><b>Phần thưởng</b><small>Xu, huy hiệu và cửa hàng</small></span></a>
       <a class="admin-tool" href="viet-blog" data-key="blog bài viết"><span class="ic">📝</span><span><b>Viết blog</b><small>Nội dung công khai</small></span></a>
     </div></section>
-    <section class="card admin-group"><h2>🛡️ Hệ thống</h2><p>Giám sát truy cập và kiểm tra hoạt động.</p><div class="admin-tools">
+    <section class="card admin-group"><h2>🛡️ Hệ thống</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-truy-cap" data-key="giám sát truy cập analytics"><span class="ic">📡</span><span><b>Giám sát truy cập</b><small>Phiên và lượt xem trang</small></span></a>
       <a class="admin-tool" href="blog" data-key="xem blog"><span class="ic">🌐</span><span><b>Xem website</b><small>Kiểm tra nội dung công khai</small></span></a>
     </div></section>
   </div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.0"></script><script src="js/menu-v5.js?v=9.6"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.0"></script><script src="js/menu-v5.js?v=9.7"></script>
 <script>
 (async function(){if(!daKetNoi())return;var me=await yeuCauDangNhap();if(!me)return;if(me.role!=='admin'){location.href='trang-chu';return;}})();
 document.getElementById('adminToolSearch').addEventListener('input',function(){var q=this.value.trim().toLocaleLowerCase('vi');document.querySelectorAll('.admin-tool').forEach(function(tool){tool.hidden=q&&((tool.textContent+' '+(tool.dataset.key||'')).toLocaleLowerCase('vi').indexOf(q)===-1);});document.querySelectorAll('.admin-group').forEach(function(group){group.hidden=!group.querySelector('.admin-tool:not([hidden])');});});

@@ -12,13 +12,18 @@
   function createFullscreenController(card, button, onResize) {
     var fallbackClass = 'vmtool-pseudo-fullscreen';
     var fallbackAnchor = null;
-    function nativeElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
-    function isActive() { return nativeElement() === card || card.classList.contains(fallbackClass); }
+    var restoreScroll = { x: 0, y: 0 };
+    var exitButton = document.createElement('button');
+    exitButton.type = 'button';
+    exitButton.className = 'vmtool-fullscreen-exit';
+    exitButton.setAttribute('aria-label', 'Thoát toàn màn hình');
+    exitButton.textContent = '← Thoát';
+    card.appendChild(exitButton);
+    function isActive() { return card.classList.contains(fallbackClass); }
     function sync() {
       var active = isActive();
-      var anyActive = !!nativeElement() || !!document.querySelector('.' + fallbackClass);
+      var anyActive = !!document.querySelector('.' + fallbackClass);
       document.documentElement.classList.toggle('vmtool-fullscreen-open', anyActive);
-      card.classList.toggle('vmtool-native-fullscreen', nativeElement() === card);
       if (button) {
         button.textContent = active ? '↙ Thu nhỏ' : '⛶ Toàn màn hình';
         button.setAttribute('aria-pressed', String(active));
@@ -27,6 +32,8 @@
       if (typeof onResize === 'function') requestAnimationFrame(function () { onResize(); });
     }
     function enterFallback() {
+      restoreScroll.x = window.scrollX || 0;
+      restoreScroll.y = window.scrollY || 0;
       if (!fallbackAnchor && card.parentNode) {
         fallbackAnchor = document.createComment('vmtool-fullscreen-anchor');
         card.parentNode.insertBefore(fallbackAnchor, card);
@@ -43,36 +50,19 @@
         fallbackAnchor = null;
       }
       sync();
+      window.scrollTo(restoreScroll.x, restoreScroll.y);
     }
     function toggle() {
       if (card.classList.contains(fallbackClass)) { exitFallback(); return; }
-      var current = nativeElement();
-      if (current) {
-        var exit = document.exitFullscreen || document.webkitExitFullscreen;
-        if (exit) {
-          try {
-            var exitResult = exit.call(document);
-            if (exitResult && exitResult.catch) exitResult.catch(exitFallback);
-          } catch (_error) { exitFallback(); }
-        } else exitFallback();
-        return;
-      }
-      var request = card.requestFullscreen || card.webkitRequestFullscreen;
-      if (!request) { enterFallback(); return; }
-      try {
-        var result = request.call(card, { navigationUI: 'hide' });
-        if (result && result.then) result.then(sync).catch(enterFallback);
-        else setTimeout(function () { if (!nativeElement()) enterFallback(); else sync(); }, 80);
-      } catch (_error) { enterFallback(); }
+      enterFallback();
     }
     function onKeydown(event) {
       if (event.key === 'Escape' && card.classList.contains(fallbackClass)) exitFallback();
     }
-    document.addEventListener('fullscreenchange', sync);
-    document.addEventListener('webkitfullscreenchange', sync);
     document.addEventListener('keydown', onKeydown);
+    exitButton.addEventListener('click', exitFallback);
     sync();
-    return { toggle: toggle, sync: sync, isActive: isActive };
+    return { toggle: toggle, exit: exitFallback, sync: sync, isActive: isActive };
   }
 
   window.VMToolFullscreen = { create: createFullscreenController };

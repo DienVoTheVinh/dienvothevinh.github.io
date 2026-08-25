@@ -43,7 +43,14 @@ Dòng hai.}
 \end{ex}`;
       const normalized = VMExamAdmin._normalizeSolutionParagraphs(paragraphFixture);
       return {
-        standard: counts('thpt-standard'), practice: counts('thpt-practice'),
+        worksheet: counts('worksheet-mixed'),
+        standard: counts('thpt-standard'),
+        mcQuiz: counts('mc-quiz'),
+        tf: counts('tf'),
+        essay: {
+          type: templates.essay.type,
+          hasPrompt: !!templates.essay.essayPrompt,
+        },
         casesRendered: !!caseRoot.querySelector('.katex-display .katex'),
         casesError: !!caseRoot.querySelector('.katex-error'),
         casesNested: /\$\s*\\\[|\\\]\s*\$/.test(caseHtml),
@@ -52,9 +59,11 @@ Dòng hai.}
         normalized,
       };
     });
-    for (const [name, counts] of Object.entries({ standard: result.standard, practice: result.practice })) {
-      if (!counts.mc || !counts.tf || !counts.short) throw new Error(`${name} template is not three-part: ${JSON.stringify(counts)}`);
-    }
+    if (!result.worksheet.mc || !result.worksheet.short || result.worksheet.tf) throw new Error(`Worksheet template is not mixed: ${JSON.stringify(result.worksheet)}`);
+    if (!result.standard.mc || !result.standard.tf || !result.standard.short) throw new Error(`THPTQG template is not three-part: ${JSON.stringify(result.standard)}`);
+    if (result.mcQuiz.mc < 2 || result.mcQuiz.tf || result.mcQuiz.short) throw new Error(`MC template is not distinct: ${JSON.stringify(result.mcQuiz)}`);
+    if (result.tf.tf < 2 || result.tf.mc || result.tf.short) throw new Error(`True/false template is not distinct: ${JSON.stringify(result.tf)}`);
+    if (result.essay.type !== 'essay' || !result.essay.hasPrompt) throw new Error(`Essay template is incomplete: ${JSON.stringify(result.essay)}`);
     if (!result.casesRendered || result.casesError || result.casesNested) throw new Error('dollar-delimited cases environment did not render through real KaTeX');
     if (!result.itemChoiceRendered || result.itemChoiceRaw) throw new Error('itemchoice/itemch did not render as an HTML list');
     if (!/\\begin\{cases\}[\s\S]*\n\n[\s\S]*\\end\{cases\}/.test(result.normalized)) {
@@ -63,7 +72,7 @@ Dòng hai.}
     if (!/\\loigiai\{Dòng một\.\n\\par\nDòng hai\.\}/.test(result.normalized)) {
       throw new Error('PDF paragraph normalization did not protect blank lines inside loigiai');
     }
-    console.log('PASS THPTQG templates, real KaTeX cases and PDF paragraph normalization');
+    console.log('PASS five distinct authoring templates, real KaTeX cases and PDF paragraph normalization');
   } finally {
     await browser.close();
   }

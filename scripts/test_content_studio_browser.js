@@ -26,9 +26,10 @@ const { chromium } = require('playwright');
       setups: document.querySelectorAll('.setup-link').length,
       summaryColumns: getComputedStyle(document.querySelector('.content-summary')).gridTemplateColumns.split(' ').length,
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
-      thpt: document.body.textContent.includes('Đề thi chuẩn THPTQG') && document.body.textContent.includes('THPTQG có lời giải'),
+      distinctTemplates: document.body.textContent.includes('Phiếu ôn tập hỗn hợp') && document.body.textContent.includes('Đề THPTQG · 3 phần') && document.body.textContent.includes('Trắc nghiệm 4 phương án'),
+      duplicateTemplate: document.documentElement.innerHTML.includes('thpt-practice'),
     }));
-    if (desktop.tools !== 6 || desktop.setups < 6 || desktop.summaryColumns !== 3 || desktop.overflow || !desktop.thpt) throw new Error(`Desktop content studio layout failed: ${JSON.stringify(desktop)}`);
+    if (desktop.tools !== 6 || desktop.setups < 6 || desktop.summaryColumns !== 3 || desktop.overflow || !desktop.distinctTemplates || desktop.duplicateTemplate) throw new Error(`Desktop content studio layout failed: ${JSON.stringify(desktop)}`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await page.evaluate(() => ({
