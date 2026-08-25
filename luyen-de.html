@@ -58,7 +58,7 @@
   white-space: nowrap;
   scroll-snap-align: start;
 }
-.practice-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start}.practice-class-filter{position:sticky;top:88px;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm)}.practice-class-filter-head{margin-bottom:12px}.practice-class-filter-head span{display:block;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.practice-class-filter-head b{display:block;margin-top:4px;font:700 1rem/1.3 var(--font-title)}#tabLopHocSinh.practice-class-tabs{display:grid!important;gap:7px;overflow:visible;padding:0;margin:0!important}#tabLopHocSinh.practice-class-tabs .tab-btn{width:100%;min-height:42px;padding:9px 10px;text-align:left;white-space:normal;line-height:1.35;border-radius:11px}#tabLopHocSinh.practice-class-tabs .tab-btn.active{box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 20%,transparent)}.practice-specialized-tag{display:inline-flex;align-items:center;margin-left:4px;padding:2px 6px;border:1px solid #6750a4;border-radius:999px;background:#eee9ff;color:#4c358b;font-size:.55rem;font-weight:900;letter-spacing:.03em;vertical-align:middle}.tab-btn.active .practice-specialized-tag{border-color:#fff;background:#fff;color:#5b3fa0}.practice-content{min-width:0}
+.practice-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}.practice-shell.has-class-filter{grid-template-columns:220px minmax(0,1fr)}.practice-class-filter{position:sticky;top:88px;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm)}.practice-class-filter-head{margin-bottom:12px}.practice-class-filter-head span{display:block;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.practice-class-filter-head b{display:block;margin-top:4px;font:700 1rem/1.3 var(--font-title)}#tabLopHocSinh.practice-class-tabs{display:grid!important;gap:7px;overflow:visible;padding:0;margin:0!important}#tabLopHocSinh.practice-class-tabs .tab-btn{width:100%;min-height:42px;padding:9px 10px;text-align:left;white-space:normal;line-height:1.35;border-radius:11px}#tabLopHocSinh.practice-class-tabs .tab-btn.active{box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 20%,transparent)}.practice-specialized-tag{display:inline-flex;align-items:center;margin-left:4px;padding:2px 6px;border:1px solid #6750a4;border-radius:999px;background:#eee9ff;color:#4c358b;font-size:.55rem;font-weight:900;letter-spacing:.03em;vertical-align:middle}.tab-btn.active .practice-specialized-tag{border-color:#fff;background:#fff;color:#5b3fa0}.practice-content{min-width:0}
 
 /* Workspace thi thử */
 .exam-workspace { display: none; position: fixed; inset: 0 !important; width: 100% !important; height: 100vh !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; transform: none !important; background: var(--bg); z-index: 1000; flex-direction: column; overflow: hidden; }
@@ -2097,9 +2097,15 @@ async function lamLuotMoi() {
   runTimer();
 }
 
-function exitWorkspace() {
+function vmResetExamWorkspace() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
   $('viewWorkspace').style.display = 'none';
   $('viewMain').style.display = 'block';
+  document.documentElement.style.removeProperty('overflow');
+  document.body.style.removeProperty('overflow');
+  document.documentElement.classList.remove('vm-popup-open');
+  document.body.classList.remove('exam-workspace-open');
   
   // Reset bảng PDF bên cạnh
   var panel = $('wkPdfPanel');
@@ -2117,8 +2123,17 @@ function exitWorkspace() {
   }
   var body = document.querySelector('.exam-body');
   if (body) {
-    body.style.gridTemplateColumns = '1fr 280px';
+    body.style.removeProperty('grid-template-columns');
   }
+  var url = new URL(window.location.href);
+  if (url.searchParams.has('exam_id')) {
+    url.searchParams.delete('exam_id');
+    history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash);
+  }
+}
+
+function exitWorkspace() {
+  vmResetExamWorkspace();
   
   var classIds = (studentInfo.class_students || []).map(function (c) { return c.class_id; });
   taiDanhSachDe(classIds);
@@ -2126,9 +2141,6 @@ function exitWorkspace() {
 
 async function huyLamBai() {
   if (!confirm('Em có chắc chắn muốn hủy làm bài? Lượt làm này sẽ KHÔNG HOÀN THÀNH và kết quả sẽ bị hủy.')) return;
-  
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
   
   if (currentAttempt && currentAttempt.id && !currentAttempt.is_practice) {
     try {
@@ -2138,27 +2150,7 @@ async function huyLamBai() {
     }
   }
   
-  $('viewWorkspace').style.display = 'none';
-  $('viewMain').style.display = 'block';
-  
-  // Reset bảng PDF bên cạnh
-  var panel = $('wkPdfPanel');
-  if (panel) {
-    panel.style.display = 'none';
-    $('sidePdfInstruction').style.display = 'flex';
-    $('sidePdfLoading').style.display = 'none';
-    $('sidePdfIframeContainer').style.display = 'none';
-    $('sidePdfIframeContainer').innerHTML = '';
-  }
-  var btn = $('btnToggleSidePdf');
-  if (btn) {
-    btn.classList.remove('active');
-    btn.textContent = '📄 Xem PDF bên cạnh';
-  }
-  var body = document.querySelector('.exam-body');
-  if (body) {
-    body.style.gridTemplateColumns = '1fr 280px';
-  }
+  vmResetExamWorkspace();
   
   var classIds = (studentInfo.class_students || []).map(function (c) { return c.class_id; });
   taiDanhSachDe(classIds);

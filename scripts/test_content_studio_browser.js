@@ -18,7 +18,7 @@ const { chromium } = require('playwright');
     await page.setContent(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${tokens}\n${shared}\n${inline}</style></head><body>${body}</body></html>`);
     await page.evaluate(() => {
       document.getElementById('contentSetupZone').style.display = '';
-      document.querySelectorAll('.content-metric b').forEach((el, index) => { el.textContent = [77, 34, 7, 1, 2][index]; });
+      document.querySelectorAll('.content-metric b').forEach((el, index) => { el.textContent = [34, 7, 1][index]; });
       document.querySelectorAll('.content-metric small').forEach((el) => { if (el.textContent.includes('Đang tải')) el.textContent = 'Đã xuất bản'; });
     });
     const desktop = await page.evaluate(() => ({
@@ -28,7 +28,7 @@ const { chromium } = require('playwright');
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
       thpt: document.body.textContent.includes('Đề thi chuẩn THPTQG') && document.body.textContent.includes('THPTQG có lời giải'),
     }));
-    if (desktop.tools < 12 || desktop.setups < 6 || desktop.summaryColumns !== 5 || desktop.overflow || !desktop.thpt) throw new Error(`Desktop content studio layout failed: ${JSON.stringify(desktop)}`);
+    if (desktop.tools !== 6 || desktop.setups < 6 || desktop.summaryColumns !== 3 || desktop.overflow || !desktop.thpt) throw new Error(`Desktop content studio layout failed: ${JSON.stringify(desktop)}`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobile = await page.evaluate(() => ({

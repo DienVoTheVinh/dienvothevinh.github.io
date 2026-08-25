@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=1.2">
+  <link rel="stylesheet" href="css/exam-admin.css?v=2.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -32,9 +32,10 @@
   <main class="exam-admin-wrap">
     <section class="exam-admin-hero">
       <div>
-        <div class="sec-label">Trung tâm đề thi VinhMath</div>
-        <h1>Biên soạn, xuất bản<br>và đọc dữ liệu học tập.</h1>
-        <p>Một quy trình thống nhất từ mã LaTeX đến đề thi trực tuyến, bản PDF in ấn và báo cáo mức độ làm chủ từng câu của lớp.</p>
+        <a class="exam-portal-back" id="examPortalBack" href="thi" hidden>← Về không gian Thầy Trường</a>
+        <div class="sec-label" id="examWorkspaceLabel">Xưởng đề thi VinhMath</div>
+        <h1 id="examWorkspaceTitle">Đề THPTQG làm trung tâm.<br>Soạn nhanh trên màn hình lớn.</h1>
+        <p id="examWorkspaceDescription">Chọn mẫu ở thanh công cụ trái, nhập LaTeX ở giữa và quan sát bản đề trực tiếp bên phải.</p>
       </div>
       <div class="exam-hero-badge"><span style="font-size:1.6rem">🎓</span><div><strong>Chuẩn THPTQG</strong><span>Trắc nghiệm · Đúng/Sai · Trả lời ngắn</span></div></div>
     </section>
@@ -55,7 +56,7 @@
     <section class="exam-panel active" id="panel-compose">
       <div class="exam-workflow">
         <aside class="exam-stack">
-          <article class="exam-card">
+          <article class="exam-card exam-settings-card">
             <div class="exam-card-head"><div><h2 id="formTitle">1. Thiết lập đề thi</h2><p>Thông tin xuất bản và đối tượng học sinh.</p></div><span class="exam-badge draft" id="editBadge">Đề mới</span></div>
             <div class="exam-card-body">
               <form id="examForm" onsubmit="VMExamAdmin.saveExam(event)">
@@ -85,17 +86,22 @@
               <button class="exam-template" onclick="VMExamAdmin.applyTemplate('tf')"><span class="exam-template-icon">✓</span><span><b>Đúng/Sai 4 ý</b><small>Mẫu riêng cho câu hỏi dạng mới.</small></span><span class="exam-template-arrow">→</span></button>
             </div>
           </article>
+
+          <article class="exam-card exam-toolbox-card">
+            <div class="exam-card-head"><div><h3>3. Công cụ câu hỏi</h3><p>Bấm một lần để chèn đúng cấu trúc tại vị trí con trỏ.</p></div></div>
+            <div class="exam-card-body exam-toolbox">
+              <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('mc')"><span>＋</span> Trắc nghiệm 4 phương án</button>
+              <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('tf')"><span>＋</span> Đúng/Sai 4 ý</button>
+              <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('short')"><span>＋</span> Trả lời ngắn</button>
+              <div class="exam-toolbox-divider"></div>
+              <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.formatSource()">⌁ Dàn mã dễ đọc</button>
+              <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.renderPreview(true)">↻ Phân tích lại</button>
+            </div>
+          </article>
         </aside>
 
         <article class="exam-card exam-editor-card">
-          <div class="exam-card-head"><div><h2>3. Nội dung và xem trước</h2><p>HTML cập nhật trực tiếp; PDF chỉ biên dịch khi cần.</p></div><span class="exam-badge" id="questionBadge">0 câu</span></div>
-          <div class="exam-editor-toolbar">
-            <button class="btn btn-secondary btn-sm" type="button" onclick="VMExamAdmin.insertSnippet('mc')">＋ Trắc nghiệm</button>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="VMExamAdmin.insertSnippet('tf')">＋ Đúng/Sai</button>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="VMExamAdmin.insertSnippet('short')">＋ Trả lời ngắn</button>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="VMExamAdmin.formatSource()">⌁ Dàn mã</button>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="VMExamAdmin.renderPreview(true)">↻ Phân tích lại</button>
-          </div>
+          <div class="exam-card-head"><div><h2>4. Nội dung đề và xem trước</h2><p>LaTeX ở giữa, bản đề học sinh nhìn thấy ở bên phải; PDF chỉ biên dịch khi cần.</p></div><span class="exam-badge" id="questionBadge">0 câu</span></div>
           <div class="exam-editor">
             <div class="exam-source" id="sourcePane">
               <div class="exam-source-label"><span>LaTeX · ex_test</span><span id="sourceHint">Hỗ trợ \choice, \choiceTF, câu trả lời ngắn</span></div>
@@ -160,6 +166,6 @@
   <script src="js/latex-view.js?v=10.8"></script>
   <script src="js/menu-v5.js?v=9.5"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/exam-admin.js?v=1.6"></script>
+  <script src="js/exam-admin.js?v=2.0"></script>
 </body>
 </html>
