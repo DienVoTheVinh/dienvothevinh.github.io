@@ -9,12 +9,12 @@
   <link rel="icon" type="image/png" href="favicon.png?v=3">
   <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <title>Quản lý đề thi & Luyện đề — VinhMath</title>
+  <title>Soạn thảo — VinhMath</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=2.1">
+  <link rel="stylesheet" href="css/exam-admin.css?v=2.2">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -33,23 +33,22 @@
     <section class="exam-admin-hero">
       <div>
         <a class="exam-portal-back" id="examPortalBack" href="thi" hidden>← Về không gian Thầy Trường</a>
-        <div class="sec-label" id="examWorkspaceLabel">Xưởng đề thi VinhMath</div>
-        <h1 id="examWorkspaceTitle">Đề THPTQG làm trung tâm.<br>Soạn nhanh trên màn hình lớn.</h1>
-        <p id="examWorkspaceDescription">Chọn mẫu ở thanh công cụ trái, nhập LaTeX ở giữa và quan sát bản đề trực tiếp bên phải.</p>
+        <div class="sec-label" id="examWorkspaceLabel">Không gian biên soạn VinhMath</div>
+        <h1 id="examWorkspaceTitle">Soạn thảo</h1>
+        <p id="examWorkspaceDescription" hidden></p>
       </div>
-      <div class="exam-hero-badge"><span style="font-size:1.6rem">🎓</span><div><strong>Chuẩn THPTQG</strong><span>Trắc nghiệm · Đúng/Sai · Trả lời ngắn</span></div></div>
     </section>
 
-    <section class="exam-kpis" aria-label="Tổng quan kho đề">
-      <div class="exam-kpi" style="--kpi:var(--exam-accent)"><b id="kpiExams">—</b><span>Đề trong hệ thống</span></div>
+    <section class="exam-kpis" aria-label="Tổng quan nội dung">
+      <div class="exam-kpi" style="--kpi:var(--exam-accent)"><b id="kpiExams">—</b><span>Nội dung đã lưu</span></div>
       <div class="exam-kpi" style="--kpi:var(--exam-blue)"><b id="kpiQuestions">—</b><span>Câu hỏi đã tạo</span></div>
       <div class="exam-kpi" style="--kpi:var(--exam-green)"><b id="kpiAttempts">—</b><span>Lượt nộp đã ghi nhận</span></div>
       <div class="exam-kpi" style="--kpi:var(--exam-red)"><b id="kpiClasses">—</b><span>Lớp đang phụ trách</span></div>
     </section>
 
-    <nav class="exam-tabs" aria-label="Chức năng quản lý đề">
-      <button class="exam-tab active" data-tab="compose" onclick="VMExamAdmin.switchTab('compose')">🛠️ Biên soạn đề</button>
-      <button class="exam-tab" data-tab="library" onclick="VMExamAdmin.switchTab('library')">📚 Kho đề thi</button>
+    <nav class="exam-tabs" aria-label="Chức năng soạn thảo">
+      <button class="exam-tab active" data-tab="compose" onclick="VMExamAdmin.switchTab('compose')">🛠️ Soạn thảo</button>
+      <button class="exam-tab" data-tab="library" onclick="VMExamAdmin.switchTab('library')">📚 Kho đã lưu</button>
       <button class="exam-tab" data-tab="analytics" onclick="VMExamAdmin.switchTab('analytics')">📊 Thống kê kết quả</button>
     </nav>
 
@@ -57,11 +56,11 @@
       <div class="exam-workflow">
         <aside class="exam-stack">
           <article class="exam-card exam-settings-card">
-            <div class="exam-card-head"><div><h2 id="formTitle">3. Thiết lập đề thi</h2><p>Thông tin xuất bản và đối tượng học sinh.</p></div><span class="exam-badge draft" id="editBadge">Đề mới</span></div>
+            <div class="exam-card-head"><div><h2 id="formTitle">3. Thiết lập xuất bản</h2></div><span class="exam-badge draft" id="editBadge">Mới</span></div>
             <div class="exam-card-body">
               <form id="examForm" onsubmit="VMExamAdmin.saveExam(event)">
                 <div class="exam-form-grid">
-                  <div class="exam-field full"><label for="exTitle">Tiêu đề đề thi *</label><input class="input" id="exTitle" required placeholder="Ví dụ: Đề thi thử tốt nghiệp THPT — Lần 1"></div>
+                  <div class="exam-field full"><label for="exTitle">Tiêu đề *</label><input class="input" id="exTitle" required placeholder="Ví dụ: Phiếu ôn tập chương Hàm số"></div>
                   <div class="exam-field"><label for="exLop">Lớp áp dụng</label><select class="input" id="exLop"><option value="">Mọi lớp</option></select></div>
                   <div class="exam-field"><label for="exDuration">Thời gian (phút) *</label><input class="input" type="number" min="1" max="300" id="exDuration" value="90" required></div>
                   <div class="exam-field full"><label for="exType">Cấu trúc đề *</label><select class="input" id="exType" onchange="VMExamAdmin.updateExamType()"><option value="mc">Chỉ trắc nghiệm 4 phương án</option><option value="tf">Chỉ Đúng/Sai — mỗi câu 4 ý</option><option value="essay">Chỉ tự luận — nộp ảnh</option><option value="combo">Kết hợp trắc nghiệm và tự luận</option><option value="thpt">Chuẩn THPTQG — 3 phần</option></select></div>
@@ -79,16 +78,18 @@
           </article>
 
           <article class="exam-card exam-quick-start-card">
-            <div class="exam-card-head"><div><h3>1. Chọn nhanh mẫu đề</h3><p>Chèn cấu trúc chuẩn rồi thay nội dung câu hỏi.</p></div><span class="exam-badge live">Mặc định</span></div>
+            <div class="exam-card-head"><div><h3>1. Chọn mẫu</h3></div><span class="exam-badge live">Nhanh</span></div>
             <div class="exam-card-body exam-template-list">
-              <button class="exam-template featured" onclick="VMExamAdmin.applyTemplate('thpt-standard')"><span class="exam-template-icon">🇻🇳</span><span><b>THPTQG · Đề thi chuẩn</b><small>Ba phần, bố cục gọn để tổ chức thi thật.</small></span><span class="exam-template-arrow">→</span></button>
-              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('thpt-practice')"><span class="exam-template-icon">🧠</span><span><b>THPTQG · Luyện tập có lời giải</b><small>Ba phần kèm khung lời giải và đáp số mẫu.</small></span><span class="exam-template-arrow">→</span></button>
-              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('tf')"><span class="exam-template-icon">✓</span><span><b>Đúng/Sai 4 ý</b><small>Mẫu riêng cho câu hỏi dạng mới.</small></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template featured" onclick="VMExamAdmin.applyTemplate('worksheet-mixed')"><span class="exam-template-icon">📘</span><span><b>Phiếu ôn tập hỗn hợp</b></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('thpt-standard')"><span class="exam-template-icon">🇻🇳</span><span><b>THPTQG · 3 phần</b></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('mc-quiz')"><span class="exam-template-icon">◉</span><span><b>Trắc nghiệm 4 phương án</b></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('tf')"><span class="exam-template-icon">✓</span><span><b>Đúng/Sai 4 ý</b></span><span class="exam-template-arrow">→</span></button>
+              <button class="exam-template" onclick="VMExamAdmin.applyTemplate('essay')"><span class="exam-template-icon">✍</span><span><b>Tự luận · Nộp ảnh</b></span><span class="exam-template-arrow">→</span></button>
             </div>
           </article>
 
           <article class="exam-card exam-toolbox-card">
-            <div class="exam-card-head"><div><h3>2. Công cụ soạn nhanh</h3><p>Bấm một lần để chèn đúng cấu trúc tại vị trí con trỏ.</p></div></div>
+            <div class="exam-card-head"><div><h3>2. Chèn nhanh</h3></div></div>
             <div class="exam-card-body exam-toolbox">
               <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('mc')"><span>＋</span> Trắc nghiệm 4 phương án</button>
               <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.insertSnippet('tf')"><span>＋</span> Đúng/Sai 4 ý</button>
@@ -102,11 +103,11 @@
         </aside>
 
         <article class="exam-card exam-editor-card">
-          <div class="exam-card-head"><div><h2>4. Nội dung đề và xem trước</h2><p>LaTeX ở giữa, bản đề học sinh nhìn thấy ở bên phải; PDF chỉ biên dịch khi cần.</p></div><span class="exam-badge" id="questionBadge">0 câu</span></div>
+          <div class="exam-card-head"><div><h2>4. Nội dung & xem trước</h2></div><span class="exam-badge" id="questionBadge">0 câu</span></div>
           <div class="exam-editor">
             <div class="exam-source" id="sourcePane">
               <div class="exam-source-label"><span>LaTeX · ex_test</span><span id="sourceHint">Hỗ trợ \choice, \choiceTF, câu trả lời ngắn</span></div>
-              <textarea id="exLatex" spellcheck="false" placeholder="Dán các môi trường \begin{ex}...\end{ex} vào đây."></textarea>
+              <textarea id="exLatex" spellcheck="false" placeholder="Dán LaTeX, các môi trường \begin{ex}...\end{ex} hoặc nội dung từ tệp .tex."></textarea>
             </div>
             <div class="exam-preview">
               <div class="exam-preview-tabs">
@@ -114,7 +115,7 @@
                 <button class="exam-preview-tab" data-preview="pdf" onclick="VMExamAdmin.switchPreview('pdf')">📄 PDF</button>
                 <span class="exam-preview-status"><i class="exam-status-dot" id="previewDot"></i><span id="previewStatus">Chưa có nội dung</span></span>
               </div>
-              <div class="exam-preview-body" id="htmlPreview"><div class="exam-empty"><div><strong>Bắt đầu bằng một mẫu đề</strong>Chọn mẫu THPTQG hoặc chèn từng loại câu hỏi.</div></div></div>
+              <div class="exam-preview-body" id="htmlPreview"><div class="exam-empty"><div><strong>Chưa có nội dung</strong>Chọn mẫu hoặc bắt đầu soạn.</div></div></div>
               <div class="exam-pdf-pane" id="pdfPreview"><div class="exam-pdf-loading"><div><div class="exam-spinner"></div><strong>PDF chưa được tạo</strong><br><small>Bấm “Biên dịch PDF” để xem bản in.</small></div></div></div>
             </div>
           </div>
@@ -122,16 +123,16 @@
       </div>
 
       <div class="exam-actions-bar">
-        <span class="status" id="saveStatus">Đề chưa lưu.</span>
+        <span class="status" id="saveStatus">Nội dung chưa lưu.</span>
         <button type="button" class="btn btn-ghost" id="btnCancelEdit" hidden onclick="VMExamAdmin.resetForm()">Hủy chỉnh sửa</button>
         <button type="button" class="btn btn-secondary" onclick="VMExamAdmin.compilePdf()">📄 Biên dịch PDF</button>
-        <button type="submit" form="examForm" class="btn btn-primary" id="btnSave">💾 Lưu đề thi</button>
+        <button type="submit" form="examForm" class="btn btn-primary" id="btnSave">💾 Lưu nội dung</button>
       </div>
     </section>
 
     <section class="exam-panel" id="panel-library">
       <div class="exam-library-tools">
-        <div class="exam-field"><label>Tìm đề</label><input class="input" id="librarySearch" placeholder="Nhập tên đề..." oninput="VMExamAdmin.renderLibrary()"></div>
+        <div class="exam-field"><label>Tìm nội dung</label><input class="input" id="librarySearch" placeholder="Nhập tiêu đề..." oninput="VMExamAdmin.renderLibrary()"></div>
         <div class="exam-field"><label>Lớp</label><select class="input" id="libraryClass" onchange="VMExamAdmin.renderLibrary()"><option value="">Tất cả lớp</option></select></div>
         <div class="exam-field"><label>Cấu trúc</label><select class="input" id="libraryType" onchange="VMExamAdmin.renderLibrary()"><option value="">Tất cả cấu trúc</option><option value="mc">Trắc nghiệm</option><option value="tf">Đúng/Sai</option><option value="essay">Tự luận</option><option value="combo">Kết hợp</option><option value="thpt">THPTQG</option></select></div>
         <div class="exam-field"><label>Trạng thái</label><select class="input" id="libraryState" onchange="VMExamAdmin.renderLibrary()"><option value="">Tất cả</option><option value="published">Đang mở</option><option value="draft">Bản nháp</option></select></div>
@@ -152,7 +153,7 @@
 
   <dialog class="exam-pdf-dialog" id="pdfDialog" data-vm-popup-position="native">
     <div class="exam-dialog-shell">
-      <div class="exam-dialog-head"><span style="font-size:1.3rem">📄</span><h3>Bản PDF đề thi</h3><a class="btn btn-secondary btn-sm" id="pdfDownload" download="de-thi-vinhmath.pdf">Tải xuống</a><button class="btn btn-ghost btn-sm" onclick="VMExamAdmin.closePdf()">✕ Đóng</button></div>
+      <div class="exam-dialog-head"><span style="font-size:1.3rem">📄</span><h3>Bản PDF</h3><a class="btn btn-secondary btn-sm" id="pdfDownload" download="vinhmath.pdf">Tải xuống</a><button class="btn btn-ghost btn-sm" onclick="VMExamAdmin.closePdf()">✕ Đóng</button></div>
       <div class="exam-dialog-body" id="pdfDialogBody"><div class="exam-pdf-loading"><div><div class="exam-spinner"></div>Đang biên dịch PDF…</div></div></div>
     </div>
   </dialog>
@@ -165,8 +166,8 @@
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/tex-environments.js?v=1.0"></script>
   <script src="js/latex-view.js?v=10.8"></script>
-  <script src="js/menu-v5.js?v=9.6"></script>
+  <script src="js/menu-v5.js?v=9.7"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/exam-admin.js?v=2.1"></script>
+  <script src="js/exam-admin.js?v=2.2"></script>
 </body>
 </html>

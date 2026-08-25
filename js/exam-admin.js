@@ -49,6 +49,27 @@ Trình bày cách tính để nhận được đáp số.}
   };
 
   var TEMPLATES = {
+    'worksheet-mixed': {
+      title: 'Phiếu ôn tập Toán', type: 'combo', duration: 45,
+      source: String.raw`% CÂU TRẮC NGHIỆM
+\begin{ex}
+Giá trị của $2^3$ bằng
+\choice
+{$4$}
+{$6$}
+{\True $8$}
+{$9$}
+\loigiai{$2^3=8$.}
+\end{ex}
+
+% CÂU TRẢ LỜI NGẮN
+\begin{bt}
+Tính $15+27$.
+\loigiai{\textbf{Câu trả lời:} 42
+
+$15+27=42$.}
+\end{bt}`
+    },
     'thpt-standard': {
       title: 'Đề thi thử tốt nghiệp THPT — Lần 1', type: 'thpt', duration: 90,
       source: String.raw`% PHẦN I — TRẮC NGHIỆM 4 PHƯƠNG ÁN
@@ -81,10 +102,9 @@ Một cấp số cộng có $u_1=2$, công sai $d=3$. Tính $u_5$.
 Ta có $u_5=u_1+4d=2+4\cdot3=14$.}
 \end{bt}`
     },
-    'thpt-practice': {
-      title: 'Luyện cấu trúc đề tốt nghiệp THPT — 3 phần', type: 'thpt', duration: 90,
-      source: String.raw`% MẪU LUYỆN TẬP THPTQG — THAY NỘI DUNG NHƯNG GIỮ CẤU TRÚC
-% I. TRẮC NGHIỆM NHIỀU PHƯƠNG ÁN
+    'mc-quiz': {
+      title: 'Bài kiểm tra trắc nghiệm', type: 'mc', duration: 45,
+      source: String.raw`% CÂU 1
 \begin{ex}
 Nghiệm của phương trình $2x-6=0$ là
 \choice
@@ -95,6 +115,7 @@ Nghiệm của phương trình $2x-6=0$ là
 \loigiai{$2x-6=0\Leftrightarrow x=3$.}
 \end{ex}
 
+% CÂU 2
 \begin{ex}
 Đạo hàm của hàm số $y=x^3$ là
 \choice
@@ -103,35 +124,15 @@ Nghiệm của phương trình $2x-6=0$ là
 {$y'=3x$}
 {$y'=x^4$}
 \loigiai{Áp dụng công thức $(x^n)'=nx^{n-1}$.}
-\end{ex}
-
-% II. TRẮC NGHIỆM ĐÚNG/SAI
-\begin{ex}
-Cho cấp số nhân $(u_n)$ với $u_1=2$, công bội $q=3$.
-\choiceTF
-{\True $u_2=6$}
-{$u_3=12$}
-{\True $u_n=2\cdot3^{n-1}$}
-{$u_4=36$}
-\loigiai{Tính $u_n=u_1q^{n-1}$ rồi đối chiếu từng ý.}
-\end{ex}
-
-% III. TRẮC NGHIỆM TRẢ LỜI NGẮN
-\begin{bt}
-Tính $\log_2 32$.
-\loigiai{\textbf{Câu trả lời:} 5
-
-Vì $32=2^5$ nên $\log_2 32=5$.}
-\end{bt}
-
-\begin{bt}
-Một hình lập phương có cạnh bằng $3$. Tính thể tích.
-\loigiai{\textbf{Câu trả lời:} 27
-
-Thể tích bằng $3^3=27$.}
-\end{bt}`
+\end{ex}`
     },
-    tf: { title: 'Bài luyện Đúng/Sai', type: 'tf', duration: 30, source: SNIPPETS.tf + '\n\n' + SNIPPETS.tf.replace('Cho dữ kiện sau.', 'Cho một dữ kiện khác.') }
+    tf: { title: 'Bài luyện Đúng/Sai', type: 'tf', duration: 30, source: SNIPPETS.tf + '\n\n' + SNIPPETS.tf.replace('Cho dữ kiện sau.', 'Cho một dữ kiện khác.') },
+    essay: {
+      title: 'Bài kiểm tra tự luận', type: 'essay', duration: 60, source: '',
+      essayPrompt: String.raw`Bài 1. Trình bày đầy đủ lời giải của bài toán.
+
+Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
+    }
   };
 
   function el(id) { return document.getElementById(id); }
@@ -217,6 +218,7 @@ Thể tích bằng $3^3=27$.}
     el('exType').value = template.type;
     el('exDuration').value = template.duration;
     el('exLatex').value = template.source;
+    el('exEssayPrompt').value = template.essayPrompt || '';
     updateExamType();
     renderPreview(true);
     toast('Đã chèn mẫu ' + template.title + '.', 'ok');
@@ -287,7 +289,7 @@ Thể tích bằng $3^3=27$.}
       updateSaveState();
       return;
     }
-    paper += '<div class="exam-paper"><header class="exam-paper-title"><small>Xem trực tiếp trên VinhMath</small><h2>' + esc(el('exTitle').value || 'Đề thi chưa đặt tên') + '</h2></header>';
+    paper += '<div class="exam-paper"><header class="exam-paper-title"><h2>' + esc(el('exTitle').value || 'Nội dung chưa đặt tên') + '</h2></header>';
     if (type === 'essay') {
       paper += '<div class="exam-section-heading">Phần tự luận</div><div style="line-height:1.75">' + latexRaHTML(el('exEssayPrompt').value || 'Chưa nhập đề bài tự luận.') + '</div>';
     } else {
@@ -316,7 +318,7 @@ Thể tích bằng $3^3=27$.}
 
   function updateExamType() {
     var type = el('exType').value;
-    el('essayField').hidden = type !== 'essay' && type !== 'combo';
+    el('essayField').hidden = type !== 'essay';
     el('sourcePane').style.display = type === 'essay' ? 'none' : 'flex';
     el('sourceHint').textContent = type === 'tf' ? 'Dùng \\choiceTF với đúng 4 ý' : type === 'thpt' ? 'Tự phân 3 phần theo loại câu hỏi' : 'Hỗ trợ \\choice, \\choiceTF, câu trả lời ngắn';
     renderPreview(false);
@@ -389,14 +391,14 @@ Thể tích bằng $3^3=27$.}
         }, {onConflict:'portal_id,exam_id'});
         if (assignment.error) throw assignment.error;
       }
-      toast((state.editingId?'Đã cập nhật':'Đã tạo')+' đề thi thành công.', 'ok');
+      toast((state.editingId?'Đã cập nhật':'Đã tạo')+' nội dung thành công.', 'ok');
       await loadExams();
       resetForm();
       switchTab('library');
     } catch (error) {
-      toast('Không lưu được đề: ' + (error.message || error), 'err');
+      toast('Không lưu được nội dung: ' + (error.message || error), 'err');
     } finally {
-      button.textContent = state.editingId ? '💾 Cập nhật đề thi' : '💾 Lưu đề thi';
+      button.textContent = state.editingId ? '💾 Cập nhật nội dung' : '💾 Lưu nội dung';
       updateSaveState();
     }
   }
@@ -413,7 +415,7 @@ Thể tích bằng $3^3=27$.}
       if (eq.error) throw eq.error;
       var data = detail.data, questions = (eq.data||[]).map(function (x) { return x.questions; }).filter(Boolean);
       state.editingId = id; state.templateKey = data.template_key || 'custom';
-      el('formTitle').textContent = '3. Chỉnh sửa đề thi'; el('editBadge').textContent = 'Đang chỉnh sửa';
+      el('formTitle').textContent = '3. Chỉnh sửa nội dung'; el('editBadge').textContent = 'Đang sửa';
       el('exTitle').value = data.title || ''; el('exLop').value = data.class_id || '';
       el('exDuration').value = data.duration_minutes || 90; el('exType').value = data.de_type || 'mc';
       el('exOpens').value = toLocalInput(data.opens_at); el('exCloses').value = toLocalInput(data.closes_at);
@@ -421,18 +423,18 @@ Thể tích bằng $3^3=27$.}
       el('exAllowSolutionPdf').checked = !!data.allow_solution_pdf;
       el('exEssayPrompt').value = data.essay_prompt || '';
       el('exLatex').value = data.latex_source || examSourceFromQuestions(questions);
-      el('btnCancelEdit').hidden = false; el('btnSave').textContent = '💾 Cập nhật đề thi';
+      el('btnCancelEdit').hidden = false; el('btnSave').textContent = '💾 Cập nhật nội dung';
       updateExamType(); renderPreview(true); el('saveStatus').textContent = 'Đang chỉnh sửa “'+data.title+'”.';
       window.scrollTo({top:0,behavior:'smooth'});
-    } catch (error) { toast('Không tải được đề: '+error.message,'err'); }
+    } catch (error) { toast('Không tải được nội dung: '+error.message,'err'); }
   }
 
   function resetForm() {
     state.editingId = null; state.templateKey = 'custom'; state.parsed = [];
     el('examForm').reset(); el('exDuration').value = 90; el('exShuffle').checked = true; el('exPublished').checked = true; el('exAllowSolutionPdf').checked = false;
     el('exType').value = 'mc'; el('exLatex').value = ''; el('exEssayPrompt').value = '';
-    el('formTitle').textContent = '3. Thiết lập đề thi'; el('editBadge').textContent = 'Đề mới';
-    el('btnCancelEdit').hidden = true; el('btnSave').textContent = '💾 Lưu đề thi'; el('saveStatus').textContent = 'Đề chưa lưu.';
+    el('formTitle').textContent = '3. Thiết lập xuất bản'; el('editBadge').textContent = 'Mới';
+    el('btnCancelEdit').hidden = true; el('btnSave').textContent = '💾 Lưu nội dung'; el('saveStatus').textContent = 'Nội dung chưa lưu.';
     updateExamType(); switchPreview('html'); renderPreview(false);
     document.documentElement.style.removeProperty('overflow'); document.body.style.removeProperty('overflow');
     window.scrollTo({top:document.getElementById('panel-compose').offsetTop || 0,behavior:'smooth'});
@@ -479,7 +481,7 @@ Thể tích bằng $3^3=27$.}
       var solutionLabel = x.allow_solution_pdf ? '🔓 HS được tải đáp án' : '🔒 Khóa PDF đáp án';
       var portalQuery = state.portal ? 'portal='+encodeURIComponent(state.portal.slug)+'&' : '';
       var analyticsAction = state.portal ? '' : '<button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button>';
-      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?'+portalQuery+'exam_id='+x.id+'" target="_blank">Xem kiểu HS</a>'+analyticsAction+'<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
+      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?'+portalQuery+'exam_id='+x.id+'" target="_blank">Xem kiểu HS</a>'+analyticsAction+'<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
     }).join('');
   }
 
@@ -575,7 +577,7 @@ Thể tích bằng $3^3=27$.}
   }
 
   async function buildPdfSource() {
-    var raw=el('exLatex').value.trim(), title=el('exTitle').value.trim()||'Đề thi VinhMath';
+    var raw=el('exLatex').value.trim(), title=el('exTitle').value.trim()||'Tài liệu VinhMath';
     if(el('exType').value==='essay') raw=el('exEssayPrompt').value.trim();
     if(!raw) throw new Error('Chưa có nội dung để biên dịch.');
     if(/\\documentclass(?:\[[^\]]*\])?\{/.test(raw)) return typeof vmChenPreambleMoiTruongTex==='function'?vmChenPreambleMoiTruongTex(raw):raw;
@@ -618,7 +620,7 @@ Thể tích bằng $3^3=27$.}
       if(!(result.data instanceof Blob)||result.data.type.indexOf('pdf')<0){var log=typeof result.data==='string'?result.data:await result.data.text();throw new Error(log.split('\n').filter(function(x){return x.indexOf('!')===0||/error/i.test(x);}).slice(0,6).join(' ')||'Không nhận được PDF');}
       if(state.pdfUrl)URL.revokeObjectURL(state.pdfUrl);state.pdfUrl=URL.createObjectURL(result.data);
       body.innerHTML='<iframe title="Xem trước PDF" src="'+state.pdfUrl+'#view=FitH"></iframe>';el('pdfDownload').href=state.pdfUrl;el('pdfDownload').download=(el('exTitle').value.trim()||'de-thi-vinhmath').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.pdf';
-      el('pdfPreview').innerHTML='<iframe title="PDF đề thi" src="'+state.pdfUrl+'#view=FitH"></iframe>';switchPreview('pdf');toast('PDF đã biên dịch thành công.','ok');
+      el('pdfPreview').innerHTML='<iframe title="PDF VinhMath" src="'+state.pdfUrl+'#view=FitH"></iframe>';switchPreview('pdf');toast('PDF đã biên dịch thành công.','ok');
     }catch(error){body.innerHTML='<div class="exam-empty" style="color:var(--err)"><div><strong>Chưa tạo được PDF</strong>'+esc(error.message||error)+'</div></div>';toast('PDF chưa biên dịch được.','err');}
   }
   function closePdf(){var d=el('pdfDialog');if(d.close)d.close();else d.removeAttribute('open');}
@@ -633,11 +635,10 @@ Thể tích bằng $3^3=27$.}
     if(portalSlug()&&!state.portal){location.href='thi?portal='+encodeURIComponent(portalSlug());return;}
     if(state.portal){
       document.body.classList.add('portal-authoring');
-      el('examWorkspaceLabel').textContent='Xưởng đề thi riêng · '+(state.portal.short_name||state.portal.name);
-      el('examWorkspaceTitle').innerHTML='Soạn đề cho học sinh<br>trong không gian Thầy Trường.';
-      el('examWorkspaceDescription').textContent='Dữ liệu đề, câu hỏi và lớp học được tách riêng khỏi tài khoản học sinh và khu VinhMath chính.';
+      el('examWorkspaceLabel').textContent='Không gian '+(state.portal.short_name||state.portal.name);
+      el('examWorkspaceTitle').textContent='Soạn thảo';
       el('examPortalBack').hidden=false;el('examPortalBack').href='thi?portal='+encodeURIComponent(state.portal.slug)+'#manage';
-      document.title='Xưởng soạn đề · '+(state.portal.short_name||state.portal.name);
+      document.title='Soạn thảo · '+(state.portal.short_name||state.portal.name);
       var analyticsTab=document.querySelector('[data-tab="analytics"]');if(analyticsTab)analyticsTab.hidden=true;
     }
     var engineSetting=await sb.from('app_settings').select('value').eq('key','latex_engine_default').maybeSingle();
@@ -668,12 +669,12 @@ Thể tích bằng $3^3=27$.}
     var requestedTab=queryParams.get('tab');
     var requestedState=queryParams.get('state');
     if(requestedTemplate&&TEMPLATES[requestedTemplate])applyTemplate(requestedTemplate);
-    else if(!requestedTab||requestedTab==='compose')applyTemplate('thpt-standard');
+    else if(!requestedTab||requestedTab==='compose')applyTemplate('worksheet-mixed');
     if(['compose','library','analytics'].indexOf(requestedTab)>=0)switchTab(requestedTab);
     if(requestedTab==='library'&&['published','draft'].indexOf(requestedState)>=0){el('libraryState').value=requestedState;renderLibrary();}
     renderPreview(false);
   }
 
   window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs};
-  document.addEventListener('DOMContentLoaded',function(){init().catch(function(error){toast('Không khởi tạo được khu đề thi: '+error.message,'err');});});
+  document.addEventListener('DOMContentLoaded',function(){init().catch(function(error){toast('Không khởi tạo được trình soạn thảo: '+error.message,'err');});});
 })();

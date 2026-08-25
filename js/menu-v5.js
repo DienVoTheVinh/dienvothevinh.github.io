@@ -27,7 +27,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp học' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
-      { type: 'link', path: 'quan-tri-de?tab=compose&template=thpt-standard', label: 'Soạn đề' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo' },
       { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri', label: 'Quản trị' }
     ];
@@ -36,7 +36,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-      { type: 'link', path: 'quan-tri-de?tab=compose&template=thpt-standard', label: 'Soạn đề' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo' },
       { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }

@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/vmtool.css?v=7">
+  <link rel="stylesheet" href="css/vmtool.css?v=8">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -30,7 +30,7 @@
     <section class="vmtool-hero">
       <div>
         <div class="vmtool-kicker">Phòng thí nghiệm Toán học VinhMath</div>
-        <div class="vmtool-hero-line"><h1>VMTool</h1><p>Nhập dữ liệu, quan sát trực tiếp và xuất hình Toán học đẹp mà không cần nhớ lệnh LaTeX.</p></div>
+        <div class="vmtool-hero-line"><h1>VMTool</h1></div>
       </div>
       <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b id="vmtoolModeName">Miền nghiệm 2D</b><small id="vmtoolModeMeta">Đồ thị · PNG · TikZ</small></div></div>
     </section>
@@ -43,7 +43,7 @@
 
     <section class="vmtool-workspace vmtool-tool-panel" id="inequalityTool" data-vmtool-panel="inequality">
       <aside class="vmtool-panel">
-        <div class="vmtool-panel-head"><h2>Hệ bất phương trình</h2><p>Mỗi dòng có dạng <strong>ax + by ≤ c</strong>. Em chỉ cần nhập các hệ số.</p></div>
+        <div class="vmtool-panel-head"><h2>Hệ bất phương trình</h2></div>
         <div class="vmtool-controls">
           <div>
             <div class="vmtool-section-label"><span>Các điều kiện</span><span id="inequalityCount">0/8</span></div>
@@ -88,17 +88,12 @@
             <div class="vmtool-empty" id="emptyRegion">Hệ bất phương trình không có miền nghiệm trong vùng đang quan sát.</div>
           </div>
         </div>
-        <div class="vmtool-guide">
-          <article><b>1. Nhập hệ số</b><p>Ví dụ 2x + y ≤ 6: nhập lần lượt 2, 1, chọn ≤ và nhập 6.</p></article>
-          <article><b>2. Quan sát trực tiếp</b><p>Phần gạch sọc bị loại; miền trắng còn lại thỏa mãn đồng thời mọi bất phương trình.</p></article>
-          <article><b>3. Đưa vào bài giảng</b><p>Tải PNG để chèn nhanh hoặc xuất TikZ cho tài liệu LaTeX sắc nét.</p></article>
-        </div>
       </div>
     </section>
 
     <section class="vmtool-workspace vmtool-tool-panel vmtool-plane-workspace" id="planeTool" data-vmtool-panel="plane" hidden>
       <aside class="vmtool-panel vmtool-plane-panel">
-        <div class="vmtool-panel-head"><h2>Dựng hình phẳng</h2><p>Chọn công cụ rồi nhấp trực tiếp lên vùng vẽ. Kéo các điểm để hình tự cập nhật như mô hình động.</p></div>
+        <div class="vmtool-panel-head"><h2>Dựng hình phẳng</h2></div>
         <div class="vmtool-controls vmtool-plane-controls">
           <div class="vmtool-plane-help" id="planeToolHelp" aria-live="polite"><span id="planeHelpIcon">↖</span><div><b id="planeHelpTitle">Di chuyển</b><p id="planeHelpText">Kéo điểm để biến đổi hình; kéo nền để di chuyển khung nhìn.</p></div></div>
           <div>
@@ -167,17 +162,12 @@
             <button class="vmtool-plane-finish" id="finishPolygon" type="button" hidden>✓ Khép đa giác</button>
           </div>
         </div>
-        <div class="vmtool-guide vmtool-plane-guide">
-          <article><b>1. Chọn công cụ</b><p>Mỗi công cụ cho biết rõ cần nhấp điểm hay đường nào tiếp theo.</p></article>
-          <article><b>2. Kéo để khám phá</b><p>Điểm gốc kéo được; trung điểm và các đường dựng tự chạy theo hình.</p></article>
-          <article><b>3. Đưa vào tài liệu</b><p>Xuất PNG, SVG hoặc TikZ với tên điểm và nét hình sắc nét.</p></article>
-        </div>
       </div>
     </section>
 
     <section class="vmtool-workspace vmtool-tool-panel vmtool-spatial-workspace" id="spatialTool" data-vmtool-panel="spatial" hidden>
       <aside class="vmtool-panel vmtool-3d-panel">
-        <div class="vmtool-panel-head"><h2>Dựng hình không gian</h2><p>Chọn mẫu, kéo thông số và quan sát ngay. Không cần nhập lệnh hình học hay LaTeX.</p></div>
+        <div class="vmtool-panel-head"><h2>Dựng hình không gian</h2></div>
         <div class="vmtool-controls vmtool-3d-controls">
           <div>
             <div class="vmtool-section-label"><span>Mẫu khối</span><span id="solidPointCount">5 điểm</span></div>
@@ -246,7 +236,7 @@
         </div>
 
         <article class="vmtool-demo-card" id="pyramidDemoCard">
-          <div class="vmtool-demo-problem"><span class="vmtool-demo-label">Bài mẫu trực quan</span><h3>Cho hình chóp S.ABCD có đáy ABCD là hình bình hành. Tìm giao tuyến của (SAB) và (SCD).</h3><p>Nhấn từng bước để thấy lập luận xuất hiện ngay trên mô hình.</p></div>
+          <div class="vmtool-demo-problem"><span class="vmtool-demo-label">Bài mẫu</span><h3>Cho hình chóp S.ABCD có đáy ABCD là hình bình hành. Tìm giao tuyến của (SAB) và (SCD).</h3></div>
           <ol class="vmtool-demo-steps">
             <li data-demo-step="1"><button type="button"><span>1</span><div><b>Tìm điểm chung</b><small>S cùng thuộc hai mặt phẳng.</small></div></button></li>
             <li data-demo-step="2"><button type="button"><span>2</span><div><b>Tìm phương chung</b><small>AB ∥ CD vì ABCD là hình bình hành.</small></div></button></li>
@@ -254,11 +244,6 @@
           </ol>
         </article>
 
-        <div class="vmtool-guide vmtool-3d-guide">
-          <article><b>1. Chọn khối</b><p>Dùng mẫu chóp, tứ diện hoặc hình hộp rồi kéo kích thước theo đề bài.</p></article>
-          <article><b>2. Chọn hai mặt</b><p>Mỗi mặt chỉ cần ba điểm. Hệ thống kiểm tra và dựng giao tuyến tự động.</p></article>
-          <article><b>3. Giảng trực quan</b><p>Xoay hình, đổi góc nhìn, bật nét khuất và tải PNG để đưa vào bài giảng.</p></article>
-        </div>
       </div>
     </section>
   </main>
@@ -266,9 +251,9 @@
 
   <dialog class="vmtool-latex-dialog" id="planeLatexDialog" aria-labelledby="planeLatexTitle">
     <form method="dialog" class="vmtool-latex-shell">
-      <header><div><span class="vmtool-kicker">Xuất bản LaTeX</span><h2 id="planeLatexTitle">Hình TikZ sẵn sàng biên dịch</h2><p>Sửa mã nếu cần, xem PDF trực tiếp rồi tải về máy.</p></div><button class="vmtool-icon-btn" value="cancel" type="submit" aria-label="Đóng">×</button></header>
+      <header><div><span class="vmtool-kicker">Xuất bản LaTeX</span><h2 id="planeLatexTitle">Hình TikZ</h2></div><button class="vmtool-icon-btn" value="cancel" type="submit" aria-label="Đóng">×</button></header>
       <div class="vmtool-latex-body">
-        <section class="vmtool-latex-source"><label for="planeLatexSource">Mã LaTeX hoàn chỉnh</label><textarea id="planeLatexSource" spellcheck="false"></textarea><div class="vmtool-latex-actions"><button class="vmtool-action" id="planeCopyLatex" type="button">⧉ Sao chép</button><button class="vmtool-action" id="planeDownloadTex" type="button">⇩ Tải .tex</button><button class="vmtool-action primary" id="planeRunLatex" type="button">▶ Biên dịch PDF</button></div><p class="vmtool-latex-note">Trình biên dịch chỉ được gọi khi thầy/cô bấm nút; VMTool không tải thư viện nặng khi mở trang.</p></section>
+        <section class="vmtool-latex-source"><label for="planeLatexSource">Mã LaTeX hoàn chỉnh</label><textarea id="planeLatexSource" spellcheck="false"></textarea><div class="vmtool-latex-actions"><button class="vmtool-action" id="planeCopyLatex" type="button">⧉ Sao chép</button><button class="vmtool-action" id="planeDownloadTex" type="button">⇩ Tải .tex</button><button class="vmtool-action primary" id="planeRunLatex" type="button">▶ Biên dịch PDF</button></div></section>
         <section class="vmtool-latex-preview" id="planeLatexPreview"><div class="vmtool-latex-empty"><span>PDF</span><b>Chưa biên dịch</b><p>Bản xem trước sẽ hiện tại đây.</p></div></section>
       </div>
       <footer><span id="planeLatexStatus" role="status" aria-live="polite">Sẵn sàng</span><a class="vmtool-action primary" id="planePdfDownload" hidden>Tải PDF</a></footer>
@@ -278,8 +263,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.0"></script>
-  <script src="js/menu-v5.js?v=9.6"></script>
-  <script src="js/vmtool.js?v=6"></script>
+  <script src="js/menu-v5.js?v=9.7"></script>
+  <script src="js/vmtool.js?v=7"></script>
   <script src="js/vmtool-loader.js?v=4"></script>
   <script src="js/analytics.js"></script>
 </body>

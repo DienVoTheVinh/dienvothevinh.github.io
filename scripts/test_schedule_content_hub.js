@@ -21,7 +21,7 @@ new vm.Script(menu, { filename: 'js/menu-v5.js' });
 new vm.Script(examAdmin, { filename: 'js/exam-admin.js' });
 
 expect(menu.includes("path: 'quan-tri-lich', label: 'Lịch'"), 'Admin navigation must expose schedule directly');
-expect(menu.includes("path: 'quan-tri-de?tab=compose&template=thpt-standard', label: 'Soạn đề'"), 'Staff navigation must open the THPTQG editor directly');
+expect(menu.includes("path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo'"), 'Staff navigation must open the general authoring workspace directly');
 expect(home.includes('id="staffHomeContainer"') && home.includes('id="weekCal"'), 'Staff home schedule views are missing');
 expect(homeRoleCss.includes('.vm-home-staff .dashboard-grid{display:grid!important') && homeRoleCss.includes('.vm-home-staff .dashboard-grid .left-panel{display:none!important'), 'Staff weekly schedule must be visible without the old dashboard clutter');
 
@@ -33,12 +33,13 @@ expect(schedule.includes("meetInput = layLinkMeetHopLe('schMeet')"), 'Per-sessio
 expect(schedule.includes("sb.from('class_links')") && schedule.includes("sb.from('app_settings')"), 'Class and global Meet fallbacks must remain available');
 expect(schedule.includes("khungThu.style.display = 'none'") && schedule.includes("$('khungSchMeet').hidden = !online"), 'Schedule form must progressively hide irrelevant controls');
 
-for (const fragment of ['Trung tâm nội dung', 'Xưởng đề thi & LaTeX', '1. Biên soạn đề thi', '2. Kho đề & tài liệu', '3. Thiết lập & môi trường', 'Soạn tài liệu LaTeX / PDF', 'Đề thi chuẩn THPTQG', 'THPTQG có lời giải', 'Môi trường TeX', 'Cấu hình biên soạn toàn hệ thống', 'contentEnvStatus', 'metricDocuments', 'metricExams', 'metricThpt']) {
+for (const fragment of ['Trung tâm nội dung', 'Xưởng biên soạn', '1. Soạn thảo', '2. Kho & xuất bản', '3. Thiết lập & môi trường', 'Soạn tài liệu LaTeX / PDF', 'Phiếu ôn tập hỗn hợp', 'Đề THPTQG · 3 phần', 'Trắc nghiệm 4 phương án', 'Môi trường TeX', 'Cấu hình biên soạn toàn hệ thống', 'contentEnvStatus', 'metricDocuments', 'metricExams', 'metricThpt']) {
   expect(content.includes(fragment), `Content studio is missing ${fragment}`);
 }
 expect(!content.includes('viet-blog?new=1') && !content.includes('Blog nháp & đã đăng') && !content.includes('Kho bài giảng theo lớp'), 'Blog and lesson repositories must stay in their existing dedicated areas');
-expect(content.includes('quan-tri-de?tab=compose&template=thpt-standard') && content.includes('quan-tri-de?tab=compose&template=thpt-practice'), 'Both THPTQG templates need direct content-studio shortcuts');
-expect(content.includes("params.get('hub') !== '1'") && content.includes("location.replace('quan-tri-de?tab=compose&template=thpt-standard')"), 'The legacy content hub must redirect to the central editor unless explicitly requested');
+expect(content.includes('quan-tri-de?tab=compose&template=worksheet-mixed') && content.includes('quan-tri-de?tab=compose&template=thpt-standard') && content.includes('quan-tri-de?tab=compose&template=mc-quiz'), 'The content hub must expose distinct general-purpose authoring templates');
+expect(!content.includes('thpt-practice'), 'The duplicate THPTQG practice shortcut must be removed');
+expect(content.includes("params.get('hub') !== '1'") && content.includes("location.replace('quan-tri-de?tab=compose&template=worksheet-mixed')"), 'The legacy content hub must redirect to the general authoring workspace unless explicitly requested');
 for (const setting of ['latex_preamble_default', 'latex_engine_default', 'latex_raw_mode_default']) expect(content.includes(setting), `System authoring setting is missing: ${setting}`);
 expect(content.includes("sb.from('app_settings').upsert(rows") && content.includes("contentProfile.role !== 'admin'"), 'Only admin may save system-wide authoring settings through RLS-backed app_settings');
 expect(examAdmin.includes("var queryParams=new URLSearchParams(location.search)") && examAdmin.includes('applyTemplate(requestedTemplate)') && examAdmin.includes("switchTab(requestedTab)"), 'Exam editor must honor direct template and library links');
