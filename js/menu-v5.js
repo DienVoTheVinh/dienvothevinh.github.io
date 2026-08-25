@@ -27,7 +27,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp học' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
-      { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=thpt-standard', label: 'Soạn đề' },
       { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri', label: 'Quản trị' }
     ];
@@ -36,7 +36,7 @@ function apDungMenu(role, portalContext) {
       { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
       { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi' },
       { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-      { type: 'link', path: 'quan-tri-tai-lieu', label: 'Nội dung' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=thpt-standard', label: 'Soạn đề' },
       { type: 'link', path: 'vmtool', label: 'VMTool' },
       { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
       { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
@@ -84,7 +84,7 @@ function apDungMenu(role, portalContext) {
         activeClass = ' class="active"';
       } else if (m.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
         activeClass = ' class="active"';
-      } else if (m.path === 'quan-tri-tai-lieu' && trang === 'tai-lieu') {
+      } else if (menuPage === 'quan-tri-de' && trang === 'quan-tri-tai-lieu') {
         activeClass = ' class="active"';
       }
       return '<a href="' + m.path + '"' + activeClass + '>' + m.label + '</a>';
