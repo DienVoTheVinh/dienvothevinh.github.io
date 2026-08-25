@@ -13,11 +13,14 @@ const { chromium } = require('playwright');
   const practiceCss = [...practiceSource.matchAll(/<style>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n');
   const browser = await chromium.launch({ executablePath: chrome, headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 1680, height: 1050 } });
+    const page = await browser.newPage({ viewport: { width: 1680, height: 800 } });
     await page.setContent(`<!doctype html><html><head><style>${tokens}\n${shared}\n${examCss}</style></head><body>${body}</body></html>`);
+    await page.addScriptTag({ path: 'js/exam-admin.js' });
+    await page.evaluate(() => window.VMExamAdmin._syncAuthoringRail());
     const desktop = await page.evaluate(() => {
       const workflow = document.querySelector('.exam-workflow').getBoundingClientRect();
-      const stack = document.querySelector('.exam-stack').getBoundingClientRect();
+      const stackEl = document.querySelector('.exam-stack');
+      const stack = stackEl.getBoundingClientRect();
       const editor = document.querySelector('.exam-editor-card').getBoundingClientRect();
       return {
         columns: getComputedStyle(document.querySelector('.exam-workflow')).gridTemplateColumns.split(' ').length,
@@ -26,17 +29,30 @@ const { chromium } = require('playwright');
         toolboxInsideRail: !!document.querySelector('.exam-stack .exam-toolbox-card'),
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
         workflowWidth: workflow.width,
+        railBottom: stack.bottom,
+        viewportHeight: innerHeight,
+        railScrollable: stackEl.scrollHeight > stackEl.clientHeight + 1,
+        railTabIndex: stackEl.tabIndex,
       };
     });
-    if (desktop.columns !== 2 || desktop.stackWidth > 360 || desktop.editorWidth < 1000 || !desktop.toolboxInsideRail || desktop.overflow || desktop.workflowWidth < 1500) {
+    await page.locator('.exam-stack').hover({ position: { x: 120, y: 320 } });
+    await page.mouse.wheel(0, 520);
+    await page.waitForTimeout(80);
+    const railScrollTop = await page.locator('.exam-stack').evaluate((node) => node.scrollTop);
+    if (desktop.columns !== 2 || desktop.stackWidth > 360 || desktop.editorWidth < 1000 || !desktop.toolboxInsideRail || desktop.overflow || desktop.workflowWidth < 1500 || desktop.railBottom > desktop.viewportHeight - 8 || !desktop.railScrollable || desktop.railTabIndex !== 0 || railScrollTop < 100) {
       throw new Error(`Desktop exam authoring is not screen-efficient: ${JSON.stringify(desktop)}`);
     }
     await page.setViewportSize({ width: 390, height: 844 });
-    const mobile = await page.evaluate(() => ({
-      columns: getComputedStyle(document.querySelector('.exam-workflow')).gridTemplateColumns.split(' ').length,
-      overflow: document.documentElement.scrollWidth > innerWidth + 1,
-    }));
-    if (mobile.columns !== 1 || mobile.overflow) throw new Error(`Mobile exam authoring overflow: ${JSON.stringify(mobile)}`);
+    const mobile = await page.evaluate(() => {
+      window.VMExamAdmin._syncAuthoringRail();
+      const rail = document.querySelector('.exam-stack');
+      return {
+        columns: getComputedStyle(document.querySelector('.exam-workflow')).gridTemplateColumns.split(' ').length,
+        overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        railExpands: rail.clientHeight >= rail.scrollHeight - 1,
+      };
+    });
+    if (mobile.columns !== 1 || mobile.overflow || !mobile.railExpands) throw new Error(`Mobile exam authoring overflow: ${JSON.stringify(mobile)}`);
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.setContent(`<!doctype html><html><head><style>${tokens}\n${shared}\n${practiceCss}</style></head><body><div class="wrap"><div class="practice-shell"><aside class="practice-class-filter" style="display:none"></aside><main class="practice-content">Nội dung</main></div></div></body></html>`);

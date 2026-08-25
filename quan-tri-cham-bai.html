@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-<script src="js/latex-view.js?v=10.6"></script>
+<script src="js/latex-view.js?v=11.0"></script>
 <style>
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
@@ -1889,6 +1889,12 @@ function vmXoaFile(inputId, idx, listId) {
   vmRenderFileList(inputId, listId);
 }
 
+function vmReviewEscape(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+
 async function xemChiTietTest(attemptId, hsName, title) {
   $('mtTieuDe').textContent = 'Chi tiết bài trắc nghiệm — ' + hsName;
   $('mtThongTin').textContent = 'Nội dung: ' + title;
@@ -1896,10 +1902,8 @@ async function xemChiTietTest(attemptId, hsName, title) {
   $('modalTest').style.display = 'flex';
   
   try {
-    var r = await sb.from('attempts')
-      .select('id, score, correct_n, total_n, attempt_answers(chosen_key, is_correct, questions(content_latex, choices, solution_latex))')
-      .eq('id', attemptId)
-      .single();
+    var r = await sb.rpc('vm_exam_attempt_review', { p_attempt_id: attemptId });
+    if (r.error) throw r.error;
       
     var data = r.data;
     if (!data) {
@@ -1907,26 +1911,31 @@ async function xemChiTietTest(attemptId, hsName, title) {
       return;
     }
     
+    var protectedNotice = data.protected_bank && !data.answers_visible
+      ? '<div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;background:var(--surface-2);font-size:.82rem;color:var(--ink-2)">🔒 Nội dung và kết quả từng câu được hiển thị để chấm; khóa đáp án và lời giải ngân hàng vẫn được bảo vệ.</div>'
+      : '';
     var listHtml = (data.attempt_answers || []).map(function (ans, idx) {
       var q = ans.questions || {};
-      var correctAns = (q.choices || []).find(function (c) { return c.correct; }) || {};
+      var correctAns = data.answers_visible
+        ? ((q.choices || []).find(function (c) { return c.correct; }) || {})
+        : {};
       
       var resBadge = ans.is_correct 
         ? '<span style="color:var(--ok);font-weight:700">✓ Đúng</span>' 
         : '<span style="color:var(--err);font-weight:700">✗ Sai</span>';
         
       return '<div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;font-size:.88rem;background:var(--surface)">' +
-        '<div style="line-height:1.4"><b>Câu ' + (idx + 1) + ': </b>' + q.content_latex + '</div>' +
+        '<div style="line-height:1.4"><b>Câu ' + (idx + 1) + ': </b>' + vmReviewEscape(q.content_latex) + '</div>' +
         '<div style="margin-top:8px;display:flex;gap:12px;align-items:center;font-size:.85rem">' +
-          '<span>Đã chọn: <b style="color:' + (ans.is_correct ? 'var(--ok)' : 'var(--err)') + '">' + (ans.chosen_key || '—') + '</b></span>' +
-          '<span>Đáp án đúng: <b style="color:var(--ok)">' + (correctAns.key || '—') + '</b></span>' +
+          '<span>Đã chọn: <b style="color:' + (ans.is_correct ? 'var(--ok)' : 'var(--err)') + '">' + vmReviewEscape(ans.chosen_key || '—') + '</b></span>' +
+          (data.answers_visible ? '<span>Đáp án đúng: <b style="color:var(--ok)">' + vmReviewEscape(correctAns.key || '—') + '</b></span>' : '') +
           resBadge +
         '</div>' +
-        (q.solution_latex ? '<div style="margin-top:8px;color:var(--ink-3);padding-top:8px;border-top:1px dashed var(--line);font-size:.82rem;line-height:1.4"><b>Lời giải: </b>' + q.solution_latex + '</div>' : '') +
+        (q.solution_latex ? '<div style="margin-top:8px;color:var(--ink-3);padding-top:8px;border-top:1px dashed var(--line);font-size:.82rem;line-height:1.4"><b>Lời giải: </b>' + vmReviewEscape(q.solution_latex) + '</div>' : '') +
         '</div>';
     }).join('');
     
-    $('mtDanhSach').innerHTML = listHtml || '<p style="color:var(--ink-3)">Không tìm thấy câu trả lời nào.</p>';
+    $('mtDanhSach').innerHTML = protectedNotice + (listHtml || '<p style="color:var(--ink-3)">Không tìm thấy câu trả lời nào.</p>');
     if (window.renderMathInElement) {
       window.renderMathInElement($('mtDanhSach'), {
         delimiters: [

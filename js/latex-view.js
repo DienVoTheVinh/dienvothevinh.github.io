@@ -27,6 +27,14 @@ var vmLatexContentSeq = 0;
 var vmLatexContentRegistry = window.vmLatexContentRegistry || {};
 window.vmLatexContentRegistry = vmLatexContentRegistry;
 
+(function vmGanKieuTikzDungChung() {
+  if (document.getElementById('vmTikzSharedStyle')) return;
+  var style = document.createElement('style');
+  style.id = 'vmTikzSharedStyle';
+  style.textContent = '.vm-tex-tikz{width:100%;min-height:96px;margin:16px auto;display:grid;place-items:center;overflow:auto;border:1px dashed var(--line-2,var(--line,#d7dce2));border-radius:14px;background:color-mix(in srgb,var(--surface-2,transparent) 72%,transparent)}.vm-tex-tikz[data-vm-tikz-ready="done"]{min-height:0;border-color:transparent;background:transparent}.vm-tex-tikz-state{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 14px;color:var(--ink-3,#667085);font-size:.82rem;text-align:center}.vm-tex-tikz-spinner{width:20px;height:20px;flex:none;border:2px solid var(--line-2,#d7dce2);border-top-color:var(--accent,#d99000);border-radius:50%;animation:vmTikzSpin .8s linear infinite}.vm-tex-tikz canvas{display:block;width:auto;max-width:100%;height:auto;margin:auto;background:transparent!important}[data-theme="dark"] .vm-tex-tikz canvas{filter:invert(1) hue-rotate(180deg)}.vm-tex-tikz-error{color:var(--err,#b42318)}@keyframes vmTikzSpin{to{transform:rotate(360deg)}}';
+  (document.head || document.documentElement).appendChild(style);
+})();
+
 function vmEscapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -60,18 +68,45 @@ function vmKhoiTikzSangHtml(html) {
 
 var vmTikzPdfDangTai = window.vmTikzPdfDangTai || {};
 var vmTikzPdfBoNho = window.vmTikzPdfBoNho || {};
+var vmTikzPdfThuTu = window.vmTikzPdfThuTu || [];
 window.vmTikzPdfDangTai = vmTikzPdfDangTai;
 window.vmTikzPdfBoNho = vmTikzPdfBoNho;
+window.vmTikzPdfThuTu = vmTikzPdfThuTu;
 
-function vmTikzMaNoiDung(tex) {
-  var hash = 2166136261;
+function vmNhoTikzPdf(key, blob) {
+  var oldIndex = vmTikzPdfThuTu.indexOf(key);
+  if (oldIndex !== -1) vmTikzPdfThuTu.splice(oldIndex, 1);
+  vmTikzPdfThuTu.push(key);
+  vmTikzPdfBoNho[key] = blob;
+  // Kho Cache API van giu ban sao tren dia. Gioi han bo nho RAM de cac trang
+  // ngan hang/de dai khong giu hang nghin Blob PDF sau khi nguoi dung cuon qua.
+  while (vmTikzPdfThuTu.length > 72) {
+    var expired = vmTikzPdfThuTu.shift();
+    if (expired && expired !== key) delete vmTikzPdfBoNho[expired];
+  }
+}
+
+(function vmDonCacheTikzCu() {
+  if (!('caches' in window) || window.vmTikzCacheCleanupStarted) return;
+  window.vmTikzCacheCleanupStarted = true;
+  Promise.all(['vinhmath-tikz-v2', 'vinhmath-tikz-v3'].map(function (name) {
+    return caches.delete(name).catch(function () { return false; });
+  })).catch(function () {});
+})();
+
+async function vmTikzMaNoiDung(tex) {
   var text = String(tex || '');
+  if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+    var digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.prototype.map.call(new Uint8Array(digest), function (byte) { return byte.toString(16).padStart(2,'0'); }).join('');
+  }
+  var hash = 2166136261;
   for (var i = 0; i < text.length; i++) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 16777619); }
   return (hash >>> 0).toString(16) + '-' + text.length;
 }
 
-function vmTikzCacheRequestNhanh(tex) {
-  return new Request('/__vinhmath_tikz_cache__/v3/' + vmTikzMaNoiDung(tex) + '.pdf');
+function vmTikzCacheRequestNhanh(key) {
+  return new Request('/__vinhmath_tikz_cache__/v4/' + key + '.pdf');
 }
 
 function vmTikzDocLoi(data) {
@@ -84,31 +119,34 @@ function vmTikzDocLoi(data) {
 // Một tài liệu TikZ chỉ được gửi lên máy chủ đúng một lần trong cùng phiên.
 // Kết quả tiếp tục được lưu bằng Cache API để lần mở sau có thể dùng ngay.
 async function vmLayTikzPdfNhanh(tex) {
-  var key = vmTikzMaNoiDung(tex);
+  var key = await vmTikzMaNoiDung(tex);
   if (vmTikzPdfBoNho[key]) return vmTikzPdfBoNho[key];
   if (vmTikzPdfDangTai[key]) return vmTikzPdfDangTai[key];
   vmTikzPdfDangTai[key] = (async function () {
     var pdfBlob = null;
     if ('caches' in window) {
       try {
-        var hit = await (await caches.open('vinhmath-tikz-v3')).match(vmTikzCacheRequestNhanh(tex));
+        var hit = await (await caches.open('vinhmath-tikz-v4')).match(vmTikzCacheRequestNhanh(key));
         if (hit) pdfBlob = await hit.blob();
       } catch (e) {}
     }
     if (!pdfBlob) {
       if (typeof sb === 'undefined' || !sb.functions) throw new Error('Chưa kết nối được trạm kết xuất TikZ');
-      var result = await sb.functions.invoke('latex', { body: { tex: tex, engine: 'pdflatex' } });
+      var result = await sb.functions.invoke('latex', {
+        body: { tex: tex, engine: 'pdflatex', purpose: 'tikz', cache_version: 4 },
+        timeout: 50000
+      });
       if (result.error) throw new Error(result.error.message || 'Trạm kết xuất TikZ đang bận');
       pdfBlob = result.data;
       if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) return vmTikzDocLoi(pdfBlob);
       if ('caches' in window) {
         try {
-          await (await caches.open('vinhmath-tikz-v3')).put(vmTikzCacheRequestNhanh(tex), new Response(pdfBlob, { headers:{ 'Content-Type':'application/pdf' } }));
+          await (await caches.open('vinhmath-tikz-v4')).put(vmTikzCacheRequestNhanh(key), new Response(pdfBlob, { headers:{ 'Content-Type':'application/pdf' } }));
         } catch (e) {}
       }
     }
     if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) return vmTikzDocLoi(pdfBlob);
-    vmTikzPdfBoNho[key] = pdfBlob;
+    vmNhoTikzPdf(key, pdfBlob);
     return pdfBlob;
   })();
   try { return await vmTikzPdfDangTai[key]; }
@@ -181,7 +219,7 @@ function vmTikzCompatPreamble(source) {
 
 function vmTexTikzPreview(items, batch) {
   var list = Array.isArray(items) ? items : [items];
-  var preamble = String(list[0] && list[0].preamble || '');
+  var preamble = list.map(function (item) { return String(item && item.preamble || ''); }).filter(function (value,index,all) { return value && all.indexOf(value) === index; }).join('\n');
   var sources = list.map(function (item) { return vmChuanHoaTikzSource(item && item.source || ''); }).join('\n');
   var optional = '';
   if (/\\tkzTab/.test(sources)) optional += '\\usepackage{tkz-tab}\n';
@@ -215,22 +253,27 @@ function vmTaiPdfJsTikz() {
 async function vmVeTrangTikz(pdf, pageNumber, figure) {
   var page = await pdf.getPage(pageNumber);
   var scale = Math.min(2.25, Math.max(1.5, window.devicePixelRatio || 1));
-  var viewport = page.getViewport({ scale: scale });
+  var viewport = vmTikzViewportAnToan(page, scale);
   var canvas = document.createElement('canvas');
   canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
-  await page.render({ canvasContext: canvas.getContext('2d', { alpha:false }), viewport:viewport }).promise;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'Hình minh họa TikZ');
+  await page.render({ canvasContext: canvas.getContext('2d', { alpha:true }), viewport:viewport, background:'rgba(0,0,0,0)' }).promise;
   figure.innerHTML = ''; figure.appendChild(canvas);
   figure.setAttribute('data-vm-tikz-ready', 'done');
 }
 
-async function vmRenderTikzPreviewNhanh(root) {
-  if (!root || !window.vmLatexTikzRegistry) return;
-  var figures = Array.prototype.slice.call(root.querySelectorAll('.vm-tex-tikz:not([data-vm-tikz-ready="done"])'));
-  var entries = figures.map(function (figure) {
-    return { figure:figure, item:window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
-  }).filter(function (entry) { return !!entry.item; });
+function vmTikzViewportAnToan(page, preferredScale) {
+  var base = page.getViewport({ scale:1 });
+  var scale = Math.max(.1, Number(preferredScale) || 1);
+  var width = base.width * scale, height = base.height * scale;
+  var bySide = Math.min(1, 4096 / Math.max(width, height, 1));
+  var byArea = Math.min(1, Math.sqrt(12000000 / Math.max(width * height, 1)));
+  return page.getViewport({ scale:scale * Math.min(bySide, byArea) });
+}
+
+async function vmRenderTikzEntriesNhanh(entries) {
   if (!entries.length) return;
-  entries.forEach(function (entry) { entry.figure.setAttribute('data-vm-tikz-ready', 'queued'); });
   try {
     // standalone multi=tikzpicture tạo một trang cho mỗi hình: một lần gọi
     // máy chủ có thể dựng toàn bộ bảng hình thay vì N lần gọi liên tiếp.
@@ -255,9 +298,85 @@ async function vmRenderTikzPreviewNhanh(root) {
         }
       }
     }
-    await Promise.all([worker(), worker(), worker()]);
+    await Promise.all([worker(), worker()]);
   }
 }
+
+async function vmRenderTikzPreviewNhanh(root) {
+  if (!root || !window.vmLatexTikzRegistry) return;
+  var figures = Array.prototype.slice.call(root.querySelectorAll('.vm-tex-tikz')).filter(function (figure) {
+    var state = figure.getAttribute('data-vm-tikz-ready');
+    return state !== 'done' && state !== 'queued';
+  });
+  if (window.vmTikzAutoObserver) figures.forEach(function (figure) { try { window.vmTikzAutoObserver.unobserve(figure); } catch (e) {} });
+  var entries = figures.map(function (figure) {
+    return { figure:figure, item:window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
+  }).filter(function (entry) { return !!entry.item; });
+  if (!entries.length) return;
+  entries.forEach(function (entry) { entry.figure.setAttribute('data-vm-tikz-ready', 'queued'); });
+  await vmRenderTikzEntriesNhanh(entries);
+}
+
+// Tự quan sát mọi bộ đọc dùng latexRaHTML. Hình chỉ được dựng khi sắp đi vào
+// vùng nhìn; những hình gần nhau được gom thành một lần biên dịch.
+var vmTikzAutoQueue = [];
+var vmTikzAutoActive = false;
+var vmTikzAutoTimer = 0;
+
+function vmXepHangTikzTuDong(figure) {
+  if (!figure || figure.getAttribute('data-vm-tikz-ready') === 'done' || figure.getAttribute('data-vm-tikz-ready') === 'queued') return;
+  figure.setAttribute('data-vm-tikz-ready', 'queued');
+  if (vmTikzAutoQueue.indexOf(figure) === -1) vmTikzAutoQueue.push(figure);
+  clearTimeout(vmTikzAutoTimer);
+  vmTikzAutoTimer = setTimeout(vmChayHangTikzTuDong, 70);
+}
+
+async function vmChayHangTikzTuDong() {
+  if (vmTikzAutoActive || !vmTikzAutoQueue.length) return;
+  vmTikzAutoActive = true;
+  var figures = vmTikzAutoQueue.splice(0, 12);
+  var entries = figures.map(function (figure) {
+    return { figure:figure, item:window.vmLatexTikzRegistry && window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
+  }).filter(function (entry) { return !!entry.item; });
+  try { await vmRenderTikzEntriesNhanh(entries); }
+  finally {
+    vmTikzAutoActive = false;
+    if (vmTikzAutoQueue.length) vmTikzAutoTimer = setTimeout(vmChayHangTikzTuDong, 30);
+  }
+}
+
+function vmQuanSatTikzTuDong(root) {
+  if (!root || !root.querySelectorAll) return;
+  var figures = Array.prototype.slice.call(root.matches && root.matches('.vm-tex-tikz') ? [root] : root.querySelectorAll('.vm-tex-tikz'));
+  figures.forEach(function (figure) {
+    if (figure.hasAttribute('data-vm-tikz-ready')) return;
+    if (window.vmTikzAutoObserver) {
+      figure.setAttribute('data-vm-tikz-ready', 'observed');
+      window.vmTikzAutoObserver.observe(figure);
+    } else vmXepHangTikzTuDong(figure);
+  });
+}
+
+function vmBatDauTikzTuDong() {
+  if (!document.body || window.vmTikzAutoStarted || window.vmDisableGlobalTikzAuto) return;
+  window.vmTikzAutoStarted = true;
+  if ('IntersectionObserver' in window) {
+    window.vmTikzAutoObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        window.vmTikzAutoObserver.unobserve(entry.target);
+        vmXepHangTikzTuDong(entry.target);
+      });
+    }, { rootMargin:'700px 0px' });
+  }
+  vmQuanSatTikzTuDong(document.body);
+  new MutationObserver(function (records) {
+    records.forEach(function (record) { Array.prototype.forEach.call(record.addedNodes || [], vmQuanSatTikzTuDong); });
+  }).observe(document.body, { childList:true, subtree:true });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vmBatDauTikzTuDong);
+else setTimeout(vmBatDauTikzTuDong, 0);
 
 // LaTeX cho phep chen $...$ ben trong \text{...} cua align, nhung KaTeX
 // dang o math mode se coi dau $ do la loi. Tach phan toan ra khoi \text.

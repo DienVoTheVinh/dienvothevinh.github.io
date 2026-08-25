@@ -115,7 +115,7 @@ function between(source, from, to) {
       active: document.querySelector('[data-reader-key="reader-test"]').classList.contains('vm-tex-fullscreen-active'),
       locked: document.body.classList.contains('vm-reader-locked'),
       enterHidden: document.querySelector('[data-vm-fullscreen-btn="reader-test"]').offsetParent === null,
-      exitVisible: document.querySelector('[data-vm-fullscreen-exit="reader-test"]').offsetParent !== null,
+      exitVisible: (() => { const e=document.querySelector('[data-vm-fullscreen-exit="reader-test"]'),r=e.getBoundingClientRect(); return getComputedStyle(e).display !== 'none' && r.width > 0 && r.height > 0; })(),
       exitText: document.querySelector('[data-vm-fullscreen-exit="reader-test"]').textContent,
       exitOutsideTools: !document.querySelector('.vm-tex-actions').contains(document.querySelector('[data-vm-fullscreen-exit="reader-test"]')),
       exitPosition: (() => { const r = document.querySelector('[data-vm-fullscreen-exit="reader-test"]').getBoundingClientRect(); return { left: Math.round(r.left), top: Math.round(r.top) }; })(),
@@ -263,7 +263,7 @@ function between(source, from, to) {
         active: root.classList.contains('vm-tex-fullscreen-active'),
         locked: document.body.classList.contains('vm-reader-locked'),
         enterHidden: root.querySelector('[data-vm-fullscreen-btn="lesson-theory"]').offsetParent === null,
-        exitVisible: root.querySelector('[data-vm-fullscreen-exit="lesson-theory"]').offsetParent !== null,
+        exitVisible: (() => { const e=root.querySelector('[data-vm-fullscreen-exit="lesson-theory"]'),r=e.getBoundingClientRect(); return getComputedStyle(e).display !== 'none' && r.width > 0 && r.height > 0; })(),
         exitOutsideTools: !root.querySelector('.vm-tex-actions').contains(root.querySelector('[data-vm-fullscreen-exit="lesson-theory"]')),
         readingOverflow: getComputedStyle(reading).overflowY,
       };
