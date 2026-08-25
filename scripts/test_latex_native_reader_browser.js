@@ -158,7 +158,7 @@ Tính $1+2+3$.
     if (!lesson.includes('vmMauDuPhongTikz') || !lesson.includes('providecolor')) throw new Error('TikZ custom-color fallback is missing');
     if (!lesson.includes('vmTikzMaxConcurrent') || !lesson.includes('vmLayTikzPdfNhanh') || !reader.includes('vmTikzPdfDangTai')) throw new Error('Fast TikZ queue/cache deduplication is missing');
     if (!lessonAdmin.includes('vmRenderTikzPreviewNhanh(output)') || !classAdmin.includes('vmRenderTikzPreviewNhanh(output)')) throw new Error('Admin TikZ preview renderer is not wired');
-    if (![lesson, lessonAdmin, classAdmin].every((source) => source.includes('js/latex-view.js?v=10.6'))) throw new Error('LaTeX reader cache version was not bumped');
+    if (![lesson, lessonAdmin, classAdmin].every((source) => source.includes('js/latex-view.js?v=11.0'))) throw new Error('LaTeX reader cache version was not bumped');
     if (!/\.vm-tex-reader\s*\{[\s\S]*?flex:0 0 auto;[\s\S]*?overflow:visible;/.test(inlineCss)) throw new Error('Long reader content can still be clipped by flex sizing');
     if (lesson.includes('id="btnMaxContent"')) throw new Error('Legacy transparent content fullscreen button still exists');
     if (!lesson.includes('vmReaderLoadingHTML') || !lesson.includes('Đang dựng nội dung lý thuyết')) throw new Error('Visible reader build state is missing');

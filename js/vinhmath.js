@@ -1223,6 +1223,18 @@ function formatAuthorName(name) {
 
 async function dangXuat() {
   sessionStorage.removeItem('vm-guest-mode');
+  // PDF TikZ co the chua noi dung bai hoc. Xoa ban sao tren thiet bi dung
+  // chung khi doi tai khoan; raw TeX khong bao gio duoc luu trong cache nay.
+  try {
+    if ('caches' in window) {
+      var vmCacheNames = await caches.keys();
+      await Promise.all(vmCacheNames.filter(function (name) {
+        return /^vinhmath-tikz-v\d+$/.test(name);
+      }).map(function (name) { return caches.delete(name); }));
+    }
+    window.vmTikzPdfBoNho = {};
+    window.vmTikzPdfThuTu = [];
+  } catch (_cacheError) {}
   if (daKetNoi()) await sb.auth.signOut();
   window.location.href = 'dang-nhap';
 }
@@ -3627,7 +3639,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=47', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=49', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }

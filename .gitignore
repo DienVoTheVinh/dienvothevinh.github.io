@@ -25,3 +25,8 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env
 web/supabase/supabase/
+
+# Question-bank source archives and Codex attachments stay local. The bank is
+# imported through admin-only RPCs; raw TeX/answers must never ship with Pages.
+NganHang/
+.codex-remote-attachments/
