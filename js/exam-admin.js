@@ -23,12 +23,14 @@
       serverReady: null,
       statsLoaded: false,
       sourceItems: [],
+      searchItems: [],
       selectedSourceId: null,
       selectedSourceMode: 'assign',
       taxonomyCatalog: [],
       taxonomyCatalogLoaded: false,
       blueprintSeq: 1,
-      access: { canUse: false, canAdmin: false }
+      access: { canUse: false, canAdmin: false },
+      preview: { title: '', questions: [], showAnswers: false, showSolutions: false, editableSource: '', pdfUrl: '', mode: 'html', requestToken: 0 }
     }
   };
 
@@ -175,6 +177,10 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     ], throwOnError:false });
   }
   function kindOf(q) {
+    var explicit = q && (q.question_type || q.type);
+    if (explicit === 'true_false' || explicit === 'tf') return 'tf';
+    if (explicit === 'short_answer' || explicit === 'short') return 'short';
+    if (explicit === 'multiple_choice' || explicit === 'mc') return 'mc';
     var c = q && q.choices || [];
     if (c.length === 4 && c[0].key === 'a') return 'tf';
     if (c.length === 1 && c[0].key === 'short') return 'short';
@@ -276,18 +282,21 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return '<div class="exam-short-answer"><span>Phiếu trả lời:</span><span class="exam-short-cells">' + boxes + '</span></div>';
   }
 
-  function renderQuestion(q, number) {
+  function renderQuestion(q, number, options) {
+    options = options || {};
+    var showAnswers = options.showAnswers !== false;
+    var showSolutions = options.showSolutions !== false;
     var kind = kindOf(q);
     var choices = q.choices || [];
     var body = '<article class="exam-question" data-kind="' + kind + '"><div class="exam-question-title"><span class="exam-question-no">Câu ' + number + '.</span><div>' + latexRaHTML(q.content_latex || '') + '</div></div>';
     if (kind === 'mc') {
-      body += '<div class="exam-choice-grid">' + choices.map(function (c) { return '<div class="exam-choice' + (c.correct?' correct':'') + '"><b>' + esc(c.key) + '.</b> ' + latexRaHTML(c.latex || '') + '</div>'; }).join('') + '</div>';
+      body += '<div class="exam-choice-grid">' + choices.map(function (c) { return '<div class="exam-choice' + (showAnswers && c.correct?' correct':'') + '"><b>' + esc(c.key) + '.</b> ' + latexRaHTML(c.latex || '') + '</div>'; }).join('') + '</div>';
     } else if (kind === 'tf') {
-      body += '<div class="exam-tf-grid">' + choices.map(function (c) { return '<div class="exam-tf-row"><div><b>' + esc(String(c.key).toLowerCase()) + ')</b> ' + latexRaHTML(c.latex || '') + '</div><span class="exam-tf-answer">' + (c.correct?'ĐÚNG':'SAI') + '</span></div>'; }).join('') + '</div>';
+      body += '<div class="exam-tf-grid">' + choices.map(function (c) { return '<div class="exam-tf-row"><div><b>' + esc(String(c.key).toLowerCase()) + ')</b> ' + latexRaHTML(c.latex || '') + '</div>' + (showAnswers?'<span class="exam-tf-answer">' + (c.correct?'ĐÚNG':'SAI') + '</span>':'') + '</div>'; }).join('') + '</div>';
     } else {
-      body += shortAnswerSheet((choices[0] && choices[0].latex) || '');
+      body += shortAnswerSheet(showAnswers ? ((choices[0] && choices[0].latex) || '') : '');
     }
-    if (q.solution_latex) body += '<div class="exam-solution"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>';
+    if (showSolutions && q.solution_latex) body += '<div class="exam-solution"><b>Lời giải:</b> ' + latexRaHTML(q.solution_latex) + '</div>';
     return body + '</article>';
   }
 
@@ -349,13 +358,16 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     el('btnSave').disabled = !valid;
   }
 
-  function examSourceFromQuestions(questions) {
+  function examSourceFromQuestions(questions, options) {
+    options = options || {};
+    var showAnswers = options.showAnswers !== false;
+    var showSolutions = options.showSolutions !== false;
     return (questions || []).map(function (q) {
       var kind = kindOf(q), body = '\\begin{' + (kind === 'short' ? 'bt' : 'ex') + '}\n' + (q.content_latex || '');
-      if (kind === 'mc') body += '\n\\choice\n' + q.choices.map(function (c) { return '{' + (c.correct?'\\True ':'') + c.latex + '}'; }).join('\n');
-      if (kind === 'tf') body += '\n\\choiceTF\n' + q.choices.map(function (c) { return '{' + (c.correct?'\\True ':'') + c.latex + '}'; }).join('\n');
-      if (kind === 'short') body += '\n\\loigiai{\\textbf{Câu trả lời:} ' + ((q.choices[0] && q.choices[0].latex) || '') + '\n\n' + (q.solution_latex || '') + '}';
-      else if (q.solution_latex) body += '\n\\loigiai{' + q.solution_latex + '}';
+      if (kind === 'mc') body += '\n\\choice\n' + q.choices.map(function (c) { return '{' + (showAnswers && c.correct?'\\True ':'') + c.latex + '}'; }).join('\n');
+      if (kind === 'tf') body += '\n\\choiceTF\n' + q.choices.map(function (c) { return '{' + (showAnswers && c.correct?'\\True ':'') + c.latex + '}'; }).join('\n');
+      if (kind === 'short' && (showAnswers || (showSolutions && q.solution_latex))) body += '\n\\loigiai{\\textbf{Câu trả lời:} ' + (showAnswers ? ((q.choices[0] && q.choices[0].latex) || '') : '') + (showSolutions && q.solution_latex ? '\n\n' + q.solution_latex : '') + '}';
+      else if (kind !== 'short' && showSolutions && q.solution_latex) body += '\n\\loigiai{' + q.solution_latex + '}';
       return body + '\n\\end{' + (kind === 'short' ? 'bt' : 'ex') + '}';
     }).join('\n\n');
   }
@@ -498,12 +510,16 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var solutionLabel = x.allow_solution_pdf ? '🔓 HS được tải đáp án' : '🔒 Khóa PDF đáp án';
       var portalQuery = state.portal ? 'portal='+encodeURIComponent(state.portal.slug)+'&' : '';
       var analyticsAction = state.portal ? '' : '<button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button>';
-      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?'+portalQuery+'exam_id='+x.id+'" target="_blank">Xem kiểu HS</a>'+analyticsAction+'<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
+      var protectedExam = !!(x.bank_generated || x.source_bank_document_id);
+      var primaryAction = protectedExam
+        ? '<button class="btn btn-primary btn-sm" onclick="VMExamAdmin.bankOpenExamPreview(\''+x.id+'\')">Xem HTML / PDF</button>'
+        : '<button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa</button>';
+      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span>'+(protectedExam?'<span class="exam-badge">Ngân hàng đề</span>':'')+'<button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions">'+primaryAction+'<a class="btn btn-secondary btn-sm" href="luyen-de.html?'+portalQuery+'exam_id='+x.id+'" target="_blank">Xem kiểu HS</a>'+analyticsAction+'<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
     }).join('');
   }
 
   async function loadExams() {
-    var query = sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,allow_solution_pdf,class_id,de_type,template_key,portal_id,classes(name),exam_questions(count)');
+    var query = sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,allow_solution_pdf,class_id,de_type,template_key,portal_id,bank_generated,source_bank_document_id,classes(name),exam_questions(count)');
     query = state.portal ? query.eq('portal_id',state.portal.id) : query.is('portal_id',null);
     var result = await query.order('created_at',{ascending:false});
     if (result.error) throw result.error;
@@ -598,9 +614,12 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return text;
   }
 
-  async function buildPdfSource() {
-    var raw=el('exLatex').value.trim(), title=el('exTitle').value.trim()||'Tài liệu VinhMath';
-    if(el('exType').value==='essay') raw=el('exEssayPrompt').value.trim();
+  async function buildPdfSource(rawOverride, titleOverride, typeOverride) {
+    var hasOverride=arguments.length>0;
+    var raw=hasOverride?String(rawOverride||'').trim():el('exLatex').value.trim();
+    var title=hasOverride?(String(titleOverride||'').trim()||'Tài liệu VinhMath'):(el('exTitle').value.trim()||'Tài liệu VinhMath');
+    var type=hasOverride?(typeOverride||'thpt'):el('exType').value;
+    if(!hasOverride&&type==='essay') raw=el('exEssayPrompt').value.trim();
     if(!raw) throw new Error('Chưa có nội dung để biên dịch.');
     if(/\\documentclass(?:\[[^\]]*\])?\{/.test(raw)) return typeof vmChenPreambleMoiTruongTex==='function'?vmChenPreambleMoiTruongTex(raw):raw;
     // The bundled ex_test version has neither `bt` nor `choiceTF`. Keep the
@@ -647,6 +666,296 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
   function closePdf(){var d=el('pdfDialog');if(d.close)d.close();else d.removeAttribute('open');}
 
+  function bankPreviewSlug(value) {
+    return String(value || 'ngan-hang-de-vinhmath').toLowerCase().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'ngan-hang-de-vinhmath';
+  }
+
+  function bankNormalizePreviewQuestion(input, options) {
+    options = options || {};
+    var item = input && (input.questions || input.question) || input || {};
+    var type = item.question_type || item.type || '';
+    var kind = type === 'true_false' || type === 'tf' ? 'tf' : type === 'short_answer' || type === 'short' ? 'short' : 'mc';
+    var sourceChoices = Array.isArray(item.choices) ? item.choices : [];
+    var choices = sourceChoices.map(function (choice, index) {
+      var defaultKey = kind === 'tf' ? String.fromCharCode(97 + index) : String.fromCharCode(65 + index);
+      var normalizedChoice = {
+        key: String(choice && (choice.key || choice.label) || defaultKey),
+        latex: String(choice && (choice.latex != null ? choice.latex : choice.tex) || '')
+      };
+      if (options.showAnswers) normalizedChoice.correct = !!(choice && (choice.correct === true || choice.is_correct === true));
+      return normalizedChoice;
+    });
+    if (kind === 'short') {
+      var shortValue = options.showAnswers ? String(item.short_answer || (choices[0] && choices[0].latex) || '') : '';
+      choices = [{key:'short',latex:shortValue,correct:false}];
+    }
+    var normalizedQuestion = {
+      question_type: kind === 'tf' ? 'true_false' : kind === 'short' ? 'short_answer' : 'multiple_choice',
+      content_latex: String(item.content_latex != null ? item.content_latex : item.content_tex || ''),
+      choices: choices
+    };
+    if (options.showSolutions) normalizedQuestion.solution_latex = String(item.solution_latex != null ? item.solution_latex : item.solution_tex || '');
+    return normalizedQuestion;
+  }
+
+  function bankPreviewPaper(title, questions, options) {
+    options = options || {};
+    var sections = [
+      {kind:'mc',title:'Phần I. Trắc nghiệm khách quan 4 phương án'},
+      {kind:'tf',title:'Phần II. Trắc nghiệm Đúng/Sai — 4 ý'},
+      {kind:'short',title:'Phần III. Trắc nghiệm trả lời ngắn'}
+    ];
+    var paper = '<div class="exam-paper"><header class="exam-paper-title"><h2>'+esc(title || 'Nội dung ngân hàng đề')+'</h2></header>';
+    var number = 0;
+    sections.forEach(function (section) {
+      var rows = questions.filter(function (question) { return kindOf(question) === section.kind; });
+      if (!rows.length) return;
+      if (questions.length > 1) paper += '<div class="exam-section-heading">'+section.title+'</div>';
+      rows.forEach(function (question) {
+        number += 1;
+        paper += renderQuestion(question, number, {showAnswers:options.showAnswers,showSolutions:options.showSolutions});
+      });
+    });
+    return paper + '</div>';
+  }
+
+  function bankResetPreviewPdf() {
+    var preview = state.bank.preview;
+    if (preview.pdfUrl) URL.revokeObjectURL(preview.pdfUrl);
+    preview.pdfUrl = '';
+    var pane = el('bankPreviewPdf'), download = el('bankPreviewDownload'), button = el('bankPreviewCompileButton');
+    if (pane) pane.innerHTML = '<div class="bank-preview-empty"><span aria-hidden="true">📄</span><strong>PDF chưa được biên dịch</strong><small>Bấm “Biên dịch PDF” để kiểm tra bản in.</small></div>';
+    if (download) { download.hidden = true; download.removeAttribute('href'); }
+    if (button) { button.disabled = false; button.textContent = '▶ Biên dịch PDF'; }
+  }
+
+  function bankShowPreviewDialog() {
+    var dialog = el('bankPreviewDialog');
+    if (!dialog) return;
+    if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+    else dialog.setAttribute('open','');
+  }
+
+  function bankSwitchPreview(mode) {
+    mode = mode === 'pdf' ? 'pdf' : 'html';
+    state.bank.preview.mode = mode;
+    document.querySelectorAll('[data-bank-preview-tab]').forEach(function (button) {
+      var active = button.dataset.bankPreviewTab === mode;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-selected',active?'true':'false');
+    });
+    document.querySelectorAll('[data-bank-preview-pane]').forEach(function (pane) {
+      var active = pane.dataset.bankPreviewPane === mode;
+      pane.hidden = !active;
+      pane.classList.toggle('active',active);
+    });
+  }
+
+  function bankOpenPreview(title, rawQuestions, options) {
+    options = options || {};
+    var questions = (rawQuestions || []).map(function (question) {
+      return bankNormalizePreviewQuestion(question,options);
+    }).filter(function (question) { return !!question.content_latex.trim(); });
+    if (!questions.length) throw new Error('Nội dung này chưa có câu hợp lệ để xem trước.');
+    state.bank.preview.title = String(title || 'Nội dung ngân hàng đề');
+    state.bank.preview.questions = questions;
+    state.bank.preview.showAnswers = !!options.showAnswers;
+    state.bank.preview.showSolutions = !!options.showSolutions;
+    state.bank.preview.editableSource = String(options.editableSource || '');
+    state.bank.preview.requestToken += 1;
+    bankResetPreviewPdf();
+    el('bankPreviewTitle').textContent = state.bank.preview.title;
+    el('bankPreviewHtml').innerHTML = bankPreviewPaper(state.bank.preview.title,questions,options);
+    renderMath(el('bankPreviewHtml'));
+    el('bankPreviewStatus').textContent = 'HTML tức thời · '+questions.length+' câu';
+    if (el('bankPreviewToEditor')) el('bankPreviewToEditor').hidden = !state.bank.preview.editableSource;
+    bankSwitchPreview('html');
+    bankShowPreviewDialog();
+  }
+
+  function bankOpenPreviewLoading(title) {
+    state.bank.preview.requestToken += 1;
+    state.bank.preview.title = String(title || 'Đang tải nội dung');
+    state.bank.preview.questions = [];
+    state.bank.preview.showAnswers = false;
+    state.bank.preview.showSolutions = false;
+    state.bank.preview.editableSource = '';
+    bankResetPreviewPdf();
+    el('bankPreviewTitle').textContent = state.bank.preview.title;
+    el('bankPreviewHtml').innerHTML = '<div class="bank-preview-empty"><div class="exam-spinner"></div><strong>Đang tải bản xem trước an toàn…</strong></div>';
+    el('bankPreviewStatus').textContent = 'Đang tải nội dung…';
+    if (el('bankPreviewToEditor')) el('bankPreviewToEditor').hidden = true;
+    bankSwitchPreview('html');
+    bankShowPreviewDialog();
+    return state.bank.preview.requestToken;
+  }
+
+  function bankPreviewPayload(data) {
+    var payload = Array.isArray(data) ? (data[0] || {}) : (data || {});
+    var rows = Array.isArray(payload.questions) ? payload.questions.slice() : [];
+    rows.sort(function (a,b) { return Number(a && a.sort || 0)-Number(b && b.sort || 0); });
+    return {title:payload.title || payload.exam_title || (payload.exam && payload.exam.title) || '',questions:rows};
+  }
+
+  async function bankLoadRemotePreview(rpcName, args, fallbackTitle) {
+    if (!state.bank.access.canUse) return;
+    var requestToken = bankOpenPreviewLoading(fallbackTitle);
+    try {
+      var response = await sb.rpc(rpcName,args);
+      if (requestToken !== state.bank.preview.requestToken) return;
+      if (response.error) throw response.error;
+      var payload = bankPreviewPayload(response.data);
+      bankOpenPreview(payload.title || fallbackTitle,payload.questions,{showAnswers:false,showSolutions:false});
+      bankSetServerState(true);
+    } catch (error) {
+      if (requestToken !== state.bank.preview.requestToken) return;
+      if (bankRpcMissing(error)) bankSetServerState(false,error);
+      el('bankPreviewHtml').innerHTML = '<div class="exam-empty" style="color:var(--err)"><div><strong>Chưa tải được bản xem trước</strong>'+esc(bankSafeError(error))+'</div></div>';
+      el('bankPreviewStatus').textContent = 'Không tải được nội dung';
+      toast('Chưa tải được bản xem trước.','err');
+    }
+  }
+
+  function bankOpenLocalPreview(index) {
+    if (!state.bank.access.canAdmin || !state.bank.items[index]) return;
+    var question = state.bank.items[index];
+    var source = state.bank.documents[question._bankDocumentIndex] || {};
+    try {
+      bankOpenPreview((source.fileName || source.path || 'Tệp TeX')+' · Câu '+(Number(question.source_index||index)+1),[question],{showAnswers:true,showSolutions:true,editableSource:question.canonical_tex||question.raw_tex||''});
+    } catch (error) { toast(error.message||String(error),'err'); }
+  }
+
+  function bankOpenSearchPreview(index) {
+    if (!state.bank.access.canUse || !state.bank.searchItems[index]) return;
+    try { bankOpenPreview('Câu tìm thấy trong ngân hàng',[state.bank.searchItems[index]],{showAnswers:false,showSolutions:false}); }
+    catch (error) { toast(error.message||String(error),'err'); }
+  }
+
+  function bankOpenSourcePreview(documentId) {
+    var item = state.bank.sourceItems.find(function (entry) { return String(entry.id) === String(documentId); });
+    return bankLoadRemotePreview('vm_bank_source_exam_preview',{p_document_id:documentId},item && item.title || 'Đề nguồn');
+  }
+
+  function bankOpenExamPreview(examId, title) {
+    if (!examId) return;
+    var exam = state.exams.find(function (entry) { return String(entry.id) === String(examId); });
+    return bankLoadRemotePreview('vm_bank_exam_preview',{p_exam_id:examId},title || (exam && exam.title) || 'Đề đã tạo');
+  }
+
+  async function bankCompilePreviewPdf() {
+    var preview = state.bank.preview;
+    if (!preview.questions.length) { toast('Chưa có nội dung để biên dịch.','err'); return; }
+    var requestToken = preview.requestToken;
+    var button = el('bankPreviewCompileButton'), pane = el('bankPreviewPdf');
+    button.disabled = true; button.textContent = '⏳ Đang biên dịch…';
+    pane.innerHTML = '<div class="bank-preview-empty"><div class="exam-spinner"></div><strong>Đang biên dịch PDF…</strong><small>Hình TikZ đã từng dùng sẽ lấy từ bộ nhớ đệm.</small></div>';
+    el('bankPreviewStatus').textContent = 'Đang biên dịch PDF…';
+    bankSwitchPreview('pdf');
+    try {
+      if (typeof vmTaiMoiTruongTex === 'function') await vmTaiMoiTruongTex();
+      var raw = examSourceFromQuestions(preview.questions,{showAnswers:preview.showAnswers,showSolutions:preview.showSolutions});
+      var tex = await buildPdfSource(raw,preview.title,'thpt');
+      var result = await sb.functions.invoke('latex',{body:{tex:tex,engine:state.pdfEngine||'pdflatex'}});
+      if (requestToken !== preview.requestToken) return;
+      if (result.error) throw new Error(result.error.message||'Edge Function lỗi');
+      if (!(result.data instanceof Blob) || result.data.type.indexOf('pdf') < 0) {
+        var log = typeof result.data === 'string' ? result.data : await result.data.text();
+        throw new Error(log.split('\n').filter(function (line) { return line.indexOf('!')===0 || /error/i.test(line); }).slice(0,6).join(' ') || 'Không nhận được PDF');
+      }
+      if (preview.pdfUrl) URL.revokeObjectURL(preview.pdfUrl);
+      preview.pdfUrl = URL.createObjectURL(result.data);
+      pane.innerHTML = '<iframe title="PDF ngân hàng đề" src="'+preview.pdfUrl+'#view=FitH"></iframe>';
+      var download = el('bankPreviewDownload');
+      download.href = preview.pdfUrl; download.download = bankPreviewSlug(preview.title)+'.pdf'; download.hidden = false;
+      button.textContent = '↻ Biên dịch lại PDF';
+      el('bankPreviewStatus').textContent = 'PDF đã biên dịch · sẵn sàng tải xuống';
+      toast('PDF ngân hàng đề đã sẵn sàng.','ok');
+    } catch (error) {
+      if (requestToken !== preview.requestToken) return;
+      pane.innerHTML = '<div class="exam-empty" style="color:var(--err)"><div><strong>Chưa tạo được PDF</strong>'+esc(error.message||error)+'</div></div>';
+      button.textContent = '↻ Thử biên dịch lại';
+      el('bankPreviewStatus').textContent = 'Biên dịch PDF chưa thành công';
+      toast('PDF chưa biên dịch được.','err');
+    } finally { if (requestToken === preview.requestToken) button.disabled = false; }
+  }
+
+  function bankClosePreview() {
+    state.bank.preview.requestToken += 1;
+    state.bank.preview.editableSource = '';
+    if (el('bankPreviewToEditor')) el('bankPreviewToEditor').hidden = true;
+    var dialog = el('bankPreviewDialog');
+    if (dialog) { if (dialog.close) dialog.close(); else dialog.removeAttribute('open'); }
+    bankResetPreviewPdf();
+  }
+
+  function bankSetupPreviewDialog() {
+    var dialog = el('bankPreviewDialog');
+    if (!dialog || dialog._bankBound) return;
+    dialog._bankBound = true;
+    dialog.addEventListener('click',function (event) { if (event.target === dialog) bankClosePreview(); });
+    dialog.addEventListener('cancel',function (event) { event.preventDefault(); bankClosePreview(); });
+  }
+
+  function openBankFromEditor() {
+    if (!state.bank.access.canUse) { toast('Tài khoản này không có quyền dùng ngân hàng đề.','err'); return; }
+    var area = el('exLatex');
+    var selected = area && area.selectionStart !== area.selectionEnd ? area.value.slice(area.selectionStart,area.selectionEnd) : '';
+    var query = stripLatex(selected).replace(/\s+/g,' ').trim().slice(0,120);
+    if (query && el('bankSearchQuery')) el('bankSearchQuery').value = query;
+    switchTab('bank');
+    var target = el('bankSearchCard');
+    if (target) target.scrollIntoView({behavior:'smooth',block:'start'});
+    if (query) toast('Đã chuyển phần đang chọn sang ô tìm ngân hàng.','ok');
+  }
+
+  function bankImportEditorSource() {
+    if (!state.bank.access.canAdmin) { toast('Chỉ admin được đưa TeX trực tiếp vào kho riêng.','err'); return; }
+    var parser = window.VinhMathQuestionBank;
+    var raw = el('exType').value === 'essay' ? el('exEssayPrompt').value.trim() : el('exLatex').value.trim();
+    if (!raw) { toast('Bản soạn chưa có nội dung để phân loại.','err'); return; }
+    if (!parser) { toast('Chưa tải được bộ đọc ngân hàng TeX.','err'); return; }
+    if (state.bank.items.length && !confirm('Thay danh sách tệp đang chờ nhập bằng nội dung trong trình soạn?')) return;
+    var title = el('exTitle').value.trim() || 'Nội dung từ trình soạn';
+    var fileName = bankPreviewSlug(title)+'.tex';
+    var parsed = parser.parseDocument(raw,{sourcePath:fileName});
+    if (!parsed.questions || !parsed.questions.length) { toast('Chưa nhận diện được môi trường câu hỏi trong bản soạn.','err'); return; }
+    state.bank.documents = [{file:null,fileName:fileName,path:fileName,text:raw,contentHash:parser.hashText(raw),parsed:parsed}];
+    state.bank.items = [];
+    state.bank.parseErrors = (parsed.errors || []).map(function (error) { return {path:fileName,error:error}; });
+    state.bank.visibleLimit = 120;
+    parsed.questions.forEach(function (question,index) {
+      question._bankDocumentIndex = 0;
+      question._bankIndex = index;
+      question._bankSelected = false;
+      bankRefreshQuestion(question);
+      state.bank.items.push(question);
+    });
+    if (el('bankImportTitle')) el('bankImportTitle').value = title;
+    bankRenderLocal();
+    switchTab('bank');
+    var workbench = el('bankAdminWorkbench');
+    if (workbench) workbench.scrollIntoView({behavior:'smooth',block:'start'});
+    toast('Đã chuyển '+state.bank.items.length+' câu sang bước phân loại và nhập kho.','ok');
+  }
+
+  function bankSendPreviewToEditor() {
+    var source = state.bank.preview.editableSource;
+    if (!state.bank.access.canAdmin || !source) return;
+    var area = el('exLatex');
+    if (area.value.trim() && !confirm('Nối câu đang xem vào cuối bản soạn hiện tại?')) return;
+    area.value = area.value.trim() ? area.value.trim()+'\n\n'+source.trim() : source.trim();
+    if (!el('exTitle').value.trim()) el('exTitle').value = state.bank.preview.title || 'Nội dung từ ngân hàng';
+    if (el('exType').value === 'essay') { el('exType').value = 'combo'; updateExamType(); }
+    state.templateKey = 'custom';
+    bankClosePreview();
+    switchTab('compose');
+    renderPreview(true);
+    area.focus();
+    area.scrollIntoView({behavior:'smooth',block:'center'});
+    toast('Đã đưa câu vào bản soạn.','ok');
+  }
+
   function bankTypeLabel(type) {
     return {multiple_choice:'Trắc nghiệm',true_false:'Đúng/Sai',short_answer:'Trả lời ngắn',essay:'Tự luận'}[type] || 'Không xác định';
   }
@@ -665,8 +974,10 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
 
   function bankConfigureAccess(profile) {
     state.bank.access = bankAccessFor(profile);
+    bankSetupPreviewDialog();
     var tab = el('bankTab');
     if (tab) tab.hidden = !state.bank.access.canUse;
+    if (el('editorToBankButton')) el('editorToBankButton').hidden = !state.bank.access.canAdmin;
     if (el('bankAdminWorkbench')) el('bankAdminWorkbench').hidden = !state.bank.access.canAdmin;
     if (!state.bank.access.canUse) {
       document.body.classList.remove('bank-teacher-mode');
@@ -1191,7 +1502,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var globalIndex = q._bankIndex;
       var source = state.bank.documents[q._bankDocumentIndex] || {};
       return '<article class="bank-question-item '+(q._bankStatus==='quarantined'?'quarantined ':'')+(q._bankSelected?'selected':'')+'" data-bank-question-index="'+globalIndex+'">'+
-        '<div class="bank-question-select"><label><input type="checkbox" '+(q._bankSelected?'checked':'')+' onchange="VMExamAdmin.bankToggleQuestionSelection('+globalIndex+',this.checked)" aria-label="Chọn câu '+(globalIndex+1)+'"><span class="bank-question-index">#'+(globalIndex+1)+'</span></label></div><div class="bank-question-main"><div class="bank-question-top"><span class="bank-chip">'+esc(bankTypeLabel(q.type))+'</span><span class="bank-chip">'+esc(q.grade||'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(q.difficulty||'Chưa rõ mức')+'</span><span class="bank-chip '+(q._bankStatus==='active'?'ok':'warn')+'">'+(q._bankStatus==='active'?'Hợp lệ':'Cách ly')+'</span>'+(q.has_assets?'<span class="bank-chip">Có hình</span>':'')+'</div><p>'+esc(stripLatex(q.content_tex).slice(0,230)||'Câu hỏi chưa có nội dung hiển thị')+'</p><span class="bank-question-source">'+esc(source.path||q.source_path||'Tệp TeX')+' · vị trí '+(Number(q.source_index||0)+1)+'</span><span class="bank-answer-summary">Đáp án nội bộ: '+esc(bankAnswerSummary(q))+'</span></div>'+
+        '<div class="bank-question-select"><label><input type="checkbox" '+(q._bankSelected?'checked':'')+' onchange="VMExamAdmin.bankToggleQuestionSelection('+globalIndex+',this.checked)" aria-label="Chọn câu '+(globalIndex+1)+'"><span class="bank-question-index">#'+(globalIndex+1)+'</span></label></div><div class="bank-question-main"><div class="bank-question-top"><span class="bank-chip">'+esc(bankTypeLabel(q.type))+'</span><span class="bank-chip">'+esc(q.grade||'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(q.difficulty||'Chưa rõ mức')+'</span><span class="bank-chip '+(q._bankStatus==='active'?'ok':'warn')+'">'+(q._bankStatus==='active'?'Hợp lệ':'Cách ly')+'</span>'+(q.has_assets?'<span class="bank-chip">Có hình</span>':'')+'</div><p>'+esc(stripLatex(q.content_tex).slice(0,230)||'Câu hỏi chưa có nội dung hiển thị')+'</p><span class="bank-question-source">'+esc(source.path||q.source_path||'Tệp TeX')+' · vị trí '+(Number(q.source_index||0)+1)+'</span><span class="bank-answer-summary">Đáp án nội bộ: '+esc(bankAnswerSummary(q))+'</span><button class="btn btn-secondary btn-sm bank-preview-open" type="button" onclick="VMExamAdmin.bankOpenLocalPreview('+globalIndex+')">🌐 Xem HTML / PDF</button></div>'+
         '<div class="bank-question-id"><label for="bankItemId'+globalIndex+'">Mã phân loại</label><input class="input" id="bankItemId'+globalIndex+'" value="'+esc(q.question_id||'')+'" placeholder="Ví dụ: 2D1H3-HAM-SO" onchange="VMExamAdmin.bankUpdateId('+globalIndex+',this.value)"><small>UID/hash được tạo tự động, không đổi khi sửa mã này.</small>'+(q._bankReason?'<span class="bank-question-reason">'+esc(q._bankReason)+'</span>':'')+'</div></article>';
     }).join('');
     var more = el('bankLoadMore');
@@ -1363,14 +1674,16 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var response = await sb.rpc('vm_bank_search',{p_filters:bankSearchFilters(),p_limit:50,p_offset:0});
       if (response.error) throw response.error;
       var data = response.data || {}, items = Array.isArray(data) ? data : data.items || [];
+      state.bank.searchItems = items;
       var total = Number(data.total==null?items.length:data.total);
       el('bankSearchTotal').textContent = total.toLocaleString('vi-VN')+' câu';
       if (!items.length) results.innerHTML = '<div class="exam-empty" style="min-height:150px"><div><strong>Không có câu phù hợp</strong>Thử nới bộ lọc chuyên đề hoặc mức độ.</div></div>';
       else results.innerHTML = items.map(function (item,itemIndex) {
         var choices = Array.isArray(item.choices) ? item.choices : [];
         var identityLabel = state.bank.access.canAdmin ? (item.stable_id||item.legacy_code||('Câu hỏi '+(itemIndex+1))) : ('Câu hỏi '+(itemIndex+1));
-        return '<article class="bank-result-item"><div class="bank-result-top"><span class="bank-chip">'+esc(identityLabel)+'</span><span class="bank-chip">'+esc(bankTypeLabel(item.question_type))+'</span><span class="bank-chip">Khối '+esc(item.grade||'—')+'</span><span class="bank-chip">'+esc(item.difficulty||'—')+'</span></div><p>'+latexRaHTML(item.content_latex||'')+'</p>'+(choices.length?'<div class="bank-result-meta">'+choices.map(function(choice,choiceIndex){return '<span><b>'+esc(choice.key||choice.label||String.fromCharCode(65+choiceIndex))+'.</b> '+latexRaHTML(choice.latex||choice.tex||'')+'</span>';}).join(' · ')+'</div>':'')+'<div class="bank-result-meta">'+esc(item.source_label||'Nguồn đã ẩn')+'</div></article>';
+        return '<article class="bank-result-item"><div class="bank-result-top"><span class="bank-chip">'+esc(identityLabel)+'</span><span class="bank-chip">'+esc(bankTypeLabel(item.question_type))+'</span><span class="bank-chip">Khối '+esc(item.grade||'—')+'</span><span class="bank-chip">'+esc(item.difficulty||'—')+'</span></div><p>'+latexRaHTML(item.content_latex||'')+'</p>'+(choices.length?'<div class="bank-result-meta">'+choices.map(function(choice,choiceIndex){return '<span><b>'+esc(choice.key||choice.label||String.fromCharCode(65+choiceIndex))+'.</b> '+latexRaHTML(choice.latex||choice.tex||'')+'</span>';}).join(' · ')+'</div>':'')+'<div class="bank-result-meta">'+esc(item.source_label||'Nguồn đã ẩn')+'</div><button class="btn btn-secondary btn-sm bank-preview-open" type="button" data-bank-search-preview="'+itemIndex+'">🌐 Xem HTML / PDF</button></article>';
       }).join('');
+      results.querySelectorAll('[data-bank-search-preview]').forEach(function (button) { button.addEventListener('click',function () { bankOpenSearchPreview(Number(button.dataset.bankSearchPreview)); }); });
       renderMath(results); bankSetServerState(true);
     } catch (error) {
       if (bankRpcMissing(error)) bankSetServerState(false,error);
@@ -1393,7 +1706,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var response=await sb.rpc('vm_bank_generate_exam',{p_spec:spec});
       if(response.error)throw response.error;if(response.data&&response.data.error)throw new Error(response.data.error);
       var data=response.data||{},query=state.portal?'portal='+encodeURIComponent(state.portal.slug)+'&':'';
-      box.innerHTML='<b>✓ Đã tạo “'+esc(data.title||title)+'”</b><br>'+Number(data.question_count||0)+' câu · mã trộn '+esc(data.seed||spec.seed)+(data.warnings&&data.warnings.length?'<br><span>'+esc(data.warnings.join(' · '))+'</span>':'')+(data.exam_id?'<br><a class="btn btn-secondary btn-sm" style="margin-top:10px" href="luyen-de?'+query+'exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">Xem đề đã tạo ↗</a>':'');
+      box.innerHTML='<b>✓ Đã tạo “'+esc(data.title||title)+'”</b><br>'+Number(data.question_count||0)+' câu · mã trộn '+esc(data.seed||spec.seed)+(data.warnings&&data.warnings.length?'<br><span>'+esc(data.warnings.join(' · '))+'</span>':'')+(data.exam_id?'<div class="bank-preview-result-actions"><button class="btn btn-primary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">🌐 Xem HTML / PDF</button><a class="btn btn-secondary btn-sm" href="luyen-de?'+query+'exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">Mở trang làm đề ↗</a></div>':'');
+      var generatedPreview=box.querySelector('[data-bank-preview-exam]');if(generatedPreview)generatedPreview.addEventListener('click',function(){bankOpenExamPreview(generatedPreview.dataset.bankPreviewExam,data.title||title);});
       box.hidden=false;status.textContent='Hoàn tất';bankSetServerState(true);bankNewSeed();
       if(state.bank.access.canAdmin)await loadExams();
     }catch(error){if(bankRpcMissing(error))bankSetServerState(false,error);status.textContent='Chưa tạo được đề';toast('Không tạo được đề: '+bankSafeError(error),'err');}
@@ -1412,7 +1726,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       if(response.error)throw response.error;var data=response.data||{},items=Array.isArray(data)?data:data.items||[];state.bank.sourceItems=items;
       if(!items.length)box.innerHTML='<div class="exam-empty" style="min-height:150px"><div><strong>Chưa có đề gốc phù hợp</strong>Admin có thể nhập tệp TeX kèm metadata ở phía dưới.</div></div>';
       else {
-        box.innerHTML=items.map(function(item){return '<article class="bank-source-item"><div class="bank-result-top"><span class="bank-chip">'+esc(item.exam_year||'Chưa rõ năm')+'</span><span class="bank-chip">'+esc(item.exam_kind||'Đề nguồn')+'</span><span class="bank-chip">'+Number(item.question_count||0)+' câu</span></div><h3>'+esc(item.title||'Đề chưa đặt tên')+'</h3><p>'+esc(item.province||'Chưa ghi tỉnh / đơn vị')+'</p><div class="bank-source-actions"><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="assign">Giao nguyên đề</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="clone">Tạo đề cùng cấu trúc</button></div></article>';}).join('');
+        box.innerHTML=items.map(function(item){return '<article class="bank-source-item"><div class="bank-result-top"><span class="bank-chip">'+esc(item.exam_year||'Chưa rõ năm')+'</span><span class="bank-chip">'+esc(item.exam_kind||'Đề nguồn')+'</span><span class="bank-chip">'+Number(item.question_count||0)+' câu</span></div><h3>'+esc(item.title||'Đề chưa đặt tên')+'</h3><p>'+esc(item.province||'Chưa ghi tỉnh / đơn vị')+'</p><div class="bank-source-actions"><button class="btn btn-primary bank-source-preview" type="button" data-source-preview-id="'+esc(item.id)+'">🌐 Xem HTML / PDF</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="assign">Giao nguyên đề</button><button class="btn btn-secondary" type="button" data-source-exam-id="'+esc(item.id)+'" data-source-mode="clone">Tạo đề cùng cấu trúc</button></div></article>';}).join('');
+        box.querySelectorAll('[data-source-preview-id]').forEach(function(button){button.addEventListener('click',function(){bankOpenSourcePreview(button.dataset.sourcePreviewId);});});
         box.querySelectorAll('[data-source-exam-id]').forEach(function(button){button.addEventListener('click',function(){bankChooseSourceExam(button.dataset.sourceExamId,button.dataset.sourceMode);});});
       }
       bankSetServerState(true);
@@ -1444,7 +1759,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         ?await sb.rpc('vm_bank_clone_source_structure',{p_document_id:state.bank.selectedSourceId,p_spec:spec})
         :await sb.rpc('vm_bank_assign_source_exam',{p_document_id:state.bank.selectedSourceId,p_spec:spec});
       if(response.error)throw response.error;if(response.data&&response.data.error)throw new Error(response.data.error);var data=response.data||{},warnings=Array.isArray(data.warnings)?data.warnings.length:0;
-      status.innerHTML='✓ '+(mode==='clone'?'Đã tạo đề mới ':'Đã giao ')+Number(data.question_count||0)+' câu'+(data.skipped?' · bỏ qua '+Number(data.skipped)+' câu chưa hợp lệ':'')+(warnings?' · '+warnings+' vị trí chưa có câu tương đương':'')+(data.exam_id?' · <a href="luyen-de?exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">xem đề ↗</a>':'');bankSetServerState(true);if(state.bank.access.canAdmin)await loadExams();
+      status.innerHTML='✓ '+(mode==='clone'?'Đã tạo đề mới ':'Đã giao ')+Number(data.question_count||0)+' câu'+(data.skipped?' · bỏ qua '+Number(data.skipped)+' câu chưa hợp lệ':'')+(warnings?' · '+warnings+' vị trí chưa có câu tương đương':'')+(data.exam_id?' · <button class="btn btn-secondary btn-sm" type="button" data-bank-preview-exam="'+esc(data.exam_id)+'">Xem HTML / PDF</button> · <a href="luyen-de?exam_id='+encodeURIComponent(data.exam_id)+'" target="_blank" rel="noopener">mở trang làm đề ↗</a>':'');var assignedPreview=status.querySelector('[data-bank-preview-exam]');if(assignedPreview)assignedPreview.addEventListener('click',function(){bankOpenExamPreview(assignedPreview.dataset.bankPreviewExam,title);});bankSetServerState(true);if(state.bank.access.canAdmin)await loadExams();
     }catch(error){if(bankRpcMissing(error))bankSetServerState(false,error);status.textContent='Chưa giao được đề: '+bankSafeError(error);}
     finally{button.disabled=false;}
   }
@@ -1500,7 +1815,6 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       el('kpiExams').textContent='—';el('kpiQuestions').textContent='—';el('kpiAttempts').textContent='—';
       return;
     }
-
     var engineSetting=await sb.from('app_settings').select('value').eq('key','latex_engine_default').maybeSingle();
     if(!engineSetting.error&&engineSetting.data&&['pdflatex','xelatex','lualatex'].indexOf(engineSetting.data.value)>=0)state.pdfEngine=engineSetting.data.value;
     if(typeof vmTaiMoiTruongTex==='function')vmTaiMoiTruongTex();
@@ -1521,7 +1835,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankChooseSourceExam:bankChooseSourceExam,bankAssignSourceExam:bankAssignSourceExam,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankState:state.bank};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankChooseSourceExam:bankChooseSourceExam,bankAssignSourceExam:bankAssignSourceExam,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankState:state.bank};
   window.addEventListener('resize',scheduleAuthoringRailSync,{passive:true});
   window.addEventListener('scroll',scheduleAuthoringRailSync,{passive:true});
   document.addEventListener('DOMContentLoaded',function(){syncAuthoringRail();init().catch(function(error){toast('Không khởi tạo được trình soạn thảo: '+error.message,'err');});});

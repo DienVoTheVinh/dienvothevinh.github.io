@@ -8,7 +8,7 @@ const js = fs.readFileSync('js/exam-admin.js', 'utf8');
 const css = fs.readFileSync('css/exam-admin.css', 'utf8');
 
 assert.ok(html.includes('id="bankTab"') && html.includes('id="panel-bank"'));
-assert.ok(html.indexOf('js/question-bank.js?v=1.1') < html.indexOf('js/exam-admin.js?v=2.5'));
+assert.ok(html.indexOf('js/question-bank.js?v=1.1') < html.indexOf('js/exam-admin.js?v=2.6'));
 assert.ok(html.includes('id="bankAdminWorkbench" hidden'));
 assert.ok(html.includes('id="bankTexFiles"') && html.includes('multiple'));
 assert.ok(html.includes('id="bankPackageFile"') && html.includes('id="bankPackageButton"'));

@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=2.5">
+  <link rel="stylesheet" href="css/exam-admin.css?v=2.6">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -98,6 +98,8 @@
               <div class="exam-toolbox-divider"></div>
               <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.formatSource()">⌁ Dàn mã dễ đọc</button>
               <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.renderPreview(true)">↻ Phân tích lại</button>
+              <button class="btn btn-ghost" type="button" onclick="VMExamAdmin.openBankFromEditor()">🧠 Tra ngân hàng đề</button>
+              <button class="btn btn-ghost" id="editorToBankButton" type="button" onclick="VMExamAdmin.bankImportEditorSource()" hidden>⇢ Phân loại &amp; nhập nội dung này</button>
               <a class="btn btn-ghost exam-hub-link" href="quan-tri-tai-lieu?hub=1">📚 Kho nội dung & LaTeX</a>
             </div>
           </article>
@@ -289,6 +291,43 @@
     </section>
   </main>
 
+  <dialog class="bank-preview-dialog" id="bankPreviewDialog" aria-labelledby="bankPreviewTitle" data-vm-popup-position="native">
+    <div class="bank-preview-shell">
+      <header class="bank-preview-head">
+        <div class="bank-preview-heading">
+          <span class="bank-preview-heading-icon" aria-hidden="true">▣</span>
+          <div>
+            <span>Xem trước ngân hàng đề</span>
+            <h2 id="bankPreviewTitle">Nội dung câu hỏi</h2>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="bankPreviewToEditor" type="button" onclick="VMExamAdmin.bankSendPreviewToEditor()" hidden>⇢ Đưa vào bản soạn</button>
+        <a class="btn btn-secondary btn-sm bank-preview-download" id="bankPreviewDownload" aria-label="Tải bản PDF xem trước" download="vinhmath-ngan-hang-de.pdf" hidden><span aria-hidden="true">⇩</span><span>Tải PDF</span></a>
+        <button class="btn btn-ghost btn-sm bank-preview-close" type="button" aria-label="Đóng cửa sổ xem trước ngân hàng đề" onclick="VMExamAdmin.bankClosePreview()"><span aria-hidden="true">✕</span><span>Đóng</span></button>
+      </header>
+
+      <div class="bank-preview-toolbar">
+        <div class="bank-preview-tabs" role="tablist" aria-label="Chế độ xem trước ngân hàng đề">
+          <button class="bank-preview-tab active" id="bankPreviewHtmlTab" type="button" role="tab" tabindex="0" aria-selected="true" aria-controls="bankPreviewHtml" data-bank-preview-tab="html" onclick="VMExamAdmin.bankSwitchPreview('html')">🌐 HTML tức thời</button>
+          <button class="bank-preview-tab" id="bankPreviewPdfTab" type="button" role="tab" tabindex="-1" aria-selected="false" aria-controls="bankPreviewPdf" data-bank-preview-tab="pdf" onclick="VMExamAdmin.bankSwitchPreview('pdf')">📄 PDF đã biên dịch</button>
+        </div>
+        <div class="bank-preview-tools">
+          <span class="bank-preview-status" id="bankPreviewStatus" role="status" aria-live="polite" aria-atomic="true">Sẵn sàng xem HTML tức thời.</span>
+          <button class="btn btn-primary btn-sm" id="bankPreviewCompileButton" type="button" onclick="VMExamAdmin.bankCompilePreviewPdf()">▶ Biên dịch PDF</button>
+        </div>
+      </div>
+
+      <div class="bank-preview-body">
+        <section class="bank-preview-pane active" id="bankPreviewHtml" role="tabpanel" aria-labelledby="bankPreviewHtmlTab" data-bank-preview-pane="html">
+          <div class="bank-preview-empty"><span aria-hidden="true">🌐</span><strong>HTML sẽ hiện ngay tại đây</strong><small>Chọn một câu hoặc một đề trong ngân hàng để xem trước.</small></div>
+        </section>
+        <section class="bank-preview-pane bank-preview-pdf" id="bankPreviewPdf" role="tabpanel" aria-labelledby="bankPreviewPdfTab" data-bank-preview-pane="pdf" hidden>
+          <div class="bank-preview-empty"><span aria-hidden="true">📄</span><strong>PDF chưa được biên dịch</strong><small>Bấm “Biên dịch PDF” để kiểm tra bản in.</small></div>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="exam-pdf-dialog" id="pdfDialog" data-vm-popup-position="native">
     <div class="exam-dialog-shell">
       <div class="exam-dialog-head"><span style="font-size:1.3rem">📄</span><h3>Bản PDF</h3><a class="btn btn-secondary btn-sm" id="pdfDownload" download="vinhmath.pdf">Tải xuống</a><button class="btn btn-ghost btn-sm" onclick="VMExamAdmin.closePdf()">✕ Đóng</button></div>
@@ -307,6 +346,6 @@
   <script src="js/menu-v5.js?v=9.7"></script>
   <script src="js/analytics.js"></script>
   <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=2.5"></script>
+  <script src="js/exam-admin.js?v=2.6"></script>
 </body>
 </html>
