@@ -8,13 +8,19 @@ const js = fs.readFileSync('js/exam-admin.js', 'utf8');
 const css = fs.readFileSync('css/exam-admin.css', 'utf8');
 
 assert.ok(html.includes('id="bankTab"') && html.includes('id="panel-bank"'));
-assert.ok(html.indexOf('js/question-bank.js?v=1.1') < html.indexOf('js/exam-admin.js?v=2.6'));
+assert.ok(html.includes('<details class="bank-usage-guide" id="bankUsageGuide">'), 'bank usage guide should stay compact by default');
+assert.ok(html.includes('Tạo một đề mới') && html.includes('Dùng một đề cũ'), 'guide must explain both teacher workflows');
+assert.ok(html.includes('Giáo viên</b> dùng kho') && html.includes('Admin</b> có thêm quyền'), 'guide must distinguish teacher and admin access');
+assert.ok(html.includes('Nạp đề TeX và gắn ID') && html.includes('Xem HTML/PDF'), 'guide must cover TeX classification and preview');
+assert.ok(html.includes('Liên kết với Soạn thảo') && html.includes('Tra ngân hàng đề'), 'guide must explain the two-way authoring link');
+assert.ok(html.indexOf('js/question-bank.js?v=1.1') < html.indexOf('js/exam-admin.js?v=2.7'));
 assert.ok(html.includes('id="bankAdminWorkbench" hidden'));
 assert.ok(html.includes('id="bankTexFiles"') && html.includes('multiple'));
 assert.ok(html.includes('id="bankPackageFile"') && html.includes('id="bankPackageButton"'));
 assert.ok(html.includes('id="bankImportSourceKind"') && html.includes('value="mock_exam" selected'));
 assert.ok(html.includes('id="bankImportUnit"') && html.includes('id="bankImportYear"') && html.includes('id="bankImportExamType"'));
 assert.ok(html.includes('id="bankSourceCatalogCard"') && html.includes('id="bankSourceAssign"'));
+assert.ok(html.includes('id="bankImportCard"') && html.includes('Đang tải danh mục đề hoàn chỉnh'));
 assert.ok(html.includes('id="bankTaxonomyCatalogSelect"') && html.includes('id="bankTaxonomyPreview"'));
 assert.ok(html.includes('id="bankTaxGrade"') && html.includes('id="bankTaxArea"') && html.includes('id="bankTaxChapter"'));
 assert.ok(html.includes('id="bankTaxDifficulty"') && html.includes('id="bankTaxSkill"') && html.includes('id="bankTaxVariant"'));
@@ -38,6 +44,9 @@ assert.ok(js.includes("if(!bankAccess.canAdmin){"), 'teacher path must return be
 assert.ok(js.includes('data-source-exam-id'), 'source catalog should bind sanitized data instead of interpolating inline JavaScript');
 assert.ok(js.includes('data-source-mode="clone"') && js.includes('Tạo đề cùng cấu trúc'), 'source catalog must offer a fresh exam with the same pedagogical structure');
 assert.ok(js.includes('function bankSafeError'), 'teacher-facing RPC errors must be sanitized');
+assert.ok(js.includes('function bankGenerationFailureHtml') && js.includes('Không đủ câu phù hợp để tạo đề'), 'empty or insufficient bank generation must explain the cause');
+assert.ok(js.includes('function bankSourceEmptyHtml') && js.includes('Chưa có đề hoàn chỉnh trong kho'), 'empty source catalog must distinguish whole exams from topic packs');
+assert.ok(js.includes('bankFocusImport:bankFocusImport'), 'admins need a direct recovery action from empty-bank messages');
 assert.ok(js.includes("if (document._serverId) return {id:document._serverId,raw_tex:''}"), 'later chunks must reuse the private source document without resending raw TeX');
 assert.ok(js.includes("record.schema_version!=='vinhmath.question-bank.admin-package.v1'"));
 assert.ok(js.includes("documentPayload={id:documentIds[key],raw_tex:''}"), 'large-package continuation chunks must reuse server document IDs');
@@ -64,5 +73,6 @@ assert.ok(css.includes('.bank-source-results'));
 assert.ok(css.includes('.bank-question-list'));
 assert.ok(css.includes('.bank-taxonomy-manual-grid'));
 assert.ok(css.includes('body.bank-teacher-mode .bank-admin-taxonomy-filter'));
+assert.ok(css.includes('.bank-usage-guide') && css.includes('.bank-usage-grid'));
 
 console.log('question-bank admin UI: static contract passed');

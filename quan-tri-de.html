@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=2.6">
+  <link rel="stylesheet" href="css/exam-admin.css?v=2.7">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -134,6 +134,39 @@
     </section>
 
     <section class="exam-panel" id="panel-bank">
+      <details class="bank-usage-guide" id="bankUsageGuide">
+        <summary>
+          <span class="bank-usage-icon" aria-hidden="true">?</span>
+          <span class="bank-usage-title"><strong>Cách dùng Ngân hàng đề</strong><small>GV tạo hoặc giao đề; admin nạp nguồn và quản lý mã câu.</small></span>
+          <span class="bank-usage-toggle"><span><span class="bank-usage-open-label">Mở hướng dẫn</span><span class="bank-usage-close-label">Thu gọn</span></span><i aria-hidden="true">⌄</i></span>
+        </summary>
+        <div class="bank-usage-body">
+          <div class="bank-usage-prerequisite" role="note"><b>Điều kiện để tạo đề:</b> kho phải có đủ câu đúng khối, dạng và mức độ đã chọn. Danh mục “đề cũ” chỉ hiện những tệp được admin nhập dưới dạng <b>đề hoàn chỉnh</b>.</div>
+          <div class="bank-usage-roles" aria-label="Phân quyền ngân hàng đề">
+            <span><b>Giáo viên</b> dùng kho, xem trước và giao đề; không thấy raw TeX, đáp án hay mã nội bộ.</span>
+            <span><b>Admin</b> có thêm quyền nhập TeX, gắn phân loại và quản trị nguồn.</span>
+          </div>
+          <div class="bank-usage-grid">
+            <section class="bank-usage-card">
+              <span class="bank-usage-step">Luồng 1 · GV</span>
+              <h3>Tạo một đề mới</h3>
+              <ol><li>Nhập tên đề, lớp và cấu trúc câu.</li><li>Chọn khối, dạng, mức độ và số câu.</li><li>Bấm <b>Tạo đề từ ngân hàng</b>, xem lại rồi xuất bản.</li></ol>
+            </section>
+            <section class="bank-usage-card">
+              <span class="bank-usage-step">Luồng 2 · GV</span>
+              <h3>Dùng một đề cũ</h3>
+              <ol><li>Tìm theo tỉnh, năm hoặc kỳ thi.</li><li>Xem trước ngay bằng HTML; biên dịch PDF khi cần.</li><li>Giao nguyên đề, hoặc tạo đề mới cùng cấu trúc.</li></ol>
+            </section>
+            <section class="bank-usage-card bank-usage-admin">
+              <span class="bank-usage-step">Chỉ admin</span>
+              <h3>Nạp đề TeX và gắn ID</h3>
+              <ol><li>Chọn <b>Đề hoàn chỉnh</b>, điền tỉnh, năm, loại kỳ thi rồi thả tệp <b>.tex</b>.</li><li>Kiểm tra từng câu; chọn câu thiếu mã và áp dụng đủ 6 tiêu chí phân loại. UID/hash được tạo tự động.</li><li>Xem HTML/PDF, sau đó bấm <b>Nhập các câu vào kho</b>.</li></ol>
+            </section>
+          </div>
+          <div class="bank-usage-link"><span aria-hidden="true">↔</span><p><b>Liên kết với Soạn thảo:</b> trong bản soạn, bấm “Tra ngân hàng đề”; admin còn có thể chuyển nội dung sang bước phân loại. Từ cửa sổ xem trước của kho, admin có thể đưa câu trở lại bản soạn.</p></div>
+        </div>
+      </details>
+
       <div class="bank-server-notice" id="bankServerNotice" hidden>
         <span>ℹ️</span><div><b>Ngân hàng đề đang được cập nhật</b><p>Bạn vẫn có thể kiểm tra tệp. Tìm kiếm, nhập kho và tạo đề sẽ hoạt động lại ngay khi máy chủ hoàn tất cập nhật.</p></div>
       </div>
@@ -171,7 +204,7 @@
             <div class="exam-field"><label for="bankSourceType">Loại kỳ thi</label><select class="input" id="bankSourceType"><option value="">Tất cả</option><option value="official">Đề chính thức</option><option value="mock">Thi thử</option><option value="semester">Học kỳ</option><option value="chapter">Ôn chương</option><option value="other">Khác</option></select></div>
             <button class="btn btn-secondary bank-search-button" id="bankSourceSearchButton" type="submit">🔎 Tìm đề gốc</button>
           </form>
-          <div class="bank-source-results" id="bankSourceResults"><div class="exam-empty" style="min-height:150px"><div><strong>Danh mục đề gốc</strong>Bấm tìm để tải danh sách đề đã nhập.</div></div></div>
+          <div class="bank-source-results" id="bankSourceResults"><div class="exam-empty" style="min-height:150px"><div><div class="exam-spinner"></div><strong>Đang tải danh mục đề hoàn chỉnh</strong></div></div></div>
           <form class="bank-source-assign" id="bankSourceAssign" onsubmit="VMExamAdmin.bankAssignSourceExam(event)" hidden>
             <div class="bank-source-selected"><span id="bankSourceSelectedMode">Đang chọn đề nguồn</span><b id="bankSourceSelectedTitle">—</b></div>
             <div class="exam-field"><label for="bankSourceAssignClass">Giao cho lớp *</label><select class="input" id="bankSourceAssignClass" required><option value="">Chọn lớp</option></select></div>
@@ -208,7 +241,7 @@
           <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankLoadStats(true)">↻ Cập nhật</button>
         </section>
 
-        <section class="exam-card bank-import-card">
+        <section class="exam-card bank-import-card" id="bankImportCard">
           <div class="exam-card-head"><div><h2>Nhập tệp TeX</h2><p>Chọn hoặc kéo nhiều tệp. Mỗi câu được chuẩn hóa về môi trường VinhMath trước khi gửi lên kho riêng.</p></div><span class="exam-badge draft">Chỉ admin</span></div>
           <div class="exam-card-body">
             <div class="bank-source-metadata">
@@ -346,6 +379,6 @@
   <script src="js/menu-v5.js?v=9.7"></script>
   <script src="js/analytics.js"></script>
   <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=2.6"></script>
+  <script src="js/exam-admin.js?v=2.7"></script>
 </body>
 </html>

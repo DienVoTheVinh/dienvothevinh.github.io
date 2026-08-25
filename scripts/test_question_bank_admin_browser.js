@@ -209,6 +209,53 @@ Tính $15+27$.
     }
     if (/(raw_tex|answer|solution|source_path|taxonomy)/i.test(JSON.stringify(cloned.call.args))) throw new Error('Clone-source flow leaked protected bank fields');
 
+    const teacherEmptyBank = await page.evaluate(async () => {
+      window.sb = { rpc: async (name) => {
+        if (name === 'vm_bank_generate_exam') return { data:null, error:{ code:'P0002', message:'bank_no_matching_questions' } };
+        if (name === 'vm_bank_source_exam_catalog') return { data:{ total:0, items:[] }, error:null };
+        return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
+      }};
+      document.getElementById('bankGenTitle').value = 'Đề khi kho trống';
+      await window.VMExamAdmin.bankGenerateExam({ preventDefault() {} });
+      await window.VMExamAdmin.bankLoadSourceCatalog({ preventDefault() {} });
+      return {
+        generation:document.getElementById('bankGenerateResult').textContent,
+        generationVisible:!document.getElementById('bankGenerateResult').hidden,
+        source:document.getElementById('bankSourceResults').textContent,
+        leakedTechnicalCode:document.getElementById('bankGenerateResult').textContent.includes('bank_no_matching_questions')
+      };
+    });
+    if (!teacherEmptyBank.generationVisible || !teacherEmptyBank.generation.includes('Không đủ câu phù hợp') || !teacherEmptyBank.generation.includes('quản trị viên') || !teacherEmptyBank.source.includes('Chưa có đề hoàn chỉnh trong kho') || teacherEmptyBank.leakedTechnicalCode) {
+      throw new Error(`Teacher empty-bank guidance failed: ${JSON.stringify(teacherEmptyBank)}`);
+    }
+
+    const adminEmptyBank = await page.evaluate(async () => {
+      window.__emptyBankCalls = [];
+      window.sb = { rpc: async (name) => {
+        window.__emptyBankCalls.push(name);
+        if (name === 'vm_bank_admin_stats') return { data:{ documents:0, items:0, active:0, quarantined:0 }, error:null };
+        if (name === 'vm_bank_admin_taxonomy_catalog') return { data:{ items:[] }, error:null };
+        if (name === 'vm_bank_source_exam_catalog') return { data:{ total:0, items:[] }, error:null };
+        if (name === 'vm_bank_generate_exam') return { data:{ exam_id:'SHOULD_NOT_RUN' }, error:null };
+        return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
+      }};
+      window.VMExamAdmin._bankState.statsLoaded = false;
+      window.VMExamAdmin._bankConfigureAccess({ role:'admin' });
+      document.getElementById('bankGenClass').innerHTML = '<option value="class-1">Toán 12A1</option>';
+      document.getElementById('bankGenTitle').value = 'Đề quản trị khi kho trống';
+      await window.VMExamAdmin.bankGenerateExam({ preventDefault() {} });
+      window.VMExamAdmin.bankFocusImport();
+      return {
+        generation:document.getElementById('bankGenerateResult').textContent,
+        importAction:!!document.querySelector('#bankGenerateResult button'),
+        activeElement:document.activeElement && document.activeElement.id,
+        generatorCalled:window.__emptyBankCalls.includes('vm_bank_generate_exam')
+      };
+    });
+    if (!adminEmptyBank.generation.includes('0 câu') || !adminEmptyBank.generation.includes('Nhập câu / đề TeX') || !adminEmptyBank.importAction || adminEmptyBank.activeElement !== 'bankImportSourceKind' || adminEmptyBank.generatorCalled) {
+      throw new Error(`Admin empty-bank recovery failed: ${JSON.stringify(adminEmptyBank)}`);
+    }
+
     await page.evaluate(() => window.VMExamAdmin._bankConfigureAccess({ role: 'assistant' }));
     const assistant = await page.evaluate(() => ({
       canUse: window.VMExamAdmin._bankState.access.canUse,
