@@ -18,6 +18,7 @@ function apDungMenu(role, portalContext) {
     ];
     if (portalContext.member_role === 'owner' || portalContext.member_role === 'manager') {
       muc.push({ type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#manage', label: 'Quản lý' });
+      muc.push({ type: 'link', path: 'quan-tri-de?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Soạn đề' });
     }
   } else if (role === 'admin') {
     // Admin dùng khu điều hành riêng; thanh đầu chỉ giữ các nhiệm vụ hằng ngày.
@@ -204,6 +205,7 @@ function apDungLogoBadge(role) {
       if (portalContext) {
         var currentPage = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
         var allowed = ['thi', 'luyen-de', 'dang-nhap'];
+        if (portalContext.member_role === 'owner' || portalContext.member_role === 'manager') allowed.push('quan-tri-de');
         if (allowed.indexOf(currentPage) === -1) {
           location.replace('thi?portal=' + encodeURIComponent(portalContext.portal.slug));
           return;

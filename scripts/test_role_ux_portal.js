@@ -13,7 +13,7 @@ const compileInline = (file) => {
   return html;
 };
 
-for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/exam-portal.js', 'js/portal-classroom.js', 'js/role-home.js', 'js/student-results.js']) compile(file);
+for (const file of ['js/menu-v5.js', 'js/vinhmath.js', 'js/exam-portal.js', 'js/portal-classroom.js', 'js/exam-admin.js', 'js/role-home.js', 'js/student-results.js']) compile(file);
 const login = compileInline('dang-nhap.html');
 const classAdmin = compileInline('quan-tri-lop.html');
 const exam = compileInline('luyen-de.html');
@@ -33,6 +33,7 @@ const accountFunction = read('supabase/functions/tao-tai-khoan/index.ts');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
 const roleHome = read('js/role-home.js');
+const examAdmin = read('js/exam-admin.js');
 
 expect(menu.includes("path: 'trang-chu', label: 'Hôm nay'") && menu.includes("path: 'quan-tri', label: 'Quản trị'"), 'Role navigation is not task-focused');
 expect(hub.includes('Trung tâm quản trị') && hub.includes('quan-tri-portal-thi'), 'Admin tools are not grouped in one hub');
@@ -43,7 +44,10 @@ expect(shared.includes('/@hs$/') && shared.includes('/@(hs|gv)[a-z0-9]{2,20}$/')
 expect(portal.includes('Không gian lớp học riêng') && portal.includes('Bài học') && portal.includes('Nội dung') && !portal.includes('js/menu-v5.js'), 'Portal must have a minimal independent classroom shell');
 expect(!/Góc học tập|Bảng vàng|Cá nhân/.test(portal), 'Partner portal must not inherit unnecessary VinhMath navigation');
 expect(portal.includes('js/portal-classroom.js') && portal.includes('portalPanelLearn'), 'Portal classroom workspace is not loaded');
-expect(exam.includes('vmPortalExamIds') && exam.includes("query.in('id', vmPortalExamIds)"), 'Exam engine is not constrained to portal assignments');
+expect(portal.includes('portalAuthorLink') && portal.includes('portalAuthorCta'), 'Portal managers need a visible dedicated exam-authoring entry point');
+expect(menu.includes("label: 'Soạn đề'") && menu.includes("allowed.push('quan-tri-de')"), 'Only portal managers should be routed into the dedicated exam workspace');
+for (const fragment of ["loadPortalManager(profile)", "eq('portal_id',state.portal.id)", "portal_id: state.portal ? state.portal.id : null", "sb.from('exam_portal_exams').upsert"]) expect(examAdmin.includes(fragment), `Portal exam authoring is missing ${fragment}`);
+expect(exam.includes('vmPortalExamIds') && exam.includes('vmPortalExamIds.indexOf(exam.id) !== -1'), 'Exam engine is not constrained to portal assignments');
 expect(portalAdmin.includes('portal_hs') && portalAdmin.includes('portal_gv') && portalAdmin.includes('exam_portal_exams') && portalAdmin.includes('Xem portal'), 'Portal account, exam and admin preview workflow is incomplete');
 expect(portalAdmin.includes('portal_only:false') && !portalAdmin.includes("portal_only:role==='student'"), 'Existing VinhMath accounts must not become portal-only through manual membership');
 expect(accountFunction.includes('prof.role !== "admin"') && accountFunction.includes('portal_only: true') && accountFunction.includes('isManager ? "manager" : "student"'), 'Portal account creation must be admin-only and portal-only');
@@ -68,6 +72,6 @@ expect(classroom.includes('assignment.class_id is null') && classroom.includes('
 for (const table of ['classes', 'lessons', 'exams', 'questions', 'exam_questions']) expect(classroomHardening.includes(`on public.${table} as restrictive for all`), `Portal-only write isolation is missing for ${table}`);
 expect(classroomHardening.includes('not (select private.is_portal_only_user())'), 'Normal VinhMath and portal-only authoring scopes must stay separate');
 expect(classroomReturningFix.includes('private.can_manage_exam_portal(portal_id)') && classroomReturningFix.includes('private.portal_exam_payload_valid(portal_id, class_id)'), 'Hardened INSERT RETURNING path must authorize the portal row directly');
-expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test([menu, shared, portal, portalAdmin, exam, migration, hardening, loginSuffix, teacherSuffix, toanThayTruong, classroom, classroomHardening, classroomReturningFix].join('\n')), 'Privileged credentials must not appear in browser or migration files');
+expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test([menu, shared, portal, portalAdmin, exam, examAdmin, migration, hardening, loginSuffix, teacherSuffix, toanThayTruong, classroom, classroomHardening, classroomReturningFix].join('\n')), 'Privileged credentials must not appear in browser or migration files');
 
 console.log('PASS role UX + partner exam portal: navigation, routing, allow-list, account workflow and RLS');

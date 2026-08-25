@@ -16,6 +16,8 @@ expect(/value="tf">Chỉ Đúng\/Sai/, page, 'The dedicated true/false exam type
 expect(/value="thpt">Chuẩn THPTQG/, page, 'The THPTQG three-part exam type is missing.');
 expect(/HTML trực tiếp[\s\S]*PDF/, page, 'HTML and PDF preview modes must both be visible.');
 expect(/thpt-standard[\s\S]*thpt-practice/, page, 'Both THPTQG templates must be available.');
+expect(/exam-toolbox-card[\s\S]*Trắc nghiệm 4 phương án[\s\S]*Đúng\/Sai 4 ý[\s\S]*Trả lời ngắn/, page, 'Question tools must live in the left authoring rail.');
+expect(/width:min\(1880px,100%\)/, css, 'The authoring workspace must use large PC screens.');
 expect(/\\choiceTF/, js, 'The true/false template must use ex_test choiceTF syntax.');
 expect(/providecommand\{\\\\choiceTF\}/, js, 'PDF export must define a choiceTF fallback for the bundled ex_test version.');
 expect(/\\\\vmTFItem\{a\}\{#2\}[\s\S]*\\\\vmTFItem\{d\}\{#5\}/, js, 'True/false PDF choices must use a)-d) labels.');
@@ -30,6 +32,9 @@ expect(/statement_stats/, js, 'Per-statement true/false analytics are not render
 expect(/async function toggleSolutionPdf\(/, js, 'Each exam needs a quick answer-PDF permission toggle.');
 expect(/update\(\{ allow_solution_pdf: next \}\)[\s\S]*select\('id,allow_solution_pdf'\)[\s\S]*single\(\)/, js, 'The quick answer-PDF toggle must verify the saved row.');
 expect(/exam-solution-toggle/, css, 'The quick answer-PDF toggle is not styled.');
+expect(/async function loadPortalManager\(/, js, 'The @gvtt portal manager authorization path is missing.');
+expect(/exam_portal_exams'\)\.upsert/, js, 'Portal-authored exams must be assigned inside the same isolated portal.');
+expect(/function resetForm\(\)[\s\S]*switchPreview\('html'\)[\s\S]*renderPreview\(false\)/, js, 'Cancel editing must restore the editor and preview layout.');
 expect(/@media\(max-width:760px\)/, css, 'Mobile authoring layout is missing.');
 expect(/security definer[\s\S]*set search_path = ''/i, sql, 'Analytics RPC must pin the search path.');
 expect(/v_role not in \('admin', 'teacher'\)/, sql, 'Analytics RPC must reject non-teacher roles.');

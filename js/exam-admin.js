@@ -12,7 +12,9 @@
     pdfEngine: 'pdflatex',
     previewTimer: 0,
     pdfUrl: '',
-    analytics: null
+    analytics: null,
+    portal: null,
+    portalMembership: null
   };
 
   var TYPES = {
@@ -172,6 +174,25 @@ Thể tích bằng $3^3=27$.}
     if (!value) return '';
     var d = new Date(value);
     return new Date(d.getTime() + 7*3600000).toISOString().slice(0,16);
+  }
+
+  function portalSlug() {
+    return (new URLSearchParams(location.search).get('portal') || '').trim().toLowerCase();
+  }
+
+  async function loadPortalManager(profile) {
+    var slug = portalSlug();
+    if (!slug) return null;
+    var membership = await sb.from('exam_portal_members')
+      .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active)')
+      .eq('user_id', profile.id).eq('portal.slug', slug).maybeSingle();
+    var data = membership.data;
+    if ((!data || !data.portal) && profile.role === 'admin') {
+      var portal = await sb.from('exam_portals').select('id,slug,name,short_name,is_active').eq('slug', slug).maybeSingle();
+      if (portal.data) data = {member_role:'owner',portal_only:false,portal:portal.data};
+    }
+    if (!data || !data.portal || !data.portal.is_active || ['owner','manager'].indexOf(data.member_role) < 0) return null;
+    return data;
   }
 
   function switchTab(name) {
@@ -334,7 +355,8 @@ Thể tích bằng $3^3=27$.}
       shuffle: el('exShuffle').checked, published: el('exPublished').checked,
       allow_solution_pdf: !!el('exAllowSolutionPdf').checked,
       de_type: type, essay_prompt: el('exEssayPrompt').value.trim() || null,
-      latex_source: el('exLatex').value.trim() || null, template_key: state.templateKey || 'custom'
+      latex_source: el('exLatex').value.trim() || null, template_key: state.templateKey || 'custom',
+      portal_id: state.portal ? state.portal.id : null
     };
     try {
       var examId = state.editingId, result;
@@ -352,11 +374,20 @@ Thể tích bằng $3^3=27$.}
         var q = state.parsed[i];
         var rq = await sb.from('questions').insert({
           source_id:'EX-'+Date.now().toString(36).toUpperCase()+'-'+i,
-          content_latex:q.content_latex, choices:q.choices, solution_latex:q.solution_latex||null, difficulty:'TH'
+          content_latex:q.content_latex, choices:q.choices, solution_latex:q.solution_latex||null, difficulty:'TH',
+          portal_id: state.portal ? state.portal.id : null
         }).select('id').single();
         if (rq.error) throw rq.error;
         var link = await sb.from('exam_questions').insert({exam_id:examId,question_id:rq.data.id,sort:i});
         if (link.error) throw link.error;
+      }
+      if (state.portal) {
+        var assignment = await sb.from('exam_portal_exams').upsert({
+          portal_id:state.portal.id, exam_id:examId, class_id:payload.class_id,
+          published:payload.published, show_result:true,
+          available_from:payload.opens_at, available_until:payload.closes_at
+        }, {onConflict:'portal_id,exam_id'});
+        if (assignment.error) throw assignment.error;
       }
       toast((state.editingId?'Đã cập nhật':'Đã tạo')+' đề thi thành công.', 'ok');
       await loadExams();
@@ -402,7 +433,9 @@ Thể tích bằng $3^3=27$.}
     el('exType').value = 'mc'; el('exLatex').value = ''; el('exEssayPrompt').value = '';
     el('formTitle').textContent = '1. Thiết lập đề thi'; el('editBadge').textContent = 'Đề mới';
     el('btnCancelEdit').hidden = true; el('btnSave').textContent = '💾 Lưu đề thi'; el('saveStatus').textContent = 'Đề chưa lưu.';
-    updateExamType();
+    updateExamType(); switchPreview('html'); renderPreview(false);
+    document.documentElement.style.removeProperty('overflow'); document.body.style.removeProperty('overflow');
+    window.scrollTo({top:document.getElementById('panel-compose').offsetTop || 0,behavior:'smooth'});
   }
 
   async function deleteExam(id) {
@@ -444,12 +477,16 @@ Thể tích bằng $3^3=27$.}
       var count = x.exam_questions && x.exam_questions[0] ? x.exam_questions[0].count : 0;
       var className = x.classes && x.classes.name ? x.classes.name : 'Mọi lớp';
       var solutionLabel = x.allow_solution_pdf ? '🔓 HS được tải đáp án' : '🔒 Khóa PDF đáp án';
-      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?exam_id='+x.id+'" target="_blank">Xem kiểu HS</a><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button><button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
+      var portalQuery = state.portal ? 'portal='+encodeURIComponent(state.portal.slug)+'&' : '';
+      var analyticsAction = state.portal ? '' : '<button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.openAnalytics(\''+(x.class_id||'')+'\',\''+x.id+'\')">Thống kê</button>';
+      return '<article class="exam-list-card"><div class="exam-list-top"><span class="exam-list-icon">'+(x.de_type==='thpt'?'🎓':x.de_type==='tf'?'✓':'📝')+'</span><div class="exam-list-main"><div class="exam-list-badges"><span class="exam-badge '+(x.published?'live':'draft')+'">'+(x.published?'Đang mở':'Bản nháp')+'</span><span class="exam-badge">'+esc(typeLabel(x.de_type))+'</span><button type="button" class="exam-solution-toggle '+(x.allow_solution_pdf?'on':'off')+'" data-solution-toggle="'+x.id+'" aria-pressed="'+(x.allow_solution_pdf?'true':'false')+'" title="Bật hoặc khóa quyền tải bản có đáp án" onclick="VMExamAdmin.toggleSolutionPdf(\''+x.id+'\')">'+solutionLabel+'</button></div><div class="exam-list-title">'+esc(x.title)+'</div><div class="exam-list-meta"><span>🏫 '+esc(className)+'</span><span>⏱ '+x.duration_minutes+' phút</span><span>📋 '+count+' câu</span></div></div></div><div class="exam-list-actions"><button class="btn btn-secondary btn-sm" onclick="VMExamAdmin.editExam(\''+x.id+'\')">Sửa đề</button><a class="btn btn-secondary btn-sm" href="luyen-de.html?'+portalQuery+'exam_id='+x.id+'" target="_blank">Xem kiểu HS</a>'+analyticsAction+'<button class="btn btn-ghost btn-sm" style="color:var(--err)" onclick="VMExamAdmin.deleteExam(\''+x.id+'\')">Xóa</button></div></article>';
     }).join('');
   }
 
   async function loadExams() {
-    var result = await sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,allow_solution_pdf,class_id,de_type,template_key,classes(name),exam_questions(count)').order('created_at',{ascending:false});
+    var query = sb.from('exams').select('id,title,duration_minutes,opens_at,closes_at,published,allow_solution_pdf,class_id,de_type,template_key,portal_id,classes(name),exam_questions(count)');
+    query = state.portal ? query.eq('portal_id',state.portal.id) : query.is('portal_id',null);
+    var result = await query.order('created_at',{ascending:false});
     if (result.error) throw result.error;
     state.exams = result.data || [];
     if (state.profile.role !== 'admin') state.exams = state.exams.filter(function (x) { return x.class_id===null || state.classes.some(function (c) { return c.id===x.class_id; }); });
@@ -589,19 +626,33 @@ Thể tích bằng $3^3=27$.}
   async function init() {
     if(!window.sb||!daKetNoi())return;
     var profile=await yeuCauDangNhap();if(!profile)return;
-    if(['admin','teacher','assistant'].indexOf(profile.role)<0){location.href='luyen-de';return;}
     state.profile=profile;
+    state.portalMembership=await loadPortalManager(profile);
+    state.portal=state.portalMembership&&state.portalMembership.portal||null;
+    if(['admin','teacher','assistant'].indexOf(profile.role)<0&&!state.portal){location.href='luyen-de';return;}
+    if(portalSlug()&&!state.portal){location.href='thi?portal='+encodeURIComponent(portalSlug());return;}
+    if(state.portal){
+      document.body.classList.add('portal-authoring');
+      el('examWorkspaceLabel').textContent='Xưởng đề thi riêng · '+(state.portal.short_name||state.portal.name);
+      el('examWorkspaceTitle').innerHTML='Soạn đề cho học sinh<br>trong không gian Thầy Trường.';
+      el('examWorkspaceDescription').textContent='Dữ liệu đề, câu hỏi và lớp học được tách riêng khỏi tài khoản học sinh và khu VinhMath chính.';
+      el('examPortalBack').hidden=false;el('examPortalBack').href='thi?portal='+encodeURIComponent(state.portal.slug)+'#manage';
+      document.title='Xưởng soạn đề · '+(state.portal.short_name||state.portal.name);
+      var analyticsTab=document.querySelector('[data-tab="analytics"]');if(analyticsTab)analyticsTab.hidden=true;
+    }
     var engineSetting=await sb.from('app_settings').select('value').eq('key','latex_engine_default').maybeSingle();
     if(!engineSetting.error&&engineSetting.data&&['pdflatex','xelatex','lualatex'].indexOf(engineSetting.data.value)>=0)state.pdfEngine=engineSetting.data.value;
-    if(profile.role==='assistant'){
+    if(profile.role==='assistant'||state.portal){
       var analyticsTab=document.querySelector('[data-tab="analytics"]');
       if(analyticsTab)analyticsTab.hidden=true;
     }
     if(typeof vmTaiMoiTruongTex==='function')vmTaiMoiTruongTex();
-    var classes=await sb.from('classes').select('id,name,is_specialized,teacher_id,co_teacher_id').order('grade').order('name');
+    var classQuery=sb.from('classes').select('id,name,is_specialized,teacher_id,co_teacher_id,portal_id');
+    classQuery=state.portal?classQuery.eq('portal_id',state.portal.id):classQuery.is('portal_id',null);
+    var classes=await classQuery.order('grade').order('name');
     if(classes.error)throw classes.error;
     state.classes=classes.data||[];
-    if(profile.role!=='admin'){
+    if(profile.role!=='admin'&&!state.portal){
       var assistants=await sb.from('class_assistants').select('class_id').eq('assistant_id',profile.id);
       var ids=(assistants.data||[]).map(function(x){return x.class_id;});
       state.classes=state.classes.filter(function(c){return c.teacher_id===profile.id||c.co_teacher_id===profile.id||ids.indexOf(c.id)>=0;});
@@ -609,8 +660,7 @@ Thể tích bằng $3^3=27$.}
     el('exLop').innerHTML='<option value="">Mọi lớp</option>'+state.classes.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+(c.is_specialized?' · Chuyên':'')+'</option>';}).join('');
     el('libraryClass').innerHTML=classOptions(true);el('statClass').innerHTML=classOptions(false);el('kpiClasses').textContent=state.classes.length;
     await loadExams();
-    var attempts=await sb.from('attempts').select('id',{count:'exact',head:true}).not('exam_id','is',null).not('submitted_at','is',null);
-    el('kpiAttempts').textContent=attempts.count==null?'—':attempts.count;
+    if(state.portal){el('kpiAttempts').textContent='Riêng';}else{var attempts=await sb.from('attempts').select('id',{count:'exact',head:true}).not('exam_id','is',null).not('submitted_at','is',null);el('kpiAttempts').textContent=attempts.count==null?'—':attempts.count;}
     el('exLatex').addEventListener('input',function(){state.templateKey='custom';schedulePreview();});
     el('exTitle').addEventListener('input',schedulePreview);el('exEssayPrompt').addEventListener('input',schedulePreview);
     var queryParams=new URLSearchParams(location.search);
@@ -618,6 +668,7 @@ Thể tích bằng $3^3=27$.}
     var requestedTab=queryParams.get('tab');
     var requestedState=queryParams.get('state');
     if(requestedTemplate&&TEMPLATES[requestedTemplate])applyTemplate(requestedTemplate);
+    else if(!requestedTab||requestedTab==='compose')applyTemplate('thpt-standard');
     if(['compose','library','analytics'].indexOf(requestedTab)>=0)switchTab(requestedTab);
     if(requestedTab==='library'&&['published','draft'].indexOf(requestedState)>=0){el('libraryState').value=requestedState;renderLibrary();}
     renderPreview(false);

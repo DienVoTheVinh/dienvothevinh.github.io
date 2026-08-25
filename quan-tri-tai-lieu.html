@@ -35,6 +35,7 @@ textarea.code:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px
 .alert.warn{display:block;background:var(--warn-soft);color:var(--warn)}
 select.input{width:auto}
 .content-studio{margin-bottom:26px}.content-studio-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:14px}.content-studio-head h2{margin:0;font-size:1.22rem}.content-studio-head p{margin:5px 0 0;color:var(--ink-3);font-size:.84rem}.content-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-bottom:14px}.content-metric{padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}.content-metric b{display:block;color:var(--accent);font-size:1.22rem}.content-metric span{display:block;margin-top:3px;color:var(--ink-2);font-size:.7rem;font-weight:750}.content-metric small{display:block;margin-top:3px;color:var(--ink-3);font-size:.64rem}.content-zone{margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}.content-zone-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px}.content-zone-head h3{margin:0;font-size:.95rem}.content-zone-head p{margin:3px 0 0;color:var(--ink-3);font-size:.72rem}.content-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.content-tool{display:flex;flex-direction:column;gap:7px;min-height:116px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);text-decoration:none;cursor:pointer;text-align:left;font:inherit;transition:.18s}.content-tool:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}.content-tool .ic{font-size:1.35rem}.content-tool b{font-size:.84rem}.content-tool small{color:var(--ink-3);font-size:.69rem;line-height:1.42}.content-tool .state{margin-top:auto;color:var(--accent);font-size:.66rem;font-weight:800}.content-tool.compact{min-height:96px}.content-tool.status-card{cursor:default}.content-tool.status-card:hover{border-color:var(--line);transform:none;box-shadow:none}.setup-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.setup-link{display:flex;align-items:flex-start;gap:10px;min-height:92px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-decoration:none;font:inherit;text-align:left;cursor:pointer}.setup-link:hover{border-color:var(--accent)}.setup-link>span:first-child{font-size:1.2rem;line-height:1}.setup-link b{display:block;font-size:.8rem}.setup-link small{display:block;color:var(--ink-3);font-size:.67rem;line-height:1.4;margin-top:3px}.setup-link .state{display:block;color:var(--accent);font-size:.64rem;font-weight:800;margin-top:7px}.content-system-note{margin:10px 0 0;color:var(--ink-3);font-size:.68rem;line-height:1.45}.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.config-check{display:flex;align-items:center;gap:9px;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:.8rem;font-weight:700}.config-check input{width:18px;height:18px;accent-color:var(--accent)}
+.content-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.content-tool.primary{min-height:140px;background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--accent-soft) 55%,var(--surface)))}
 @media(max-width:980px){.content-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.content-tools,.setup-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.wrap{padding-left:14px;padding-right:14px}.content-studio-head,.content-zone-head{align-items:flex-start;flex-direction:column}.content-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.content-tools,.setup-grid,.config-grid{grid-template-columns:1fr}.content-tool{min-height:96px}.content-zone{padding:11px}.content-metric:last-child{grid-column:1 / -1}}
 </style>
@@ -61,41 +62,33 @@ select.input{width:auto}
   <div class="head">
     <div class="sec-label">Khu vực của thầy</div>
     <h1>Trung tâm nội dung</h1>
-    <p style="margin-top:6px">Mọi công cụ soạn bài, tài liệu và đề thi nằm tại đây; phần bên dưới là trình biên dịch LaTeX.</p>
+    <p style="margin-top:6px">Không gian biên soạn tinh gọn cho đề thi và tài liệu LaTeX; bài giảng và Blog tiếp tục được quản lý tại khu vực riêng vốn có.</p>
   </div>
 
   <section class="content-studio" aria-label="Công cụ soạn nội dung">
-    <div class="content-studio-head"><div><h2>Xưởng biên soạn</h2><p>Tạo, quản lý, xuất bản và cấu hình mọi loại nội dung tại một nơi.</p></div><button class="btn btn-secondary btn-sm" type="button" onclick="taiTongQuanNoiDung(true)">↻ Cập nhật trạng thái</button></div>
+    <div class="content-studio-head"><div><h2>Xưởng đề thi & LaTeX</h2><p>Đề THPTQG là luồng trung tâm; tài liệu PDF dùng trình biên dịch độc lập bên dưới.</p></div><button class="btn btn-secondary btn-sm" type="button" onclick="taiTongQuanNoiDung(true)">↻ Cập nhật trạng thái</button></div>
 
     <div class="content-summary" aria-label="Tổng quan nội dung">
-      <div class="content-metric"><b id="metricLessons">—</b><span>Bài học</span><small id="metricLessonsSub">Đang tải…</small></div>
       <div class="content-metric"><b id="metricDocuments">—</b><span>Tài liệu PDF</span><small id="metricDocumentsSub">Kho dùng chung</small></div>
       <div class="content-metric"><b id="metricExams">—</b><span>Đề thi</span><small id="metricExamsSub">Đang tải…</small></div>
       <div class="content-metric"><b id="metricThpt">—</b><span>Đề THPTQG</span><small>Cấu trúc ba phần</small></div>
-      <div class="content-metric"><b id="metricBlog">—</b><span>Bài viết</span><small id="metricBlogSub">Đang tải…</small></div>
     </div>
 
     <div class="content-zone">
-      <div class="content-zone-head"><div><h3>1. Tạo nội dung mới</h3><p>Mở thẳng đúng biểu mẫu, bao gồm cả hai mẫu THPTQG.</p></div></div>
+      <div class="content-zone-head"><div><h3>1. Biên soạn đề thi</h3><p>Chọn mẫu sẵn; trình soạn mở rộng toàn chiều ngang màn hình PC.</p></div></div>
       <div class="content-tools">
-        <a class="content-tool" href="quan-tri-lop"><span class="ic">📚</span><b>Bài giảng & bài học</b><small>Video, lý thuyết, bài kiểm tra, BTVN và tài liệu theo lớp.</small><span class="state">CHỌN LỚP & TẠO →</span></a>
-        <a class="content-tool" href="#latexEditor"><span class="ic">📄</span><b>Tài liệu LaTeX / PDF</b><small>Biên dịch, xem trước và đưa trực tiếp vào kho học sinh.</small><span class="state">SOẠN NGAY ↓</span></a>
-        <a class="content-tool" href="quan-tri-de?tab=compose&template=thpt-standard"><span class="ic">🇻🇳</span><b>Đề thi chuẩn THPTQG</b><small>Ba phần: chọn đáp án, đúng/sai và trả lời ngắn.</small><span class="state">DÙNG MẪU CHUẨN →</span></a>
-        <a class="content-tool" href="quan-tri-de?tab=compose&template=thpt-practice"><span class="ic">🧠</span><b>THPTQG có lời giải</b><small>Mẫu luyện tập ba phần kèm lời giải và đáp số.</small><span class="state">DÙNG MẪU LUYỆN →</span></a>
+        <a class="content-tool primary" href="quan-tri-de?tab=compose&template=thpt-standard"><span class="ic">🇻🇳</span><b>Đề thi chuẩn THPTQG</b><small>Luồng trung tâm gồm ba phần: nhiều lựa chọn, đúng/sai và trả lời ngắn.</small><span class="state">MỞ XƯỞNG THPTQG →</span></a>
+        <a class="content-tool primary" href="quan-tri-de?tab=compose&template=thpt-practice"><span class="ic">🧠</span><b>THPTQG có lời giải</b><small>Mẫu luyện tập ba phần đã có sẵn khung lời giải và đáp số.</small><span class="state">DÙNG MẪU LUYỆN →</span></a>
         <a class="content-tool" href="quan-tri-de?tab=compose"><span class="ic">🧪</span><b>Đề kiểm tra tùy chỉnh</b><small>Trắc nghiệm, đúng/sai, tự luận hoặc cấu trúc kết hợp.</small><span class="state">TẠO ĐỀ KHÁC →</span></a>
-        <a class="content-tool" href="viet-blog?new=1"><span class="ic">✍️</span><b>Bài viết & thông báo</b><small>Soạn bản nháp hoặc xuất bản nội dung công khai trên Blog.</small><span class="state">VIẾT BÀI →</span></a>
       </div>
     </div>
 
     <div class="content-zone">
-      <div class="content-zone-head"><div><h3>2. Quản lý & xuất bản</h3><p>Tìm lại nội dung, kiểm tra trạng thái và quyền xem trước khi giao cho học sinh.</p></div><a class="btn btn-ghost btn-sm" href="tai-lieu">Xem như học sinh</a></div>
+      <div class="content-zone-head"><div><h3>2. Kho đề & tài liệu</h3><p>Chỉ giữ các điểm đến phục vụ trực tiếp cho việc soạn và xuất bản.</p></div></div>
       <div class="content-tools">
-        <a class="content-tool compact" href="quan-tri-lop"><span class="ic">🏫</span><b>Kho bài giảng theo lớp</b><small>Sửa bài học, chuyên đề, tài liệu và thứ tự xuất hiện.</small><span class="state">QUẢN LÝ BÀI GIẢNG →</span></a>
-        <a class="content-tool compact" href="tai-lieu"><span class="ic">🗂️</span><b>Kho tài liệu đã lưu</b><small>Kiểm tra PDF dùng chung và tài liệu theo lớp.</small><span class="state">MỞ KHO PDF →</span></a>
         <a class="content-tool compact" href="quan-tri-de?tab=library"><span class="ic">📋</span><b>Kho đề & trạng thái</b><small>Lọc đề nháp, đề đang mở, THPTQG và xem thống kê.</small><span class="state">MỞ KHO ĐỀ →</span></a>
-        <a class="content-tool compact" href="viet-blog"><span class="ic">📰</span><b>Blog nháp & đã đăng</b><small>Sửa, xuất bản hoặc gỡ bài viết công khai.</small><span class="state">QUẢN LÝ BLOG →</span></a>
-        <a class="content-tool compact" href="quan-tri-bai-hoc"><span class="ic">🔐</span><b>Quyền xem bài giảng</b><small>Mở, khóa và kiểm tra quyền theo từng tài khoản.</small><span class="state">KIỂM TRA QUYỀN →</span></a>
-        <a class="content-tool compact" href="quan-tri-cham-bai"><span class="ic">✅</span><b>Đáp án & bài đã trả</b><small>Đáp án chung theo lớp/bài và nội dung giáo viên trả học sinh.</small><span class="state">QUẢN LÝ ĐÁP ÁN →</span></a>
+        <a class="content-tool compact" href="#latexEditor"><span class="ic">📄</span><b>Soạn tài liệu LaTeX / PDF</b><small>Biên dịch tài liệu độc lập và xem trước ngay trên màn hình.</small><span class="state">ĐẾN TRÌNH BIÊN DỊCH ↓</span></a>
+        <a class="content-tool compact" href="quan-tri-tex"><span class="ic">∑</span><b>Môi trường TeX</b><small>Quản lý Preamble, mẫu và phiên bản môi trường biên dịch.</small><span class="state">MỞ MÔI TRƯỜNG →</span></a>
       </div>
     </div>
 
@@ -186,26 +179,20 @@ async function taiTongQuanNoiDung(manual) {
   if (!window.sb) return;
   try {
     var rs = await Promise.all([
-      sb.from('lessons').select('id', { count: 'exact', head: true }),
-      sb.from('lessons').select('id', { count: 'exact', head: true }).eq('published', true),
       sb.from('documents').select('id', { count: 'exact', head: true }),
       sb.from('exams').select('id', { count: 'exact', head: true }),
       sb.from('exams').select('id', { count: 'exact', head: true }).eq('published', true),
-      sb.from('exams').select('id', { count: 'exact', head: true }).eq('de_type', 'thpt'),
-      sb.from('blog_posts').select('id', { count: 'exact', head: true }),
-      sb.from('blog_posts').select('id', { count: 'exact', head: true }).eq('published', true)
+      sb.from('exams').select('id', { count: 'exact', head: true }).eq('de_type', 'thpt')
     ]);
     var firstError = rs.find(function (x) { return x && x.error; });
     if (firstError) throw firstError.error;
-    contentDatSo('metricLessons', rs[0].count, 'metricLessonsSub', (rs[1].count || 0) + ' đã xuất bản');
-    contentDatSo('metricDocuments', rs[2].count, 'metricDocumentsSub', 'PDF trong kho dùng chung');
-    contentDatSo('metricExams', rs[3].count, 'metricExamsSub', (rs[4].count || 0) + ' đang mở');
-    contentDatSo('metricThpt', rs[5].count);
-    contentDatSo('metricBlog', rs[6].count, 'metricBlogSub', (rs[7].count || 0) + ' đã đăng');
+    contentDatSo('metricDocuments', rs[0].count, 'metricDocumentsSub', 'PDF trong kho dùng chung');
+    contentDatSo('metricExams', rs[1].count, 'metricExamsSub', (rs[2].count || 0) + ' đang mở');
+    contentDatSo('metricThpt', rs[3].count);
     if (manual) bao('✓ Đã cập nhật trạng thái nội dung.', 'ok');
   } catch (e) {
     if (manual) bao('Không đọc được tổng quan nội dung: ' + e.message, 'warn');
-    ['metricLessonsSub','metricDocumentsSub','metricExamsSub','metricBlogSub'].forEach(function (id) { if ($(id)) $(id).textContent = 'Chưa đọc được trạng thái'; });
+    ['metricDocumentsSub','metricExamsSub'].forEach(function (id) { if ($(id)) $(id).textContent = 'Chưa đọc được trạng thái'; });
   }
 }
 
