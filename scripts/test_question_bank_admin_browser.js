@@ -47,6 +47,8 @@ Tính $15+27$.
       workbenchVisible: !document.getElementById('bankAdminWorkbench').hidden,
       importNavVisible: !document.getElementById('bankImportNav').hidden,
       importZoneVisible: !document.getElementById('bankZoneImport').hidden,
+      activeView: window.VMExamAdmin._bankState.activeView,
+      visibleZones: Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
       workspaceZones: document.querySelectorAll('[data-bank-zone-nav]').length,
       parsed: window.VMExamAdmin._bankState.items.length,
       quarantined: window.VMExamAdmin._bankState.items.filter((item) => item._bankStatus === 'quarantined').length,
@@ -54,9 +56,59 @@ Tính $15+27$.
       catalogOptions: document.querySelectorAll('#bankTaxonomyCatalogSelect option').length,
       identities: window.VMExamAdmin._bankState.items.map((item) => ({ id: item.question_id, hash: item.canonical_hash, uid: item.uid })),
     }));
-    if (!admin.bankVisible || !admin.workbenchVisible || !admin.importNavVisible || !admin.importZoneVisible || admin.workspaceZones !== 4 || admin.parsed !== 2 || admin.quarantined !== 1 || !admin.answerPreview || admin.catalogOptions !== 2) {
+    if (!admin.bankVisible || !admin.workbenchVisible || !admin.importNavVisible || admin.importZoneVisible || admin.activeView !== 'overview' || JSON.stringify(admin.visibleZones) !== JSON.stringify(['overview']) || admin.workspaceZones !== 4 || admin.parsed !== 2 || admin.quarantined !== 1 || !admin.answerPreview || admin.catalogOptions !== 2) {
       throw new Error(`Admin workbench failed: ${JSON.stringify(admin)}`);
     }
+
+    await page.evaluate(() => {
+      window.__bankScrollCalls = [];
+      window.__bankOriginalScrollTo = window.scrollTo;
+      window.scrollTo = (options) => { window.__bankScrollCalls.push(options); };
+    });
+    await page.click('[data-bank-zone-nav="create"]');
+    await page.fill('#bankGenTitle', 'Bản nháp giữ nguyên khi đổi view');
+    await page.click('[data-bank-zone-nav="manage"]');
+    const managedView = await page.evaluate(() => ({
+      hash:location.hash,
+      active:window.VMExamAdmin._bankState.activeView,
+      visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
+      selected:document.querySelector('[data-bank-zone-nav][aria-selected="true"]').dataset.bankZoneNav,
+    }));
+    if (managedView.hash !== '#bank-manage' || managedView.active !== 'manage' || managedView.selected !== 'manage' || JSON.stringify(managedView.visible) !== JSON.stringify(['manage'])) throw new Error(`Independent manage view failed: ${JSON.stringify(managedView)}`);
+    await page.evaluate(() => history.back());
+    await page.waitForFunction(() => location.hash === '#bank-create' && window.VMExamAdmin._bankState.activeView === 'create');
+    const backView = await page.evaluate(() => ({
+      value:document.getElementById('bankGenTitle').value,
+      visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
+    }));
+    if (backView.value !== 'Bản nháp giữ nguyên khi đổi view' || JSON.stringify(backView.visible) !== JSON.stringify(['create'])) throw new Error(`Back navigation lost bank view state: ${JSON.stringify(backView)}`);
+    await page.evaluate(() => history.forward());
+    await page.waitForFunction(() => location.hash === '#bank-manage' && window.VMExamAdmin._bankState.activeView === 'manage');
+    await page.click('[data-bank-zone-nav="import"]');
+    await page.waitForTimeout(50);
+    const importView = await page.evaluate(() => ({
+      hash:location.hash,
+      active:window.VMExamAdmin._bankState.activeView,
+      visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
+      value:document.getElementById('bankGenTitle').value,
+      scrollCalls:window.__bankScrollCalls.slice(),
+    }));
+    await page.evaluate(() => { window.scrollTo = window.__bankOriginalScrollTo; });
+    if (importView.hash !== '#bank-import' || importView.active !== 'import' || importView.value !== 'Bản nháp giữ nguyên khi đổi view' || JSON.stringify(importView.visible) !== JSON.stringify(['import']) || !importView.scrollCalls.length || importView.scrollCalls.some((call) => !Number.isFinite(call.top))) throw new Error(`Independent import view failed: ${JSON.stringify(importView)}`);
+    const editorHandoff = await page.evaluate(() => {
+      const editor=document.getElementById('exLatex');
+      editor.value='Tìm câu về hàm số bậc ba';
+      editor.selectionStart=0;
+      editor.selectionEnd=editor.value.length;
+      window.VMExamAdmin.openBankFromEditor();
+      return {
+        hash:location.hash,
+        active:window.VMExamAdmin._bankState.activeView,
+        query:document.getElementById('bankSearchQuery').value,
+        visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
+      };
+    });
+    if (editorHandoff.hash !== '#bank-manage' || editorHandoff.active !== 'manage' || editorHandoff.query !== 'Tìm câu về hàm số bậc ba' || JSON.stringify(editorHandoff.visible) !== JSON.stringify(['manage'])) throw new Error(`Editor-to-bank handoff did not open manage view: ${JSON.stringify(editorHandoff)}`);
     await page.evaluate(() => {
       window.VMExamAdmin.bankSelectMissingIds();
       document.getElementById('bankTaxDifficulty').value = 'N';
@@ -191,7 +243,61 @@ Giá trị của $1+1$ bằng
       throw new Error(`Admin streaming package import failed: ${JSON.stringify(packageImport)}`);
     }
 
-    await page.evaluate(() => window.VMExamAdmin._bankConfigureAccess({ role: 'teacher' }));
+    const inventoryOverview = await page.evaluate(async () => {
+      window.sb = { rpc: async (name) => {
+        if (name === 'vm_bank_inventory') return { data:{
+          summary:{ full_exams:7, active:264, quarantined:8 },
+          items:[
+            { key:'topic_pack', status:'active', documents:209, active_questions:21863, question_occurrences:23454 },
+            { key:'topic_pack', status:'quarantined', documents:6, active_questions:0, question_occurrences:2823 },
+            { key:'thptqg', status:'active', documents:50, active_questions:980, question_occurrences:980 },
+            { key:'semester', status:'active', documents:5, active_questions:583, question_occurrences:583 },
+            { key:'other_exam', status:'quarantined', documents:2, active_questions:0, question_occurrences:31 }
+          ]
+        }, error:null };
+        if (name === 'vm_bank_category_summary') return { data:{
+          items:[
+            { key:'topic_pack', active_documents:209, active_questions:21563 },
+            { key:'thptqg', active_documents:50, active_questions:980 },
+            { key:'semester', active_documents:5, active_questions:583 }
+          ]
+        }, error:null };
+        return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
+      }};
+      await window.VMExamAdmin._bankLoadInventory(false);
+      return {
+        complete:document.getElementById('bankOverviewComplete').textContent,
+        topic:document.getElementById('bankOverviewTopic').textContent,
+        thpt:document.getElementById('bankOverviewThpt').textContent,
+        semester:document.getElementById('bankOverviewSemester').textContent,
+        other:document.getElementById('bankOverviewOther').textContent,
+        active:document.getElementById('bankOverviewActive').textContent,
+        review:document.getElementById('bankOverviewReview').textContent,
+      };
+    });
+    if (inventoryOverview.complete !== '7' || inventoryOverview.topic !== '21.563' || inventoryOverview.topic === '26.277' || inventoryOverview.thpt !== '50' || inventoryOverview.semester !== '5' || inventoryOverview.other !== '0' || inventoryOverview.active !== '264' || inventoryOverview.review !== '8') {
+      throw new Error(`Active-only inventory overview failed: ${JSON.stringify(inventoryOverview)}`);
+    }
+
+    const canonicalFailure = await page.evaluate(async () => {
+      window.VMExamAdmin._bankState.stats.topic_pack_questions = null;
+      window.sb = { rpc: async (name) => {
+        if (name === 'vm_bank_inventory') return { data:{
+          summary:{ full_exams:7, active:264, quarantined:8 },
+          items:[{ key:'topic_pack', status:'active', documents:209, active_questions:26277, question_occurrences:26277 }]
+        }, error:null };
+        if (name === 'vm_bank_category_summary') return { data:null, error:{ code:'PGRST202', message:'not installed yet' } };
+        return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
+      } };
+      await window.VMExamAdmin._bankLoadInventory(false);
+      return document.getElementById('bankOverviewTopic').textContent;
+    });
+    if (canonicalFailure !== '—' || canonicalFailure === '26.277') throw new Error(`Canonical RPC failure exposed inflated occurrence count: ${canonicalFailure}`);
+
+    await page.evaluate(() => {
+      window.VMExamAdmin.bankSetView('import',{history:'replace',scroll:false});
+      window.VMExamAdmin._bankConfigureAccess({ role: 'teacher' });
+    });
     const teacher = await page.evaluate(() => ({
       activeBank: document.getElementById('panel-bank').classList.contains('active'),
       workbenchHidden: document.getElementById('bankAdminWorkbench').hidden,
@@ -201,6 +307,9 @@ Giá trị của $1+1$ bằng
       libraryHidden: document.querySelector('[data-tab="library"]').hidden,
       analyticsHidden: document.querySelector('[data-tab="analytics"]').hidden,
       taxonomyFilterHidden: getComputedStyle(document.querySelector('.bank-admin-taxonomy-filter')).display === 'none',
+      overviewOnly: JSON.stringify(Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone)) === JSON.stringify(['overview']),
+      overviewState: window.VMExamAdmin._bankState.activeView === 'overview',
+      safeHash: location.hash === '#bank-overview',
     }));
     if (!Object.values(teacher).every(Boolean)) throw new Error(`Teacher boundary failed: ${JSON.stringify(teacher)}`);
 
@@ -242,7 +351,14 @@ Giá trị của $1+1$ bằng
         rpc: async (name, args) => {
           window.__bankRpcCalls.push({ name, args });
           if (name === 'vm_bank_generate_exam') return { data: { exam_id: 'exam-generated', title: args.p_spec.title, question_count: 9, seed: args.p_spec.seed, warnings: [{ requested:12, selected:9 }] }, error: null };
-          if (name === 'vm_bank_source_exam_catalog') return { data: { total: 1, items: [{ id: 'source-exam-1', title: 'Đề chính thức Đồng Nai 2025', province: 'Đồng Nai', exam_year: 2025, exam_kind: 'official', question_count: 22, raw_tex: 'MUST_NOT_RENDER', answer: 'MUST_NOT_RENDER' }] }, error: null };
+          if (name === 'vm_bank_source_exam_catalog') return { data: { total: 6, items: [
+            { id: 'source-exam-1', title: 'Đề tham khảo Đồng Nai 2025', province: 'Đồng Nai', grade: 12, exam_year: 2025, bank_category: 'thptqg', bank_variant: 'reference', exam_kind: 'mock', question_count: 22, raw_tex: 'MUST_NOT_RENDER', answer: 'MUST_NOT_RENDER' },
+            { id: 'source-exam-mock', title: 'Đề thi thử Đồng Nai 2025', province: 'Đồng Nai', grade: 12, exam_year: 2025, bank_category: 'thptqg', bank_variant: 'mock', exam_kind: 'mock', question_count: 22 },
+            { id: 'source-exam-ghk2', title: 'DeThi GHK2 L12', province: 'Đồng Nai', grade: 12, bank_category: 'semester', bank_variant: 'midterm', exam_kind: 'mock', question_count: 20 },
+            { id: 'source-exam-hk1', title: 'HK1 Lan2', province: 'Đồng Nai', grade: 12, bank_category: 'semester', bank_variant: 'semester_1', exam_kind: 'mock', question_count: 20 },
+            { id: 'source-exam-hk2', title: 'HK2 Lan2', province: 'Đồng Nai', grade: 12, bank_category: 'semester', bank_variant: 'semester_2', exam_kind: 'mock', question_count: 20 },
+            { id: 'source-exam-generic', title: 'Đề luyện tập riêng', province: 'Đồng Nai', grade: 12, bank_category: 'other_exam', bank_variant: 'mock', exam_kind: 'mock', question_count: 20 }
+          ] }, error: null };
           if (name === 'vm_bank_assign_source_exam') return { data: { exam_id: 'exam-assigned', title: args.p_spec.title, question_count: 22, skipped: 0, source_document_id: args.p_document_id }, error: null };
           if (name === 'vm_bank_clone_source_structure') return { data: { exam_id: 'exam-cloned', title: args.p_spec.title, question_count: 20, source_question_count: 22, seed: args.p_spec.seed, warnings: [{ position: 3, code: 'no_compatible_question' }] }, error: null };
           return { data: null, error: { code: 'PGRST202', message: 'missing test RPC' } };
@@ -260,6 +376,7 @@ Giá trị của $1+1$ bằng
         document.getElementById(id).innerHTML = '<option value="class-1">Toán 12A1</option>';
       }
     });
+    await page.click('[data-bank-zone-nav="create"]');
     await page.fill('#bankGenTitle', 'Đề tự sinh tuần 3');
     await page.selectOption('#bankGenGrade', '12');
     const grade12Chapters = await page.$$eval('#bankGenChapter option', (options) => options.map((option) => option.value));
@@ -310,14 +427,44 @@ Giá trị của $1+1$ bằng
     if (/(raw_tex|answer|solution|source_path)/i.test(JSON.stringify(generatedSpec))) throw new Error('Teacher generation leaked protected bank fields');
 
     await page.selectOption('#bankSourceGrade', '12');
+    await page.selectOption('#bankSourceType', 'thpt_reference');
     await page.evaluate(async () => window.VMExamAdmin.bankLoadSourceCatalog({ preventDefault() {} }));
     const sourceCatalog = await page.evaluate(() => ({
       text: document.getElementById('bankSourceResults').textContent,
       buttons: document.querySelectorAll('[data-source-exam-id]').length,
+      activeCategory: document.querySelector('[data-bank-source-category].active')?.dataset.bankSourceCategory,
       call: window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_source_exam_catalog'),
     }));
-    if (!sourceCatalog.call || sourceCatalog.call.args.p_filters.grade !== 12 || sourceCatalog.buttons !== 2 || !sourceCatalog.text.includes('Đồng Nai') || sourceCatalog.text.includes('MUST_NOT_RENDER')) {
+    if (!sourceCatalog.call || sourceCatalog.call.args.p_filters.grade !== 12 || sourceCatalog.call.args.p_filters.exam_kind !== null || sourceCatalog.call.args.p_filters.bank_category !== 'thptqg' || sourceCatalog.call.args.p_filters.bank_variant !== 'reference' || sourceCatalog.activeCategory !== 'thptqg' || sourceCatalog.buttons !== 12 || !sourceCatalog.text.includes('Đồng Nai') || !sourceCatalog.text.includes('THPTQG · tham khảo') || !sourceCatalog.text.includes('THPTQG · thi thử') || !sourceCatalog.text.includes('Giữa kỳ') || !sourceCatalog.text.includes('Học kỳ I') || !sourceCatalog.text.includes('Học kỳ II') || !sourceCatalog.text.includes('Thi thử') || /\bmock\b/i.test(sourceCatalog.text) || sourceCatalog.text.includes('MUST_NOT_RENDER')) {
       throw new Error(`Source catalog sanitization failed: ${JSON.stringify(sourceCatalog)}`);
+    }
+    const semanticFilterMatrix = await page.evaluate(async () => {
+      const values = ['thpt_official','thpt_reference','thpt_mock','midterm','final','semester_1','semester_2','chapter','other'];
+      const result = {};
+      for (const value of values) {
+        document.getElementById('bankSourceType').value = value;
+        document.getElementById('bankSourceType').dispatchEvent(new Event('change', { bubbles:true }));
+        const before = window.__bankRpcCalls.length;
+        await window.VMExamAdmin.bankLoadSourceCatalog({ preventDefault() {} });
+        const call = window.__bankRpcCalls.slice(before).find((entry) => entry.name === 'vm_bank_source_exam_catalog');
+        result[value] = {
+          filters:call && call.args.p_filters,
+          activeCategory:document.querySelector('[data-bank-source-category].active')?.dataset.bankSourceCategory,
+        };
+      }
+      return result;
+    });
+    const expectedSemanticFilters = {
+      thpt_official:['thptqg','official'], thpt_reference:['thptqg','reference'], thpt_mock:['thptqg','mock'],
+      midterm:['semester','midterm'], final:['semester','final'], semester_1:['semester','semester_1'], semester_2:['semester','semester_2'],
+      chapter:['other_exam','chapter'], other:['other_exam',null]
+    };
+    for (const [kind, route] of Object.entries(expectedSemanticFilters)) {
+      const entry = semanticFilterMatrix[kind];
+      const filter = entry && entry.filters;
+      if (!filter || filter.exam_kind !== null || filter.bank_category !== route[0] || filter.bank_variant !== route[1] || entry.activeCategory !== route[0]) {
+        throw new Error(`Semantic source filter ${kind} failed: ${JSON.stringify(entry)}`);
+      }
     }
     await page.click('[data-source-exam-id="source-exam-1"][data-source-mode="assign"]');
     await page.fill('#bankSourceAssignTitle', 'Giao nguyên đề Đồng Nai');
@@ -343,6 +490,56 @@ Giá trị của $1+1$ bằng
       throw new Error(`Clone-source structure flow failed: ${JSON.stringify(cloned)}`);
     }
     if (/(raw_tex|answer|solution|source_path|taxonomy)/i.test(JSON.stringify(cloned.call.args))) throw new Error('Clone-source flow leaked protected bank fields');
+
+    const sourcePagination = await page.evaluate(async () => {
+      const rows = Array.from({ length:53 }, (_, index) => ({
+        id:`paged-source-${index + 1}`,
+        title:`Đề nguồn phân trang ${index + 1}`,
+        province:'Đồng Nai',
+        grade:12,
+        exam_year:2026,
+        bank_category:'thptqg',
+        bank_variant:'mock',
+        exam_kind:'mock',
+        question_count:22,
+      }));
+      window.__sourcePaginationCalls = [];
+      window.sb = { rpc: async (name, args) => {
+        if (name !== 'vm_bank_source_exam_catalog') return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
+        window.__sourcePaginationCalls.push(args);
+        const offset = Number(args.p_offset || 0);
+        const items = offset === 0 ? rows.slice(0, 50) : (offset === 50 ? [rows[49], ...rows.slice(50)] : []);
+        return { data:{ total:53, items }, error:null };
+      }};
+      const type = document.getElementById('bankSourceType');
+      type.value = '';
+      type.dispatchEvent(new Event('change', { bubbles:true }));
+      window.VMExamAdmin._bankState.sourceCatalogLoading = false;
+      await window.VMExamAdmin.bankLoadSourceCatalog({ preventDefault() {} });
+      const initial = {
+        cards:document.querySelectorAll('#bankSourceResults .bank-source-item').length,
+        status:document.getElementById('bankSourcePageStatus').textContent,
+        loadMoreHidden:document.getElementById('bankSourceLoadMoreButton').hidden,
+        offset:window.VMExamAdmin._bankState.sourceCatalogOffset,
+      };
+      await window.VMExamAdmin.bankLoadMoreSources({ preventDefault() {} });
+      const ids = window.VMExamAdmin._bankState.sourceItems.map((item) => item.id);
+      return {
+        initial,
+        offsets:window.__sourcePaginationCalls.map((args) => args.p_offset),
+        limits:window.__sourcePaginationCalls.map((args) => args.p_limit),
+        cards:document.querySelectorAll('#bankSourceResults .bank-source-item').length,
+        uniqueIds:new Set(ids).size,
+        duplicateCount:ids.filter((id) => id === 'paged-source-50').length,
+        status:document.getElementById('bankSourcePageStatus').textContent,
+        loadMoreHidden:document.getElementById('bankSourceLoadMoreButton').hidden,
+        offset:window.VMExamAdmin._bankState.sourceCatalogOffset,
+        total:window.VMExamAdmin._bankState.sourceCatalogResultTotal,
+      };
+    });
+    if (sourcePagination.initial.cards !== 50 || !sourcePagination.initial.status.includes('50 / 53') || sourcePagination.initial.loadMoreHidden || sourcePagination.initial.offset !== 50 || JSON.stringify(sourcePagination.offsets) !== JSON.stringify([0,50]) || JSON.stringify(sourcePagination.limits) !== JSON.stringify([50,50]) || sourcePagination.cards !== 53 || sourcePagination.uniqueIds !== 53 || sourcePagination.duplicateCount !== 1 || !sourcePagination.status.includes('53 / 53') || !sourcePagination.loadMoreHidden || sourcePagination.offset !== 54 || sourcePagination.total !== 53) {
+      throw new Error(`Whole-source pagination failed: ${JSON.stringify(sourcePagination)}`);
+    }
 
     const teacherEmptyBank = await page.evaluate(async () => {
       window.sb = { rpc: async (name) => {
@@ -465,6 +662,7 @@ Câu kiểm thử số ${index + 1}: Giá trị của $2^3+${index}$ bằng
         if (name === 'vm_bank_admin_finalize_document') return { data:{ document_id:args.p_document_id, expected_count:args.p_expected_count, ready:true }, error:null };
         if (name === 'vm_bank_admin_stats') return { data:{ documents:1, items:41, active:41, quarantined:0 }, error:null };
         if (name === 'vm_bank_inventory') return { data:{ summary:{ documents:1, questions:41, active:41, quarantined:0 }, categories:[] }, error:null };
+        if (name === 'vm_bank_category_summary') return { data:{ items:[{ key:'topic_pack', active_documents:1, active_questions:41 }] }, error:null };
         if (name === 'vm_bank_source_exam_catalog') return { data:{ total:1, items:[] }, error:null };
         if (name === 'vm_bank_matrix') return { data:{ question_count:41, items:[{ question_type:'multiple_choice', difficulty:'NB', count:41 }] }, error:null };
         return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
@@ -503,9 +701,22 @@ Câu kiểm thử số ${index + 1}: Giá trị của $2^3+${index}$ bằng
     }));
     if (assistant.canUse || !assistant.tabHidden || !assistant.workbenchHidden) throw new Error(`Assistant boundary failed: ${JSON.stringify(assistant)}`);
 
+    await page.evaluate(() => {
+      window.VMExamAdmin._bankConfigureAccess({ role:'teacher' });
+      window.VMExamAdmin.switchTab('bank');
+      window.VMExamAdmin.bankSetView('manage',{ history:'replace', scroll:false });
+    });
     await page.setViewportSize({ width: 390, height: 844 });
-    const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
-    if (mobileOverflow) throw new Error('Question-bank panel overflows the mobile viewport');
+    const mobileLayout = await page.evaluate(() => {
+      const nav=document.getElementById('bankWorkspaceNav'),style=getComputedStyle(nav);
+      return {
+        pageOverflow:document.documentElement.scrollWidth > innerWidth + 1,
+        navDisplay:style.display,
+        navOverflow:style.overflowX,
+        visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
+      };
+    });
+    if (mobileLayout.pageOverflow || mobileLayout.navDisplay !== 'flex' || !['auto','scroll'].includes(mobileLayout.navOverflow) || JSON.stringify(mobileLayout.visible) !== JSON.stringify(['manage'])) throw new Error(`Question-bank mobile views are not responsive: ${JSON.stringify(mobileLayout)}`);
     console.log('PASS question-bank admin/teacher UI, parser flow, roles and responsive layout');
   } finally {
     await browser.close();

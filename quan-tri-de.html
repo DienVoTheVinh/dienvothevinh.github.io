@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=3.0">
+  <link rel="stylesheet" href="css/exam-admin.css?v=3.1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -134,14 +134,15 @@
     </section>
 
     <section class="exam-panel" id="panel-bank">
-      <nav class="bank-workspace-nav" aria-label="Các khu vực của Ngân hàng đề">
-        <button class="active" type="button" data-bank-zone-nav="overview" onclick="VMExamAdmin.bankScrollZone('overview')"><span>01</span>Tổng quan kho</button>
-        <button type="button" data-bank-zone-nav="create" onclick="VMExamAdmin.bankScrollZone('create')"><span>02</span>Tạo &amp; giao đề</button>
-        <button id="bankImportNav" type="button" data-bank-zone-nav="import" onclick="VMExamAdmin.bankScrollZone('import')" hidden><span>03</span>Nạp &amp; chuẩn hóa</button>
-        <button type="button" data-bank-zone-nav="manage" onclick="VMExamAdmin.bankScrollZone('manage')"><span>04</span>Kho câu &amp; ma trận</button>
+      <nav class="bank-workspace-nav" id="bankWorkspaceNav" role="tablist" aria-label="Các khu vực của Ngân hàng đề">
+        <button class="active" id="bankViewTabOverview" type="button" role="tab" aria-selected="true" aria-controls="bankZoneOverview" data-bank-zone-nav="overview" onclick="VMExamAdmin.bankScrollZone('overview')"><span>01</span>Tổng quan kho</button>
+        <button id="bankViewTabCreate" type="button" role="tab" aria-selected="false" aria-controls="bankZoneCreate" tabindex="-1" data-bank-zone-nav="create" onclick="VMExamAdmin.bankScrollZone('create')"><span>02</span>Tạo &amp; giao đề</button>
+        <button id="bankImportNav" type="button" role="tab" aria-selected="false" aria-controls="bankZoneImport" tabindex="-1" data-bank-zone-nav="import" onclick="VMExamAdmin.bankScrollZone('import')" hidden><span>03</span>Nạp &amp; chuẩn hóa</button>
+        <button id="bankViewTabManage" type="button" role="tab" aria-selected="false" aria-controls="bankZoneManage" tabindex="-1" data-bank-zone-nav="manage" onclick="VMExamAdmin.bankScrollZone('manage')"><span>04</span>Kho câu &amp; ma trận</button>
       </nav>
 
-      <section class="bank-zone bank-overview-zone" id="bankZoneOverview" data-bank-zone="overview">
+      <div class="bank-workspace-views" id="bankWorkspaceViews">
+      <section class="bank-zone bank-overview-zone active" id="bankZoneOverview" role="tabpanel" aria-labelledby="bankViewTabOverview" data-bank-zone="overview">
         <header class="bank-zone-head">
           <div><span>Tổng quan kho</span><h2>Nguồn đề và trạng thái sử dụng</h2></div>
           <small>Các nhóm dữ liệu được tách rõ để chọn đúng luồng làm việc.</small>
@@ -193,7 +194,7 @@
       </div>
       </section>
 
-      <section class="bank-zone" id="bankZoneCreate" data-bank-zone="create">
+      <section class="bank-zone" id="bankZoneCreate" role="tabpanel" aria-labelledby="bankViewTabCreate" data-bank-zone="create" hidden>
         <header class="bank-zone-head">
           <div><span>Tạo &amp; giao đề</span><h2>Dựng đề mới hoặc dùng lại đề nguồn</h2></div>
           <small>Chọn một trong hai luồng; bản nháp chỉ xuất bản khi thầy cô quyết định.</small>
@@ -228,20 +229,24 @@
         <div class="exam-card-head"><div><h2>2. Chọn nguyên đề đã nhập</h2><p>Duyệt theo tỉnh, năm và loại kỳ thi; giữ nguyên thứ tự câu của đề nguồn rồi giao thẳng cho lớp.</p></div><span class="exam-badge">Đề gốc</span></div>
         <div class="exam-card-body">
           <div class="bank-source-category-tabs" aria-label="Nhóm đề hoàn chỉnh">
-            <button type="button" class="active" data-bank-source-category="" onclick="VMExamAdmin.bankSetSourceCategory('')">Tất cả đề hoàn chỉnh</button>
-            <button type="button" data-bank-source-category="thptqg" onclick="VMExamAdmin.bankSetSourceCategory('thptqg')">THPTQG &amp; tham khảo</button>
-            <button type="button" data-bank-source-category="semester" onclick="VMExamAdmin.bankSetSourceCategory('semester')">Học kỳ</button>
-            <button type="button" data-bank-source-category="other_exam" onclick="VMExamAdmin.bankSetSourceCategory('other_exam')">Đề khác</button>
+            <button type="button" class="active" aria-pressed="true" data-bank-source-category="" onclick="VMExamAdmin.bankSetSourceCategory('')">Tất cả đề hoàn chỉnh</button>
+            <button type="button" aria-pressed="false" data-bank-source-category="thptqg" onclick="VMExamAdmin.bankSetSourceCategory('thptqg')">THPTQG &amp; tham khảo</button>
+            <button type="button" aria-pressed="false" data-bank-source-category="semester" onclick="VMExamAdmin.bankSetSourceCategory('semester')">Học kỳ</button>
+            <button type="button" aria-pressed="false" data-bank-source-category="other_exam" onclick="VMExamAdmin.bankSetSourceCategory('other_exam')">Đề khác</button>
           </div>
           <form class="bank-source-filters" onsubmit="VMExamAdmin.bankLoadSourceCatalog(event)">
             <div class="exam-field bank-field-wide"><label for="bankSourceQuery">Tên đề / đơn vị</label><input class="input" id="bankSourceQuery" placeholder="Ví dụ: Sở GD&ĐT Đồng Nai"></div>
             <div class="exam-field"><label for="bankSourceUnit">Tỉnh / đơn vị</label><input class="input" id="bankSourceUnit" placeholder="Tất cả"></div>
             <div class="exam-field"><label for="bankSourceGrade">Khối</label><select class="input" id="bankSourceGrade"><option value="">Tất cả</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
             <div class="exam-field"><label for="bankSourceYear">Năm</label><input class="input" id="bankSourceYear" type="number" min="2000" max="2100" placeholder="Tất cả"></div>
-            <div class="exam-field"><label for="bankSourceType">Loại kỳ thi</label><select class="input" id="bankSourceType"><option value="">Tất cả</option><option value="thpt_official">THPTQG chính thức</option><option value="thpt_reference">THPTQG tham khảo</option><option value="thpt_mock">THPTQG thi thử</option><option value="midterm">Giữa kỳ</option><option value="final">Cuối kỳ</option><option value="chapter">Kiểm tra chương</option><option value="other">Khác</option></select></div>
+            <div class="exam-field"><label for="bankSourceType">Loại kỳ thi</label><select class="input" id="bankSourceType" onchange="VMExamAdmin.bankSyncSourceCategory()"><option value="">Tất cả</option><option value="thpt_official">THPTQG chính thức</option><option value="thpt_reference">THPTQG tham khảo</option><option value="thpt_mock">THPTQG thi thử</option><option value="midterm">Giữa kỳ</option><option value="final">Cuối kỳ</option><option value="semester_1">Học kỳ I</option><option value="semester_2">Học kỳ II</option><option value="chapter">Kiểm tra chương</option><option value="other">Khác</option></select></div>
             <button class="btn btn-secondary bank-search-button" id="bankSourceSearchButton" type="submit">🔎 Tìm đề gốc</button>
           </form>
           <div class="bank-source-results" id="bankSourceResults"><div class="exam-empty" style="min-height:150px"><div><div class="exam-spinner"></div><strong>Đang tải danh mục đề hoàn chỉnh</strong></div></div></div>
+          <div class="bank-source-pagination" id="bankSourcePagination" hidden>
+            <span id="bankSourcePageStatus" role="status">Đã hiển thị 0 / 0 đề</span>
+            <button class="btn btn-secondary" id="bankSourceLoadMoreButton" type="button" onclick="VMExamAdmin.bankLoadMoreSources(event)">Tải thêm đề</button>
+          </div>
           <form class="bank-source-assign" id="bankSourceAssign" onsubmit="VMExamAdmin.bankAssignSourceExam(event)" hidden>
             <div class="bank-source-selected"><span id="bankSourceSelectedMode">Đang chọn đề nguồn</span><b id="bankSourceSelectedTitle">—</b></div>
             <div class="exam-field"><label for="bankSourceAssignClass">Giao cho lớp *</label><select class="input" id="bankSourceAssignClass" required><option value="">Chọn lớp</option></select></div>
@@ -255,7 +260,7 @@
       </section>
       </section>
 
-      <section class="bank-zone" id="bankZoneManage" data-bank-zone="manage">
+      <section class="bank-zone" id="bankZoneManage" role="tabpanel" aria-labelledby="bankViewTabManage" data-bank-zone="manage" hidden>
         <header class="bank-zone-head">
           <div><span>Quản trị câu &amp; ma trận</span><h2>Lọc theo chương, kiểm tra cơ cấu câu</h2></div>
           <small>ID nội bộ chỉ hiện với admin; giáo viên dùng nhãn chương và bài học.</small>
@@ -293,7 +298,7 @@
       </section>
       </section>
 
-      <section class="bank-zone bank-admin-import-zone" id="bankZoneImport" data-bank-zone="import" hidden>
+      <section class="bank-zone bank-admin-import-zone" id="bankZoneImport" role="tabpanel" aria-labelledby="bankImportNav" data-bank-zone="import" hidden>
         <header class="bank-zone-head">
           <div><span>Chỉ quản trị viên</span><h2>Nạp &amp; chuẩn hóa nội dung</h2></div>
           <small>Dán TeX, gắn ID và kiểm tra trước khi đưa vào kho.</small>
@@ -408,6 +413,7 @@
         </section>
       </div>
       </section>
+      </div>
     </section>
 
     <section class="exam-panel" id="panel-library">
@@ -482,10 +488,10 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.0"></script>
   <script src="js/tex-environments.js?v=1.0"></script>
-  <script src="js/latex-view.js?v=11.0"></script>
+  <script src="js/latex-view.js?v=11.1"></script>
   <script src="js/menu-v5.js?v=9.7"></script>
   <script src="js/analytics.js"></script>
   <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=3.0"></script>
+  <script src="js/exam-admin.js?v=3.2"></script>
 </body>
 </html>

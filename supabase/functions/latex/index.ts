@@ -3,6 +3,7 @@
 // behaviour and is never retained automatically.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.112.3";
+import { LatexValidationError, validateLatexSource } from "./security.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -70,11 +71,12 @@ Deno.serve(async (request: Request) => {
     const sourceBytes = new TextEncoder().encode(tex).byteLength;
     if (!tex) throw new Error("Thiếu nội dung LaTeX");
     if (sourceBytes > MAX_TEX_BYTES) throw new Error("Nội dung LaTeX vượt giới hạn 2 MB");
+    const validation = await validateLatexSource(tex, purpose);
 
     // Only isolated TikZ previews are retained. Full exams may contain private
     // material and therefore continue through the non-persistent path.
-    const tikzCount = (tex.match(/\\begin\s*\{tikzpicture\}/g) || []).length;
-    const standalone = /\\documentclass(?:\[[^\]]*\])?\s*\{standalone\}/.test(tex);
+    const tikzCount = validation.tikzCount;
+    const standalone = validation.standalone;
     const cacheable = purpose === "tikz" && standalone && tikzCount > 0 && tikzCount <= 16;
     if (!cacheable) {
       const result = await compile(tex, engine, DOCUMENT_TIMEOUT_MS);
@@ -133,6 +135,8 @@ Deno.serve(async (request: Request) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi không xác định";
-    return reply("Lỗi trạm trung chuyển: " + message, "text/plain; charset=utf-8", 500, { "Cache-Control": "no-store" });
+    const status = error instanceof LatexValidationError ? error.status : 500;
+    const prefix = status === 400 ? "Yêu cầu không hợp lệ: " : "Lỗi trạm trung chuyển: ";
+    return reply(prefix + message, "text/plain; charset=utf-8", status, { "Cache-Control": "no-store" });
   }
 });

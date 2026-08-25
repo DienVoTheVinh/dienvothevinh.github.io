@@ -31,6 +31,8 @@ function extractRange(source, from, to) {
 const lesson = fs.readFileSync('bai-hoc.html', 'utf8');
 const reader = fs.readFileSync('js/latex-view.js', 'utf8');
 const source = [
+  extractFunction(reader, 'vmTimDongMoiTruong'),
+  extractFunction(reader, 'vmThayMoiTruongCanBang'),
   extractRange(reader, 'function xoaLenhKhoiLatex', 'function dinhDangVanBanTaiLieuLatex'),
   extractRange(lesson, 'function vmChenTruocDocument', 'async function vmBatDauXuatPdf'),
   'return { configure: vmCauHinhNoiDungPdf, answers: vmBienDoiLoiGiaiPdf, repair: vmSuaXungDotGeometry };',
