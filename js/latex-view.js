@@ -31,7 +31,7 @@ window.vmLatexContentRegistry = vmLatexContentRegistry;
   if (document.getElementById('vmTikzSharedStyle')) return;
   var style = document.createElement('style');
   style.id = 'vmTikzSharedStyle';
-  style.textContent = '.vm-tex-tikz{width:100%;min-height:96px;margin:16px auto;display:grid;place-items:center;overflow:auto;border:1px dashed var(--line-2,var(--line,#d7dce2));border-radius:14px;background:color-mix(in srgb,var(--surface-2,transparent) 72%,transparent)}.vm-tex-tikz[data-vm-tikz-ready="done"]{min-height:0;border-color:transparent;background:transparent}.vm-tex-tikz-state{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 14px;color:var(--ink-3,#667085);font-size:.82rem;text-align:center}.vm-tex-tikz-spinner{width:20px;height:20px;flex:none;border:2px solid var(--line-2,#d7dce2);border-top-color:var(--accent,#d99000);border-radius:50%;animation:vmTikzSpin .8s linear infinite}.vm-tex-tikz canvas{display:block;width:auto;max-width:100%;height:auto;margin:auto;background:transparent!important}[data-theme="dark"] .vm-tex-tikz canvas{filter:invert(1) hue-rotate(180deg)}.vm-tex-tikz-error{color:var(--err,#b42318)}@keyframes vmTikzSpin{to{transform:rotate(360deg)}}';
+  style.textContent = '.vm-tex-tikz{width:100%;min-height:96px;margin:16px auto;display:grid;place-items:center;overflow:auto;border:1px dashed var(--line-2,var(--line,#d7dce2));border-radius:14px;background:color-mix(in srgb,var(--surface-2,transparent) 72%,transparent)}.vm-tex-tikz[data-vm-tikz-ready="done"]{min-height:0;border-color:transparent;background:transparent}.vm-tex-tikz-state{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:22px 14px;color:var(--ink-3,#667085);font-size:.82rem;text-align:center}.vm-tex-tikz-spinner{width:20px;height:20px;flex:none;border:2px solid var(--line-2,#d7dce2);border-top-color:var(--accent,#d99000);border-radius:50%;animation:vmTikzSpin .8s linear infinite}.vm-tex-tikz canvas{display:block;width:auto;max-width:100%;height:auto;margin:auto;background:transparent!important}[data-theme="dark"] .vm-tex-tikz canvas{filter:invert(1) hue-rotate(180deg)}.vm-tex-tikz-error{color:var(--err,#b42318)}.vm-tex-tikz-retry{border:1px solid var(--line-2,#d7dce2);border-radius:999px;background:var(--surface,#fff);color:var(--ink,#171717);padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}.vm-tex-tikz-error small{flex-basis:100%;color:var(--ink-3,#667085)}@keyframes vmTikzSpin{to{transform:rotate(360deg)}}';
   (document.head || document.documentElement).appendChild(style);
 })();
 
@@ -39,6 +39,54 @@ function vmEscapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function vmTikzGioiHan(name, fallback) {
+  var overrides = window.vmTikzTimeoutOverrides;
+  var value = overrides && Number(overrides[name]);
+  return Number.isFinite(value) && value > 0 && value <= 300000 ? value : fallback;
+}
+
+function vmTikzVoiGioiHan(promise, timeoutMs, message, onTimeout) {
+  var timer = 0;
+  var timeoutPromise = new Promise(function (_, reject) {
+    timer = setTimeout(function () {
+      try { if (typeof onTimeout === 'function') onTimeout(); } catch (_) {}
+      var error = new Error(message || 'Quá thời gian kết xuất hình TikZ');
+      error.code = 'VM_TIKZ_TIMEOUT';
+      reject(error);
+    }, Math.max(1, Number(timeoutMs) || 1));
+  });
+  return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(function () { clearTimeout(timer); });
+}
+
+function vmDatDangChoTikz(figure) {
+  if (!figure) return;
+  figure.removeAttribute('data-vm-tikz-ready');
+  figure.innerHTML = '<div class="vm-tex-tikz-state"><span class="vm-tex-tikz-spinner" aria-hidden="true"></span><span>Đang kết xuất hình TikZ...</span></div>';
+}
+
+function vmDatLoiTikz(figure, error) {
+  if (!figure) return;
+  figure.setAttribute('data-vm-tikz-ready', 'error');
+  figure.innerHTML = '';
+  var state = document.createElement('div');
+  state.className = 'vm-tex-tikz-state vm-tex-tikz-error';
+  var title = document.createElement('b');
+  title.textContent = error && error.code === 'VM_TIKZ_TIMEOUT' ? 'Kết xuất TikZ quá thời gian.' : 'Chưa kết xuất được hình TikZ.';
+  var retry = document.createElement('button');
+  retry.type = 'button'; retry.className = 'vm-tex-tikz-retry'; retry.textContent = 'Thử lại';
+  retry.addEventListener('click', function () {
+    vmDatDangChoTikz(figure);
+    vmXepHangTikzTuDong(figure);
+  });
+  state.appendChild(title); state.appendChild(retry);
+  if (error && error.message) {
+    var detail = document.createElement('small');
+    detail.textContent = String(error.message).slice(0, 180);
+    state.appendChild(detail);
+  }
+  figure.appendChild(state);
 }
 
 function vmLayPreambleLatex(src) {
@@ -132,10 +180,19 @@ async function vmLayTikzPdfNhanh(tex) {
     }
     if (!pdfBlob) {
       if (typeof sb === 'undefined' || !sb.functions) throw new Error('Chưa kết nối được trạm kết xuất TikZ');
-      var result = await sb.functions.invoke('latex', {
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      var invokeTimeout = vmTikzGioiHan('invoke', 50000);
+      var invokeOptions = {
         body: { tex: tex, engine: 'pdflatex', purpose: 'tikz', cache_version: 4 },
-        timeout: 50000
-      });
+        timeout: invokeTimeout
+      };
+      if (controller) invokeOptions.signal = controller.signal;
+      var result = await vmTikzVoiGioiHan(
+        sb.functions.invoke('latex', invokeOptions),
+        invokeTimeout + vmTikzGioiHan('invokeGrace', 750),
+        'Trạm kết xuất TikZ phản hồi quá lâu',
+        function () { if (controller) controller.abort(); }
+      );
       if (result.error) throw new Error(result.error.message || 'Trạm kết xuất TikZ đang bận');
       pdfBlob = result.data;
       if (!(pdfBlob instanceof Blob) || pdfBlob.type.indexOf('pdf') === -1) return vmTikzDocLoi(pdfBlob);
@@ -155,19 +212,29 @@ async function vmLayTikzPdfNhanh(tex) {
 
 function vmKhaiBaoTikzPreview(preamble) {
   var lines = String(preamble || '').split(/\r?\n/), out = [];
-  var collecting = false, depth = 0;
+  var collecting = false, depth = 0, current = [];
   var allowed = /^\s*\\(?:newcommand|renewcommand|providecommand|DeclareMathOperator|definecolor|colorlet|tikzset|pgfplotsset|tikzstyle|usetikzlibrary|usepgfplotslibrary|def)\b/;
+  // Phòng thủ phía trình duyệt: một khai báo hợp lệ ở dòng đầu vẫn có thể
+  // giấu primitive đọc/ghi tệp hoặc gọi shell trong thân nhiều dòng. Edge
+  // Function tiếp tục là ranh giới bảo mật chính, nhưng nguồn nguy hiểm không
+  // được gửi đi ngay từ bước xem trước.
+  var blocked = /\\(?:@{0,2}input|includeonly|include|openin|openout|newread|newwrite|readline|read|write18|write|immediate|special|usepackage|RequirePackage|documentclass|filecontents\*?|verbatiminput|lstinputlisting|inputminted|endinput|catcode|csname|scantokens|directlua|pdfshellescape)(?![A-Za-z@])/i;
   function delta(line) {
     var clean = String(line || '').replace(/\\[{}]/g, '');
     return (clean.match(/\{/g) || []).length - (clean.match(/\}/g) || []).length;
   }
+  function flush() {
+    var block = current.join('\n');
+    if (block && !blocked.test(block)) out.push(block);
+    current = [];
+  }
   lines.forEach(function (line) {
     if (!collecting && allowed.test(line)) {
-      collecting = true; depth = delta(line); out.push(line);
-      if (depth <= 0) collecting = false;
+      collecting = true; depth = delta(line); current = [line];
+      if (depth <= 0) { collecting = false; flush(); }
     } else if (collecting) {
-      out.push(line); depth += delta(line);
-      if (depth <= 0) collecting = false;
+      current.push(line); depth += delta(line);
+      if (depth <= 0) { collecting = false; flush(); }
     }
   });
   return out.join('\n');
@@ -229,38 +296,78 @@ function vmTexTikzPreview(items, batch) {
     '\\usepackage[T5]{fontenc}\n\\usepackage[utf8]{inputenc}\n\\usepackage{xcolor}\n' +
     '\\usepackage{amsmath,amssymb,mathtools}\n\\usepackage{tikz,tkz-euclide,pgfplots}\n' + optional +
     vmMauTikzPreview(preamble + '\n' + sources) + vmTikzCompatPreamble(sources) + '\\pgfplotsset{compat=1.18}\n' +
-    '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,positioning,shapes.geometric,decorations.pathmorphing,decorations.markings,backgrounds,fit,matrix}\n' +
+    '\\usetikzlibrary{calc,intersections,angles,quotes,arrows,arrows.meta,patterns,patterns.meta,positioning,shapes,shapes.geometric,decorations.pathmorphing,decorations.markings,decorations.text,backgrounds,fit,matrix,snakes,shadows,lindenmayersystems,shadings,fadings}\n' +
+    '\\usepgfplotslibrary{fillbetween}\n' +
     vmKhaiBaoTikzPreview(preamble) + '\n\\begin{document}\n' + sources + '\n\\end{document}';
 }
 
 function vmTaiPdfJsTikz() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if (window._vmTikzPdfJsPromise) return window._vmTikzPdfJsPromise;
-  window._vmTikzPdfJsPromise = new Promise(function (resolve, reject) {
-    var script = document.createElement('script');
+  var script = null;
+  var loading = new Promise(function (resolve, reject) {
+    script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
     script.onload = function () {
+      if (!window.pdfjsLib) {
+        var missing = new Error('pdf.js đã tải nhưng chưa khởi tạo');
+        missing.code = 'VM_TIKZ_PDFJS'; reject(missing); return;
+      }
       var worker = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
       resolve(window.pdfjsLib);
     };
-    script.onerror = reject;
+    script.onerror = function () {
+      var loadError = new Error('Không tải được bộ đọc PDF cho hình TikZ');
+      loadError.code = 'VM_TIKZ_PDFJS'; reject(loadError);
+    };
     document.head.appendChild(script);
+  });
+  window._vmTikzPdfJsPromise = vmTikzVoiGioiHan(
+    loading,
+    vmTikzGioiHan('pdfjs', 12000),
+    'Bộ đọc PDF cho TikZ tải quá lâu',
+    function () { if (script && script.parentNode) script.parentNode.removeChild(script); }
+  ).catch(function (error) {
+    window._vmTikzPdfJsPromise = null;
+    if (script && script.parentNode) script.parentNode.removeChild(script);
+    throw error;
   });
   return window._vmTikzPdfJsPromise;
 }
 
 async function vmVeTrangTikz(pdf, pageNumber, figure) {
-  var page = await pdf.getPage(pageNumber);
+  var page = await vmTikzVoiGioiHan(
+    pdf.getPage(pageNumber),
+    vmTikzGioiHan('pdfPage', 15000),
+    'Đọc trang TikZ quá thời gian'
+  );
   var scale = Math.min(2.25, Math.max(1.5, window.devicePixelRatio || 1));
   var viewport = vmTikzViewportAnToan(page, scale);
   var canvas = document.createElement('canvas');
   canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', 'Hình minh họa TikZ');
-  await page.render({ canvasContext: canvas.getContext('2d', { alpha:true }), viewport:viewport, background:'rgba(0,0,0,0)' }).promise;
+  var renderTask = page.render({ canvasContext: canvas.getContext('2d', { alpha:true }), viewport:viewport, background:'rgba(0,0,0,0)' });
+  await vmTikzVoiGioiHan(
+    renderTask.promise,
+    vmTikzGioiHan('pdfRender', 20000),
+    'Vẽ hình TikZ quá thời gian',
+    function () { if (renderTask && typeof renderTask.cancel === 'function') renderTask.cancel(); }
+  );
   figure.innerHTML = ''; figure.appendChild(canvas);
   figure.setAttribute('data-vm-tikz-ready', 'done');
+}
+
+async function vmMoPdfTikz(blob) {
+  var lib = await vmTaiPdfJsTikz();
+  var loadingTask = lib.getDocument({ data:await blob.arrayBuffer() });
+  return vmTikzVoiGioiHan(
+    loadingTask.promise,
+    vmTikzGioiHan('pdfOpen', 20000),
+    'Mở bản PDF TikZ quá thời gian',
+    function () { if (loadingTask && typeof loadingTask.destroy === 'function') loadingTask.destroy(); }
+  );
 }
 
 function vmTikzViewportAnToan(page, preferredScale) {
@@ -278,23 +385,24 @@ async function vmRenderTikzEntriesNhanh(entries) {
     // standalone multi=tikzpicture tạo một trang cho mỗi hình: một lần gọi
     // máy chủ có thể dựng toàn bộ bảng hình thay vì N lần gọi liên tiếp.
     var batchBlob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entries.map(function (entry) { return entry.item; }), true));
-    var lib = await vmTaiPdfJsTikz();
-    var pdf = await lib.getDocument({ data:await batchBlob.arrayBuffer() }).promise;
+    var pdf = await vmMoPdfTikz(batchBlob);
     if (pdf.numPages < entries.length) throw new Error('Bản TikZ theo lô thiếu trang');
     await Promise.all(entries.map(function (entry, index) { return vmVeTrangTikz(pdf, index + 1, entry.figure); }));
   } catch (batchError) {
+    if (batchError && (batchError.code === 'VM_TIKZ_TIMEOUT' || batchError.code === 'VM_TIKZ_PDFJS')) {
+      entries.forEach(function (entry) { vmDatLoiTikz(entry.figure, batchError); });
+      return;
+    }
     var next = 0;
     async function worker() {
       while (next < entries.length) {
         var entry = entries[next++];
         try {
           var blob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entry.item, false));
-          var lib = await vmTaiPdfJsTikz();
-          var pdf = await lib.getDocument({ data:await blob.arrayBuffer() }).promise;
+          var pdf = await vmMoPdfTikz(blob);
           await vmVeTrangTikz(pdf, 1, entry.figure);
         } catch (error) {
-          entry.figure.setAttribute('data-vm-tikz-ready', 'error');
-          entry.figure.innerHTML = '<div class="vm-tex-tikz-state vm-tex-tikz-error"><b>Chưa kết xuất được hình TikZ.</b></div>';
+          vmDatLoiTikz(entry.figure, error);
         }
       }
     }
@@ -311,7 +419,11 @@ async function vmRenderTikzPreviewNhanh(root) {
   if (window.vmTikzAutoObserver) figures.forEach(function (figure) { try { window.vmTikzAutoObserver.unobserve(figure); } catch (e) {} });
   var entries = figures.map(function (figure) {
     return { figure:figure, item:window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
-  }).filter(function (entry) { return !!entry.item; });
+  });
+  entries.filter(function (entry) { return !entry.item; }).forEach(function (entry) {
+    vmDatLoiTikz(entry.figure, new Error('Không còn dữ liệu nguồn để kết xuất hình này'));
+  });
+  entries = entries.filter(function (entry) { return !!entry.item; });
   if (!entries.length) return;
   entries.forEach(function (entry) { entry.figure.setAttribute('data-vm-tikz-ready', 'queued'); });
   await vmRenderTikzEntriesNhanh(entries);
@@ -337,7 +449,11 @@ async function vmChayHangTikzTuDong() {
   var figures = vmTikzAutoQueue.splice(0, 12);
   var entries = figures.map(function (figure) {
     return { figure:figure, item:window.vmLatexTikzRegistry && window.vmLatexTikzRegistry[figure.getAttribute('data-vm-tikz')] };
-  }).filter(function (entry) { return !!entry.item; });
+  });
+  entries.filter(function (entry) { return !entry.item; }).forEach(function (entry) {
+    vmDatLoiTikz(entry.figure, new Error('Không còn dữ liệu nguồn để kết xuất hình này'));
+  });
+  entries = entries.filter(function (entry) { return !!entry.item; });
   try { await vmRenderTikzEntriesNhanh(entries); }
   finally {
     vmTikzAutoActive = false;
@@ -429,6 +545,21 @@ function vmDocKhoiNgoac(src, start) {
   return { content: text.slice(at + 1, i - 1), end: i };
 }
 
+function vmDocNhomCanBang(src, start, open, close) {
+  var text = String(src || '');
+  var at = start;
+  while (/\s/.test(text.charAt(at))) at++;
+  if (text.charAt(at) !== open) return null;
+  var depth = 1, i = at + 1;
+  while (i < text.length && depth > 0) {
+    if (text.charAt(i) === open && text.charAt(i - 1) !== '\\') depth++;
+    else if (text.charAt(i) === close && text.charAt(i - 1) !== '\\') depth--;
+    i++;
+  }
+  if (depth !== 0) return null;
+  return { content:text.slice(at + 1, i - 1), start:at, end:i };
+}
+
 // Cac bo DGNL dung \immini{noi dung}{hinh}. Tren web ta giu du ca hai
 // khoi theo thu tu doc thay vi xoa ten lenh va de lo cap ngoac nhon.
 function vmThayLenhHaiKhoi(src, command, replacer) {
@@ -471,23 +602,32 @@ function vmBaoVeKhoiNoiDung(src) {
   }
   environments = environments.map(function (name) { return String(name || '').toLowerCase(); })
     .filter(function (name, index, all) { return /^[a-z][a-z0-9@_-]*$/.test(name) && all.indexOf(name) === index; });
-  var envPattern = environments.join('|');
-  var pattern = new RegExp('\\\\begin\\{(' + envPattern + ')\\}([\\s\\S]*?)\\\\end\\{\\1\\}', 'gi');
-  var changed = true, limit = 30;
-  while (changed && limit-- > 0) {
-    changed = false;
-    text = text.replace(pattern, function (_, env, content) {
-      changed = true;
-      var info = { env: String(env || '').toLowerCase(), content: content, title: '' };
-      if (/^(dang|dangg|khung4|noidung)$/.test(info.env)) {
-        var titled = vmTachTieuDeMoiTruong(content);
-        info.title = titled.title;
-        info.content = titled.content;
-      }
-      var token = 'VMCONTENT' + (++vmLatexContentSeq);
-      vmLatexContentRegistry[token] = info;
-      return '\n___' + token + '___\n';
+  var limit = 200, searchEnds = {};
+  while (limit-- > 0) {
+    var hit = null;
+    environments.forEach(function (env) {
+      var token = '\\begin{' + env + '}';
+      var endAt = Object.prototype.hasOwnProperty.call(searchEnds, env) ? searchEnds[env] : text.length;
+      var at = text.lastIndexOf(token, endAt);
+      if (at !== -1 && (!hit || at > hit.at)) hit = { env:env, token:token, at:at };
     });
+    if (!hit) break;
+    var bodyAt = hit.at + hit.token.length;
+    var close = vmTimDongMoiTruong(text, hit.env, bodyAt);
+    if (!close) {
+      searchEnds[hit.env] = hit.at - 1;
+      continue;
+    }
+    var info = { env:hit.env, content:text.slice(bodyAt, close.start), title:'' };
+    if (/^(dang|dangg|khung4|noidung)$/.test(info.env)) {
+      var titled = vmTachTieuDeMoiTruong(info.content);
+      info.title = titled.title;
+      info.content = titled.content;
+    }
+    var token = 'VMCONTENT' + (++vmLatexContentSeq);
+    vmLatexContentRegistry[token] = info;
+    text = text.slice(0, hit.at) + '\n___' + token + '___\n' + text.slice(close.end);
+    searchEnds = {};
   }
   return text;
 }
@@ -579,6 +719,106 @@ function vmTimDongMoiTruong(src, env, from) {
   return null;
 }
 
+function vmThayMoiTruongCanBang(src, environment, replacer, bodyStart) {
+  var text = String(src || '');
+  var token = '\\begin{' + environment + '}';
+  var limit = 200, searchEnd = text.length;
+  while (limit-- > 0) {
+    var at = text.lastIndexOf(token, searchEnd);
+    if (at === -1) break;
+    var after = at + token.length;
+    var contentAt = typeof bodyStart === 'function' ? bodyStart(text, after, environment) : after;
+    if (contentAt == null) { searchEnd = at - 1; continue; }
+    var close = vmTimDongMoiTruong(text, environment, contentAt);
+    if (!close) { searchEnd = at - 1; continue; }
+    var content = text.slice(contentAt, close.start);
+    var replacement = typeof replacer === 'function'
+      ? replacer(content, { environment:environment, begin:at, contentStart:contentAt, end:close.end })
+      : String(replacer || '');
+    text = text.slice(0, at) + replacement + text.slice(close.end);
+    searchEnd = text.length;
+  }
+  return text;
+}
+
+function vmSauDoiSoMoiTruong(text, at, environment) {
+  var cursor = at;
+  function skip() { while (/\s/.test(text.charAt(cursor))) cursor++; }
+  function optional(open, close) {
+    skip();
+    var group = vmDocNhomCanBang(text, cursor, open, close);
+    if (!group) return false;
+    cursor = group.end;
+    return true;
+  }
+  if (environment === 'minipage') {
+    optional('[', ']');
+    skip();
+    var width = vmDocNhomCanBang(text, cursor, '{', '}');
+    if (!width) return null;
+    return width.end;
+  }
+  if (environment === 'figure' || environment === 'tcolorbox' || environment === 'description') {
+    optional('[', ']');
+    return cursor;
+  }
+  if (environment === 'tasks' || environment === 'taskEX') {
+    var count = 0;
+    while (count++ < 4) {
+      if (optional('[', ']') || optional('(', ')')) continue;
+      break;
+    }
+    return cursor;
+  }
+  if (environment === 'dinglist') {
+    skip();
+    var symbol = vmDocNhomCanBang(text, cursor, '{', '}');
+    if (!symbol) return null;
+    return symbol.end;
+  }
+  return cursor;
+}
+
+function vmTaskSangItem(src) {
+  var text = String(src || ''), token = '\\task', from = 0;
+  while (from < text.length) {
+    var at = text.indexOf(token, from);
+    if (at === -1) break;
+    var after = at + token.length;
+    if (/[A-Za-z@]/.test(text.charAt(after))) { from = after; continue; }
+    var label = vmDocNhomCanBang(text, after, '[', ']');
+    var replacement = '\\item' + (label ? '[' + label.content + ']' : ' ');
+    text = text.slice(0, at) + replacement + text.slice(label ? label.end : after);
+    from = at + replacement.length;
+  }
+  return text;
+}
+
+// Chỉ bóc các khung trình bày an toàn. Không đụng scope/axis vì đó là cấu
+// trúc ngữ nghĩa của TikZ/PGFPlots và phải được giữ nguyên để biên dịch hình.
+function vmChuanHoaMoiTruongVanBan(src, options) {
+  options = options || {};
+  var text = String(src || '');
+  ['minipage', 'flushleft', 'flushright', 'figure', 'tcolorbox', 'scriptsize'].forEach(function (environment) {
+    text = vmThayMoiTruongCanBang(text, environment, function (content) { return '\n' + content + '\n'; }, vmSauDoiSoMoiTruong);
+  });
+  ['tasks', 'taskEX'].forEach(function (environment) {
+    text = vmThayMoiTruongCanBang(text, environment, function (content) {
+      return '\n\\begin{enumerate}[a)]\n' + vmTaskSangItem(content) + '\n\\end{enumerate}\n';
+    }, vmSauDoiSoMoiTruong);
+  });
+  text = vmThayMoiTruongCanBang(text, 'description', function (content) {
+    return '\n\\begin{itemize}\n' + content + '\n\\end{itemize}\n';
+  }, vmSauDoiSoMoiTruong);
+  text = vmThayMoiTruongCanBang(text, 'dinglist', function (content) {
+    return '\n\\begin{itemize}\n' + content + '\n\\end{itemize}\n';
+  }, vmSauDoiSoMoiTruong);
+  text = vmThayMoiTruongCanBang(text, 'onlysolution', function (content) {
+    return options.showSolutions === false ? '' : '\n\\begin{solution}\n' + content + '\n\\end{solution}\n';
+  }, vmSauDoiSoMoiTruong);
+  return text;
+}
+
 function vmNoiDungBangSangHtml(body) {
   var text = String(body || '')
     .replace(/\\(?:hline|toprule|midrule|bottomrule)\b/g, '')
@@ -606,7 +846,7 @@ function vmNoiDungBangSangHtml(body) {
 // m{5cm}, p{.3\\linewidth}, tabularx... không còn rơi ra thành chữ thô.
 function tabularSangBangHTML(src) {
   var text = String(src || '');
-  var environments = ['tabularx', 'tabular*', 'longtable', 'tabular', 'array'];
+  var environments = ['tabularx', 'tabular*', 'longtable', 'tabular', 'tblr', 'array'];
   var cursor = 0;
   while (cursor < text.length) {
     var hit = null;
@@ -618,10 +858,8 @@ function tabularSangBangHTML(src) {
     if (!hit) break;
     var argsAt = hit.at + hit.token.length;
     while (/\s/.test(text.charAt(argsAt))) argsAt++;
-    if (text.charAt(argsAt) === '[') {
-      var bracketEnd = text.indexOf(']', argsAt + 1);
-      if (bracketEnd !== -1) argsAt = bracketEnd + 1;
-    }
+    var optional = vmDocNhomCanBang(text, argsAt, '[', ']');
+    if (optional) argsAt = optional.end;
     var first = vmDocKhoiNgoac(text, argsAt);
     if (!first) { cursor = argsAt; continue; }
     var bodyAt = first.end;
@@ -815,8 +1053,7 @@ function thayLenhKhoiLatex(src, command, replacer) {
 }
 
 function thayMoiTruongKhoiLatex(src, environment, replacer) {
-  var pattern = new RegExp('\\\\begin\\{' + environment + '\\}([\\s\\S]*?)\\\\end\\{' + environment + '\\}', 'gi');
-  return String(src || '').replace(pattern, function (_, content) {
+  return vmThayMoiTruongCanBang(src, environment, function (content) {
     return typeof replacer === 'function' ? replacer(content) : String(replacer || '');
   });
 }
@@ -841,7 +1078,7 @@ function tachLoiGiaiKhoiNoiDung(src) {
 
 function dinhDangVanBanTaiLieuLatex(src) {
   var solutionBlocks = [];
-  var text = String(src || '');
+  var text = vmChuanHoaMoiTruongVanBan(String(src || ''), { showSolutions:true });
   ['loigiai', 'solution', 'answer'].forEach(function (command) {
     text = thayLenhKhoiLatex(text, command, function (content) {
       var token = '___VMSOLUTION_' + solutionBlocks.length + '___';
@@ -882,13 +1119,33 @@ function dinhDangVanBanTaiLieuLatex(src) {
   return vmKhoiNoiDungSangHtml(html).trim();
 }
 
+// Bộ dựng mảnh dùng chung cho trình soạn và ngân hàng đề. fullSource giữ lại
+// preamble của tệp gốc để TikZ dùng được macro/thư viện riêng, còn chính sách
+// lời giải vẫn do nơi gọi quyết định.
+function vmLatexFragmentRaHTML(src, options) {
+  options = options || {};
+  var showSolutions = options.showSolutions !== false;
+  var text = vmChuanHoaMoiTruongVanBan(String(src || ''), { showSolutions:showSolutions });
+  if (!showSolutions) {
+    ['loigiai', 'solution', 'answer'].forEach(function (command) {
+      text = xoaLenhKhoiLatex(text, command);
+    });
+    ['loigiai', 'solution', 'answer', 'sol', 'onlysolution'].forEach(function (environment) {
+      text = thayMoiTruongKhoiLatex(text, environment, '');
+    });
+  }
+  text = vmBaoVeKhoiTikz(text, String(options.fullSource || src || ''));
+  return dinhDangVanBanTaiLieuLatex(text);
+}
+window.vmLatexFragmentRaHTML = vmLatexFragmentRaHTML;
+
 // Bộ đọc tài liệu dùng chung cho lý thuyết thường, đề kiểm tra, BTVN và bài
 // thưởng. Mặc định không hiển thị \loigiai/\solution để tránh lộ đáp án.
 function latexTaiLieuRaHTML(src, options) {
   options = options || {};
   var kind = options.kind || 'document';
   var title = options.title || 'Tài liệu học tập';
-  var body = tachNoiDungTaiLieuLatex(src || '');
+  var body = vmChuanHoaMoiTruongVanBan(tachNoiDungTaiLieuLatex(src || ''), { showSolutions:!!options.showSolutions });
   if (!options.showSolutions) {
     body = xoaLenhKhoiLatex(body, 'loigiai');
     body = xoaLenhKhoiLatex(body, 'solution');
@@ -1045,28 +1302,31 @@ function dichMoiTruongDanhSach(s) {
   return s;
 }
 
+function vmTuyChonRenderToan() {
+  return {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '\\[', right: '\\]', display: true },
+      { left: '$', right: '$', display: false },
+      { left: '\\(', right: '\\)', display: false }
+    ],
+    macros: {
+      "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right.",
+      "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+      "\\N": "\\mathbb{N}", "\\Z": "\\mathbb{Z}", "\\Q": "\\mathbb{Q}",
+      "\\R": "\\mathbb{R}", "\\C": "\\mathbb{C}",
+      "\\vect": "\\overrightarrow{#1}"
+    },
+    throwOnError: false,
+    strict: 'ignore',
+    trust: false
+  };
+}
+window.vmTuyChonRenderToan = vmTuyChonRenderToan;
+
 // Render mọi công thức toán bên trong phần tử
 function renderToanTrong(el) {
-  if (window.renderMathInElement && el) {
-    renderMathInElement(el, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '\\[', right: '\\]', display: true },
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false }
-      ],
-      macros: {
-        "\\hoac": "\\left[\\begin{aligned}#1\\end{aligned}\\right.",
-        "\\heva": "\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
-        "\\N": "\\mathbb{N}", "\\Z": "\\mathbb{Z}", "\\Q": "\\mathbb{Q}",
-        "\\R": "\\mathbb{R}", "\\C": "\\mathbb{C}",
-        "\\vect": "\\overrightarrow{#1}"
-      },
-      throwOnError: false,
-      strict: 'ignore',
-      trust: false
-    });
-  }
+  if (window.renderMathInElement && el) renderMathInElement(el, vmTuyChonRenderToan());
 }
 
 // Trình biên dịch LaTeX Parser (bóc tách \begin{ex}...\end{ex} hoặc \begin{bt}...\end{bt})

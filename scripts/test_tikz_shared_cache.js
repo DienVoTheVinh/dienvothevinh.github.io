@@ -8,7 +8,8 @@ const migration = fs.readFileSync('supabase/migrations/20260825151000_latex_tikz
 const shell = fs.readFileSync('js/vinhmath.js','utf8');
 
 assert(reader.includes("purpose: 'tikz'") && reader.includes('cache_version: 4'));
-assert(reader.includes('timeout: 50000'));
+assert(reader.includes("vmTikzGioiHan('invoke', 50000)") && reader.includes('new AbortController()'));
+assert(reader.includes('vmTikzVoiGioiHan') && reader.includes('controller.abort()'));
 assert(reader.includes("digest('SHA-256'") && reader.includes("vinhmath-tikz-v4"));
 assert(reader.includes("alpha:true") && reader.includes("background:'rgba(0,0,0,0)'"));
 assert(reader.includes('IntersectionObserver') && reader.includes('vmTikzAutoQueue'));
@@ -27,6 +28,10 @@ assert(edge.includes('TIKZ_TIMEOUT_MS') && edge.includes('DOCUMENT_TIMEOUT_MS') 
 assert(edge.includes('EdgeRuntime.waitUntil'));
 assert(migration.includes("'latex-render-cache'") && migration.includes('public=false'));
 assert(reader.includes('vmTikzViewportAnToan') && reader.includes('vmTikzPdfThuTu.length > 72'));
+assert(reader.includes("vmTikzGioiHan('pdfjs', 12000)") && reader.includes('window._vmTikzPdfJsPromise = null'));
+assert(reader.includes('vm-tex-tikz-retry') && reader.includes('Không còn dữ liệu nguồn để kết xuất hình này'));
+assert(reader.includes('patterns.meta') && reader.includes('decorations.text') && reader.includes('usepgfplotslibrary{fillbetween}'));
+assert(reader.includes('@{0,2}input') && reader.includes('write18') && reader.includes('pdfshellescape') && reader.includes('filecontents\\*?'));
 assert(lesson.includes('fallbackWorker()') && !lesson.includes('Promise.all(figures.map(vmBienDichMotTikz))'));
 assert(shell.includes("/^vinhmath-tikz-v\\d+$/.test(name)") && shell.includes('caches.delete(name)'));
 

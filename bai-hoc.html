@@ -21,7 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script>window.vmDisableGlobalTikzAuto = true;</script>
-<script src="js/latex-view.js?v=11.0"></script>
+<script src="js/latex-view.js?v=11.1"></script>
 <style>
 body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--ink); }
 .lesson-container { display:flex; flex-direction:column; height:100vh; height:100dvh; }
@@ -2892,11 +2892,17 @@ async function chuanHoaTexBaiHoc(rawCode) {
   
   var styExTest = '';
   var styTitleDot = '';
+  var styCasioVn = '';
+  var styCasio580x = '';
   try {
     var r1 = await fetch('ex_test.sty');
     if (r1.ok) styExTest = await r1.text();
     var r2 = await fetch('titledot.sty');
     if (r2.ok) styTitleDot = await r2.text();
+    var r3 = await fetch('casiovn.sty');
+    if (r3.ok) styCasioVn = await r3.text();
+    var r4 = await fetch('casio580x.sty');
+    if (r4.ok) styCasio580x = await r4.text();
   } catch (e) {
     console.error('Lỗi fetch sty:', e);
   }
@@ -2909,122 +2915,12 @@ async function chuanHoaTexBaiHoc(rawCode) {
     virtualFiles += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
   }
   
-  // Virtual files for Casio
-  virtualFiles += `\\begin{filecontents*}{casiovn.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\endinput
-\\end{filecontents*}\n`;
-
-  virtualFiles += `\\begin{filecontents*}{casio580x.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\endinput
-\\end{filecontents*}\n`;
+  if (styCasioVn) {
+    virtualFiles += '\\begin{filecontents*}{casiovn.sty}\n' + styCasioVn + '\n\\end{filecontents*}\n';
+  }
+  if (styCasio580x) {
+    virtualFiles += '\\begin{filecontents*}{casio580x.sty}\n' + styCasio580x + '\n\\end{filecontents*}\n';
+  }
 
   var preamble = virtualFiles + `\\documentclass[12pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
 \\usepackage{newpxtext} % Palatino — font serif cổ điển cho sách toán

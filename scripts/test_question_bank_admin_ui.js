@@ -13,28 +13,47 @@ assert.ok(html.includes('Tạo một đề mới') && html.includes('Dùng một
 assert.ok(html.includes('Giáo viên</b> dùng kho') && html.includes('Admin</b> có thêm quyền'), 'guide must distinguish teacher and admin access');
 assert.ok(html.includes('Nạp đề TeX và gắn ID') && html.includes('Xem HTML/PDF'), 'guide must cover TeX classification and preview');
 assert.ok(html.includes('Liên kết với Soạn thảo') && html.includes('Tra ngân hàng đề'), 'guide must explain the two-way authoring link');
-assert.ok(html.indexOf('js/question-bank.js?v=1.1') < html.indexOf('js/exam-admin.js?v=3.0'));
+const questionBankScript = html.search(/js\/question-bank\.js\?v=[^"']+/);
+const examAdminScript = html.search(/js\/exam-admin\.js\?v=[^"']+/);
+assert.ok(questionBankScript >= 0 && examAdminScript > questionBankScript,
+  'question-bank parser must load before the exam-admin UI regardless of cache-buster version');
 for (const zone of ['Overview','Create','Import','Manage']) {
   assert.ok(html.includes(`id="bankZone${zone}"`), `bank workspace is missing ${zone.toLowerCase()} zone`);
 }
 assert.ok(html.includes('id="bankImportNav"') && html.includes('data-bank-zone-nav="import"'), 'admin import needs its own workspace navigation entry');
 assert.ok(html.includes('Nạp &amp; chuẩn hóa') && html.includes('Kho câu &amp; ma trận'), 'four-zone navigation must use clear workflow labels');
+assert.ok(html.includes('id="bankWorkspaceNav" role="tablist"') && html.includes('id="bankWorkspaceViews"'), 'bank navigation and independent view container must be explicit');
+for (const zone of ['Overview','Create','Import','Manage']) {
+  assert.ok(new RegExp(`id="bankZone${zone}"[^>]*role="tabpanel"`).test(html), `bank ${zone.toLowerCase()} view must be an accessible tab panel`);
+}
+for (const zone of ['Create','Import','Manage']) assert.ok(new RegExp(`id="bankZone${zone}"[^>]*hidden`).test(html), `inactive ${zone.toLowerCase()} view must start hidden`);
 assert.ok(html.includes('id="bankOverviewComplete"') && html.includes('id="bankOverviewTopic"') && html.includes('id="bankOverviewReviewCard"'), 'overview must separate inventory and review status');
 assert.ok(html.includes('id="bankSearchChapter"') && html.includes('id="bankSearchTopic"'), 'search needs grade to chapter to topic hierarchy');
 assert.ok(html.includes('id="bankGenChapter"') && html.includes('id="bankGenTopic"'), 'generation needs semantic chapter and topic filters');
 assert.ok(html.includes('id="bankMatrixBody"') && html.includes('id="bankMatrixTotalRow"'), 'admin and teacher need an exam matrix');
-assert.ok(html.includes('id="bankZoneImport" data-bank-zone="import" hidden') && html.includes('id="bankAdminWorkbench"'), 'the whole import zone must be admin-only by default');
+assert.ok(/id="bankZoneImport"[^>]*data-bank-zone="import"[^>]*hidden/.test(html) && html.includes('id="bankAdminWorkbench"'), 'the whole import zone must be admin-only by default');
 assert.ok(html.includes('id="bankTexFiles"') && html.includes('multiple'));
 assert.ok(html.includes('id="bankPackageFile"') && html.includes('id="bankPackageButton"'));
 assert.ok(html.includes('id="bankImportSourceKind"') && html.includes('value="topic_pack"'), 'topic packs must be the safe default import mode');
 assert.ok(html.includes('data-bank-import-mode="topic_pack"') && html.includes('data-bank-import-mode="complete_exam"'), 'admin upload station must separate topic packs from whole exams');
 assert.ok(html.includes('id="bankImportTopicGrade"') && html.includes('id="bankImportTopicChapter"') && html.includes('id="bankImportTopicLesson"'), 'topic packs need grade to chapter to lesson classification');
 assert.ok(html.includes('id="bankPasteTex"') && html.includes('bankParsePastedTex()'), 'admin must be able to paste a legacy TeX exam without IDs');
-for (const kind of ['thpt_official','thpt_reference','thpt_mock','midterm','final','chapter','other']) assert.ok(html.includes(`value="${kind}"`), `missing source exam kind ${kind}`);
-assert.ok(!html.includes('value="semester_1"') && !html.includes('value="semester_2"'), 'semester must be stored separately from the canonical exam kind');
+const importTypeMatch = html.match(/<select[^>]*id="bankImportExamType"[^>]*>([\s\S]*?)<\/select>/);
+const sourceTypeMatch = html.match(/<select[^>]*id="bankSourceType"[^>]*>([\s\S]*?)<\/select>/);
+assert.ok(importTypeMatch && sourceTypeMatch, 'source and import exam-kind selectors must exist');
+for (const kind of ['thpt_official','thpt_reference','thpt_mock','midterm','final','chapter','other']) {
+  assert.ok(importTypeMatch[1].includes(`value="${kind}"`), `missing canonical import exam kind ${kind}`);
+}
+assert.ok(!importTypeMatch[1].includes('value="semester_1"') && !importTypeMatch[1].includes('value="semester_2"'),
+  'semester must remain metadata, not a canonical import exam kind');
+for (const kind of ['semester_1','semester_2']) {
+  assert.ok(sourceTypeMatch[1].includes(`value="${kind}"`), `source catalogue lost semantic filter ${kind}`);
+}
 assert.ok(html.includes('id="bankImportUnit"') && html.includes('id="bankImportYear"') && html.includes('id="bankImportExamType"') && html.includes('id="bankImportExamGrade"'));
 assert.ok(html.includes('id="bankSourceGrade"'), 'whole-source catalog needs a grade filter');
 assert.ok(html.includes('id="bankSourceCatalogCard"') && html.includes('id="bankSourceAssign"'));
+assert.ok(html.includes('id="bankSourceType" onchange="VMExamAdmin.bankSyncSourceCategory()"'), 'semantic exam type must synchronize the active source category');
+assert.ok(html.includes('id="bankSourcePagination"') && html.includes('id="bankSourcePageStatus"') && html.includes('id="bankSourceLoadMoreButton"'), 'whole-source catalog needs a visible load-more status');
 assert.ok(html.includes('id="bankImportCard"') && html.includes('Đang tải danh mục đề hoàn chỉnh'));
 assert.ok(html.includes('id="bankImportPreviewButton"') && html.includes('bankOpenImportPreview()'), 'pending imports need a whole-document HTML/PDF preview');
 assert.ok(html.includes('id="bankLocalMatrix"'), 'pending imports need a local matrix before publishing');
@@ -57,11 +76,17 @@ for (const rpc of [
 
 assert.ok(js.includes("profile.role === 'admin'"));
 assert.ok(js.includes("profile.role === 'teacher'"));
+assert.ok(js.includes("/^#bank-(overview|create|import|manage)$/") && js.includes("history.pushState(history.state,'',hash)"), 'bank views need shareable hash history');
+assert.ok(js.includes("document.querySelectorAll('[data-bank-zone]')") && js.includes('zone.hidden=!visible'), 'switching bank views must hide every inactive panel without rebuilding forms');
+assert.ok(js.includes("window.addEventListener('popstate',bankSyncViewFromLocation)") && js.includes("window.addEventListener('hashchange',bankSyncViewFromLocation)"), 'Back, Forward and direct hash navigation must restore the selected view');
 assert.ok(!/profile\.role\s*===\s*['\"]assistant['\"]/.test(js.slice(js.indexOf('function bankAccessFor'), js.indexOf('function bankFillClassOptions'))));
 assert.ok(js.includes("if(!bankAccess.canUse){location.href="));
 assert.ok(js.includes("if(!bankAccess.canAdmin){"), 'teacher path must return before raw exam/admin loading');
 assert.ok(js.includes('data-source-exam-id'), 'source catalog should bind sanitized data instead of interpolating inline JavaScript');
 assert.ok(js.includes('data-source-mode="clone"') && js.includes('Tạo đề cùng cấu trúc'), 'source catalog must offer a fresh exam with the same pedagogical structure');
+assert.ok(js.includes('function bankSyncSourceCategory') && js.includes('bankRenderSourceCategoryTabs()'), 'semantic filters and category tabs must stay synchronized');
+assert.ok(js.includes('function bankLoadMoreSources') && js.includes('sourceCatalogOffset=offset+items.length') && js.includes('bankMergeSourceItems'), 'source catalog must paginate with server offsets and deduplicate rows');
+assert.ok(js.includes("p_limit:pageSize,p_offset:offset") && js.includes("status.textContent='Đã hiển thị '+displayed+' / '+total+' đề'"), 'source pagination must report displayed and total rows');
 assert.ok(js.includes('function bankSafeError'), 'teacher-facing RPC errors must be sanitized');
 assert.ok(js.includes("if (state.bank.access.canAdmin) return bankLoadAdminDocumentPreview"), 'source preview must branch admin away from the teacher-safe RPC');
 const adminDocumentPreviewSource = js.slice(js.indexOf('async function bankLoadAdminDocumentPreview'), js.indexOf('function bankOpenLocalPreview'));
@@ -115,8 +140,10 @@ assert.ok(css.includes('.bank-teacher-mode'));
 assert.ok(css.includes('.bank-dropzone'));
 assert.ok(css.includes('.bank-package-import'));
 assert.ok(css.includes('.bank-import-mode-switch') && css.includes('.bank-paste-textarea') && css.includes('.bank-import-input-grid'), 'upload station needs its professional responsive layout');
-assert.ok(css.includes('.bank-admin-import-zone') && css.includes('.bank-local-toolbar') && css.includes('.bank-local-matrix'), 'dedicated import zone needs preview and matrix layout');
+assert.ok(html.includes('class="bank-zone bank-admin-import-zone"') && css.includes('.bank-local-toolbar') && css.includes('.bank-local-matrix'), 'dedicated import zone needs preview and matrix layout');
+assert.ok(css.includes('.bank-workspace-views') && css.includes('.bank-zone[hidden]{display:none!important}') && css.includes('@keyframes bank-view-enter'), 'independent bank views need stable responsive layout and restrained transitions');
 assert.ok(css.includes('.bank-source-results'));
+assert.ok(css.includes('.bank-source-pagination') && css.includes('.bank-source-pagination[hidden]{display:none!important}'));
 assert.ok(css.includes('.bank-question-list'));
 assert.ok(css.includes('.bank-taxonomy-manual-grid'));
 assert.ok(css.includes('body.bank-teacher-mode .bank-admin-taxonomy-filter'));

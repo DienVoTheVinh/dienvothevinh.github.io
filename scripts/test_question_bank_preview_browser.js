@@ -100,7 +100,10 @@ Giá trị của $2^3$ bằng
       href:document.getElementById('bankPreviewDownload').getAttribute('href')
     }));
     if (!cleanup.revoked.includes(compiled.href) || !cleanup.hidden || cleanup.href) throw new Error(`Bank preview Blob URL was not revoked: ${JSON.stringify(cleanup)}`);
-    await page.evaluate(async () => window.VMExamAdmin.bankSearch({preventDefault(){}}));
+    await page.evaluate(async () => {
+      window.VMExamAdmin.bankSetView('manage',{history:'replace',scroll:false});
+      await window.VMExamAdmin.bankSearch({preventDefault(){}});
+    });
     await page.click('[data-bank-search-preview="0"]');
     const teacherSafe = await page.evaluate(() => ({
       html:document.getElementById('bankPreviewHtml').textContent,

@@ -556,7 +556,7 @@
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.0"></script>
 <script src="js/menu-v5.js?v=9.7"></script>
-<script src="js/latex-view.js?v=11.0"></script>
+<script src="js/latex-view.js?v=11.1"></script>
 <script src="js/analytics.js"></script>
 <script>
 var listExams = [];
@@ -2369,8 +2369,16 @@ async function chayBienDichTaiCho() {
   // PDF lời giải luôn phải qua kiểm tra máy chủ; trạng thái giao diện không đủ để cấp quyền.
   var cheDo = (await vmKiemTraQuyenPdfLoiGiai({ silent: true })) ? 'solution' : 'exam';
   
-  var styExTest = await taiExTestSty();
-  var styTitleDot = await taiTitleDotSty();
+  var styFiles = await Promise.all([
+    taiExTestSty(),
+    taiTitleDotSty(),
+    taiCasioVnSty(),
+    taiCasio580xSty()
+  ]);
+  var styExTest = styFiles[0];
+  var styTitleDot = styFiles[1];
+  var styCasioVn = styFiles[2];
+  var styCasio580x = styFiles[3];
   
   var preamble = PREAMBLE_MAC_DINH;
   var classOpt = fontSize + 'pt,a4paper,' + (layout === 'two' ? 'twocolumn' : 'onecolumn') + ',titlepage,twoside,openany';
@@ -2469,7 +2477,7 @@ async function chayBienDichTaiCho() {
     }
   }
   
-  var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
+  var tex = ghepTexCode(styExTest, styTitleDot, styCasioVn, styCasio580x, preamble, body);
   
   try {
     var r = await sb.functions.invoke('latex', {
@@ -2505,6 +2513,8 @@ var pdfCompileMode = 'exam'; // 'exam' hoặc 'solution'
 var pdfBlob = null;
 var cachedExTestSty = '';
 var cachedTitleDotSty = '';
+var cachedCasioVnSty = '';
+var cachedCasio580xSty = '';
 
 var PREAMBLE_MAC_DINH = `\\documentclass[13pt,a4paper,onecolumn,titlepage,twoside,openany]{book}
 \\usepackage{fouriernc}
@@ -2721,6 +2731,34 @@ async function taiTitleDotSty() {
   return '';
 }
 
+async function taiCasioVnSty() {
+  if (cachedCasioVnSty) return cachedCasioVnSty;
+  try {
+    var res = await fetch('casiovn.sty');
+    if (res.ok) {
+      cachedCasioVnSty = await res.text();
+      return cachedCasioVnSty;
+    }
+  } catch (e) {
+    console.error('Lỗi tải file casiovn.sty:', e);
+  }
+  return '';
+}
+
+async function taiCasio580xSty() {
+  if (cachedCasio580xSty) return cachedCasio580xSty;
+  try {
+    var res = await fetch('casio580x.sty');
+    if (res.ok) {
+      cachedCasio580xSty = await res.text();
+      return cachedCasio580xSty;
+    }
+  } catch (e) {
+    console.error('Lỗi tải file casio580x.sty:', e);
+  }
+  return '';
+}
+
 function vmEscapeTexText(value) {
   return String(value || '').replace(/[\\{}%$#&_~^]/g, function (ch) {
     var map = {
@@ -2756,7 +2794,7 @@ function vmTaoLoiGiaiNganPdf(answer, solution) {
     (normalized ? '\n\\par\n' + normalized : '') + '\n';
 }
 
-function ghepTexCode(styExTest, styTitleDot, preamble, body) {
+function ghepTexCode(styExTest, styTitleDot, styCasioVn, styCasio580x, preamble, body) {
   body = vmChuanHoaNoiDungDePdf(body);
   var tex = '';
   if (styExTest) {
@@ -2766,127 +2804,12 @@ function ghepTexCode(styExTest, styTitleDot, preamble, body) {
     tex += '\\begin{filecontents*}{titledot.sty}\n' + styTitleDot + '\n\\end{filecontents*}\n';
   }
   
-  // Virtual files for Casio
-  tex += `\\begin{filecontents*}{casiovn.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casiovn}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\DeclareRobustCommand{\\log10k}{\\key{log10}}
-\\endinput
-\\end{filecontents*}\n`;
-
-  tex += `\\begin{filecontents*}{casio580x.sty}
-\\NeedsTeXFormat{LaTeX2e}
-\\ProvidesPackage{casio580x}[2018/07/17 version 1.01 Mock]
-\\RequirePackage{xspace}
-\\DeclareRobustCommand{\\key}[1]{\\protect\\framebox{\\protect\\sffamily\\protect\\bfseries\\protect\\scriptsize#1}}
-\\DeclareRobustCommand{\\onk}{\\key{ON}}
-\\DeclareRobustCommand{\\ack}{\\key{AC}}
-\\DeclareRobustCommand{\\shiftk}{\\key{SHIFT}}
-\\DeclareRobustCommand{\\alphak}{\\key{ALPHA}}
-\\DeclareRobustCommand{\\menuk}{\\key{MENU}}
-\\DeclareRobustCommand{\\delk}{\\key{DEL}}
-\\DeclareRobustCommand{\\calck}{\\key{CALC}}
-\\DeclareRobustCommand{\\engk}{\\key{ENG}}
-\\DeclareRobustCommand{\\optnk}{\\key{OPTN}}
-\\DeclareRobustCommand{\\stok}{\\key{STO}}
-\\DeclareRobustCommand{\\abovek}{\\key{$\\uparrow$}}
-\\DeclareRobustCommand{\\belowk}{\\key{$\\downarrow$}}
-\\DeclareRobustCommand{\\leftk}{\\key{$\\leftarrow$}}
-\\DeclareRobustCommand{\\rightk}{\\key{$\\rightarrow$}}
-\\DeclareRobustCommand{\\intk}{\\key{$\\int$}}
-\\DeclareRobustCommand{\\vark}{\\key{x}}
-\\DeclareRobustCommand{\\dfrack}{\\key{a/b}}
-\\DeclareRobustCommand{\\sqrtk}{\\key{$\\sqrt{}$}}
-\\DeclareRobustCommand{\\exp2k}{\\key{$x^2$}}
-\\DeclareRobustCommand{\\expk}{\\key{$x^{\\square}$}}
-\\DeclareRobustCommand{\\inversek}{\\key{$x^{-1}$}}
-\\DeclareRobustCommand{\\logk}{\\key{log}}
-\\DeclareRobustCommand{\\lnk}{\\key{ln}}
-\\DeclareRobustCommand{\\tank}{\\key{tan}}
-\\DeclareRobustCommand{\\cosk}{\\key{cos}}
-\\DeclareRobustCommand{\\sink}{\\key{sin}}
-\\DeclareRobustCommand{\\circk}{\\key{o}}
-\\DeclareRobustCommand{\\signk}{\\key{+/-}}
-\\DeclareRobustCommand{\\openk}{\\key{(}}
-\\DeclareRobustCommand{\\closek}{\\key{)}}
-\\DeclareRobustCommand{\\convertk}{\\key{S$\\leftrightarrow$D}}
-\\DeclareRobustCommand{\\dotk}{\\key{.}}
-\\DeclareRobustCommand{\\mul10expk}{\\key{x10}}
-\\DeclareRobustCommand{\\ansk}{\\key{ANS}}
-\\DeclareRobustCommand{\\subk}{\\key{-}}
-\\DeclareRobustCommand{\\addk}{\\key{+}}
-\\DeclareRobustCommand{\\mulk}{\\key{$\\times$}}
-\\DeclareRobustCommand{\\divk}{\\key{$\\div$}}
-\\DeclareRobustCommand{\\equalk}{\\key{=}}
-\\DeclareRobustCommand{\\morerememberk}{\\key{M+}}
-\\DeclareRobustCommand{\\zerok}{\\key{0}}
-\\DeclareRobustCommand{\\onek}{\\key{1}}
-\\DeclareRobustCommand{\\twok}{\\key{2}}
-\\DeclareRobustCommand{\\threek}{\\key{3}}
-\\DeclareRobustCommand{\\fourk}{\\key{4}}
-\\DeclareRobustCommand{\\fivek}{\\key{5}}
-\\DeclareRobustCommand{\\sixk}{\\key{6}}
-\\DeclareRobustCommand{\\sevenk}{\\key{7}}
-\\DeclareRobustCommand{\\eightk}{\\key{8}}
-\\DeclareRobustCommand{\\ninek}{\\key{9}}
-\\DeclareRobustCommand{\\rclk}{\\key{RCL}}
-\\DeclareRobustCommand{\\modek}{\\key{MODE}}
-\\endinput
-\\end{filecontents*}\n`;
+  if (styCasioVn) {
+    tex += '\\begin{filecontents*}{casiovn.sty}\n' + styCasioVn + '\n\\end{filecontents*}\n';
+  }
+  if (styCasio580x) {
+    tex += '\\begin{filecontents*}{casio580x.sty}\n' + styCasio580x + '\n\\end{filecontents*}\n';
+  }
 
   tex += preamble + '\n\\begin{document}\n' + body + '\n\\end{document}';
   return tex;
@@ -2969,8 +2892,16 @@ async function generateAndCompilePDF() {
   var tfStyle = $('pdfTfStyle').value;
   var soDongCham = $('pdfDotLines') ? (parseInt($('pdfDotLines').value, 10) || 0) : 0;
   
-  var styExTest = await taiExTestSty();
-  var styTitleDot = await taiTitleDotSty();
+  var styFiles = await Promise.all([
+    taiExTestSty(),
+    taiTitleDotSty(),
+    taiCasioVnSty(),
+    taiCasio580xSty()
+  ]);
+  var styExTest = styFiles[0];
+  var styTitleDot = styFiles[1];
+  var styCasioVn = styFiles[2];
+  var styCasio580x = styFiles[3];
   
   var preamble = PREAMBLE_MAC_DINH;
   
@@ -3070,7 +3001,7 @@ async function generateAndCompilePDF() {
     }
   }
   
-  var tex = ghepTexCode(styExTest, styTitleDot, preamble, body);
+  var tex = ghepTexCode(styExTest, styTitleDot, styCasioVn, styCasio580x, preamble, body);
   
   try {
     var r = await sb.functions.invoke('latex', {
