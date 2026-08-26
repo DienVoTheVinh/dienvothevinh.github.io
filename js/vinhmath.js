@@ -1047,6 +1047,247 @@ if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
 }
 function daKetNoi() { return sb !== null; }
 
+/* ---------- KHONG GIAN THUONG HIEU DUNG CHUNG ----------
+   Tai khoan thuoc mot khong gian full-site van dung nguyen cac trang VinhMath.
+   RPC chi tra ve bo nhan dien + chinh sach hien thi; quyen du lieu van do RLS.
+   Promise duoc dung chung de moi trang chi goi RPC ngu canh hien tai mot lan. */
+var VM_TENANT_CONTEXT_RPC = 'vm_current_tenant_context';
+var VM_PUBLIC_TENANT_CONTEXT_RPC = 'vm_public_tenant_context';
+var vmTenantContextPromise = null;
+window.VM_TENANT_CONTEXT = null;
+window.VM_TENANT_CONTEXT_READY = null;
+
+function vmTenantOneRow(value) {
+  if (Array.isArray(value)) value = value[0] || null;
+  if (value && value.context && typeof value.context === 'object') value = value.context;
+  return value && typeof value === 'object' ? value : null;
+}
+
+function vmTenantBool(value) {
+  return value === true || value === 1 || /^(?:1|true|full[-_ ]?site)$/i.test(String(value || ''));
+}
+
+function vmNormalizeTenantContext(value) {
+  var raw = vmTenantOneRow(value);
+  if (!raw) return null;
+  var tenant = vmTenantOneRow(raw.tenant || raw.portal) || raw;
+  var active = tenant.is_active;
+  if (active === false || active === 0) return null;
+  var brand = vmTenantOneRow(raw.brand || tenant.brand);
+  var slug = String(raw.slug || raw.tenant_slug || tenant.slug || '').trim().toLowerCase();
+  if (!slug) return null;
+  var mode = raw.experience_mode || raw.site_mode || tenant.experience_mode || tenant.site_mode || '';
+  var fullSite = vmTenantBool(raw.full_site) || vmTenantBool(tenant.full_site) || /full[-_ ]?site/i.test(String(mode));
+  var portalOnly = raw.portal_only;
+  if (portalOnly == null) portalOnly = tenant.portal_only;
+  var normalizedTenant = {
+    id: raw.tenant_id || raw.portal_id || tenant.id || null,
+    slug: slug,
+    name: raw.name || raw.tenant_name || tenant.name || (brand && brand.name) || slug,
+    short_name: raw.short_name || tenant.short_name || (brand && brand.short_name) || slug,
+    description: raw.description || tenant.description || '',
+    support_text: raw.support_text || tenant.support_text || '',
+    login_suffix: raw.login_suffix || tenant.login_suffix || '',
+    teacher_login_suffix: raw.teacher_login_suffix || tenant.teacher_login_suffix || '',
+    home_path: String(raw.home_path || tenant.home_path || (slug === 'uyenmath' ? 'uyenmath' : 'trang-chu')).replace(/^\/+/, ''),
+    manifest_path: raw.manifest_path || tenant.manifest_path || '',
+    full_site: fullSite,
+    portal_only: portalOnly !== false,
+    member_role: raw.member_role || tenant.member_role || 'student',
+    profile_role: raw.profile_role || raw.role || tenant.profile_role || '',
+    brand: brand,
+    features: raw.features || raw.feature_settings || tenant.features || tenant.feature_settings || []
+  };
+  // Giu hinh dang portal cu cho cac trang thi doc lap dang su dung.
+  normalizedTenant.portal = {
+    id: normalizedTenant.id,
+    slug: normalizedTenant.slug,
+    name: normalizedTenant.name,
+    short_name: normalizedTenant.short_name,
+    description: normalizedTenant.description,
+    support_text: normalizedTenant.support_text,
+    is_active: true,
+    brand: normalizedTenant.brand
+  };
+  return normalizedTenant;
+}
+
+function vmTenantFeatureState(context, featureKey, role) {
+  if (!context || !context.full_site || role === 'admin' || !featureKey) return 'shown';
+  var audience = role === 'assistant' ? 'teacher' : role;
+  var source = context.features || [];
+  var value = null;
+  if (Array.isArray(source)) {
+    var row = source.find(function (item) {
+      if (!item) return false;
+      var key = item.feature_key || item.key;
+      var target = item.audience || item.role || 'all';
+      return key === featureKey && (target === audience || target === role || target === 'all' || target === '*');
+    });
+    if (row) value = row.state || row.visibility || row.status;
+  } else if (source && typeof source === 'object') {
+    if (source[audience] && typeof source[audience] === 'object') value = source[audience][featureKey];
+    if (value == null && source[role] && typeof source[role] === 'object') value = source[role][featureKey];
+    if (value == null && source[featureKey] && typeof source[featureKey] === 'object') value = source[featureKey][audience] || source[featureKey][role] || source[featureKey].all || source[featureKey].state;
+    if (value == null && typeof source[featureKey] === 'string') value = source[featureKey];
+  }
+  value = String(value || 'shown').toLowerCase();
+  if (value === 'hidden' || value === 'hide' || value === 'off') return 'hidden';
+  if (value === 'locked' || value === 'lock' || value === 'disabled') return 'locked';
+  return 'shown';
+}
+
+function vmTenantFeatureForPath(pathname) {
+  var page = String(pathname || location.pathname.split('/').pop() || 'index').replace(/^\/+/, '').replace(/\.html$/, '').split('?')[0];
+  var map = {
+    'trang-chu':'home','uyenmath':'home',
+    'quan-tri-lop':'classes','quan-tri-bai-hoc':'classes','quan-tri-hoc-sinh':'classes','bang-tin-lop':'classes',
+    'quan-tri-cham-bai':'grading',
+    'quan-tri-de':'authoring','quan-tri-tai-lieu':'authoring',
+    'vmtool':'vmtool',
+    'quan-tri-lich':'schedule','quan-tri-buoi-day':'schedule','lich-hoc':'schedule',
+    'lop-hoc':'lessons','bai-hoc':'lessons',
+    'luyen-de':'practice','ket-qua':'results','bang-vang':'leaderboard','ca-nhan':'profile',
+    'phu-huynh':'parental','goc-tu-hoc':'self_study'
+  };
+  return map[page] || '';
+}
+
+function vmTenantHomePath(context) {
+  if (!context || !context.full_site) return 'trang-chu';
+  return context.home_path || (context.slug === 'uyenmath' ? 'uyenmath' : 'trang-chu');
+}
+
+function vmTenantFirstShownPath(context, role) {
+  var groups = {
+    teacher: [
+      ['home', vmTenantHomePath(context)], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
+      ['authoring', 'quan-tri-de?tab=compose&template=worksheet-mixed'], ['vmtool', 'vmtool'], ['schedule', 'quan-tri-lich'], ['profile', 'ca-nhan']
+    ],
+    assistant: [
+      ['home', vmTenantHomePath(context)], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
+      ['vmtool', 'vmtool'], ['profile', 'ca-nhan']
+    ],
+    student: [
+      ['home', vmTenantHomePath(context)], ['lessons', 'lop-hoc'], ['practice', 'luyen-de'],
+      ['results', 'ket-qua'], ['leaderboard', 'bang-vang'], ['vmtool', 'vmtool'], ['profile', 'ca-nhan']
+    ],
+    parent: [
+      ['parental', 'phu-huynh'], ['self_study', 'goc-tu-hoc'], ['vmtool', 'vmtool'], ['leaderboard', 'bang-vang']
+    ]
+  };
+  var candidates = groups[role] || groups.student;
+  for (var i = 0; i < candidates.length; i++) {
+    if (vmTenantFeatureState(context, candidates[i][0], role) === 'shown') return candidates[i][1];
+  }
+  return '';
+}
+
+function vmGuardTenantRoute(context, role) {
+  if (!context || !context.full_site || role === 'admin') return false;
+  var key = vmTenantFeatureForPath();
+  if (!key) return false;
+  var state = vmTenantFeatureState(context, key, role);
+  if (state === 'shown') return false;
+  try { sessionStorage.setItem('vm-tenant-feature-notice', state + ':' + key); } catch (_) {}
+  var shownTarget = vmTenantFirstShownPath(context, role);
+  var target = shownTarget || vmTenantHomePath(context);
+  var current = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+  var targetPage = target.split('?')[0].replace(/\.html$/, '');
+  var alreadyExplained = new URLSearchParams(location.search).has('feature');
+  if (current !== targetPage || (!shownTarget && !alreadyExplained)) {
+    target += (target.indexOf('?') === -1 ? '?' : '&') + 'feature=' + encodeURIComponent(state);
+    location.replace(target);
+  }
+  return true;
+}
+
+function vmApplyTenantIdentity(context) {
+  if (!context || !context.full_site) return;
+  window.VM_TENANT_CONTEXT = context;
+  var brand = context.brand;
+  if (brand && typeof vmApDungThuongHieu === 'function') vmApDungThuongHieu(brand);
+  var brandName = (brand && (brand.short_name || brand.name)) || context.short_name || context.name;
+  if (brandName) document.title = document.title.replace(/VinhMath/gi, brandName);
+  if (document.body) {
+    document.body.classList.add('vm-full-site-tenant');
+    document.body.dataset.vmTenant = context.slug;
+  }
+  document.documentElement.dataset.vmTenant = context.slug;
+  var homePath = vmTenantHomePath(context);
+  document.querySelectorAll('a.logo').forEach(function (logo) { logo.href = homePath; });
+  if (brand) {
+    var logoUrl = typeof vmUrlLogoThuongHieu === 'function' ? vmUrlLogoThuongHieu(brand) : '';
+    if (logoUrl) {
+      document.querySelectorAll('a.logo img').forEach(function (img) { img.src = logoUrl; img.alt = brandName || context.name; });
+      document.querySelectorAll('link[rel="apple-touch-icon"],link[rel~="icon"]').forEach(function (link) { link.href = logoUrl; });
+    }
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme && brand.topbar_color) metaTheme.content = brand.topbar_color;
+  }
+  var manifestPath = context.manifest_path || (context.slug === 'uyenmath' ? '/manifest-uyenmath.webmanifest' : '');
+  var manifest = document.querySelector('link[rel="manifest"]');
+  if (manifest && manifestPath) manifest.href = manifestPath;
+  window.dispatchEvent(new CustomEvent('vm-tenant-ready', { detail: context }));
+}
+
+async function vmLegacyPortalContext(uid) {
+  try {
+    var result = await sb.from('exam_portal_members')
+      .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,description,support_text,is_active,experience_mode,brand:brand_templates(' + VM_BRAND_COLUMNS + '))')
+      .eq('user_id', uid).eq('portal_only', true).eq('portal.experience_mode', 'exam_only').limit(1).maybeSingle();
+    if (!result.error && result.data && result.data.portal && result.data.portal.is_active) return vmNormalizeTenantContext(result.data);
+  } catch (_) {}
+  return null;
+}
+
+function vmLoadTenantContext() {
+  if (vmTenantContextPromise) return vmTenantContextPromise;
+  vmTenantContextPromise = (async function () {
+    if (!daKetNoi() || sessionStorage.getItem('vm-guest-mode') === 'true') return null;
+    var session = await vmLayPhienAnToan();
+    if (!session.data.session) return null;
+    var context = null;
+    try {
+      var response = await sb.rpc(VM_TENANT_CONTEXT_RPC);
+      if (!response.error) {
+        context = vmNormalizeTenantContext(response.data);
+      }
+    } catch (_) {}
+    // RPC full-site tra null cho ca tai khoan VinhMath thuong va portal thi doc
+    // lap. Mot lan doi chieu bang cu giu portal thi hoat dong; Promise ben ngoai
+    // van dam bao moi trang chi nap ngu canh mot lan.
+    if (!context) context = await vmLegacyPortalContext(session.data.session.user.id);
+    window.VM_TENANT_CONTEXT = context;
+    if (context && context.full_site) vmApplyTenantIdentity(context);
+    return context;
+  })();
+  window.VM_TENANT_CONTEXT_READY = vmTenantContextPromise;
+  return vmTenantContextPromise;
+}
+
+async function vmLoadPublicTenantContext(slug) {
+  slug = String(slug || '').trim().toLowerCase();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !daKetNoi()) return null;
+  try {
+    var response = await sb.rpc(VM_PUBLIC_TENANT_CONTEXT_RPC, { p_slug: slug });
+    if (response.error) return null;
+    var context = vmNormalizeTenantContext(response.data);
+    if (context && context.full_site) vmApplyTenantIdentity(context);
+    return context;
+  } catch (_) { return null; }
+}
+
+window.vmNormalizeTenantContext = vmNormalizeTenantContext;
+window.vmTenantFeatureState = vmTenantFeatureState;
+window.vmTenantFeatureForPath = vmTenantFeatureForPath;
+window.vmTenantHomePath = vmTenantHomePath;
+window.vmTenantFirstShownPath = vmTenantFirstShownPath;
+window.vmGuardTenantRoute = vmGuardTenantRoute;
+window.vmApplyTenantIdentity = vmApplyTenantIdentity;
+window.vmLoadTenantContext = vmLoadTenantContext;
+window.vmLoadPublicTenantContext = vmLoadPublicTenantContext;
+
 /* Gọi Edge Function với FormData và giữ nguyên thông báo lỗi JSON từ máy chủ.
    supabase.functions.invoke() chỉ trả thông báo HTTP chung cho một số lỗi 4xx/5xx,
    khiến người dùng không biết Google Drive, phân loại bài hay phiên đăng nhập đang lỗi. */
@@ -1222,6 +1463,14 @@ function formatAuthorName(name) {
 
 
 async function dangXuat() {
+  var tenantContext = window.VM_TENANT_CONTEXT;
+  var portalContext = window.VM_PORTAL_CONTEXT;
+  var returnUrl = 'dang-nhap';
+  if (tenantContext && tenantContext.full_site && tenantContext.slug) {
+    returnUrl += '?tenant=' + encodeURIComponent(tenantContext.slug);
+  } else if (portalContext && portalContext.portal && portalContext.portal.slug) {
+    returnUrl += '?portal=' + encodeURIComponent(portalContext.portal.slug);
+  }
   sessionStorage.removeItem('vm-guest-mode');
   // PDF TikZ co the chua noi dung bai hoc. Xoa ban sao tren thiet bi dung
   // chung khi doi tai khoan; raw TeX khong bao gio duoc luu trong cache nay.
@@ -1236,7 +1485,16 @@ async function dangXuat() {
     window.vmTikzPdfThuTu = [];
   } catch (_cacheError) {}
   if (daKetNoi()) await sb.auth.signOut();
-  window.location.href = 'dang-nhap';
+  try {
+    localStorage.removeItem('vm-tenant-context');
+    sessionStorage.removeItem('vm-tenant-context');
+    sessionStorage.removeItem('vm-tenant-feature-notice');
+  } catch (_) {}
+  vmTenantContextPromise = null;
+  window.VM_TENANT_CONTEXT = null;
+  window.VM_TENANT_CONTEXT_READY = null;
+  window.VM_PORTAL_CONTEXT = null;
+  window.location.href = returnUrl;
 }
 
 // Lấy hồ sơ (họ tên, vai trò, lớp) của người đang đăng nhập
@@ -1316,7 +1574,10 @@ async function yeuCauDangNhap() {
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
   var s = await vmLayPhienAnToan();
   if (!s.data.session) { window.location.href = 'dang-nhap'; return null; }
-  return layHoSo();
+  var profile = await layHoSo();
+  var tenantContext = await vmLoadTenantContext();
+  if (profile && vmGuardTenantRoute(tenantContext, profile.role)) return null;
+  return profile;
 }
 
 /* ---------- TIỆN ÍCH NHỎ ---------- */
@@ -2675,6 +2936,9 @@ var VM_BRAND_RELATION = 'brand:brand_templates(' + VM_BRAND_COLUMNS + ')';
 window.VM_ACTIVE_BRAND = null;
 
 function vmThuongHieuTuLop(lop) {
+  if (window.VM_TENANT_CONTEXT && window.VM_TENANT_CONTEXT.full_site && window.VM_TENANT_CONTEXT.brand) {
+    return window.VM_TENANT_CONTEXT.brand;
+  }
   if (!lop) return 'vinhmath';
   var brand = Array.isArray(lop.brand) ? lop.brand[0] : lop.brand;
   return brand || lop.theme || 'vinhmath';
@@ -2836,6 +3100,11 @@ function vmApDungBienThuongHieu(brand) {
 
 function vmApDungThuongHieu(theme) {
   try {
+    // Nhan dien tenant full-site luon cao hon theme rieng cua lop. Tai khoan
+    // VinhMath thuong khong co context nay nen hanh vi cu duoc giu nguyen.
+    if (window.VM_TENANT_CONTEXT && window.VM_TENANT_CONTEXT.full_site && window.VM_TENANT_CONTEXT.brand) {
+      theme = window.VM_TENANT_CONTEXT.brand;
+    }
     theme = theme || 'vinhmath';
     window.VM_ACTIVE_BRAND = theme;
     var preset = vmPresetThuongHieu(theme);
@@ -3639,7 +3908,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=51', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=52', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }

@@ -235,8 +235,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.0"></script>
-<script src="js/menu-v5.js?v=9.8"></script>
+<script src="js/vinhmath.js?v=9.3"></script>
+<script src="js/menu-v5.js?v=10.0"></script>
 <script src="js/analytics.js"></script>
 <script>
 (async function () {
@@ -395,8 +395,9 @@ async function ttTaiPhamViTaiKhoan() {
   if (!select) return;
   try {
     var result = await sb.from('exam_portals')
-      .select('id,slug,name,short_name,login_suffix,teacher_login_suffix,is_active')
+      .select('id,slug,name,short_name,login_suffix,teacher_login_suffix,is_active,experience_mode')
       .eq('is_active', true)
+      .eq('experience_mode', 'exam_only')
       .order('name');
     if (result.error) throw result.error;
     window.ttPortals = (result.data || []).filter(function (portal) {

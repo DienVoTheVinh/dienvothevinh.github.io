@@ -350,21 +350,21 @@ body {
 <canvas id="cyberCanvas"></canvas>
 
 <div class="side">
-  <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <small>· Lớp Toán Thầy Vinh</small></a>
+  <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <small id="loginBrandTagline">· Lớp Toán Thầy Vinh</small></a>
   
 
 
   <div>
     <p class="quote">"Toán không phải là nhớ công thức. Là <span class="accent">nhìn ra con đường</span> đi đến lời giải."</p>
-    <p class="who">Thầy Vinh</p>
+    <p class="who" id="loginBrandOwner">Thầy Vinh</p>
   </div>
-  <p style="font-size:0.82rem;color:var(--ink-3); font-family: var(--font-mono)">© 2026 VinhMath · Lớp Toán Thầy Vinh</p>
+  <p id="loginBrandFooter" style="font-size:0.82rem;color:var(--ink-3); font-family: var(--font-mono)">© 2026 VinhMath · Lớp Toán Thầy Vinh</p>
 </div>
 
 <div class="main">
   <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Đổi chế độ sáng/tối">🌙</button>
   <div class="box reveal">
-    <a class="logo" href="index" style="display:inline-flex"><img src="img/logo.png" alt="VinhMath">VinhMath</a>
+    <a class="logo" href="index" style="display:inline-flex"><img src="img/logo.png" alt="VinhMath"><span id="loginCardBrandName">VinhMath</span></a>
     <h1>SYSTEM_ACCESS<span class="cyber-cursor">_</span></h1>
     <p class="sub">Đăng nhập cổng bảo mật để vào hệ thống học tập.</p>
 
@@ -386,20 +386,20 @@ body {
         <input type="checkbox" id="rememberLogin" checked>
         <span class="remember-copy">
           <strong>Ghi nhớ đăng nhập trên thiết bị này</strong>
-          <small>Duy trì phiên sau khi đóng trình duyệt. Mật khẩu được trình duyệt quản lý an toàn, VinhMath không tự lưu.</small>
+          <small>Duy trì phiên sau khi đóng trình duyệt. Mật khẩu được trình duyệt quản lý an toàn, <span id="loginSecurityBrandName">VinhMath</span> không tự lưu.</small>
         </span>
       </label>
       <button class="btn btn-primary" type="submit" id="nutVao" style="width:100%; margin-top: 10px;">AUTH_SIGN_IN</button>
     </form>
 
-    <p class="hint" style="font-family: var(--font-mono);">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
+    <p class="hint" id="loginSupportHint" style="font-family: var(--font-mono);">Quên mật khẩu? Nhắn thầy qua Zalo hoặc Facebook để được cấp lại.</p>
   </div>
 </div>
 
 <!-- Thư viện Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.1"></script>
+<script src="js/vinhmath.js?v=9.3"></script>
 <script src="js/analytics.js"></script>
 <script>
 // --- NEN: MANG LUOI 3D (doan thang gap khuc) + QUA CAU DEN-VANG ---
@@ -638,20 +638,44 @@ function baoLoi(msg, loai) {
   el.textContent = msg;
 }
 
+var vmRequestedTenantSlug = String(new URLSearchParams(location.search).get('tenant') || '').trim().toLowerCase();
+
+function vmApplyLoginTenantCopy(context) {
+  if (!context || !context.full_site) return;
+  var brand = context.brand || {};
+  var name = brand.short_name || brand.name || context.short_name || context.name;
+  var tagline = brand.tagline || context.description || '';
+  var support = context.support_text || '';
+  var cardName = document.getElementById('loginCardBrandName');
+  var owner = document.getElementById('loginBrandOwner');
+  var footer = document.getElementById('loginBrandFooter');
+  var tag = document.getElementById('loginBrandTagline');
+  var securityName = document.getElementById('loginSecurityBrandName');
+  if (cardName) cardName.textContent = name;
+  if (owner) owner.textContent = name;
+  if (footer) footer.textContent = '© 2026 ' + name + (tagline ? ' · ' + tagline : '');
+  if (tag) tag.textContent = '· ' + (tagline || name);
+  if (securityName) securityName.textContent = name;
+  if (support) document.getElementById('loginSupportHint').textContent = support;
+  if (context.login_suffix) document.getElementById('user').placeholder = 'vd: NguyenVanA@' + context.login_suffix;
+  document.querySelectorAll('a.logo').forEach(function (logo) { logo.href = vmTenantHomePath(context); });
+}
+
+if (vmRequestedTenantSlug && typeof vmLoadPublicTenantContext === 'function') {
+  vmLoadPublicTenantContext(vmRequestedTenantSlug).then(vmApplyLoginTenantCopy).catch(function () {});
+}
+
 async function vmDichDangNhap(uid, role) {
   var requestedPortal = new URLSearchParams(location.search).get('portal');
-  try {
-    var membership = await sb.from('exam_portal_members')
-      .select('portal_only,portal:exam_portals!inner(slug,is_active)')
-      .eq('user_id', uid)
-      .eq('portal_only', true)
-      .limit(1)
-      .maybeSingle();
-    if (membership.data && membership.data.portal && membership.data.portal.is_active) {
-      location.replace('thi?portal=' + encodeURIComponent(membership.data.portal.slug));
-      return;
-    }
-  } catch (portalError) { /* Bản cũ chưa có portal: giữ luồng VinhMath. */ }
+  var tenantContext = typeof vmLoadTenantContext === 'function' ? await vmLoadTenantContext() : null;
+  if (tenantContext && tenantContext.full_site) {
+    location.replace(vmTenantHomePath(tenantContext));
+    return;
+  }
+  if (tenantContext && tenantContext.portal_only && tenantContext.portal) {
+    location.replace('thi?portal=' + encodeURIComponent(tenantContext.portal.slug));
+    return;
+  }
   if (requestedPortal) {
     location.replace('thi?portal=' + encodeURIComponent(requestedPortal));
     return;

@@ -554,8 +554,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.0"></script>
-<script src="js/menu-v5.js?v=9.8"></script>
+<script src="js/vinhmath.js?v=9.3"></script>
+<script src="js/menu-v5.js?v=10.0"></script>
 <script src="js/latex-view.js?v=11.4"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -583,17 +583,21 @@ async function vmKhoiTaoCheDoPortal() {
   vmPortalSlug = new URLSearchParams(location.search).get('portal') || '';
   if (!vmPortalSlug) return false;
   var membership = await sb.from('exam_portal_members')
-    .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active,brand:brand_templates(' + VM_BRAND_COLUMNS + '))')
+    .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active,experience_mode,brand:brand_templates(' + VM_BRAND_COLUMNS + '))')
     .eq('user_id', studentInfo.id)
     .eq('portal.slug', vmPortalSlug)
     .maybeSingle();
   if ((!membership.data || !membership.data.portal) && studentInfo.role === 'admin') {
     var preview = await sb.from('exam_portals')
-      .select('id,slug,name,short_name,is_active,brand:brand_templates(' + VM_BRAND_COLUMNS + ')')
+      .select('id,slug,name,short_name,is_active,experience_mode,brand:brand_templates(' + VM_BRAND_COLUMNS + ')')
       .eq('slug', vmPortalSlug).maybeSingle();
     if (preview.data) membership.data = { member_role: 'owner', portal_only: false, portal: preview.data };
   }
-  if (!membership.data || !membership.data.portal || !membership.data.portal.is_active) {
+  if (membership.data && membership.data.portal && membership.data.portal.experience_mode === 'full_site') {
+    location.replace('trang-chu');
+    return true;
+  }
+  if (!membership.data || !membership.data.portal || !membership.data.portal.is_active || membership.data.portal.experience_mode !== 'exam_only') {
     location.replace('thi?portal=' + encodeURIComponent(vmPortalSlug));
     return true;
   }

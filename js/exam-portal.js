@@ -13,13 +13,14 @@ async function vmPortalLoad(){
   var profileResponse=await sb.from('profiles').select('id,role,username,full_name').eq('id',uid).single();
   if(profileResponse.error||!profileResponse.data){location.href='dang-nhap?portal='+encodeURIComponent(slug);return;}
   vmPortalState.profile=profileResponse.data;
-  var membershipResponse=await sb.from('exam_portal_members').select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,description,logo_path,support_text,is_active,brand:brand_templates('+VM_BRAND_COLUMNS+'))').eq('user_id',uid).eq('portal.slug',slug).maybeSingle();
+  var membershipResponse=await sb.from('exam_portal_members').select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,description,logo_path,support_text,is_active,experience_mode,brand:brand_templates('+VM_BRAND_COLUMNS+'))').eq('user_id',uid).eq('portal.slug',slug).maybeSingle();
   var membership=membershipResponse.data;
   if((!membership||!membership.portal)&&profileResponse.data.role==='admin'){
-    var portalResponse=await sb.from('exam_portals').select('id,slug,name,short_name,description,logo_path,support_text,is_active,brand:brand_templates('+VM_BRAND_COLUMNS+')').eq('slug',slug).maybeSingle();
+    var portalResponse=await sb.from('exam_portals').select('id,slug,name,short_name,description,logo_path,support_text,is_active,experience_mode,brand:brand_templates('+VM_BRAND_COLUMNS+')').eq('slug',slug).maybeSingle();
     if(portalResponse.data)membership={member_role:'owner',portal_only:false,portal:portalResponse.data};
   }
-  if(!membership||!membership.portal||!membership.portal.is_active){document.getElementById('portalName').textContent='Không có quyền truy cập';document.getElementById('portalDescription').textContent='Tài khoản này không thuộc cổng thi được yêu cầu.';document.getElementById('portalExamList').innerHTML='<div class="card portal-empty">Hãy kiểm tra lại tên đăng nhập hoặc liên hệ người phụ trách.</div>';return;}
+  if(membership&&membership.portal&&membership.portal.experience_mode==='full_site'){location.replace('trang-chu');return;}
+  if(!membership||!membership.portal||!membership.portal.is_active||membership.portal.experience_mode!=='exam_only'){document.getElementById('portalName').textContent='Không có quyền truy cập';document.getElementById('portalDescription').textContent='Tài khoản này không thuộc cổng thi được yêu cầu.';document.getElementById('portalExamList').innerHTML='<div class="card portal-empty">Hãy kiểm tra lại tên đăng nhập hoặc liên hệ người phụ trách.</div>';return;}
   vmPortalState.membership=membership;vmPortalState.portal=membership.portal;
   if(membership.portal.brand&&typeof vmApDungThuongHieu==='function')vmApDungThuongHieu(membership.portal.brand);
   document.title=(membership.portal.short_name||membership.portal.name)+' — Lớp học';document.getElementById('portalName').textContent=membership.portal.name;document.getElementById('portalShortName').textContent=membership.portal.short_name||membership.portal.name;document.getElementById('portalDescription').textContent=membership.portal.description||'Bài học và đề thi được sắp xếp trong một khu vực riêng, gọn và dễ theo dõi.';document.getElementById('portalUser').textContent=profileResponse.data.full_name||profileResponse.data.username||'Học sinh';document.getElementById('portalHome').href='thi?portal='+encodeURIComponent(slug);document.getElementById('portalNow').textContent=new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit'});

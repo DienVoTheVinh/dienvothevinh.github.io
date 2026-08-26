@@ -42,6 +42,7 @@
     </div></section>
     <section class="card admin-group"><h2>🎨 Giao diện & đối tác</h2><div class="admin-tools">
       <a class="admin-tool" href="quan-tri-thuong-hieu" data-key="tạo thương hiệu logo màu sắc"><span class="ic">🎨</span><span><b>Tạo thương hiệu</b><small>Logo và bảng màu lớp</small></span></a>
+      <a class="admin-tool" href="quan-tri-khong-gian" data-key="không gian thương hiệu uyenmath menu hiện khóa ẩn"><span class="ic">◫</span><span><b>Không gian thương hiệu</b><small>Trang riêng, hậu tố và thanh công cụ</small></span></a>
       <a class="admin-tool" href="quan-tri-le-hoi" data-key="lễ hội trung thu trang trí mùa lịch"><span class="ic">🏮</span><span><b>Giao diện lễ hội</b><small>Tự động, đặt lịch và xem thử</small></span></a>
       <a class="admin-tool" href="quan-tri-portal-thi" data-key="cổng thi đối tác portal thi thử"><span class="ic">🏁</span><span><b>Cổng thi đối tác</b><small>Portal, tài khoản và đề được giao</small></span></a>
       <a class="admin-tool" href="quan-tri-thuong" data-key="phần thưởng xu huy hiệu"><span class="ic">🏆</span><span><b>Phần thưởng</b><small>Xu, huy hiệu và cửa hàng</small></span></a>
@@ -53,7 +54,7 @@
     </div></section>
   </div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.0"></script><script src="js/menu-v5.js?v=9.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="js/config.js"></script><script src="js/vinhmath.js?v=9.3"></script><script src="js/menu-v5.js?v=10.0"></script>
 <script>
 (async function(){if(!daKetNoi())return;var me=await yeuCauDangNhap();if(!me)return;if(me.role!=='admin'){location.href='trang-chu';return;}})();
 document.getElementById('adminToolSearch').addEventListener('input',function(){var q=this.value.trim().toLocaleLowerCase('vi');document.querySelectorAll('.admin-tool').forEach(function(tool){tool.hidden=q&&((tool.textContent+' '+(tool.dataset.key||'')).toLocaleLowerCase('vi').indexOf(q)===-1);});document.querySelectorAll('.admin-group').forEach(function(group){group.hidden=!group.querySelector('.admin-tool:not([hidden])');});});

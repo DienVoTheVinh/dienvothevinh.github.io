@@ -256,14 +256,14 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var slug = portalSlug();
     if (!slug) return null;
     var membership = await sb.from('exam_portal_members')
-      .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active)')
+      .select('member_role,portal_only,portal:exam_portals!inner(id,slug,name,short_name,is_active,experience_mode)')
       .eq('user_id', profile.id).eq('portal.slug', slug).maybeSingle();
     var data = membership.data;
     if ((!data || !data.portal) && profile.role === 'admin') {
-      var portal = await sb.from('exam_portals').select('id,slug,name,short_name,is_active').eq('slug', slug).maybeSingle();
+      var portal = await sb.from('exam_portals').select('id,slug,name,short_name,is_active,experience_mode').eq('slug', slug).maybeSingle();
       if (portal.data) data = {member_role:'owner',portal_only:false,portal:portal.data};
     }
-    if (!data || !data.portal || !data.portal.is_active || ['owner','manager'].indexOf(data.member_role) < 0) return null;
+    if (!data || !data.portal || !data.portal.is_active || data.portal.experience_mode !== 'exam_only' || ['owner','manager'].indexOf(data.member_role) < 0) return null;
     return data;
   }
 
