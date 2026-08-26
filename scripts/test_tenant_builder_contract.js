@@ -267,6 +267,106 @@ section('generic tenant preview and messages', () => {
     'The generic landing must remain visible until the user chooses a workspace.');
 });
 
+section('live tenant HTML preview security contract', () => {
+  checkMatch(builder,
+    /<iframe\b(?=[^>]*\bid=["']tenantLivePreviewFrame["'])(?=[^>]*\btitle=["'][^"']+["'])(?=[^>]*\bsandbox=["']allow-scripts allow-same-origin["'])(?=[^>]*\breferrerpolicy=["']same-origin["'])[^>]*><\/iframe>/i,
+    'Live preview iframe must be named and narrowly sandboxed on the shared origin.');
+  checkNoMatch(builder, /\bsrcdoc\s*=/i,
+    'Live tenant preview must reuse the canonical renderer instead of interpolating a srcdoc document.');
+
+  const livePreviewUrl = jsFunction(builder, 'previewUrl');
+  checkMatch(livePreviewUrl, /new URL\(\s*['"]khong-gian['"]\s*,\s*location\.href\s*\)/,
+    'Live preview must always render the canonical khong-gian page.');
+  checkMatch(livePreviewUrl, /searchParams\.set\(\s*['"]tenant['"]/,
+    'Live preview URL must identify the selected tenant.');
+  checkMatch(livePreviewUrl, /searchParams\.set\(\s*['"]preview['"]\s*,\s*['"]1['"]\s*\)/,
+    'Live preview URL must explicitly use authenticated preview mode.');
+  checkMatch(livePreviewUrl, /searchParams\.set\(\s*['"]embed['"]\s*,\s*['"]builder['"]\s*\)/,
+    'Embedded rendering must be distinguishable from a normal preview tab.');
+  checkMatch(livePreviewUrl, /searchParams\.set\(\s*['"]channel['"]\s*,\s*livePreviewChannel\s*\)/,
+    'Every embedded preview navigation must carry its fresh channel nonce.');
+  checkNoMatch(livePreviewUrl, /home_path|tenantHome/,
+    'Unsaved home_path must never choose the iframe document.');
+
+  const liveSender = jsFunction(builder, 'sendLivePreview');
+  checkMatch(liveSender, /\.postMessage\([\s\S]*?,\s*location\.origin\s*\)/,
+    'Parent preview messages must target the exact current origin.');
+  checkNoMatch(liveSender, /\.postMessage\([\s\S]*?,\s*['"]\*['"]\s*\)/,
+    'Parent preview messages must never use a wildcard targetOrigin.');
+  checkMatch(liveSender, /type\s*:\s*['"]vm:tenant-preview:draft['"][\s\S]*version\s*:\s*1[\s\S]*channel\s*:\s*livePreviewChannel[\s\S]*slug\s*:\s*context\.slug/,
+    'Draft messages need a version, channel and tenant slug.');
+
+  const parentReceiver = jsFunction(builder, 'handleLivePreviewMessage');
+  checkMatch(parentReceiver, /event\.origin\s*!==\s*location\.origin/,
+    'Parent must reject preview messages from every other origin.');
+  checkMatch(parentReceiver, /event\.source\s*!==\s*frame\.contentWindow/,
+    'Parent must reject messages not sent by its current preview frame.');
+  checkMatch(parentReceiver, /data\.channel\s*!==\s*livePreviewChannel/,
+    'Parent must reject messages from a stale preview channel.');
+  checkMatch(parentReceiver, /data\.slug\s*!==\s*currentTenant\.slug/,
+    'Parent must reject messages for a previously selected tenant.');
+
+  const draftContext = jsFunction(builder, 'draftPreviewContext');
+  [
+    'name', 'short_name', 'description', 'support_text', 'home_title', 'home_subtitle',
+    'home_image_path', 'landing_copy', 'brand'
+  ].forEach((field) => checkMatch(draftContext, new RegExp(`\\b${field}\\s*:`),
+    `Live draft allow-list is missing presentation field ${field}.`));
+  [
+    'login_suffix', 'teacher_login_suffix', 'member_role', 'profile_role',
+    'features', 'classes', 'profiles', 'teachers', 'home_path'
+  ].forEach((field) => checkNoMatch(draftContext, new RegExp(`\\b${field}\\s*:`),
+    `Live draft must not expose non-presentation field ${field}.`));
+
+  checkMatch(genericLanding, /addEventListener\(\s*['"]message['"]\s*,\s*handleBuilderPreviewMessage\s*\)/,
+    'Canonical tenant renderer must expose its explicit live-preview message listener.');
+
+  const childReceiver = jsFunction(genericLanding, 'handleBuilderPreviewMessage');
+  checkMatch(childReceiver,
+    /!previewMode\s*\|\|\s*!embedMode\s*\|\|\s*!previewAuthorized\s*\|\|\s*!currentContext/,
+    'Child message handling must be gated by preview mode, embed mode, completed admin authorization and loaded context.');
+  checkMatch(childReceiver,
+    /event\.origin\s*!==\s*location\.origin\s*\|\|\s*event\.source\s*!==\s*window\.parent/,
+    'Embedded renderer must reject every other origin and every source except its direct parent.');
+  checkMatch(childReceiver,
+    /data\.version\s*!==\s*1\s*\|\|\s*data\.channel\s*!==\s*previewChannel\s*\|\|\s*data\.slug\s*!==\s*tenantSlug/,
+    'Child must reject another protocol version, stale channel or another tenant slug.');
+
+  const previewLoader = jsFunction(genericLanding, 'loadPreview');
+  checkMatch(previewLoader,
+    /vmLayPhienAnToan\([^)]+\)[\s\S]*profiles[\s\S]*profileResult\.data\.role\s*!==\s*['"]admin['"]/,
+    'Draft loading must authenticate the session and require the admin role.');
+  checkMatch(genericLanding,
+    /var\s+context\s*=\s*previewMode\s*\?\s*await\s+loadPreview\(\)\s*:\s*await\s+loadPublic\(\)\s*;\s*if\s*\(previewMode\)\s*previewAuthorized\s*=\s*true\s*;/,
+    'The child must authorize live messages only after the protected preview loader resolves.');
+  check((genericLanding.match(/previewAuthorized\s*=\s*true/g) || []).length === 1,
+    'The renderer must have exactly one post-auth path that enables live preview messages.');
+
+  const childDraftContext = jsFunction(genericLanding, 'previewDraftContext');
+  [
+    'name', 'short_name', 'description', 'support_text', 'home_title',
+    'home_subtitle', 'home_image_path', 'landing_copy', 'brand'
+  ].forEach((field) => checkMatch(childDraftContext, new RegExp(`\\b${field}\\s*:`),
+    `Child live-draft allow-list is missing presentation field ${field}.`));
+  [
+    'login_suffix', 'teacher_login_suffix', 'member_role', 'profile_role',
+    'features', 'classes', 'profiles', 'teachers', 'home_path'
+  ].forEach((field) => checkNoMatch(childDraftContext, new RegExp(`\\bsource\\.${field}\\b|\\b${field}\\s*:\\s*source\\b`),
+    `Child must ignore incoming non-presentation field ${field}.`));
+  checkNoMatch(childDraftContext, /Object\.assign\(\s*\{\}\s*,\s*currentContext\s*,\s*source\s*\)|\.\.\.source/,
+    'Child must not merge an untrusted draft object wholesale into the server-loaded context.');
+  checkMatch(childDraftContext, /vmNormalizeTenantLandingCopy\(\s*source\.landing_copy\s*\)/,
+    'Live copy must pass through the shared plain-text allow-list before rendering.');
+
+  const childSenders = jsFunction(genericLanding, 'sendPreviewSelection') + jsFunction(genericLanding, 'announcePreviewReady');
+  checkMatch(childSenders, /\.postMessage\([\s\S]*?,\s*location\.origin\s*\)/,
+    'Child preview messages must target the exact current origin.');
+  checkNoMatch(childSenders, /\.postMessage\([\s\S]*?,\s*['"]\*['"]\s*\)/,
+    'Child preview messages must never use a wildcard targetOrigin.');
+  checkNoMatch(genericLanding, /srcdoc|document\.write\s*\(/i,
+    'Canonical live renderer must never build executable HTML from a draft payload.');
+});
+
 section('shared runtime order, label and escaping', () => {
   checkMatch(shared, /function vmTenantFeatureConfig\s*\(/,
     'Shared runtime needs a normalized feature-config reader.');

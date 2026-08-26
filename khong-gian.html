@@ -69,6 +69,10 @@
     [data-theme="dark"] .space-topbar{background:rgba(8,12,20,.84)}
     [data-theme="dark"] .space-card,[data-theme="dark"] .space-state-card,[data-theme="dark"] .space-cta{box-shadow:none}
     [data-theme="dark"] .space-visual-card{box-shadow:0 34px 100px color-mix(in srgb,var(--accent) 10%,transparent)}
+    [data-space-embed="builder"] .space-preview-note{display:none!important}
+    [data-space-embed="builder"] a,[data-space-embed="builder"] button{cursor:pointer}
+    .space-live-highlight{outline:3px solid var(--accent)!important;outline-offset:6px;border-radius:8px;scroll-margin:92px;animation:space-highlight 1.25s ease-out}
+    @keyframes space-highlight{0%{outline-color:transparent;box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 42%,transparent)}35%{box-shadow:0 0 0 12px transparent}100%{outline-color:var(--accent);box-shadow:none}}
     @media(max-width:860px){.space-main{padding-top:28px}.space-hero{grid-template-columns:1fr;min-height:auto;padding-bottom:42px}.space-visual{min-height:350px}.space-section-head{align-items:flex-start;flex-direction:column}.space-grid{grid-template-columns:1fr}.space-cta{align-items:flex-start;flex-direction:column}}
     @media(max-width:560px){.space-nav,.space-main,.space-footer{width:min(100% - 24px,var(--space-max))}.space-nav{min-height:64px}.space-nav .logo img{width:38px;height:38px}.space-nav .logo{font-size:.92rem}.space-theme{display:none}.space-action{padding:0 12px;font-size:.78rem}.space-main{padding-top:20px}.space-hero{gap:22px}.space-hero h1{font-size:clamp(2.3rem,13vw,3.8rem)}.space-lead{margin-top:18px}.space-visual{min-height:290px}.space-badge{right:2px;bottom:8px}.space-section{padding:42px 0}.space-cta{padding:23px}.space-preview-note{align-items:flex-start;flex-direction:column}.space-footer{align-items:flex-start;flex-direction:column}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.space-spinner{animation:none}}
@@ -148,12 +152,66 @@
     var params = new URLSearchParams(location.search);
     var tenantSlug = String(params.get('tenant') || '').trim().toLowerCase();
     var previewMode = params.get('preview') === '1';
+    var previewChannel = String(params.get('channel') || '').trim().toLowerCase();
+    var embedMode = previewMode && params.get('embed') === 'builder' && /^[a-f0-9]{16,64}$/.test(previewChannel);
+    var previewAuthorized = false;
+    var previewFocusedField = '';
     var currentContext = null;
+    if (embedMode) document.documentElement.dataset.spaceEmbed = 'builder';
+
+    var PREVIEW_FIELD_TARGETS = {
+      tenantName: 'spaceFooterName', tenantShort: 'spaceBadgeTitle', tenantBrand: 'spaceLogo',
+      tenantHomeTitle: 'spaceTitle', tenantHomeSubtitle: 'spaceSubtitle', tenantHomeImage: 'spaceHeroImage', tenantSupport: 'spaceSupport',
+      copyKicker: 'spaceKicker', copySecondaryCta: 'spaceSecondaryAction', copyBadgeTitle: 'spaceBadgeTitle', copyBadgeText: 'spaceBadgeText',
+      copyHighlightsTitle: 'spaceHighlightsTitle', copyHighlightsIntro: 'spaceHighlightsIntro', copyHighlight1Title: 'spaceHighlight1Title',
+      copyHighlight1Body: 'spaceHighlight1Body', copyHighlight2Title: 'spaceHighlight2Title', copyHighlight2Body: 'spaceHighlight2Body',
+      copyHighlight3Title: 'spaceHighlight3Title', copyHighlight3Body: 'spaceHighlight3Body', copyCtaTitle: 'spaceCtaTitle',
+      copyCtaGuestText: 'spaceCtaText', copyFooterBrand: 'spaceFooterName', copyFooterText: 'spaceSupport'
+    };
+    var PREVIEW_TARGET_FIELDS = Object.keys(PREVIEW_FIELD_TARGETS).reduce(function (result, field) {
+      var target = PREVIEW_FIELD_TARGETS[field];
+      if (!result[target] || field.indexOf('tenant') === 0) result[target] = field;
+      return result;
+    }, {});
 
     function byId(id) { return document.getElementById(id); }
     function setText(id, value) { var node = byId(id); if (node) node.textContent = String(value || ''); }
     function validSlug(value) { return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value); }
     function loginUrl() { return 'dang-nhap?tenant=' + encodeURIComponent(tenantSlug); }
+    function previewText(value, limit) { return typeof value === 'string' ? value.trim().slice(0, limit) : ''; }
+
+    function previewBrand(value, fallback) {
+      var source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      var current = fallback && typeof fallback === 'object' ? fallback : {};
+      var columns = typeof VM_BRAND_COLUMNS === 'string' ? VM_BRAND_COLUMNS.split(',') : [];
+      return columns.reduce(function (brand, key) {
+        key = key.trim();
+        var candidate = Object.prototype.hasOwnProperty.call(source, key) ? source[key] : current[key];
+        if (typeof candidate === 'string') brand[key] = candidate.slice(0, 512);
+        else if (typeof candidate === 'number' && Number.isFinite(candidate)) brand[key] = candidate;
+        else if (typeof candidate === 'boolean') brand[key] = candidate;
+        return brand;
+      }, {});
+    }
+
+    function previewDraftContext(value) {
+      var source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      return Object.assign({}, currentContext, {
+        id: currentContext.id,
+        slug: currentContext.slug,
+        name: previewText(source.name, 100),
+        short_name: previewText(source.short_name, 40),
+        description: previewText(source.description, 320),
+        support_text: previewText(source.support_text, 240),
+        home_title: previewText(source.home_title, 120),
+        home_subtitle: previewText(source.home_subtitle, 320),
+        home_image_path: previewText(source.home_image_path, 512),
+        landing_copy: vmNormalizeTenantLandingCopy(source.landing_copy),
+        brand: previewBrand(source.brand, currentContext.brand),
+        full_site: true,
+        preview_source_active: currentContext.preview_source_active
+      });
+    }
 
     function showError(title, message) {
       byId('spaceSpinner').hidden = true;
@@ -188,6 +246,61 @@
       setAction(byId('spaceTopAction'), topLabel, href, switchAccount);
       setAction(byId('spacePrimaryAction'), mainLabel, href, switchAccount);
       setAction(byId('spaceBottomAction'), mainLabel, href, switchAccount);
+    }
+
+    function renderEmbeddedActions() {
+      byId('spacePreviewNote').hidden = true;
+      byId('spaceSessionNote').hidden = true;
+      setAllActions('Đăng nhập', 'Đăng nhập để bắt đầu →', '#', false);
+      byId('spaceLogo').href = '#';
+      ['spaceLogo', 'spaceTopAction', 'spacePrimaryAction', 'spaceSecondaryAction', 'spaceBottomAction', 'themeBtn'].forEach(function (id) {
+        var node = byId(id);
+        if (node) node.dataset.previewInert = '1';
+      });
+    }
+
+    function highlightPreviewField(fieldId) {
+      document.querySelectorAll('.space-live-highlight').forEach(function (node) { node.classList.remove('space-live-highlight'); });
+      var targetId = PREVIEW_FIELD_TARGETS[fieldId];
+      var target = targetId ? byId(targetId) : null;
+      if (!target) return;
+      target.classList.add('space-live-highlight');
+      if (previewFocusedField !== fieldId) target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      previewFocusedField = fieldId;
+    }
+
+    function previewFieldForTarget(targetId) {
+      var copy = currentContext && currentContext.landing_copy && typeof currentContext.landing_copy === 'object' ? currentContext.landing_copy : {};
+      if (targetId === 'spaceBadgeTitle') return copy.badge_title ? 'copyBadgeTitle' : 'tenantShort';
+      if (targetId === 'spaceFooterName') return copy.footer_brand ? 'copyFooterBrand' : 'tenantName';
+      if (targetId === 'spaceSupport') return copy.footer_text ? 'copyFooterText' : 'tenantSupport';
+      return PREVIEW_TARGET_FIELDS[targetId] || '';
+    }
+
+    function sendPreviewSelection(field) {
+      if (!field || window.parent === window) return;
+      window.parent.postMessage({ type: 'vm:tenant-preview:select', version: 1, channel: previewChannel, slug: tenantSlug, field: field }, location.origin);
+    }
+
+    function announcePreviewReady() {
+      if (!embedMode || !previewAuthorized || window.parent === window) return;
+      window.parent.postMessage({ type: 'vm:tenant-preview:ready', version: 1, channel: previewChannel, slug: tenantSlug }, location.origin);
+    }
+
+    function handleBuilderPreviewMessage(event) {
+      if (!previewMode || !embedMode || !previewAuthorized || !currentContext) return;
+      if (event.origin !== location.origin || event.source !== window.parent) return;
+      var data = event.data;
+      if (!data || data.version !== 1 || data.channel !== previewChannel || data.slug !== tenantSlug) return;
+      if (data.type === 'vm:tenant-preview:draft') {
+        var context = previewDraftContext(data.context);
+        vmApplyTenantIdentity(context);
+        renderLanding(context);
+        highlightPreviewField(typeof data.focus_field === 'string' ? data.focus_field : '');
+      } else if (data.type === 'vm:tenant-preview:theme' && (data.theme === 'light' || data.theme === 'dark')) {
+        document.documentElement.setAttribute('data-theme', data.theme);
+        vmApplyTenantIdentity(currentContext);
+      }
     }
 
     function disableWorkspaceActions(message) {
@@ -272,7 +385,7 @@
       document.title = shortName + ' — Không gian học tập';
       var descriptionMeta = document.querySelector('meta[name="description"]');
       if (descriptionMeta) descriptionMeta.content = subtitle.slice(0, 200);
-      byId('spaceLogo').href = context.home_path || ('khong-gian?tenant=' + encodeURIComponent(tenantSlug));
+      byId('spaceLogo').href = embedMode ? '#' : (context.home_path || ('khong-gian?tenant=' + encodeURIComponent(tenantSlug)));
       setText('spaceKicker', copy.kicker);
       setText('spaceTitle', title);
       setText('spaceSubtitle', subtitle);
@@ -297,9 +410,13 @@
       byId('spaceContent').hidden = false;
 
       if (previewMode) {
-        byId('spacePreviewNote').hidden = false;
-        setText('spacePreviewState', context.preview_source_active ? 'Đang hoạt động' : 'Đang tạm ẩn');
-        setAllActions('Về quản trị', 'Quay lại chỉnh sửa', 'quan-tri-khong-gian', false);
+        if (embedMode) {
+          renderEmbeddedActions();
+        } else {
+          byId('spacePreviewNote').hidden = false;
+          setText('spacePreviewState', context.preview_source_active ? 'Đang hoạt động' : 'Đang tạm ẩn');
+          setAllActions('Về quản trị', 'Quay lại chỉnh sửa', 'quan-tri-khong-gian', false);
+        }
       } else {
         setAllActions('Đăng nhập', 'Đăng nhập để bắt đầu →', loginUrl(), false);
       }
@@ -337,7 +454,24 @@
       }
     }
 
+    window.addEventListener('message', handleBuilderPreviewMessage);
+
     document.addEventListener('click', function (event) {
+      if (embedMode && previewAuthorized) {
+        var node = event.target && event.target.closest ? event.target.closest('[id]') : null;
+        while (node && !previewFieldForTarget(node.id)) node = node.parentElement && node.parentElement.closest ? node.parentElement.closest('[id]') : null;
+        var field = node ? previewFieldForTarget(node.id) : '';
+        var control = event.target && event.target.closest ? event.target.closest('a,button,[data-preview-inert="1"]') : null;
+        if (field || control) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (field) {
+            highlightPreviewField(field);
+            sendPreviewSelection(field);
+          }
+          return;
+        }
+      }
       var disabled = event.target.closest('[aria-disabled="true"]');
       if (disabled) {
         event.preventDefault();
@@ -368,8 +502,10 @@
           return;
         }
         var context = previewMode ? await loadPreview() : await loadPublic();
+        if (previewMode) previewAuthorized = true;
         renderLanding(context);
         await configureSession(context);
+        announcePreviewReady();
       } catch (error) {
         var code = String(error && error.message || error || '');
         if (code === 'PREVIEW_LOGIN_REQUIRED') {
