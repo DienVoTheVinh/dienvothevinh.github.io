@@ -8,6 +8,7 @@ const shared = read('js/vinhmath.js');
 const menu = read('js/menu-v5.js');
 const login = read('dang-nhap.html');
 const uyenLanding = read('uyenmath.html');
+const genericLanding = read('khong-gian.html');
 
 new vm.Script(shared, { filename: 'js/vinhmath.js' });
 new vm.Script(menu, { filename: 'js/menu-v5.js' });
@@ -17,6 +18,9 @@ new vm.Script(menu, { filename: 'js/menu-v5.js' });
 [...uyenLanding.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1]).filter((source) => source.trim())
   .forEach((source, index) => new vm.Script(source, { filename: `uyenmath.html#${index + 1}` }));
+[...genericLanding.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
+  .map((match) => match[1]).filter((source) => source.trim())
+  .forEach((source, index) => new vm.Script(source, { filename: `khong-gian.html#${index + 1}` }));
 
 expect(shared.includes("VM_TENANT_CONTEXT_RPC = 'vm_current_tenant_context'"), 'Current tenant RPC contract is missing');
 expect((shared.match(/sb\.rpc\(VM_TENANT_CONTEXT_RPC\)/g) || []).length === 1, 'A page must issue at most one current-context RPC');
@@ -51,10 +55,10 @@ expect(login.includes("vmRequestedTenantSlug === 'uyenmath' ? 'uyenmath' : 'tran
 expect(login.includes("location.replace('thi?portal='") && login.includes('tenantContext.portal_only'), 'Legacy exam portal login routing regressed');
 expect(!/if\s*\(vmRequestedTenantSlug\)[\s\S]{0,160}location\.replace\(['"]thi/.test(login), 'A public tenant hint must never force an unrelated account into the exam portal');
 
-expect(uyenLanding.includes("vmTenantFirstShownPath(c,space)") && uyenLanding.includes("'tenant=uyenmath&space='+space"), 'UYENMATH landing must expose a policy-aware role workspace action');
-expect(uyenLanding.includes("isTeacher?'Không gian giáo viên':'Không gian học sinh'"), 'UYENMATH landing must label the teacher and student spaces explicitly');
-expect(uyenLanding.includes("login.href=workspacePath") && uyenLanding.includes("primary.href=workspacePath") && uyenLanding.includes("bottom.href=workspacePath"), 'Every signed-in UYENMATH call to action must enter the selected workspace');
-expect(uyenLanding.includes("link.setAttribute('aria-disabled','true')"), 'An all-hidden UYENMATH policy must disable workspace actions without a redirect loop');
-expect(!uyenLanding.includes("location.replace('trang-chu?tenant=uyenmath')"), 'UYENMATH landing must not auto-skip itself after sign-in');
+expect(uyenLanding.includes("new URL('khong-gian', location.href)") && uyenLanding.includes("target.searchParams.set('tenant', 'uyenmath')"), 'UYENMATH must redirect to the generic shared renderer');
+expect(genericLanding.includes('vmTenantFirstShownPath(signedContext, role.key)') && genericLanding.includes("url.searchParams.set('space', role.space)"), 'The shared landing must expose a policy-aware role workspace action');
+expect(genericLanding.includes("label: 'giáo viên'") && genericLanding.includes("label: 'học sinh'"), 'The shared landing must label teacher and student spaces explicitly');
+expect(genericLanding.includes("setAllActions('Mở không gian'") && genericLanding.includes('disableWorkspaceActions'), 'Shared signed-in calls to action must enter a visible workspace or disable safely');
+expect(!genericLanding.includes("location.replace('trang-chu?tenant=uyenmath')"), 'The shared landing must not auto-skip itself after sign-in');
 
 console.log('PASS full-site tenant runtime: one context load, brand precedence, role menu policy, route guard and login/logout routing');

@@ -1056,6 +1056,50 @@ var VM_PUBLIC_TENANT_CONTEXT_RPC = 'vm_public_tenant_context';
 var vmTenantContextPromise = null;
 window.VM_TENANT_CONTEXT = null;
 window.VM_TENANT_CONTEXT_READY = null;
+var VM_TENANT_LANDING_COPY_LIMITS = {
+  kicker: 100, badge_title: 100, badge_text: 240, secondary_cta_label: 60,
+  highlights_title: 180, highlights_intro: 320,
+  highlight_1_title: 120, highlight_1_body: 320,
+  highlight_2_title: 120, highlight_2_body: 320,
+  highlight_3_title: 120, highlight_3_body: 320,
+  cta_title: 160, cta_guest_text: 280, footer_brand: 120, footer_text: 240
+};
+
+function vmNormalizeTenantLandingCopy(value) {
+  var source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return Object.keys(VM_TENANT_LANDING_COPY_LIMITS).reduce(function (copy, key) {
+    if (typeof source[key] !== 'string') return copy;
+    var text = source[key].trim();
+    if (text) copy[key] = text.slice(0, VM_TENANT_LANDING_COPY_LIMITS[key]);
+    return copy;
+  }, {});
+}
+
+function vmTenantLandingCopy(context) {
+  context = context || {};
+  var brand = context.brand || {};
+  var name = brand.name || context.name || context.short_name || 'Không gian học tập';
+  var shortName = brand.short_name || context.short_name || name;
+  var defaults = {
+    kicker: name,
+    badge_title: shortName,
+    badge_text: brand.tagline || context.support_text || 'Học tập liền mạch trên mọi thiết bị.',
+    secondary_cta_label: 'Khám phá',
+    highlights_title: 'Mọi thứ cần thiết,\nở đúng một nơi.',
+    highlights_intro: 'Nội dung và dữ liệu học tập được giữ thống nhất; giao diện tự thích ứng với vai trò của từng tài khoản.',
+    highlight_1_title: 'Bài học theo lớp',
+    highlight_1_body: 'Theo dõi nội dung, lịch học và tài liệu được giao trong đúng lớp của mình.',
+    highlight_2_title: 'Luyện tập & đề thi',
+    highlight_2_body: 'Làm bài, xem tiến độ và tiếp tục ôn luyện trên cùng một hành trình học tập.',
+    highlight_3_title: 'Phản hồi rõ ràng',
+    highlight_3_body: 'Giáo viên chấm bài, gửi nhận xét; học sinh nhận kết quả ngay trong không gian chung.',
+    cta_title: 'Sẵn sàng vào ' + shortName + '?',
+    cta_guest_text: 'Đăng nhập bằng tài khoản đã được cấp cho không gian này.',
+    footer_brand: name,
+    footer_text: context.support_text || 'Học tập · Luyện tập · Tiến bộ'
+  };
+  return Object.assign(defaults, vmNormalizeTenantLandingCopy(context.landing_copy));
+}
 
 function vmTenantOneRow(value) {
   if (Array.isArray(value)) value = value[0] || null;
@@ -1090,6 +1134,10 @@ function vmNormalizeTenantContext(value) {
     login_suffix: raw.login_suffix || tenant.login_suffix || '',
     teacher_login_suffix: raw.teacher_login_suffix || tenant.teacher_login_suffix || '',
     home_path: String(raw.home_path || tenant.home_path || (slug === 'uyenmath' ? 'uyenmath' : 'trang-chu')).replace(/^\/+/, ''),
+    home_title: raw.home_title || tenant.home_title || '',
+    home_subtitle: raw.home_subtitle || tenant.home_subtitle || '',
+    home_image_path: raw.home_image_path || tenant.home_image_path || '',
+    landing_copy: vmNormalizeTenantLandingCopy(raw.landing_copy || tenant.landing_copy),
     manifest_path: raw.manifest_path || tenant.manifest_path || '',
     full_site: fullSite,
     portal_only: portalOnly !== false,
@@ -1106,24 +1154,33 @@ function vmNormalizeTenantContext(value) {
     short_name: normalizedTenant.short_name,
     description: normalizedTenant.description,
     support_text: normalizedTenant.support_text,
+    landing_copy: normalizedTenant.landing_copy,
     is_active: true,
     brand: normalizedTenant.brand
   };
   return normalizedTenant;
 }
 
-function vmTenantFeatureState(context, featureKey, role) {
-  if (!context || !context.full_site || role === 'admin' || !featureKey) return 'shown';
+function vmTenantFeatureConfig(context, featureKey, role) {
+  var fallback = { state: 'shown', sort_order: null, label_override: '' };
+  if (!context || !context.full_site || role === 'admin' || !featureKey) return fallback;
   var audience = role === 'assistant' ? 'teacher' : role;
   var source = context.features || [];
+  var row = null;
   var value = null;
   if (Array.isArray(source)) {
-    var row = source.find(function (item) {
+    var matches = source.filter(function (item) {
       if (!item) return false;
       var key = item.feature_key || item.key;
-      var target = item.audience || item.role || 'all';
-      return key === featureKey && (target === audience || target === role || target === 'all' || target === '*');
+      return key === featureKey;
     });
+    row = matches.find(function (item) {
+      var target = item.audience || item.role || 'all';
+      return target === audience || target === role;
+    }) || matches.find(function (item) {
+      var target = item.audience || item.role || 'all';
+      return target === 'all' || target === '*';
+    }) || (matches.length === 1 ? matches[0] : null);
     if (row) value = row.state || row.visibility || row.status;
   } else if (source && typeof source === 'object') {
     if (source[audience] && typeof source[audience] === 'object') value = source[audience][featureKey];
@@ -1131,23 +1188,41 @@ function vmTenantFeatureState(context, featureKey, role) {
     if (value == null && source[featureKey] && typeof source[featureKey] === 'object') value = source[featureKey][audience] || source[featureKey][role] || source[featureKey].all || source[featureKey].state;
     if (value == null && typeof source[featureKey] === 'string') value = source[featureKey];
   }
-  value = String(value || 'shown').toLowerCase();
-  if (value === 'hidden' || value === 'hide' || value === 'off') return 'hidden';
-  if (value === 'locked' || value === 'lock' || value === 'disabled') return 'locked';
-  return 'shown';
+  var rawState = value && typeof value === 'object' ? (value.state || value.visibility || value.status) : value;
+  rawState = String(rawState || 'shown').toLowerCase();
+  var state = rawState === 'hidden' || rawState === 'hide' || rawState === 'off'
+    ? 'hidden' : (rawState === 'locked' || rawState === 'lock' || rawState === 'disabled' ? 'locked' : 'shown');
+  var sourceConfig = row || (value && typeof value === 'object' ? value : {});
+  var sortOrder = Number(sourceConfig.sort_order != null ? sourceConfig.sort_order : sourceConfig.sort);
+  var label = String(sourceConfig.label_override || sourceConfig.label || '').trim();
+  return {
+    state: state,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : null,
+    label_override: label.slice(0, 80)
+  };
 }
 
-function vmTenantFeatureForPath(pathname) {
+function vmTenantFeatureState(context, featureKey, role) {
+  if (!context || !context.full_site || role === 'admin' || !featureKey) return 'shown';
+  return vmTenantFeatureConfig(context, featureKey, role).state;
+}
+
+function vmTenantFeatureForPath(pathname, role) {
   var page = String(pathname || location.pathname.split('/').pop() || 'index').replace(/^\/+/, '').replace(/\.html$/, '').split('?')[0];
+  var roleName = String(role || '').toLowerCase();
+  var teacherSpace = roleName === 'teacher' || roleName === 'assistant' || roleName === 'owner' || roleName === 'manager';
+  if (page === 'tai-lieu') return teacherSpace ? 'classes' : 'lessons';
+  if (page === 'lop-online' || page === 'diem-danh') return teacherSpace ? 'schedule' : 'lessons';
   var map = {
-    'trang-chu':'home',
+    'trang-chu':'home','hoc-tap':'home',
     'quan-tri-lop':'classes','quan-tri-bai-hoc':'classes','quan-tri-hoc-sinh':'classes','bang-tin-lop':'classes',
+    'quan-tri-video-meet':'classes','quan-tri-bao-cao-hoc-sinh':'classes',
     'quan-tri-cham-bai':'grading',
     'quan-tri-de':'authoring','quan-tri-tai-lieu':'authoring',
     'vmtool':'vmtool',
     'quan-tri-lich':'schedule','quan-tri-buoi-day':'schedule','lich-hoc':'schedule',
     'lop-hoc':'lessons','bai-hoc':'lessons',
-    'luyen-de':'practice','ket-qua':'results','bang-vang':'leaderboard','ca-nhan':'profile',
+    'luyen-de':'practice','thi':'practice','ket-qua':'results','bang-vang':'leaderboard','thanh-tuu':'leaderboard','ca-nhan':'profile',
     'phu-huynh':'parental','goc-tu-hoc':'self_study'
   };
   return map[page] || '';
@@ -1177,15 +1252,20 @@ function vmTenantFirstShownPath(context, role) {
     ]
   };
   var candidates = groups[role] || groups.student;
-  for (var i = 0; i < candidates.length; i++) {
-    if (vmTenantFeatureState(context, candidates[i][0], role) === 'shown') return candidates[i][1];
+  var ordered = candidates.map(function (candidate, index) {
+    var config = vmTenantFeatureConfig(context, candidate[0], role);
+    return { candidate: candidate, index: index, config: config,
+      order: config.sort_order == null ? index * 10 : config.sort_order };
+  }).sort(function (a, b) { return a.order - b.order || a.index - b.index; });
+  for (var i = 0; i < ordered.length; i++) {
+    if (ordered[i].config.state === 'shown') return ordered[i].candidate[1];
   }
   return '';
 }
 
 function vmGuardTenantRoute(context, role) {
   if (!context || !context.full_site || role === 'admin') return false;
-  var key = vmTenantFeatureForPath();
+  var key = vmTenantFeatureForPath(null, role);
   if (!key) return false;
   var state = vmTenantFeatureState(context, key, role);
   if (state === 'shown') return false;
@@ -1279,6 +1359,9 @@ async function vmLoadPublicTenantContext(slug) {
 }
 
 window.vmNormalizeTenantContext = vmNormalizeTenantContext;
+window.vmNormalizeTenantLandingCopy = vmNormalizeTenantLandingCopy;
+window.vmTenantLandingCopy = vmTenantLandingCopy;
+window.vmTenantFeatureConfig = vmTenantFeatureConfig;
 window.vmTenantFeatureState = vmTenantFeatureState;
 window.vmTenantFeatureForPath = vmTenantFeatureForPath;
 window.vmTenantHomePath = vmTenantHomePath;

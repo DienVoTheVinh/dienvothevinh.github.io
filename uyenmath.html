@@ -1,95 +1,27 @@
 <!doctype html>
-<html lang="vi" data-theme="light">
+<html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#176BD9">
-  <meta name="description" content="Không gian học tập Toán UYENMATH, vận hành trên nền tảng VinhMath.">
-  <title>UYENMATH — Học Toán vững vàng</title>
-  <link rel="icon" type="image/png" href="logo/uyenmath/uyenmath-apple-um-final.png">
-  <link rel="apple-touch-icon" href="logo/uyenmath/uyenmath-apple-um-final.png">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0;url=khong-gian?tenant=uyenmath">
+  <title>Đang mở UYENMATH…</title>
   <link rel="manifest" href="/manifest-uyenmath.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/tokens.css?v=8.4">
-  <style>
-    :root{--um-blue:#176bd9;--um-sky:#439cdf;--um-navy:#082b5e;--um-ink:#0b172a;--um-muted:#59708c;--um-line:#dce8f7;--um-soft:#edf6ff;--um-white:#fff}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font-family:"Be Vietnam Pro",sans-serif;color:var(--um-ink);background:#f7fbff;overflow-x:hidden}
-    a{color:inherit}.um-shell{position:relative;min-height:100vh;isolation:isolate}.um-shell:before,.um-shell:after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(12px);pointer-events:none}.um-shell:before{width:480px;height:480px;right:-160px;top:-150px;background:radial-gradient(circle,rgba(67,156,223,.26),transparent 69%)}.um-shell:after{width:420px;height:420px;left:-210px;bottom:-180px;background:radial-gradient(circle,rgba(23,107,217,.14),transparent 70%)}
-    .um-nav{height:82px;display:flex;align-items:center;justify-content:space-between;gap:24px;max-width:1240px;margin:0 auto;padding:0 28px}.um-brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:900;font-size:1.22rem;letter-spacing:.035em}.um-brand img{width:48px;height:48px;object-fit:contain;border-radius:15px;background:#fff;box-shadow:0 8px 24px rgba(8,43,94,.14)}.um-brand span span:first-child{color:var(--um-blue)}.um-brand span span:last-child{color:var(--um-ink)}
-    .um-links{display:flex;align-items:center;gap:24px;font-size:.88rem;font-weight:700}.um-links a{text-decoration:none}.um-links a:hover{color:var(--um-blue)}.um-login{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:13px;background:linear-gradient(135deg,var(--um-blue),var(--um-sky));color:#fff!important;box-shadow:0 10px 24px rgba(23,107,217,.24)}
-    .um-hero{max-width:1240px;margin:0 auto;padding:62px 28px 80px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.75fr);gap:70px;align-items:center}.um-kicker{display:inline-flex;align-items:center;gap:8px;color:var(--um-blue);font-size:.75rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.um-kicker:before{content:"";width:32px;height:3px;border-radius:3px;background:var(--um-blue)}.um-hero h1{font-size:clamp(2.7rem,5vw,5.4rem);line-height:1.02;letter-spacing:-.055em;margin:18px 0 20px;max-width:10ch}.um-hero h1 span{color:var(--um-blue)}.um-lead{max-width:670px;color:var(--um-muted);font-size:clamp(1rem,1.6vw,1.16rem);line-height:1.75;margin:0}.um-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}.um-btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 22px;border-radius:15px;text-decoration:none;font-weight:800;border:1px solid var(--um-line);background:#fff}.um-btn.primary{border-color:transparent;background:linear-gradient(135deg,var(--um-blue),var(--um-sky));color:#fff;box-shadow:0 14px 30px rgba(23,107,217,.25)}.um-btn:hover{transform:translateY(-2px)}.um-btn.is-disabled{pointer-events:none;opacity:.55;box-shadow:none;transform:none}
-    .um-portrait{position:relative;min-height:500px;display:grid;place-items:center}.um-orbit{position:absolute;width:min(36vw,440px);aspect-ratio:1;border-radius:50%;border:1px solid rgba(23,107,217,.16);box-shadow:0 0 0 38px rgba(23,107,217,.035),0 0 0 76px rgba(23,107,217,.025)}.um-logo-card{position:relative;width:min(31vw,370px);aspect-ratio:1;border-radius:36%;padding:24px;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(237,246,255,.86));border:1px solid rgba(23,107,217,.18);box-shadow:0 34px 70px rgba(8,43,94,.18);transform:rotate(-3deg)}.um-logo-card img{width:100%;height:100%;object-fit:contain;border-radius:31%;transform:rotate(3deg)}.um-note{position:absolute;right:-24px;bottom:48px;max-width:235px;padding:15px 17px;border-radius:16px;background:rgba(255,255,255,.94);border:1px solid var(--um-line);box-shadow:0 14px 32px rgba(8,43,94,.13);font-size:.8rem;line-height:1.55;color:var(--um-muted)}.um-note b{display:block;color:var(--um-ink);margin-bottom:3px}
-    .um-section{max-width:1240px;margin:0 auto;padding:8px 28px 88px}.um-section-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:24px}.um-section h2{font-size:clamp(1.7rem,3vw,2.5rem);margin:0;letter-spacing:-.035em}.um-section-head p{max-width:540px;margin:0;color:var(--um-muted);line-height:1.65}.um-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.um-card{padding:25px;border:1px solid var(--um-line);border-radius:22px;background:rgba(255,255,255,.9);box-shadow:0 12px 30px rgba(8,43,94,.06)}.um-card-icon{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:var(--um-soft);color:var(--um-blue);font-size:1.18rem;font-weight:900}.um-card h3{font-size:1rem;margin:18px 0 8px}.um-card p{margin:0;color:var(--um-muted);font-size:.85rem;line-height:1.65}
-    .um-footer{border-top:1px solid var(--um-line);padding:24px 28px;color:var(--um-muted);font-size:.78rem}.um-footer-inner{max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.um-status{display:none;max-width:1184px;margin:-48px auto 52px;padding:14px 18px;color:#31516f;font-size:.82rem;line-height:1.55;border:1px solid #cfe2f7;border-radius:15px;background:rgba(237,246,255,.88)}.um-status.show{display:block}
-    @media(max-width:900px){.um-links>a:not(.um-login){display:none}.um-hero{grid-template-columns:1fr;gap:20px;padding-top:38px}.um-hero h1{max-width:12ch}.um-portrait{min-height:380px}.um-logo-card{width:min(72vw,330px)}.um-orbit{width:min(80vw,390px)}.um-grid{grid-template-columns:1fr}.um-section-head{align-items:flex-start;flex-direction:column}.um-note{right:4px}}
-    @media(max-width:520px){.um-nav{height:70px;padding:0 16px}.um-brand img{width:42px;height:42px}.um-brand{font-size:1rem}.um-login{min-height:40px;padding:0 13px;font-size:.76rem}.um-hero,.um-section{padding-left:16px;padding-right:16px}.um-hero{padding-bottom:58px}.um-hero h1{font-size:2.7rem}.um-portrait{min-height:330px}.um-note{bottom:6px}.um-section{padding-bottom:58px}}
-  </style>
+  <link rel="icon" type="image/png" href="/logo/uyenmath/uyenmath-apple-um-final.png">
+  <link rel="apple-touch-icon" href="logo/uyenmath/uyenmath-apple-um-final.png">
 </head>
 <body>
-<div class="um-shell">
-  <header class="um-nav">
-    <a class="um-brand" href="uyenmath" aria-label="UYENMATH"><img src="logo/uyenmath/uyenmath-apple-um-final.png" alt=""><span><span>UYEN</span><span>MATH</span></span></a>
-    <nav class="um-links" aria-label="Điều hướng UYENMATH"><a href="#dong-hanh">Đồng hành</a><a href="#khong-gian">Không gian học tập</a><a class="um-login" id="umLogin" href="dang-nhap?tenant=uyenmath">Đăng nhập</a></nav>
-  </header>
-  <main>
-    <section class="um-hero">
-      <div><div class="um-kicker">Không gian Toán học của Cô Uyên</div><h1>Hiểu bản chất.<br><span>Vững từng bước.</span></h1><p class="um-lead">Một không gian học tập riêng để học sinh theo dõi bài học, luyện tập, làm đề và nhận phản hồi trực tiếp — vận hành trên nền tảng VinhMath.</p><div class="um-actions"><a class="um-btn primary" id="umPrimary" href="dang-nhap?tenant=uyenmath">Vào không gian học tập →</a><a class="um-btn" href="#khong-gian">Khám phá</a></div></div>
-      <div class="um-portrait" aria-hidden="true"><div class="um-orbit"></div><div class="um-logo-card"><img src="logo/uyenmath/uyenmath-apple-um-final.png" alt=""></div><div class="um-note"><b>UYENMATH</b>Hành trình vạn dặm bắt đầu từ một bước chân.</div></div>
-    </section>
-    <section class="um-section" id="khong-gian"><div class="um-section-head"><h2>Một hệ thống, đúng bản sắc UYENMATH</h2><p>Không tách rời công cụ hay dữ liệu: học sinh và giáo viên vẫn dùng trọn bộ chức năng ổn định của VinhMath trong giao diện UYENMATH.</p></div><div class="um-grid">
-      <article class="um-card"><div class="um-card-icon">01</div><h3>Bài học và lớp học</h3><p>Nội dung, lịch học và tiến độ được sắp xếp trong cùng một luồng rõ ràng.</p></article>
-      <article class="um-card"><div class="um-card-icon">02</div><h3>Luyện tập và đề thi</h3><p>Làm bài, xem kết quả và tiếp tục luyện theo đúng lộ trình giáo viên giao.</p></article>
-      <article class="um-card"><div class="um-card-icon">03</div><h3>Phản hồi trực tiếp</h3><p>Bài nộp, nhận xét và kết quả luôn gắn với tài khoản và lớp học hiện có.</p></article>
-    </div></section>
-    <section class="um-section" id="dong-hanh"><div class="um-card" style="display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap"><div><div class="um-kicker">Bắt đầu</div><h2 style="margin-top:10px">Sẵn sàng vào lớp?</h2></div><a class="um-btn primary" id="umBottomAction" href="dang-nhap?tenant=uyenmath">Đăng nhập UYENMATH →</a></div></section>
-    <div class="um-status" id="umStatus" role="status" aria-live="polite">Đang kiểm tra phiên đăng nhập…</div>
-  </main>
-  <footer class="um-footer"><div class="um-footer-inner"><span>© UYENMATH</span><span>Vận hành trên nền tảng VinhMath</span></div></footer>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.4"></script>
-<script>
-(async function(){
-  var params=new URLSearchParams(location.search);
-  if(params.get('preview')==='1'||typeof daKetNoi!=='function'||!daKetNoi())return;
-  var status=document.getElementById('umStatus');
-  try{
-    var s=await vmLayPhienAnToan(4500);
-    if(!s.data.session)return;
-    var c=typeof vmLoadTenantContext==='function'?await vmLoadTenantContext():null;
-    if(c&&c.slug==='uyenmath'&&(c.experience_mode==='full_site'||c.full_site===true)){
-      var role=String(c.profile_role||c.member_role||'student').toLowerCase();
-      var isTeacher=role==='teacher'||role==='assistant'||role==='manager'||role==='owner'||role==='admin';
-      var space=isTeacher?'teacher':'student';
-      var shortLabel=isTeacher?'Không gian giáo viên':'Không gian học sinh';
-      var actionLabel='Vào '+shortLabel.toLowerCase()+' →';
-      var firstPath=typeof vmTenantFirstShownPath==='function'?vmTenantFirstShownPath(c,space):'trang-chu';
-      var workspacePath=firstPath?firstPath+(firstPath.indexOf('?')===-1?'?':'&')+'tenant=uyenmath&space='+space:'';
-      var login=document.getElementById('umLogin');
-      var primary=document.getElementById('umPrimary');
-      var bottom=document.getElementById('umBottomAction');
-      if(workspacePath){
-        login.textContent=shortLabel;
-        login.href=workspacePath;
-        primary.textContent=actionLabel;
-        primary.href=workspacePath;
-        bottom.textContent=actionLabel;
-        bottom.href=workspacePath;
-        status.textContent='Đã đăng nhập UYENMATH. Chọn “'+shortLabel+'” khi bạn sẵn sàng tiếp tục.';
-      }else{
-        [login,primary,bottom].forEach(function(link){link.textContent='Không gian đang tạm khóa';link.href='#';link.classList.add('is-disabled');link.setAttribute('aria-disabled','true');});
-        status.textContent='Hiện chưa có chức năng nào được mở cho tài khoản này. Vui lòng liên hệ Cô Uyên.';
-      }
-      status.classList.add('show');
-      document.body.classList.add('um-authenticated');
-    }else if(params.has('feature')){
-      status.textContent='Không gian vừa chọn đang tạm khóa hoặc ẩn. Vui lòng chọn một chức năng khác.';
-      status.classList.add('show');
-    }
-  }catch(_){ }
-})();
-</script>
+  <p>Đang mở <a href="khong-gian?tenant=uyenmath">không gian UYENMATH</a>…</p>
+  <script>
+  (function () {
+    var target = new URL('khong-gian', location.href);
+    new URLSearchParams(location.search).forEach(function (value, key) {
+      if (key !== 'tenant') target.searchParams.append(key, value);
+    });
+    target.searchParams.set('tenant', 'uyenmath');
+    target.hash = location.hash;
+    location.replace(target.pathname + target.search + target.hash);
+  })();
+  </script>
 </body>
 </html>

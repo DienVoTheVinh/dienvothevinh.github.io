@@ -5,6 +5,12 @@
 // Muốn thêm/bớt mục menu: sửa ĐÚNG MỘT chỗ là file này.
 // ============================================================
 
+function vmMenuEsc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char];
+  });
+}
+
 function apDungMenu(role, portalContext, tenantContext) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
@@ -74,16 +80,24 @@ function apDungMenu(role, portalContext, tenantContext) {
 
   var fullSiteTenant = tenantContext && tenantContext.full_site ? tenantContext : null;
   if (fullSiteTenant && role !== 'admin' && typeof vmTenantFeatureState === 'function') {
-    muc = muc.filter(function (item) {
-      item.featureState = vmTenantFeatureState(fullSiteTenant, item.featureKey, role);
+    muc = muc.map(function (item, index) {
+      var config = typeof vmTenantFeatureConfig === 'function'
+        ? vmTenantFeatureConfig(fullSiteTenant, item.featureKey, role)
+        : { state: vmTenantFeatureState(fullSiteTenant, item.featureKey, role), sort_order: null, label_override: '' };
+      item.featureState = config.state;
+      item.featureOrder = config.sort_order == null ? index * 10 : config.sort_order;
+      item.featureIndex = index;
+      if (config.label_override) item.label = config.label_override;
+      return item;
+    }).filter(function (item) {
       return item.featureState !== 'hidden';
-    });
+    }).sort(function (a, b) { return a.featureOrder - b.featureOrder || a.featureIndex - b.featureIndex; });
   }
 
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
       if (m.featureState === 'locked') {
-        return '<a href="#" class="vm-feature-locked" data-vm-feature="' + m.featureKey + '" aria-disabled="true" tabindex="-1" title="Chức năng đang tạm khóa">' + m.label + ' <span aria-hidden="true">🔒</span></a>';
+        return '<a href="#" class="vm-feature-locked" data-vm-feature="' + vmMenuEsc(m.featureKey) + '" aria-disabled="true" title="Chức năng đang tạm khóa">' + vmMenuEsc(m.label) + ' <span aria-hidden="true">🔒</span></a>';
       }
       var activeClass = '';
       var menuPage = m.path.split('?')[0].split('#')[0];
@@ -98,7 +112,7 @@ function apDungMenu(role, portalContext, tenantContext) {
       } else if (menuPage === 'quan-tri-de' && trang === 'quan-tri-tai-lieu') {
         activeClass = ' class="active"';
       }
-      return '<a href="' + m.path + '"' + activeClass + '>' + m.label + '</a>';
+      return '<a href="' + m.path + '"' + activeClass + '>' + vmMenuEsc(m.label) + '</a>';
     } else if (m.type === 'dropdown') {
       var dropdownActive = false;
       var itemsHtml = m.items.map(function(sub) {
@@ -119,12 +133,12 @@ function apDungMenu(role, portalContext, tenantContext) {
           activeClass = ' class="active"';
           dropdownActive = true;
         }
-        return '<a href="' + sub.path + '"' + activeClass + '>' + sub.label + '</a>';
+        return '<a href="' + sub.path + '"' + activeClass + '>' + vmMenuEsc(sub.label) + '</a>';
       }).join('');
       
       var btnActive = dropdownActive ? ' active' : '';
       return '<div class="nav-dropdown">' +
-             '  <button class="nav-dropdown-btn' + btnActive + '">' + m.label + '</button>' +
+             '  <button class="nav-dropdown-btn' + btnActive + '">' + vmMenuEsc(m.label) + '</button>' +
              '  <div class="nav-dropdown-content">' + itemsHtml + '</div>' +
              '</div>';
     }

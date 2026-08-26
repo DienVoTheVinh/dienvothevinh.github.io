@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172747">
+  <meta name="description" content="Không gian học tập riêng trên nền tảng VinhMath.">
+  <title>Không gian học tập</title>
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="/icons/vinhmath-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="css/tokens.css?v=8.4">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
+  <style>
+    :root{--space-navy:#172747;--space-max:1240px}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;color:var(--ink);background:
+      radial-gradient(circle at 92% 8%,color-mix(in srgb,var(--accent) 19%,transparent),transparent 27rem),
+      radial-gradient(circle at 5% 86%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 25rem),
+      var(--bg);overflow-x:hidden}
+    .space-shell{min-height:100vh;position:relative;isolation:isolate}
+    .space-shell:before,.space-shell:after{content:"";position:fixed;z-index:-1;border-radius:999px;filter:blur(1px);pointer-events:none}
+    .space-shell:before{width:22rem;height:22rem;right:-10rem;top:8rem;background:color-mix(in srgb,var(--accent-soft) 70%,transparent)}
+    .space-shell:after{width:16rem;height:16rem;left:-9rem;bottom:8rem;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+    .space-topbar{position:sticky;top:0;z-index:20;border-bottom:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));background:color-mix(in srgb,var(--topbar-bg,var(--surface-solid)) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .space-nav{width:min(var(--space-max),calc(100% - 36px));min-height:72px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .space-nav .logo{display:inline-flex;align-items:center;gap:10px;min-width:0;color:var(--topbar-text,var(--ink));text-decoration:none;font-size:1.08rem;font-weight:900;letter-spacing:.015em}
+    .space-nav .logo img{width:42px;height:42px;border-radius:12px;object-fit:contain;background:#fff;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+    .space-nav-actions{display:flex;align-items:center;gap:9px}
+    .space-theme,.space-action{min-height:42px;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line));font:inherit;font-weight:800;cursor:pointer}
+    .space-theme{width:42px;padding:0;display:grid;place-items:center;background:var(--surface);color:var(--ink)}
+    .space-action{display:inline-flex;align-items:center;justify-content:center;padding:0 16px;background:var(--accent-gradient);color:#fff;text-decoration:none;white-space:nowrap}
+    .space-action.secondary{background:var(--surface);color:var(--accent)}
+    .space-action[aria-disabled="true"]{opacity:.52;cursor:not-allowed;pointer-events:none}
+    .space-main{width:min(var(--space-max),calc(100% - 36px));margin:auto;padding:54px 0 48px}
+    .space-state{min-height:62vh;display:grid;place-items:center;text-align:center}
+    .space-state-card{width:min(560px,100%);padding:34px;border:1px solid var(--line);border-radius:22px;background:var(--surface);box-shadow:var(--shadow)}
+    .space-spinner{width:34px;height:34px;margin:0 auto 15px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:space-spin .8s linear infinite}
+    @keyframes space-spin{to{transform:rotate(360deg)}}
+    .space-state-card h1{margin:0 0 8px;font-size:1.35rem}.space-state-card p{margin:0;color:var(--ink-3);line-height:1.65}
+    .space-content[hidden],.space-state[hidden]{display:none!important}
+    .space-preview-note,.space-session-note{margin:0 0 18px;padding:11px 14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:13px;background:color-mix(in srgb,var(--accent-soft) 65%,var(--surface));color:var(--ink-2);font-size:.82rem;line-height:1.55}
+    .space-preview-note{display:flex;align-items:center;justify-content:space-between;gap:12px}.space-preview-note[hidden]{display:none!important}.space-preview-note b{color:var(--accent)}
+    .space-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);align-items:center;gap:clamp(34px,6vw,86px);min-height:520px;padding:22px 0 56px}
+    .space-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--accent);font-size:.74rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+    .space-kicker:before{content:"";width:26px;height:3px;border-radius:99px;background:var(--accent-gradient)}
+    .space-hero h1{margin:0;max-width:760px;font-size:clamp(2.55rem,5.8vw,5.7rem);line-height:.98;letter-spacing:-.055em;text-wrap:balance}
+    .space-hero h1 span{color:var(--accent)}
+    .space-lead{max-width:680px;margin:24px 0 0;color:var(--ink-2);font-size:clamp(1rem,1.6vw,1.18rem);line-height:1.75}
+    .space-actions{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:29px}
+    .space-actions .space-action{min-height:50px;padding:0 20px}
+    .space-visual{position:relative;min-height:420px;display:grid;place-items:center}
+    .space-orbit{position:absolute;width:min(410px,88vw);aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);box-shadow:0 0 0 42px color-mix(in srgb,var(--accent) 5%,transparent),0 0 0 84px color-mix(in srgb,var(--accent) 3%,transparent)}
+    .space-visual-card{position:relative;width:min(310px,72vw);aspect-ratio:1;border-radius:32%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--accent-soft) 76%,var(--surface)));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));box-shadow:0 34px 90px color-mix(in srgb,var(--accent) 18%,transparent);transform:rotate(-4deg)}
+    .space-visual-card:after{content:"";position:absolute;inset:12px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:29%}
+    .space-visual-card img{position:relative;z-index:1;width:72%;height:72%;object-fit:contain;filter:drop-shadow(0 18px 28px rgba(0,0,0,.14));transform:rotate(4deg)}
+    .space-badge{position:absolute;right:0;bottom:36px;max-width:220px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));border-radius:15px;background:color-mix(in srgb,var(--surface-solid) 90%,transparent);box-shadow:var(--shadow);font-size:.74rem;line-height:1.5;backdrop-filter:blur(16px)}
+    .space-badge b{display:block;color:var(--accent);font-size:.82rem;margin-bottom:2px}
+    .space-section{padding:58px 0;border-top:1px solid var(--line)}
+    .space-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:24px}
+    .space-section h2{margin:0;font-size:clamp(1.7rem,3vw,2.65rem);letter-spacing:-.035em}.space-section-head h2{white-space:pre-line}.space-section-head p{max-width:540px;margin:0;color:var(--ink-3);line-height:1.65}
+    .space-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+    .space-card{min-height:180px;padding:22px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));border-radius:var(--r-lg,20px);background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 14px 38px rgba(15,23,42,.055)}
+    .space-card-index{display:grid;place-items:center;width:36px;height:36px;margin-bottom:23px;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-weight:900}.space-card h3{margin:0 0 8px;font-size:1.02rem}.space-card p{margin:0;color:var(--ink-3);font-size:.86rem;line-height:1.65}
+    .space-cta{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:32px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));border-radius:24px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent-soft) 72%,var(--surface)),var(--surface));box-shadow:var(--shadow)}
+    .space-cta h2{margin:0 0 8px;font-size:clamp(1.45rem,3vw,2.25rem)}.space-cta p{margin:0;color:var(--ink-3)}
+    .space-footer{width:min(var(--space-max),calc(100% - 36px));margin:auto;padding:24px 0 34px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--ink-3);font-size:.74rem}.space-footer b{color:var(--ink-2)}
+    [data-theme="dark"] .space-topbar{background:rgba(8,12,20,.84)}
+    [data-theme="dark"] .space-card,[data-theme="dark"] .space-state-card,[data-theme="dark"] .space-cta{box-shadow:none}
+    [data-theme="dark"] .space-visual-card{box-shadow:0 34px 100px color-mix(in srgb,var(--accent) 10%,transparent)}
+    @media(max-width:860px){.space-main{padding-top:28px}.space-hero{grid-template-columns:1fr;min-height:auto;padding-bottom:42px}.space-visual{min-height:350px}.space-section-head{align-items:flex-start;flex-direction:column}.space-grid{grid-template-columns:1fr}.space-cta{align-items:flex-start;flex-direction:column}}
+    @media(max-width:560px){.space-nav,.space-main,.space-footer{width:min(100% - 24px,var(--space-max))}.space-nav{min-height:64px}.space-nav .logo img{width:38px;height:38px}.space-nav .logo{font-size:.92rem}.space-theme{display:none}.space-action{padding:0 12px;font-size:.78rem}.space-main{padding-top:20px}.space-hero{gap:22px}.space-hero h1{font-size:clamp(2.3rem,13vw,3.8rem)}.space-lead{margin-top:18px}.space-visual{min-height:290px}.space-badge{right:2px;bottom:8px}.space-section{padding:42px 0}.space-cta{padding:23px}.space-preview-note{align-items:flex-start;flex-direction:column}.space-footer{align-items:flex-start;flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.space-spinner{animation:none}}
+  </style>
+</head>
+<body>
+  <div class="space-shell">
+    <header class="space-topbar">
+      <div class="space-nav">
+        <a class="logo" id="spaceLogo" href="index" aria-label="Không gian học tập">
+          <img src="img/logo.png" alt="">
+          <span class="brand-container-el"><span class="brand-vinh">Không gian</span><span class="brand-math"> học tập</span></span>
+        </a>
+        <div class="space-nav-actions">
+          <button class="space-theme" id="themeBtn" type="button" onclick="toggleTheme()" aria-label="Đổi chế độ sáng tối">◐</button>
+          <a class="space-action" id="spaceTopAction" href="dang-nhap">Đăng nhập</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="space-main">
+      <section class="space-state" id="spaceState" aria-live="polite">
+        <div class="space-state-card">
+          <div class="space-spinner" id="spaceSpinner" aria-hidden="true"></div>
+          <h1 id="spaceStateTitle">Đang mở không gian…</h1>
+          <p id="spaceStateText">Hệ thống đang tải nhận diện và lối vào phù hợp.</p>
+        </div>
+      </section>
+
+      <div class="space-content" id="spaceContent" hidden>
+        <div class="space-preview-note" id="spacePreviewNote" hidden><span><b>Bản xem trước quản trị</b> · Chế độ này chỉ hiển thị trong phiên quản trị hợp lệ.</span><span id="spacePreviewState"></span></div>
+        <div class="space-session-note" id="spaceSessionNote" hidden></div>
+
+        <section class="space-hero">
+          <div>
+            <div class="space-kicker" id="spaceKicker">Không gian học tập riêng</div>
+            <h1 id="spaceTitle">Học vững từng bước.</h1>
+            <p class="space-lead" id="spaceSubtitle">Bài học, luyện tập và phản hồi được kết nối trong một không gian thống nhất.</p>
+            <div class="space-actions">
+              <a class="space-action" id="spacePrimaryAction" href="dang-nhap">Đăng nhập để bắt đầu →</a>
+              <a class="space-action secondary" id="spaceSecondaryAction" href="#spaceHighlights">Khám phá</a>
+            </div>
+          </div>
+          <div class="space-visual" aria-hidden="true">
+            <div class="space-orbit"></div>
+            <div class="space-visual-card"><img id="spaceHeroImage" src="img/logo.png" alt=""></div>
+            <div class="space-badge"><b id="spaceBadgeTitle">Học tập liền mạch</b><span id="spaceBadgeText">Dùng chung một hệ thống từ bài học đến kết quả.</span></div>
+          </div>
+        </section>
+
+        <section class="space-section" id="spaceHighlights">
+          <div class="space-section-head"><h2 id="spaceHighlightsTitle">Mọi thứ cần thiết,
+ở đúng một nơi.</h2><p id="spaceHighlightsIntro">Nội dung và dữ liệu học tập được giữ thống nhất; giao diện tự thích ứng với vai trò của từng tài khoản.</p></div>
+          <div class="space-grid">
+            <article class="space-card"><div class="space-card-index">01</div><h3 id="spaceHighlight1Title">Bài học theo lớp</h3><p id="spaceHighlight1Body">Theo dõi nội dung, lịch học và tài liệu được giao trong đúng lớp của mình.</p></article>
+            <article class="space-card"><div class="space-card-index">02</div><h3 id="spaceHighlight2Title">Luyện tập &amp; đề thi</h3><p id="spaceHighlight2Body">Làm bài, xem tiến độ và tiếp tục ôn luyện trên cùng một hành trình học tập.</p></article>
+            <article class="space-card"><div class="space-card-index">03</div><h3 id="spaceHighlight3Title">Phản hồi rõ ràng</h3><p id="spaceHighlight3Body">Giáo viên chấm bài, gửi nhận xét; học sinh nhận kết quả ngay trong không gian chung.</p></article>
+          </div>
+        </section>
+
+        <section class="space-section">
+          <div class="space-cta"><div><h2 id="spaceCtaTitle">Sẵn sàng bắt đầu?</h2><p id="spaceCtaText">Đăng nhập bằng tài khoản đã được cấp cho không gian này.</p></div><a class="space-action" id="spaceBottomAction" href="dang-nhap">Đăng nhập →</a></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="space-footer"><span><b id="spaceFooterName">Không gian học tập</b></span><span id="spaceSupport">Học tập · Luyện tập · Tiến bộ</span></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vinhmath.js?v=9.5"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var params = new URLSearchParams(location.search);
+    var tenantSlug = String(params.get('tenant') || '').trim().toLowerCase();
+    var previewMode = params.get('preview') === '1';
+    var currentContext = null;
+
+    function byId(id) { return document.getElementById(id); }
+    function setText(id, value) { var node = byId(id); if (node) node.textContent = String(value || ''); }
+    function validSlug(value) { return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value); }
+    function loginUrl() { return 'dang-nhap?tenant=' + encodeURIComponent(tenantSlug); }
+
+    function showError(title, message) {
+      byId('spaceSpinner').hidden = true;
+      setText('spaceStateTitle', title);
+      setText('spaceStateText', message);
+      byId('spaceState').hidden = false;
+      byId('spaceContent').hidden = true;
+      byId('spaceTopAction').textContent = 'Về trang chính';
+      byId('spaceTopAction').href = 'index';
+    }
+
+    function safeAsset(path, fallback) {
+      path = String(path || '').trim();
+      if (!path) return fallback;
+      if (path.indexOf('site:') === 0) {
+        var local = path.slice(5).replace(/^\/+/, '');
+        if (local && local.indexOf('..') === -1 && /^[a-zA-Z0-9_./% -]+$/.test(local)) return local;
+        return fallback;
+      }
+      if (path.indexOf('..') !== -1 || !/^[a-zA-Z0-9][a-zA-Z0-9_./% -]{0,510}$/.test(path)) return fallback;
+      try { return sb.storage.from('brand-assets').getPublicUrl(path).data.publicUrl || fallback; } catch (_) { return fallback; }
+    }
+
+    function setAction(node, label, href, switchAccount) {
+      node.textContent = label;
+      node.removeAttribute('aria-disabled');
+      node.dataset.switchAccount = switchAccount ? '1' : '';
+      node.href = href || '#';
+    }
+
+    function setAllActions(topLabel, mainLabel, href, switchAccount) {
+      setAction(byId('spaceTopAction'), topLabel, href, switchAccount);
+      setAction(byId('spacePrimaryAction'), mainLabel, href, switchAccount);
+      setAction(byId('spaceBottomAction'), mainLabel, href, switchAccount);
+    }
+
+    function disableWorkspaceActions(message) {
+      ['spacePrimaryAction', 'spaceBottomAction'].forEach(function (id) {
+        var node = byId(id);
+        node.textContent = 'Chưa có mục đang mở';
+        node.href = '#';
+        node.setAttribute('aria-disabled', 'true');
+      });
+      byId('spaceSessionNote').hidden = false;
+      setText('spaceSessionNote', message);
+    }
+
+    function roleDetails(context) {
+      var profileRole = String(context.profile_role || '').toLowerCase();
+      var memberRole = String(context.member_role || '').toLowerCase();
+      if (memberRole === 'owner' || memberRole === 'manager' || profileRole === 'teacher') {
+        return { key: 'teacher', space: 'teacher', label: 'giáo viên' };
+      }
+      if (profileRole === 'assistant') return { key: 'assistant', space: 'teacher', label: 'trợ giảng' };
+      if (profileRole === 'parent') return { key: 'parent', space: 'student', label: 'phụ huynh' };
+      return { key: 'student', space: 'student', label: 'học sinh' };
+    }
+
+    function workspaceUrl(path, role) {
+      try {
+        var url = new URL(path, location.href);
+        if (url.origin !== location.origin) return '';
+        url.searchParams.set('tenant', tenantSlug);
+        url.searchParams.set('space', role.space);
+        return url.pathname + url.search + url.hash;
+      } catch (_) { return ''; }
+    }
+
+    async function loadPreview() {
+      if (typeof daKetNoi !== 'function' || !daKetNoi()) throw new Error('Không kết nối được máy chủ.');
+      var sessionResult = await vmLayPhienAnToan(4500);
+      var session = sessionResult && sessionResult.data && sessionResult.data.session;
+      if (!session) throw new Error('PREVIEW_LOGIN_REQUIRED');
+      var profileResult = await sb.from('profiles').select('id,role').eq('id', session.user.id).single();
+      if (profileResult.error || !profileResult.data || profileResult.data.role !== 'admin') throw new Error('PREVIEW_ADMIN_REQUIRED');
+
+      var columns = 'id,slug,name,short_name,description,support_text,is_active,login_suffix,teacher_login_suffix,experience_mode,home_path,home_title,home_subtitle,home_image_path,landing_copy,brand:brand_templates(' + VM_BRAND_COLUMNS + ')';
+      var portalResult = await sb.from('exam_portals').select(columns).eq('slug', tenantSlug).eq('experience_mode', 'full_site').maybeSingle();
+      if (portalResult.error) throw portalResult.error;
+      if (!portalResult.data) throw new Error('PREVIEW_NOT_FOUND');
+
+      var raw = portalResult.data;
+      var normalizedInput = Object.assign({}, raw, { is_active: true, full_site: true });
+      var context = vmNormalizeTenantContext(normalizedInput);
+      if (!context) throw new Error('PREVIEW_NOT_FOUND');
+      context.home_title = raw.home_title || '';
+      context.home_subtitle = raw.home_subtitle || '';
+      context.home_image_path = raw.home_image_path || '';
+      context.landing_copy = vmNormalizeTenantLandingCopy(raw.landing_copy);
+      context.preview_source_active = raw.is_active === true;
+
+      var rulesResult = await sb.from('exam_portal_feature_rules').select('role_scope,feature_key,state,sort_order,label_override').eq('portal_id', raw.id).order('sort_order');
+      if (!rulesResult.error) context.features = rulesResult.data || [];
+      vmApplyTenantIdentity(context);
+      return context;
+    }
+
+    async function loadPublic() {
+      if (typeof vmLoadPublicTenantContext !== 'function') throw new Error('PUBLIC_CONTEXT_UNAVAILABLE');
+      var context = await vmLoadPublicTenantContext(tenantSlug);
+      if (!context || !context.full_site || context.slug !== tenantSlug) throw new Error('PUBLIC_NOT_FOUND');
+      return context;
+    }
+
+    function renderLanding(context) {
+      currentContext = context;
+      var brand = context.brand || {};
+      var name = brand.name || context.name || context.short_name || tenantSlug.toUpperCase();
+      var shortName = brand.short_name || context.short_name || name;
+      var title = context.home_title || ('Không gian học tập ' + shortName);
+      var subtitle = context.home_subtitle || context.description || brand.tagline || 'Bài học, luyện tập và phản hồi được kết nối trong một không gian thống nhất.';
+      var logo = typeof vmUrlLogoThuongHieu === 'function' ? vmUrlLogoThuongHieu(brand) : 'img/logo.png';
+      var heroImage = safeAsset(context.home_image_path, logo);
+      var copy = vmTenantLandingCopy(context);
+
+      document.title = shortName + ' — Không gian học tập';
+      var descriptionMeta = document.querySelector('meta[name="description"]');
+      if (descriptionMeta) descriptionMeta.content = subtitle.slice(0, 200);
+      byId('spaceLogo').href = context.home_path || ('khong-gian?tenant=' + encodeURIComponent(tenantSlug));
+      setText('spaceKicker', copy.kicker);
+      setText('spaceTitle', title);
+      setText('spaceSubtitle', subtitle);
+      setText('spaceBadgeTitle', copy.badge_title);
+      setText('spaceBadgeText', copy.badge_text);
+      setText('spaceSecondaryAction', copy.secondary_cta_label);
+      setText('spaceHighlightsTitle', copy.highlights_title);
+      setText('spaceHighlightsIntro', copy.highlights_intro);
+      setText('spaceHighlight1Title', copy.highlight_1_title);
+      setText('spaceHighlight1Body', copy.highlight_1_body);
+      setText('spaceHighlight2Title', copy.highlight_2_title);
+      setText('spaceHighlight2Body', copy.highlight_2_body);
+      setText('spaceHighlight3Title', copy.highlight_3_title);
+      setText('spaceHighlight3Body', copy.highlight_3_body);
+      setText('spaceCtaTitle', copy.cta_title);
+      setText('spaceCtaText', copy.cta_guest_text);
+      setText('spaceFooterName', copy.footer_brand);
+      setText('spaceSupport', copy.footer_text);
+      byId('spaceHeroImage').src = heroImage;
+      byId('spaceHeroImage').alt = '';
+      byId('spaceState').hidden = true;
+      byId('spaceContent').hidden = false;
+
+      if (previewMode) {
+        byId('spacePreviewNote').hidden = false;
+        setText('spacePreviewState', context.preview_source_active ? 'Đang hoạt động' : 'Đang tạm ẩn');
+        setAllActions('Về quản trị', 'Quay lại chỉnh sửa', 'quan-tri-khong-gian', false);
+      } else {
+        setAllActions('Đăng nhập', 'Đăng nhập để bắt đầu →', loginUrl(), false);
+      }
+    }
+
+    async function configureSession(context) {
+      if (previewMode) return;
+      try {
+        var sessionResult = await vmLayPhienAnToan(3500);
+        var session = sessionResult && sessionResult.data && sessionResult.data.session;
+        if (!session) return;
+
+        var response = await sb.rpc('vm_current_tenant_context');
+        var signedContext = response.error ? null : vmNormalizeTenantContext(response.data);
+        if (signedContext && signedContext.full_site && signedContext.slug === tenantSlug) {
+          var role = roleDetails(signedContext);
+          var firstPath = vmTenantFirstShownPath(signedContext, role.key);
+          var target = firstPath ? workspaceUrl(firstPath, role) : '';
+          if (!target) {
+            setAction(byId('spaceTopAction'), 'Đã đăng nhập', '#', false);
+            byId('spaceTopAction').setAttribute('aria-disabled', 'true');
+            disableWorkspaceActions('Hiện chưa có mục nào được mở cho vai trò của bạn. Vui lòng liên hệ người quản lý không gian.');
+            return;
+          }
+          setAllActions('Mở không gian', 'Vào không gian ' + role.label + ' →', target, false);
+          setText('spaceCtaText', 'Tiếp tục vào khu vực phù hợp với tài khoản ' + role.label + ' của bạn.');
+          return;
+        }
+
+        byId('spaceSessionNote').hidden = false;
+        setText('spaceSessionNote', 'Bạn đang đăng nhập bằng một tài khoản không thuộc không gian này. Hệ thống sẽ không tự chuyển thương hiệu; hãy chọn đổi tài khoản nếu muốn tiếp tục.');
+        setAllActions('Đổi tài khoản', 'Đăng nhập đúng không gian →', '#', true);
+      } catch (_) {
+        setAllActions('Đăng nhập', 'Đăng nhập để bắt đầu →', loginUrl(), false);
+      }
+    }
+
+    document.addEventListener('click', function (event) {
+      var disabled = event.target.closest('[aria-disabled="true"]');
+      if (disabled) {
+        event.preventDefault();
+        return;
+      }
+      var action = event.target.closest('[data-switch-account="1"]');
+      if (!action) return;
+      event.preventDefault();
+      action.setAttribute('aria-disabled', 'true');
+      action.textContent = 'Đang đổi tài khoản…';
+      (async function () {
+        try {
+          if (typeof dangXuat === 'function') {
+            await dangXuat();
+            return;
+          }
+          if (typeof daKetNoi === 'function' && daKetNoi()) await sb.auth.signOut();
+        } catch (_) {}
+        location.href = loginUrl();
+      })();
+    });
+
+    (async function initLanding() {
+      try {
+        if (typeof capNhatNutTheme === 'function') capNhatNutTheme();
+        if (!validSlug(tenantSlug)) {
+          showError('Thiếu mã không gian', 'Đường dẫn này chưa xác định một không gian học tập hợp lệ.');
+          return;
+        }
+        var context = previewMode ? await loadPreview() : await loadPublic();
+        renderLanding(context);
+        await configureSession(context);
+      } catch (error) {
+        var code = String(error && error.message || error || '');
+        if (code === 'PREVIEW_LOGIN_REQUIRED') {
+          showError('Cần đăng nhập quản trị', 'Bản nháp chỉ được mở trong phiên quản trị hợp lệ.');
+        } else if (code === 'PREVIEW_ADMIN_REQUIRED') {
+          showError('Không có quyền xem bản nháp', 'Tài khoản hiện tại không được phép xem không gian chưa công khai.');
+        } else if (code === 'PREVIEW_NOT_FOUND') {
+          showError('Không tìm thấy bản nháp', 'Không gian cần xem trước không tồn tại hoặc không thuộc loại toàn hệ thống.');
+        } else {
+          showError('Không gian chưa sẵn sàng', 'Không gian này chưa hoạt động hoặc đường dẫn không còn khả dụng.');
+        }
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>
