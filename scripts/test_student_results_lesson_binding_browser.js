@@ -26,7 +26,7 @@ function extractFunction(source, name) {
   const executablePath = process.env.VM_CHROME_PATH;
   if (!executablePath || !fs.existsSync(executablePath)) throw new Error('VM_CHROME_PATH must point to Chrome');
   const source = fs.readFileSync('js/student-results.js', 'utf8');
-  const names = ['safeUrl','filesOf','titleFor','isImage','isPdf','fileLink','driveFileId','filePreviewUrl','fileFallbackUrl','fileCards','loadClassAnswerHtml'];
+  const names = ['safeUrl','filesOf','titleFor','isImage','isPdf','fileLink','driveFileId','filePreviewUrl','fileFallbackUrl','fileCards','loadClassAnswerHtml','prepareResultFiles'];
   const functions = names.map((name) => extractFunction(source, name)).join('\n');
   const browser = await chromium.launch({ executablePath, headless:true });
   try {
@@ -42,26 +42,29 @@ function extractFunction(source, name) {
         return {answer:{lesson_id:'lesson-6',tex_content:'Đáp án bài 6',files:[{id:'answer-1',name:'Đáp án 1.png',mime_type:'image/png'}]}};
       }
       async function vmGoiHamFormDataBlob(name,form){
-        calls.push({action:form.get('kind'),lesson:form.get('lesson_id'),file:form.get('file_id')});
+        calls.push({action:form.get('kind'),lesson:form.get('lesson_id'),submission:form.get('submission_id'),collection:form.get('collection'),file:form.get('file_id')});
         return new Blob(['image'],{type:'image/png'});
       }
       function latexTaiLieuRaHTML(value){return '<div data-tex>'+value+'</div>'}
       ${functions}
     ` });
     const state = await page.evaluate(async () => {
-      const driveHtml = fileCards([{id:'drive-image',name:'Bài đã chấm.png',link:'https://drive.google.com/file/d/drive-image/view',mime_type:'image/png'}], 'Bài đã chấm');
+      const prepared = await prepareResultFiles({id:'submission-6'}, [{name:'Bài đã chấm.png',link:'https://drive.google.com/file/d/drive-image/view',mime_type:'image/png'}], 'graded_files');
+      const driveHtml = fileCards(prepared, 'Bài đã chấm');
       const answerHtml = await loadClassAnswerHtml({lesson_id:'lesson-6',kind:'homework',lessons:{title:'Buổi 6'}});
       document.getElementById('out').innerHTML = driveHtml + answerHtml;
       return {
+        preparedPreview:prepared[0] && prepared[0].previewUrl,
         driveSrc:document.querySelector('.student-result-file img').src,
         answerText:document.getElementById('out').textContent,
         calls,
         groupSizes:Object.values(mediaGroups).map((group) => group.items.length)
       };
     });
-    if (!state.driveSrc.includes('drive.google.com/thumbnail?id=drive-image')) throw new Error(`Drive image is not normalized: ${state.driveSrc}`);
+    if (!state.driveSrc.startsWith('blob:')) throw new Error(`Drive image did not use the private blob proxy: ${JSON.stringify(state)}`);
     if (!state.answerText.includes('Đáp án chung của bài giảng') || !state.answerText.includes('Đáp án bài 6')) throw new Error(`Lesson answer is missing: ${state.answerText}`);
-    if (state.calls.some((call) => call.lesson !== 'lesson-6') || !state.calls.some((call) => call.action === 'class_answer_file' && call.file === 'answer-1')) throw new Error(`Answer requests are not lesson-bound: ${JSON.stringify(state.calls)}`);
+    if (state.calls.filter((call) => /^class_answer_/.test(call.action)).some((call) => call.lesson !== 'lesson-6') || !state.calls.some((call) => call.action === 'class_answer_file' && call.file === 'answer-1')) throw new Error(`Answer requests are not lesson-bound: ${JSON.stringify(state.calls)}`);
+    if (!state.calls.some((call) => call.action === 'result_file' && call.submission === 'submission-6' && call.collection === 'graded_files' && call.file === 'drive-image')) throw new Error(`Result file request is not submission-bound: ${JSON.stringify(state.calls)}`);
     if (!state.groupSizes.includes(1)) throw new Error(`Answer gallery was not created: ${JSON.stringify(state.groupSizes)}`);
 
     const mismatch = await page.evaluate(async () => {
@@ -69,6 +72,6 @@ function extractFunction(source, name) {
       return loadClassAnswerHtml({lesson_id:'lesson-6',kind:'homework',lessons:{title:'Buổi 6'}});
     });
     if (!mismatch.includes('Chưa tải được đáp án chung')) throw new Error('A mismatched lesson answer was not rejected');
-    console.log('PASS student results Drive media and lesson-bound common answer');
+    console.log('PASS student results private media proxy and lesson-bound common answer');
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exit(1); });

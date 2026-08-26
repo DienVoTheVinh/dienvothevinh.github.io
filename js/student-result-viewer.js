@@ -40,7 +40,7 @@
   function ensureViewer() {
     var viewer = document.getElementById('vmResultMediaViewer');
     if (viewer) return viewer;
-    viewer = document.createElement('div');
+    viewer = document.createElement('dialog');
     viewer.id = 'vmResultMediaViewer';
     viewer.className = 'vm-result-media-viewer';
     viewer.setAttribute('role', 'dialog');
@@ -55,6 +55,11 @@
       '<button class="vm-result-media-nav next" type="button" data-media-action="next" aria-label="Ảnh tiếp theo">›</button></main>' +
       '<footer class="vm-result-media-thumbs" data-media-thumbs aria-label="Danh sách ảnh"></footer></div>';
     document.body.appendChild(viewer);
+
+    viewer.addEventListener('cancel', function (event) {
+      event.preventDefault();
+      close();
+    });
 
     viewer.addEventListener('click', function (event) {
       var action = event.target.closest('[data-media-action]');
@@ -148,6 +153,11 @@
     viewer.querySelector('#vmResultMediaTitle').textContent = options && options.title ? String(options.title) : 'Ảnh bài làm';
     renderThumbs(viewer);
     viewer.classList.add('open');
+    if (typeof viewer.showModal === 'function' && !viewer.open) {
+      try { viewer.showModal(); } catch (_) { viewer.setAttribute('open', ''); }
+    } else if (!viewer.open) {
+      viewer.setAttribute('open', '');
+    }
     document.documentElement.classList.add('vm-result-media-open');
     show(startIndex || 0);
     viewer.querySelector('[data-media-action="close"]').focus();
@@ -159,6 +169,8 @@
     if (!viewer || !viewer.classList.contains('open')) return;
     if (document.fullscreenElement === viewer && document.exitFullscreen) document.exitFullscreen();
     viewer.classList.remove('open', 'fullscreen-fallback');
+    if (typeof viewer.close === 'function' && viewer.open) viewer.close();
+    else viewer.removeAttribute('open');
     document.documentElement.classList.remove('vm-result-media-open');
     items = []; index = 0;
     if (returnFocus && returnFocus.focus) returnFocus.focus();

@@ -17,7 +17,8 @@
 
   function safeUrl(value) {
     try {
-      var url = new URL(String(value || ''), window.location.origin);
+      var raw = String(value || '');
+      var url = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? new URL(raw) : new URL(raw, window.location.origin);
       return url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === 'blob:' ? url.href : '';
     } catch (_) { return ''; }
   }
@@ -233,6 +234,31 @@
     }
   }
 
+  async function prepareResultFiles(item, sourceFiles, collection) {
+    if (!Array.isArray(sourceFiles) || !sourceFiles.length) return [];
+    if (!item || !item.id || typeof vmGoiHamFormDataBlob !== 'function') return sourceFiles;
+    return (await Promise.all(sourceFiles.map(async function (file) {
+      if (!file) return file;
+      var privateFileId = driveFileId(file);
+      if (!privateFileId) return file;
+      try {
+        var form = new FormData();
+        form.append('kind', 'result_file');
+        form.append('submission_id', String(item.id));
+        form.append('file_id', privateFileId);
+        form.append('collection', collection);
+        var blob = await vmGoiHamFormDataBlob('nop-bai', form, {timeoutMs:90000});
+        if (!(blob instanceof Blob)) throw new Error('Máy chủ không trả về tệp kết quả hợp lệ.');
+        var objectUrl = URL.createObjectURL(blob);
+        resultObjectUrls.push(objectUrl);
+        return Object.assign({}, file, {previewUrl:objectUrl,link:objectUrl,mime_type:file.mime_type || blob.type});
+      } catch (fileError) {
+        console.warn('Không tải được tệp kết quả qua kênh riêng:', fileError && fileError.message ? fileError.message : fileError);
+        return file;
+      }
+    }))).filter(Boolean);
+  }
+
   function lessonResultHref(item) {
     if (!item || !item.lesson_id) return '';
     var query = new URLSearchParams({
@@ -256,8 +282,8 @@
   async function openResult(id) {
     var item = results.find(function (row) { return String(row.id) === String(id); });
     if (!item) return;
-    var corrected = filesOf(item.graded_files);
-    var submitted = filesOf(item.files);
+    var correctedSource = filesOf(item.graded_files);
+    var submittedSource = filesOf(item.files);
     var assessment = assessmentFor(item.assessment_level);
     var itemClass = classOf(item);
     mediaGroups = {};
@@ -270,9 +296,16 @@
     var dialog = document.getElementById('studentResultDialog');
     if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
     else dialog.setAttribute('open', '');
-    var loadedLessonContent = await Promise.all([loadSolutionHtml(item), loadClassAnswerHtml(item)]);
+    var loadedLessonContent = await Promise.all([
+      loadSolutionHtml(item),
+      loadClassAnswerHtml(item),
+      prepareResultFiles(item, correctedSource, 'graded_files'),
+      prepareResultFiles(item, submittedSource, 'files')
+    ]);
     var solutionHtml = loadedLessonContent[0];
     var classAnswerHtml = loadedLessonContent[1];
+    var corrected = loadedLessonContent[2];
+    var submitted = loadedLessonContent[3];
     var contextHref = lessonResultHref(item);
     inner.innerHTML = '<header class="student-result-viewer-bar"><div class="student-result-viewer-context"><span class="student-result-viewer-kicker">KẾT QUẢ</span><div class="student-result-viewer-crumbs"><span>' + esc(itemClass ? itemClass.name : 'Lớp học') + '</span><b>›</b><strong>' + esc(titleFor(item)) + '</strong></div></div><div class="student-result-viewer-actions">' +
       (contextHref ? '<a class="btn btn-secondary btn-sm" href="' + esc(contextHref) + '">Mở đúng vị trí trong bài học ↗</a>' : '') +
