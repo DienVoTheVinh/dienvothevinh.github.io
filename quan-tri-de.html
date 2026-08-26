@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=3.5">
+  <link rel="stylesheet" href="css/exam-admin.css?v=3.6">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -170,7 +170,7 @@
             <section class="bank-usage-card">
               <span class="bank-usage-step">Luồng 1 · GV</span>
               <h3>Tạo một đề mới</h3>
-              <ol><li>Nhập tên đề, lớp và cấu trúc câu.</li><li>Chọn khối, dạng, mức độ và số câu.</li><li>Bấm <b>Tạo đề từ ngân hàng</b>, xem lại rồi xuất bản.</li></ol>
+              <ol><li>Nhập tên đề và cấu trúc câu; chưa cần chọn lớp.</li><li>Chọn khối, dạng, mức độ và số câu rồi tạo bản xem trước.</li><li>Kiểm tra HTML/PDF; khi đã ổn mới chọn lớp và bấm <b>Lưu đề đã xem</b>.</li></ol>
             </section>
             <section class="bank-usage-card">
               <span class="bank-usage-step">Luồng 2 · GV</span>
@@ -221,9 +221,8 @@
       <section class="exam-card bank-generator-card" id="bankGeneratorCard">
         <div class="exam-card-head"><div><h2>1. Trích xuất câu và tạo đề mới</h2><p>Chọn tiêu chí; máy chủ tự lấy câu phù hợp mà không gửi đáp án hay nguyên liệu TeX về trình duyệt.</p></div><span class="exam-badge live">An toàn</span></div>
         <div class="exam-card-body">
-          <form id="bankGenerateForm" class="bank-generate-grid" onsubmit="VMExamAdmin.bankGenerateExam(event)">
+          <form id="bankGenerateForm" class="bank-generate-grid" onsubmit="VMExamAdmin.bankPreviewExamDraft(event)">
             <div class="exam-field bank-field-wide"><label for="bankGenTitle">Tiêu đề đề *</label><input class="input" id="bankGenTitle" required placeholder="Ví dụ: Ôn tập Hàm số · Tuần 3"></div>
-            <div class="exam-field"><label for="bankGenClass">Lớp áp dụng *</label><select class="input" id="bankGenClass" required><option value="">Chọn lớp</option></select></div>
             <fieldset class="bank-generation-kind bank-field-wide" aria-labelledby="bankGenerationKindLabel">
               <legend id="bankGenerationKindLabel">Loại tài liệu cần tạo</legend>
               <label class="active"><input type="radio" name="bankGenerationKind" value="practice_topic" checked onchange="VMExamAdmin.bankUpdateGenerationKind()"><span><b>Chuyên đề bài tập</b><small>Ôn theo chương hoặc bài</small></span></label>
@@ -256,10 +255,15 @@
             <div class="bank-blueprint-actions"><button class="btn btn-secondary" id="bankAddBlueprintButton" type="button" onclick="VMExamAdmin.bankAddBlueprintRow()">＋ Thêm nhóm câu</button><span id="bankBlueprintTotal" role="status">Tổng 20 câu</span></div>
             <div class="exam-field"><label for="bankGenDuration">Thời gian (phút)</label><input class="input" id="bankGenDuration" type="number" min="1" max="300" value="45"></div>
             <div class="exam-field"><label for="bankGenSeed">Mã trộn đề</label><div class="bank-seed-row"><input class="input" id="bankGenSeed" autocomplete="off"><button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankNewSeed()" title="Tạo mã trộn mới">↻</button></div></div>
-            <label class="exam-switch bank-publish-switch"><input type="checkbox" id="bankGenPublished"> Xuất bản ngay</label>
-            <div class="bank-generate-actions"><button class="btn btn-primary" id="bankGenerateButton" type="submit">✨ Tạo đề từ ngân hàng</button><span id="bankGenerateStatus" role="status"></span></div>
+            <div class="bank-generate-actions"><button class="btn btn-primary" id="bankGenerateButton" type="submit">👁 Tạo bản xem trước</button><span id="bankGenerateStatus" role="status">Chưa lưu vào kho</span></div>
           </form>
           <div class="bank-generate-result" id="bankGenerateResult" hidden></div>
+          <section class="bank-draft-commit" id="bankDraftCommitPanel" aria-labelledby="bankDraftCommitTitle" hidden>
+            <div class="bank-draft-commit-copy"><b id="bankDraftCommitTitle">Bản xem trước chưa được lưu</b><small>Chỉ khi bấm nút bên dưới, đề mới được đưa vào kho hoặc giao cho học sinh.</small></div>
+            <div class="exam-field"><label for="bankGenClass" id="bankGenClassLabel">Lớp khi lưu</label><select class="input" id="bankGenClass"><option value="">Chọn lớp</option></select></div>
+            <label class="exam-switch bank-publish-switch"><input type="checkbox" id="bankGenPublished"> Xuất bản và giao ngay</label>
+            <button class="btn btn-primary" id="bankSaveDraftButton" type="button" onclick="VMExamAdmin.bankSaveExamDraft(event)">💾 Lưu đề đã xem</button>
+          </section>
         </div>
       </section>
 
@@ -371,7 +375,7 @@
           <div class="bank-stat"><b id="bankStatDocuments">—</b><span>Tệp nguồn</span></div>
           <div class="bank-stat"><b id="bankStatItems">—</b><span>Tổng số câu</span></div>
           <div class="bank-stat ok"><b id="bankStatActive">—</b><span>Đang dùng</span></div>
-          <div class="bank-stat warn"><b id="bankStatQuarantine">—</b><span>Cần duyệt</span></div>
+          <div class="bank-stat warn"><b id="bankStatQuarantine">—</b><span>Chờ chuẩn hóa</span><small id="bankStatIdBreakdown">Đang phân loại nguyên nhân</small></div>
           <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankLoadStats(true)">↻ Cập nhật</button>
         </section>
 
@@ -579,6 +583,6 @@
   <script src="js/menu-v5.js?v=9.8"></script>
   <script src="js/analytics.js"></script>
   <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=3.6"></script>
+  <script src="js/exam-admin.js?v=3.7"></script>
 </body>
 </html>
