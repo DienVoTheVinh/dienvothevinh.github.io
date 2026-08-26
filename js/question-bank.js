@@ -7,7 +7,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var QUESTION_ENVS = ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap'];
   var QUESTION_ENV_SET = QUESTION_ENVS.reduce(function (result, name) {
     result[name] = true;
@@ -203,14 +203,132 @@
     return { blocks: blocks, errors: errors };
   }
 
-  function extractQuestionId(rawTex) {
+  function addQuestionIdCandidate(candidates, seen, value, syntax) {
+    var parsed = parseQuestionId(value);
+    if (!parsed) return;
+    if (!seen[parsed.id]) {
+      seen[parsed.id] = {
+        id: parsed.id,
+        syntaxes: []
+      };
+      candidates.push(seen[parsed.id]);
+    }
+    if (seen[parsed.id].syntaxes.indexOf(syntax) === -1) {
+      seen[parsed.id].syntaxes.push(syntax);
+    }
+  }
+
+  function findUnescapedPercent(text, start) {
+    for (var i = start || 0; i < text.length; i += 1) {
+      if (text.charAt(i) === '%' && !isEscaped(text, i)) return i;
+    }
+    return -1;
+  }
+
+  // Recovery is deliberately limited to the leading metadata comment attached
+  // to the environment header. Looking through question/solution comments would
+  // risk borrowing a taxonomy code from quoted source material.
+  function leadingQuestionComments(rawTex) {
+    var source = normalizeNewlines(rawTex);
+    var environmentMatch = /\\begin\s*\{\s*(ex|bt|vd|cauhoi|question|baitap)\s*\}/i.exec(maskComments(source));
+    if (!environmentMatch) return [];
+    var comments = [];
+    var cursor = environmentMatch.index + environmentMatch[0].length;
+    var firstLine = true;
+
+    while (cursor <= source.length) {
+      var lineEnd = source.indexOf('\n', cursor);
+      if (lineEnd === -1) lineEnd = source.length;
+      var line = source.slice(cursor, lineEnd);
+      var percent = findUnescapedPercent(line, 0);
+      if (percent !== -1 && !/\S/.test(line.slice(0, percent))) {
+        comments.push(line.slice(percent + 1));
+      } else if (/\S/.test(line)) {
+        break;
+      } else if (!firstLine && comments.length) {
+        // A blank line ends the metadata envelope once comments have started.
+        break;
+      }
+      if (lineEnd >= source.length) break;
+      cursor = lineEnd + 1;
+      firstLine = false;
+    }
+    return comments;
+  }
+
+  function relaxedQuestionIdCandidates(rawTex) {
+    var candidates = [];
+    var seen = Object.create(null);
+    var tokenRegex = /[012][A-Za-z]\d+[A-Za-z]\d+-[A-Za-z0-9-]+/g;
+
+    leadingQuestionComments(rawTex).forEach(function (comment) {
+      var match;
+      while ((match = tokenRegex.exec(comment))) {
+        var before = comment.slice(0, match.index);
+        var openMatch = /\[\s*$/.exec(before);
+        if (!openMatch) continue;
+        var openIndex = openMatch.index;
+        var after = comment.slice(tokenRegex.lastIndex);
+        var closeMatch = /^\s*\]/.exec(after);
+        var syntax = null;
+
+        if (closeMatch) {
+          var beforeOpen = before.slice(0, openIndex);
+          var afterClose = after.slice(closeMatch[0].length);
+          if (/\[\s*$/.test(beforeOpen) && /^\s*\]/.test(afterClose)) {
+            syntax = 'double_bracket';
+          } else if (/\]\s*$/.test(beforeOpen)) {
+            syntax = 'unprefixed_bracket';
+          }
+        } else if (/^\s*(?:%|$)/.test(after)) {
+          syntax = 'missing_closing_bracket';
+        }
+
+        if (syntax) addQuestionIdCandidate(candidates, seen, match[0], syntax);
+      }
+    });
+    return candidates;
+  }
+
+  function analyzeQuestionIds(rawTex) {
+    var source = normalizeNewlines(rawTex);
+    var standard = [];
+    var standardSeen = Object.create(null);
     var regex = /%\s*\[\s*([012][A-Za-z]\d+[A-Za-z]\d+-[A-Za-z0-9-]+)\s*\]/g;
     var match;
-    while ((match = regex.exec(rawTex))) {
-      var parsed = parseQuestionId(match[1]);
-      if (parsed) return parsed.id;
+    while ((match = regex.exec(source))) {
+      addQuestionIdCandidate(standard, standardSeen, match[1], 'standard_comment');
     }
-    return null;
+
+    var relaxed = relaxedQuestionIdCandidates(source);
+    var all = [];
+    var allSeen = Object.create(null);
+    standard.concat(relaxed).forEach(function (candidate) {
+      candidate.syntaxes.forEach(function (syntax) {
+        addQuestionIdCandidate(all, allSeen, candidate.id, syntax);
+      });
+    });
+
+    var recovered = standard.length === 0 && all.length === 1;
+    var selected = standard.length ? standard[0].id : (recovered ? all[0].id : null);
+    var warnings = [];
+    if (all.length > 1) {
+      warnings.push({
+        code: 'MULTIPLE_QUESTION_IDS',
+        candidates: all.map(function (candidate) { return candidate.id; })
+      });
+    }
+    return {
+      id: selected,
+      candidates: all.map(function (candidate) { return candidate.id; }),
+      recovered: recovered,
+      recovery_syntax: recovered ? all[0].syntaxes[0] : null,
+      warnings: warnings
+    };
+  }
+
+  function extractQuestionId(rawTex) {
+    return analyzeQuestionIds(rawTex).id;
   }
 
   function parseQuestionId(value) {
@@ -514,7 +632,8 @@
     });
     if (solution) ranges.push({ start: solution.start, end: solution.end });
     var content = stripLeadingMetadata(removeRanges(body, ranges));
-    var questionId = extractQuestionId(rawTex);
+    var questionIdAnalysis = analyzeQuestionIds(rawTex);
+    var questionId = questionIdAnalysis.id;
     var idInfo = questionId ? parseQuestionId(questionId) : null;
     var assets = detectAssets(rawTex);
     var normalizedEnvironment = (type === 'multiple_choice' || type === 'true_false') ? 'ex' : 'bt';
@@ -528,6 +647,10 @@
       normalized_environment: normalizedEnvironment,
       type: type,
       question_id: questionId,
+      question_id_candidates: questionIdAnalysis.candidates,
+      question_id_recovered: questionIdAnalysis.recovered,
+      question_id_recovery_syntax: questionIdAnalysis.recovery_syntax,
+      parser_warnings: questionIdAnalysis.warnings,
       id_info: idInfo,
       grade: idInfo ? idInfo.grade : null,
       area: idInfo ? idInfo.area : null,
@@ -597,6 +720,7 @@
     normalizeQuestionForDedupe: normalizeQuestionForDedupe,
     maskComments: maskComments,
     findQuestionBlocks: findQuestionBlocks,
+    analyzeQuestionIds: analyzeQuestionIds,
     extractQuestionId: extractQuestionId,
     parseQuestionId: parseQuestionId,
     detectAssets: detectAssets,

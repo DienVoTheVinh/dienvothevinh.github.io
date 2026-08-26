@@ -9,17 +9,16 @@
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
   <style>
-    .admin-hub{max-width:1160px;margin:0 auto;padding:42px 22px 88px}.admin-hub-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}.admin-hub-head h1{margin:4px 0 6px}
+    .admin-hub{max-width:1160px;margin:0 auto;padding:20px 22px 88px}.admin-toolbar{display:flex;justify-content:flex-end;margin-bottom:16px}
     .admin-search{width:min(390px,100%);position:relative}.admin-search input{width:100%;padding:12px 44px 12px 14px}.admin-search span{position:absolute;right:14px;top:11px;color:var(--ink-3)}
     .admin-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.admin-group{padding:20px}.admin-group h2{font-size:1.08rem;margin:0 0 14px}.admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-tool{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink);background:var(--surface);transition:.18s}.admin-tool:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}.admin-tool .ic{font-size:1.2rem}.admin-tool b{display:block;font-size:.88rem}.admin-tool small{display:block;color:var(--ink-3);font-size:.72rem;margin-top:2px}.admin-tool[hidden]{display:none}
-    @media(max-width:760px){.admin-hub{padding:26px 14px 72px}.admin-hub-head{align-items:stretch;flex-direction:column}.admin-groups{grid-template-columns:1fr}.admin-tools{grid-template-columns:1fr}}
+    @media(max-width:760px){.admin-hub{padding:14px 14px 72px}.admin-toolbar{margin-bottom:12px}.admin-search{width:100%}.admin-groups{grid-template-columns:1fr}.admin-tools{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <header class="topbar"><div class="nav"><a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span><b>Vinh</b>Math</span></a><nav class="navlinks"></nav><button class="btn btn-ghost btn-sm" id="themeBtn" onclick="vmDoiTheme()">☼</button><button class="btn btn-secondary btn-sm" onclick="dangXuat()">Đăng xuất</button></div></header>
-<main class="admin-hub">
-  <div class="admin-hub-head">
-    <div><div class="sec-label">Điều hành hệ thống</div><h1>Trung tâm quản trị</h1></div>
+<main class="admin-hub" aria-label="Công cụ quản trị VinhMath">
+  <div class="admin-toolbar">
     <label class="admin-search"><span>⌕</span><input class="input" id="adminToolSearch" type="search" placeholder="Tìm lớp, tài khoản, video, thương hiệu…" aria-label="Tìm công cụ quản trị"></label>
   </div>
   <div class="admin-groups" id="adminGroups">

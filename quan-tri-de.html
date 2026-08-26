@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
   <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=3.6">
+  <link rel="stylesheet" href="css/exam-admin.css?v=3.8">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -291,15 +291,6 @@
             <span id="bankSourcePageStatus" role="status">Đã hiển thị 0 / 0 đề</span>
             <button class="btn btn-secondary" id="bankSourceLoadMoreButton" type="button" onclick="VMExamAdmin.bankLoadMoreSources(event)">Tải thêm đề</button>
           </div>
-          <form class="bank-source-assign" id="bankSourceAssign" onsubmit="VMExamAdmin.bankAssignSourceExam(event)" hidden>
-            <div class="bank-source-selected"><span id="bankSourceSelectedMode">Đang chọn đề nguồn</span><b id="bankSourceSelectedTitle">—</b></div>
-            <div class="exam-field"><label for="bankSourceAssignClass">Giao cho lớp *</label><select class="input" id="bankSourceAssignClass" required><option value="">Chọn lớp</option></select></div>
-            <div class="exam-field"><label for="bankSourceAssignTitle">Tên đề khi giao *</label><input class="input" id="bankSourceAssignTitle" required></div>
-            <div class="exam-field"><label for="bankSourceAssignDuration">Thời gian</label><input class="input" id="bankSourceAssignDuration" type="number" min="1" max="300" value="90"></div>
-            <label class="exam-switch"><input type="checkbox" id="bankSourceAssignPublished"> Xuất bản ngay</label>
-            <button class="btn btn-primary" id="bankSourceAssignButton" type="submit">Giao nguyên đề cho lớp</button>
-            <span class="bank-source-assign-status" id="bankSourceAssignStatus" role="status"></span>
-          </form>
         </div>
       </section>
       </section>
@@ -333,10 +324,10 @@
           <small>ID nội bộ chỉ hiện với admin; giáo viên dùng nhãn chương và bài học.</small>
         </header>
 
-        <section class="exam-card bank-matrix-card" id="bankMatrixCard">
+        <section class="exam-card bank-matrix-card" id="bankMatrixCard" aria-busy="true">
           <div class="exam-card-head"><div><h2>Ma trận câu hỏi</h2><p>Tổng hợp dạng câu và mức độ của kết quả đang lọc.</p></div><span class="exam-badge" id="bankMatrixCount">0 câu</span></div>
           <div class="exam-card-body">
-            <div class="bank-matrix-meta"><span id="bankMatrixScope">Chọn Khối → Chương → Bài / Chủ đề rồi tìm câu.</span><small id="bankMatrixNote">Ma trận dùng tối đa 50 kết quả đang hiển thị.</small></div>
+            <div class="bank-matrix-meta"><span id="bankMatrixScope">Toàn bộ kho câu đang dùng</span><div class="bank-matrix-feedback"><small id="bankMatrixNote">Đang tải thống kê toàn bộ kho câu…</small><button class="btn btn-ghost btn-sm" id="bankMatrixRetry" type="button" onclick="VMExamAdmin.bankRetryMatrix()" hidden>Thử lại</button></div></div>
             <div class="bank-matrix-table-wrap">
               <table class="bank-matrix-table">
                 <thead><tr><th>Dạng câu</th><th>Nhận biết</th><th>Thông hiểu</th><th>Vận dụng</th><th>Vận dụng cao</th><th>Tổng</th></tr></thead>
@@ -505,6 +496,27 @@
     </section>
   </main>
 
+  <dialog class="bank-source-assign-dialog" id="bankSourceAssignDialog" aria-labelledby="bankSourceAssignHeading" data-vm-popup-position="native">
+    <form class="bank-source-assign" id="bankSourceAssign" onsubmit="VMExamAdmin.bankAssignSourceExam(event)">
+      <header class="bank-source-assign-head">
+        <div><span aria-hidden="true">▤</span><div><small id="bankSourceSelectedMode">Đang chọn đề nguồn</small><h2 id="bankSourceAssignHeading">Giao nguyên đề</h2></div></div>
+        <button class="btn btn-ghost btn-sm" type="button" aria-label="Đóng cửa sổ giao đề" data-bank-source-assign-close onclick="VMExamAdmin.bankCloseSourceAssign()">✕</button>
+      </header>
+      <div class="bank-source-assign-fields">
+        <div class="bank-source-selected"><span>Đề đã chọn</span><b id="bankSourceSelectedTitle">—</b></div>
+        <div class="exam-field"><label for="bankSourceAssignClass">Giao cho lớp *</label><select class="input" id="bankSourceAssignClass" required><option value="">Chọn lớp</option></select></div>
+        <div class="exam-field bank-source-assign-title"><label for="bankSourceAssignTitle">Tên đề khi giao *</label><input class="input" id="bankSourceAssignTitle" required></div>
+        <div class="exam-field"><label for="bankSourceAssignDuration">Thời gian</label><input class="input" id="bankSourceAssignDuration" type="number" min="1" max="300" value="90"></div>
+        <label class="exam-switch"><input type="checkbox" id="bankSourceAssignPublished"> Xuất bản ngay</label>
+        <p class="bank-source-assign-status" id="bankSourceAssignStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+      <footer class="bank-source-assign-actions">
+        <button class="btn btn-ghost" type="button" data-bank-source-assign-close onclick="VMExamAdmin.bankCloseSourceAssign()">Hủy</button>
+        <button class="btn btn-primary" id="bankSourceAssignButton" type="submit">Giao nguyên đề cho lớp</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="bank-preview-dialog" id="bankPreviewDialog" aria-labelledby="bankPreviewTitle" data-vm-popup-position="native">
     <div class="bank-preview-shell">
       <header class="bank-preview-head">
@@ -582,7 +594,7 @@
   <script src="js/latex-view.js?v=11.4"></script>
   <script src="js/menu-v5.js?v=9.8"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/question-bank.js?v=1.1"></script>
-  <script src="js/exam-admin.js?v=3.7"></script>
+  <script src="js/question-bank.js?v=1.1.0"></script>
+  <script src="js/exam-admin.js?v=3.8"></script>
 </body>
 </html>

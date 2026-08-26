@@ -15,8 +15,7 @@
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
 <style>
-.wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 96px; }
-.head { padding: 40px 0 20px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 18px 24px 96px; }
 .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
 .filters .input { width: auto; min-width: 180px; }
 .stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
@@ -59,6 +58,7 @@ td, th { font-size: .88rem; }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 640px; padding: 28px; max-height: 88vh; overflow-y: auto; position: relative; }
 .modal-close { position: absolute; top: 16px; right: 18px; font-size: 1.4rem; background: none; border: none; cursor: pointer; color: var(--ink-3); }
+@media(max-width:640px) { .wrap { padding:14px 14px 72px; } }
 </style>
 </head>
 <body>
@@ -74,9 +74,8 @@ td, th { font-size: .88rem; }
   </div>
 </div>
 
-<div class="wrap">
-  <div class="head">
-    <div class="sec-label">Khu vực quản trị</div>
+<div class="wrap" role="main" aria-label="Quản lý học sinh và tài khoản">
+  <div hidden aria-hidden="true">
     <h1 id="lblTitle">Quản lý học sinh</h1>
     <p id="lblDesc" style="margin-top:6px">Toàn cảnh từng em: truy cập web khi nào, học bao lâu, chuyên cần và điểm số.</p>
   </div>
