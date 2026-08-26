@@ -28,6 +28,21 @@ function tenAnToan(value: unknown, fallback: string) {
   return (text || fallback).slice(0, 160);
 }
 
+function idTepDrive(item: any): string {
+  const direct = String(item?.id || "").trim();
+  if (/^[A-Za-z0-9_-]+$/.test(direct)) return direct;
+  const link = String(item?.link || item?.url || "");
+  const pathMatch = link.match(/\/file\/d\/([A-Za-z0-9_-]+)/);
+  if (pathMatch) return pathMatch[1];
+  try {
+    const parsed = new URL(link);
+    const queryId = parsed.hostname === "drive.google.com" ? String(parsed.searchParams.get("id") || "") : "";
+    return /^[A-Za-z0-9_-]+$/.test(queryId) ? queryId : "";
+  } catch {
+    return "";
+  }
+}
+
 function loi(message: string, status: number) {
   const error = new Error(message);
   (error as any).status = status;
@@ -282,7 +297,7 @@ Deno.serve(async (req) => {
     const action = String(form.get("kind") || "nop");
     const phanloai = String(form.get("phanloai") || "");
     const files = form.getAll("files").filter((item): item is File => item instanceof File);
-    const canKhongCanTep = new Set(["xoa_cham", "submission_file", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
+    const canKhongCanTep = new Set(["xoa_cham", "submission_file", "result_file", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
     if (!canKhongCanTep.has(action) && !files.length) throw loi("Chưa chọn tệp nào.", 400);
 
     const canGoogle = action !== "class_answer_get";
@@ -314,6 +329,53 @@ Deno.serve(async (req) => {
         classId = exam?.class_id || null;
       }
       if (!(await coQuyenQuanLyLop(svc, user.id, prof.role, classId))) throw loi("Thầy/cô không có quyền chấm bài của lớp này.", 403);
+      const driveResponse = await taiFileDrive(token, fileId);
+      return new Response(driveResponse.body, {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": mimeType || driveResponse.headers.get("content-type") || "application/octet-stream",
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
+
+    if (action === "result_file") {
+      const subId = String(form.get("submission_id") || "").trim();
+      const fileId = String(form.get("file_id") || "").trim();
+      const collection = String(form.get("collection") || "").trim();
+      if (!subId || !fileId) throw loi("Thiếu mã bài nộp hoặc mã tệp kết quả.", 400);
+      if (collection !== "files" && collection !== "graded_files") throw loi("Nhóm tệp kết quả không hợp lệ.", 400);
+      const { data: submitted } = await svc.from("submissions")
+        .select("id, student_id, status, files, graded_files, lesson_id, exam_id")
+        .eq("id", subId)
+        .single();
+      if (!submitted) throw loi("Không tìm thấy bài nộp.", 404);
+
+      if (prof.role === "student") {
+        if (String(submitted.student_id || "") !== user.id) throw loi("Em không có quyền xem tệp của bài nộp này.", 403);
+        if (collection === "graded_files" && submitted.status !== "graded") throw loi("Bài chưa được giáo viên trả kết quả.", 403);
+      } else {
+        if (!["admin", "teacher", "assistant"].includes(prof.role)) throw loi("Tài khoản không có quyền xem tệp kết quả.", 403);
+        let classId: string | null = null;
+        if (submitted.lesson_id) {
+          const { data: lesson } = await svc.from("lessons").select("class_id").eq("id", submitted.lesson_id).single();
+          classId = lesson?.class_id || null;
+        } else if (submitted.exam_id) {
+          const { data: exam } = await svc.from("exams").select("class_id").eq("id", submitted.exam_id).single();
+          classId = exam?.class_id || null;
+        }
+        if (!(await coQuyenQuanLyLop(svc, user.id, prof.role, classId))) throw loi("Tài khoản không có quyền xem bài của lớp này.", 403);
+      }
+
+      const resultFiles = Array.isArray((submitted as any)[collection]) ? (submitted as any)[collection] as any[] : [];
+      const selected = resultFiles.find((item) => idTepDrive(item) === fileId);
+      if (!selected) throw loi("Tệp không thuộc đúng bài nộp và nhóm kết quả đã chọn.", 404);
+      const fileName = String(selected.name || "");
+      const mimeType = String(selected.mime_type || "");
+      const isSafeResult = mimeType.startsWith("image/") || mimeType === "application/pdf" || /\.(jpe?g|png|gif|webp|bmp|heic|pdf)$/i.test(fileName);
+      if (!isSafeResult) throw loi("Định dạng tệp kết quả chưa được hỗ trợ để xem trực tiếp.", 400);
       const driveResponse = await taiFileDrive(token, fileId);
       return new Response(driveResponse.body, {
         status: 200,

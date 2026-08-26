@@ -36,5 +36,11 @@ for (const fragment of [
   '"Cache-Control": "private, no-store, max-age=0"'
 ]) expect(edge.includes(fragment), `Submission image proxy is missing: ${fragment}`);
 
+for (const fragment of [
+  'action === "result_file"', 'student_id, status, files, graded_files',
+  'String(submitted.student_id || "") !== user.id', 'collection !== "files" && collection !== "graded_files"',
+  'Tệp không thuộc đúng bài nộp và nhóm kết quả đã chọn.', 'function idTepDrive', 'idTepDrive(item) === fileId'
+]) expect(edge.includes(fragment), `Student result proxy is missing: ${fragment}`);
+
 expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test(html), 'Privileged secrets must never enter the grading frontend');
 console.log('PASS direct submission-image annotation + authorized private proxy');
