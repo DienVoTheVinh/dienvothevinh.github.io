@@ -122,6 +122,22 @@ const { chromium } = require('playwright');
     }));
     if (state.dialogWidth > 390 || state.fullscreenButton !== 'none' || !state.nextVisible || state.overflow) throw new Error(`Mobile annotation navigation is not responsive: ${JSON.stringify(state)}`);
 
+    state = await page.evaluate(() => {
+      const ink = document.getElementById('chbDrawInk');
+      const before = chamVeState.strokes.length;
+      ink.setPointerCapture = () => {};
+      chamVeBatDau.call(ink,{pointerId:71,pointerType:'touch',button:0,clientX:120,clientY:250,preventDefault(){}});
+      const touchAction = getComputedStyle(ink).touchAction;
+      const defaultTouchCreatesStroke = !!chamVeState.current;
+      chamVeToggleVeNgonTay();
+      chamVeBatDau.call(ink,{pointerId:72,pointerType:'touch',button:0,clientX:130,clientY:260,preventDefault(){}});
+      const fingerDrawCreatesStroke = !!chamVeState.current;
+      if (chamVeState.current) chamVeState.current = null;
+      return {before,touchAction,defaultTouchCreatesStroke,fingerDrawCreatesStroke,pressed:document.getElementById('chbDrawFinger').getAttribute('aria-pressed'),modalLocked:document.getElementById('chbDrawModal').classList.contains('finger-draw')};
+    });
+    if (state.defaultTouchCreatesStroke || !(state.touchAction.includes('pan-y') || state.touchAction === 'manipulation') || !state.fingerDrawCreatesStroke || state.pressed !== 'true' || !state.modalLocked) throw new Error(`Tablet finger pan/draw separation failed: ${JSON.stringify(state)}`);
+    await page.evaluate(() => chamVeToggleVeNgonTay());
+
     await page.evaluate(() => chamLuuAnhVe());
     await page.waitForFunction(() => window._attachedFiles.length === 2);
     state = await page.evaluate(() => ({ files:window._attachedFiles.map((file) => ({ name:file.name, type:file.type, size:file.size })), open:document.getElementById('chbDrawModal').classList.contains('open'), status:document.getElementById('danchamtt-sub').textContent, alerts:window._alerts }));

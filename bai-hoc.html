@@ -17,6 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
+<link rel="stylesheet" href="css/student-result-viewer.css?v=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -35,6 +36,13 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-class-answer-preview button { padding:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); cursor:zoom-in; min-height:120px; }
 .vm-class-answer-preview img { display:block; width:100%; height:150px; object-fit:contain; background:var(--surface-2); }
 .vm-class-answer-preview span { display:block; padding:7px; color:var(--ink-2); font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vm-lesson-assessment { display:flex; align-items:center; gap:10px; margin-top:12px; padding:11px 13px; border-radius:12px; font-weight:800; }
+.vm-lesson-assessment>span { font-size:1.45rem; }
+.vm-lesson-assessment small,.vm-lesson-assessment b { display:block; }
+.vm-lesson-assessment small { font-size:.62rem; text-transform:uppercase; letter-spacing:.06em; }
+.vm-lesson-assessment.needs-improvement { background:var(--err-soft); color:var(--err); }
+.vm-lesson-assessment.meets { background:var(--ok-soft); color:var(--ok); }
+.vm-lesson-assessment.good { background:var(--accent-soft); color:var(--accent); }
 
 /* ===== Chọn nhiều ảnh bài nộp: chọn trước, gửi sau ===== */
 .vm-submit-picker { display:grid; gap:10px; }
@@ -1044,6 +1052,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 <script src="js/vinhmath.js?v=9.5"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
+<script src="js/student-result-viewer.js?v=1"></script>
 <script>
 var lessonId = null;
 var details = null;
@@ -1795,13 +1804,18 @@ function extractDriveId(url) {
   return null;
 }
 // ===== Thumbnail Drive + lightbox (dùng cho ảnh nộp & ảnh thầy chấm trả) =====
+var bhResultGallerySeq = 0;
+var bhResultGalleries = {};
 function bhThumbId(f) { if (f && f.id) return f.id; return extractDriveId((f && (f.link || f.url)) || '') || ''; }
-function bhXemAnh(id) {
-  var lb = document.getElementById('bhAnhLightbox'); if (!lb) return;
-  var driveView = 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view';
-  lb.innerHTML = '<img src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w1600" onerror="bhAnhLightboxLoi(this)" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)">' +
-    '<a href="' + driveView + '" target="_blank" rel="noopener" style="display:none;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:10px;background:#fff;color:#7a4d00;font-weight:800;text-decoration:none">↗ Mở ảnh chấm trong Google Drive</a>';
-  lb.style.display = 'flex';
+function bhXemAnh(groupId, imageIndex) {
+  var group = bhResultGalleries[groupId];
+  if (group && window.VMStudentResultUI) {
+    window.VMStudentResultUI.openMedia(group.items, Number(imageIndex || 0), { title:group.title });
+    return;
+  }
+  var id = groupId;
+  if (!id || !window.VMStudentResultUI) return;
+  window.VMStudentResultUI.openMedia([{url:'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w2000',name:'Ảnh bài làm',fallbackUrl:'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view'}], 0, {title:'Ảnh bài làm'});
 }
 function bhAnhLightboxLoi(img) {
   if (img) img.style.display = 'none';
@@ -1810,18 +1824,27 @@ function bhAnhLightboxLoi(img) {
 }
 function bhAnhThumbLoi(img) {
   if (img) img.style.display = 'none';
-  var link = img && img.parentNode ? img.parentNode.querySelector('.bh-thumb-fallback') : null;
+  var holder = img && img.closest ? img.closest('div') : null;
+  var link = holder ? holder.querySelector('.bh-thumb-fallback') : null;
   if (link) link.style.display = 'inline-flex';
 }
 function bhAnhThumbs(files) {
   files = files || [];
   if (!files.length) return '';
+  var groupId = 'lesson-result-' + (++bhResultGallerySeq);
+  var galleryItems = files.map(function (f, i) {
+    var id = bhThumbId(f); if (!id) return null;
+    return {url:'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w2000',fallbackUrl:(f.link || ('https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view')),name:f.name || ('Ảnh ' + (i + 1))};
+  }).filter(Boolean);
+  bhResultGalleries[groupId] = {title:'Ảnh bài làm và bài giáo viên sửa',items:galleryItems};
+  var galleryIndex = 0;
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">' + files.map(function (f, i) {
     var id = bhThumbId(f);
     if (!id) return '<a href="' + (f.link || '#') + '" target="_blank" style="font-size:.82rem;color:var(--accent)">📄 ' + btvnEsc(f.name || 'Tệp') + '</a>';
     var t = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w300';
+    var currentGalleryIndex = galleryIndex++;
     return '<div style="position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:82px;min-height:82px">' +
-      '<img src="' + t + '" onclick="bhXemAnh(\'' + id + '\')" onerror="bhAnhThumbLoi(this)" alt="' + btvnEsc(f.name || ('Ảnh ' + (i + 1))) + '" style="width:82px;height:82px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in" loading="lazy">' +
+      '<button type="button" onclick="bhXemAnh(\'' + groupId + '\',' + currentGalleryIndex + ')" style="padding:0;border:0;background:transparent;cursor:zoom-in" aria-label="Xem ' + btvnEsc(f.name || ('Ảnh ' + (i + 1))) + '"><img src="' + t + '" onerror="bhAnhThumbLoi(this)" alt="' + btvnEsc(f.name || ('Ảnh ' + (i + 1))) + '" style="width:82px;height:82px;object-fit:cover;border-radius:8px;border:1px solid var(--line)" loading="lazy"></button>' +
       '<a class="bh-thumb-fallback" href="' + btvnEsc(f.link || ('https://drive.google.com/file/d/' + id + '/view')) + '" target="_blank" rel="noopener" style="display:none;width:82px;min-height:82px;align-items:center;justify-content:center;padding:8px;border:1px dashed var(--accent);border-radius:8px;color:var(--accent);font-size:.72rem;font-weight:800;text-align:center;text-decoration:none">↗ Mở ảnh</a>' +
       '<span style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:.62rem;padding:1px 5px;border-radius:6px">' + (i + 1) + '</span></div>';
   }).join('') + '</div>';
@@ -3214,7 +3237,7 @@ function vmDapAnChungHTML(answer) {
     return '<button type="button" class="vm-class-answer-file" onclick="vmMoTepDapAn(\'' + btvnEsc(file.id || '') + '\')">📄 Mở PDF<br><small>' + btvnEsc(file.name || 'Đáp án.pdf') + '</small></button>';
   }).join('') + '</div>' : '';
   var imageGrid = images.length ? '<div class="vm-class-answer-preview">' + images.map(function (file) {
-    return '<button type="button" data-answer-image="' + btvnEsc(file.id || '') + '" onclick="vmMoTepDapAn(\'' + btvnEsc(file.id || '') + '\')"><div class="spinner" style="margin:32px auto"></div><span>' + btvnEsc(file.name || 'Ảnh đáp án') + '</span></button>';
+    return '<button type="button" data-answer-image="' + btvnEsc(file.id || '') + '"><div class="spinner" style="margin:32px auto"></div><span>' + btvnEsc(file.name || 'Ảnh đáp án') + '</span></button>';
   }).join('') + '</div>' : '';
   var texHtml = answer.tex_content
     ? '<div style="margin-top:14px">' + vmLatexNativeHTML('Đáp án chung — ' + ((details && details.title) || 'Bài giảng'), answer.tex_content, 'class-answer-' + lessonId, vmTenTepPdf(((details && details.title) || 'bai-giang') + '-dap-an'), 'document', false, true) + '</div>'
@@ -3241,16 +3264,25 @@ async function vmMoTepDapAn(fileId) {
 
 async function vmKhoiTaoPreviewDapAnChung(root) {
   var buttons = Array.from((root || document).querySelectorAll('[data-answer-image]'));
-  await Promise.all(buttons.map(async function (button) {
+  var loaded = await Promise.all(buttons.map(async function (button) {
     var fileId = button.getAttribute('data-answer-image'); if (!fileId) return;
     var label = button.querySelector('span'); var name = label ? label.textContent : 'Ảnh đáp án';
     try {
       var blob = await vmTaiBlobDapAn(fileId); var url = URL.createObjectURL(blob); vmDapAnObjectUrls.push(url);
       button.innerHTML = '<img src="' + url + '" alt="' + btvnEsc(name) + '"><span>' + btvnEsc(name) + '</span>';
+      return {button:button,item:{url:url,name:name}};
     } catch (e) {
       button.innerHTML = '<span>⚠️ Không tải được ' + btvnEsc(name) + '</span>';
+      button.disabled = true;
+      return null;
     }
   }));
+  var ready = loaded.filter(Boolean), items = ready.map(function (entry) { return entry.item; });
+  ready.forEach(function (entry, itemIndex) {
+    entry.button.onclick = function () {
+      if (window.VMStudentResultUI) window.VMStudentResultUI.openMedia(items, itemIndex, {title:'Đáp án chung của lớp'});
+    };
+  });
 }
 
 async function layKetQuaChamHtml(kind, submissionId) {
@@ -3258,7 +3290,7 @@ async function layKetQuaChamHtml(kind, submissionId) {
   var tenLoai = kind === 'homework_bonus' ? 'bài tập thưởng thêm' : (kind === 'homework' ? 'bài tập về nhà' : 'bài kiểm tra tự luận');
   try {
     var truyVan = sb.from('submissions')
-      .select('id, submitted_at, files, status, score, feedback, graded_files, is_late, student_reflection, reviewed_at')
+      .select('id, submitted_at, files, status, score, assessment_level, feedback, graded_files, is_late, student_reflection, reviewed_at')
       .eq('lesson_id', lessonId)
       .eq('student_id', nguoiDung.id)
       .eq('kind', kind);
@@ -3283,6 +3315,8 @@ async function layKetQuaChamHtml(kind, submissionId) {
     var ngay = new Date(sub.submitted_at).toLocaleDateString('vi-VN');
     var lateBadge = sub.is_late ? '<span style="font-size:.75rem;font-weight:800;color:#fff;background:#e74c3c;padding:2px 9px;border-radius:99px;white-space:nowrap">⏰ Nộp trễ</span>' : '';
     if (sub.status === 'graded') {
+      var assessment = window.VMStudentResultUI ? window.VMStudentResultUI.assessment(sub.assessment_level) : null;
+      var assessmentHtml = assessment ? '<div class="vm-lesson-assessment ' + assessment.className + '"><span>' + assessment.icon + '</span><div><small>Mức đánh giá</small><b>' + assessment.label + '</b></div></div>' : '';
       var baiThayCham = '';
       if ((sub.graded_files || []).length > 0) {
         baiThayCham = '<div style="margin-top:12px; font-size:0.9rem"><b>✏️ Bài thầy sửa & chấm trả:</b> <span style="font-size:.78rem;color:var(--ink-3)">(bấm ảnh để phóng to)</span>' +
@@ -3297,6 +3331,7 @@ async function layKetQuaChamHtml(kind, submissionId) {
         '    <h4 style="margin:0; color:var(--ok); font-size:1.05rem; display:flex; align-items:center; gap:6px">🎉 Đã hoàn thành & Thầy đã chấm bài! ' + lateBadge + '</h4>' +
         '    <span style="font-size:1.15rem; font-weight:800; color:var(--ok); background:var(--surface); border:2px solid var(--ok); padding:4px 12px; border-radius:8px">' + (sub.score != null ? sub.score + ' Điểm' : 'Đã chấm') + '</span>' +
         '  </div>' +
+        assessmentHtml +
         '  ' + (sub.feedback ? '<div style="margin-top:10px; font-size:0.9rem; color:var(--ink); padding:10px; background:var(--surface); border-left:4px solid var(--ok); border-radius:4px"><b>💬 Lời phê của thầy:</b><div style="white-space:pre-wrap; line-height:1.6; margin-top:4px">' + btvnEsc(sub.feedback) + '</div></div>' : '') +
         '  ' + baiThayCham +
         '  ' + anhEmNop +

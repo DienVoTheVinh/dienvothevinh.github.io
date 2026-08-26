@@ -5,6 +5,8 @@
   var activeFilter = 'all';
   var activeClass = 'all';
   var activeGrade = 'all';
+  var mediaGroups = {};
+  var mediaSequence = 0;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
@@ -50,6 +52,9 @@
   }
 
   function assessmentFor(value) {
+    if (window.VMStudentResultUI && typeof window.VMStudentResultUI.assessment === 'function') {
+      return window.VMStudentResultUI.assessment(value);
+    }
     return {
       needs_improvement:{label:'Cần cố gắng',icon:'🌱',className:'needs-improvement'},
       meets:{label:'Đạt',icon:'✓',className:'meets'},
@@ -71,13 +76,20 @@
     return safeUrl(file.link || file.url || file.publicUrl || '');
   }
 
-  function fileCards(files) {
+  function fileCards(files, sectionTitle) {
+    var imageItems = files.filter(isImage).map(function (file, index) {
+      return {url:fileLink(file),name:file.name || ('Ảnh ' + (index + 1))};
+    }).filter(function (item) { return !!item.url; });
+    var groupId = 'result-media-' + (++mediaSequence);
+    mediaGroups[groupId] = {title:sectionTitle || 'Ảnh kết quả',items:imageItems};
+    var imageIndex = 0;
     var html = files.map(function (file, index) {
       var url = fileLink(file);
       if (!url) return '';
       var name = esc(file.name || ('Tệp ' + (index + 1)));
       if (isImage(file)) {
-        return '<a class="student-result-file" href="' + esc(url) + '" target="_blank" rel="noopener"><img src="' + esc(url) + '" alt="' + name + '" loading="lazy"><span>' + name + '</span></a>';
+        var currentImageIndex = imageIndex++;
+        return '<button class="student-result-file" type="button" data-result-media-group="' + esc(groupId) + '" data-result-media-index="' + currentImageIndex + '" aria-label="Xem ' + name + '"><img src="' + esc(url) + '" alt="' + name + '" loading="lazy"><span>' + name + '</span></button>';
       }
       if (isPdf(file)) {
         return '<article class="student-result-file student-result-pdf"><iframe src="' + esc(url) + '#toolbar=1" title="' + name + '" loading="lazy"></iframe><a href="' + esc(url) + '" target="_blank" rel="noopener">📄 ' + name + '</a></article>';
@@ -172,6 +184,7 @@
     var submitted = filesOf(item.files);
     var assessment = assessmentFor(item.assessment_level);
     var itemClass = classOf(item);
+    mediaGroups = {};
     var feedbackHtml = item.status === 'graded'
       ? '<div class="student-result-feedback"><b>' + (item.score == null ? 'Nhận xét của giáo viên' : 'Điểm ' + esc(item.score) + '/10 · Nhận xét của giáo viên') + '</b><p>' + esc(item.feedback || 'Giáo viên chưa để lại lời phê bằng chữ. Em hãy xem file bài sửa bên dưới.') + '</p></div>'
       : '<div class="student-result-solution-ready"><span>🔓</span><div><b>Em đã nộp bài — lời giải đã được mở</b><p>Bài đang chờ giáo viên chấm. Em có thể xem lời giải ngay bên dưới để tự đối chiếu.</p></div></div>';
@@ -189,8 +202,8 @@
       '<div class="student-result-dialog-meta">' + (itemClass ? '<span>🏫 ' + esc(itemClass.name) + '</span>' : '') + '<span>🕐 ' + esc(formatDate(item.graded_at || item.submitted_at)) + '</span>' + '</div>' +
       (assessment ? '<div class="student-result-assessment-banner ' + assessment.className + '"><span>' + assessment.icon + '</span><div><small>Mức đánh giá</small><b>' + assessment.label + '</b></div></div>' : '') +
       feedbackHtml +
-      (corrected.length ? '<section class="student-result-file-section"><h3>✍️ Bài giáo viên đã sửa</h3><div class="student-result-files">' + fileCards(corrected) + '</div></section>' : '') +
-      (submitted.length ? '<section class="student-result-file-section"><h3>📎 Bài em đã nộp</h3><div class="student-result-files">' + fileCards(submitted) + '</div></section>' : '') +
+      (corrected.length ? '<section class="student-result-file-section"><h3>✍️ Bài giáo viên đã sửa</h3><div class="student-result-files">' + fileCards(corrected, 'Bài giáo viên đã sửa') + '</div></section>' : '') +
+      (submitted.length ? '<section class="student-result-file-section"><h3>📎 Bài em đã nộp</h3><div class="student-result-files">' + fileCards(submitted, 'Bài em đã nộp') + '</div></section>' : '') +
       solutionHtml +
       '<p class="student-result-inline-note">Điểm, nhận xét, file sửa và lời giải đã mở được tập trung trong một không gian xem; dữ liệu của bài khác vẫn giữ nguyên ở danh sách Kết quả.</p></main>';
     inner.querySelector('.student-result-dialog-close').addEventListener('click', closeResultDialog);
@@ -280,7 +293,12 @@
       return;
     }
     var resultButton = event.target.closest('[data-result-id]');
-    if (resultButton) openResult(resultButton.getAttribute('data-result-id'));
+    if (resultButton) { openResult(resultButton.getAttribute('data-result-id')); return; }
+    var mediaButton = event.target.closest('[data-result-media-group]');
+    if (mediaButton && window.VMStudentResultUI) {
+      var mediaGroup = mediaGroups[mediaButton.getAttribute('data-result-media-group')];
+      if (mediaGroup) window.VMStudentResultUI.openMedia(mediaGroup.items, Number(mediaButton.getAttribute('data-result-media-index') || 0), {title:mediaGroup.title});
+    }
   });
 
   document.getElementById('studentResultDialog').addEventListener('click', function (event) {

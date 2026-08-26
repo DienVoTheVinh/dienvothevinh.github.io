@@ -17,12 +17,13 @@ for (const fragment of [
   'function chamVeTaiDe', 'function chamVeToggleDe', 'function chamVeGanResizeDe',
   'chbDrawPrompt', 'chbDrawPromptResizer', 'chbDrawPromptZoom',
   'function chamVeGanKinhLup', 'function chamVeCapNhatKinhLup',
+  'function chamVeToggleVeNgonTay', 'chbDrawFinger', "event.pointerType==='touch'&&!chamVeState.fingerDraw",
   "chamThemFile(chamVeState.subId,files)", 'Lưu & trả bài'
 ]) expect(html.includes(fragment), `Missing annotation workflow: ${fragment}`);
 
 expect(html.includes("globalCompositeOperation=stroke.tool==='eraser'?'destination-out':'source-over'"), 'Eraser must remove only annotation strokes');
 expect(html.includes("maxSide=2400"), 'Large phone photos need a bounded annotation canvas');
-expect(html.includes("touch-action:none"), 'Stylus/touch drawing must not scroll the page');
+expect(html.includes('touch-action:pan-x pan-y pinch-zoom') && html.includes('.chb-draw-modal.finger-draw .chb-draw-stage canvas+canvas{touch-action:none}') && html.includes('.chb-draw-canvas-scroll{place-items:safe center}'), 'Finger must pan the full image by default and only lock scrolling in explicit finger-draw mode');
 expect(html.includes("e.key==='ArrowLeft'") && html.includes("e.key==='ArrowRight'"), 'Keyboard arrows must switch between submission images');
 expect(html.includes("chb-draw-modal.fullscreen") && html.includes("width:100vw;height:100dvh"), 'Desktop annotation fullscreen must use the whole viewport');
 expect(html.includes('.chb-draw-modal.fullscreen .chb-draw-prompt'), 'Fullscreen annotation must expose the reference prompt panel');

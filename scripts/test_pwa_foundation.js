@@ -20,12 +20,12 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v60"), 'Service worker cache version must publish the tenant live-preview shell');
+expect(worker.includes("vinhmath-shell-v61"), 'Service worker cache version must publish the unified student-result gallery shell');
 expect(worker.includes("'/js/vmtool-loader.js'") && !worker.includes("'/js/vmtool-plane.js'") && !worker.includes("'/js/vmtool-3d.js'"), 'Heavy geometry modules must be fetched only when their tabs are opened');
 expect(worker.includes("VM_SHELL_PREFIX = 'vinhmath-shell-'"), 'Service worker must detect every previous application shell, not only one version');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '60'"), 'Open apps must not enter a refresh loop on shell v60');
-expect(worker.includes("target.searchParams.set('vm_refresh', '60'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '61'"), 'Open apps must not enter a refresh loop on shell v61');
+expect(worker.includes("target.searchParams.set('vm_refresh', '61'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("'/khong-gian.html'"), 'Generic tenant landing must be available offline after first install');
 expect(worker.includes("key.indexOf(VM_SHELL_PREFIX) === 0 && key !== VM_CACHE"), 'Any skipped shell generation must trigger a one-time refresh');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
@@ -33,6 +33,7 @@ expect(worker.includes("'/js/portal-classroom.js'"), 'Partner classroom authorin
 expect(worker.includes("'/js/latex-view.js'"), 'Partner lesson and exam TeX parser must be available offline after installation');
 expect(worker.includes("'/js/role-home.js'"), 'Role-focused home client must be available offline after installation');
 expect(worker.includes("'/ket-qua.html'") && worker.includes("'/js/student-results.js'") && worker.includes("'/css/student-experience.css'"), 'Student results and compact experience assets must be available offline after installation');
+expect(worker.includes("'/js/student-result-viewer.js'") && worker.includes("'/css/student-result-viewer.css'"), 'The shared student result gallery must be available offline after installation');
 expect(worker.includes("'/thanh-tuu.html'") && worker.includes("'/js/student-achievement-map.js'"), 'Achievement roadmap must be available offline after installation');
 expect(worker.includes('function vmLaMaNguonGiaoDien(url)'), 'CSS and JavaScript need a dedicated freshness strategy');
 expect(worker.includes('if (!vmLaMaNguonGiaoDien(url))'), 'Only critical UI source should bypass a stale cache online');

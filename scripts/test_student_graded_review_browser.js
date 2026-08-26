@@ -24,6 +24,7 @@ function extractFunction(source, name) {
 
 (async () => {
   const source = fs.readFileSync('bai-hoc.html', 'utf8');
+  const viewerSource = fs.readFileSync('js/student-result-viewer.js', 'utf8');
   const executablePath = process.env.VM_CHROME_PATH;
   if (!executablePath || !fs.existsSync(executablePath)) throw new Error('VM_CHROME_PATH must point to Chrome');
   const browser = await chromium.launch({ executablePath, headless: true });
@@ -34,9 +35,11 @@ function extractFunction(source, name) {
     </style><nav id="mucLuc" class="sidebar open"></nav><button id="mucLucScrim"></button><button id="nutMucLuc"></button><button id="tabNoiDung"></button><button id="tabVideo"></button><main id="khongGianHoc" class="workspace show-video"><section class="pane pane-content"><div id="thanNoiDung" class="content-body"></div></section></main><div id="bhAnhLightbox"></div>`);
     const functions = ['btvnEsc','thanhCongCu','batTatMucLuc','hienMobilePane','bhThumbId','extractDriveId','bhXemAnh','bhAnhLightboxLoi','bhAnhThumbLoi','bhAnhThumbs','layKetQuaChamHtml','xemKetQua']
       .map((name) => extractFunction(source, name)).join('\n');
+    await page.addScriptTag({ content: viewerSource });
     await page.addScriptTag({ content: `
       function $(id){return document.getElementById(id)}
       var lessonId='lesson-1',nguoiDung={id:'student-1'},details={},window_khongCoVideo=false;
+      var bhResultGallerySeq=0,bhResultGalleries={};
       function switchLesson(){return Promise.resolve()}
       function vmThuHoiDapAnUrls(){}
       async function vmLayDapAnChung(){return null}
@@ -45,7 +48,7 @@ function extractFunction(source, name) {
       ${functions}
     ` });
     await page.evaluate(() => {
-      sb = { from() { return { select() { return this }, eq() { return this }, order() { return this }, limit() { return this }, async maybeSingle() { return { data: { id:'sub-1',submitted_at:'2026-08-05T10:00:00Z',files:[],status:'graded',score:8,feedback:'Làm tốt',graded_files:[{id:'drive-1',link:'https://drive.google.com/file/d/drive-1/view',name:'Bài đã chấm.png'}],is_late:false,student_reflection:null,reviewed_at:null }, error:null }; } }; } };
+      sb = { from() { return { select() { return this }, eq() { return this }, order() { return this }, limit() { return this }, async maybeSingle() { return { data: { id:'sub-1',submitted_at:'2026-08-05T10:00:00Z',files:[],status:'graded',score:8,assessment_level:'good',feedback:'Làm tốt',graded_files:[{id:'drive-1',link:'https://drive.google.com/file/d/drive-1/view',name:'Bài đã chấm.png'}],is_late:false,student_reflection:null,reviewed_at:null }, error:null }; } }; } };
     });
     await page.evaluate(() => xemKetQua('lesson-1','homework'));
     const success = await page.evaluate(() => ({
@@ -56,7 +59,7 @@ function extractFunction(source, name) {
     }));
     if (success.sidebarOpen) throw new Error('Mobile lesson sidebar still covers the graded result');
     if (!success.workspaceClass.includes('show-content')) throw new Error('Graded result does not activate the mobile content pane');
-    if (!success.text.includes('Đã hoàn thành') || !success.text.includes('Làm tốt') || success.thumbnailCount !== 1) throw new Error(`Graded result is incomplete: ${JSON.stringify(success)}`);
+    if (!success.text.includes('Đã hoàn thành') || !success.text.includes('Làm tốt') || !success.text.includes('Mức đánh giá') || !success.text.includes('Tốt') || success.thumbnailCount !== 1) throw new Error(`Graded result is incomplete: ${JSON.stringify(success)}`);
 
     await page.evaluate(() => {
       document.querySelector('#mucLuc').classList.add('open');

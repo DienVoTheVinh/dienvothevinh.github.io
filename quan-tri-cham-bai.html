@@ -104,6 +104,11 @@
 .chb-draw-workspace{display:flex;flex:1;min-width:0;min-height:0;overflow:hidden}.chb-draw-workspace>.chb-draw-stage-wrap{flex:1;min-width:0}.chb-draw-prompt{display:none;position:relative;flex:0 0 300px;min-width:220px;max-width:44vw;min-height:0;border-right:1px solid var(--line);background:var(--surface);overflow:hidden}.chb-draw-modal.fullscreen .chb-draw-prompt{display:flex;flex-direction:column}.chb-draw-prompt-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}.chb-draw-prompt-head b{font-size:.82rem}.chb-draw-prompt-body{flex:1;min-height:0;overflow:auto;padding:12px;color:var(--ink);font-size:.8rem;line-height:1.55}.chb-draw-prompt-body img{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff}.chb-draw-prompt-body iframe{width:100%!important;height:48vh!important;border:1px solid var(--line)!important;border-radius:8px}.chb-draw-prompt-body .vm-tex-reader{width:100%;padding:0}.chb-draw-prompt-body .vm-tex-reader-head h2{font-size:1rem}.chb-draw-prompt-resizer{position:absolute;z-index:3;top:0;right:0;width:10px;height:100%;cursor:ew-resize;touch-action:none}.chb-draw-prompt-resizer::after{content:'';position:absolute;top:45%;left:3px;width:3px;height:48px;border-radius:99px;background:var(--line-2)}.chb-draw-prompt-toggle{display:none}.chb-draw-modal.fullscreen .chb-draw-prompt-toggle{display:inline-flex}.chb-draw-modal.prompt-collapsed .chb-draw-prompt{flex-basis:46px!important;min-width:46px!important;width:46px!important}.chb-draw-modal.prompt-collapsed .chb-draw-prompt-head{height:100%;padding:8px 5px;flex-direction:column;justify-content:flex-start}.chb-draw-modal.prompt-collapsed .chb-draw-prompt-head b{writing-mode:vertical-rl;margin-top:8px}.chb-draw-modal.prompt-collapsed .chb-draw-prompt-body,.chb-draw-modal.prompt-collapsed .chb-draw-prompt-resizer{display:none}.chb-draw-modal.prompt-collapsed #chbDrawPromptClose{transform:rotate(180deg)}
 .chb-draw-prompt-head-tools{display:flex;align-items:center;gap:4px}.chb-draw-prompt-zoom{display:inline-flex;align-items:center;justify-content:center;min-width:36px;color:var(--accent);font-size:.68rem;font-weight:900}.chb-draw-prompt-hint{margin:0 0 8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--accent-soft);color:var(--ink-2);font-size:.69rem;line-height:1.35}.chb-draw-prompt-image-wrap{position:relative;display:block;width:100%;margin:0 0 8px;cursor:zoom-in}.chb-draw-prompt-image-wrap>img{margin:0!important}.chb-draw-magnifier{display:none;position:absolute;z-index:8;width:180px;height:180px;overflow:hidden;border:3px solid var(--accent);border-radius:50%;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.42),0 0 0 3px rgba(255,255,255,.82);pointer-events:none}.chb-draw-magnifier.visible{display:block}.chb-draw-magnifier img{position:absolute!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}.chb-draw-modal.prompt-collapsed .chb-draw-prompt-head-tools{flex-direction:column}.chb-draw-modal.prompt-collapsed .chb-draw-prompt-head-tools>:not(#chbDrawPromptClose){display:none}
 @media(max-width:640px){.chb-draw-canvas-scroll{padding:6px 42px}.chb-draw-nav{margin-top:-26px}.chb-draw-prev{left:3px}.chb-draw-next{right:3px}.chb-draw-magnifier{width:138px;height:138px}.chb-draw-prompt-zoom{min-width:31px}}
+/* Trên tablet, ngón tay mặc định kéo ảnh; chỉ khóa cuộn khi GV chủ động bật vẽ bằng ngón tay. */
+.chb-draw-stage canvas+canvas{touch-action:pan-x pan-y pinch-zoom}
+.chb-draw-modal.finger-draw .chb-draw-stage canvas+canvas{touch-action:none}
+.chb-draw-canvas-scroll{place-items:safe center}
+.chb-draw-finger.active{color:#fff!important;background:var(--accent)!important;border-color:var(--accent)!important}
 /* Lightbox modal overlay */
 #chbLightbox {
   display: none;
@@ -1625,7 +1630,7 @@ function chbXemUrl(url) {
 }
 
 /* ===== Viết trực tiếp lên ảnh bài nộp: canvas nền + lớp nét riêng ===== */
-var chamVeState = { subId:'', item:null, gallery:[], index:0, pages:{}, strokes:[], redo:[], current:null, tool:'pen', color:'#e11d48', width:6, promptZoom:2.5, loading:false, loadToken:0 };
+var chamVeState = { subId:'', item:null, gallery:[], index:0, pages:{}, strokes:[], redo:[], current:null, tool:'pen', color:'#e11d48', width:6, promptZoom:2.5, fingerDraw:false, loading:false, loadToken:0 };
 function chamVeDoiZoomDe(delta){
   chamVeState.promptZoom=Math.max(1.5,Math.min(4,Number((Number(chamVeState.promptZoom||2.5)+Number(delta||0)).toFixed(1))));
   var label=$('chbDrawPromptZoom');if(label)label.textContent=chamVeState.promptZoom.toFixed(1).replace('.0','')+'×';
@@ -1691,6 +1696,7 @@ function chamVeEl() {
     '<div class="chb-draw-tools">' +
       '<button class="btn btn-secondary btn-sm chb-draw-tool active" id="chbDrawPen" type="button" onclick="chamChonCongCu(\'pen\')">✎ Bút</button>' +
       '<button class="btn btn-secondary btn-sm chb-draw-tool" id="chbDrawEraser" type="button" onclick="chamChonCongCu(\'eraser\')">⌫ Tẩy nét</button>' +
+      '<button class="btn btn-secondary btn-sm chb-draw-finger" id="chbDrawFinger" type="button" aria-pressed="false" onclick="chamVeToggleVeNgonTay()" title="Mặc định ngón tay kéo ảnh, bút cảm ứng vẫn viết">☝ Vẽ bằng ngón tay</button>' +
       '<button class="chb-draw-color active" type="button" data-color="#e11d48" style="background:#e11d48" aria-label="Màu đỏ" onclick="chamChonMau(this)"></button>' +
       '<button class="chb-draw-color" type="button" data-color="#2563eb" style="background:#2563eb" aria-label="Màu xanh" onclick="chamChonMau(this)"></button>' +
       '<button class="chb-draw-color" type="button" data-color="#111827" style="background:#111827" aria-label="Màu đen" onclick="chamChonMau(this)"></button>' +
@@ -1740,10 +1746,19 @@ function chamChonCongCu(tool){
   chamVeState.tool=tool;
   $('chbDrawPen').classList.toggle('active',tool==='pen');$('chbDrawEraser').classList.toggle('active',tool==='eraser');
 }
+function chamVeToggleVeNgonTay(){
+  chamVeState.fingerDraw=!chamVeState.fingerDraw;
+  var modal=$('chbDrawModal'),button=$('chbDrawFinger');
+  if(modal)modal.classList.toggle('finger-draw',chamVeState.fingerDraw);
+  if(button){button.classList.toggle('active',chamVeState.fingerDraw);button.setAttribute('aria-pressed',chamVeState.fingerDraw?'true':'false');button.textContent=chamVeState.fingerDraw?'☝ Đang vẽ bằng ngón tay':'☝ Vẽ bằng ngón tay';}
+  var status=$('chbDrawStatus');if(status)status.textContent=chamVeState.fingerDraw?'Ngón tay đang vẽ. Bấm lại nút này để dùng ngón tay kéo ảnh.':'Ngón tay dùng để kéo ảnh; bút cảm ứng hoặc chuột dùng để viết.';
+}
 function chamChonMau(button){chamVeState.color=button.dataset.color;document.querySelectorAll('.chb-draw-color').forEach(function(x){x.classList.toggle('active',x===button);});chamChonCongCu('pen');}
 function chamVeDiem(event){var c=$('chbDrawInk'),r=c.getBoundingClientRect();return{x:(event.clientX-r.left)*c.width/r.width,y:(event.clientY-r.top)*c.height/r.height};}
 function chamVeBatDau(event){
-  if(chamVeState.loading||event.button>0)return;event.preventDefault();this.setPointerCapture(event.pointerId);
+  if(chamVeState.loading||event.button>0)return;
+  if(event.pointerType==='touch'&&!chamVeState.fingerDraw)return;
+  event.preventDefault();this.setPointerCapture(event.pointerId);
   var p=chamVeDiem(event),scale=this.width/Math.max(1,this.getBoundingClientRect().width);
   chamVeState.current={tool:chamVeState.tool,color:chamVeState.color,width:chamVeState.width*scale,points:[p]};chamVeState.redo=[];chamVeDongBoTrang();
 }
@@ -1771,7 +1786,7 @@ async function chamTaiAnhVe(index,skipSave){
       var url=URL.createObjectURL(blob),img=new Image();await new Promise(function(resolve,reject){img.onload=resolve;img.onerror=function(){reject(new Error('Trình duyệt không đọc được định dạng ảnh này.'));};img.src=url;});URL.revokeObjectURL(url);if(token!==chamVeState.loadToken)return;
       var maxSide=2400,ratio=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));page.width=Math.max(1,Math.round(img.naturalWidth*ratio));page.height=Math.max(1,Math.round(img.naturalHeight*ratio));page.image=img;
     }
-    if(token!==chamVeState.loadToken)return;chamVeHienTrang(page);$('chbDrawStatus').textContent='Ảnh '+(index+1)+'/'+gallery.length+' · Dùng ← → để chuyển ảnh · Ctrl/⌘+Z để hoàn tác.';
+    if(token!==chamVeState.loadToken)return;chamVeHienTrang(page);$('chbDrawStatus').textContent='Ảnh '+(index+1)+'/'+gallery.length+' · Ngón tay kéo ảnh; bút cảm ứng hoặc chuột để viết.';
   }catch(error){if(token===chamVeState.loadToken)$('chbDrawStatus').textContent='Không mở được ảnh: '+error.message;}
   finally{if(token===chamVeState.loadToken){chamVeState.loading=false;chamVeCapNhatNut();}}
 }
@@ -1779,9 +1794,9 @@ function chamDoiAnhVe(delta){if(chamVeState.loading)return;var target=chamVeStat
 async function chamMoVe(subId,gid,index){
   var gallery=((window._chbGalleries||{})[gid]||[]).filter(function(item){return item&&item.id;});var item=gallery[index];if(!item||!item.id)return;
   if($('gradesummary-'+subId))batSuaCham(subId);
-  var openIndex=Math.max(0,gallery.findIndex(function(row){return row.id===item.id;})),modal=chamVeEl();modal.classList.remove('fullscreen','prompt-collapsed');modal.classList.add('open');document.documentElement.classList.add('vm-popup-open');var fullButton=$('chbDrawFullscreen'),promptButton=$('chbDrawPromptToggle');if(fullButton)fullButton.textContent='⛶ Toàn màn hình';if(promptButton)promptButton.textContent='📚 Ẩn đề';chamVeState={subId:subId,item:null,gallery:gallery,index:openIndex,pages:{},strokes:[],redo:[],current:null,tool:'pen',color:'#e11d48',width:6,promptZoom:2.5,loading:true,loadToken:0};chamVeTaiDe(subId);chamVeDoiZoomDe(0);chamChonCongCu('pen');await chamTaiAnhVe(openIndex,true);
+  var openIndex=Math.max(0,gallery.findIndex(function(row){return row.id===item.id;})),modal=chamVeEl();modal.classList.remove('fullscreen','prompt-collapsed','finger-draw');modal.classList.add('open');document.documentElement.classList.add('vm-popup-open');var fullButton=$('chbDrawFullscreen'),promptButton=$('chbDrawPromptToggle'),fingerButton=$('chbDrawFinger');if(fullButton)fullButton.textContent='⛶ Toàn màn hình';if(promptButton)promptButton.textContent='📚 Ẩn đề';if(fingerButton){fingerButton.classList.remove('active');fingerButton.setAttribute('aria-pressed','false');fingerButton.textContent='☝ Vẽ bằng ngón tay';}chamVeState={subId:subId,item:null,gallery:gallery,index:openIndex,pages:{},strokes:[],redo:[],current:null,tool:'pen',color:'#e11d48',width:6,promptZoom:2.5,fingerDraw:false,loading:true,loadToken:0};chamVeTaiDe(subId);chamVeDoiZoomDe(0);chamChonCongCu('pen');await chamTaiAnhVe(openIndex,true);
 }
-function chamDongVe(){var modal=$('chbDrawModal');if(!modal||!modal.classList.contains('open'))return;chamVeLuuTrangHienTai();var count=chamVeSoTrangCoNet();if(count&&!chamVeState.loading&&!confirm('Đóng và bỏ nét đã viết trên '+count+' ảnh chưa đính kèm?'))return;modal.classList.remove('open','fullscreen','prompt-collapsed');document.documentElement.classList.remove('vm-popup-open');}
+function chamDongVe(){var modal=$('chbDrawModal');if(!modal||!modal.classList.contains('open'))return;chamVeLuuTrangHienTai();var count=chamVeSoTrangCoNet();if(count&&!chamVeState.loading&&!confirm('Đóng và bỏ nét đã viết trên '+count+' ảnh chưa đính kèm?'))return;modal.classList.remove('open','fullscreen','prompt-collapsed','finger-draw');document.documentElement.classList.remove('vm-popup-open');}
 async function chamTaoFileTrang(page){
   if(!page||!page.image||!page.strokes||!page.strokes.length)throw new Error('Có ảnh chưa tải xong hoặc chưa có nét viết.');
   var ink=document.createElement('canvas');ink.width=page.width;ink.height=page.height;var inkCtx=ink.getContext('2d');page.strokes.forEach(function(stroke){chamVeMotNet(inkCtx,stroke);});
