@@ -74,9 +74,6 @@ function apDungMenu(role, portalContext, tenantContext) {
 
   var fullSiteTenant = tenantContext && tenantContext.full_site ? tenantContext : null;
   if (fullSiteTenant && role !== 'admin' && typeof vmTenantFeatureState === 'function') {
-    muc.forEach(function (item) {
-      if (item.featureKey === 'home' && typeof vmTenantHomePath === 'function') item.path = vmTenantHomePath(fullSiteTenant);
-    });
     muc = muc.filter(function (item) {
       item.featureState = vmTenantFeatureState(fullSiteTenant, item.featureKey, role);
       return item.featureState !== 'hidden';

@@ -26,6 +26,10 @@ expect(landing.includes('Không gian Toán học của Cô Uyên'), 'UYENMATH ne
 expect(landing.includes('vận hành trên nền tảng VinhMath'), 'The tenant home must explain that it reuses the VinhMath platform');
 expect(landing.includes('dang-nhap?tenant=uyenmath'), 'Tenant home must open the branded shared login');
 expect(landing.includes('await vmLoadTenantContext()'), 'Authenticated members must reuse the shared tenant runtime');
+expect(landing.includes("isTeacher?'Không gian giáo viên':'Không gian học sinh'"), 'Signed-in UYENMATH members need a role-specific workspace action');
+expect(landing.includes("role==='owner'") && landing.includes("role==='admin'"), 'UYENMATH owner/admin accounts must enter the teacher workspace');
+expect(landing.includes('vmTenantFirstShownPath(c,space)'), 'The workspace action must honor admin show/lock/hide rules');
+expect(!landing.includes("location.replace('trang-chu?tenant=uyenmath')"), 'Signed-in members must remain on the UYENMATH landing until they choose to enter');
 expect(!/<a[^>]+href=["'][^"']*(?:uyenmath-(?:lop|bai|de|vmtool)|\/uyenmath\/)/i.test(landing), 'UYENMATH must not create parallel feature pages');
 expect(landing.includes("params.has('feature')"), 'An all-hidden feature policy must not loop between the tenant home and shared home');
 
