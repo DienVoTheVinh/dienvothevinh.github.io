@@ -4,6 +4,7 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 (async () => {
+  const previewDraftId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
   const chrome = process.env.VM_CHROME_PATH;
   if (!chrome || !fs.existsSync(chrome)) throw new Error('VM_CHROME_PATH must point to Chrome');
   const html = fs.readFileSync('quan-tri-de.html', 'utf8');
@@ -354,12 +355,32 @@ Giá trị của $1+1$ bằng
       throw new Error(`Teacher safe-source preview regressed: ${JSON.stringify(teacherSourcePreview)}`);
     }
 
-    await page.evaluate(() => {
+    await page.evaluate((previewDraftId) => {
       window.__bankRpcCalls = [];
       window.sb = {
         rpc: async (name, args) => {
           window.__bankRpcCalls.push({ name, args });
-          if (name === 'vm_bank_generate_exam') return { data: { exam_id: 'exam-generated', title: args.p_spec.title, question_count: 9, seed: args.p_spec.seed, warnings: [{ requested:12, selected:9 }] }, error: null };
+          if (name === 'vm_bank_preview_exam_draft') return { data: {
+            preview_draft_id: previewDraftId,
+            selection_token: 'abcdef0123456789abcdef0123456789',
+            title: args.p_spec.title,
+            question_count: 9,
+            requested_count: (args.p_spec.blueprint || []).reduce((sum, segment) => sum + Number(segment.count || 0), 0),
+            seed: args.p_spec.seed,
+            source_origins: args.p_spec.source_origins,
+            warnings: [{ requested:12, selected:9 }],
+            questions: Array.from({ length:9 }, (_, index) => ({
+              sort:index + 1,
+              question_type:'multiple_choice',
+              content_latex:`Câu xem trước ${index + 1}`,
+              choices:[{latex:'1'},{latex:'2'},{latex:'3'},{latex:'4'}]
+            }))
+          }, error: null };
+          if (name === 'vm_bank_save_exam_draft') return { data: {
+            exam_id: 'exam-generated', title: args.p_spec.title, question_count: 9,
+            seed: args.p_spec.seed, source_origins: args.p_spec.source_origins,
+            preview_draft_id: args.p_spec.preview_draft_id, warnings: [{ requested:12, selected:9 }]
+          }, error: null };
           if (name === 'vm_bank_source_exam_catalog') return { data: { total: 6, items: [
             { id: 'source-exam-1', title: 'Đề tham khảo Đồng Nai 2025', province: 'Đồng Nai', grade: 12, exam_year: 2025, bank_category: 'thptqg', bank_variant: 'reference', exam_kind: 'mock', question_count: 22, raw_tex: 'MUST_NOT_RENDER', answer: 'MUST_NOT_RENDER' },
             { id: 'source-exam-mock', title: 'Đề thi thử Đồng Nai 2025', province: 'Đồng Nai', grade: 12, exam_year: 2025, bank_category: 'thptqg', bank_variant: 'mock', exam_kind: 'mock', question_count: 22 },
@@ -384,7 +405,7 @@ Giá trị của $1+1$ bằng
       for (const id of ['bankGenClass', 'bankSourceAssignClass']) {
         document.getElementById(id).innerHTML = '<option value="class-1">Toán 12A1</option>';
       }
-    });
+    }, previewDraftId);
     await page.click('[data-bank-zone-nav="create"]');
     const initialSemesterPeriod = await page.evaluate(() => ({
       hidden:document.getElementById('bankSemesterPeriodFieldset').hidden,
@@ -407,10 +428,10 @@ Giá trị của $1+1$ bằng
     }
     await page.fill('#bankGenTitle', 'Đề học kỳ chưa chọn đợt');
     await page.evaluate(() => { window.__bankRpcCalls = []; });
-    await page.evaluate(async () => window.VMExamAdmin.bankGenerateExam({ preventDefault() {} }));
+    await page.evaluate(async () => window.VMExamAdmin.bankPreviewExamDraft({ preventDefault() {} }));
     const missingSemesterPeriod = await page.evaluate(() => ({
       invalid:document.getElementById('bankSemesterPeriodFieldset').getAttribute('aria-invalid'),
-      generationCalls:window.__bankRpcCalls.filter((entry) => entry.name === 'vm_bank_generate_exam').length,
+      generationCalls:window.__bankRpcCalls.filter((entry) => entry.name === 'vm_bank_preview_exam_draft').length,
       focused:document.activeElement && document.activeElement.value,
     }));
     if (missingSemesterPeriod.invalid !== 'true' || missingSemesterPeriod.generationCalls !== 0 || missingSemesterPeriod.focused !== 'midterm_1') {
@@ -418,9 +439,9 @@ Giá trị của $1+1$ bằng
     }
     await page.check('input[name="bankSemesterPeriod"][value="midterm_2"]');
     await page.fill('#bankGenTitle', 'Đề Giữa kỳ II · Toán 12');
-    await page.evaluate(async () => window.VMExamAdmin.bankGenerateExam({ preventDefault() {} }));
+    await page.evaluate(async () => window.VMExamAdmin.bankPreviewExamDraft({ preventDefault() {} }));
     const semesterGenerated = await page.evaluate(() => {
-      const call=window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_generate_exam');
+      const call=window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_preview_exam_draft');
       return {
         call,
         invalid:document.getElementById('bankSemesterPeriodFieldset').getAttribute('aria-invalid'),
@@ -428,9 +449,10 @@ Giá trị của $1+1$ bằng
         active:document.querySelector('input[name="bankSemesterPeriod"]:checked')?.closest('label')?.classList.contains('active') || false,
       };
     });
-    if (!semesterGenerated.call || semesterGenerated.invalid !== 'false' || !semesterGenerated.active || semesterGenerated.call.args.p_spec.output_kind !== 'semester_exam' || semesterGenerated.call.args.p_spec.semester_period !== 'midterm_2' || semesterGenerated.call.args.p_spec.semester_period_label !== 'Giữa kỳ II' || semesterGenerated.call.args.p_spec.filters.semester_period !== 'midterm_2' || !semesterGenerated.result.includes('Giữa kỳ II')) {
+    if (!semesterGenerated.call || semesterGenerated.invalid !== 'false' || !semesterGenerated.active || semesterGenerated.call.args.p_spec.output_kind !== 'semester_exam' || semesterGenerated.call.args.p_spec.semester_period !== 'midterm_2' || semesterGenerated.call.args.p_spec.filters.semester_period !== 'midterm_2' || !semesterGenerated.result.includes('Giữa kỳ II')) {
       throw new Error(`Semester-period generation payload is incomplete: ${JSON.stringify(semesterGenerated)}`);
     }
+    await page.evaluate(() => window.VMExamAdmin.bankClosePreview());
     await page.check('input[name="bankGenerationKind"][value="practice_topic"]');
     const semesterPeriodHiddenAgain = await page.evaluate(() => ({
       hidden:document.getElementById('bankSemesterPeriodFieldset').hidden,
@@ -474,22 +496,38 @@ Giá trị của $1+1$ bằng
     await page.selectOption('#bankGenDifficulty', 'TH');
     await page.evaluate(() => { document.getElementById('bankGenPrefix').value = '2D1'; });
     await page.fill('#bankGenCount', '12');
-    await page.evaluate(async () => window.VMExamAdmin.bankGenerateExam({ preventDefault() {} }));
+    await page.evaluate(() => document.activeElement && document.activeElement.blur());
+    await page.evaluate(async () => window.VMExamAdmin.bankPreviewExamDraft({ preventDefault() {} }));
     const generated = await page.evaluate(() => {
-      const call = window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_generate_exam');
+      const call = window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_preview_exam_draft');
       return {
         call,
         visible: !document.getElementById('bankGenerateResult').hidden,
         text: document.getElementById('bankGenerateResult').textContent,
+        draftId:window.VMExamAdmin._bankState.generationDraft && window.VMExamAdmin._bankState.generationDraft.previewDraftId,
       };
     });
-    if (!generated.call || !generated.visible || !generated.text.includes('9 câu') || !generated.text.includes('Yêu cầu 12 câu, tìm được 9 trong phạm vi đã chọn') || generated.text.includes('[object Object]')) throw new Error(`Generated-exam flow failed: ${JSON.stringify(generated)}`);
+    if (!generated.call || !generated.visible || !generated.text.includes('9 / 12 câu') || !generated.text.includes('Yêu cầu 12 câu, tìm được 9 trong phạm vi đã chọn') || generated.text.includes('[object Object]')) throw new Error(`Generated-exam flow failed: ${JSON.stringify(generated)}`);
     const generatedSpec = generated.call.args.p_spec;
-    if (generatedSpec.class_id !== 'class-1' || generatedSpec.blueprint[0].count !== 12 || generatedSpec.blueprint[0].grade !== 12 || generatedSpec.blueprint[0].area !== 'D' || generatedSpec.blueprint[0].chapter !== 1 || generatedSpec.blueprint[0].skill !== null || generatedSpec.blueprint[0].question_type !== 'multiple_choice' || generatedSpec.blueprint[0].difficulty !== 'TH') {
+    if ('class_id' in generatedSpec || generatedSpec.blueprint[0].count !== 12 || generatedSpec.blueprint[0].grade !== 12 || generatedSpec.blueprint[0].area !== 'D' || generatedSpec.blueprint[0].chapter !== 1 || generatedSpec.blueprint[0].skill !== null || generatedSpec.blueprint[0].question_type !== 'multiple_choice' || generatedSpec.blueprint[0].difficulty !== 'TH') {
       throw new Error(`Generated-exam filters changed: ${JSON.stringify(generatedSpec)}`);
     }
     if (generatedSpec.filters.legacy_prefix !== null || generatedSpec.filters.taxonomy_codes.length || 'taxonomy_prefix' in generatedSpec.blueprint[0]) throw new Error('Teacher generation submitted hidden taxonomy controls');
     if (/(raw_tex|answer|solution|source_path)/i.test(JSON.stringify(generatedSpec))) throw new Error('Teacher generation leaked protected bank fields');
+    const saveTransition = await page.evaluate(async () => {
+      const beforeClose = window.VMExamAdmin._bankState.generationDraft && window.VMExamAdmin._bankState.generationDraft.previewDraftId;
+      window.VMExamAdmin.bankClosePreview();
+      const afterClose = window.VMExamAdmin._bankState.generationDraft && window.VMExamAdmin._bankState.generationDraft.previewDraftId;
+      await window.VMExamAdmin.bankSaveExamDraft({ preventDefault() {} });
+      return { beforeClose, afterClose };
+    });
+    const savedGenerated = await page.evaluate(() => {
+      const call = window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_save_exam_draft');
+      return { call, status:document.getElementById('bankGenerateStatus').textContent };
+    });
+    if (saveTransition.beforeClose !== previewDraftId || saveTransition.afterClose !== previewDraftId || !savedGenerated.call || savedGenerated.call.args.p_spec.class_id !== 'class-1' || savedGenerated.call.args.p_spec.preview_draft_id !== previewDraftId || savedGenerated.call.args.p_spec.expected_selection_token !== 'abcdef0123456789abcdef0123456789' || savedGenerated.status !== 'Đã lưu') {
+      throw new Error(`Explicit generated-exam save failed: ${JSON.stringify({saveTransition,savedGenerated})}`);
+    }
 
     await page.selectOption('#bankSourceGrade', '12');
     await page.selectOption('#bankSourceType', 'thpt_reference');
@@ -608,12 +646,12 @@ Giá trị của $1+1$ bằng
 
     const teacherEmptyBank = await page.evaluate(async () => {
       window.sb = { rpc: async (name) => {
-        if (name === 'vm_bank_generate_exam') return { data:null, error:{ code:'P0002', message:'bank_no_matching_questions' } };
+        if (name === 'vm_bank_preview_exam_draft') return { data:null, error:{ code:'P0002', message:'bank_no_matching_questions' } };
         if (name === 'vm_bank_source_exam_catalog') return { data:{ total:0, items:[] }, error:null };
         return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
       }};
       document.getElementById('bankGenTitle').value = 'Đề khi kho trống';
-      await window.VMExamAdmin.bankGenerateExam({ preventDefault() {} });
+      await window.VMExamAdmin.bankPreviewExamDraft({ preventDefault() {} });
       await window.VMExamAdmin.bankLoadSourceCatalog({ preventDefault() {} });
       return {
         generation:document.getElementById('bankGenerateResult').textContent,
@@ -633,23 +671,26 @@ Giá trị của $1+1$ bằng
         if (name === 'vm_bank_admin_stats') return { data:{ documents:0, items:0, active:0, quarantined:0 }, error:null };
         if (name === 'vm_bank_admin_taxonomy_catalog') return { data:{ items:[] }, error:null };
         if (name === 'vm_bank_source_exam_catalog') return { data:{ total:0, items:[] }, error:null };
-        if (name === 'vm_bank_generate_exam') return { data:{ exam_id:'SHOULD_NOT_RUN' }, error:null };
+        if (name === 'vm_bank_preview_exam_draft') return { data:null, error:{ code:'P0002', message:'bank_no_matching_questions' } };
+        if (name === 'vm_bank_save_exam_draft') return { data:{ exam_id:'SHOULD_NOT_RUN' }, error:null };
         return { data:null, error:{ code:'PGRST202', message:'unexpected RPC '+name } };
       }};
       window.VMExamAdmin._bankState.statsLoaded = false;
       window.VMExamAdmin._bankConfigureAccess({ role:'admin' });
       document.getElementById('bankGenClass').innerHTML = '<option value="class-1">Toán 12A1</option>';
       document.getElementById('bankGenTitle').value = 'Đề quản trị khi kho trống';
-      await window.VMExamAdmin.bankGenerateExam({ preventDefault() {} });
+      await window.VMExamAdmin.bankLoadStats(true);
+      await window.VMExamAdmin.bankPreviewExamDraft({ preventDefault() {} });
       window.VMExamAdmin.bankFocusImport();
       return {
         generation:document.getElementById('bankGenerateResult').textContent,
         importAction:!!document.querySelector('#bankGenerateResult button'),
         activeElement:document.activeElement && document.activeElement.id,
-        generatorCalled:window.__emptyBankCalls.includes('vm_bank_generate_exam')
+        previewCalled:window.__emptyBankCalls.includes('vm_bank_preview_exam_draft'),
+        saveCalled:window.__emptyBankCalls.includes('vm_bank_save_exam_draft')
       };
     });
-    if (!adminEmptyBank.generation.includes('0 câu') || !adminEmptyBank.generation.includes('Nhập câu / đề TeX') || !adminEmptyBank.importAction || adminEmptyBank.activeElement !== 'bankImportTopicMode' || adminEmptyBank.generatorCalled) {
+    if (!adminEmptyBank.generation.includes('0 câu') || !adminEmptyBank.generation.includes('Nhập câu / đề TeX') || !adminEmptyBank.importAction || adminEmptyBank.activeElement !== 'bankImportTopicMode' || !adminEmptyBank.previewCalled || adminEmptyBank.saveCalled) {
       throw new Error(`Admin empty-bank recovery failed: ${JSON.stringify(adminEmptyBank)}`);
     }
 

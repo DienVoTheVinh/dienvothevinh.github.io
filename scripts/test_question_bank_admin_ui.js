@@ -105,7 +105,8 @@ assert.ok(!html.includes('id="bankBulkStart"'), 'taxonomy variants must not be g
 
 for (const rpc of [
   'vm_bank_admin_import', 'vm_bank_admin_stats', 'vm_bank_search',
-  'vm_bank_generate_exam', 'vm_bank_source_exam_catalog', 'vm_bank_assign_source_exam',
+  'vm_bank_preview_exam_draft', 'vm_bank_save_exam_draft',
+  'vm_bank_source_exam_catalog', 'vm_bank_assign_source_exam',
   'vm_bank_clone_source_structure',
   'vm_bank_admin_taxonomy_catalog', 'vm_bank_admin_import_taxonomy',
   'vm_bank_taxonomy_facets', 'vm_bank_inventory', 'vm_bank_matrix',

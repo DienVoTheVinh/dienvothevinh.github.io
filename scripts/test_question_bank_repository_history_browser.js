@@ -65,7 +65,15 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
             choices:[{key:'A',latex:'3'},{key:'B',latex:'4'},{key:'C',latex:'5'},{key:'D',latex:'6'}]
           }]}, error:null };
           if (name === 'vm_bank_report_issue') return { data:{issue_id:'issue-teacher-1',status:'open'}, error:null };
-          if (name === 'vm_bank_generate_exam') return { data:{
+          if (name === 'vm_bank_preview_exam_draft') return { data:{
+            title:'Đề an toàn từ kho',question_count:1,requested_count:1,seed:'safe-seed',
+            source_origins:['topic_pack'],selection_token:'abcdef0123456789abcdef0123456789',
+            preview_draft_id:'11111111-2222-4333-8444-555555555555',warnings:[],questions:[{
+              sort:0,question_type:'multiple_choice',content_latex:'Giá trị của $2+2$ là',
+              choices:[{key:'A',latex:'3'},{key:'B',latex:'4'},{key:'C',latex:'5'},{key:'D',latex:'6'}]
+            }]
+          }, error:null };
+          if (name === 'vm_bank_save_exam_draft') return { data:{
             exam_id:'exam-generated-safe-1',title:'Đề an toàn từ kho',question_count:1,seed:'safe-seed',source_origins:['topic_pack']
           }, error:null };
           if (name === 'vm_bank_exam_catalog') return { data:{items:[{
@@ -255,11 +263,14 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
         assignmentActions:document.querySelectorAll('#bankSourceResults [data-source-exam-id="doc-review-1"]').length,
         text:document.getElementById('bankSourceResults').textContent
       };
-      document.getElementById('bankGenClass').innerHTML = '<option value="class-teacher-1">Toán 12A1</option>';
-      document.getElementById('bankGenClass').value = 'class-teacher-1';
+      document.getElementById('bankGenClass').innerHTML = '<option value="">Chọn lớp</option><option value="class-teacher-1">Toán 12A1</option>';
       document.getElementById('bankGenTitle').value = 'Đề an toàn từ kho';
       document.getElementById('bankGenCount').value = '1';
-      await window.VMExamAdmin.bankGenerateExam({preventDefault(){}});
+      await window.VMExamAdmin.bankPreviewExamDraft({preventDefault(){}});
+      document.getElementById('bankGenClass').value = 'class-teacher-1';
+      document.getElementById('bankGenClass').dispatchEvent(new Event('change',{bubbles:true}));
+      await window.VMExamAdmin.bankSaveExamDraft({preventDefault(){}});
+      await window.VMExamAdmin.bankOpenExamPreview('exam-generated-safe-1','Đề an toàn từ kho');
       const safeCatalogCalls = window.__bankRpcCalls.filter((entry) => entry.name === 'vm_bank_exam_catalog');
       const fullscreenExamButton = Array.from(document.querySelectorAll('#bankPreviewSourceList [data-bank-preview-switch-kind="exam"]'))
         .find((button) => button.dataset.bankPreviewSwitchId === 'exam-generated-safe-1');
