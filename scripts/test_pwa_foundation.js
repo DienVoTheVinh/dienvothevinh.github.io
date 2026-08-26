@@ -20,12 +20,12 @@ expect(manifest.icons.some((icon) => icon.src === '/icons/vinhmath-512.png' && i
 expect((manifest.shortcuts || []).every((item) => (item.icons || []).every((icon) => icon.src === '/icons/vinhmath-192.png')), 'PWA shortcuts must use the website VinhMath logo');
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v57"), 'Service worker cache version must publish the UYENMATH tenant shell');
+expect(worker.includes("vinhmath-shell-v58"), 'Service worker cache version must publish the UYENMATH tenant shell');
 expect(worker.includes("'/js/vmtool-loader.js'") && !worker.includes("'/js/vmtool-plane.js'") && !worker.includes("'/js/vmtool-3d.js'"), 'Heavy geometry modules must be fetched only when their tabs are opened');
 expect(worker.includes("VM_SHELL_PREFIX = 'vinhmath-shell-'"), 'Service worker must detect every previous application shell, not only one version');
 expect(worker.includes("'/logo/toan-thay-truong-logo.svg'"), 'The Toán Thầy Trường logo must be available in the offline shell');
-expect(worker.includes("target.searchParams.get('vm_refresh') === '57'"), 'Open apps must not enter a refresh loop on shell v57');
-expect(worker.includes("target.searchParams.set('vm_refresh', '57'"), 'Open apps must reload once after the new shell activates');
+expect(worker.includes("target.searchParams.get('vm_refresh') === '58'"), 'Open apps must not enter a refresh loop on shell v58');
+expect(worker.includes("target.searchParams.set('vm_refresh', '58'"), 'Open apps must reload once after the new shell activates');
 expect(worker.includes("key.indexOf(VM_SHELL_PREFIX) === 0 && key !== VM_CACHE"), 'Any skipped shell generation must trigger a one-time refresh');
 expect(worker.includes("'/js/exam-portal.js'"), 'Partner exam portal client must be available offline after installation');
 expect(worker.includes("'/js/portal-classroom.js'"), 'Partner classroom authoring client must be available offline after installation');

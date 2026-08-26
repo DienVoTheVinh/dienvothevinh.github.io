@@ -1140,7 +1140,7 @@ function vmTenantFeatureState(context, featureKey, role) {
 function vmTenantFeatureForPath(pathname) {
   var page = String(pathname || location.pathname.split('/').pop() || 'index').replace(/^\/+/, '').replace(/\.html$/, '').split('?')[0];
   var map = {
-    'trang-chu':'home','uyenmath':'home',
+    'trang-chu':'home',
     'quan-tri-lop':'classes','quan-tri-bai-hoc':'classes','quan-tri-hoc-sinh':'classes','bang-tin-lop':'classes',
     'quan-tri-cham-bai':'grading',
     'quan-tri-de':'authoring','quan-tri-tai-lieu':'authoring',
@@ -1161,15 +1161,15 @@ function vmTenantHomePath(context) {
 function vmTenantFirstShownPath(context, role) {
   var groups = {
     teacher: [
-      ['home', vmTenantHomePath(context)], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
+      ['home', 'trang-chu'], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
       ['authoring', 'quan-tri-de?tab=compose&template=worksheet-mixed'], ['vmtool', 'vmtool'], ['schedule', 'quan-tri-lich'], ['profile', 'ca-nhan']
     ],
     assistant: [
-      ['home', vmTenantHomePath(context)], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
+      ['home', 'trang-chu'], ['classes', 'quan-tri-lop'], ['grading', 'quan-tri-cham-bai'],
       ['vmtool', 'vmtool'], ['profile', 'ca-nhan']
     ],
     student: [
-      ['home', vmTenantHomePath(context)], ['lessons', 'lop-hoc'], ['practice', 'luyen-de'],
+      ['home', 'trang-chu'], ['lessons', 'lop-hoc'], ['practice', 'luyen-de'],
       ['results', 'ket-qua'], ['leaderboard', 'bang-vang'], ['vmtool', 'vmtool'], ['profile', 'ca-nhan']
     ],
     parent: [

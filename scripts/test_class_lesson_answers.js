@@ -32,7 +32,9 @@ expect(/allowedOldIds[\s\S]*keepRequested/.test(edge), 'Danh sách giữ/xóa t�
 expect(/\.eq\("lesson_id", lessonId\)[\s\S]*\.eq\("status", "graded"\)[\s\S]*class_answer_ready/.test(edge), 'Thông báo chỉ được gửi tới học sinh đã được chấm.');
 
 expect(admin.includes('Đáp án chung cho lớp và bài giảng'), 'Màn hình chấm bài chưa có trình quản lý đáp án chung.');
-expect(admin.includes('js/vinhmath.js?v=9.3') && lesson.includes('js/vinhmath.js?v=9.3'), 'Hai màn hình phải tải cùng phiên bản helper Blob hiện hành.');
+const adminSharedVersion = (admin.match(/js\/vinhmath\.js\?v=([^"']+)/) || [])[1];
+const lessonSharedVersion = (lesson.match(/js\/vinhmath\.js\?v=([^"']+)/) || [])[1];
+expect(adminSharedVersion && adminSharedVersion === lessonSharedVersion, 'Hai màn hình phải tải cùng phiên bản helper Blob hiện hành.');
 expect(/accept="image\/\*,application\/pdf" multiple/.test(admin), 'Giáo viên chưa thể gửi nhiều ảnh/PDF.');
 expect(/document\.addEventListener\('paste'/.test(admin), 'Thiếu dán ảnh từ clipboard.');
 expect(/accept="\.tex,text\/x-tex,text\/plain"/.test(admin), 'Thiếu nạp tệp TeX.');
