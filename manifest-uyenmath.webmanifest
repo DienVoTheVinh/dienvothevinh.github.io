@@ -1,0 +1,47 @@
+{
+  "id": "/uyenmath",
+  "name": "UYENMATH - Không gian học Toán Cô Uyên",
+  "short_name": "UYENMATH",
+  "description": "Học bài, luyện tập, làm đề và theo dõi tiến bộ trong không gian UYENMATH.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "/uyenmath",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "handle_links": "preferred",
+  "prefer_related_applications": false,
+  "orientation": "portrait-primary",
+  "background_color": "#f7fbff",
+  "theme_color": "#176bd9",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo/uyenmath/uyenmath-apple-um-final.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Bài học",
+      "short_name": "Bài học",
+      "url": "/lop-hoc",
+      "icons": [{ "src": "/logo/uyenmath/uyenmath-apple-um-final.png", "sizes": "1254x1254", "type": "image/png" }]
+    },
+    {
+      "name": "Bài tập",
+      "short_name": "Bài tập",
+      "url": "/luyen-de",
+      "icons": [{ "src": "/logo/uyenmath/uyenmath-apple-um-final.png", "sizes": "1254x1254", "type": "image/png" }]
+    },
+    {
+      "name": "Cá nhân",
+      "short_name": "Cá nhân",
+      "url": "/ca-nhan",
+      "icons": [{ "src": "/logo/uyenmath/uyenmath-apple-um-final.png", "sizes": "1254x1254", "type": "image/png" }]
+    }
+  ]
+}

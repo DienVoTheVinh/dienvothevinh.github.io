@@ -22,6 +22,8 @@ expect(context.vmEmailDangNhap('NguyenVanA@hs.vinhmath.app') === 'nguyenvana@hs.
 expect(context.vmEmailDangNhap('NguyenVanA＠hs．vinhmath') === 'nguyenvana@hs.vinhmath.com', 'Mobile full-width punctuation must resolve');
 expect(context.vmEmailDangNhap('mailto:NguyenVanA@hs.vinhmath.com') === 'nguyenvana@hs.vinhmath.com', 'Pasted mailto login must resolve');
 expect(context.vmEmailDangNhap('NguyenVanA@hstt') === 'nguyenvana@hstt.vinhmath.com', 'Portal student suffix must remain supported');
+expect(context.vmEmailDangNhap('NguyenVanA@hsum') === 'nguyenvana@hsum.vinhmath.com', 'UYENMATH student suffix must resolve');
+expect(context.vmEmailDangNhap('CoUyen@gvum') === 'couyen@gvum.vinhmath.com', 'UYENMATH teacher suffix must resolve');
 expect(context.vmEmailDangNhap('NguyenVanA@hs.thay-truong.vinhmath.com') === 'nguyenvana@hs.thay-truong.vinhmath.com', 'Full legacy portal email must resolve');
 
 const exact = context.vmUngVienMatKhauDangNhap('Mat khau co khoang trang');
@@ -30,6 +32,6 @@ const pasted = context.vmUngVienMatKhauDangNhap('\u200BMatKhau\u00A0');
 expect(pasted.length === 2 && pasted[0] !== pasted[1] && pasted[1] === 'MatKhau', 'Invisible paste characters need a safe retry candidate');
 
 expect(!/console\.(?:log|info|warn|error)\([^\n]*(?:password|candidates)/i.test(core), 'Login code must not log password candidates');
-expect(fs.readFileSync('dang-nhap.html', 'utf8').includes('js/vinhmath.js?v=9.1'), 'Login page cache version must be bumped');
+expect(fs.readFileSync('dang-nhap.html', 'utf8').includes('js/vinhmath.js?v=9.3'), 'Login page cache version must be bumped');
 
 console.log('PASS resilient student login normalization and safe password retry');

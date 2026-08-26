@@ -5,7 +5,7 @@
 // Muốn thêm/bớt mục menu: sửa ĐÚNG MỘT chỗ là file này.
 // ============================================================
 
-function apDungMenu(role, portalContext) {
+function apDungMenu(role, portalContext, tenantContext) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
   var trang = (location.pathname.split('/').pop() || 'index').split('?')[0];
@@ -13,67 +13,81 @@ function apDungMenu(role, portalContext) {
   var muc;
   if (portalContext && portalContext.portal_only) {
     muc = [
-      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Kỳ thi' },
-      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#results', label: 'Kết quả' }
+      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Kỳ thi', featureKey: 'exams' },
+      { type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#results', label: 'Kết quả', featureKey: 'results' }
     ];
     if (portalContext.member_role === 'owner' || portalContext.member_role === 'manager') {
-      muc.push({ type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#manage', label: 'Quản lý' });
-      muc.push({ type: 'link', path: 'quan-tri-de?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Soạn đề' });
+      muc.push({ type: 'link', path: 'thi?portal=' + encodeURIComponent(portalContext.portal.slug) + '#manage', label: 'Quản lý', featureKey: 'manage' });
+      muc.push({ type: 'link', path: 'quan-tri-de?portal=' + encodeURIComponent(portalContext.portal.slug), label: 'Soạn đề', featureKey: 'authoring' });
     }
   } else if (role === 'admin') {
     // Admin dùng khu điều hành riêng; thanh đầu chỉ giữ các nhiệm vụ hằng ngày.
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
-      { type: 'link', path: 'quan-tri-lop', label: 'Lớp học' },
-      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-      { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
-      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'quan-tri', label: 'Quản trị' }
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay', featureKey: 'home' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp học', featureKey: 'classes' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài', featureKey: 'grading' },
+      { type: 'link', path: 'quan-tri-lich', label: 'Lịch', featureKey: 'schedule' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo', featureKey: 'authoring' },
+      { type: 'link', path: 'vmtool', label: 'VMTool', featureKey: 'vmtool' },
+      { type: 'link', path: 'quan-tri', label: 'Quản trị', featureKey: 'admin' }
     ];
   } else if (role === 'teacher') {
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
-      { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi' },
-      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'quan-tri-lich', label: 'Lịch' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay', featureKey: 'home' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp của tôi', featureKey: 'classes' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài', featureKey: 'grading' },
+      { type: 'link', path: 'quan-tri-de?tab=compose&template=worksheet-mixed', label: 'Soạn thảo', featureKey: 'authoring' },
+      { type: 'link', path: 'vmtool', label: 'VMTool', featureKey: 'vmtool' },
+      { type: 'link', path: 'quan-tri-lich', label: 'Lịch', featureKey: 'schedule' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân', featureKey: 'profile' }
     ];
   } else if (role === 'assistant') {
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
-      { type: 'link', path: 'quan-tri-lop', label: 'Lớp được giao' },
-      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài' },
-      { type: 'link', path: 'quan-tri-hoc-sinh', label: 'Học sinh' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay', featureKey: 'home' },
+      { type: 'link', path: 'quan-tri-lop', label: 'Lớp được giao', featureKey: 'classes' },
+      { type: 'link', path: 'quan-tri-cham-bai', label: 'Chấm bài', featureKey: 'grading' },
+      { type: 'link', path: 'quan-tri-hoc-sinh', label: 'Học sinh', featureKey: 'classes' },
+      { type: 'link', path: 'vmtool', label: 'VMTool', featureKey: 'vmtool' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân', featureKey: 'profile' }
     ];
   } else if (role === 'parent') {
     // ----- MENU CỦA PHỤ HUYNH -----
     muc = [
-      { type: 'link', path: 'phu-huynh', label: 'Theo dõi con' },
-      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'bang-vang', label: 'Bảng vàng' }
+      { type: 'link', path: 'phu-huynh', label: 'Theo dõi con', featureKey: 'parental' },
+      { type: 'link', path: 'goc-tu-hoc', label: 'Góc tự học', featureKey: 'self_study' },
+      { type: 'link', path: 'vmtool', label: 'VMTool', featureKey: 'vmtool' },
+      { type: 'link', path: 'bang-vang', label: 'Bảng vàng', featureKey: 'leaderboard' }
     ];
   } else {
     // ----- MENU CỦA HỌC SINH -----
     // Các điểm đến học sinh dùng thường xuyên được đặt trực tiếp trên thanh chính.
     muc = [
-      { type: 'link', path: 'trang-chu', label: 'Hôm nay' },
-      { type: 'link', path: 'lop-hoc', label: 'Bài học' },
-      { type: 'link', path: 'luyen-de', label: 'Bài tập' },
-      { type: 'link', path: 'ket-qua', label: 'Kết quả' },
-      { type: 'link', path: 'bang-vang', label: 'BXH' },
-      { type: 'link', path: 'vmtool', label: 'VMTool' },
-      { type: 'link', path: 'ca-nhan', label: 'Cá nhân' }
+      { type: 'link', path: 'trang-chu', label: 'Hôm nay', featureKey: 'home' },
+      { type: 'link', path: 'lop-hoc', label: 'Bài học', featureKey: 'lessons' },
+      { type: 'link', path: 'luyen-de', label: 'Bài tập', featureKey: 'practice' },
+      { type: 'link', path: 'ket-qua', label: 'Kết quả', featureKey: 'results' },
+      { type: 'link', path: 'bang-vang', label: 'BXH', featureKey: 'leaderboard' },
+      { type: 'link', path: 'vmtool', label: 'VMTool', featureKey: 'vmtool' },
+      { type: 'link', path: 'ca-nhan', label: 'Cá nhân', featureKey: 'profile' }
     ];
+  }
+
+  var fullSiteTenant = tenantContext && tenantContext.full_site ? tenantContext : null;
+  if (fullSiteTenant && role !== 'admin' && typeof vmTenantFeatureState === 'function') {
+    muc.forEach(function (item) {
+      if (item.featureKey === 'home' && typeof vmTenantHomePath === 'function') item.path = vmTenantHomePath(fullSiteTenant);
+    });
+    muc = muc.filter(function (item) {
+      item.featureState = vmTenantFeatureState(fullSiteTenant, item.featureKey, role);
+      return item.featureState !== 'hidden';
+    });
   }
 
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
+      if (m.featureState === 'locked') {
+        return '<a href="#" class="vm-feature-locked" data-vm-feature="' + m.featureKey + '" aria-disabled="true" tabindex="-1" title="Chức năng đang tạm khóa">' + m.label + ' <span aria-hidden="true">🔒</span></a>';
+      }
       var activeClass = '';
       var menuPage = m.path.split('?')[0].split('#')[0];
       if (menuPage === trang) {
@@ -119,6 +133,17 @@ function apDungMenu(role, portalContext) {
     }
     return '';
   }).join('');
+  if (fullSiteTenant && role !== 'admin') {
+    nav.querySelectorAll('.vm-feature-locked').forEach(function (link) {
+      link.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); });
+    });
+    if (!document.getElementById('vmTenantMenuStyle')) {
+      var style = document.createElement('style');
+      style.id = 'vmTenantMenuStyle';
+      style.textContent = '.navlinks .vm-feature-locked{opacity:.58;cursor:not-allowed;pointer-events:auto}.navlinks .vm-feature-locked:hover{color:inherit;background:transparent}';
+      document.head.appendChild(style);
+    }
+  }
   if (typeof window.vmCapNhatNutCaiDatPwa === 'function') window.vmCapNhatNutCaiDatPwa();
 }
 
@@ -191,16 +216,21 @@ function apDungLogoBadge(role) {
     if (r.data) {
       document.body.classList.add('vm-authenticated');
       document.body.classList.add('vm-role-' + (r.data.role || 'student'));
-      var portalContext = null;
-      try {
-        var pm = await sb.from('exam_portal_members')
-          .select('member_role, portal_only, portal:exam_portals(id,slug,name,short_name,is_active)')
-          .eq('user_id', s.data.session.user.id)
-          .eq('portal_only', true)
-          .limit(1)
-          .maybeSingle();
-        if (pm.data && pm.data.portal && pm.data.portal.is_active) portalContext = pm.data;
-      } catch (portalError) { /* migration chưa có: giữ điều hướng cũ */ }
+      var tenantContext = typeof vmLoadTenantContext === 'function' ? await vmLoadTenantContext() : null;
+      var portalContext = tenantContext && tenantContext.portal_only && !tenantContext.full_site ? tenantContext : null;
+      // Tương thích với bản cơ sở dữ liệu cũ chưa có RPC tenant dùng chung.
+      if (!tenantContext && typeof vmLoadTenantContext !== 'function') {
+        try {
+          var pm = await sb.from('exam_portal_members')
+            .select('member_role, portal_only, portal:exam_portals!inner(id,slug,name,short_name,is_active,experience_mode)')
+            .eq('user_id', s.data.session.user.id)
+            .eq('portal_only', true)
+            .eq('portal.experience_mode', 'exam_only')
+            .limit(1)
+            .maybeSingle();
+          if (pm.data && pm.data.portal && pm.data.portal.is_active) portalContext = pm.data;
+        } catch (portalError) { /* migration chưa có: giữ điều hướng cũ */ }
+      }
       window.VM_PORTAL_CONTEXT = portalContext;
       if (portalContext) {
         var currentPage = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
@@ -211,7 +241,8 @@ function apDungLogoBadge(role) {
           return;
         }
       }
-      apDungMenu(r.data.role, portalContext);
+      if (tenantContext && tenantContext.full_site && typeof vmGuardTenantRoute === 'function' && vmGuardTenantRoute(tenantContext, r.data.role)) return;
+      apDungMenu(r.data.role, portalContext, tenantContext);
       apDungLogoBadge(r.data.role);
       if (r.data.role === 'student' && !portalContext) napHeThongCapBac();
     }
