@@ -16,6 +16,10 @@ expect(!/data-answer-image[^>]+onclick="vmMoTepDapAn/.test(lesson), 'Common answ
 expect(lesson.includes('VMStudentResultUI.openMedia(items, itemIndex'), 'Common answer images must use the in-page gallery.');
 expect(results.includes('data-result-media-group') && results.includes('VMStudentResultUI.openMedia'), 'Results page images must use the same gallery.');
 expect(!results.includes('class="student-result-file" href="'), 'Result images must not open as standalone tabs.');
+expect(results.includes('drive.google.com/thumbnail?id=') && results.includes('filePreviewUrl(file'), 'Drive view links must be converted to image thumbnails before rendering.');
+expect(results.includes("request.append('kind', 'class_answer_get')") && results.includes("form.append('kind', 'class_answer_file')"), 'Results must load the protected common answer for the selected lesson.');
+expect(results.includes("String(answer.lesson_id || '') !== String(item.lesson_id)"), 'Results must reject a common answer belonging to another lesson.');
+expect(results.includes('classAnswerHtml +') && results.includes('Đáp án chung của bài giảng'), 'Results must render the selected lesson common answer in the unified view.');
 for (const marker of ['data-media-action="prev"','data-media-action="next"','data-media-action="fullscreen"','data-media-thumbs','requestFullscreen','ArrowLeft','ArrowRight']) {
   expect(viewer.includes(marker), `Shared result viewer is missing ${marker}.`);
 }

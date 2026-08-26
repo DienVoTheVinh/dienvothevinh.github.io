@@ -7,6 +7,7 @@
   var activeGrade = 'all';
   var mediaGroups = {};
   var mediaSequence = 0;
+  var resultObjectUrls = [];
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
@@ -17,8 +18,13 @@
   function safeUrl(value) {
     try {
       var url = new URL(String(value || ''), window.location.origin);
-      return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
+      return url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === 'blob:' ? url.href : '';
     } catch (_) { return ''; }
+  }
+
+  function releaseResultObjectUrls() {
+    resultObjectUrls.forEach(function (url) { try { URL.revokeObjectURL(url); } catch (_) {} });
+    resultObjectUrls = [];
   }
 
   function filesOf(value) {
@@ -76,21 +82,47 @@
     return safeUrl(file.link || file.url || file.publicUrl || '');
   }
 
+  function driveFileId(file) {
+    if (file && file.id) return String(file.id);
+    var value = String(file && (file.link || file.url) || '');
+    var pathMatch = value.match(/\/file\/d\/([\w_-]+)/);
+    if (pathMatch) return pathMatch[1];
+    var queryMatch = value.match(/[?&]id=([\w_-]+)/);
+    return queryMatch && /drive\.google\.com/i.test(value) ? queryMatch[1] : '';
+  }
+
+  function filePreviewUrl(file, size) {
+    var prepared = safeUrl(file && file.previewUrl || '');
+    if (prepared) return prepared;
+    var id = driveFileId(file);
+    if (id) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=' + (size || 'w2000');
+    return fileLink(file);
+  }
+
+  function fileFallbackUrl(file) {
+    var direct = fileLink(file);
+    if (direct) return direct;
+    var id = driveFileId(file);
+    return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : '';
+  }
+
   function fileCards(files, sectionTitle) {
     var imageItems = files.filter(isImage).map(function (file, index) {
-      return {url:fileLink(file),name:file.name || ('Ảnh ' + (index + 1))};
+      return {url:filePreviewUrl(file, 'w2000'),fallbackUrl:fileFallbackUrl(file),name:file.name || ('Ảnh ' + (index + 1))};
     }).filter(function (item) { return !!item.url; });
     var groupId = 'result-media-' + (++mediaSequence);
     mediaGroups[groupId] = {title:sectionTitle || 'Ảnh kết quả',items:imageItems};
     var imageIndex = 0;
     var html = files.map(function (file, index) {
       var url = fileLink(file);
-      if (!url) return '';
       var name = esc(file.name || ('Tệp ' + (index + 1)));
       if (isImage(file)) {
+        var previewUrl = filePreviewUrl(file, 'w600');
+        if (!previewUrl) return '';
         var currentImageIndex = imageIndex++;
-        return '<button class="student-result-file" type="button" data-result-media-group="' + esc(groupId) + '" data-result-media-index="' + currentImageIndex + '" aria-label="Xem ' + name + '"><img src="' + esc(url) + '" alt="' + name + '" loading="lazy"><span>' + name + '</span></button>';
+        return '<button class="student-result-file" type="button" data-result-media-group="' + esc(groupId) + '" data-result-media-index="' + currentImageIndex + '" aria-label="Xem ' + name + '"><img src="' + esc(previewUrl) + '" alt="' + name + '" loading="lazy"><span>' + name + '</span></button>';
       }
+      if (!url) return '';
       if (isPdf(file)) {
         return '<article class="student-result-file student-result-pdf"><iframe src="' + esc(url) + '#toolbar=1" title="' + name + '" loading="lazy"></iframe><a href="' + esc(url) + '" target="_blank" rel="noopener">📄 ' + name + '</a></article>';
       }
@@ -158,6 +190,49 @@
       latexTaiLieuRaHTML(response.data.content, { title:titleFor(item), kind:item.kind, showSolutions:true }) + '</section>';
   }
 
+  async function loadClassAnswerHtml(item) {
+    if (!item || !item.lesson_id || typeof vmGoiHamFormData !== 'function' || typeof vmGoiHamFormDataBlob !== 'function') return '';
+    try {
+      var request = new FormData();
+      request.append('kind', 'class_answer_get');
+      request.append('lesson_id', String(item.lesson_id));
+      var response = await vmGoiHamFormData('nop-bai', request, {timeoutMs:45000});
+      var answer = response && response.answer;
+      if (!answer) return '';
+      if (String(answer.lesson_id || '') !== String(item.lesson_id)) {
+        throw new Error('Đáp án trả về không thuộc bài giảng đang xem.');
+      }
+      var sourceFiles = filesOf(answer.files);
+      var preparedFiles = (await Promise.all(sourceFiles.map(async function (file) {
+        try {
+          if (!file.id) return null;
+          var form = new FormData();
+          form.append('kind', 'class_answer_file');
+          form.append('lesson_id', String(item.lesson_id));
+          form.append('file_id', String(file.id));
+          var blob = await vmGoiHamFormDataBlob('nop-bai', form, {timeoutMs:90000});
+          if (!(blob instanceof Blob)) throw new Error('Máy chủ không trả về tệp đáp án hợp lệ.');
+          var objectUrl = URL.createObjectURL(blob);
+          resultObjectUrls.push(objectUrl);
+          return Object.assign({}, file, {previewUrl:objectUrl,link:objectUrl,mime_type:file.mime_type || blob.type});
+        } catch (fileError) {
+          console.warn('Không tải được một tệp đáp án chung:', fileError && fileError.message ? fileError.message : fileError);
+          return null;
+        }
+      }))).filter(Boolean);
+      var texHtml = answer.tex_content && typeof latexTaiLieuRaHTML === 'function'
+        ? '<section class="student-result-solution"><div class="student-result-solution-head"><span>🔐</span><div><small>ĐÁP ÁN CHUNG ĐÚNG BÀI GIẢNG</small><h3>' + esc(titleFor(item)) + '</h3></div></div>' + latexTaiLieuRaHTML(answer.tex_content, {title:titleFor(item) + ' — Đáp án chung',kind:item.kind,showSolutions:true}) + '</section>'
+        : '';
+      var filesHtml = preparedFiles.length
+        ? '<section class="student-result-file-section student-result-class-answer"><h3>🔐 Đáp án chung của bài giảng</h3><div class="student-result-files">' + fileCards(preparedFiles, 'Đáp án chung — ' + titleFor(item)) + '</div></section>'
+        : '';
+      return filesHtml + texHtml;
+    } catch (error) {
+      console.warn('Chưa tải được đáp án chung đúng bài giảng:', error && error.message ? error.message : error);
+      return '<div class="student-result-solution-error">Chưa tải được đáp án chung của bài giảng này. Em có thể thử mở lại sau.</div>';
+    }
+  }
+
   function lessonResultHref(item) {
     if (!item || !item.lesson_id) return '';
     var query = new URLSearchParams({
@@ -175,6 +250,7 @@
     if (!dialog) return;
     if (typeof dialog.close === 'function' && dialog.open) dialog.close();
     else dialog.removeAttribute('open');
+    releaseResultObjectUrls();
   }
 
   async function openResult(id) {
@@ -185,6 +261,7 @@
     var assessment = assessmentFor(item.assessment_level);
     var itemClass = classOf(item);
     mediaGroups = {};
+    releaseResultObjectUrls();
     var feedbackHtml = item.status === 'graded'
       ? '<div class="student-result-feedback"><b>' + (item.score == null ? 'Nhận xét của giáo viên' : 'Điểm ' + esc(item.score) + '/10 · Nhận xét của giáo viên') + '</b><p>' + esc(item.feedback || 'Giáo viên chưa để lại lời phê bằng chữ. Em hãy xem file bài sửa bên dưới.') + '</p></div>'
       : '<div class="student-result-solution-ready"><span>🔓</span><div><b>Em đã nộp bài — lời giải đã được mở</b><p>Bài đang chờ giáo viên chấm. Em có thể xem lời giải ngay bên dưới để tự đối chiếu.</p></div></div>';
@@ -193,7 +270,9 @@
     var dialog = document.getElementById('studentResultDialog');
     if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
     else dialog.setAttribute('open', '');
-    var solutionHtml = await loadSolutionHtml(item);
+    var loadedLessonContent = await Promise.all([loadSolutionHtml(item), loadClassAnswerHtml(item)]);
+    var solutionHtml = loadedLessonContent[0];
+    var classAnswerHtml = loadedLessonContent[1];
     var contextHref = lessonResultHref(item);
     inner.innerHTML = '<header class="student-result-viewer-bar"><div class="student-result-viewer-context"><span class="student-result-viewer-kicker">KẾT QUẢ</span><div class="student-result-viewer-crumbs"><span>' + esc(itemClass ? itemClass.name : 'Lớp học') + '</span><b>›</b><strong>' + esc(titleFor(item)) + '</strong></div></div><div class="student-result-viewer-actions">' +
       (contextHref ? '<a class="btn btn-secondary btn-sm" href="' + esc(contextHref) + '">Mở đúng vị trí trong bài học ↗</a>' : '') +
@@ -204,6 +283,7 @@
       feedbackHtml +
       (corrected.length ? '<section class="student-result-file-section"><h3>✍️ Bài giáo viên đã sửa</h3><div class="student-result-files">' + fileCards(corrected, 'Bài giáo viên đã sửa') + '</div></section>' : '') +
       (submitted.length ? '<section class="student-result-file-section"><h3>📎 Bài em đã nộp</h3><div class="student-result-files">' + fileCards(submitted, 'Bài em đã nộp') + '</div></section>' : '') +
+      classAnswerHtml +
       solutionHtml +
       '<p class="student-result-inline-note">Điểm, nhận xét, file sửa và lời giải đã mở được tập trung trong một không gian xem; dữ liệu của bài khác vẫn giữ nguyên ở danh sách Kết quả.</p></main>';
     inner.querySelector('.student-result-dialog-close').addEventListener('click', closeResultDialog);
@@ -307,6 +387,7 @@
 
   document.getElementById('studentResultClassFilter').addEventListener('change', function () { activeClass = this.value; render(); });
   document.getElementById('studentResultGradeFilter').addEventListener('change', function () { activeGrade = this.value; render(); });
+  window.addEventListener('pagehide', releaseResultObjectUrls);
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
   else load();
