@@ -51,8 +51,8 @@ assert(
   'Không được quay lại cơ chế cũ chỉ kéo rộng một nửa workspace.'
 );
 assert(
-  /js\/vinhmath\.js\?v=9\.3/.test(lesson),
-  'Trang bài học phải nhận runtime tenant 9.3 thay vì bản cache cũ.'
+  /js\/vinhmath\.js\?v=9\.5/.test(lesson),
+  'Trang bài học phải nhận runtime tenant 9.5 thay vì bản cache cũ.'
 );
 
 console.log('PASS lesson keeps split view by default and offers manual fullscreen with Safari/WebView fallback');

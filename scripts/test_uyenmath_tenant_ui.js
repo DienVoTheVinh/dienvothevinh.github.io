@@ -12,6 +12,7 @@ function compileInline(file) {
 }
 
 const landing = compileInline('uyenmath.html');
+const genericLanding = compileInline('khong-gian.html');
 const admin = compileInline('quan-tri-khong-gian.html');
 const manifest = JSON.parse(read('manifest-uyenmath.webmanifest'));
 const rootAdmin = read('quan-tri.html');
@@ -22,22 +23,19 @@ const examAdmin = read('js/exam-admin.js');
 const practice = read('luyen-de.html');
 const accountEdge = read('supabase/functions/tao-tai-khoan/index.ts');
 
-expect(landing.includes('Không gian Toán học của Cô Uyên'), 'UYENMATH needs its own public home identity');
-expect(landing.includes('vận hành trên nền tảng VinhMath'), 'The tenant home must explain that it reuses the VinhMath platform');
-expect(landing.includes('dang-nhap?tenant=uyenmath'), 'Tenant home must open the branded shared login');
-expect(landing.includes('await vmLoadTenantContext()'), 'Authenticated members must reuse the shared tenant runtime');
-expect(landing.includes("isTeacher?'Không gian giáo viên':'Không gian học sinh'"), 'Signed-in UYENMATH members need a role-specific workspace action');
-expect(landing.includes("role==='owner'") && landing.includes("role==='admin'"), 'UYENMATH owner/admin accounts must enter the teacher workspace');
-expect(landing.includes('vmTenantFirstShownPath(c,space)'), 'The workspace action must honor admin show/lock/hide rules');
-expect(!landing.includes("location.replace('trang-chu?tenant=uyenmath')"), 'Signed-in members must remain on the UYENMATH landing until they choose to enter');
-expect(!/<a[^>]+href=["'][^"']*(?:uyenmath-(?:lop|bai|de|vmtool)|\/uyenmath\/)/i.test(landing), 'UYENMATH must not create parallel feature pages');
-expect(landing.includes("params.has('feature')"), 'An all-hidden feature policy must not loop between the tenant home and shared home');
+expect(landing.includes("target.searchParams.set('tenant', 'uyenmath')"), 'The historic UYENMATH route must preserve identity while redirecting to the shared shell');
+expect(landing.includes("new URL('khong-gian', location.href)"), 'UYENMATH must use the generic full-site renderer');
+expect(genericLanding.includes('vmLoadPublicTenantContext(tenantSlug)'), 'The shared tenant home must load its brand through the public context RPC');
+expect(genericLanding.includes('vmTenantFirstShownPath(signedContext, role.key)'), 'The workspace action must honor admin show/lock/hide rules');
+expect(genericLanding.includes('vmTenantLandingCopy(context)'), 'Every tenant must receive central landing defaults plus sparse copy overrides');
+expect(!/<a[^>]+href=["'][^"']*(?:uyenmath-(?:lop|bai|de|vmtool)|\/uyenmath\/)/i.test(genericLanding), 'UYENMATH must not create parallel feature pages');
+expect(!genericLanding.includes("location.replace('trang-chu?tenant=uyenmath')"), 'Signed-in members must remain on the shared landing until they choose to enter');
 
 expect(admin.includes(".eq('experience_mode','full_site')"), 'Admin must manage only full-site brand overlays here');
-expect(admin.includes("stateSelect('teacher'") && admin.includes("stateSelect('student'"), 'Admin needs role-specific show/lock/hide controls');
+expect(admin.includes("['teacher','student'].forEach") && admin.includes('stateSelect(role,f.key,item.state)'), 'Admin needs role-specific show/lock/hide controls');
 expect(admin.includes("type:'full_site_tenant_migrate'"), 'Admin account migration must use the audited Edge action');
 expect(admin.includes("me.role!=='admin'"), 'Tenant controls must be admin-only');
-expect(admin.includes("activeSelect.disabled=currentTenant.is_active!==true"), 'A staged tenant must not be activated before the audited account migration');
+expect(admin.includes("active.disabled=currentTenant.is_active!==true"), 'A staged tenant must not be activated before the audited account migration');
 expect(admin.includes(".eq('experience_mode','full_site').select().single()"), 'Identity edits must stay scoped to full-site overlays');
 expect(rootAdmin.includes('href="quan-tri-khong-gian"'), 'The admin hub must link to tenant controls');
 
