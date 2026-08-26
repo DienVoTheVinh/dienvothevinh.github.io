@@ -191,10 +191,10 @@ assert.deepStrictEqual(supplemental.stats, {
   duplicate_groups: 1028,
   primary_overlap_questions: 620,
   net_new_questions: 4121,
-  active_occurrences: 4915,
-  quarantine_occurrences: 1078,
-  active_questions: 3839,
-  quarantine_questions: 902,
+  active_occurrences: 4923,
+  quarantine_occurrences: 1070,
+  active_questions: 3846,
+  quarantine_questions: 895,
   question_types: {
     multiple_choice: 3276,
     true_false: 878,
@@ -209,14 +209,14 @@ assert.deepStrictEqual(supplemental.stats, {
   },
   quarantine_reasons: {
     mc_correct_answer_count: 34,
-    missing_or_invalid_id: 442,
+    missing_or_invalid_id: 434,
     missing_short_answer: 1,
     unmapped_id: 193,
     unsupported_question_type: 406
   },
   occurrence_quarantine_reasons: {
     mc_correct_answer_count: 42,
-    missing_or_invalid_id: 594,
+    missing_or_invalid_id: 585,
     missing_short_answer: 1,
     unmapped_id: 201,
     unsupported_question_type: 420
@@ -256,6 +256,65 @@ assert.ok(supplemental.manifest.documents.every((document) => {
   return document.items.map((item) => item.order).every((order, index) => order === index + 1) &&
     document.items.every((item) => item.provenance && Array.isArray(item.provenance.metadata_tags));
 }), 'supplemental documents preserve source order and bracket provenance');
+
+const supplementalItems = supplemental.manifest.documents.flatMap((document) => document.items);
+const recoveredIdItems = supplementalItems.filter((item) => item.provenance.question_ids?.recovered);
+assert.strictEqual(recoveredIdItems.length, 9, 'nine audited source occurrences recover one safe ID');
+assert.strictEqual(
+  new Set(recoveredIdItems.map((item) => item.canonical_hash)).size,
+  8,
+  'the recovered occurrences represent exactly eight canonical questions'
+);
+assert.deepStrictEqual(
+  recoveredIdItems.reduce((counts, item) => {
+    const syntax = item.provenance.question_ids.recovery_syntax;
+    counts[syntax] = (counts[syntax] || 0) + 1;
+    return counts;
+  }, {}),
+  {
+    missing_closing_bracket: 1,
+    unprefixed_bracket: 7,
+    double_bracket: 1
+  }
+);
+assert.ok(recoveredIdItems.every((item) => {
+  const audit = item.provenance.question_ids;
+  return audit.selected === item.question_id &&
+    audit.candidates.length === 1 &&
+    audit.candidates[0] === item.question_id &&
+    audit.warnings.length === 0;
+}), 'recovered IDs retain syntax and candidate provenance without warnings');
+
+const multiIdItems = supplementalItems.filter((item) =>
+  item.provenance.question_ids?.warnings.some((warning) => warning.code === 'MULTIPLE_QUESTION_IDS')
+);
+assert.strictEqual(multiIdItems.length, 35, 'all multi-ID source occurrences retain a review warning');
+assert.ok(multiIdItems.every((item) => {
+  const audit = item.provenance.question_ids;
+  const warning = audit.warnings.find((entry) => entry.code === 'MULTIPLE_QUESTION_IDS');
+  return audit.recovered === false &&
+    audit.candidates.length > 1 &&
+    JSON.stringify(warning.candidates) === JSON.stringify(audit.candidates);
+}), 'multi-ID provenance must preserve every distinct candidate rather than silently discard it');
+
+const supplementalImportItems = supplemental.importPackages.flatMap((entry) => entry.items);
+const recoveredImportItems = supplementalImportItems.filter((item) =>
+  item.source_metadata.provenance?.question_ids?.recovered
+);
+const multiIdImportItems = supplementalImportItems.filter((item) =>
+  item.source_metadata.provenance?.question_ids?.warnings.some((warning) => warning.code === 'MULTIPLE_QUESTION_IDS')
+);
+assert.strictEqual(recoveredImportItems.length, 9, 'admin package preserves every recovered-ID audit');
+assert.strictEqual(new Set(recoveredImportItems.map((item) => item.canonical_hash)).size, 8);
+assert.strictEqual(multiIdImportItems.length, 35, 'admin package preserves every multi-ID warning');
+assert.deepStrictEqual(
+  new Map(recoveredImportItems.map((item) => [
+    item.source_metadata.occurrence_id,
+    item.source_metadata.provenance.question_ids
+  ])),
+  new Map(recoveredIdItems.map((item) => [item.occurrence_id, item.provenance.question_ids])),
+  'manifest and admin package carry identical recovered-ID provenance'
+);
 
 const excludedReasonCounts = supplemental.manifest.excluded_documents.reduce((counts, document) => {
   counts[document.exclusion_reason] = (counts[document.exclusion_reason] || 0) + 1;

@@ -88,6 +88,8 @@ for (const kind of ['semester_1','semester_2']) {
 assert.ok(html.includes('id="bankImportUnit"') && html.includes('id="bankImportYear"') && html.includes('id="bankImportExamType"') && html.includes('id="bankImportExamGrade"'));
 assert.ok(html.includes('id="bankSourceGrade"'), 'whole-source catalog needs a grade filter');
 assert.ok(html.includes('id="bankSourceCatalogCard"') && html.includes('id="bankSourceAssign"'));
+assert.ok(/<dialog[^>]*id="bankSourceAssignDialog"[^>]*aria-labelledby="bankSourceAssignHeading"[^>]*data-vm-popup-position="native"/.test(html), 'whole-source assignment must open in a native viewport dialog');
+assert.ok(/<form[^>]*id="bankSourceAssign"[^>]*onsubmit="VMExamAdmin\.bankAssignSourceExam\(event\)"/.test(html) && html.includes('data-bank-source-assign-close'), 'source assignment dialog must keep the existing submit contract and explicit close controls');
 assert.ok(html.includes('data-bank-source-origin="province_exam"') && html.includes("bankSetSourceCategory('province_exam')"), 'source catalog needs a province-exam origin tab');
 assert.ok(html.includes('data-bank-source-origin="authored"') && html.includes("bankSetSourceCategory('authored')"), 'source catalog needs an authored origin tab');
 assert.ok(html.includes('id="bankSourceType" onchange="VMExamAdmin.bankSyncSourceCategory()"'), 'semantic exam type must synchronize the active source category');
@@ -140,6 +142,10 @@ assert.ok(js.includes("if(!bankAccess.canUse){location.href="));
 assert.ok(js.includes("if(!bankAccess.canAdmin){"), 'teacher path must return before raw exam/admin loading');
 assert.ok(js.includes('data-source-exam-id'), 'source catalog should bind sanitized data instead of interpolating inline JavaScript');
 assert.ok(js.includes('data-source-mode="clone"') && js.includes('Tạo đề cùng cấu trúc'), 'source catalog must offer a fresh exam with the same pedagogical structure');
+const chooseSourceExam = js.slice(js.indexOf('function bankChooseSourceExam'), js.indexOf('async function bankAssignSourceExam'));
+assert.ok(chooseSourceExam.includes("dialog.showModal()") && chooseSourceExam.includes("classField.focus({preventScroll:true})"), 'source assignment must open at the viewport and focus its first required choice');
+assert.ok(!chooseSourceExam.includes('scrollIntoView'), 'source assignment must not scroll down to an inline form');
+assert.ok(js.includes('function bankCloseSourceAssign') && js.includes('bankCloseSourceAssign:bankCloseSourceAssign'), 'source assignment dialog needs an exported close handler');
 assert.ok(js.includes('function bankSyncSourceCategory') && js.includes('bankRenderSourceCategoryTabs()'), 'semantic filters and category tabs must stay synchronized');
 assert.ok(js.includes("source_origin:state.bank.sourceOrigin||null"), 'source-origin tabs must reach the source catalog RPC filters');
 assert.ok(js.includes('function bankLoadMoreSources') && js.includes('sourceCatalogOffset=offset+items.length') && js.includes('bankMergeSourceItems'), 'source catalog must paginate with server offsets and deduplicate rows');
@@ -230,6 +236,7 @@ assert.ok(/\.bank-workspace-nav\{[^}]*flex-direction:column[^}]*overflow-y:auto/
 assert.ok(/@media\(max-width:900px\)\{#panel-bank\.active\{display:block\}[\s\S]*?\.bank-workspace-nav\{[^}]*flex-direction:row[^}]*overflow-x:auto[^}]*overflow-y:hidden/.test(css), 'mobile and narrow tablet bank navigation must return to a compact horizontally scrollable bar');
 assert.ok(css.includes('.bank-source-results'));
 assert.ok(css.includes('.bank-source-pagination') && css.includes('.bank-source-pagination[hidden]{display:none!important}'));
+assert.ok(css.includes('.bank-source-assign-dialog') && css.includes('.bank-source-assign-dialog::backdrop') && css.includes('.bank-source-assign-fields'), 'source assignment dialog needs a responsive modal layout and backdrop');
 assert.ok(css.includes('.bank-question-list'));
 assert.ok(css.includes('.bank-taxonomy-manual-grid'));
 assert.ok(css.includes('body.bank-teacher-mode .bank-admin-taxonomy-filter'));

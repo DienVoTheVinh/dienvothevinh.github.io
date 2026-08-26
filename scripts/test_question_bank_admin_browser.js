@@ -569,30 +569,83 @@ Giá trị của $1+1$ bằng
         throw new Error(`Semantic source filter ${kind} failed: ${JSON.stringify(entry)}`);
       }
     }
-    await page.click('[data-source-exam-id="source-exam-1"][data-source-mode="assign"]');
+    const assignSourceButton = page.locator('[data-source-exam-id="source-exam-1"][data-source-mode="assign"]');
+    await assignSourceButton.scrollIntoViewIfNeeded();
+    const sourceScrollBefore = await page.evaluate(() => scrollY);
+    await assignSourceButton.click();
+    await page.waitForFunction(() => document.activeElement?.id === 'bankSourceAssignClass');
+    const assignDialogOpened = await page.evaluate((scrollBefore) => {
+      const dialog=document.getElementById('bankSourceAssignDialog'),rect=dialog.getBoundingClientRect();
+      return {
+        open:dialog.open,
+        scrollBefore,
+        scrollAfter:scrollY,
+        activeElement:document.activeElement && document.activeElement.id,
+        heading:document.getElementById('bankSourceAssignHeading').textContent,
+        sourceTitle:document.getElementById('bankSourceSelectedTitle').textContent,
+        status:document.getElementById('bankSourceAssignStatus').textContent,
+        insideViewport:rect.left >= -1 && rect.top >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1,
+      };
+    }, sourceScrollBefore);
+    if (!assignDialogOpened.open || Math.abs(assignDialogOpened.scrollAfter - assignDialogOpened.scrollBefore) > 1 || assignDialogOpened.activeElement !== 'bankSourceAssignClass' || assignDialogOpened.heading !== 'Giao nguyên đề' || !assignDialogOpened.sourceTitle.includes('Đề tham khảo Đồng Nai 2025') || !assignDialogOpened.status.includes('22 câu') || !assignDialogOpened.insideViewport) {
+      throw new Error(`Whole-source assignment dialog did not stay at the trigger viewport: ${JSON.stringify(assignDialogOpened)}`);
+    }
     await page.fill('#bankSourceAssignTitle', 'Giao nguyên đề Đồng Nai');
     await page.evaluate(async () => window.VMExamAdmin.bankAssignSourceExam({ preventDefault() {} }));
     const assigned = await page.evaluate(() => ({
       call: window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_assign_source_exam'),
       status: document.getElementById('bankSourceAssignStatus').textContent,
+      dialogOpen:document.getElementById('bankSourceAssignDialog').open,
+      dialogBusy:document.getElementById('bankSourceAssignDialog').hasAttribute('aria-busy'),
+      closeDisabled:Array.from(document.querySelectorAll('[data-bank-source-assign-close]')).some((button) => button.disabled),
     }));
-    if (!assigned.call || assigned.call.args.p_document_id !== 'source-exam-1' || assigned.call.args.p_spec.class_id !== 'class-1' || assigned.call.args.p_spec.shuffle !== false || !assigned.status.includes('22 câu')) {
+    if (!assigned.call || assigned.call.args.p_document_id !== 'source-exam-1' || assigned.call.args.p_spec.class_id !== 'class-1' || assigned.call.args.p_spec.shuffle !== false || !assigned.status.includes('22 câu') || !assigned.dialogOpen || assigned.dialogBusy || assigned.closeDisabled) {
       throw new Error(`Whole-source assignment flow failed: ${JSON.stringify(assigned)}`);
     }
     if (/(raw_tex|answer|solution|source_path)/i.test(JSON.stringify(assigned.call.args))) throw new Error('Source-exam assignment leaked protected bank fields');
 
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('bankSourceAssignDialog').open && document.activeElement?.dataset.sourceMode === 'assign');
     await page.click('[data-source-exam-id="source-exam-1"][data-source-mode="clone"]');
+    await page.waitForFunction(() => document.activeElement?.id === 'bankSourceAssignClass');
     await page.fill('#bankSourceAssignTitle', 'Đề tương tự Đồng Nai');
     await page.evaluate(async () => window.VMExamAdmin.bankAssignSourceExam({ preventDefault() {} }));
     const cloned = await page.evaluate(() => ({
       call: window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_clone_source_structure'),
       status: document.getElementById('bankSourceAssignStatus').textContent,
       button: document.getElementById('bankSourceAssignButton').textContent,
+      heading:document.getElementById('bankSourceAssignHeading').textContent,
+      dialogOpen:document.getElementById('bankSourceAssignDialog').open,
     }));
-    if (!cloned.call || cloned.call.args.p_document_id !== 'source-exam-1' || cloned.call.args.p_spec.class_id !== 'class-1' || cloned.call.args.p_spec.shuffle !== true || !cloned.status.includes('20 câu') || !cloned.status.includes('1 vị trí') || !cloned.button.includes('Tạo đề mới')) {
+    if (!cloned.call || cloned.call.args.p_document_id !== 'source-exam-1' || cloned.call.args.p_spec.class_id !== 'class-1' || cloned.call.args.p_spec.shuffle !== true || !cloned.status.includes('20 câu') || !cloned.status.includes('1 vị trí') || !cloned.button.includes('Tạo đề mới') || cloned.heading !== 'Tạo đề cùng cấu trúc' || !cloned.dialogOpen) {
       throw new Error(`Clone-source structure flow failed: ${JSON.stringify(cloned)}`);
     }
     if (/(raw_tex|answer|solution|source_path|taxonomy)/i.test(JSON.stringify(cloned.call.args))) throw new Error('Clone-source flow leaked protected bank fields');
+
+    await page.evaluate(() => window.VMExamAdmin.bankCloseSourceAssign());
+    await page.waitForFunction(() => !document.getElementById('bankSourceAssignDialog').open);
+    await page.setViewportSize({ width:390, height:844 });
+    await page.evaluate(() => window.VMExamAdmin.bankChooseSourceExam('source-exam-1','assign'));
+    await page.waitForFunction(() => document.activeElement?.id === 'bankSourceAssignClass');
+    const mobileAssignDialog = await page.evaluate(() => {
+      const dialog=document.getElementById('bankSourceAssignDialog'),rect=dialog.getBoundingClientRect();
+      return {
+        open:dialog.open,
+        left:rect.left,
+        top:rect.top,
+        right:rect.right,
+        bottom:rect.bottom,
+        viewportWidth:innerWidth,
+        viewportHeight:innerHeight,
+        pageOverflow:document.documentElement.scrollWidth > innerWidth + 1,
+        fieldColumns:getComputedStyle(document.querySelector('.bank-source-assign-fields')).gridTemplateColumns,
+      };
+    });
+    if (!mobileAssignDialog.open || mobileAssignDialog.left < -1 || mobileAssignDialog.top < -1 || mobileAssignDialog.right > mobileAssignDialog.viewportWidth + 1 || mobileAssignDialog.bottom > mobileAssignDialog.viewportHeight + 1 || mobileAssignDialog.pageOverflow || mobileAssignDialog.fieldColumns.trim().split(/\s+/).length !== 1) {
+      throw new Error(`Whole-source assignment dialog is not mobile-safe: ${JSON.stringify(mobileAssignDialog)}`);
+    }
+    await page.evaluate(() => window.VMExamAdmin.bankCloseSourceAssign());
+    await page.setViewportSize({ width:1600, height:900 });
 
     const sourcePagination = await page.evaluate(async () => {
       const rows = Array.from({ length:53 }, (_, index) => ({

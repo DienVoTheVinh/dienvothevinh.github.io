@@ -51,7 +51,7 @@ Câu hỏi có hình dựng trực tiếp.
 \choice{\True A}{B}{C}{D}
 \end{ex}`;
 
-assert.strictEqual(QuestionBank.VERSION, '1.0.0');
+assert.strictEqual(QuestionBank.VERSION, '1.1.0');
 assert.deepStrictEqual(QuestionBank.QUESTION_ENVIRONMENTS, ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap']);
 
 const id = QuestionBank.parseQuestionId('1D6N4-4');
@@ -77,6 +77,70 @@ Nội dung.
 \end{ex}`),
   '2D1H3-HAM-SO',
   'descriptive taxonomy variants in uploaded TeX must be preserved'
+);
+
+const recoveredCommentCases = [
+  {
+    syntax: 'unprefixed_bracket',
+    tex: String.raw`\begin{ex}%[TeamTeXHoa -- Nguyễn Văn A][2H2H2-6]
+Nội dung.\end{ex}`,
+    id: '2H2H2-6'
+  },
+  {
+    syntax: 'double_bracket',
+    tex: String.raw`\begin{ex}%[[2D4N1-4]]
+Nội dung.\end{ex}`,
+    id: '2D4N1-4'
+  },
+  {
+    syntax: 'missing_closing_bracket',
+    tex: String.raw`\begin{ex}%[2H2V2-4%[Nguồn đề]
+Nội dung.\end{ex}`,
+    id: '2H2V2-4'
+  }
+];
+for (const example of recoveredCommentCases) {
+  const analysis = QuestionBank.analyzeQuestionIds(example.tex);
+  const question = QuestionBank.parseQuestionBlock(example.tex);
+  assert.strictEqual(analysis.id, example.id);
+  assert.deepStrictEqual(analysis.candidates, [example.id]);
+  assert.strictEqual(analysis.recovered, true);
+  assert.strictEqual(analysis.recovery_syntax, example.syntax);
+  assert.strictEqual(question.question_id, example.id);
+  assert.strictEqual(question.question_id_recovered, true);
+  assert.strictEqual(question.question_id_recovery_syntax, example.syntax);
+  assert.deepStrictEqual(question.parser_warnings, []);
+}
+
+const relaxedMultiId = QuestionBank.parseQuestionBlock(String.raw`\begin{ex}%[Tác giả][2H2H2-6][2H2V2-4]
+Không được tự chọn một trong hai mã.\end{ex}`);
+assert.strictEqual(relaxedMultiId.question_id, null, 'relaxed recovery requires exactly one valid candidate');
+assert.deepStrictEqual(relaxedMultiId.question_id_candidates, ['2H2H2-6', '2H2V2-4']);
+assert.deepStrictEqual(relaxedMultiId.parser_warnings, [{
+  code: 'MULTIPLE_QUESTION_IDS',
+  candidates: ['2H2H2-6', '2H2V2-4']
+}]);
+
+const standardMultiId = QuestionBank.parseQuestionBlock(String.raw`\begin{ex}%[2D1N1-1]%[2D1H1-1]
+Giữ tương thích bằng mã chuẩn đầu tiên nhưng phải lưu cảnh báo.\end{ex}`);
+assert.strictEqual(standardMultiId.question_id, '2D1N1-1');
+assert.strictEqual(standardMultiId.question_id_recovered, false);
+assert.deepStrictEqual(standardMultiId.question_id_candidates, ['2D1N1-1', '2D1H1-1']);
+assert.strictEqual(standardMultiId.parser_warnings[0].code, 'MULTIPLE_QUESTION_IDS');
+
+assert.strictEqual(
+  QuestionBank.extractQuestionId(String.raw`\begin{ex}%[2D1K4]
+Mã thiếu biến thể phải chờ duyệt.\end{ex}`),
+  null,
+  'malformed IDs must not be guessed'
+);
+assert.strictEqual(
+  QuestionBank.extractQuestionId(String.raw`\begin{ex}
+Nội dung trước.
+%[Tác giả][2H2H2-6]
+\end{ex}`),
+  null,
+  'relaxed recovery must not scan comments inside question content'
 );
 
 const report = QuestionBank.parseDocument(fixture, { sourcePath: 'fixture.tex' });
@@ -239,6 +303,45 @@ if (fs.existsSync(realBankFile)) {
   assert.ok(realQuestions.some((question) => question.type === 'short_answer'));
   assert.ok(realQuestions.some((question) => question.question_id === '1D9H2-3'));
   assert.ok(realQuestions.every((question) => /^\\begin\{(?:ex|bt)\}/.test(question.canonical_tex)));
+}
+
+// These are the nine audited source occurrences whose leading metadata has one
+// safely recoverable taxonomy ID. Two De1 copies are the same canonical item,
+// so the regression must remain exactly nine occurrences / eight questions.
+const auditedRecoveryFiles = [
+  ['De on theo chuong T10 hk1', 'CK1-K12', 'De1.tex'],
+  ['De on theo chuong T10 hk1', 'Toan10', 'Hethucluong-de4.tex'],
+  ['De on theo chuong T10 hk1', 'Toan10', 'Vecto-de1.tex'],
+  ['De on theo chuong T10 hk1', 'Toan10', 'Vecto-de2.tex'],
+  ['De on theo chuong T10 hk1', 'Toan10', 'Vecto-de6.tex'],
+  ['De on theo chuong T10 hk1', 'Toan12 HK1 DeOn', 'CK1-K12', 'De1.tex'],
+  ['De On Theo Chuong Toan 12 Hk1', 'De On Theo Chuong Toan 12 Hk1', 'Toan12', 'Vecto-de5.tex'],
+  ['DeOnTheoChuong Toan 11', 'THPT', 'Dethamkhao2.tex'],
+  ['DeOnTheoChuong Toan 11', 'THPT', 'Hamso-de7.tex']
+].map((segments) => path.join(__dirname, '..', 'NganHang', ...segments));
+
+if (auditedRecoveryFiles.every((file) => fs.existsSync(file))) {
+  const recoveredQuestions = auditedRecoveryFiles.flatMap((file) =>
+    QuestionBank.parseTex(fs.readFileSync(file, 'utf8'), { sourcePath: file })
+      .filter((question) => question.question_id_recovered)
+  );
+  assert.strictEqual(recoveredQuestions.length, 9, 'audited corpus must recover exactly nine occurrences');
+  assert.strictEqual(
+    new Set(recoveredQuestions.map((question) => question.canonical_hash)).size,
+    8,
+    'the nine recovered occurrences must represent exactly eight canonical questions'
+  );
+  assert.deepStrictEqual(
+    recoveredQuestions.reduce((counts, question) => {
+      counts[question.question_id_recovery_syntax] = (counts[question.question_id_recovery_syntax] || 0) + 1;
+      return counts;
+    }, {}),
+    {
+      unprefixed_bracket: 7,
+      missing_closing_bracket: 1,
+      double_bracket: 1
+    }
+  );
 }
 
 console.log('question-bank parser: all tests passed');

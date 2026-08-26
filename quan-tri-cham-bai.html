@@ -20,8 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="js/latex-view.js?v=11.4"></script>
 <style>
-.wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
-.head { padding: 40px 0 20px; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 18px 24px 96px; }
 .chb-rank-panel{margin-bottom:18px;padding:18px;border-color:color-mix(in srgb,#7b61ff 28%,var(--line));background:radial-gradient(circle at 90% 0,rgba(123,97,255,.12),transparent 34%),var(--surface)}
 .chb-rank-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.chb-rank-head span{color:#7651ce;font-size:.65rem;font-weight:900;letter-spacing:.1em}.chb-rank-head h2{margin:4px 0;font-size:1.12rem}.chb-rank-head p{margin:0;color:var(--ink-3);font-size:.7rem;line-height:1.5}.chb-rank-head>b{padding:6px 10px;border-radius:999px;background:rgba(123,97,255,.12);color:#7651ce;font-size:.68rem;white-space:nowrap}.chb-rank-queue{display:grid;gap:9px;margin-top:14px}.chb-rank-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}.chb-rank-row.passed{border-color:var(--ok)}.chb-rank-row.failed{opacity:.78}.chb-rank-student{display:flex;align-items:center;gap:9px;min-width:0}.chb-rank-student>span{font-size:1.4rem}.chb-rank-student b,.chb-rank-student small,.chb-rank-result b,.chb-rank-result small{display:block}.chb-rank-student b{font-size:.78rem}.chb-rank-student small,.chb-rank-result small{color:var(--ink-3);font-size:.6rem;margin-top:2px}.chb-rank-grade{display:grid;grid-template-columns:90px minmax(150px,1fr) auto;gap:7px;min-width:min(470px,55%)}.chb-rank-result{text-align:right}.chb-rank-result b{font-size:.72rem}.chb-rank-empty{padding:15px;text-align:center;color:var(--ink-3);font-size:.72rem}@media(max-width:760px){.chb-rank-head,.chb-rank-row{flex-direction:column;align-items:stretch}.chb-rank-grade{min-width:0;grid-template-columns:1fr}.chb-rank-result{text-align:left}}
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
@@ -43,6 +42,7 @@
 .chb-edit-status { min-height:1.25em; margin-top:6px; font-size:.8rem; color:var(--ok); }
 .chb-assessment-wrap{margin-top:12px}.chb-assessment-wrap>span{display:block;margin-bottom:7px;color:var(--ink-3);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.chb-assessment-options{display:flex;gap:7px;flex-wrap:wrap}.chb-assessment-options label{cursor:pointer}.chb-assessment-options input{position:absolute;opacity:0;pointer-events:none}.chb-assessment-options label span,.chb-assessment-clear{display:inline-flex;align-items:center;min-height:38px;padding:7px 12px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface);color:var(--ink-2);font:800 .78rem/1.2 inherit}.chb-assessment-options input:checked+span{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff);box-shadow:0 0 0 3px var(--accent-soft)}.chb-assessment-clear{cursor:pointer}.chb-assessment-chip{display:inline-flex;align-items:center;margin-top:7px;padding:4px 9px;border-radius:999px;font-size:.72rem;font-weight:900}.chb-assessment-chip.needs_improvement{background:var(--err-soft);color:var(--err)}.chb-assessment-chip.meets{background:var(--ok-soft);color:var(--ok)}.chb-assessment-chip.good{background:var(--accent-soft);color:var(--accent)}
 @media(max-width:640px) {
+  .wrap { padding:14px 14px 72px; }
   .chb-grade-summary-grid { grid-template-columns:1fr; }
   .chb-grade-summary-grid .btn { width:100%; }
   .chb-filter-selects { width:100%; margin-left:0; display:grid; grid-template-columns:1fr; gap:8px; }
@@ -470,13 +470,7 @@
   </div>
 </div>
 
-<div class="wrap">
-  <div class="head">
-    <div class="sec-label">Khu vực của thầy</div>
-    <h1>Chấm bài học sinh nộp</h1>
-    <p style="margin-top:6px">Bài nộp nằm trong Drive của thầy (thư mục <b>VINHMATH NOP BAI</b>). Chấm xong nhập điểm + lời phê, đính kèm file chấm nếu cần — học sinh thấy ngay.</p>
-  </div>
-
+<div class="wrap" role="main" aria-label="Chấm bài học sinh nộp">
   <section id="rankBreakthroughPanel" class="card chb-rank-panel" hidden>
     <div class="chb-rank-head"><div><span>⚡ KIỂM TRA ĐỘT PHÁ</span><h2>Học sinh chờ mở cảnh giới</h2><p>Giao bài kiểm tra riêng, sau đó nhập điểm tại đây. Từ 8/10 hệ thống tự mở cảnh giới mới; dưới 8 học sinh giữ nguyên XP và có thể xin kiểm tra lại.</p></div><b id="rankBreakthroughCount">0 yêu cầu</b></div>
     <div id="rankBreakthroughQueue" class="chb-rank-queue"></div>

@@ -374,6 +374,10 @@ function questionPayload(question) {
     normalized_environment: question.normalized_environment,
     type: question.type,
     question_id: question.question_id,
+    question_id_candidates: question.question_id_candidates || [],
+    question_id_recovered: Boolean(question.question_id_recovered),
+    question_id_recovery_syntax: question.question_id_recovery_syntax || null,
+    parser_warnings: question.parser_warnings || [],
     id_info: question.id_info,
     grade: question.grade,
     area: question.area,
@@ -397,6 +401,36 @@ function questionPayload(question) {
     asset_refs: question.asset_refs,
     embedded_graphics: question.embedded_graphics,
     canonical_tex: question.canonical_tex
+  };
+}
+
+function questionIdAuditProvenance(question) {
+  const candidates = Array.isArray(question && question.question_id_candidates)
+    ? question.question_id_candidates.slice()
+    : [];
+  const warnings = Array.isArray(question && question.parser_warnings)
+    ? question.parser_warnings.map((warning) => ({
+        code: warning.code,
+        candidates: Array.isArray(warning.candidates) ? warning.candidates.slice() : []
+      }))
+    : [];
+  const recovered = Boolean(question && question.question_id_recovered);
+  if (!recovered && candidates.length <= 1 && !warnings.length) return null;
+  return {
+    selected: question && question.question_id || null,
+    candidates,
+    recovered,
+    recovery_syntax: question && question.question_id_recovery_syntax || null,
+    warnings
+  };
+}
+
+function mergeQuestionIdProvenance(question, provenance) {
+  const audit = questionIdAuditProvenance(question);
+  if (!audit) return provenance || null;
+  return {
+    ...(provenance || {}),
+    question_ids: audit
   };
 }
 
@@ -447,7 +481,7 @@ function questionImportPayload(question, occurrence, status, reasons) {
     source_metadata: {
       occurrence_id: occurrence && occurrence.occurrence_id || null,
       source_hash: occurrence && occurrence.source_hash || question.source_hash || null,
-      provenance: occurrence && occurrence.provenance || null,
+      provenance: mergeQuestionIdProvenance(question, occurrence && occurrence.provenance),
       assets: occurrence && occurrence.assets || []
     }
   };
@@ -953,7 +987,7 @@ function buildSupplementalQuestionBankManifest(options = {}) {
           status: classification.status,
           reasons: classification.reasons,
           answer_integrity: classification.answer_integrity,
-          provenance: { metadata_tags: metadataTags, source_tags: sourceTags },
+          provenance: mergeQuestionIdProvenance(question, { metadata_tags: metadataTags, source_tags: sourceTags }),
           assets: resolvedAssets
         };
         let group = groups.get(digest);
