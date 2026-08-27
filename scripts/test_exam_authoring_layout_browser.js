@@ -7,8 +7,12 @@ const { chromium } = require('playwright');
   const tokens = fs.readFileSync('css/tokens.css', 'utf8');
   const shared = fs.readFileSync('css/vinhmath.css', 'utf8');
   const pageSource = fs.readFileSync('quan-tri-de.html', 'utf8');
-  if (!/css\/exam-admin\.css\?v=4\.1/.test(pageSource)) throw new Error('Exam admin stylesheet cache key was not bumped');
+  if (!/css\/exam-admin\.css\?v=4\.2/.test(pageSource) || !/js\/exam-admin\.js\?v=4\.3/.test(pageSource)) throw new Error('Exam admin layout assets were not cache-busted together');
   const examCss = fs.readFileSync('css/exam-admin.css', 'utf8');
+  const examScript = fs.readFileSync('js/exam-admin.js', 'utf8');
+  if (!examScript.includes("document.body.classList.remove('bank-import-mode')") || !examScript.includes("document.body.classList.toggle('bank-can-import'") || examScript.includes("document.body.classList.toggle('bank-import-mode'")) {
+    throw new Error('Import capability must not reuse the bank-import-mode component class on body');
+  }
   const body = pageSource.match(/<body>([\s\S]*?)<script/)[1];
   if (!body.includes('topbar exam-admin-topbar')) throw new Error('Exam admin topbar is missing its isolated layout class');
   const practiceSource = fs.readFileSync('luyen-de.html', 'utf8');
@@ -21,9 +25,24 @@ const { chromium } = require('playwright');
     await page.evaluate(() => {
       window.apDungMenu('admin', null, null, null);
       window.apDungLogoBadge('admin');
+      // Reproduce the authenticated-admin state that exposed the former class
+      // collision: legacy JS added this class to body while the import buttons
+      // used the same class for their grid layout.
+      document.body.classList.add('bank-import-mode');
     });
+    const mixedCache = await page.evaluate(() => ({
+      bodyDisplay: getComputedStyle(document.body).display,
+      importModeDisplay: getComputedStyle(document.querySelector('.bank-import-mode-switch > .bank-import-mode')).display,
+    }));
+    if (mixedCache.bodyDisplay === 'grid' || mixedCache.importModeDisplay !== 'grid') {
+      throw new Error(`New CSS must remain safe with cached legacy JS: ${JSON.stringify(mixedCache)}`);
+    }
     await page.addScriptTag({ path: 'js/exam-admin.js' });
-    await page.evaluate(() => window.VMExamAdmin._syncAuthoringRail());
+    await page.evaluate(() => {
+      window.sb = { rpc: async () => ({ data:null, error:{ code:'PGRST202', message:'not installed in layout fixture' } }) };
+      window.VMExamAdmin._bankConfigureAccess({ role:'admin' });
+      window.VMExamAdmin._syncAuthoringRail();
+    });
     const desktop = await page.evaluate(() => {
       const workflow = document.querySelector('.exam-workflow').getBoundingClientRect();
       const stackEl = document.querySelector('.exam-stack');
@@ -32,7 +51,11 @@ const { chromium } = require('playwright');
       const topbar = document.querySelector('.topbar').getBoundingClientRect();
       const tabs = document.querySelector('.exam-tabs').getBoundingClientRect();
       const nav = document.querySelector('.topbar .nav').getBoundingClientRect();
+      const importModeButton = document.querySelector('.bank-import-mode-switch > .bank-import-mode');
       return {
+        bodyDisplay: getComputedStyle(document.body).display,
+        legacyImportClassRemoved: !document.body.classList.contains('bank-import-mode'),
+        importCapabilityClassPresent: document.body.classList.contains('bank-can-import'),
         columns: getComputedStyle(document.querySelector('.exam-workflow')).gridTemplateColumns.split(' ').length,
         stackWidth: stack.width,
         editorWidth: editor.width,
@@ -47,13 +70,14 @@ const { chromium } = require('playwright');
         topbarBottom: topbar.bottom,
         tabsTop: tabs.top,
         navWidth: nav.width,
+        importModeDisplay: importModeButton ? getComputedStyle(importModeButton).display : '',
       };
     });
     await page.locator('.exam-stack').hover({ position: { x: 120, y: 320 } });
     await page.mouse.wheel(0, 520);
     await page.waitForTimeout(80);
     const railScrollTop = await page.locator('.exam-stack').evaluate((node) => node.scrollTop);
-    if (desktop.columns !== 2 || desktop.stackWidth > 360 || desktop.editorWidth < 1000 || !desktop.toolboxInsideRail || desktop.overflow || desktop.workflowWidth < 1500 || desktop.railBottom > desktop.viewportHeight - 8 || !desktop.railScrollable || desktop.railTabIndex !== 0 || railScrollTop < 100 || Math.abs(desktop.topbarTop) > 1 || desktop.tabsTop < desktop.topbarBottom || desktop.navWidth < 1500) {
+    if (desktop.bodyDisplay === 'grid' || !desktop.legacyImportClassRemoved || !desktop.importCapabilityClassPresent || desktop.importModeDisplay !== 'grid' || desktop.columns !== 2 || desktop.stackWidth > 360 || desktop.editorWidth < 1000 || !desktop.toolboxInsideRail || desktop.overflow || desktop.workflowWidth < 1500 || desktop.railBottom > desktop.viewportHeight - 8 || !desktop.railScrollable || desktop.railTabIndex !== 0 || railScrollTop < 100 || Math.abs(desktop.topbarTop) > 1 || desktop.tabsTop < desktop.topbarBottom || desktop.navWidth < 1500) {
       throw new Error(`Desktop exam authoring is not screen-efficient: ${JSON.stringify(desktop)}`);
     }
 

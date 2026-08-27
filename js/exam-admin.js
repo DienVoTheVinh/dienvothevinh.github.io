@@ -2249,7 +2249,12 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     state.bank.access = capabilities ? bankNormalizeAccess(capabilities,profile) : bankAccessFor(profile);
     document.body.classList.add('bank-access-ready');
     document.body.classList.toggle('bank-admin-mode',state.bank.access.canAdmin);
-    document.body.classList.toggle('bank-import-mode',state.bank.access.canImport);
+    // `bank-import-mode` belongs to the two mode-selector buttons. Older builds
+    // also placed it on <body>, which turned the entire authenticated admin page
+    // into that button's two-column grid. Remove the legacy collision before
+    // publishing the independent capability state.
+    document.body.classList.remove('bank-import-mode');
+    document.body.classList.toggle('bank-can-import',state.bank.access.canImport);
     document.body.classList.toggle('bank-delegated-import-mode',state.bank.access.canImport&&!state.bank.access.canAdmin);
     document.body.classList.toggle('bank-download-tex-mode',state.bank.access.canDownloadTex);
     document.body.classList.toggle('bank-manage-mode',state.bank.access.canManage);
