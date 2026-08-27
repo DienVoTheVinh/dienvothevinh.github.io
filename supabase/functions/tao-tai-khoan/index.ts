@@ -229,6 +229,7 @@ async function migrateFullSiteTenant(
     from: compactLogin(actor.oldEmail),
     to: compactLogin(actor.targetEmail),
     unchanged: actor.oldEmail === actor.targetEmail,
+    roleClaimRepair: String(actor.appMetadata.vinhmath_role || "") !== actor.profileRole,
   }));
   const preflight = {
     tenantId: portal.id,
@@ -243,21 +244,28 @@ async function migrateFullSiteTenant(
 
   const changed: AuthSnapshot[] = [];
   for (const actor of snapshots) {
-    if (actor.oldEmail === actor.targetEmail) continue;
+    const oldRoleClaim = String(actor.appMetadata.vinhmath_role || "");
+    if (actor.oldEmail === actor.targetEmail && oldRoleClaim === actor.profileRole) continue;
     const { data, error } = await svc.auth.admin.updateUserById(actor.id, {
       email: actor.targetEmail,
       email_confirm: true,
-      app_metadata: { ...actor.appMetadata },
+      // The profile role is the authorization source after the admin preflight.
+      // Repair the private Auth claim as part of the same reversible cutover so
+      // a legacy exam-only manager can safely become a full-site teacher.
+      app_metadata: { ...actor.appMetadata, vinhmath_role: actor.profileRole },
       user_metadata: { ...actor.userMetadata },
     });
-    if (error || data.user?.email?.toLowerCase() !== actor.targetEmail) {
+    if (error || data.user?.email?.toLowerCase() !== actor.targetEmail ||
+      String(data.user?.app_metadata?.vinhmath_role || "") !== actor.profileRole) {
       // A transport error can arrive after GoTrue committed the rename. Resolve
       // that ambiguity before compensating, otherwise the current actor could
       // be left on the tenant suffix while the earlier actors are reverted.
       const observed = await svc.auth.admin.getUserById(actor.id);
       const observedEmail = observed.data?.user?.email?.toLowerCase();
-      if (!observed.error && observedEmail === actor.targetEmail) changed.push(actor);
-      else if (observed.error || (observedEmail !== actor.oldEmail && observedEmail !== actor.targetEmail)) {
+      const observedRoleClaim = String(observed.data?.user?.app_metadata?.vinhmath_role || "");
+      if (!observed.error && observedEmail === actor.targetEmail && observedRoleClaim === actor.profileRole) {
+        changed.push(actor);
+      } else if (observed.error || (observedEmail !== actor.oldEmail && observedEmail !== actor.targetEmail)) {
         const rollback = await rollbackAuthEmails(svc, changed);
         return jsonRes({
           error: "Chua xac dinh duoc trang thai doi email Auth; hay thu lai cung yeu cau",
@@ -265,6 +273,10 @@ async function migrateFullSiteTenant(
           rollbackKnownOk: rollback.ok,
           rollbackFailedUserIds: rollback.failedUserIds,
         }, 503);
+      } else if (observedEmail !== actor.oldEmail || observedRoleClaim !== oldRoleClaim) {
+        // The Auth update was only partly observed. Include the current actor in
+        // the compensating rollback instead of leaving a mixed email/claim state.
+        changed.push(actor);
       }
       const rollback = await rollbackAuthEmails(svc, changed);
       return jsonRes({
