@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v65';
+const VM_CACHE = 'vinhmath-shell-v67';
 const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
@@ -23,6 +23,7 @@ const VM_SHELL = [
   '/css/student-result-viewer.css',
   '/css/vmtool.css',
   '/js/config.js',
+  '/js/theme-preflight.js',
   '/js/vinhmath.js',
   '/js/festival-theme.js',
   '/js/menu-v5.js',
@@ -78,8 +79,8 @@ self.addEventListener('activate', function (event) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '65') return null;
-                target.searchParams.set('vm_refresh', '65');
+                if (target.searchParams.get('vm_refresh') === '66') return null;
+                target.searchParams.set('vm_refresh', '66');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));
@@ -111,7 +112,12 @@ self.addEventListener('fetch', function (event) {
           return response;
         })
         .catch(function () {
-          return caches.match(request).then(function (cached) {
+          /* Canonical HTML references versioned CSS/JS (for example
+             ?v=8.6), while the install shell deliberately stores one
+             unversioned copy. Ignore only the query string on the offline
+             fallback so the pre-paint theme and shared styles still load
+             after the browser HTTP cache has been cleared. */
+          return caches.match(request, { ignoreSearch: true }).then(function (cached) {
             return cached || caches.match('/offline.html');
           });
         })
@@ -122,7 +128,7 @@ self.addEventListener('fetch', function (event) {
   if (vmLaTaiNguyenTinh(url)) {
     if (!vmLaMaNguonGiaoDien(url)) {
       event.respondWith(
-        caches.match(request).then(function (cached) {
+        caches.match(request, { ignoreSearch: true }).then(function (cached) {
           var fresh = fetch(request).then(function (response) {
             if (response && response.ok) {
               var copy = response.clone();
@@ -142,7 +148,9 @@ self.addEventListener('fetch', function (event) {
             caches.open(VM_CACHE).then(function (cache) { cache.put(request, copy); });
           }
           return response;
-        }).catch(function () { return caches.match(request); })
+        }).catch(function () {
+          return caches.match(request, { ignoreSearch: true });
+        })
     );
   }
 });

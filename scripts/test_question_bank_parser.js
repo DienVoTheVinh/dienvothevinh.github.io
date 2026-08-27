@@ -51,7 +51,7 @@ Câu hỏi có hình dựng trực tiếp.
 \choice{\True A}{B}{C}{D}
 \end{ex}`;
 
-assert.strictEqual(QuestionBank.VERSION, '1.2.0');
+assert.strictEqual(QuestionBank.VERSION, '1.3.0');
 assert.deepStrictEqual(QuestionBank.QUESTION_ENVIRONMENTS, ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap']);
 
 const id = QuestionBank.parseQuestionId('1D6N4-4');
@@ -74,6 +74,17 @@ assert.strictEqual(QuestionBank.parseQuestionId('bad metadata'), null);
 assert.strictEqual(QuestionBank.parseQuestionId('2D1H3-HAM-SO'), null, 'semantic suffixes are not part of the legacy author standard');
 assert.strictEqual(QuestionBank.parseQuestionId('2D1D3-1'), null, 'unknown difficulty aliases must not enter the catalog');
 assert.strictEqual(QuestionBank.parseQuestionId('0D0N1-1').chapter, 0, 'chapter zero is valid in the original taxonomy');
+
+const thcsId = QuestionBank.parseQuestionId('thcs-v1:6D1TH3-1');
+assert.ok(thcsId, 'namespaced custom IDs are supported');
+assert.strictEqual(thcsId.id, 'thcs-v1:6D1TH3-1');
+assert.strictEqual(thcsId.schema_name, 'thcs-v1');
+assert.strictEqual(thcsId.grade, 6);
+assert.strictEqual(thcsId.difficulty, 'TH');
+assert.strictEqual(thcsId.taxonomy_key, 'thcs-v1:6D1?3-1');
+assert.strictEqual(QuestionBank.parseQuestionId('THCS-CHUYEN-V1:9H2VDC4-HSG').id, 'thcs-chuyen-v1:9H2VDC4-HSG');
+assert.strictEqual(QuestionBank.parseQuestionId('6D1TH3-1'), null, 'custom curricula require a namespace');
+assert.strictEqual(QuestionBank.extractQuestionId(String.raw`\begin{ex}%[thcs-v1:6D1TH3-1] Nội dung\end{ex}`), 'thcs-v1:6D1TH3-1');
 
 const recoveredCommentCases = [
   {

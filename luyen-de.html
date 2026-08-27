@@ -12,8 +12,9 @@
 <title>Bài tập — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/theme-preflight.js?v=1"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.5">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.6">
 <link rel="stylesheet" href="css/exam-portal.css?v=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -146,6 +147,15 @@
 .recovery-card strong { display:block; margin-bottom:5px; color:var(--ink); font-size:.9rem; }
 .recovery-card p { margin:0; color:var(--ink-2); font-size:.78rem; line-height:1.5; }
 .recovery-card .btn { width:100%; justify-content:center; margin-top:11px; }
+.recovery-card-workspace { margin:12px 18px 0; flex:0 0 auto; }
+@media (min-width:901px) {
+  .recovery-card-workspace { display:none !important; }
+  .exam-workspace.is-result-view .recovery-card-workspace.is-visible {
+    display:grid !important; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
+  }
+  .exam-workspace.is-result-view .recovery-card-workspace .btn { width:auto; min-width:210px; margin-top:0; }
+}
+@media (max-width:900px) { .recovery-card-workspace { margin:10px 10px 0; } }
 
 /* Modals của PDF */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1010; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
@@ -303,6 +313,14 @@
       <button class="btn btn-ghost btn-sm" id="wkExitBtn" onclick="exitWorkspace()" style="display:none">Thoát</button>
     </div>
   </header>
+
+  <div class="recovery-card recovery-card-workspace" id="vmRecoveryWorkspaceCard" aria-live="polite">
+    <div>
+      <strong>🎯 Luyện đúng phần em vừa sai</strong>
+      <p id="vmRecoveryWorkspaceText">Hệ thống đang tìm các câu cùng kỹ năng để em luyện lại.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" id="vmRecoveryWorkspaceBtn" onclick="vmTaoBaiLuyenTuongTu()">Tạo bài luyện tương tự</button>
+  </div>
   
   <div class="exam-body">
     <!-- Vùng câu hỏi -->
@@ -554,7 +572,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.5"></script>
+<script src="js/vinhmath.js?v=9.6"></script>
 <script src="js/menu-v5.js?v=10.2"></script>
 <script src="js/latex-view.js?v=11.4"></script>
 <script src="js/analytics.js"></script>
@@ -1135,6 +1153,8 @@ async function startExam(examId) {
   vmAnswerSaveChains = Object.create(null);
   vmAnswerSaveErrors = Object.create(null);
   vmExamSubmitting = false;
+  vmAnGoiYOnTap();
+  if ($('viewWorkspace')) $('viewWorkspace').classList.remove('is-result-view');
   canDownloadSolutionPdf = false;
   vmCapNhatNutPdfWorkspace('exam');
   
@@ -2075,6 +2095,7 @@ function showExamResults() {
 
   $('viewMain').style.display = 'none';
   $('viewWorkspace').style.display = 'flex';
+  $('viewWorkspace').classList.add('is-result-view');
   var laLuyenTap = currentAttempt.is_practice || !currentAttempt.id;
   $('wkTitle').textContent = currentExam.title + (laLuyenTap ? ' (LUYỆN TẬP)' : ' (KẾT QUẢ)');
 
@@ -2103,53 +2124,95 @@ function vmLayDanhSachGoiY(payload) {
   return [];
 }
 
+function vmCacThanhPhanGoiYOnTap() {
+  return {
+    cards: [$('vmRecoveryCard'), $('vmRecoveryWorkspaceCard')].filter(Boolean),
+    texts: [$('vmRecoveryText'), $('vmRecoveryWorkspaceText')].filter(Boolean),
+    buttons: [$('vmRecoveryBtn'), $('vmRecoveryWorkspaceBtn')].filter(Boolean)
+  };
+}
+
+function vmAnGoiYOnTap() {
+  var ui = vmCacThanhPhanGoiYOnTap();
+  ui.cards.forEach(function (card) { card.classList.remove('is-visible'); });
+  ui.buttons.forEach(function (button) {
+    button.disabled = false;
+    button.textContent = 'Tạo bài luyện tương tự';
+  });
+}
+
+function vmDatTrangThaiGoiYOnTap(message, visible) {
+  var ui = vmCacThanhPhanGoiYOnTap();
+  ui.texts.forEach(function (text) { text.textContent = message; });
+  ui.cards.forEach(function (card) { card.classList.toggle('is-visible', visible); });
+}
+
+function vmDatNutGoiYOnTap(disabled, label) {
+  vmCacThanhPhanGoiYOnTap().buttons.forEach(function (button) {
+    button.disabled = disabled;
+    button.textContent = label;
+  });
+}
+
 async function vmTaiGoiYOnTap() {
-  var card = $('vmRecoveryCard');
-  var text = $('vmRecoveryText');
-  var button = $('vmRecoveryBtn');
-  if (!card || !text || !button) return;
-  card.classList.remove('is-visible');
-  button.disabled = false;
-  button.textContent = 'Tạo bài luyện tương tự';
+  var ui = vmCacThanhPhanGoiYOnTap();
+  if (!ui.cards.length) return;
+  vmAnGoiYOnTap();
 
   var role = studentInfo && studentInfo.role;
-  if (!currentAttempt || !currentAttempt.id || currentAttempt.is_practice || role === 'admin' || role === 'teacher') return;
+  if (!currentAttempt || !currentAttempt.id || currentAttempt.is_practice || role !== 'student') return;
 
-  text.textContent = 'Hệ thống đang tìm các câu cùng kỹ năng để em luyện lại.';
-  card.classList.add('is-visible');
+  var wrongCount = Math.max(0, Number(currentAttempt.total_n || 0) - Number(currentAttempt.correct_n || 0));
+  if (!wrongCount) return;
+
+  vmDatTrangThaiGoiYOnTap('Hệ thống đang tìm các câu cùng kỹ năng để em luyện lại.', true);
   var result = await sb.rpc('vm_exam_recommendations', { p_attempt_id: currentAttempt.id });
   if (result.error) {
     console.warn('Không tải được gợi ý luyện tập:', result.error.message || result.error);
-    card.classList.remove('is-visible');
+    vmDatTrangThaiGoiYOnTap('Chưa tải được gợi ý lúc này. Em có thể thử tạo bài luyện lại.', true);
     return;
   }
 
   var items = vmLayDanhSachGoiY(result.data);
   var count = items.length || Number(result.data && result.data.count) || 0;
+  var hasCoverage = !!(result.data && Object.prototype.hasOwnProperty.call(result.data, 'matched_wrong_count'));
+  if (result.data && Number.isFinite(Number(result.data.wrong_count))) {
+    wrongCount = Math.max(0, Number(result.data.wrong_count));
+  }
+  var matchedWrongCount = hasCoverage
+    ? Math.max(0, Number(result.data.matched_wrong_count) || 0)
+    : null;
   if (!count) {
-    card.classList.remove('is-visible');
+    if (!hasCoverage) {
+      // Backward-compatible while the coverage-aware RPC migration rolls out.
+      vmDatTrangThaiGoiYOnTap('Em có ' + wrongCount + ' câu cần luyện lại. Hệ thống sẽ tìm câu phù hợp khi em tạo bài luyện.', true);
+      return;
+    }
+    if (!matchedWrongCount) {
+      vmDatTrangThaiGoiYOnTap('Các câu sai của đề này chưa được liên kết chính xác với ngân hàng nên chưa thể tạo bài luyện tự động.', true);
+      vmDatNutGoiYOnTap(true, 'Chưa có câu tương tự');
+      return;
+    }
+    vmDatTrangThaiGoiYOnTap('Đã nhận diện ' + matchedWrongCount + '/' + wrongCount + ' câu sai nhưng chưa còn câu tương tự phù hợp mà em chưa làm.', true);
+    vmDatNutGoiYOnTap(true, 'Chưa có câu tương tự');
     return;
   }
-  text.textContent = 'Có ' + count + ' câu cùng kỹ năng, đã loại câu trùng và những câu em vừa làm.';
+  var coverageText = hasCoverage
+    ? ' Đã nhận diện an toàn ' + matchedWrongCount + '/' + wrongCount + ' câu sai.'
+    : '';
+  vmDatTrangThaiGoiYOnTap('Có ' + count + ' câu cùng kỹ năng; câu trùng và câu đã làm được loại tự động.' + coverageText, true);
 }
 
 async function vmTaoBaiLuyenTuongTu() {
   if (!currentAttempt || !currentAttempt.id || currentAttempt.is_practice) return;
-  var button = $('vmRecoveryBtn');
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Đang tạo bài luyện…';
-  }
+  vmDatNutGoiYOnTap(true, 'Đang tạo bài luyện…');
   var result = await sb.rpc('vm_exam_create_recovery', {
     p_attempt_id: currentAttempt.id,
     p_limit: 8
   });
   if (result.error) {
     alert('Chưa thể tạo bài luyện tương tự: ' + result.error.message);
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Tạo bài luyện tương tự';
-    }
+    vmDatNutGoiYOnTap(false, 'Tạo bài luyện tương tự');
     return;
   }
 
@@ -2157,10 +2220,7 @@ async function vmTaoBaiLuyenTuongTu() {
   var examId = payload.exam_id || payload.id;
   if (!examId) {
     alert('Chưa đủ câu phù hợp để tạo bài luyện mới.');
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Tạo bài luyện tương tự';
-    }
+    vmDatNutGoiYOnTap(false, 'Tạo bài luyện tương tự');
     return;
   }
 
@@ -2168,10 +2228,7 @@ async function vmTaoBaiLuyenTuongTu() {
   var generatedExam = Array.isArray(catalog.data) ? catalog.data[0] : null;
   if (!generatedExam) {
     alert('Bài luyện đã được tạo nhưng chưa thể mở. Em hãy tải lại trang.');
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Tạo bài luyện tương tự';
-    }
+    vmDatNutGoiYOnTap(false, 'Tạo bài luyện tương tự');
     return;
   }
   if (!listExams.some(function (item) { return item.id === generatedExam.id; })) listExams.push(generatedExam);

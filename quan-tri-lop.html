@@ -15,8 +15,9 @@
 <title>Quản lý Lớp học — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/theme-preflight.js?v=1"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.5">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.6">
 <style>
 @keyframes goldPulse {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
@@ -54,6 +55,17 @@
 .sidebar-classes-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:10px; margin-bottom:14px; border-bottom:1px solid var(--line); }
 .sidebar-classes-head h1 { margin:0; font-size:1rem; line-height:1.3; }
 .sidebar-classes-head .btn { flex:0 0 auto; }
+.class-scope-panel { display:none; margin:-2px 0 14px; padding:10px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.class-scope-panel.is-visible { display:block; }
+.class-scope-label { display:block; margin-bottom:6px; color:var(--ink-3); font-size:.7rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.class-scope-select { width:100%; min-height:38px; padding:7px 10px; border:1px solid var(--line-2); border-radius:9px; background:var(--surface); color:var(--ink); font:inherit; font-size:.82rem; }
+.class-scope-teachers { display:none; gap:6px; flex-wrap:wrap; max-height:160px; overflow:auto; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
+.class-scope-teachers.is-visible { display:flex; }
+.class-scope-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:999px; background:var(--surface); color:var(--ink-2); font-size:.75rem; cursor:pointer; }
+.class-scope-chip:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+.class-scope-chip input { width:14px; height:14px; margin:0; accent-color:var(--accent); }
+.class-scope-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.class-scope-summary { margin-top:7px; color:var(--ink-3); font-size:.72rem; line-height:1.35; }
 .grade-group { margin-bottom: 20px; }
 .grade-title { font-size: .85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 6px; border-bottom: 1px solid var(--line-2); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 .class-list { display: flex; flex-direction: column; gap: 4px; }
@@ -299,6 +311,17 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
     <!-- Cột trái: Sidebar Khối lớp & Lớp học -->
     <div class="sidebar-classes">
       <div class="sidebar-classes-head"><h1>🏫 Lớp học</h1><button class="btn btn-secondary btn-sm chi-gv chi-ql" onclick="moFormLop()">+ Tạo lớp mới</button></div>
+      <div class="class-scope-panel" id="classScopePanel">
+        <label class="class-scope-label" for="classScopeSelect">Phạm vi lớp hiển thị</label>
+        <select class="class-scope-select" id="classScopeSelect" onchange="doiPhamViLop(this.value)">
+          <option value="mine">Lớp tôi phụ trách</option>
+          <option value="collaboration">Có tôi và giáo viên hợp tác</option>
+          <option value="selected">Chọn một hoặc nhiều giáo viên</option>
+          <option value="all">Tất cả lớp</option>
+        </select>
+        <div class="class-scope-teachers" id="classScopeTeachers" aria-label="Chọn giáo viên để lọc lớp"></div>
+        <div class="class-scope-summary" id="classScopeSummary">Mặc định chỉ gồm lớp do tôi phụ trách hoặc có tôi hợp tác.</div>
+      </div>
       <div id="dsKhoiLop">Đang tải danh sách...</div>
     </div>
 
@@ -1220,7 +1243,7 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.5"></script>
+<script src="js/vinhmath.js?v=9.6"></script>
 <script src="js/latex-view.js?v=11.4"></script>
 <script src="js/menu-v5.js?v=10.2"></script>
 <script src="js/analytics.js"></script>
@@ -1250,6 +1273,8 @@ function danhXungGV(id, name) {
 }
 var dsGiaoVien = [];
 var hoSoNguoiDung = null;
+var phamViLop = 'mine';
+var giaoVienLocLop = [];
 var tgDanhSachUngVien = [];
 var tgAssistantIds = [];
 var tgUngVienDaChon = null;
@@ -1280,6 +1305,7 @@ var tgGoiYTimer = null;
     dsGiaoVien = rT.data || [];
     dsGiaoVien.forEach(function(u) { mapGiaoVien[u.id] = u.full_name; mapGioiTinhGV[u.id] = u.gender; });
   } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
+  khoiTaoBoLocLop();
   
   await napThuongHieu();
   console.log("5. Đang tải sidebar...");
@@ -1308,11 +1334,59 @@ function napSelectGiaoVien() {
   
   var optionsHtml = '<option value="">-- Không hợp tác --</option>';
   dsGiaoVien.forEach(function(u) {
-    optionsHtml += '<option value="' + u.id + '">' + u.full_name + ' (' + (u.role === 'admin' ? 'Admin' : 'GV') + ')</option>';
+    optionsHtml += '<option value="' + escAttr(u.id) + '">' + escAttr(u.full_name) + ' (' + (u.role === 'admin' ? 'Admin' : 'GV') + ')</option>';
   });
   
   if (coTeachSelect) coTeachSelect.innerHTML = optionsHtml;
   if (editCoTeachSelect) editCoTeachSelect.innerHTML = optionsHtml;
+}
+
+function khoiTaoBoLocLop() {
+  var panel = $('classScopePanel');
+  if (!panel || !hoSoNguoiDung || hoSoNguoiDung.role !== 'admin') return;
+  panel.classList.add('is-visible');
+  var teacherBox = $('classScopeTeachers');
+  teacherBox.innerHTML = dsGiaoVien.slice().sort(function(a,b) {
+    return String(a.full_name || '').localeCompare(String(b.full_name || ''), 'vi');
+  }).map(function(teacher) {
+    return '<label class="class-scope-chip"><input type="checkbox" value="' + teacher.id + '" onchange="chonGiaoVienLocLop(this)"><span>' + escAttr(teacher.full_name || 'Giáo viên') + '</span></label>';
+  }).join('');
+}
+
+function doiPhamViLop(scope) {
+  if (!hoSoNguoiDung || hoSoNguoiDung.role !== 'admin') return;
+  phamViLop = ['mine','collaboration','selected','all'].indexOf(scope) !== -1 ? scope : 'mine';
+  $('classScopeTeachers').classList.toggle('is-visible', phamViLop === 'selected');
+  classDangChon = null;
+  $('vungChiTiet').style.display = 'none';
+  $('chuaChonLop').style.display = 'flex';
+  loadingSidebar();
+}
+
+function chonGiaoVienLocLop(input) {
+  var id = input && input.value;
+  if (!id) return;
+  if (input.checked && giaoVienLocLop.indexOf(id) === -1) giaoVienLocLop.push(id);
+  if (!input.checked) giaoVienLocLop = giaoVienLocLop.filter(function(x) { return x !== id; });
+  if (phamViLop === 'selected') {
+    classDangChon = null;
+    $('vungChiTiet').style.display = 'none';
+    $('chuaChonLop').style.display = 'flex';
+    loadingSidebar();
+  }
+}
+
+function capNhatTomTatPhamViLop() {
+  var summary = $('classScopeSummary');
+  if (!summary) return;
+  var messages = {
+    mine:'Lớp do tôi phụ trách, đồng phụ trách hoặc được phân công hỗ trợ.',
+    collaboration:'Chỉ lớp có tôi cùng một giáo viên khác tham gia.',
+    selected:'Hiện lớp có ít nhất một giáo viên đã chọn tham gia.',
+    all:'Toàn bộ lớp trong hệ thống.'
+  };
+  var selectedText = phamViLop === 'selected' ? ' Đã chọn ' + giaoVienLocLop.length + ' giáo viên.' : '';
+  summary.textContent = (messages[phamViLop] || messages.mine) + selectedText + ' Đang hiện ' + dsLop.length + ' lớp.';
 }
 
 async function napThuongHieu() {
@@ -1343,22 +1417,20 @@ function themeTuThuongHieu(id) {
 
 /* ----- Danh sách lớp sidebar ----- */
 async function loadingSidebar() {
-  console.log("loadingSidebar: Đang truy vấn bảng classes...");
-  var r = await sb.from('classes').select('id, name, grade, mode, school_year, is_specialized, teacher_id, co_teacher_id, theme, brand_id, ' + VM_BRAND_RELATION).order('grade').order('name');
-  console.log("loadingSidebar: Kết quả truy vấn classes:", r);
-  dsLop = r.data || [];
-  
-  if (hoSoNguoiDung && hoSoNguoiDung.role !== 'admin') {
-    var myAssistantIds = [];
-    try {
-      var ra = await sb.from('class_assistants').select('class_id').eq('assistant_id', hoSoNguoiDung.id);
-      myAssistantIds = (ra.data || []).map(function (x) { return x.class_id; });
-    } catch (e) {}
-    window.myAssistantClassIds = myAssistantIds;
-    dsLop = dsLop.filter(function (l) {
-      return l.teacher_id === hoSoNguoiDung.id || l.co_teacher_id === hoSoNguoiDung.id || myAssistantIds.indexOf(l.id) !== -1;
-    });
+  console.log("loadingSidebar: Đang truy vấn phạm vi lớp được phép xem...");
+  // RPC trả trường brand cùng hình dạng mà VM_BRAND_RELATION dùng ở các màn hình lớp khác.
+  var scope = hoSoNguoiDung && hoSoNguoiDung.role === 'admin' ? phamViLop : 'mine';
+  var teacherIds = scope === 'selected' ? giaoVienLocLop : [];
+  var r = await sb.rpc('vm_list_accessible_classes', { p_scope: scope, p_teacher_ids: teacherIds });
+  console.log("loadingSidebar: Kết quả phạm vi lớp:", r);
+  if (r.error) {
+    console.error('Không tải được phạm vi lớp an toàn:', r.error);
+    dsLop = [];
+    $('dsKhoiLop').innerHTML = '<div class="empty">Không tải được danh sách lớp. Vui lòng tải lại trang.</div>';
+    return;
   }
+  dsLop = r.data || [];
+  capNhatTomTatPhamViLop();
   
   // Group theo grade
   var groups = {};
@@ -1393,7 +1465,7 @@ async function loadingSidebar() {
           var specBadge = l.is_specialized ? '<span class="badge badge-accent" style="font-size:0.68rem; padding:1px 5px; margin-left:4px; font-weight:700">Chuyên</span>' : '';
           var activeClass = (classDangChon && classDangChon.id === l.id) ? ' active' : '';
           return '<button class="class-item' + activeClass + '" onclick="chonLopHoc(\'' + l.id + '\')">' +
-            '<span style="display:flex; align-items:center;"><span>' + l.name + '</span>' + specBadge + '</span>' +
+            '<span style="display:flex; align-items:center;"><span>' + escAttr(l.name) + '</span>' + specBadge + '</span>' +
             '<span class="badge badge-mute">' + modeLabel + '</span>' +
             '</button>';
         }).join('') +
@@ -1436,7 +1508,7 @@ function chonLopHoc(id) {
   
   var gvChinh = mapGiaoVien[cl.teacher_id] || 'Thầy Điền Võ Thế Vinh';
   var gvHopTac = mapGiaoVien[cl.co_teacher_id];
-  $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + danhXungGV(cl.teacher_id, gvChinh) + '</b>' + (gvHopTac ? ' & <b>' + danhXungGV(cl.co_teacher_id, gvHopTac) + '</b>' : '');
+  $('detGiaoVien').innerHTML = 'Giáo viên: <b>' + escAttr(danhXungGV(cl.teacher_id, gvChinh)) + '</b>' + (gvHopTac ? ' & <b>' + escAttr(danhXungGV(cl.co_teacher_id, gvHopTac)) + '</b>' : '');
 
   $('detMode').textContent = cl.mode === 'online' ? '🎥 Online' : '🏫 Trực tiếp';
   $('detMode').className = 'badge ' + (cl.mode === 'online' ? 'badge-accent' : 'badge-ok');
@@ -3173,6 +3245,11 @@ async function luuLopHoc(e) {
     alert('Lỗi: ' + r.error.message);
   } else {
     dongFormLop();
+    if (hoSoNguoiDung && hoSoNguoiDung.role === 'admin') {
+      phamViLop = 'mine';
+      $('classScopeSelect').value = 'mine';
+      $('classScopeTeachers').classList.remove('is-visible');
+    }
     await loadingSidebar();
     chonLopHoc(r.data.id);
   }

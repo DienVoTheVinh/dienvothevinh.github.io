@@ -52,9 +52,8 @@ Tính $15+27$.
       bankVisible: !document.getElementById('bankTab').hidden,
       workbenchVisible: !document.getElementById('bankAdminWorkbench').hidden,
       importNavVisible: !document.getElementById('bankImportNav').hidden,
-      repositoryNavVisible: !document.getElementById('bankRepositoryNav').hidden,
       importZoneVisible: !document.getElementById('bankZoneImport').hidden,
-      repositoryZoneVisible: !document.getElementById('bankZoneRepository').hidden,
+      sourcesPaneVisible: !document.getElementById('bankManageSourcesPane').hidden,
       activeView: window.VMExamAdmin._bankState.activeView,
       visibleZones: Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
       workspaceZones: document.querySelectorAll('[data-bank-zone-nav]').length,
@@ -64,7 +63,7 @@ Tính $15+27$.
       catalogOptions: document.querySelectorAll('#bankTaxonomyCatalogSelect option').length,
       identities: window.VMExamAdmin._bankState.items.map((item) => ({ id: item.question_id, hash: item.canonical_hash, uid: item.uid })),
     }));
-    if (!admin.bankVisible || !admin.workbenchVisible || !admin.importNavVisible || !admin.repositoryNavVisible || admin.importZoneVisible || admin.repositoryZoneVisible || admin.activeView !== 'overview' || JSON.stringify(admin.visibleZones) !== JSON.stringify(['overview']) || admin.workspaceZones !== 5 || admin.parsed !== 2 || admin.quarantined !== 1 || !admin.answerPreview || admin.catalogOptions !== 2) {
+    if (!admin.bankVisible || !admin.workbenchVisible || !admin.importNavVisible || admin.importZoneVisible || admin.sourcesPaneVisible || admin.activeView !== 'overview' || JSON.stringify(admin.visibleZones) !== JSON.stringify(['overview']) || admin.workspaceZones !== 4 || admin.parsed !== 2 || admin.quarantined !== 1 || !admin.answerPreview || admin.catalogOptions !== 2) {
       throw new Error(`Admin workbench failed: ${JSON.stringify(admin)}`);
     }
 
@@ -104,6 +103,7 @@ Tính $15+27$.
     await page.evaluate(() => { window.scrollTo = window.__bankOriginalScrollTo; });
     if (importView.hash !== '#bank-import' || importView.active !== 'import' || importView.value !== 'Bản nháp giữ nguyên khi đổi view' || JSON.stringify(importView.visible) !== JSON.stringify(['import']) || !importView.scrollCalls.length || importView.scrollCalls.some((call) => !Number.isFinite(call.top))) throw new Error(`Independent import view failed: ${JSON.stringify(importView)}`);
     const editorHandoff = await page.evaluate(() => {
+      window.VMExamAdmin.bankSetManageMode('sources',{ load:false });
       const editor=document.getElementById('exLatex');
       editor.value='Tìm câu về hàm số bậc ba';
       editor.selectionStart=0;
@@ -113,10 +113,13 @@ Tính $15+27$.
         hash:location.hash,
         active:window.VMExamAdmin._bankState.activeView,
         query:document.getElementById('bankSearchQuery').value,
+        manageMode:window.VMExamAdmin._bankState.manageMode,
+        questionsVisible:!document.getElementById('bankManageQuestionsPane').hidden,
+        sourcesVisible:!document.getElementById('bankManageSourcesPane').hidden,
         visible:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((zone) => !zone.hidden).map((zone) => zone.dataset.bankZone),
       };
     });
-    if (editorHandoff.hash !== '#bank-manage' || editorHandoff.active !== 'manage' || editorHandoff.query !== 'Tìm câu về hàm số bậc ba' || JSON.stringify(editorHandoff.visible) !== JSON.stringify(['manage'])) throw new Error(`Editor-to-bank handoff did not open manage view: ${JSON.stringify(editorHandoff)}`);
+    if (editorHandoff.hash !== '#bank-manage' || editorHandoff.active !== 'manage' || editorHandoff.manageMode !== 'questions' || !editorHandoff.questionsVisible || editorHandoff.sourcesVisible || editorHandoff.query !== 'Tìm câu về hàm số bậc ba' || JSON.stringify(editorHandoff.visible) !== JSON.stringify(['manage'])) throw new Error(`Editor-to-bank handoff did not open question search: ${JSON.stringify(editorHandoff)}`);
     await page.evaluate(() => {
       window.VMExamAdmin.bankSelectMissingIds();
       document.getElementById('bankTaxDifficulty').value = 'N';

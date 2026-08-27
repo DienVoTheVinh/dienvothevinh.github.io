@@ -12,9 +12,10 @@
   <title>Soạn thảo — VinhMath</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="js/theme-preflight.js?v=1"></script>
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
-  <link rel="stylesheet" href="css/vinhmath.css?v=8.5">
-  <link rel="stylesheet" href="css/exam-admin.css?v=3.9">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.6">
+  <link rel="stylesheet" href="css/exam-admin.css?v=4.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -133,8 +134,7 @@
         <button class="active" id="bankViewTabOverview" type="button" role="tab" aria-selected="true" aria-controls="bankZoneOverview" data-bank-zone-nav="overview" onclick="VMExamAdmin.bankScrollZone('overview')"><span>01</span>Tổng quan kho</button>
         <button id="bankViewTabCreate" type="button" role="tab" aria-selected="false" aria-controls="bankZoneCreate" tabindex="-1" data-bank-zone-nav="create" onclick="VMExamAdmin.bankScrollZone('create')"><span>02</span>Tạo &amp; giao đề</button>
         <button id="bankImportNav" type="button" role="tab" aria-selected="false" aria-controls="bankZoneImport" tabindex="-1" data-bank-zone-nav="import" onclick="VMExamAdmin.bankScrollZone('import')" hidden><span>03</span>Nạp &amp; chuẩn hóa</button>
-        <button id="bankRepositoryNav" type="button" role="tab" aria-selected="false" aria-controls="bankZoneRepository" tabindex="-1" data-bank-zone-nav="repository" onclick="VMExamAdmin.bankScrollZone('repository')" hidden><span>04</span>Kho nguồn</button>
-        <button id="bankViewTabManage" type="button" role="tab" aria-selected="false" aria-controls="bankZoneManage" tabindex="-1" data-bank-zone-nav="manage" onclick="VMExamAdmin.bankScrollZone('manage')"><span>05</span>Kho câu &amp; ma trận</button>
+        <button id="bankViewTabManage" type="button" role="tab" aria-selected="false" aria-controls="bankZoneManage" tabindex="-1" data-bank-zone-nav="manage" onclick="VMExamAdmin.bankScrollZone('manage')"><span>04</span>Kho dữ liệu &amp; ma trận</button>
       </nav>
 
       <div class="bank-workspace-views" id="bankWorkspaceViews">
@@ -196,6 +196,22 @@
           </section>
           <section class="bank-id-mapper bank-admin-only-ui" aria-labelledby="bankIdMapperTitle">
             <div><span>Chuyển chuẩn có kiểm soát</span><h3 id="bankIdMapperTitle">Ánh xạ ID cũ sang chuẩn tương lai</h3><p>Chuẩn gốc <b>legacy-v1</b> luôn được giữ. Tạo quy tắc mới chỉ sinh mã hiển thị/alias; không sửa UID và không đổi hàng loạt cho đến khi quản trị viên xem trước rồi xác nhận.</p></div>
+            <details class="bank-id-system-builder" open>
+              <summary>Tạo hệ ID cho chương trình mới</summary>
+              <p>Mỗi hệ có namespace riêng nên không thể trùng mã THPT cũ. Ví dụ <code>thcs-v1:6D1TH3-1</code> là khối 6; <code>thcs-chuyen-v1:6D1TH3-1</code> thuộc kho chuyên THCS.</p>
+              <div class="bank-id-system-grid">
+                <label>Mẫu nhanh<select class="input" id="bankIdSystemPreset"><option value="thcs">Toán THCS · khối 6–9</option><option value="thcs_specialized">Toán chuyên THCS · khối 6–9</option><option value="custom">Tùy chỉnh</option></select></label>
+                <label>Tên hệ / namespace<input class="input" id="bankIdSystemName" value="thcs-v1" placeholder="Ví dụ: thcs-v1"></label>
+                <label>Tên hiển thị<input class="input" id="bankIdSystemLabel" value="Toán THCS"></label>
+                <label>Bậc học<select class="input" id="bankIdSystemLevel"><option value="thcs">THCS</option><option value="thpt">THPT</option><option value="mixed">Nhiều bậc</option></select></label>
+              </div>
+              <fieldset class="bank-id-system-grades"><legend>Khối áp dụng</legend><label><input type="checkbox" name="bankIdSystemGrade" value="1"> 1</label><label><input type="checkbox" name="bankIdSystemGrade" value="2"> 2</label><label><input type="checkbox" name="bankIdSystemGrade" value="3"> 3</label><label><input type="checkbox" name="bankIdSystemGrade" value="4"> 4</label><label><input type="checkbox" name="bankIdSystemGrade" value="5"> 5</label><label><input type="checkbox" name="bankIdSystemGrade" value="6" checked> 6</label><label><input type="checkbox" name="bankIdSystemGrade" value="7" checked> 7</label><label><input type="checkbox" name="bankIdSystemGrade" value="8" checked> 8</label><label><input type="checkbox" name="bankIdSystemGrade" value="9" checked> 9</label><label><input type="checkbox" name="bankIdSystemGrade" value="10"> 10</label><label><input type="checkbox" name="bankIdSystemGrade" value="11"> 11</label><label><input type="checkbox" name="bankIdSystemGrade" value="12"> 12</label><label><input type="checkbox" id="bankIdSystemSpecialized"> Kho chuyên</label><label><input type="checkbox" id="bankIdSystemActive" checked> Đang dùng</label><button class="btn btn-primary" type="button" id="bankIdSystemSave">Lưu hệ ID</button></fieldset>
+              <div class="bank-id-family-builder">
+                <h4>Thêm họ dạng bài vào hệ</h4>
+                <div class="bank-id-family-grid"><label>Hệ ID<select class="input" id="bankIdFamilySchema"><option value="">Tạo hệ ID trước</option></select></label><label>Khối<select class="input" id="bankIdFamilyGrade"><option value="">Chọn hệ trước</option></select></label><label>Mảng<input class="input" id="bankIdFamilyArea" maxlength="1" value="D" placeholder="D / H / C"></label><label>Chương<input class="input" id="bankIdFamilyChapter" type="number" min="0" value="1"></label><label>Bài / kỹ năng<input class="input" id="bankIdFamilySkill" type="number" min="0" value="1"></label><label>Biến thể<input class="input" id="bankIdFamilyVariant" value="1" maxlength="24"></label><label>Tên chương<input class="input" id="bankIdFamilyChapterLabel" placeholder="Ví dụ: Số hữu tỉ"></label><label>Tên bài / kỹ năng<input class="input" id="bankIdFamilySkillLabel" placeholder="Ví dụ: Cộng hai số hữu tỉ"></label><label>Tên dạng bài<input class="input" id="bankIdFamilyVariantLabel" placeholder="Ví dụ: Tính trực tiếp"></label><button class="btn btn-secondary" type="button" id="bankIdFamilySave">Thêm họ mã</button></div>
+              </div>
+              <output id="bankIdSystemOutput" class="bank-id-map-output">Chưa lưu hệ ID mới.</output>
+            </details>
             <div class="bank-id-mapper-grid"><label>Mã cũ<input class="input" id="bankIdMapOld" placeholder="2D1H3-1"></label><label>Mã mới (có thể để trống)<input class="input" id="bankIdMapNew" placeholder="Tự sinh từ quy tắc bên dưới"></label><label>Phiên bản mới<input class="input" id="bankIdMapSchema" list="bankIdSchemaNames" placeholder="Ví dụ: vm-id-v2"><datalist id="bankIdSchemaNames"></datalist></label><button class="btn btn-secondary" type="button" id="bankIdMapPreview">Xem ánh xạ</button></div>
             <details class="bank-id-schema-advanced"><summary>Tùy chỉnh vị trí và bảng đổi mã</summary><div class="bank-id-schema-fields"><label>Thứ tự 6 phần<input class="input" id="bankIdMapOrder" value="grade,area,chapter,difficulty,skill,variant"></label><label>Bảng đổi mã (JSON)<textarea class="input" id="bankIdMapCodes" rows="3" spellcheck="false">{"grade":{"0":"10","1":"11","2":"12"},"difficulty":{"NB":"NB","TH":"TH","VD":"VD","VDC":"VDC"}}</textarea></label><label>Dấu nối thường<input class="input" id="bankIdMapSeparator" value="-"></label><label>Dấu trước biến thể<input class="input" id="bankIdMapVariantSeparator" value="-"></label></div></details>
             <div class="bank-id-mapper-actions"><button class="btn btn-secondary" type="button" id="bankIdSchemaSave">Lưu chuẩn mới</button><button class="btn btn-primary" type="button" id="bankIdAliasSave">Lưu ngoại lệ ánh xạ</button></div>
@@ -309,34 +325,18 @@
       </section>
       </section>
 
-      <section class="bank-zone bank-admin-repository-zone" id="bankZoneRepository" role="tabpanel" aria-labelledby="bankRepositoryNav" data-bank-zone="repository" hidden>
-        <header class="bank-zone-head">
-          <div><span>Chỉ quản trị viên · 04</span><h2>Kho nguồn</h2></div>
-          <small>Duyệt toàn bộ tệp đã nạp; raw TeX chỉ được lấy khi admin chủ động mở một nguồn.</small>
-        </header>
-
-        <section class="exam-card bank-repository-card" aria-describedby="bankRepositoryAccessNote">
-          <div class="exam-card-head"><div><h2>Tệp TeX và trạng thái chuẩn hóa</h2><p>Lọc theo nguồn, trạng thái hoặc khối rồi mở bản HTML/PDF để kiểm tra.</p></div><span class="exam-badge draft">Admin</span></div>
-          <div class="exam-card-body">
-            <div class="bank-repository-access-note" id="bankRepositoryAccessNote" role="note"><span aria-hidden="true">⌁</span><p><b>Tách metadata khỏi nội dung:</b> danh sách chỉ tải tên tệp, tuyến phân loại và trạng thái. TeX gốc không xuất hiện trong màn hình giáo viên.</p></div>
-            <form class="bank-repository-filters" onsubmit="VMExamAdmin.bankLoadRepository(event)">
-              <div class="exam-field bank-field-wide"><label for="bankRepositoryQuery">Tên nguồn / tên tệp</label><input class="input" id="bankRepositoryQuery" autocomplete="off" placeholder="Ví dụ: Dethamkhao12.tex"></div>
-              <div class="exam-field"><label for="bankRepositoryGroup">Nhóm nguồn</label><select class="input" id="bankRepositoryGroup"><option value="">Tất cả nguồn</option><option value="province_exam">Đề tỉnh / kỳ thi</option><option value="authored">Tác giả / tự biên</option><option value="topic_pack">Gói câu chuyên đề</option></select></div>
-              <div class="exam-field"><label for="bankRepositoryStatus">Trạng thái</label><select class="input" id="bankRepositoryStatus"><option value="">Tất cả trạng thái</option><option value="ready">Sẵn sàng</option><option value="review">Cần phân loại</option><option value="staging">Đang nạp dở</option><option value="error">Lỗi nguồn</option><option value="archived">Đã lưu trữ</option></select></div>
-              <div class="exam-field"><label for="bankRepositoryGrade">Khối</label><select class="input" id="bankRepositoryGrade"><option value="">Tất cả khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
-              <div class="bank-repository-filter-actions"><button class="btn btn-ghost" type="button" onclick="VMExamAdmin.bankResetRepositoryFilters()">Đặt lại</button><button class="btn btn-primary" id="bankRepositorySearchButton" type="submit">🔎 Tìm tệp</button></div>
-            </form>
-            <div class="bank-repository-results" id="bankRepositoryResults" aria-live="polite"><div class="exam-empty bank-repository-empty"><div><strong>Chọn Kho nguồn để tải danh sách</strong>Raw TeX chỉ được yêu cầu sau khi admin mở một tệp.</div></div></div>
-            <div class="bank-repository-pagination" aria-label="Phân trang kho nguồn"><button class="btn btn-secondary" id="bankRepositoryPrev" type="button" onclick="VMExamAdmin.bankRepositoryPage(-1)" disabled>← Trang trước</button><span id="bankRepositoryPageStatus" role="status">0–0 / 0 tệp</span><button class="btn btn-secondary" id="bankRepositoryNext" type="button" onclick="VMExamAdmin.bankRepositoryPage(1)" disabled>Trang sau →</button></div>
-          </div>
-        </section>
-      </section>
-
       <section class="bank-zone" id="bankZoneManage" role="tabpanel" aria-labelledby="bankViewTabManage" data-bank-zone="manage" hidden>
         <header class="bank-zone-head">
-          <div><span>Quản trị câu &amp; ma trận</span><h2>Lọc theo chương, kiểm tra cơ cấu câu</h2></div>
-          <small>ID nội bộ chỉ hiện với admin; giáo viên dùng nhãn chương và bài học.</small>
+          <div><span>Kho dữ liệu &amp; ma trận</span><h2>Duyệt câu hỏi, nguồn và cơ cấu kho</h2></div>
+          <small>Một điểm quản lý thống nhất; quyền xem nội dung gốc vẫn được giữ riêng.</small>
         </header>
+
+        <div class="bank-manage-switch bank-admin-only-ui" role="tablist" aria-label="Chế độ quản lý kho">
+          <button class="active" id="bankManageQuestionsTab" type="button" role="tab" aria-selected="true" aria-controls="bankManageQuestionsPane" onclick="VMExamAdmin.bankSetManageMode('questions')">Câu hỏi &amp; ma trận</button>
+          <button id="bankManageSourcesTab" type="button" role="tab" aria-selected="false" aria-controls="bankManageSourcesPane" tabindex="-1" onclick="VMExamAdmin.bankSetManageMode('sources')">Tệp nguồn &amp; chuẩn hóa</button>
+        </div>
+
+        <div id="bankManageQuestionsPane" class="bank-manage-pane" role="tabpanel" aria-labelledby="bankManageQuestionsTab">
 
         <section class="exam-card bank-matrix-card" id="bankMatrixCard" aria-busy="true">
           <div class="exam-card-head"><div><h2>Ma trận câu hỏi</h2><p>Tổng hợp dạng câu và mức độ của kết quả đang lọc.</p></div><span class="exam-badge" id="bankMatrixCount">0 câu</span></div>
@@ -368,6 +368,25 @@
           <div class="bank-search-results" id="bankSearchResults"><div class="exam-empty" style="min-height:160px"><div><strong>Chọn bộ lọc để tìm câu</strong>Kết quả không chứa đáp án hoặc raw TeX.</div></div></div>
         </div>
       </section>
+        </div>
+
+        <div id="bankManageSourcesPane" class="bank-manage-pane bank-admin-only-ui" role="tabpanel" aria-labelledby="bankManageSourcesTab" hidden>
+          <section class="exam-card bank-repository-card" aria-describedby="bankRepositoryAccessNote">
+            <div class="exam-card-head"><div><h2>Tệp nguồn và trạng thái chuẩn hóa</h2><p>Lọc theo nguồn, trạng thái hoặc khối rồi mở bản HTML/PDF để kiểm tra.</p></div><span class="exam-badge draft">Nguồn</span></div>
+            <div class="exam-card-body">
+              <div class="bank-repository-access-note" id="bankRepositoryAccessNote" role="note"><span aria-hidden="true">⌁</span><p><b>Tách metadata khỏi nội dung:</b> danh sách chỉ tải tên tệp, tuyến phân loại và trạng thái; TeX gốc chỉ được lấy khi mở một nguồn.</p></div>
+              <form class="bank-repository-filters" onsubmit="VMExamAdmin.bankLoadRepository(event)">
+                <div class="exam-field bank-field-wide"><label for="bankRepositoryQuery">Tên nguồn / tên tệp</label><input class="input" id="bankRepositoryQuery" autocomplete="off" placeholder="Ví dụ: Dethamkhao12.tex"></div>
+                <div class="exam-field"><label for="bankRepositoryGroup">Nhóm nguồn</label><select class="input" id="bankRepositoryGroup"><option value="">Tất cả nguồn</option><option value="province_exam">Đề tỉnh / kỳ thi</option><option value="authored">Tác giả / tự biên</option><option value="topic_pack">Gói câu chuyên đề</option></select></div>
+                <div class="exam-field"><label for="bankRepositoryStatus">Trạng thái</label><select class="input" id="bankRepositoryStatus"><option value="">Tất cả trạng thái</option><option value="ready">Sẵn sàng</option><option value="review">Cần phân loại</option><option value="staging">Đang nạp dở</option><option value="error">Lỗi nguồn</option><option value="archived">Đã lưu trữ</option></select></div>
+                <div class="exam-field"><label for="bankRepositoryGrade">Khối</label><select class="input" id="bankRepositoryGrade"><option value="">Tất cả khối</option><option value="10">Khối 10</option><option value="11">Khối 11</option><option value="12">Khối 12</option></select></div>
+                <div class="bank-repository-filter-actions"><button class="btn btn-ghost" type="button" onclick="VMExamAdmin.bankResetRepositoryFilters()">Đặt lại</button><button class="btn btn-primary" id="bankRepositorySearchButton" type="submit">🔎 Tìm tệp</button></div>
+              </form>
+              <div class="bank-repository-results" id="bankRepositoryResults" aria-live="polite"><div class="exam-empty bank-repository-empty"><div><strong>Chọn Tệp nguồn &amp; chuẩn hóa để tải danh sách</strong>TeX gốc chỉ được yêu cầu sau khi mở một tệp.</div></div></div>
+              <div class="bank-repository-pagination" aria-label="Phân trang kho nguồn"><button class="btn btn-secondary" id="bankRepositoryPrev" type="button" onclick="VMExamAdmin.bankRepositoryPage(-1)" disabled>← Trang trước</button><span id="bankRepositoryPageStatus" role="status">0–0 / 0 tệp</span><button class="btn btn-secondary" id="bankRepositoryNext" type="button" onclick="VMExamAdmin.bankRepositoryPage(1)" disabled>Trang sau →</button></div>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section class="bank-zone bank-admin-import-zone" id="bankZoneImport" role="tabpanel" aria-labelledby="bankImportNav" data-bank-zone="import" hidden>
@@ -452,19 +471,30 @@
             </aside>
 
             <div class="bank-bulk-tools" id="bankBulkTools" hidden>
+              <section class="bank-taxonomy-explorer" aria-labelledby="bankTaxonomyExplorerTitle">
+                <div class="bank-taxonomy-explorer-head">
+                  <div><span>Danh mục ID của tác giả gốc</span><h3 id="bankTaxonomyExplorerTitle">Chọn theo cây kiến thức từng khối</h3></div>
+                  <output id="bankTaxonomyExplorerSummary">Đang tải 530 họ mã…</output>
+                </div>
+                <div class="bank-taxonomy-grade-tabs" id="bankTaxonomyGradeTabs" role="tablist" aria-label="Chọn khối để duyệt họ mã"></div>
+                <label class="bank-taxonomy-browser-search" for="bankTaxonomyBrowserSearch"><span>Tìm trong khối đang chọn</span><input class="input" id="bankTaxonomyBrowserSearch" placeholder="Mã, chương, bài / kỹ năng hoặc dạng toán…" oninput="VMExamAdmin.bankFilterTaxonomyCatalog()"></label>
+                <div class="bank-taxonomy-family-list" id="bankTaxonomyFamilyList" aria-live="polite"><div class="exam-empty"><div><strong>Đang tải danh mục</strong></div></div></div>
+              </section>
+
               <div class="bank-taxonomy-catalog-row">
-                <div class="exam-field bank-field-wide"><label for="bankTaxonomyCatalogSelect">Chọn nhanh từ danh mục chuẩn</label><select class="input" id="bankTaxonomyCatalogSelect" onchange="VMExamAdmin.bankChooseTaxonomy(this.value)"><option value="">Đang tải danh mục…</option></select></div>
+                <div class="exam-field bank-field-wide"><label for="bankTaxonomyCatalogSelect">Chọn chính xác một họ mã</label><select class="input" id="bankTaxonomyCatalogSelect" onchange="VMExamAdmin.bankChooseTaxonomy(this.value)"><option value="">Đang tải danh mục…</option></select></div>
                 <button class="btn btn-secondary" type="button" onclick="VMExamAdmin.bankLoadTaxonomyCatalog(false)">↻ Tải danh mục</button>
-                <span id="bankTaxonomyCatalogStatus" role="status">Có thể nhập tay bằng 6 ô bên dưới.</span>
+                <span id="bankTaxonomyCatalogStatus" role="status">Các lựa chọn bên dưới lọc nối tầng, không cần nhập số thủ công.</span>
               </div>
 
               <div class="bank-taxonomy-manual-grid" aria-label="Phân loại thủ công">
-                <div class="exam-field"><label for="bankTaxGrade">Khối</label><select class="input" id="bankTaxGrade" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><option value="">—</option><option value="0">10</option><option value="1">11</option><option value="2">12</option></select></div>
-                <div class="exam-field"><label for="bankTaxArea">Mảng</label><input class="input" id="bankTaxArea" maxlength="1" list="bankTaxAreaList" autocomplete="off" placeholder="D" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxAreaList"></datalist></div>
-                <div class="exam-field"><label for="bankTaxChapter">Chương</label><input class="input" id="bankTaxChapter" type="number" min="0" step="1" list="bankTaxChapterList" placeholder="1" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxChapterList"></datalist></div>
-                <div class="exam-field"><label for="bankTaxDifficulty">Mức độ</label><select class="input" id="bankTaxDifficulty" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><option value="">—</option><option value="N">Nhận biết</option><option value="H">Thông hiểu</option><option value="V">Vận dụng</option><option value="G">Vận dụng cao</option></select></div>
-                <div class="exam-field"><label for="bankTaxSkill">Kỹ năng</label><input class="input" id="bankTaxSkill" type="number" min="1" step="1" list="bankTaxSkillList" placeholder="3" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxSkillList"></datalist></div>
-                <div class="exam-field"><label for="bankTaxVariant">Số dạng bài</label><input class="input" id="bankTaxVariant" type="number" min="0" step="1" list="bankTaxVariantList" autocomplete="off" placeholder="1" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxVariantList"></datalist></div>
+                <div class="exam-field"><label for="bankTaxSchema">1. Hệ ID</label><select class="input" id="bankTaxSchema" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('schema')"><option value="">Chọn hệ ID</option></select></div>
+                <div class="exam-field"><label for="bankTaxGrade">2. Khối</label><select class="input" id="bankTaxGrade" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('grade')" disabled><option value="">Chọn hệ ID trước</option></select></div>
+                <div class="exam-field"><label for="bankTaxArea">3. Mảng</label><select class="input" id="bankTaxArea" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('area')" disabled><option value="">Chọn khối trước</option></select></div>
+                <div class="exam-field"><label for="bankTaxChapter">4. Chương</label><select class="input" id="bankTaxChapter" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('chapter')" disabled><option value="">Chọn mảng trước</option></select></div>
+                <div class="exam-field"><label for="bankTaxSkill">5. Bài / kỹ năng</label><select class="input" id="bankTaxSkill" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('skill')" disabled><option value="">Chọn chương trước</option></select></div>
+                <div class="exam-field"><label for="bankTaxVariant">6. Dạng bài cụ thể</label><select class="input" id="bankTaxVariant" onchange="VMExamAdmin.bankUpdateTaxonomyHierarchy('variant')" disabled><option value="">Chọn bài / kỹ năng trước</option></select></div>
+                <div class="exam-field"><label for="bankTaxDifficulty">7. Mức độ</label><select class="input" id="bankTaxDifficulty" onchange="VMExamAdmin.bankUpdateTaxonomyPreview()"><option value="">Chọn mức độ</option><option value="N">Nhận biết</option><option value="H">Thông hiểu</option><option value="V">Vận dụng</option><option value="G">Vận dụng cao</option></select></div>
               </div>
 
               <div class="bank-taxonomy-preview"><span>Mã sẽ áp dụng</span><code id="bankTaxonomyPreview">Chọn đủ 6 tiêu chí</code></div>
@@ -603,13 +633,13 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
-  <script src="js/vinhmath.js?v=9.5"></script>
+  <script src="js/vinhmath.js?v=9.6"></script>
   <script src="js/tex-environments.js?v=1.0"></script>
   <script src="js/latex-view.js?v=11.6"></script>
   <script src="js/menu-v5.js?v=10.2"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/question-bank.js?v=1.2.0"></script>
-  <script src="js/question-bank-id-guide.js?v=1.1.0"></script>
-  <script src="js/exam-admin.js?v=4.1"></script>
+  <script src="js/question-bank.js?v=1.3.0"></script>
+  <script src="js/question-bank-id-guide.js?v=1.2.0"></script>
+  <script src="js/exam-admin.js?v=4.2"></script>
 </body>
 </html>

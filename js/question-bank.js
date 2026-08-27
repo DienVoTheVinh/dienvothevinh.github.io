@@ -7,7 +7,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
   var QUESTION_ENVS = ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap'];
   var QUESTION_ENV_SET = QUESTION_ENVS.reduce(function (result, name) {
     result[name] = true;
@@ -259,7 +259,7 @@
   function relaxedQuestionIdCandidates(rawTex) {
     var candidates = [];
     var seen = Object.create(null);
-    var tokenRegex = /[012][A-Za-z]\d+[A-Za-z]\d+-[A-Za-z0-9-]+/g;
+    var tokenRegex = /(?:[012][A-Za-z]\d+[A-Za-z]\d+-\d+)|(?:[A-Za-z0-9][A-Za-z0-9._-]{2,31}:(?:[1-9]|1[0-2])[A-Za-z](?:0|[1-9]\d*)(?:NB|TH|VD|VDC)(?:0|[1-9]\d*)-[A-Za-z0-9][A-Za-z0-9-]{0,23}(?![A-Za-z0-9-]))/g;
 
     leadingQuestionComments(rawTex).forEach(function (comment) {
       var match;
@@ -294,7 +294,7 @@
     var source = normalizeNewlines(rawTex);
     var standard = [];
     var standardSeen = Object.create(null);
-    var regex = /%\s*\[\s*([012][A-Za-z]\d+[A-Za-z]\d+-[A-Za-z0-9-]+)\s*\]/g;
+    var regex = /%\s*\[\s*((?:[012][A-Za-z]\d+[A-Za-z]\d+-\d+)|(?:[A-Za-z0-9][A-Za-z0-9._-]{2,31}:(?:[1-9]|1[0-2])[A-Za-z](?:0|[1-9]\d*)(?:NB|TH|VD|VDC)(?:0|[1-9]\d*)-[A-Za-z0-9][A-Za-z0-9-]{0,23}))\s*\]/g;
     var match;
     while ((match = regex.exec(source))) {
       addQuestionIdCandidate(standard, standardSeen, match[1], 'standard_comment');
@@ -338,39 +338,76 @@
     // Không nới lỏng hậu tố thành nhãn chữ vì sẽ làm mất khả năng đối chiếu
     // trực tiếp với id_map.json và khiến cùng một dạng có nhiều mã khác nhau.
     var match = /^([012])([A-Z])(\d+)([NBYHTVKGC])(\d+)-(\d+)$/.exec(id);
+    if (match) {
+      var gradeLookup = { '0': 10, '1': 11, '2': 12 };
+      var grade = gradeLookup[match[1]] || null;
+      var area = match[2];
+      var chapter = Number(match[3]);
+      var difficultyCode = match[4];
+      var skill = Number(match[5]);
+      var variant = match[6];
+      var topicCode = match[1] + area + match[3];
+      var skillFamily = topicCode + '?' + match[5];
+      // id_map/idvn_map deliberately replace difficulty with `?`: questions
+      // sharing this full key are the same mathematical form at potentially
+      // different cognitive levels. The final segment is therefore part of the
+      // family, not a per-question UID.
+      var taxonomyKey = skillFamily + '-' + variant;
+      var difficulty = DIFFICULTY_MAP[difficultyCode] || null;
+      return {
+        id: id,
+        schema_name: 'legacy-v1',
+        grade: grade,
+        grade_code: match[1],
+        area: area,
+        chapter: chapter,
+        chapter_code: topicCode,
+        topic_code: topicCode,
+        difficulty_code: difficultyCode,
+        difficulty: difficulty,
+        difficulty_rank: difficulty ? DIFFICULTY_RANK[difficulty] : null,
+        skill: skill,
+        skill_code: match[1] + area + match[3] + difficultyCode + match[5],
+        skill_family: skillFamily,
+        variant: variant,
+        taxonomy_key: taxonomyKey,
+        similarity_key: taxonomyKey
+      };
+    }
+
+    // Future curricula use a namespaced canonical envelope. This does not
+    // reinterpret or loosen legacy-v1, and lets Grade 6-9 catalogues coexist.
+    match = /^([A-Z0-9][A-Z0-9._-]{2,31}):([1-9]|1[0-2])([A-Z])(0|[1-9]\d*)(NB|TH|VD|VDC)(0|[1-9]\d*)-([A-Z0-9][A-Z0-9-]{0,23})$/.exec(id);
     if (!match) return null;
-    var gradeLookup = { '0': 10, '1': 11, '2': 12 };
-    var grade = gradeLookup[match[1]] || null;
-    var area = match[2];
-    var chapter = Number(match[3]);
-    var difficultyCode = match[4];
-    var skill = Number(match[5]);
-    var variant = match[6];
-    var topicCode = match[1] + area + match[3];
-    var skillFamily = topicCode + '?' + match[5];
-    // id_map/idvn_map deliberately replace difficulty with `?`: questions
-    // sharing this full key are the same mathematical form at potentially
-    // different cognitive levels. The final segment is therefore part of the
-    // family, not a per-question UID.
-    var taxonomyKey = skillFamily + '-' + variant;
-    var difficulty = DIFFICULTY_MAP[difficultyCode] || null;
+    var schemaName = match[1].toLowerCase();
+    var customGrade = Number(match[2]);
+    var customArea = match[3];
+    var customChapter = Number(match[4]);
+    var customDifficulty = match[5];
+    var customSkill = Number(match[6]);
+    var customVariant = match[7];
+    var customId = schemaName + ':' + match[2] + customArea + match[4] + customDifficulty + match[6] + '-' + customVariant;
+    var customTopicCode = schemaName + ':' + match[2] + customArea + match[4];
+    var customSkillFamily = customTopicCode + '?' + match[6];
+    var customTaxonomyKey = customSkillFamily + '-' + customVariant;
     return {
-      id: id,
-      grade: grade,
-      grade_code: match[1],
-      area: area,
-      chapter: chapter,
-      chapter_code: topicCode,
-      topic_code: topicCode,
-      difficulty_code: difficultyCode,
-      difficulty: difficulty,
-      difficulty_rank: difficulty ? DIFFICULTY_RANK[difficulty] : null,
-      skill: skill,
-      skill_code: match[1] + area + match[3] + difficultyCode + match[5],
-      skill_family: skillFamily,
-      variant: variant,
-      taxonomy_key: taxonomyKey,
-      similarity_key: taxonomyKey
+      id: customId,
+      schema_name: schemaName,
+      grade: customGrade,
+      grade_code: match[2],
+      area: customArea,
+      chapter: customChapter,
+      chapter_code: customTopicCode,
+      topic_code: customTopicCode,
+      difficulty_code: customDifficulty,
+      difficulty: customDifficulty,
+      difficulty_rank: DIFFICULTY_RANK[customDifficulty] || null,
+      skill: customSkill,
+      skill_code: customTopicCode + customDifficulty + match[6],
+      skill_family: customSkillFamily,
+      variant: customVariant,
+      taxonomy_key: customTaxonomyKey,
+      similarity_key: customTaxonomyKey
     };
   }
 

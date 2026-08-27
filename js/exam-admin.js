@@ -59,6 +59,8 @@
       matrixRequestToken: 0,
       importMode: 'topic_pack',
       activeView: 'overview',
+      manageMode: 'questions',
+      taxonomyBrowserQuery: '',
       blueprintSeq: 1,
       generationDraft: null,
       access: { canUse: false, canAdmin: false },
@@ -277,7 +279,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var requestedView=bankViewFromLocation();
       bankSetView(requestedView||state.bank.activeView,{history:requestedView?'none':'replace',normalizeHash:true,scroll:false});
       if (state.bank.access.canAdmin && !state.bank.statsLoaded) bankLoadStats(true);
-      if (state.bank.access.canAdmin && state.bank.activeView === 'repository' && !state.bank.repositoryLoaded) bankLoadRepository();
+      if (state.bank.access.canAdmin && state.bank.activeView === 'manage' && state.bank.manageMode === 'sources' && !state.bank.repositoryLoaded) bankLoadRepository();
       if (state.bank.access.canUse && !state.bank.sourceCatalogLoaded) bankLoadSourceCatalog();
     }
   }
@@ -312,8 +314,9 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankAllowedView(name) {
+    if(name==='repository')return state.bank.access.canAdmin?'manage':'overview';
     var allowed=['overview','create','manage'];
-    if(state.bank.access.canAdmin)allowed.push('import','repository');
+    if(state.bank.access.canAdmin)allowed.push('import');
     return allowed.indexOf(name)>=0?name:'overview';
   }
 
@@ -358,13 +361,34 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         window.scrollTo({top:bankWorkspaceTop(),behavior:reduced?'auto':'smooth'});
       });
     }
-    if(key==='repository'&&state.bank.access.canAdmin&&!state.bank.repositoryLoaded)bankLoadRepository();
-    if(key==='manage')bankLoadMatrix(state.bank.matrixFilters||{status:'active'},true);
+    if(key==='manage')bankSetManageMode(requested==='repository'?'sources':state.bank.manageMode,{load:true});
     return key;
   }
 
   function bankScrollZone(name) {
+    if(name==='manage')state.bank.manageMode='questions';
+    if(name==='repository'&&state.bank.access.canAdmin)state.bank.manageMode='sources';
     return bankSetView(name,{history:'push',normalizeHash:true,scroll:true});
+  }
+
+  function bankSetManageMode(mode,options) {
+    options=options||{};
+    var requested=String(mode||'questions');
+    var key=requested==='sources'&&state.bank.access.canAdmin?'sources':'questions';
+    state.bank.manageMode=key;
+    var questionsPane=el('bankManageQuestionsPane'),sourcesPane=el('bankManageSourcesPane');
+    var questionsTab=el('bankManageQuestionsTab'),sourcesTab=el('bankManageSourcesTab');
+    if(questionsPane){questionsPane.hidden=key!=='questions';questionsPane.classList.toggle('active',key==='questions');}
+    if(sourcesPane){sourcesPane.hidden=key!=='sources';sourcesPane.classList.toggle('active',key==='sources');}
+    [[questionsTab,'questions'],[sourcesTab,'sources']].forEach(function(pair){
+      var button=pair[0],selected=pair[1]===key;if(!button)return;
+      button.classList.toggle('active',selected);button.setAttribute('aria-selected',selected?'true':'false');button.tabIndex=selected?0:-1;
+    });
+    if(options.load!==false){
+      if(key==='sources'&&!state.bank.repositoryLoaded)bankLoadRepository();
+      if(key==='questions')bankLoadMatrix(state.bank.matrixFilters||{status:'active'},true);
+    }
+    return key;
   }
 
   function bankHandleViewNavigationKey(event) {
@@ -1652,6 +1676,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (query && el('bankSearchQuery')) el('bankSearchQuery').value = query;
     bankWriteWorkspaceTab('bank','push');
     switchTab('bank');
+    state.bank.manageMode='questions';
     bankSetView('manage',{history:'push',normalizeHash:true,scroll:false});
     var target = el('bankSearchCard');
     if (target) target.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1853,7 +1878,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       setTimeout(function(){if(el('bankSearchGrade'))el('bankSearchGrade').focus({preventScroll:true});},260);
       return;
     }
-    if(kind==='repository'){bankScrollZone('repository');return;}
+    if(kind==='repository'){state.bank.manageMode='sources';bankScrollZone('repository');return;}
     bankScrollZone('create');
     setTimeout(function(){bankSetSourceCategory(kind==='complete'?'':kind);},180);
   }
@@ -2047,10 +2072,17 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var grade=el('bankImportTopicGrade')&&el('bankImportTopicGrade').value;
     var chapter=bankImportChapterParts();
     var lesson=el('bankImportTopicLesson')&&el('bankImportTopicLesson').value;
-    if(el('bankTaxGrade'))el('bankTaxGrade').value=bankTaxonomyGradeCode(grade);
+    var schema=el('bankTaxSchema')&&el('bankTaxSchema').value||'legacy-v1';
+    if(el('bankTaxGrade'))el('bankTaxGrade').value=bankTaxonomyGradeCode(grade,schema);
+    bankRenderTaxonomySuggestions();
     if(el('bankTaxArea'))el('bankTaxArea').value=chapter.area||'';
+    bankRenderTaxonomySuggestions();
     if(el('bankTaxChapter'))el('bankTaxChapter').value=chapter.chapter||'';
+    bankRenderTaxonomySuggestions();
     if(el('bankTaxSkill'))el('bankTaxSkill').value=lesson||'';
+    bankRenderTaxonomySuggestions();
+    if(el('bankTaxVariant'))el('bankTaxVariant').value='';
+    bankRenderTaxonomyBrowser();
     bankUpdateTaxonomyPreview();
   }
 
@@ -2147,12 +2179,13 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (el('editorToBankButton')) el('editorToBankButton').hidden = !state.bank.access.canAdmin;
     if (el('bankAdminWorkbench')) el('bankAdminWorkbench').hidden = !state.bank.access.canAdmin;
     if (el('bankImportNav')) el('bankImportNav').hidden = !state.bank.access.canAdmin;
-    if (el('bankRepositoryNav')) el('bankRepositoryNav').hidden = !state.bank.access.canAdmin;
+    if (el('bankManageSourcesTab')) el('bankManageSourcesTab').hidden = !state.bank.access.canAdmin;
     if (el('bankOverviewReviewCard')) el('bankOverviewReviewCard').hidden = !state.bank.access.canAdmin;
     if (!state.bank.access.canUse) {
       document.body.classList.remove('bank-teacher-mode');
       return;
     }
+    if(!state.bank.access.canAdmin)state.bank.manageMode='questions';
     bankSetView(bankViewFromLocation()||state.bank.activeView,{history:'none',normalizeHash:true,scroll:false});
     bankFillClassOptions();
     var saveClassLabel=el('bankGenClassLabel');
@@ -2182,7 +2215,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       bankSetupDropzone();
       bankSetImportMode('topic_pack');
       bankLoadTaxonomyCatalog(true);
-      if (state.bank.activeView === 'repository') bankLoadRepository();
+      if (state.bank.activeView === 'manage' && state.bank.manageMode === 'sources') bankLoadRepository();
     }
   }
 
@@ -2480,40 +2513,54 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     return {NB:'N',TH:'H',VD:'V',VDC:'G',N:'N',H:'H',V:'V',G:'G',C:'G',B:'N',Y:'N',T:'H',K:'V'}[token] || '';
   }
 
-  function bankTaxonomyGradeCode(value) {
-    var token = String(value == null ? '' : value).trim();
-    return {10:'0',11:'1',12:'2',0:'0',1:'1',2:'2'}[token] || '';
+  function bankTaxonomyDifficultyValue(value,schemaName) {
+    var token=String(value==null?'':value).trim().toUpperCase();
+    var semantic={N:'NB',B:'NB',Y:'NB',NB:'NB',H:'TH',T:'TH',TH:'TH',V:'VD',K:'VD',VD:'VD',G:'VDC',C:'VDC',VDC:'VDC'}[token]||'';
+    return String(schemaName||'legacy-v1').toLowerCase()==='legacy-v1'?bankTaxonomyDifficultyCode(token):semantic;
   }
 
-  function bankTaxonomyVariant(value) {
+  function bankTaxonomyGradeCode(value,schemaName) {
     var token = String(value == null ? '' : value).trim();
-    return /^\d+$/.test(token) ? String(Math.max(0,parseInt(token,10))) : '';
+    if(String(schemaName||'legacy-v1').toLowerCase()==='legacy-v1')return {10:'0',11:'1',12:'2',0:'0',1:'1',2:'2'}[token] || '';
+    return /^(?:[1-9]|1[0-2])$/.test(token)?String(Number(token)):'';
+  }
+
+  function bankTaxonomyVariant(value,schemaName) {
+    var token = String(value == null ? '' : value).trim();
+    if(String(schemaName||'legacy-v1').toLowerCase()==='legacy-v1')return /^\d+$/.test(token) ? String(Math.max(0,parseInt(token,10))) : '';
+    return /^[A-Z0-9][A-Z0-9-]{0,23}$/i.test(token)?token.toUpperCase():'';
   }
 
   function bankTaxonomyCode(parts) {
     var parser = window.VinhMathQuestionBank;
-    var gradeCode = bankTaxonomyGradeCode(parts.grade_code != null ? parts.grade_code : parts.grade);
+    var schemaName=String(parts.schema_name||'legacy-v1').trim().toLowerCase();
+    var gradeCode = bankTaxonomyGradeCode(parts.grade_code != null ? parts.grade_code : parts.grade,schemaName);
     var area = String(parts.area == null ? '' : parts.area).trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,1);
     var chapterToken = String(parts.chapter == null ? '' : parts.chapter).trim();
     var chapter = /^\d+$/.test(chapterToken) ? Number(chapterToken) : -1;
-    var difficultyCode = bankTaxonomyDifficultyCode(parts.difficulty_code != null ? parts.difficulty_code : parts.difficulty);
+    var difficultyCode = bankTaxonomyDifficultyValue(parts.difficulty_code != null ? parts.difficulty_code : parts.difficulty,schemaName);
     var skillToken = String(parts.skill == null ? '' : parts.skill).trim();
-    var skill = /^\d+$/.test(skillToken) ? Number(skillToken) : 0;
-    var variant = bankTaxonomyVariant(parts.variant);
-    if (!gradeCode || !area || chapter < 0 || !difficultyCode || !skill || !variant || !parser) return null;
-    var code = gradeCode+area+chapter+difficultyCode+skill+'-'+variant;
-    return parser.parseQuestionId(code) ? code : null;
+    var skill = /^\d+$/.test(skillToken) ? Number(skillToken) : -1;
+    var variant = bankTaxonomyVariant(parts.variant,schemaName);
+    if (!gradeCode || !area || chapter < 0 || !difficultyCode || skill < 0 || !variant || !parser) return null;
+    var code = schemaName==='legacy-v1'
+      ? gradeCode+area+chapter+difficultyCode+skill+'-'+variant
+      : schemaName+':'+gradeCode+area+chapter+difficultyCode+skill+'-'+variant;
+    var parsed=parser.parseQuestionId(code);
+    return parsed ? parsed.id : null;
   }
 
   function bankNormalizeTaxonomyEntry(raw, index) {
     var parser = window.VinhMathQuestionBank;
     var entry = typeof raw === 'string' ? {code:raw} : (raw || {});
     var taxonomy = entry.taxonomy && typeof entry.taxonomy === 'object' ? entry.taxonomy : entry;
-    var candidate = String(entry.code || entry.legacy_code || entry.taxonomy_code || '').trim().toUpperCase();
-    var familyKey = String(entry.key || entry.taxonomy_key || taxonomy.taxonomy_key || '').trim().toUpperCase();
+    var schemaName=String(entry.schema_name||taxonomy.schema_name||'legacy-v1').trim().toLowerCase();
+    var candidate = String(entry.sample_code || entry.code || entry.legacy_code || entry.taxonomy_code || '').trim().toUpperCase();
+    var familyKey = String(entry.key || entry.taxonomy_key || taxonomy.taxonomy_key || '').trim();
     var parsed = parser && candidate ? parser.parseQuestionId(candidate) : null;
     if (!parsed) {
       candidate = bankTaxonomyCode({
+        schema_name:schemaName,
         grade_code:taxonomy.grade_code != null ? taxonomy.grade_code : entry.grade_code,
         grade:taxonomy.grade != null ? taxonomy.grade : entry.grade,
         area:taxonomy.area != null ? taxonomy.area : entry.area,
@@ -2525,7 +2572,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       });
       parsed = parser && candidate ? parser.parseQuestionId(candidate) : null;
     }
-    var familyMatch = /^([012])([A-Z])(\d+)\?(\d+)-(\d+)$/.exec(familyKey);
+    var familyMatch = /^([012])([A-Z])(\d+)\?(\d+)-(\d+)$/.exec(familyKey.toUpperCase());
     if (!parsed && !familyMatch) return null;
     var label = String(entry.label || entry.name || entry.title || entry.vi || entry.slug || taxonomy.label || '').trim();
     var gradeCode = parsed ? parsed.grade_code : familyMatch[1];
@@ -2535,10 +2582,12 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var difficultyCode = parsed ? parsed.difficulty_code : bankTaxonomyDifficultyCode(entry.difficulty_code || entry.difficulty || taxonomy.difficulty_code || taxonomy.difficulty);
     var skill = parsed ? parsed.skill : Number(familyMatch[4]);
     var variant = parsed ? parsed.variant : familyMatch[5];
-    var catalogKey = parsed ? parsed.id : familyKey;
+    var catalogKey = familyKey || (parsed && parsed.taxonomy_key) || '';
     return {
       catalog_key:catalogKey,
       code:parsed ? parsed.id : null,
+      schema_name:parsed ? parsed.schema_name : schemaName,
+      schema_label:String(entry.schema_label || taxonomy.schema_label || schemaName).trim(),
       grade_code:gradeCode,
       grade:grade,
       area:area,
@@ -2547,6 +2596,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       difficulty:parsed ? parsed.difficulty : (entry.difficulty || taxonomy.difficulty || null),
       skill:skill,
       variant:variant,
+      status:String(entry.status || taxonomy.status || 'active').trim().toLowerCase(),
       label:label || ('Mẫu phân loại '+(index+1)),
       area_label:String(entry.area_label || taxonomy.area_label || '').trim(),
       chapter_label:String(entry.chapter_label || taxonomy.chapter_label || '').trim(),
@@ -2555,39 +2605,138 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     };
   }
 
-  function bankRenderTaxonomySuggestions() {
-    var catalog = state.bank.taxonomyCatalog || [];
-    var configs = [
-      ['bankTaxAreaList','area','area_label'],
-      ['bankTaxChapterList','chapter','chapter_label'],
-      ['bankTaxSkillList','skill','skill_label'],
-      ['bankTaxVariantList','variant','variant_label']
-    ];
-    configs.forEach(function (config) {
-      var list = el(config[0]); if (!list) return;
-      var seen = Object.create(null), options = [];
-      catalog.forEach(function (entry) {
-        var value = String(entry[config[1]] == null ? '' : entry[config[1]]).trim();
-        if (!value || seen[value]) return;
-        seen[value] = true;
-        var label = String(entry[config[2]] || '').trim();
-        options.push('<option value="'+esc(value)+'"'+(label?' label="'+esc(label)+'"':'')+'></option>');
+  function bankTaxonomyFiltered(filters) {
+    filters=filters||{};
+    return (state.bank.taxonomyCatalog||[]).filter(function(entry){
+      return Object.keys(filters).every(function(key){
+        var expected=filters[key];
+        return expected==null||expected===''||String(entry[key])===String(expected);
       });
-      list.innerHTML = options.join('');
     });
+  }
+
+  function bankTaxonomyConsensusLabel(rows,field,fallback) {
+    var counts=Object.create(null),best='',bestCount=0;
+    (rows||[]).forEach(function(row){
+      var value=String(row&&row[field]||'').trim();if(!value)return;
+      counts[value]=(counts[value]||0)+1;
+      if(counts[value]>bestCount){best=value;bestCount=counts[value];}
+    });
+    return best||fallback||'';
+  }
+
+  function bankTaxonomyOptionGroups(rows,key,labelField,prefix) {
+    var groups=Object.create(null);
+    (rows||[]).forEach(function(entry){
+      var value=String(entry[key]==null?'':entry[key]).trim();if(!value)return;
+      (groups[value]||(groups[value]=[])).push(entry);
+    });
+    return Object.keys(groups).sort(function(a,b){return a.localeCompare(b,'vi',{numeric:true});}).map(function(value){
+      var label=bankTaxonomyConsensusLabel(groups[value],labelField,(prefix||'')+value);
+      return {value:value,label:label,rows:groups[value]};
+    });
+  }
+
+  function bankFillTaxonomySelect(id,options,placeholder,enabled) {
+    var select=el(id);if(!select)return '';
+    var previous=String(select.value||'');
+    var valid=(options||[]).some(function(option){return String(option.value)===previous;});
+    select.innerHTML='<option value="">'+esc(placeholder)+'</option>'+(options||[]).map(function(option){
+      var text=option.text||option.value+(option.label&&option.label!==String(option.value)?' · '+option.label:'');
+      return '<option value="'+esc(option.value)+'">'+esc(text)+'</option>';
+    }).join('');
+    select.disabled=!enabled||!(options||[]).length;
+    select.value=valid?previous:'';
+    return select.value;
+  }
+
+  function bankRenderTaxonomySuggestions() {
+    var catalog=state.bank.taxonomyCatalog||[];
+    var schemaOptions=bankTaxonomyOptionGroups(catalog,'schema_name','schema_label','').map(function(option){
+      option.text=option.value==='legacy-v1'
+        ? 'legacy-v1 · THPT 10–12 (tác giả gốc)'
+        : option.value+(option.label&&option.label!==option.value?' · '+option.label:'');
+      return option;
+    });
+    var schemaSelect=el('bankTaxSchema');
+    var schema=bankFillTaxonomySelect('bankTaxSchema',schemaOptions,'Chọn hệ ID',true);
+    if(!schema&&schemaSelect&&schemaOptions.length){
+      schema=schemaOptions.some(function(option){return option.value==='legacy-v1';})?'legacy-v1':schemaOptions[0].value;
+      schemaSelect.value=schema;
+    }
+    var gradeGroups=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema}),'grade_code','grade_label','');
+    var gradeOptions=gradeGroups.map(function(option){
+      var row=option.rows&&option.rows[0];
+      option.text='Khối '+String(row&&row.grade||option.value);
+      return option;
+    });
+    var grade=bankFillTaxonomySelect('bankTaxGrade',gradeOptions,schema?'Chọn khối':'Chọn hệ ID trước',!!schema);
+    var areas=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema,grade_code:grade}),'area','area_label','Mảng ');
+    var area=bankFillTaxonomySelect('bankTaxArea',areas,grade?'Chọn mảng':'Chọn khối trước',!!grade);
+    var chapters=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema,grade_code:grade,area:area}),'chapter','chapter_label','Chương ');
+    var chapter=bankFillTaxonomySelect('bankTaxChapter',chapters,area?'Chọn chương':'Chọn mảng trước',!!area);
+    var skills=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema,grade_code:grade,area:area,chapter:chapter}),'skill','skill_label','Bài / kỹ năng ');
+    var skill=bankFillTaxonomySelect('bankTaxSkill',skills,chapter?'Chọn bài / kỹ năng':'Chọn chương trước',!!chapter);
+    var variants=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema,grade_code:grade,area:area,chapter:chapter,skill:skill}),'variant','variant_label','Dạng ');
+    bankFillTaxonomySelect('bankTaxVariant',variants,skill?'Chọn dạng bài cụ thể':'Chọn bài / kỹ năng trước',!!skill);
+  }
+
+  function bankTaxonomyGradeStats(schemaName,gradeCode) {
+    var rows=bankTaxonomyFiltered({schema_name:schemaName,grade_code:gradeCode});
+    var chapters=new Set(),skills=new Set(),labels=new Set();
+    rows.forEach(function(row){
+      chapters.add(row.area+'|'+row.chapter);skills.add(row.area+'|'+row.chapter+'|'+row.skill);
+      var label=String(row.variant_label||row.label||'').trim();if(label)labels.add(label);
+    });
+    return {rows:rows,count:rows.length,chapters:chapters.size,skills:skills.size,labels:labels.size};
+  }
+
+  function bankRenderTaxonomyBrowser() {
+    var schema=el('bankTaxSchema')&&el('bankTaxSchema').value||'legacy-v1';
+    var grade=el('bankTaxGrade')&&el('bankTaxGrade').value;
+    var gradeGroups=bankTaxonomyOptionGroups(bankTaxonomyFiltered({schema_name:schema}),'grade_code','grade_label','');
+    var tabs=el('bankTaxonomyGradeTabs');
+    if(tabs)tabs.innerHTML=gradeGroups.map(function(group){
+      var row=group.rows&&group.rows[0],actual=row&&row.grade||group.value,stats=bankTaxonomyGradeStats(schema,group.value);
+      return '<button type="button" data-taxonomy-grade="'+esc(group.value)+'" onclick="VMExamAdmin.bankSelectTaxonomyGrade(\''+esc(group.value)+'\',\''+esc(schema)+'\')"'+(grade===group.value?' class="active" aria-selected="true"':' aria-selected="false"')+'><b>Khối '+esc(actual)+'</b><small>'+stats.count+' họ mã · '+stats.labels+' dạng</small></button>';
+    });
+    var schemaRows=bankTaxonomyFiltered({schema_name:schema});
+    var stats=grade?bankTaxonomyGradeStats(schema,grade):{rows:schemaRows,count:schemaRows.length,chapters:0,skills:0,labels:0};
+    if(!grade){var allChapters=new Set(),allSkills=new Set();stats.rows.forEach(function(row){allChapters.add(row.area+'|'+row.chapter);allSkills.add(row.area+'|'+row.chapter+'|'+row.skill);});stats.chapters=allChapters.size;stats.skills=allSkills.size;}
+    if(!grade){var allLabels=new Set();stats.rows.forEach(function(row){var label=String(row.variant_label||row.label||'').trim();if(label)allLabels.add(label);});stats.labels=allLabels.size;}
+    var summary=el('bankTaxonomyExplorerSummary');
+    var activeGradeRow=stats.rows&&stats.rows[0];
+    if(summary)summary.textContent=schema+' · '+(grade?'Khối '+(activeGradeRow&&activeGradeRow.grade||grade)+' · ':'Toàn bộ · ')+stats.count+' họ mã · '+stats.skills+' bài/kỹ năng · '+stats.labels+' dạng';
+    var query=String(state.bank.taxonomyBrowserQuery||'').trim().toLocaleLowerCase('vi');
+    var rows=stats.rows.filter(function(row){
+      if(!query)return true;
+      return [row.catalog_key,row.area_label,row.chapter_label,row.skill_label,row.variant_label,row.label].join(' ').toLocaleLowerCase('vi').indexOf(query)>=0;
+    });
+    var list=el('bankTaxonomyFamilyList');if(!list)return;
+    if(!rows.length){list.innerHTML='<div class="exam-empty"><div><strong>Không có họ mã phù hợp</strong>Thử đổi khối hoặc từ khóa.</div></div>';return;}
+    var shown=rows.slice(0,120);
+    list.innerHTML=shown.map(function(row){
+      var chapter=bankTaxonomyConsensusLabel(bankTaxonomyFiltered({schema_name:row.schema_name,grade_code:row.grade_code,area:row.area,chapter:row.chapter}),'chapter_label','Chương '+row.chapter);
+      var skill=bankTaxonomyConsensusLabel(bankTaxonomyFiltered({schema_name:row.schema_name,grade_code:row.grade_code,area:row.area,chapter:row.chapter,skill:row.skill}),'skill_label','Bài / kỹ năng '+row.skill);
+      var variant=String(row.variant_label||row.label||('Dạng '+row.variant));
+      return '<button type="button" class="bank-taxonomy-family" onclick="VMExamAdmin.bankChooseTaxonomy(\''+esc(row.catalog_key)+'\')"><code>'+esc(row.catalog_key)+'</code><span><b>'+esc(variant)+'</b><small>'+esc((row.area_label||('Mảng '+row.area))+' · '+chapter+' · '+skill)+'</small></span><i>Chọn</i></button>';
+    }).join('')+(rows.length>shown.length?'<p class="bank-taxonomy-more">Đang hiện '+shown.length+' / '+rows.length+' họ mã. Nhập từ khóa để thu hẹp.</p>':'');
   }
 
   function bankRenderTaxonomyCatalog(message) {
     var select = el('bankTaxonomyCatalogSelect');
     var status = el('bankTaxonomyCatalogStatus');
     if (!select) return;
-    var catalog = state.bank.taxonomyCatalog || [];
-    select.innerHTML = '<option value="">'+(catalog.length?'Chọn một mã đã chuẩn hóa':'Nhập tay bằng 6 tiêu chí bên dưới')+'</option>' + catalog.map(function (entry) {
-      return '<option value="'+esc(entry.catalog_key)+'">'+esc(entry.catalog_key+' · '+entry.label)+'</option>';
-    }).join('');
-    if (status) status.textContent = message || (catalog.length ? 'Đã tải '+catalog.length+' mã chuẩn.' : 'Danh mục chưa sẵn sàng; vẫn có thể phân loại thủ công.');
     bankRenderTaxonomySuggestions();
-    bankRefreshAllHierarchyControls();
+    var schema=el('bankTaxSchema')&&el('bankTaxSchema').value;
+    var grade=el('bankTaxGrade')&&el('bankTaxGrade').value;
+    var catalog = bankTaxonomyFiltered({schema_name:schema,grade_code:grade});
+    select.innerHTML = '<option value="">'+(catalog.length?'Chọn một họ mã đã chuẩn hóa':'Danh mục chưa sẵn sàng')+'</option>' + catalog.map(function (entry) {
+      var label=String(entry.variant_label||entry.label||'').trim();
+      return '<option value="'+esc(entry.catalog_key)+'">'+esc(entry.catalog_key+' · '+label)+'</option>';
+    }).join('');
+    if (status) status.textContent = message || (catalog.length ? 'Đang hiển thị '+catalog.length+' / '+(state.bank.taxonomyCatalog||[]).length+' họ mã.' : 'Danh mục chưa sẵn sàng; dữ liệu đang nhập vẫn được giữ nguyên.');
+    bankRenderTaxonomyBrowser();
   }
 
   async function bankLoadTaxonomyCatalog(silent) {
@@ -2596,7 +2745,9 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (status) status.textContent = 'Đang tải danh mục phân loại…';
     if (!window.sb || typeof window.sb.rpc !== 'function') {
       state.bank.taxonomyCatalog = [];
-      bankRenderTaxonomyCatalog('Chưa kết nối danh mục; dùng 6 ô phân loại thủ công.');
+      state.bank.taxonomyCatalogLoaded = false;
+      bankRenderTaxonomyCatalog('Chưa kết nối được danh mục; tạm dừng phân loại để không tạo mã ngoài chuẩn gốc.');
+      bankRefreshAllHierarchyControls();
       return;
     }
     try {
@@ -2613,17 +2764,19 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       }
       var seen = Object.create(null);
       state.bank.taxonomyCatalog = rows.map(bankNormalizeTaxonomyEntry).filter(function (entry) {
-        if (!entry || seen[entry.catalog_key]) return false;
+        if (!entry || entry.status==='archived' || seen[entry.catalog_key]) return false;
         seen[entry.catalog_key] = true; return true;
       }).sort(function (a,b) { return a.catalog_key.localeCompare(b.catalog_key,'vi',{numeric:true}); });
       state.bank.taxonomyCatalogLoaded = true;
       bankRenderTaxonomyCatalog();
+      bankRefreshAllHierarchyControls();
     } catch (error) {
       state.bank.taxonomyCatalog = [];
       state.bank.taxonomyCatalogLoaded = false;
       bankRenderTaxonomyCatalog(bankRpcMissing(error)
         ? 'Danh mục máy chủ chưa được bật; dùng 6 ô phân loại thủ công.'
         : 'Không tải được danh mục; dữ liệu đang nhập vẫn được giữ nguyên.');
+      bankRefreshAllHierarchyControls();
       if (!silent && !bankRpcMissing(error)) toast('Chưa tải được danh mục phân loại.','err');
     }
   }
@@ -2632,18 +2785,49 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (!state.bank.access.canAdmin) return;
     var entry = state.bank.taxonomyCatalog.find(function (item) { return item.catalog_key === code; });
     if (!entry) { bankUpdateTaxonomyPreview(); return; }
+    if(el('bankTaxSchema'))el('bankTaxSchema').value=entry.schema_name||'legacy-v1';
+    bankRenderTaxonomySuggestions();
     el('bankTaxGrade').value = entry.grade_code;
+    bankRenderTaxonomySuggestions();
     el('bankTaxArea').value = entry.area;
+    bankRenderTaxonomySuggestions();
     el('bankTaxChapter').value = entry.chapter;
+    bankRenderTaxonomySuggestions();
+    el('bankTaxSkill').value = entry.skill;
+    bankRenderTaxonomySuggestions();
+    el('bankTaxVariant').value = entry.variant;
     var difficultyCode = bankTaxonomyDifficultyCode(entry.difficulty_code || entry.difficulty);
     if (difficultyCode) el('bankTaxDifficulty').value = difficultyCode;
-    el('bankTaxSkill').value = entry.skill;
-    el('bankTaxVariant').value = entry.variant;
+    bankRenderTaxonomyCatalog();
     bankUpdateTaxonomyPreview();
+  }
+
+  function bankUpdateTaxonomyHierarchy(level) {
+    if(!state.bank.access.canAdmin)return;
+    var clear={schema:['bankTaxGrade','bankTaxArea','bankTaxChapter','bankTaxSkill','bankTaxVariant'],grade:['bankTaxArea','bankTaxChapter','bankTaxSkill','bankTaxVariant'],area:['bankTaxChapter','bankTaxSkill','bankTaxVariant'],chapter:['bankTaxSkill','bankTaxVariant'],skill:['bankTaxVariant'],variant:[]};
+    (clear[level]||[]).forEach(function(id){if(el(id))el(id).value='';});
+    bankRenderTaxonomyCatalog();
+    bankUpdateTaxonomyPreview();
+  }
+
+  function bankSelectTaxonomyGrade(gradeCode,schemaName) {
+    if(!state.bank.access.canAdmin||!el('bankTaxGrade'))return;
+    if(schemaName&&el('bankTaxSchema'))el('bankTaxSchema').value=String(schemaName).toLowerCase();
+    bankRenderTaxonomySuggestions();
+    var schema=el('bankTaxSchema')&&el('bankTaxSchema').value||'legacy-v1';
+    el('bankTaxGrade').value=bankTaxonomyGradeCode(gradeCode,schema);
+    bankUpdateTaxonomyHierarchy('grade');
+  }
+
+  function bankFilterTaxonomyCatalog() {
+    var input=el('bankTaxonomyBrowserSearch');
+    state.bank.taxonomyBrowserQuery=String(input&&input.value||'');
+    bankRenderTaxonomyBrowser();
   }
 
   function bankCurrentTaxonomyCode() {
     return bankTaxonomyCode({
+      schema_name:el('bankTaxSchema') && el('bankTaxSchema').value,
       grade_code:el('bankTaxGrade') && el('bankTaxGrade').value,
       area:el('bankTaxArea') && el('bankTaxArea').value,
       chapter:el('bankTaxChapter') && el('bankTaxChapter').value,
@@ -2663,7 +2847,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     }
     var catalogSelect = el('bankTaxonomyCatalogSelect');
     var parsed = code && window.VinhMathQuestionBank ? window.VinhMathQuestionBank.parseQuestionId(code) : null;
-    var familyKey = parsed ? (parsed.grade_code+parsed.area+parsed.chapter+'?'+parsed.skill+'-'+parsed.variant) : '';
+    var familyKey = parsed ? parsed.taxonomy_key : '';
     var matchingEntry = state.bank.taxonomyCatalog.find(function (entry) { return entry.catalog_key === code || entry.catalog_key === familyKey; });
     if (catalogSelect && matchingEntry) catalogSelect.value = matchingEntry.catalog_key;
     else if (catalogSelect) catalogSelect.value = '';
@@ -3122,7 +3306,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   function bankCatalogEntryForQuestion(question) {
     var parsed=question&&question.id_info;
     if(!parsed)return null;
-    var familyKey=parsed.grade_code+parsed.area+parsed.chapter+'?'+parsed.skill+'-'+parsed.variant;
+    var familyKey=parsed.taxonomy_key;
     return (state.bank.taxonomyCatalog||[]).find(function(entry){
       return entry.catalog_key===parsed.id||entry.catalog_key===familyKey;
     })||null;
@@ -3908,7 +4092,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateImportOrigin:bankUpdateImportOrigin,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankRetryMatrix:bankRetryMatrix,bankPreviewExamDraft:bankPreviewExamDraft,bankSaveExamDraft:bankSaveExamDraft,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankCloseSourceAssign:bankCloseSourceAssign,bankAssignSourceExam:bankAssignSourceExam,bankLoadRepository:bankLoadRepository,bankRepositoryPage:bankRepositoryPage,bankResetRepositoryFilters:bankResetRepositoryFilters,bankOpenRepositoryDocument:bankOpenRepositoryDocument,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_normalizeLegacyPdfFragment:normalizeLegacyPdfFragment,_buildPdfSource:buildPdfSource,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankSetManageMode:bankSetManageMode,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateImportOrigin:bankUpdateImportOrigin,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyHierarchy:bankUpdateTaxonomyHierarchy,bankSelectTaxonomyGrade:bankSelectTaxonomyGrade,bankFilterTaxonomyCatalog:bankFilterTaxonomyCatalog,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankRetryMatrix:bankRetryMatrix,bankPreviewExamDraft:bankPreviewExamDraft,bankSaveExamDraft:bankSaveExamDraft,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankCloseSourceAssign:bankCloseSourceAssign,bankAssignSourceExam:bankAssignSourceExam,bankLoadRepository:bankLoadRepository,bankRepositoryPage:bankRepositoryPage,bankResetRepositoryFilters:bankResetRepositoryFilters,bankOpenRepositoryDocument:bankOpenRepositoryDocument,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_normalizeLegacyPdfFragment:normalizeLegacyPdfFragment,_buildPdfSource:buildPdfSource,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
   Object.assign(window.VMExamAdmin,{
     bankTogglePreviewFullscreen:bankTogglePreviewFullscreen,
     bankTogglePreviewSidebar:bankTogglePreviewSidebar,

@@ -8,7 +8,15 @@
    ============================================ */
 
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{
+  scroll-behavior:smooth;
+  background:#faf8f5;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  background:#000000;
+  color-scheme:dark;
+}
 body {
   background: var(--bg);
   background-image: var(--bg-gradient);
@@ -18,7 +26,7 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.65;
-  transition: background 0.3s, color 0.3s;
+  transition: background-color .22s ease, color .2s ease;
   -webkit-font-smoothing: antialiased;
   position: relative;
   overflow-x: hidden;
@@ -1199,6 +1207,67 @@ tr:last-child td{border-bottom:none}
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
+.cc-theme-schedule {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface-solid) 72%, transparent);
+}
+.cc-schedule-mode,
+.cc-schedule-times label {
+  display: grid;
+  gap: 5px;
+  color: var(--ink-2);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.cc-schedule-mode select,
+.cc-schedule-times input {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-solid);
+  color: var(--ink);
+  padding: 7px 9px;
+  font: inherit;
+  color-scheme: inherit;
+}
+.cc-schedule-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.cc-schedule-times input:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.cc-schedule-save,
+.cc-follow-system {
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  cursor: pointer;
+}
+.cc-schedule-save:disabled { opacity: .6; cursor: wait; }
+.cc-follow-system {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+}
+#ccThemeScheduleStatus {
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .cc-schedule-times { grid-template-columns: 1fr; }
+}
+
 /* Accent Color Picker */
 .cc-color-picker {
   display: flex;
@@ -1936,14 +2005,29 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
   transition-duration: .18s !important;
   transition-timing-function: cubic-bezier(.2,.8,.2,1) !important;
 }
-.vm-smooth-enter {
-  opacity: 0;
-  transform: translate3d(0, 7px, 0);
+
+/* Native cross-document transitions keep the previous frame visible while the
+   next page is parsed. This avoids both a white interstitial frame and the old
+   JavaScript navigation delay. Unsupported browsers simply navigate normally. */
+@view-transition { navigation: auto; }
+::view-transition-group(root) {
+  animation-duration: .24s;
+  animation-timing-function: cubic-bezier(.22,1,.36,1);
 }
-.vm-smooth-enter.is-ready {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-  transition: opacity .24s ease-out, transform .24s cubic-bezier(.2,.8,.2,1);
+::view-transition-old(root) {
+  animation: vmRouteOut .16s ease-in both;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: vmRouteIn .24s cubic-bezier(.22,1,.36,1) both;
+  mix-blend-mode: normal;
+}
+@keyframes vmRouteOut {
+  to { opacity: .94; }
+}
+@keyframes vmRouteIn {
+  from { opacity: .94; }
+  to { opacity: 1; }
 }
 .vm-page-hidden *, .vm-page-hidden *::before, .vm-page-hidden *::after {
   animation-play-state: paused !important;
@@ -1970,8 +2054,13 @@ html.vm-lite-motion [class*="shimmer"] {
   animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vm-smooth-enter, .vm-smooth-enter.is-ready { opacity: 1; transform: none; }
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
 }
+html.vm-lite-motion::view-transition-group(root),
+html.vm-lite-motion::view-transition-old(root),
+html.vm-lite-motion::view-transition-new(root) { animation: none !important; }
 
 /* Cuộn mượt toàn trang */
 html { scroll-behavior: smooth; }
