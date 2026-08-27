@@ -48,19 +48,21 @@ expect(/oldEmail: authUser\.email\.toLowerCase\(\)/.test(migration) &&
   /appMetadata: copyMetadata\(authUser\.app_metadata\)/.test(migration) &&
   /userMetadata: copyMetadata\(authUser\.user_metadata\)/.test(migration),
   'The action must snapshot the original email and both metadata objects.');
-expect(/app_metadata: \{ \.\.\.actor\.appMetadata \}/.test(migration) &&
+expect(/app_metadata: \{ \.\.\.actor\.appMetadata, vinhmath_role: actor\.profileRole \}/.test(migration) &&
   /user_metadata: \{ \.\.\.actor\.userMetadata \}/.test(migration),
-  'Auth renames must preserve app and user metadata.');
-expect(/actor\.oldEmail === actor\.targetEmail\) continue/.test(migration),
-  'Already-migrated Auth users must be skipped on retry.');
+  'Auth cutover must preserve metadata while aligning the private role claim with the verified profile role.');
+expect(/roleClaimRepair:[\s\S]{0,120}actor\.appMetadata\.vinhmath_role[\s\S]{0,120}actor\.profileRole/.test(migration),
+  'Dry-run output must disclose a legacy role-claim repair.');
+expect(/actor\.oldEmail === actor\.targetEmail && oldRoleClaim === actor\.profileRole\) continue/.test(migration),
+  'Already-migrated Auth users with an aligned claim must be skipped on retry.');
 expect(/rollbackAuthEmails\(svc, changed\)/.test(migration) &&
   /for \(const actor of \[\.\.\.changed\]\.reverse\(\)\)/.test(edge) &&
   /email: actor\.oldEmail/.test(edge),
   'Partial Auth changes need reverse-order compensating rollback.');
 expect(/const observed = await svc\.auth\.admin\.getUserById\(actor\.id\)/.test(migration) &&
-  /observedEmail === actor\.targetEmail\) changed\.push\(actor\)/.test(migration) &&
+  /observedEmail === actor\.targetEmail && observedRoleClaim === actor\.profileRole/.test(migration) &&
   /rollbackKnownOk: rollback\.ok/.test(migration) && /retryable: true/.test(migration),
-  'Ambiguous Auth responses must be observed before rollback or an idempotent retry.');
+  'Ambiguous Auth responses must verify both email and role claim before rollback or an idempotent retry.');
 
 expect(/vm_admin_finalize_full_site_tenant_migration/.test(migration) &&
   /p_portal_id: portalId[\s\S]*p_teacher_id: teacherId[\s\S]*p_student_ids: studentIds/.test(migration),
