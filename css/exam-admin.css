@@ -5,7 +5,13 @@
   --exam-green:#168467;
   --exam-red:#c94d55;
 }
-.exam-admin-wrap{width:min(1880px,100%);max-width:none;margin:0 auto;padding:0 28px 96px}
+.exam-admin-topbar{position:relative;inset:auto;width:100%;transform:none}
+.exam-admin-topbar .nav{width:min(1880px,100%);max-width:none;min-height:68px}
+.exam-admin-topbar .logo{flex:0 0 auto}
+.exam-admin-topbar .navlinks{min-width:0;flex:1;justify-content:center}
+.exam-admin-topbar .navlinks>a,.exam-admin-topbar .nav-dropdown-btn{padding-inline:10px;white-space:nowrap}
+.exam-admin-wrap{width:100%;max-width:none;margin:0 auto;padding:0 28px 96px}
+.exam-admin-wrap,.exam-workflow,.exam-workflow>*{min-width:0}
 .exam-runtime-state{display:none!important}
 .exam-tabs{position:sticky;top:0;z-index:30;display:flex;gap:8px;margin:14px 0 12px;padding:6px;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);box-shadow:var(--shadow)}
 .exam-tab{flex:1;min-height:46px;border:0;border-radius:13px;background:transparent;color:var(--ink-2);font:inherit;font-weight:750;cursor:pointer;transition:.18s ease}
