@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
     await page.evaluate(async () => {
       window.sb = {
         rpc: async (name) => name === 'vm_bank_admin_taxonomy_catalog'
-          ? { data: { items: [{ key: '1D1?2-POWER', vi: 'Lũy thừa cơ bản' }] }, error: null }
+          ? { data: { items: [{ key: '1D1?2-1', vi: 'Lũy thừa cơ bản' }] }, error: null }
           : { data: null, error: { code: 'PGRST202', message: 'missing test RPC' } }
       };
       window.VMExamAdmin._bankConfigureAccess({ role: 'admin' });
@@ -120,7 +120,7 @@ Tính $15+27$.
     await page.evaluate(() => {
       window.VMExamAdmin.bankSelectMissingIds();
       document.getElementById('bankTaxDifficulty').value = 'N';
-      window.VMExamAdmin.bankChooseTaxonomy('1D1?2-POWER');
+      window.VMExamAdmin.bankChooseTaxonomy('1D1?2-1');
       window.VMExamAdmin.bankApplyClassification();
     });
     const afterBulk = await page.evaluate(() => ({
@@ -130,7 +130,7 @@ Tính $15+27$.
       preview: document.getElementById('bankTaxonomyPreview').textContent,
       identities: window.VMExamAdmin._bankState.items.map((item) => ({ id: item.question_id, hash: item.canonical_hash, uid: item.uid })),
     }));
-    if (afterBulk.quarantined !== 0 || afterBulk.ids[1] !== '1D1N2-POWER' || afterBulk.ids[0] !== '1D1N1-1' || afterBulk.selected !== 0 || afterBulk.preview !== '1D1N2-POWER') throw new Error(`Taxonomy classification failed: ${JSON.stringify(afterBulk)}`);
+    if (afterBulk.quarantined !== 0 || afterBulk.ids[1] !== '1D1N2-1' || afterBulk.ids[0] !== '1D1N1-1' || afterBulk.selected !== 0 || afterBulk.preview !== '1D1N2-1') throw new Error(`Taxonomy classification failed: ${JSON.stringify(afterBulk)}`);
     for (let index = 0; index < admin.identities.length; index += 1) {
       if (afterBulk.identities[index].hash !== admin.identities[index].hash || afterBulk.identities[index].uid !== admin.identities[index].uid) {
         throw new Error(`Editable taxonomy ID changed immutable identity: ${JSON.stringify({ before: admin.identities[index], after: afterBulk.identities[index] })}`);
@@ -791,7 +791,7 @@ Giá trị của $1+1$ bằng
     await page.evaluate(() => window.VMExamAdmin.bankClosePreview());
 
     const largeImport = await page.evaluate(async () => {
-      const source = Array.from({ length: 41 }, (_, index) => String.raw`\begin{ex}%[1D1N2-POWER]
+      const source = Array.from({ length: 41 }, (_, index) => String.raw`\begin{ex}%[1D1N2-1]
 Câu kiểm thử số ${index + 1}: Giá trị của $2^3+${index}$ bằng
 \choice{\True $${8 + index}$}{$${9 + index}$}{$${10 + index}$}{$${11 + index}$}
 \loigiai{$2^3+${index}=${8 + index}$.}
@@ -802,7 +802,7 @@ Câu kiểm thử số ${index + 1}: Giá trị của $2^3+${index}$ bằng
       document.getElementById('bankImportExamType').value = 'thpt_mock';
       document.getElementById('bankImportExamGrade').value = '11';
       document.getElementById('bankImportYear').value = '2026';
-      bank.taxonomyCatalog = [{ catalog_key:'1D1?2-POWER' }];
+      bank.taxonomyCatalog = [{ catalog_key:'1D1?2-1' }];
       bank.taxonomyCatalogLoaded = true;
       const file = new File([source], 'de-41-cau.tex', { type:'text/x-tex' });
       await window.VMExamAdmin.bankSelectFiles([file]);

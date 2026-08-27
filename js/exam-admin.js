@@ -2487,19 +2487,21 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankTaxonomyVariant(value) {
-    return String(value == null ? '' : value).trim().toUpperCase()
-      .replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+    var token = String(value == null ? '' : value).trim();
+    return /^\d+$/.test(token) ? String(Math.max(0,parseInt(token,10))) : '';
   }
 
   function bankTaxonomyCode(parts) {
     var parser = window.VinhMathQuestionBank;
     var gradeCode = bankTaxonomyGradeCode(parts.grade_code != null ? parts.grade_code : parts.grade);
     var area = String(parts.area == null ? '' : parts.area).trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,1);
-    var chapter = Math.max(0,parseInt(parts.chapter,10)||0);
+    var chapterToken = String(parts.chapter == null ? '' : parts.chapter).trim();
+    var chapter = /^\d+$/.test(chapterToken) ? Number(chapterToken) : -1;
     var difficultyCode = bankTaxonomyDifficultyCode(parts.difficulty_code != null ? parts.difficulty_code : parts.difficulty);
-    var skill = Math.max(0,parseInt(parts.skill,10)||0);
+    var skillToken = String(parts.skill == null ? '' : parts.skill).trim();
+    var skill = /^\d+$/.test(skillToken) ? Number(skillToken) : 0;
     var variant = bankTaxonomyVariant(parts.variant);
-    if (!gradeCode || !area || !chapter || !difficultyCode || !skill || !variant || !parser) return null;
+    if (!gradeCode || !area || chapter < 0 || !difficultyCode || !skill || !variant || !parser) return null;
     var code = gradeCode+area+chapter+difficultyCode+skill+'-'+variant;
     return parser.parseQuestionId(code) ? code : null;
   }
@@ -2524,7 +2526,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       });
       parsed = parser && candidate ? parser.parseQuestionId(candidate) : null;
     }
-    var familyMatch = /^([012])([A-Z])(\d+)\?(\d+)-([A-Z0-9-]+)$/.exec(familyKey);
+    var familyMatch = /^([012])([A-Z])(\d+)\?(\d+)-(\d+)$/.exec(familyKey);
     if (!parsed && !familyMatch) return null;
     var label = String(entry.label || entry.name || entry.title || entry.vi || entry.slug || taxonomy.label || '').trim();
     var gradeCode = parsed ? parsed.grade_code : familyMatch[1];
@@ -2998,7 +3000,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var source = state.bank.documents[q._bankDocumentIndex] || {};
       return '<article class="bank-question-item '+(q._bankStatus==='quarantined'?'quarantined ':'')+(q._bankSelected?'selected':'')+'" data-bank-question-index="'+globalIndex+'">'+
         '<div class="bank-question-select"><label><input type="checkbox" '+(q._bankSelected?'checked':'')+' onchange="VMExamAdmin.bankToggleQuestionSelection('+globalIndex+',this.checked)" aria-label="Chọn câu '+(globalIndex+1)+'"><span class="bank-question-index">#'+(globalIndex+1)+'</span></label></div><div class="bank-question-main"><div class="bank-question-top"><span class="bank-chip">'+esc(bankTypeLabel(q.type))+'</span><span class="bank-chip">'+esc(q.grade||'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(q.difficulty||'Chưa rõ mức')+'</span><span class="bank-chip '+(q._bankStatus==='active'?'ok':'warn')+'">'+(q._bankStatus==='active'?'Hợp lệ':'Cách ly')+'</span>'+(q.has_assets?'<span class="bank-chip">Có hình</span>':'')+'</div><p>'+esc(stripLatex(q.content_tex).slice(0,230)||'Câu hỏi chưa có nội dung hiển thị')+'</p><span class="bank-question-source">'+esc(source.path||q.source_path||'Tệp TeX')+' · vị trí '+(Number(q.source_index||0)+1)+'</span><span class="bank-answer-summary">Đáp án nội bộ: '+esc(bankAnswerSummary(q))+'</span><button class="btn btn-secondary btn-sm bank-preview-open" type="button" onclick="VMExamAdmin.bankOpenLocalPreview('+globalIndex+')">🌐 Xem HTML / PDF</button></div>'+
-        '<div class="bank-question-id"><label for="bankItemId'+globalIndex+'">Mã phân loại</label><input class="input" id="bankItemId'+globalIndex+'" value="'+esc(q.question_id||'')+'" placeholder="Ví dụ: 2D1H3-HAM-SO" onchange="VMExamAdmin.bankUpdateId('+globalIndex+',this.value)"><small>UID/hash được tạo tự động, không đổi khi sửa mã này.</small>'+(q._bankReason?'<span class="bank-question-reason">'+esc(q._bankReason)+'</span>':'')+'</div></article>';
+        '<div class="bank-question-id"><label for="bankItemId'+globalIndex+'">Mã phân loại</label><input class="input" id="bankItemId'+globalIndex+'" value="'+esc(q.question_id||'')+'" placeholder="Ví dụ: 2D1H3-1" onchange="VMExamAdmin.bankUpdateId('+globalIndex+',this.value)"><small>Giữ chuẩn mã gốc; UID/hash được tạo tự động và không đổi.</small>'+(q._bankReason?'<span class="bank-question-reason">'+esc(q._bankReason)+'</span>':'')+'</div></article>';
     }).join('');
     var more = el('bankLoadMore');
     if (more) { more.hidden = visible.length >= items.length; more.textContent = 'Hiện thêm '+Math.min(120,items.length-visible.length)+' câu'; }
@@ -3210,21 +3212,21 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var totals = {inserted:0,updated:0,quarantined:0,linked:0};
     try {
       for (var d=0;d<state.bank.documents.length;d++) {
-        var document = state.bank.documents[d];
+        var sourceDocument = state.bank.documents[d];
         var items = state.bank.items.filter(function (question) { return question._bankDocumentIndex === d; });
         for (var offset=0;offset<items.length;offset+=40) {
           var chunk=items.slice(offset,offset+40),isFinal=offset+chunk.length>=items.length;
-          var response = await sb.rpc('vm_bank_admin_import',{p_document:bankDocumentPayload(document,{expectedCount:items.length,final:isFinal}),p_items:chunk.map(bankItemPayload)});
+          var response = await sb.rpc('vm_bank_admin_import',{p_document:bankDocumentPayload(sourceDocument,{expectedCount:items.length,final:isFinal}),p_items:chunk.map(bankItemPayload)});
           if (response.error) throw response.error;
           if (response.data && response.data.error) throw new Error(response.data.error);
           var result = response.data || {};
-          if (result.document_id) document._serverId = result.document_id;
+          if (result.document_id) sourceDocument._serverId = result.document_id;
           Object.keys(totals).forEach(function (key) { totals[key] += Number(result[key]||0); });
           done += Math.min(40,items.length-offset);
           bankSetImportProgress(done,total,'Đang nhập '+done+' / '+total+' câu');
         }
-        if(!document._serverId)throw new Error('Máy chủ chưa trả mã tài liệu để hoàn tất nhập kho.');
-        var finalize=await sb.rpc('vm_bank_admin_finalize_document',{p_document_id:document._serverId,p_expected_count:items.length});
+        if(!sourceDocument._serverId)throw new Error('Máy chủ chưa trả mã tài liệu để hoàn tất nhập kho.');
+        var finalize=await sb.rpc('vm_bank_admin_finalize_document',{p_document_id:sourceDocument._serverId,p_expected_count:items.length});
         if(finalize.error)throw finalize.error;
         if(finalize.data&&finalize.data.error)throw new Error(finalize.data.error);
         if(!finalize.data||finalize.data.ready!==true)throw new Error('Nguồn đã nhập nhưng chưa vượt qua kiểm tra hoàn tất.');

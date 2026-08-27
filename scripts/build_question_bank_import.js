@@ -1583,8 +1583,19 @@ function resolveOutputPaths(outputPath) {
 function writeAtomic(filePath, content) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const temporary = filePath + '.tmp-' + process.pid;
+  const backup = filePath + '.bak-' + process.pid;
   fs.writeFileSync(temporary, content, 'utf8');
-  fs.renameSync(temporary, filePath);
+  // Windows không cho rename đè lên tệp đã tồn tại. Đổi tệp cũ sang backup
+  // trước để lần ghi lại cùng gói vẫn nguyên tử và có thể phục hồi khi lỗi.
+  if (fs.existsSync(filePath)) fs.renameSync(filePath, backup);
+  try {
+    fs.renameSync(temporary, filePath);
+    if (fs.existsSync(backup)) fs.rmSync(backup, { force:true });
+  } catch (error) {
+    if (!fs.existsSync(filePath) && fs.existsSync(backup)) fs.renameSync(backup, filePath);
+    if (fs.existsSync(temporary)) fs.rmSync(temporary, { force:true });
+    throw error;
+  }
 }
 
 function assertOutsideSourceBank(targetPath) {

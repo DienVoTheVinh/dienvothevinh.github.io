@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css?v=8.4">
-  <link rel="stylesheet" href="css/vinhmath.css?v=8.4">
-  <link rel="stylesheet" href="css/exam-admin.css?v=3.8">
+  <link rel="stylesheet" href="css/vinhmath.css?v=8.5">
+  <link rel="stylesheet" href="css/exam-admin.css?v=3.9">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
 <body>
@@ -184,9 +184,23 @@
             </section>
           </div>
           <div class="bank-usage-identifiers bank-admin-only-ui" aria-label="Phân biệt mã câu hỏi">
-            <section><span>Mã phân loại ngắn</span><code>2D1H3-HAM-SO</code><p>Dùng để đọc và chỉnh tuyến kiến thức: khối, mảng, chương, mức độ, kỹ năng và biến thể dạng bài.</p></section>
+            <section><span>Mã phân loại gốc</span><code>2D1H3-1</code><p>Khối 12 · Đại số · chương 1 · Thông hiểu · bài/kỹ năng 3 · dạng số 1. Dấu <code>?</code> chỉ dùng trong mã họ như <code>2D1?3-1</code>.</p></section>
             <section><span>UID kỹ thuật QB</span><code>QB-…</code><p>Khóa ổn định do hệ thống tự sinh để chống trùng và đồng bộ. Không nhập tay, không đổi khi sửa mã phân loại ngắn.</p></section>
           </div>
+          <section class="bank-id-reference bank-admin-only-ui" id="bankIdReference" aria-labelledby="bankIdReferenceTitle">
+            <div class="bank-id-reference-head"><div><span>Chuẩn tác giả gốc · 530 họ mã</span><h3 id="bankIdReferenceTitle">Ma trận ID khối 10, 11, 12</h3></div><button class="btn btn-secondary" type="button" id="bankIdReferenceLoad">Tải ma trận</button></div>
+            <p class="bank-id-anatomy"><code>2</code> khối 12 · <code>D</code> mảng · <code>1</code> chương · <code>H</code> mức độ · <code>3</code> bài/kỹ năng · <code>-1</code> dạng số. Mức gốc: N/B/Y = nhận biết; H/T = thông hiểu; V/K = vận dụng; G/C = vận dụng cao.</p>
+            <div class="bank-id-reference-tools"><input class="input" id="bankIdReferenceSearch" placeholder="Tìm mã, chương, bài hoặc dạng toán…"><div class="bank-id-grade-tabs" role="tablist"><button type="button" data-grade="10" class="active">Khối 10</button><button type="button" data-grade="11">Khối 11</button><button type="button" data-grade="12">Khối 12</button></div></div>
+            <p class="bank-id-reference-status" id="bankIdReferenceStatus">Mở hướng dẫn để tải đúng ma trận gốc.</p>
+            <div class="bank-id-reference-table" id="bankIdReferenceTable"></div>
+          </section>
+          <section class="bank-id-mapper bank-admin-only-ui" aria-labelledby="bankIdMapperTitle">
+            <div><span>Chuyển chuẩn có kiểm soát</span><h3 id="bankIdMapperTitle">Ánh xạ ID cũ sang chuẩn tương lai</h3><p>Chuẩn gốc <b>legacy-v1</b> luôn được giữ. Tạo quy tắc mới chỉ sinh mã hiển thị/alias; không sửa UID và không đổi hàng loạt cho đến khi quản trị viên xem trước rồi xác nhận.</p></div>
+            <div class="bank-id-mapper-grid"><label>Mã cũ<input class="input" id="bankIdMapOld" placeholder="2D1H3-1"></label><label>Mã mới (có thể để trống)<input class="input" id="bankIdMapNew" placeholder="Tự sinh từ quy tắc bên dưới"></label><label>Phiên bản mới<input class="input" id="bankIdMapSchema" list="bankIdSchemaNames" placeholder="Ví dụ: vm-id-v2"><datalist id="bankIdSchemaNames"></datalist></label><button class="btn btn-secondary" type="button" id="bankIdMapPreview">Xem ánh xạ</button></div>
+            <details class="bank-id-schema-advanced"><summary>Tùy chỉnh vị trí và bảng đổi mã</summary><div class="bank-id-schema-fields"><label>Thứ tự 6 phần<input class="input" id="bankIdMapOrder" value="grade,area,chapter,difficulty,skill,variant"></label><label>Bảng đổi mã (JSON)<textarea class="input" id="bankIdMapCodes" rows="3" spellcheck="false">{"grade":{"0":"10","1":"11","2":"12"},"difficulty":{"NB":"NB","TH":"TH","VD":"VD","VDC":"VDC"}}</textarea></label><label>Dấu nối thường<input class="input" id="bankIdMapSeparator" value="-"></label><label>Dấu trước biến thể<input class="input" id="bankIdMapVariantSeparator" value="-"></label></div></details>
+            <div class="bank-id-mapper-actions"><button class="btn btn-secondary" type="button" id="bankIdSchemaSave">Lưu chuẩn mới</button><button class="btn btn-primary" type="button" id="bankIdAliasSave">Lưu ngoại lệ ánh xạ</button></div>
+            <output id="bankIdMapOutput" class="bank-id-map-output">Chưa có quy tắc xem trước.</output>
+          </section>
           <section class="bank-usage-legacy bank-admin-only-ui" aria-labelledby="bankLegacyTexTitle">
             <div class="bank-usage-legacy-head"><div><span>TeX cũ</span><h3 id="bankLegacyTexTitle">Các lệnh tương thích thường gặp</h3></div><small>Giữ nguyên cú pháp trong tệp nguồn</small></div>
             <div class="bank-usage-legacy-table-wrap">
@@ -434,7 +448,7 @@
 
             <aside class="bank-taxonomy-guide" aria-label="Chuẩn mã phân loại câu hỏi">
               <div><strong>Chuẩn mã phân loại</strong><code>&lt;khối&gt;&lt;mảng&gt;&lt;chương&gt;&lt;mức&gt;&lt;kỹ năng&gt;-&lt;biến thể&gt;</code></div>
-              <p><b>0/1/2 = khối 10/11/12</b>; <b>N/H/V/G = NB/TH/VD/VDC</b>. Ví dụ <b>2D1H3-HAM-SO</b> là khối 12 · mảng D · chương 1 · thông hiểu · kỹ năng 3 · dạng “hàm số”. Biến thể là dạng bài, không phải số thứ tự; UID/hash do hệ thống tự tạo.</p>
+              <p><b>0/1/2 = khối 10/11/12</b>; <b>N/H/V/G = NB/TH/VD/VDC</b>. Ví dụ <b>2D1H3-1</b> là khối 12 · mảng D · chương 1 · thông hiểu · bài/kỹ năng 3 · dạng số 1. Mã phải có trong danh mục gốc; UID/hash do hệ thống tự tạo.</p>
             </aside>
 
             <div class="bank-bulk-tools" id="bankBulkTools" hidden>
@@ -447,10 +461,10 @@
               <div class="bank-taxonomy-manual-grid" aria-label="Phân loại thủ công">
                 <div class="exam-field"><label for="bankTaxGrade">Khối</label><select class="input" id="bankTaxGrade" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><option value="">—</option><option value="0">10</option><option value="1">11</option><option value="2">12</option></select></div>
                 <div class="exam-field"><label for="bankTaxArea">Mảng</label><input class="input" id="bankTaxArea" maxlength="1" list="bankTaxAreaList" autocomplete="off" placeholder="D" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxAreaList"></datalist></div>
-                <div class="exam-field"><label for="bankTaxChapter">Chương</label><input class="input" id="bankTaxChapter" type="number" min="1" step="1" list="bankTaxChapterList" placeholder="1" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxChapterList"></datalist></div>
+                <div class="exam-field"><label for="bankTaxChapter">Chương</label><input class="input" id="bankTaxChapter" type="number" min="0" step="1" list="bankTaxChapterList" placeholder="1" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxChapterList"></datalist></div>
                 <div class="exam-field"><label for="bankTaxDifficulty">Mức độ</label><select class="input" id="bankTaxDifficulty" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><option value="">—</option><option value="N">Nhận biết</option><option value="H">Thông hiểu</option><option value="V">Vận dụng</option><option value="G">Vận dụng cao</option></select></div>
                 <div class="exam-field"><label for="bankTaxSkill">Kỹ năng</label><input class="input" id="bankTaxSkill" type="number" min="1" step="1" list="bankTaxSkillList" placeholder="3" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxSkillList"></datalist></div>
-                <div class="exam-field"><label for="bankTaxVariant">Biến thể dạng bài</label><input class="input" id="bankTaxVariant" list="bankTaxVariantList" autocomplete="off" placeholder="HAM-SO" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxVariantList"></datalist></div>
+                <div class="exam-field"><label for="bankTaxVariant">Số dạng bài</label><input class="input" id="bankTaxVariant" type="number" min="0" step="1" list="bankTaxVariantList" autocomplete="off" placeholder="1" oninput="VMExamAdmin.bankUpdateTaxonomyPreview()"><datalist id="bankTaxVariantList"></datalist></div>
               </div>
 
               <div class="bank-taxonomy-preview"><span>Mã sẽ áp dụng</span><code id="bankTaxonomyPreview">Chọn đủ 6 tiêu chí</code></div>
@@ -591,10 +605,11 @@
   <script src="js/config.js"></script>
   <script src="js/vinhmath.js?v=9.5"></script>
   <script src="js/tex-environments.js?v=1.0"></script>
-  <script src="js/latex-view.js?v=11.4"></script>
+  <script src="js/latex-view.js?v=11.5"></script>
   <script src="js/menu-v5.js?v=10.2"></script>
   <script src="js/analytics.js"></script>
-  <script src="js/question-bank.js?v=1.1.0"></script>
-  <script src="js/exam-admin.js?v=3.9"></script>
+  <script src="js/question-bank.js?v=1.2.0"></script>
+  <script src="js/question-bank-id-guide.js?v=1.1.0"></script>
+  <script src="js/exam-admin.js?v=4.0"></script>
 </body>
 </html>

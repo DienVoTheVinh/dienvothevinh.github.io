@@ -51,7 +51,7 @@ Câu hỏi có hình dựng trực tiếp.
 \choice{\True A}{B}{C}{D}
 \end{ex}`;
 
-assert.strictEqual(QuestionBank.VERSION, '1.1.0');
+assert.strictEqual(QuestionBank.VERSION, '1.2.0');
 assert.deepStrictEqual(QuestionBank.QUESTION_ENVIRONMENTS, ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap']);
 
 const id = QuestionBank.parseQuestionId('1D6N4-4');
@@ -71,13 +71,9 @@ assert.strictEqual(QuestionBank.parseQuestionId('2H3C2-1').difficulty, 'VDC');
 assert.strictEqual(QuestionBank.parseQuestionId('0D2H3-2').grade, 10);
 assert.strictEqual(QuestionBank.parseQuestionId('0D2H3-2').difficulty, 'TH');
 assert.strictEqual(QuestionBank.parseQuestionId('bad metadata'), null);
-assert.strictEqual(
-  QuestionBank.extractQuestionId(String.raw`\begin{ex}%[2D1H3-HAM-SO]
-Nội dung.
-\end{ex}`),
-  '2D1H3-HAM-SO',
-  'descriptive taxonomy variants in uploaded TeX must be preserved'
-);
+assert.strictEqual(QuestionBank.parseQuestionId('2D1H3-HAM-SO'), null, 'semantic suffixes are not part of the legacy author standard');
+assert.strictEqual(QuestionBank.parseQuestionId('2D1D3-1'), null, 'unknown difficulty aliases must not enter the catalog');
+assert.strictEqual(QuestionBank.parseQuestionId('0D0N1-1').chapter, 0, 'chapter zero is valid in the original taxonomy');
 
 const recoveredCommentCases = [
   {

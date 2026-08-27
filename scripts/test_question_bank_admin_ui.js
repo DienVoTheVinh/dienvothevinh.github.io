@@ -25,7 +25,9 @@ assert.ok(html.includes('Tạo một đề mới') && html.includes('Dùng một
 assert.ok(html.includes('Giáo viên</b> dùng kho') && html.includes('Admin</b> có thêm quyền'), 'guide must distinguish teacher and admin access');
 assert.ok(html.includes('Nạp đề TeX và gắn ID') && html.includes('Xem HTML/PDF'), 'guide must cover TeX classification and preview');
 assert.ok(html.includes('Liên kết với Soạn thảo') && html.includes('Tra ngân hàng đề'), 'guide must explain the two-way authoring link');
-assert.ok(html.includes('Mã phân loại ngắn') && html.includes('2D1H3-HAM-SO') && html.includes('UID kỹ thuật QB'), 'guide must distinguish readable classification codes from immutable QB identifiers');
+assert.ok(html.includes('Mã phân loại gốc') && html.includes('2D1H3-1') && html.includes('UID kỹ thuật QB'), 'guide must distinguish original classification codes from immutable QB identifiers');
+assert.ok(html.includes('Ma trận ID khối 10, 11, 12') && html.includes('question-bank-id-guide.js'), 'guide must expose the complete original ID matrix');
+assert.ok(html.includes('Ánh xạ ID cũ sang chuẩn tương lai') && html.includes('bankIdMapOrder') && html.includes('bankIdAliasSave'), 'admin needs versioned ID schema and alias controls');
 for (const macro of ['vv','vect','heva','hoac'].map((name) => '\\' + name)) assert.ok(html.includes(`<code>${macro}`), `guide is missing legacy TeX macro ${macro}`);
 assert.ok(html.includes('lớp tương thích chỉ bổ sung lệnh còn thiếu') && html.includes('\\renewcommand'), 'guide must state the non-overriding legacy compatibility rule');
 const questionBankScript = html.search(/js\/question-bank\.js\?v=[^"']+/);
@@ -101,9 +103,9 @@ assert.ok(html.includes('id="bankTaxonomyCatalogSelect"') && html.includes('id="
 assert.ok(html.includes('id="bankTaxGrade"') && html.includes('id="bankTaxArea"') && html.includes('id="bankTaxChapter"'));
 assert.ok(html.includes('id="bankTaxDifficulty"') && html.includes('id="bankTaxSkill"') && html.includes('id="bankTaxVariant"'));
 assert.ok(html.includes('Chọn tất cả câu thiếu mã') && html.includes('Mã phân loại'));
-assert.ok(html.includes('Biến thể là dạng bài, không phải số thứ tự'));
+assert.ok(html.includes('Số dạng bài') && html.includes('min="0"'), 'legacy variants stay numeric and chapter zero remains selectable');
 assert.ok(html.includes('Hệ thống đối chiếu UID/hash'), 'import resume/idempotency guidance must be visible');
-assert.ok(!html.includes('id="bankBulkStart"'), 'taxonomy variants must not be generated as sequential numbers');
+assert.ok(!html.includes('id="bankBulkStart"'), 'taxonomy variants are selected from the original catalog rather than auto-incremented blindly');
 
 for (const rpc of [
   'vm_bank_admin_import', 'vm_bank_admin_stats', 'vm_bank_search',
