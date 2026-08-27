@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var state = { rows:[], grade:'10', query:'', loaded:false, schemas:[] };
+  var state = { rows:[], grade:'', query:'', loaded:false, schemas:[] };
   var systemPresets = {
     thcs:{schema_name:'thcs-v1',label:'Toán THCS',education_level:'thcs',grades:[6,7,8,9],is_specialized:false},
     thcs_specialized:{schema_name:'thcs-chuyen-v1',label:'Toán chuyên THCS',education_level:'thcs',grades:[6,7,8,9],is_specialized:true}
@@ -14,6 +14,13 @@
       var info=map[key]||{}; return {key:key,grade:gradeMap[match[1]],area:match[2],chapter:Number(match[3]),skill:Number(match[4]),variant:Number(match[5]),chapterName:String(info.chap_name||''),lessonName:String(info.lesson_name||''),typeName:String(info.type_name||'')};
     }).filter(Boolean).sort(function(a,b){return a.key.localeCompare(b.key,'vi',{numeric:true});});
   }
+  function renderGradeTabs() {
+    var host=document.getElementById('bankIdReferenceGradeTabs');if(!host)return;
+    var grades=Array.from(new Set(state.rows.map(function(row){return String(row.grade||'');}).filter(Boolean))).sort(function(a,b){return Number(a)-Number(b);});
+    if(grades.length&&grades.indexOf(String(state.grade))<0)state.grade=grades[0];
+    host.innerHTML=grades.map(function(grade){return '<button type="button" data-grade="'+esc(grade)+'" class="'+(String(state.grade)===grade?'active':'')+'" aria-selected="'+(String(state.grade)===grade?'true':'false')+'">Khối '+esc(grade)+'</button>';}).join('');
+    host.querySelectorAll('[data-grade]').forEach(function(item){item.addEventListener('click',function(){state.grade=item.getAttribute('data-grade');renderGradeTabs();render();});});
+  }
   function render() {
     var host=document.getElementById('bankIdReferenceTable'),status=document.getElementById('bankIdReferenceStatus'); if(!host)return;
     var query=state.query.toLocaleLowerCase('vi');
@@ -23,7 +30,7 @@
   }
   async function load() {
     if(state.loaded){render();return;} var status=document.getElementById('bankIdReferenceStatus'); if(status)status.textContent='Đang tải 530 họ mã từ id_map gốc…';
-    try{var response=await fetch('NganHang/NganHangTHPT1.3/id_map.json',{cache:'force-cache'});if(!response.ok)throw new Error('HTTP '+response.status);state.rows=normalize(await response.json());state.loaded=true;render();}
+    try{var response=await fetch('NganHang/NganHangTHPT1.3/id_map.json',{cache:'force-cache'});if(!response.ok)throw new Error('HTTP '+response.status);state.rows=normalize(await response.json());state.loaded=true;renderGradeTabs();render();}
     catch(error){if(status)status.textContent='Chưa tải được ma trận ID. Hãy tải lại trang rồi thử lại.';}
   }
   function schemaForm(){
@@ -129,7 +136,6 @@
   document.addEventListener('DOMContentLoaded',function(){
     var details=document.getElementById('bankUsageGuide'),button=document.getElementById('bankIdReferenceLoad'),search=document.getElementById('bankIdReferenceSearch');
     if(details)details.addEventListener('toggle',function(){if(details.open){load();loadSchemas(false);}});if(button)button.addEventListener('click',load);if(search)search.addEventListener('input',function(){state.query=search.value.trim();render();});
-    document.querySelectorAll('.bank-id-grade-tabs [data-grade]').forEach(function(item){item.addEventListener('click',function(){state.grade=item.getAttribute('data-grade');document.querySelectorAll('.bank-id-grade-tabs [data-grade]').forEach(function(tab){tab.classList.toggle('active',tab===item);});render();});});
     var preview=document.getElementById('bankIdMapPreview');if(preview)preview.addEventListener('click',previewMapping);
     var schemaName=document.getElementById('bankIdMapSchema');if(schemaName)schemaName.addEventListener('change',useSavedSchema);
     var schemaSave=document.getElementById('bankIdSchemaSave'),aliasSave=document.getElementById('bankIdAliasSave');if(schemaSave)schemaSave.addEventListener('click',saveSchema);if(aliasSave)aliasSave.addEventListener('click',saveAlias);

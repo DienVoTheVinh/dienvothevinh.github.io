@@ -55,9 +55,13 @@ light.api.apply('dark');
 expect(light.attrs['data-theme'] === 'dark' && light.styles.backgroundColor === '#000000', 'Theme toggles must reuse the same paint-safe path');
 
 const resolver = runPreflight('dark').api;
-const schedule = { mode: 'schedule', theme: 'dark', lightStart: '06:00', darkStart: '18:00' };
+const schedule = { mode: 'schedule', theme: 'dark', lightStart: '06:00', darkStart: '19:00' };
 expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T00:00:00Z')) === 'light', '07:00 in Vietnam must use the scheduled light theme');
 expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T13:00:00Z')) === 'dark', '20:00 in Vietnam must use the scheduled dark theme');
+expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T11:59:00Z')) === 'light', '18:59 in Vietnam must still use the scheduled light theme');
+expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T12:00:00Z')) === 'dark', '19:00 in Vietnam must switch to the scheduled dark theme');
+expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T22:59:00Z')) === 'dark', '05:59 in Vietnam must still use the scheduled dark theme');
+expect(resolver.resolveSystemTheme(schedule, new Date('2026-08-28T23:00:00Z')) === 'light', '06:00 in Vietnam must switch to the scheduled light theme');
 const temporary = runPreflight('dark', { schedule, manual: true, override: 'dark' });
 expect(temporary.attrs['data-theme'] === 'dark', 'Manual sun-button choice must override the system only inside the current session');
 
@@ -66,6 +70,7 @@ const css = read('css/vinhmath.css');
 expect(!shared.includes('vmPageTransition') && !shared.includes('vm-leaving'), 'Navigation must not fade the whole body or delay links with JavaScript');
 expect(shared.includes('window.VMThemePreflight.apply(newTheme)'), 'Runtime theme toggle must synchronize the root canvas through preflight');
 expect(shared.includes("sessionStorage.setItem(VM_THEME_CHOICE_KEY, 'manual')"), 'User theme overrides must be scoped to the current sign-in session');
+expect(!/toggleTheme\(\)[\s\S]{0,3000}luuCaiDatHeThong\('theme_mode'/.test(shared), 'The topbar sun button must never overwrite the global admin schedule');
 expect(/vmXoaThemeTamTheoPhien\(\);[\s\S]{0,500}return \{ ok: true \};/.test(shared), 'A successful new login must reset the previous session theme override');
 expect(/vmXoaThemeTamTheoPhien\(\);[\s\S]{0,500}vmChoCoGioiHan\(taiCaiDatHeThongGlobal\(\),\s*6000\)[\s\S]{0,300}return \{ ok: true \};/.test(shared), 'A successful login must refresh the global schedule before redirecting without blocking indefinitely');
 expect(!/addEventListener\('change',\s*capNhatTrangThaiDieuKhienLichTheme\)/.test(shared), 'Schedule mode changes must not pass the DOM Event as schedule data');

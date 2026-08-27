@@ -151,7 +151,7 @@
           <button type="button" class="bank-overview-card" onclick="VMExamAdmin.bankOpenOverview('thptqg')"><span class="bank-overview-icon" aria-hidden="true">THPT</span><span><b id="bankOverviewThpt">—</b><strong>THPTQG &amp; tham khảo</strong><small>Mở danh mục luyện thi</small></span></button>
           <button type="button" class="bank-overview-card" onclick="VMExamAdmin.bankOpenOverview('semester')"><span class="bank-overview-icon" aria-hidden="true">HK</span><span><b id="bankOverviewSemester">—</b><strong>Đề học kỳ</strong><small>Mở đề kiểm tra định kỳ</small></span></button>
           <button type="button" class="bank-overview-card muted" onclick="VMExamAdmin.bankOpenOverview('other_exam')"><span class="bank-overview-icon" aria-hidden="true">KHÁC</span><span><b id="bankOverviewOther">—</b><strong>Đề / nguồn khác</strong><small>Ôn chương và nguồn riêng</small></span></button>
-          <article class="bank-overview-card review bank-admin-overview" id="bankOverviewReviewCard" hidden><span class="bank-overview-icon" aria-hidden="true">✓</span><div><b><span id="bankOverviewActive">—</span><i>/</i><span id="bankOverviewReview">—</span></b><strong>Đang dùng / Cần duyệt</strong><small>Chỉ quản trị viên thấy kiểm duyệt</small></div></article>
+          <article class="bank-overview-card review bank-admin-overview" id="bankOverviewReviewCard" hidden><span class="bank-overview-icon" aria-hidden="true">✓</span><div><b><span id="bankOverviewActive">—</span><i>/</i><span id="bankOverviewReview">—</span></b><strong>Đang dùng / Cần duyệt</strong><small>Theo dõi nguồn cần chuẩn hóa</small></div></article>
         </div>
 
       <details class="bank-usage-guide" id="bankUsageGuide">
@@ -178,23 +178,23 @@
               <ol><li>Tìm theo tỉnh, năm hoặc kỳ thi.</li><li>Xem trước ngay bằng HTML; biên dịch PDF khi cần.</li><li>Giao nguyên đề, hoặc tạo đề mới cùng cấu trúc.</li></ol>
             </section>
             <section class="bank-usage-card bank-usage-admin bank-admin-only-ui">
-              <span class="bank-usage-step">Chỉ admin</span>
+              <span class="bank-usage-step">Quản trị nguồn</span>
               <h3>Nạp đề TeX và gắn ID</h3>
               <ol><li>Chọn <b>Đề hoàn chỉnh</b>, điền tỉnh, năm, loại kỳ thi rồi thả tệp <b>.tex</b>.</li><li>Kiểm tra từng câu; chọn câu thiếu mã và áp dụng đủ 6 tiêu chí phân loại. UID/hash được tạo tự động.</li><li>Xem HTML/PDF, sau đó bấm <b>Nhập các câu vào kho</b>.</li></ol>
             </section>
           </div>
-          <div class="bank-usage-identifiers bank-admin-only-ui" aria-label="Phân biệt mã câu hỏi">
+          <div class="bank-usage-identifiers bank-id-schema-only-ui" aria-label="Phân biệt mã câu hỏi">
             <section><span>Mã phân loại gốc</span><code>2D1H3-1</code><p>Khối 12 · Đại số · chương 1 · Thông hiểu · bài/kỹ năng 3 · dạng số 1. Dấu <code>?</code> chỉ dùng trong mã họ như <code>2D1?3-1</code>.</p></section>
             <section><span>UID kỹ thuật QB</span><code>QB-…</code><p>Khóa ổn định do hệ thống tự sinh để chống trùng và đồng bộ. Không nhập tay, không đổi khi sửa mã phân loại ngắn.</p></section>
           </div>
-          <section class="bank-id-reference bank-admin-only-ui" id="bankIdReference" aria-labelledby="bankIdReferenceTitle">
-            <div class="bank-id-reference-head"><div><span>Chuẩn tác giả gốc · 530 họ mã</span><h3 id="bankIdReferenceTitle">Ma trận ID khối 10, 11, 12</h3></div><button class="btn btn-secondary" type="button" id="bankIdReferenceLoad">Tải ma trận</button></div>
+          <section class="bank-id-reference bank-id-schema-only-ui" id="bankIdReference" aria-labelledby="bankIdReferenceTitle">
+            <div class="bank-id-reference-head"><div><span>Chuẩn legacy-v1 · 530 họ mã</span><h3 id="bankIdReferenceTitle">Danh mục ID</h3></div><button class="btn btn-secondary" type="button" id="bankIdReferenceLoad">Tải ma trận</button></div>
             <p class="bank-id-anatomy"><code>2</code> khối 12 · <code>D</code> mảng · <code>1</code> chương · <code>H</code> mức độ · <code>3</code> bài/kỹ năng · <code>-1</code> dạng số. Mức gốc: N/B/Y = nhận biết; H/T = thông hiểu; V/K = vận dụng; G/C = vận dụng cao.</p>
-            <div class="bank-id-reference-tools"><input class="input" id="bankIdReferenceSearch" placeholder="Tìm mã, chương, bài hoặc dạng toán…"><div class="bank-id-grade-tabs" role="tablist"><button type="button" data-grade="10" class="active">Khối 10</button><button type="button" data-grade="11">Khối 11</button><button type="button" data-grade="12">Khối 12</button></div></div>
+            <div class="bank-id-reference-tools"><input class="input" id="bankIdReferenceSearch" placeholder="Tìm mã, chương, bài hoặc dạng toán…"><div class="bank-id-grade-tabs" id="bankIdReferenceGradeTabs" role="tablist" aria-label="Chọn khối trong danh mục ID"></div></div>
             <p class="bank-id-reference-status" id="bankIdReferenceStatus">Mở hướng dẫn để tải đúng ma trận gốc.</p>
             <div class="bank-id-reference-table" id="bankIdReferenceTable"></div>
           </section>
-          <section class="bank-id-mapper bank-admin-only-ui" aria-labelledby="bankIdMapperTitle">
+          <section class="bank-id-mapper bank-id-schema-only-ui" aria-labelledby="bankIdMapperTitle">
             <div><span>Chuyển chuẩn có kiểm soát</span><h3 id="bankIdMapperTitle">Ánh xạ ID cũ sang chuẩn tương lai</h3><p>Chuẩn gốc <b>legacy-v1</b> luôn được giữ. Tạo quy tắc mới chỉ sinh mã hiển thị/alias; không sửa UID và không đổi hàng loạt cho đến khi quản trị viên xem trước rồi xác nhận.</p></div>
             <details class="bank-id-system-builder" open>
               <summary>Tạo hệ ID cho chương trình mới</summary>
@@ -391,11 +391,11 @@
 
       <section class="bank-zone bank-admin-import-zone" id="bankZoneImport" role="tabpanel" aria-labelledby="bankImportNav" data-bank-zone="import" hidden>
         <header class="bank-zone-head">
-          <div><span>Chỉ quản trị viên</span><h2>Nạp &amp; chuẩn hóa nội dung</h2></div>
-          <small>Dán TeX, gắn ID và kiểm tra trước khi đưa vào kho.</small>
+          <div><span>Nạp nội dung</span><h2>Nạp &amp; chuẩn hóa nội dung</h2></div>
+          <small>Dán TeX hoặc chọn tệp, kiểm tra trước khi gửi vào kho.</small>
         </header>
       <div id="bankAdminWorkbench">
-        <section class="bank-stat-grid" aria-label="Thống kê ngân hàng">
+        <section class="bank-stat-grid bank-admin-only-ui" aria-label="Thống kê ngân hàng">
           <div class="bank-stat"><b id="bankStatDocuments">—</b><span>Tệp nguồn</span></div>
           <div class="bank-stat"><b id="bankStatItems">—</b><span>Tổng số câu</span></div>
           <div class="bank-stat ok"><b id="bankStatActive">—</b><span>Đang dùng</span></div>
@@ -404,7 +404,7 @@
         </section>
 
         <section class="exam-card bank-import-card" id="bankImportCard">
-          <div class="exam-card-head"><div><h2>Nạp nội dung vào ngân hàng</h2><p>Dán đề có sẵn hoặc chọn tệp TeX, kiểm tra từng câu, gắn ID rồi mới đưa vào kho riêng.</p></div><span class="exam-badge draft">Chỉ admin</span></div>
+          <div class="exam-card-head"><div><h2>Nạp nội dung vào ngân hàng</h2><p>Dán đề có sẵn hoặc chọn tệp TeX, kiểm tra nội dung trước khi gửi vào kho.</p></div><span class="exam-badge draft">Kiểm tra trước khi lưu</span></div>
           <div class="exam-card-body">
             <div class="bank-import-mode-switch" role="tablist" aria-label="Kiểu nội dung cần nạp">
               <button class="bank-import-mode active" id="bankImportTopicMode" type="button" role="tab" aria-selected="true" aria-controls="bankImportTopicPanel" data-bank-import-mode="topic_pack" onclick="VMExamAdmin.bankSetImportMode('topic_pack')"><span aria-hidden="true">▦</span><b>Gói câu theo chuyên đề</b><small>Phân loại theo khối → chương → bài / chủ đề</small></button>
@@ -454,7 +454,7 @@
                 </div>
               </section>
             </div>
-            <div class="bank-package-import">
+            <div class="bank-package-import bank-admin-only-ui">
               <div><b>Kho lớn đã chuẩn hóa</b><span>Đọc tuần tự trên máy, gửi từng lô riêng tư và có thể nhập lại an toàn khi mạng gián đoạn.</span></div>
               <input id="bankPackageFile" type="file" accept=".jsonl,application/x-ndjson" hidden onchange="VMExamAdmin.bankImportAdminPackage(this.files);this.value=''">
               <button class="btn btn-secondary" id="bankPackageButton" type="button" onclick="document.getElementById('bankPackageFile').click()">Nhập gói ngân hàng lớn</button>
@@ -463,17 +463,21 @@
               <div class="bank-local-summary" id="bankLocalSummary"><span>Chưa có nội dung chờ nhập</span></div>
               <button class="btn btn-secondary" id="bankImportPreviewButton" type="button" onclick="VMExamAdmin.bankOpenImportPreview()" hidden>🌐 Xem toàn bộ HTML / PDF</button>
             </div>
+            <section class="bank-delegated-import" id="bankDelegatedImportPanel" hidden>
+              <div><strong>Gửi nguồn để chuẩn hóa</strong><p>Nội dung sẽ vào hàng chờ kiểm tra. Kho đang dùng không thay đổi cho đến khi nguồn được duyệt.</p></div>
+              <button class="btn btn-primary" id="bankDelegatedImportButton" type="button" onclick="VMExamAdmin.bankImport()">Gửi nguồn chờ duyệt</button>
+            </section>
             <div class="bank-local-matrix" id="bankLocalMatrix" hidden aria-label="Ma trận nội dung đang chờ nhập"></div>
 
-            <aside class="bank-taxonomy-guide" aria-label="Chuẩn mã phân loại câu hỏi">
+            <aside class="bank-taxonomy-guide bank-admin-only-ui" aria-label="Chuẩn mã phân loại câu hỏi">
               <div><strong>Chuẩn mã phân loại</strong><code>&lt;khối&gt;&lt;mảng&gt;&lt;chương&gt;&lt;mức&gt;&lt;kỹ năng&gt;-&lt;biến thể&gt;</code></div>
               <p><b>0/1/2 = khối 10/11/12</b>; <b>N/H/V/G = NB/TH/VD/VDC</b>. Ví dụ <b>2D1H3-1</b> là khối 12 · mảng D · chương 1 · thông hiểu · bài/kỹ năng 3 · dạng số 1. Mã phải có trong danh mục gốc; UID/hash do hệ thống tự tạo.</p>
             </aside>
 
-            <div class="bank-bulk-tools" id="bankBulkTools" hidden>
+            <div class="bank-bulk-tools bank-admin-only-ui" id="bankBulkTools" hidden>
               <section class="bank-taxonomy-explorer" aria-labelledby="bankTaxonomyExplorerTitle">
                 <div class="bank-taxonomy-explorer-head">
-                  <div><span>Danh mục ID của tác giả gốc</span><h3 id="bankTaxonomyExplorerTitle">Chọn theo cây kiến thức từng khối</h3></div>
+                  <div><span>Danh mục ID</span><h3 id="bankTaxonomyExplorerTitle">Chọn theo cây kiến thức từng khối</h3></div>
                   <output id="bankTaxonomyExplorerSummary">Đang tải 530 họ mã…</output>
                 </div>
                 <div class="bank-taxonomy-grade-tabs" id="bankTaxonomyGradeTabs" role="tablist" aria-label="Chọn khối để duyệt họ mã"></div>
@@ -575,6 +579,7 @@
         <button class="btn btn-secondary btn-sm" id="bankPreviewReportButton" type="button" onclick="VMExamAdmin.bankOpenIssueReport()" hidden><span aria-hidden="true">⚑</span><span>Báo lỗi</span></button>
         <button class="btn btn-secondary btn-sm bank-admin-only-ui" id="bankPreviewResolveButton" type="button" onclick="VMExamAdmin.bankResolveCurrentIssue()" hidden>✓ Đã xử lý</button>
         <a class="btn btn-secondary btn-sm bank-preview-download" id="bankPreviewDownload" aria-label="Tải bản PDF xem trước" download="vinhmath-ngan-hang-de.pdf" hidden><span aria-hidden="true">⇩</span><span>Tải PDF</span></a>
+        <button class="btn btn-secondary btn-sm bank-preview-download-tex" id="bankPreviewDownloadTex" type="button" onclick="VMExamAdmin.bankDownloadPreviewTex()" hidden><span aria-hidden="true">⇩</span><span>Tải TeX</span></button>
         <button class="btn btn-secondary btn-sm bank-preview-fullscreen" id="bankPreviewFullscreenButton" type="button" aria-pressed="false" aria-label="Mở toàn màn hình" onclick="VMExamAdmin.bankTogglePreviewFullscreen()"><span aria-hidden="true">⛶</span><span data-bank-fullscreen-label>Toàn màn hình</span></button>
         <button class="btn btn-ghost btn-sm bank-preview-close" type="button" aria-label="Đóng cửa sổ xem trước ngân hàng đề" onclick="VMExamAdmin.bankClosePreview()"><span aria-hidden="true">✕</span><span>Đóng</span></button>
       </header>

@@ -11,7 +11,25 @@ function vmMenuEsc(value) {
   });
 }
 
-function apDungMenu(role, portalContext, tenantContext) {
+function vmMenuFeatureMap(access) {
+  var map = Object.create(null);
+  var items = access && Array.isArray(access.items) ? access.items : [];
+  items.forEach(function (item) {
+    if (!item || !item.feature_key) return;
+    map[item.feature_key] = item.state === 'hidden' || item.state === 'locked' ? item.state : 'shown';
+  });
+  return map;
+}
+
+function vmMenuTenantExamFocus(context) {
+  if (!context || !context.full_site || !Array.isArray(context.features)) return false;
+  return context.features.some(function (item) {
+    return item && (item.feature_key || item.key) === 'exam_focus' &&
+      String(item.state || item.status || '').toLowerCase() === 'shown';
+  });
+}
+
+function apDungMenu(role, portalContext, tenantContext, featureAccess) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
   var trang = (location.pathname.split('/').pop() || 'index').split('?')[0];
@@ -94,6 +112,26 @@ function apDungMenu(role, portalContext, tenantContext) {
     }).sort(function (a, b) { return a.featureOrder - b.featureOrder || a.featureIndex - b.featureIndex; });
   }
 
+  // Chính sách toàn hệ thống là lớp quyền thật; cấu hình tenant chỉ có thể
+  // hạn chế thêm, tuyệt đối không được nâng một quyền đã khóa/ẩn.
+  var globalFeatures = vmMenuFeatureMap(featureAccess);
+  muc = muc.map(function (item) {
+    var globalState = globalFeatures[item.featureKey] || 'shown';
+    if (globalState === 'hidden' || item.featureState === 'hidden') item.featureState = 'hidden';
+    else if (globalState === 'locked' || item.featureState === 'locked') item.featureState = 'locked';
+    else item.featureState = 'shown';
+    return item;
+  }).filter(function (item) { return item.featureState !== 'hidden'; });
+
+  // Cổng thi tập trung là một trạng thái trình bày của full-site tenant, không
+  // đổi experience_mode và không can thiệp RLS. Học sinh chỉ còn lối vào thi,
+  // kết quả và hồ sơ trong giai đoạn này.
+  if (fullSiteTenant && role === 'student' && vmMenuTenantExamFocus(fullSiteTenant)) {
+    muc = muc.filter(function (item) {
+      return item.featureKey === 'practice' || item.featureKey === 'results' || item.featureKey === 'profile';
+    });
+  }
+
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
       if (m.featureState === 'locked') {
@@ -144,7 +182,7 @@ function apDungMenu(role, portalContext, tenantContext) {
     }
     return '';
   }).join('');
-  if (fullSiteTenant && role !== 'admin') {
+  if ((fullSiteTenant && role !== 'admin') || Object.keys(globalFeatures).length) {
     nav.querySelectorAll('.vm-feature-locked').forEach(function (link) {
       link.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); });
     });
@@ -214,7 +252,7 @@ function apDungLogoBadge(role) {
   try {
     if (sessionStorage.getItem('vm-guest-mode') === 'true') {
       document.body.classList.add('vm-authenticated', 'vm-role-student');
-      apDungMenu('student', null);
+      apDungMenu('student', null, null, null);
       apDungLogoBadge('student');
       napHeThongCapBac();
       napDongHoTuHoc();
@@ -252,8 +290,26 @@ function apDungLogoBadge(role) {
           return;
         }
       }
+      var featureAccess = null;
+      try {
+        var accessResponse = await sb.rpc('vm_my_feature_access', {
+          p_portal_id: tenantContext && tenantContext.full_site ? tenantContext.id : null
+        });
+        if (!accessResponse.error) featureAccess = accessResponse.data;
+      } catch (featureError) { /* migration cũ: giữ menu hiện hành */ }
+      if (featureAccess && !portalContext) {
+        var pageFeature = typeof vmTenantFeatureForPath === 'function'
+          ? vmTenantFeatureForPath(null, r.data.role) : '';
+        var pageState = vmMenuFeatureMap(featureAccess)[pageFeature] || 'shown';
+        if (pageFeature && pageState !== 'shown') {
+          try { sessionStorage.setItem('vm-global-feature-notice', pageState + ':' + pageFeature); } catch (_) {}
+          var safeTarget = r.data.role === 'student' ? 'trang-chu' : 'trang-chu';
+          var currentPage = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+          if (currentPage !== safeTarget) { location.replace(safeTarget + '?feature=' + encodeURIComponent(pageState)); return; }
+        }
+      }
       if (tenantContext && tenantContext.full_site && typeof vmGuardTenantRoute === 'function' && vmGuardTenantRoute(tenantContext, r.data.role)) return;
-      apDungMenu(r.data.role, portalContext, tenantContext);
+      apDungMenu(r.data.role, portalContext, tenantContext, featureAccess);
       apDungLogoBadge(r.data.role);
       if (r.data.role === 'student' && !portalContext) napHeThongCapBac();
     }

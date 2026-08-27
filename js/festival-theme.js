@@ -10,6 +10,22 @@
     start_date: '',
     end_date: ''
   };
+  var FESTIVALS = {
+    mid_autumn: {
+      label: 'Tết Trung thu',
+      icon: '☾',
+      description: 'Lồng đèn, sao và trăng rằm theo phong cách VinhMath.',
+      auto_label: '8–17/8 ÂL',
+      auto_help: 'Tự bật từ mùng 8 đến 17 tháng 8 âm lịch.'
+    },
+    national_day: {
+      label: 'Lễ Quốc Khánh 2/9',
+      icon: '★',
+      description: 'Sắc đỏ, cờ Việt Nam và ánh vàng chào mừng ngày Quốc Khánh.',
+      auto_label: '30/8–3/9',
+      auto_help: 'Tự bật từ ngày 30/8 đến hết ngày 3/9 theo giờ Việt Nam.'
+    }
+  };
   var activeConfig = null;
   var realtimeChannel = null;
 
@@ -27,7 +43,7 @@
     var intensity = ['subtle', 'balanced', 'festive'].indexOf(raw.intensity) >= 0 ? raw.intensity : DEFAULT_CONFIG.intensity;
     return {
       mode: mode,
-      festival: raw.festival === 'mid_autumn' ? raw.festival : DEFAULT_CONFIG.festival,
+      festival: Object.prototype.hasOwnProperty.call(FESTIVALS, raw.festival) ? raw.festival : DEFAULT_CONFIG.festival,
       intensity: intensity,
       start_date: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.start_date || '')) ? raw.start_date : '',
       end_date: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.end_date || '')) ? raw.end_date : ''
@@ -165,6 +181,11 @@
     return lunar.month === 8 && lunar.leap === 0 && lunar.day >= 8 && lunar.day <= 17;
   }
 
+  function isAutoNationalDay(date) {
+    var p = vietnamDateParts(date);
+    return (p.month === 8 && p.day >= 30) || (p.month === 9 && p.day <= 3);
+  }
+
   function isActive(config, date) {
     var cfg = normalizeConfig(config);
     if (cfg.mode === 'off') return false;
@@ -173,7 +194,7 @@
       var today = isoVietnamDate(date);
       return !!cfg.start_date && !!cfg.end_date && today >= cfg.start_date && today <= cfg.end_date;
     }
-    return cfg.festival === 'mid_autumn' && isAutoMidAutumn(date);
+    return cfg.festival === 'national_day' ? isAutoNationalDay(date) : isAutoMidAutumn(date);
   }
 
   function ensureStyles() {
@@ -181,7 +202,7 @@
     var link = document.createElement('link');
     link.id = 'vmFestivalStyles';
     link.rel = 'stylesheet';
-    link.href = '/css/festival-theme.css?v=1.1';
+    link.href = '/css/festival-theme.css?v=1.2';
     document.head.appendChild(link);
   }
 
@@ -204,6 +225,42 @@
     return html;
   }
 
+  function midAutumnMarkup(count, mobile) {
+    return '<div class="vm-festival-sky"><span class="vm-festival-stars">' + stars(count) + '</span></div>' +
+      '<div class="vm-festival-moon"><span class="vm-moon-crater one"></span><span class="vm-moon-crater two"></span><span class="vm-moon-crater three"></span><i class="vm-moon-cloud"></i></div>' +
+      lantern('left', 'red') + (mobile ? '' : lantern('right', 'gold') +
+      '<div class="vm-festival-cloud is-left"></div><div class="vm-festival-cloud is-right"></div>' +
+      '<div class="vm-festival-wish"><span>☾</span><b>Trung thu đoàn viên</b><small>Trăng sáng · lòng vui · học tốt</small></div>');
+  }
+
+  function nationalDayFlag(side) {
+    return '<div class="vm-national-day-flag is-' + side + '"><span aria-hidden="true">★</span></div>';
+  }
+
+  function nationalDayMarkup(count, mobile) {
+    return '<div class="vm-national-day-glow"></div>' +
+      '<div class="vm-national-day-stars"><span class="vm-festival-stars">' + stars(Math.max(5, Math.floor(count * .72))) + '</span></div>' +
+      '<div class="vm-national-day-ribbon is-top"></div><div class="vm-national-day-ribbon is-bottom"></div>' +
+      nationalDayFlag('left') + (mobile ? '' : nationalDayFlag('right') +
+      '<div class="vm-national-day-wish"><span>★</span><b>Mừng Quốc Khánh 2·9</b><small>Độc lập · Tự do · Hạnh phúc</small></div>');
+  }
+
+  function previewMarkup(cfg) {
+    if (cfg.festival === 'national_day') {
+      return '<div class="vm-national-preview-rays"></div>' +
+        '<div class="vm-national-preview-stars">' + stars(cfg.intensity === 'festive' ? 13 : 8) + '</div>' +
+        '<div class="vm-national-preview-flag"><span>★</span></div>' +
+        '<div class="vm-national-preview-wave"></div>' +
+        '<div class="vm-preview-copy"><small>LỄ HỘI VIỆT NAM</small><strong>Quốc Khánh 2·9</strong><span>Tự hào Việt Nam · rạng rỡ cờ sao</span></div>';
+    }
+    return '<div class="vm-preview-stars">' + stars(cfg.intensity === 'festive' ? 16 : 10) + '</div>' +
+      '<div class="vm-preview-moon"><i></i><i></i></div>' +
+      '<div class="vm-preview-lantern left"><i></i><b></b><span></span></div>' +
+      '<div class="vm-preview-lantern right"><i></i><b></b><span></span></div>' +
+      '<div class="vm-preview-hills"></div>' +
+      '<div class="vm-preview-copy"><small>LỄ HỘI VIỆT NAM</small><strong>Tết Trung thu</strong><span>Lồng đèn thắp sáng · trăng rằm dịu êm</span></div>';
+  }
+
   function removeLayer() {
     if (typeof document === 'undefined') return;
     var old = document.getElementById('vmFestivalLayer');
@@ -223,16 +280,13 @@
     var count = mobile ? 4 : (cfg.intensity === 'subtle' ? 9 : (cfg.intensity === 'festive' ? 24 : 16));
     var layer = document.createElement('div');
     layer.id = 'vmFestivalLayer';
-    layer.className = 'vm-festival-layer intensity-' + cfg.intensity;
+    layer.className = 'vm-festival-layer festival-' + cfg.festival + ' intensity-' + cfg.intensity;
     layer.setAttribute('aria-hidden', 'true');
     layer.setAttribute('data-vm-passive-overlay', 'true');
     layer.setAttribute('inert', '');
-    layer.innerHTML =
-      '<div class="vm-festival-sky"><span class="vm-festival-stars">' + stars(count) + '</span></div>' +
-      '<div class="vm-festival-moon"><span class="vm-moon-crater one"></span><span class="vm-moon-crater two"></span><span class="vm-moon-crater three"></span><i class="vm-moon-cloud"></i></div>' +
-      lantern('left', 'red') + (mobile ? '' : lantern('right', 'gold') +
-      '<div class="vm-festival-cloud is-left"></div><div class="vm-festival-cloud is-right"></div>' +
-      '<div class="vm-festival-wish"><span>☾</span><b>Trung thu đoàn viên</b><small>Trăng sáng · lòng vui · học tốt</small></div>');
+    layer.innerHTML = cfg.festival === 'national_day'
+      ? nationalDayMarkup(count, mobile)
+      : midAutumnMarkup(count, mobile);
     document.body.appendChild(layer);
     document.documentElement.setAttribute('data-vm-festival', cfg.festival);
     document.body.classList.add('vm-festival-active');
@@ -242,14 +296,8 @@
   function renderPreview(target, config) {
     if (!target) return;
     var cfg = normalizeConfig(config);
-    target.className = 'vm-festival-preview intensity-' + cfg.intensity;
-    target.innerHTML =
-      '<div class="vm-preview-stars">' + stars(cfg.intensity === 'festive' ? 16 : 10) + '</div>' +
-      '<div class="vm-preview-moon"><i></i><i></i></div>' +
-      '<div class="vm-preview-lantern left"><i></i><b></b><span></span></div>' +
-      '<div class="vm-preview-lantern right"><i></i><b></b><span></span></div>' +
-      '<div class="vm-preview-hills"></div>' +
-      '<div class="vm-preview-copy"><small>LỄ HỘI VIỆT NAM</small><strong>Tết Trung thu</strong><span>Lồng đèn thắp sáng · trăng rằm dịu êm</span></div>';
+    target.className = 'vm-festival-preview festival-' + cfg.festival + ' intensity-' + cfg.intensity;
+    target.innerHTML = previewMarkup(cfg);
   }
 
   async function loadConfig() {
@@ -296,11 +344,13 @@
 
   global.VMFestival = {
     defaults: normalizeConfig(DEFAULT_CONFIG),
+    catalog: FESTIVALS,
     normalizeConfig: normalizeConfig,
     solarToLunar: solarToLunar,
     vietnamDateParts: vietnamDateParts,
     isoVietnamDate: isoVietnamDate,
     isAutoMidAutumn: isAutoMidAutumn,
+    isAutoNationalDay: isAutoNationalDay,
     isActive: isActive,
     loadConfig: loadConfig,
     refresh: refresh,

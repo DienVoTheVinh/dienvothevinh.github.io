@@ -29,6 +29,7 @@ const toanThayTruong = read('supabase/migrations/20260822152556_add_toan_thay_tr
 const classroom = read('supabase/migrations/20260822172114_partner_portal_classroom_workspace.sql');
 const classroomHardening = read('supabase/migrations/20260822173332_harden_partner_portal_classroom_write_scope.sql');
 const classroomReturningFix = read('supabase/migrations/20260822173559_fix_partner_portal_hardened_insert_returning.sql');
+const unifiedMigration = read('supabase/migrations/20260828143000_unify_admin_brand_theme_feature_access.sql');
 const accountFunction = read('supabase/functions/tao-tai-khoan/index.ts');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
@@ -36,7 +37,12 @@ const roleHome = read('js/role-home.js');
 const examAdmin = read('js/exam-admin.js');
 
 expect(menu.includes("path: 'trang-chu', label: 'Hôm nay'") && menu.includes("path: 'quan-tri', label: 'Quản trị'"), 'Role navigation is not task-focused');
-expect(hub.includes('Trung tâm quản trị') && hub.includes('quan-tri-portal-thi'), 'Admin tools are not grouped in one hub');
+expect(hub.includes('Thương hiệu & không gian') && (hub.match(/href="quan-tri-khong-gian"/g) || []).length === 1, 'Admin tools must expose one unified brand/tenant/portal hub');
+expect(!hub.includes('href="quan-tri-portal-thi"') && !hub.includes('href="quan-tri-thuong-hieu"'), 'Legacy portal and brand pages must not remain competing hub shortcuts');
+expect(portalAdmin.includes("get('embed')==='1'") && portalAdmin.includes("location.replace('quan-tri-khong-gian?panel=exam&legacy=1')"), 'Legacy portal URL must redirect into the unified manager while supporting its embedded workflow');
+expect(menu.includes('function vmMenuFeatureMap(access)') && menu.includes("sb.rpc('vm_my_feature_access'"), 'Role UX must consume server-authoritative effective feature access');
+expect(menu.includes('apDungMenu(r.data.role, portalContext, tenantContext, featureAccess)'), 'Shared menu must receive all four role/portal/tenant/access inputs');
+expect(menu.includes('function vmMenuTenantExamFocus(context)') && menu.includes("role === 'student' && vmMenuTenantExamFocus(fullSiteTenant)"), 'Student exam focus must be a presentation state of the shared tenant menu');
 expect(roleHome.includes('Việc cần ưu tiên') && roleHome.includes('Việc cần làm & cập nhật'), 'Teacher/student home priorities are incomplete');
 expect(classAdmin.includes("localStorage.getItem('vm-admin-active-class-id')") && classAdmin.includes("dsLop[0] && dsLop[0].id"), 'Class manager must select a valid class immediately');
 expect(classAdmin.includes("currentUrl.searchParams.set('tab', tab)"), 'Class tab state must survive reloads');
@@ -72,6 +78,9 @@ expect(classroom.includes('assignment.class_id is null') && classroom.includes('
 for (const table of ['classes', 'lessons', 'exams', 'questions', 'exam_questions']) expect(classroomHardening.includes(`on public.${table} as restrictive for all`), `Portal-only write isolation is missing for ${table}`);
 expect(classroomHardening.includes('not (select private.is_portal_only_user())'), 'Normal VinhMath and portal-only authoring scopes must stay separate');
 expect(classroomReturningFix.includes('private.can_manage_exam_portal(portal_id)') && classroomReturningFix.includes('private.portal_exam_payload_valid(portal_id, class_id)'), 'Hardened INSERT RETURNING path must authorize the portal row directly');
+expect(unifiedMigration.includes('exam_focus_mode boolean not null default false') && unifiedMigration.includes("experience_mode<>'full_site'"), 'Exam focus must remain separate from the legacy exam-only portal mode');
+expect(unifiedMigration.includes('create or replace function public.vm_admin_deploy_tenant') && unifiedMigration.includes('create or replace function public.vm_admin_update_tenant_lifecycle'), 'Unified tenant publishing must use explicit deploy/update lifecycle RPCs');
+expect(unifiedMigration.includes('create or replace function public.vm_my_feature_access') && unifiedMigration.includes('create table if not exists private.vm_feature_user_rules'), 'Role UX authorization needs effective access plus per-user overrides');
 expect(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test([menu, shared, portal, portalAdmin, exam, examAdmin, migration, hardening, loginSuffix, teacherSuffix, toanThayTruong, classroom, classroomHardening, classroomReturningFix].join('\n')), 'Privileged credentials must not appear in browser or migration files');
 
 console.log('PASS role UX + partner exam portal: navigation, routing, allow-list, account workflow and RLS');
