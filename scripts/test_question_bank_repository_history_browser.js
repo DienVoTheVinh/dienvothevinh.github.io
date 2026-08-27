@@ -99,15 +99,16 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
 
     const repository = await page.evaluate(() => ({
       zones:document.querySelectorAll('[data-bank-zone-nav]').length,
-      navVisible:!document.getElementById('bankRepositoryNav').hidden,
       importVisible:!document.getElementById('bankImportNav').hidden,
       active:window.VMExamAdmin._bankState.activeView,
+      manageMode:window.VMExamAdmin._bankState.manageMode,
+      sourcesVisible:!document.getElementById('bankManageSourcesPane').hidden,
       visibleZones:Array.from(document.querySelectorAll('[data-bank-zone]')).filter((node) => !node.hidden).map((node) => node.dataset.bankZone),
       url:location.pathname+location.search+location.hash,
       item:document.getElementById('bankRepositoryResults').textContent,
       catalogCall:window.__bankRpcCalls.find((entry) => entry.name === 'vm_bank_admin_document_catalog')
     }));
-    if (repository.zones !== 5 || !repository.navVisible || !repository.importVisible || repository.active !== 'repository' || JSON.stringify(repository.visibleZones) !== JSON.stringify(['repository']) || !repository.url.includes('tab=bank') || !repository.url.endsWith('#bank-repository') || !repository.item.includes('Dethamkhao9') || !repository.item.includes('Tác giả / tự biên') || !repository.catalogCall || repository.catalogCall.args.p_limit !== 25 || repository.catalogCall.args.p_offset !== 0) {
+    if (repository.zones !== 4 || !repository.importVisible || repository.active !== 'manage' || repository.manageMode !== 'sources' || !repository.sourcesVisible || JSON.stringify(repository.visibleZones) !== JSON.stringify(['manage']) || !repository.url.includes('tab=bank') || !repository.url.endsWith('#bank-manage') || !repository.item.includes('Dethamkhao9') || !repository.item.includes('Tác giả / tự biên') || !repository.catalogCall || repository.catalogCall.args.p_limit !== 25 || repository.catalogCall.args.p_offset !== 0) {
       throw new Error(`Admin repository contract failed: ${JSON.stringify(repository)}`);
     }
 
@@ -134,7 +135,7 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
       active:window.VMExamAdmin._bankState.activeView,
       historyActive:window.VMExamAdmin._bankState.preview.historyActive
     }));
-    if (!afterBack.url.includes('tab=bank') || !afterBack.url.endsWith('#bank-repository') || afterBack.active !== 'repository' || afterBack.historyActive) {
+    if (!afterBack.url.includes('tab=bank') || !afterBack.url.endsWith('#bank-manage') || afterBack.active !== 'manage' || afterBack.historyActive) {
       throw new Error(`Browser Back did not close only the preview: ${JSON.stringify(afterBack)}`);
     }
 
@@ -276,9 +277,10 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
         .find((button) => button.dataset.bankPreviewSwitchId === 'exam-generated-safe-1');
       return {
         selected,
-        repositoryNavHidden:document.getElementById('bankRepositoryNav').hidden,
         importNavHidden:document.getElementById('bankImportNav').hidden,
-        repositoryZoneHidden:document.getElementById('bankZoneRepository').hidden,
+        sourceMode:window.VMExamAdmin._bankState.manageMode,
+        sourcesPaneHidden:document.getElementById('bankManageSourcesPane').hidden,
+        sourcesTabHidden:document.getElementById('bankManageSourcesTab').hidden,
         adminGuideHidden:getComputedStyle(document.querySelector('.bank-usage-identifiers')).display === 'none' && getComputedStyle(document.querySelector('.bank-usage-legacy')).display === 'none',
         teacherGuideVisible:getComputedStyle(document.querySelector('.bank-teacher-only-ui')).display !== 'none',
         editorHidden:getComputedStyle(document.getElementById('bankPreviewToEditor')).display === 'none',
@@ -302,7 +304,7 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
     const examReportArgs = teacher.examReportCall && teacher.examReportCall.args || {};
     const examReportTarget = examReportArgs.p_target || {};
     const reportLeaksPrivateData = /(?:item_id|stable_id|technical_id|legacy_code|raw_tex|canonical_tex|solution_latex|correct_indexes)/i.test(JSON.stringify([sourceReportArgs,examReportArgs]));
-    if (teacher.selected !== 'overview' || !teacher.repositoryNavHidden || !teacher.importNavHidden || !teacher.repositoryZoneHidden || !teacher.adminGuideHidden || !teacher.teacherGuideVisible || !teacher.editorHidden || !teacher.reportVisible || !teacher.safePreview || !teacher.safePayload || teacher.after !== teacher.before || !teacher.sourceReportCall || sourceReportArgs.p_target_type !== 'question' || sourceReportTarget.document_id !== 'doc-authored-9' || sourceReportTarget.source_ordinal !== 1 || !teacher.sourceReportContext.includes('câu 1') || !teacher.examReportCall || examReportArgs.p_target_type !== 'question' || examReportTarget.exam_id !== 'exam-generated-1' || examReportTarget.exam_sort !== 0 || !teacher.examReportContext.includes('câu 1') || reportLeaksPrivateData || teacher.unavailableSource.previewActions !== 1 || teacher.unavailableSource.assignmentActions !== 0 || !teacher.safeCatalogCall || teacher.safeCatalogCall.args.p_limit !== 120 || !teacher.fullscreenGeneratedExam) {
+    if (teacher.selected !== 'overview' || !teacher.importNavHidden || teacher.sourceMode !== 'questions' || !teacher.sourcesPaneHidden || !teacher.sourcesTabHidden || !teacher.adminGuideHidden || !teacher.teacherGuideVisible || !teacher.editorHidden || !teacher.reportVisible || !teacher.safePreview || !teacher.safePayload || teacher.after !== teacher.before || !teacher.sourceReportCall || sourceReportArgs.p_target_type !== 'question' || sourceReportTarget.document_id !== 'doc-authored-9' || sourceReportTarget.source_ordinal !== 1 || !teacher.sourceReportContext.includes('câu 1') || !teacher.examReportCall || examReportArgs.p_target_type !== 'question' || examReportTarget.exam_id !== 'exam-generated-1' || examReportTarget.exam_sort !== 0 || !teacher.examReportContext.includes('câu 1') || reportLeaksPrivateData || teacher.unavailableSource.previewActions !== 1 || teacher.unavailableSource.assignmentActions !== 0 || !teacher.safeCatalogCall || teacher.safeCatalogCall.args.p_limit !== 120 || !teacher.fullscreenGeneratedExam) {
       throw new Error(`Teacher repository boundary failed: ${JSON.stringify(teacher)}`);
     }
 

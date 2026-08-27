@@ -28,23 +28,27 @@ assert.ok(html.includes('Liên kết với Soạn thảo') && html.includes('Tra
 assert.ok(html.includes('Mã phân loại gốc') && html.includes('2D1H3-1') && html.includes('UID kỹ thuật QB'), 'guide must distinguish original classification codes from immutable QB identifiers');
 assert.ok(html.includes('Ma trận ID khối 10, 11, 12') && html.includes('question-bank-id-guide.js'), 'guide must expose the complete original ID matrix');
 assert.ok(html.includes('Ánh xạ ID cũ sang chuẩn tương lai') && html.includes('bankIdMapOrder') && html.includes('bankIdAliasSave'), 'admin needs versioned ID schema and alias controls');
+for (const id of ['bankIdSystemPreset','bankIdSystemName','bankIdSystemLevel','bankIdSystemSave','bankIdFamilySchema','bankIdFamilyGrade','bankIdFamilySave']) {
+  assert.ok(html.includes(`id="${id}"`), `admin ID-system builder is missing ${id}`);
+}
+assert.ok(html.includes('thcs-v1:6D1TH3-1') && html.includes('thcs-chuyen-v1:6D1TH3-1'), 'THCS and specialized THCS must use distinct namespaced canonical examples');
 for (const macro of ['vv','vect','heva','hoac'].map((name) => '\\' + name)) assert.ok(html.includes(`<code>${macro}`), `guide is missing legacy TeX macro ${macro}`);
 assert.ok(html.includes('lớp tương thích chỉ bổ sung lệnh còn thiếu') && html.includes('\\renewcommand'), 'guide must state the non-overriding legacy compatibility rule');
 const questionBankScript = html.search(/js\/question-bank\.js\?v=[^"']+/);
 const examAdminScript = html.search(/js\/exam-admin\.js\?v=[^"']+/);
 assert.ok(questionBankScript >= 0 && examAdminScript > questionBankScript,
   'question-bank parser must load before the exam-admin UI regardless of cache-buster version');
-for (const zone of ['Overview','Create','Import','Repository','Manage']) {
+for (const zone of ['Overview','Create','Import','Manage']) {
   assert.ok(html.includes(`id="bankZone${zone}"`), `bank workspace is missing ${zone.toLowerCase()} zone`);
 }
 assert.ok(html.includes('id="bankImportNav"') && html.includes('data-bank-zone-nav="import"'), 'admin import needs its own workspace navigation entry');
-assert.ok(html.includes('id="bankRepositoryNav"') && html.includes('data-bank-zone-nav="repository"'), 'admin source repository needs its own workspace navigation entry');
-assert.ok(html.includes('Nạp &amp; chuẩn hóa') && html.includes('Kho nguồn') && html.includes('Kho câu &amp; ma trận'), 'five-zone navigation must use clear workflow labels');
+assert.ok(!html.includes('id="bankRepositoryNav"'), 'source files and matrices must share one workspace instead of a duplicate navigation zone');
+assert.ok(html.includes('Nạp &amp; chuẩn hóa') && html.includes('Kho dữ liệu &amp; ma trận'), 'four-zone navigation must use clear workflow labels');
 assert.ok(html.includes('id="bankWorkspaceNav" role="tablist"') && html.includes('id="bankWorkspaceViews"'), 'bank navigation and independent view container must be explicit');
-for (const zone of ['Overview','Create','Import','Repository','Manage']) {
+for (const zone of ['Overview','Create','Import','Manage']) {
   assert.ok(new RegExp(`id="bankZone${zone}"[^>]*role="tabpanel"`).test(html), `bank ${zone.toLowerCase()} view must be an accessible tab panel`);
 }
-for (const zone of ['Create','Import','Repository','Manage']) assert.ok(new RegExp(`id="bankZone${zone}"[^>]*hidden`).test(html), `inactive ${zone.toLowerCase()} view must start hidden`);
+for (const zone of ['Create','Import','Manage']) assert.ok(new RegExp(`id="bankZone${zone}"[^>]*hidden`).test(html), `inactive ${zone.toLowerCase()} view must start hidden`);
 assert.ok(html.includes('id="bankOverviewComplete"') && html.includes('id="bankOverviewTopic"') && html.includes('id="bankOverviewReviewCard"'), 'overview must separate inventory and review status');
 assert.ok(html.includes('id="bankSearchChapter"') && html.includes('id="bankSearchTopic"'), 'search needs grade to chapter to topic hierarchy');
 assert.ok(html.includes('id="bankGenChapter"') && html.includes('id="bankGenTopic"'), 'generation needs semantic chapter and topic filters');
@@ -63,7 +67,8 @@ for (const id of ['bankGenerationSourceProvinceCount','bankGenerationSourceAutho
 }
 assert.ok(html.includes('id="bankMatrixBody"') && html.includes('id="bankMatrixTotalRow"'), 'admin and teacher need an exam matrix');
 assert.ok(/id="bankZoneImport"[^>]*data-bank-zone="import"[^>]*hidden/.test(html) && html.includes('id="bankAdminWorkbench"'), 'the whole import zone must be admin-only by default');
-assert.ok(/id="bankZoneRepository"[^>]*data-bank-zone="repository"[^>]*hidden/.test(html), 'the whole source repository must be admin-only by default');
+assert.ok(html.includes('id="bankManageQuestionsTab"') && html.includes('id="bankManageSourcesTab"') && html.includes('id="bankManageQuestionsPane"') && html.includes('id="bankManageSourcesPane"'), 'questions, matrices and source files must share an internal management workspace');
+assert.ok(/id="bankManageSourcesPane"[^>]*bank-admin-only-ui[^>]*hidden/.test(html), 'private source files must stay hidden until an admin selects the internal source pane');
 for (const id of ['bankRepositoryQuery','bankRepositoryGroup','bankRepositoryStatus','bankRepositoryGrade','bankRepositoryResults','bankRepositoryPrev','bankRepositoryNext']) {
   assert.ok(html.includes(`id="${id}"`), `source repository is missing ${id}`);
 }
@@ -103,7 +108,7 @@ assert.ok(html.includes('id="bankTaxonomyCatalogSelect"') && html.includes('id="
 assert.ok(html.includes('id="bankTaxGrade"') && html.includes('id="bankTaxArea"') && html.includes('id="bankTaxChapter"'));
 assert.ok(html.includes('id="bankTaxDifficulty"') && html.includes('id="bankTaxSkill"') && html.includes('id="bankTaxVariant"'));
 assert.ok(html.includes('Chọn tất cả câu thiếu mã') && html.includes('Mã phân loại'));
-assert.ok(html.includes('Số dạng bài') && html.includes('min="0"'), 'legacy variants stay numeric and chapter zero remains selectable');
+assert.ok(html.includes('Dạng bài cụ thể') && html.includes('id="bankTaxonomyGradeTabs"') && html.includes('id="bankTaxSchema"') && html.includes('id="bankTaxonomyFamilyList"'), 'taxonomy must generate grade-specific families for the selected ID system instead of one global variant number');
 assert.ok(html.includes('Hệ thống đối chiếu UID/hash'), 'import resume/idempotency guidance must be visible');
 assert.ok(!html.includes('id="bankBulkStart"'), 'taxonomy variants are selected from the original catalog rather than auto-incremented blindly');
 
@@ -121,7 +126,8 @@ for (const rpc of [
 
 assert.ok(js.includes("profile.role === 'admin'"));
 assert.ok(js.includes("profile.role === 'teacher'"));
-assert.ok(js.includes("/^#bank-(overview|create|import|repository|manage)$/") && js.includes("history.pushState(history.state,'',hash)"), 'bank views need shareable hash history');
+assert.ok(js.includes("/^#bank-(overview|create|import|repository|manage)$/") && js.includes("requested==='repository'?'sources'") && js.includes("history.pushState(history.state,'',hash)"), 'legacy repository deep links must map to the private source pane without restoring a fifth workspace view');
+assert.ok(js.includes('function bankSetManageMode') && js.includes("bankSetManageMode:bankSetManageMode"), 'management workspace must switch safely between question matrix and private source panes');
 assert.ok(js.includes("document.querySelectorAll('[data-bank-zone]')") && js.includes('zone.hidden=!visible'), 'switching bank views must hide every inactive panel without rebuilding forms');
 assert.ok(js.includes("window.addEventListener('popstate',bankSyncWorkspaceFromLocation)") && js.includes("window.addEventListener('hashchange',bankSyncWorkspaceFromLocation)"), 'Back, Forward, preview closing and direct hash navigation must restore the selected workspace');
 assert.ok(js.includes("url.searchParams.set('preview','bank')") && js.includes("history.pushState(Object.assign({},history.state||{},{vmBankPreview:true})"), 'opening the bank preview must create a Back-closeable history entry');
@@ -138,7 +144,7 @@ for (const name of ['bankOpenIssueReport','bankSubmitIssueReport','bankOpenIssue
   assert.ok(js.includes(`function ${name}`) && js.includes(`${name}:${name}`), `issue-report handler ${name} must be implemented and exported`);
 }
 const issueDeepLinkSource = js.slice(js.indexOf('function bankOpenIssueFromLocation'), js.indexOf('function ',js.indexOf('function bankOpenIssueFromLocation')+10));
-assert.ok(issueDeepLinkSource.includes('bank_report') && issueDeepLinkSource.includes('canAdmin') && issueDeepLinkSource.includes('repository'), 'admin issue deep link must validate role and open the repository context from bank_report');
+assert.ok(issueDeepLinkSource.includes('bank_report') && issueDeepLinkSource.includes('canAdmin') && issueDeepLinkSource.includes("bankSetView('repository'"), 'admin issue deep link must validate role and open the private source context from bank_report');
 assert.ok(!/profile\.role\s*===\s*['\"]assistant['\"]/.test(js.slice(js.indexOf('function bankAccessFor'), js.indexOf('function bankFillClassOptions'))));
 assert.ok(js.includes("if(!bankAccess.canUse){location.href="));
 assert.ok(js.includes("if(!bankAccess.canAdmin){"), 'teacher path must return before raw exam/admin loading');

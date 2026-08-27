@@ -153,18 +153,6 @@
   }
   document.addEventListener('visibilitychange', updateVisibilityBudget, { passive: true });
   updateVisibilityBudget();
-
-  function revealPage() {
-    var main = document.querySelector('main, .wrap, #viewMain');
-    if (!main || main.dataset.vmSmoothReady) return;
-    main.dataset.vmSmoothReady = '1';
-    main.classList.add('vm-smooth-enter');
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { main.classList.add('is-ready'); });
-    });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealPage, { once: true });
-  else revealPage();
 })();
 
 /* ---------- CHỌN ĐÚNG CA GOOGLE MEET THEO NGÀY/GIỜ ---------- */
@@ -759,48 +747,96 @@ function vmDangChayTrongUngDungDaCai() {
   }, true);
 })();
 
-/* ---------- 0. CHUYỂN CẢNH MƯỢT GIỮA CÁC TRANG (fade-in + fade-out khi điều hướng) ---------- */
-(function () {
-  try {
-    var giamHoatAnh = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (giamHoatAnh) return;
-    // Chèn style hiệu ứng
-    var st = document.createElement('style');
-    st.id = 'vmPageTransition';
-    st.textContent =
-      // Không transform <body>: transform dù bằng ma trận đơn vị vẫn biến body thành
-      // containing block, khiến mọi position:fixed bị neo theo chiều cao tài liệu.
-      '@keyframes vmPageIn{from{opacity:0}to{opacity:1}}' +
-      '@keyframes vmPageOut{from{opacity:1}to{opacity:0}}' +
-      'body{animation:vmPageIn .36s cubic-bezier(.22,1,.36,1) both}' +
-      'html.vm-leaving body{animation:vmPageOut .2s ease both}';
-    (document.head || document.documentElement).appendChild(st);
-
-    // Fade-out khi bấm sang trang khác cùng site (bubble phase để tôn trọng handler của phần tử)
-    document.addEventListener('click', function (e) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-      if (!a) return;
-      if (a.target === '_blank' || a.hasAttribute('download') || a.getAttribute('rel') === 'external') return;
-      var href = a.getAttribute('href') || '';
-      if (!href || href.charAt(0) === '#' || /^(javascript:|mailto:|tel:)/i.test(href)) return;
-      var url; try { url = new URL(a.href, location.href); } catch (_) { return; }
-      if (url.origin !== location.origin) return;                 // link ngoài site
-      if (url.pathname === location.pathname && url.search === location.search) return; // cùng trang (neo)
-      e.preventDefault();
-      document.documentElement.classList.add('vm-leaving');
-      var dich = a.href;
-      setTimeout(function () { location.href = dich; }, 190);
-    }, false);
-
-    // Quay lại/tiến (bfcache) -> đảm bảo trang hiện rõ, gỡ trạng thái đang rời
-    window.addEventListener('pageshow', function (ev) {
-      if (ev.persisted) document.documentElement.classList.remove('vm-leaving');
-    });
-  } catch (e) { /* im lặng, không chặn trang */ }
-})();
-
 /* ---------- 1. CHẾ ĐỘ SÁNG / TỐI & HỆ THỐNG GIAO DIỆN LIQUID GLASS ---------- */
+var VM_THEME_SCHEDULE_KEY = 'vm-theme-schedule';
+var VM_THEME_CHOICE_KEY = 'vm-theme-choice';
+var VM_THEME_OVERRIDE_KEY = 'vm-theme-session';
+var vmThemeScheduleTimer = null;
+
+function vmLichThemeMacDinh(overrides) {
+  var value = overrides && typeof overrides === 'object' ? overrides : {};
+  return {
+    mode: value.mode === 'schedule' ? 'schedule' : 'manual',
+    theme: value.theme === 'light' ? 'light' : 'dark',
+    lightStart: /^([01]\d|2[0-3]):[0-5]\d$/.test(value.lightStart || '') ? value.lightStart : '06:00',
+    darkStart: /^([01]\d|2[0-3]):[0-5]\d$/.test(value.darkStart || '') ? value.darkStart : '18:00',
+    timezone: 'Asia/Ho_Chi_Minh'
+  };
+}
+
+function vmDocLichThemeDaLuu() {
+  try { return vmLichThemeMacDinh(JSON.parse(localStorage.getItem(VM_THEME_SCHEDULE_KEY) || '{}')); }
+  catch (_) { return vmLichThemeMacDinh(); }
+}
+
+function vmLuuLichTheme(schedule) {
+  var value = vmLichThemeMacDinh(schedule);
+  try { localStorage.setItem(VM_THEME_SCHEDULE_KEY, JSON.stringify(value)); } catch (_) {}
+  return value;
+}
+
+function vmThemeTheoLich(schedule, date) {
+  var value = vmLichThemeMacDinh(schedule);
+  if (window.VMThemePreflight && typeof window.VMThemePreflight.resolveSystemTheme === 'function') {
+    return window.VMThemePreflight.resolveSystemTheme(value, date);
+  }
+  if (value.mode !== 'schedule') return value.theme;
+  var now = date || new Date();
+  var parts;
+  try {
+    parts = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Ho_Chi_Minh', hour:'2-digit', minute:'2-digit', hour12:false }).format(now).split(':');
+  } catch (_) { parts = [now.getHours(), now.getMinutes()]; }
+  var current = (Number(parts[0]) % 24) * 60 + Number(parts[1]);
+  function clock(input, fallback) { var pair=String(input||'').split(':'); var result=Number(pair[0])*60+Number(pair[1]); return Number.isFinite(result)?result:fallback; }
+  var light = clock(value.lightStart, 360), dark = clock(value.darkStart, 1080);
+  if (light === dark) return value.theme;
+  return (light < dark ? current >= light && current < dark : current >= light || current < dark) ? 'light' : 'dark';
+}
+
+function vmDangTheoThemeHeThong() {
+  try { return sessionStorage.getItem(VM_THEME_CHOICE_KEY) !== 'manual'; } catch (_) { return true; }
+}
+
+function vmXoaThemeTamTheoPhien() {
+  try {
+    sessionStorage.removeItem(VM_THEME_CHOICE_KEY);
+    sessionStorage.removeItem(VM_THEME_OVERRIDE_KEY);
+  } catch (_) {}
+}
+
+function vmApDungThemeHienTai(schedule) {
+  if (!vmDangTheoThemeHeThong()) return document.documentElement.getAttribute('data-theme') || 'dark';
+  var theme = vmThemeTheoLich(schedule || vmDocLichThemeDaLuu());
+  if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') window.VMThemePreflight.apply(theme);
+  else document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('vm-theme', theme); } catch (_) {}
+  capNhatNutTheme();
+  var accent = localStorage.getItem('vm-accent') || 'amber';
+  apdungMauAccent(document.documentElement, accent, theme === 'dark');
+  try { window.dispatchEvent(new Event('theme-change')); } catch (_) {}
+  return theme;
+}
+
+function vmKhoiDongDongHoTheme() {
+  if (vmThemeScheduleTimer) clearInterval(vmThemeScheduleTimer);
+  vmThemeScheduleTimer = setInterval(function () {
+    if (!document.hidden) vmApDungThemeHienTai();
+  }, 30000);
+}
+
+function capNhatTrangThaiDieuKhienLichTheme(schedule) {
+  var value = schedule ? vmLichThemeMacDinh(schedule) : vmDocLichThemeDaLuu();
+  var mode = document.getElementById('ccThemeMode');
+  var light = document.getElementById('ccLightStart');
+  var dark = document.getElementById('ccDarkStart');
+  if (mode && schedule) mode.value = value.mode;
+  if (light && schedule) light.value = value.lightStart;
+  if (dark && schedule) dark.value = value.darkStart;
+  var scheduled = (mode ? mode.value : value.mode) === 'schedule';
+  if (light) light.disabled = !scheduled;
+  if (dark) dark.disabled = !scheduled;
+}
+
 function capNhatNutTheme() {
   var btn = document.getElementById('themeBtn');
   if (!btn) return;
@@ -814,7 +850,13 @@ function toggleTheme() {
   var h = document.documentElement;
   var dark = h.getAttribute('data-theme') === 'dark';
   var newTheme = dark ? 'light' : 'dark';
-  h.setAttribute('data-theme', newTheme);
+  if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') {
+    window.VMThemePreflight.apply(newTheme);
+  } else {
+    h.setAttribute('data-theme', newTheme);
+    h.style.colorScheme = newTheme;
+    h.style.backgroundColor = newTheme === 'dark' ? '#000000' : '#faf8f5';
+  }
   
   capNhatNutTheme();
   
@@ -834,11 +876,21 @@ function toggleTheme() {
   var activeColor = localStorage.getItem('vm-accent') || 'amber';
   apdungMauAccent(h, activeColor, newTheme === 'dark');
   
-  try { localStorage.setItem('vm-theme', newTheme); } catch (e) {}
+  try {
+    if (window.VM_USER_ROLE !== 'admin') {
+      sessionStorage.setItem(VM_THEME_CHOICE_KEY, 'manual');
+      sessionStorage.setItem(VM_THEME_OVERRIDE_KEY, newTheme);
+    } else {
+      localStorage.setItem('vm-theme', newTheme);
+    }
+  } catch (e) {}
   try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
   
   // Lưu lên database nếu là admin
   if (window.VM_USER_ROLE === 'admin') {
+    vmXoaThemeTamTheoPhien();
+    var adminSchedule = vmLuuLichTheme(Object.assign({}, vmDocLichThemeDaLuu(), { mode:'manual', theme:newTheme }));
+    luuCaiDatHeThong('theme_mode', adminSchedule.mode);
     luuCaiDatHeThong('theme_theme', newTheme);
   } else if (daKetNoi()) {
     // Trường hợp vai trò chưa được tải xong khi bấm nút
@@ -849,6 +901,8 @@ function toggleTheme() {
           var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
           if (rp.data && rp.data.role === 'admin') {
             window.VM_USER_ROLE = 'admin';
+            vmXoaThemeTamTheoPhien();
+            luuCaiDatHeThong('theme_mode', 'manual');
             luuCaiDatHeThong('theme_theme', newTheme);
           }
         }
@@ -886,8 +940,13 @@ function apdungMauAccent(el, color, isDark) {
     var root = document.documentElement;
     
     // 1. Theme
-    var savedTheme = localStorage.getItem('vm-theme') || 'dark'; // mặc định tối cho ngầu
-    root.setAttribute('data-theme', savedTheme);
+    var savedTheme = (window.VMThemePreflight && window.VMThemePreflight.theme)
+      || localStorage.getItem('vm-theme') || 'dark';
+    if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') {
+      window.VMThemePreflight.apply(savedTheme);
+    } else {
+      root.setAttribute('data-theme', savedTheme);
+    }
     
     // 2. Transparency & Blur
     var savedTrans = localStorage.getItem('vm-transparency');
@@ -1528,6 +1587,19 @@ async function dangNhap(username, password) {
       return { error: 'Sai tên đăng nhập hoặc mật khẩu. Em kiểm tra lại nhé.' };
     return { error: 'Không đăng nhập được: ' + msg };
   }
+  // Một lần đăng nhập mới luôn bắt đầu từ lịch sáng/tối của hệ thống. Nút mặt
+  // trời chỉ là lựa chọn tạm của phiên trước, tuyệt đối không mang sang tài khoản
+  // hoặc lần đăng nhập kế tiếp trên thiết bị dùng chung.
+  vmXoaThemeTamTheoPhien();
+  // Phiên Auth đã hợp lệ ở thời điểm này, nên nạp lại lịch trước khi trang đăng
+  // nhập điều hướng. Nhờ đó first paint của trang đích dùng đúng lịch mới nhất,
+  // kể cả khi admin đã đổi lịch trong lúc thiết bị này đang đăng xuất.
+  try {
+    await vmChoCoGioiHan(taiCaiDatHeThongGlobal(), 6000);
+  } catch (_) {
+    // Không giữ người dùng ở màn hình đăng nhập nếu mạng tải cài đặt chậm.
+    // Trang đích vẫn tải lại lịch ngay sau khi mở.
+  }
   return { ok: true };
 }
 
@@ -1555,6 +1627,7 @@ async function dangXuat() {
     returnUrl += '?portal=' + encodeURIComponent(portalContext.portal.slug);
   }
   sessionStorage.removeItem('vm-guest-mode');
+  vmXoaThemeTamTheoPhien();
   // PDF TikZ co the chua noi dung bai hoc. Xoa ban sao tren thiet bi dung
   // chung khi doi tai khoan; raw TeX khong bao gio duoc luu trong cache nay.
   try {
@@ -1903,6 +1976,7 @@ function khoiTaoControlCenter() {
   var currentBlur = localStorage.getItem('vm-blur') || '20';
   var currentCanvasOpacity = localStorage.getItem('vm-canvas-opacity') || '0.25';
   var currentAccent = localStorage.getItem('vm-accent') || 'amber';
+  var currentSchedule = vmDocLichThemeDaLuu();
   
   panel.innerHTML = 
     '<!-- Shared theme customizations (Sliders for Opacity, Effect, Blur) -->' +
@@ -1943,11 +2017,26 @@ function khoiTaoControlCenter() {
 
     '<!-- Locked settings message for non-admins -->' +
     '<div id="ccLockedMsg" style="text-align:center; padding:12px; font-size:0.85rem; color:var(--ink-3); border-top:1px dashed var(--line); margin-top:12px; display:block">' +
-      '🎨 <i>Màu chủ đề & AI do Quản trị viên thiết lập.</i>' +
+      '🎨 <i>Mặc định sáng/tối do Quản trị viên thiết lập.</i>' +
+      '<button type="button" class="cc-follow-system" id="ccFollowSystem">Theo lịch hệ thống</button>' +
     '</div>' +
     
     '<!-- Admin theme color customizations -->' +
     '<div id="ccThemeColorControls" style="display:none; flex-direction:column; gap:14px; border-top:1px dashed var(--line); padding-top:12px; margin-top:12px">' +
+      '<div class="cc-theme-schedule">' +
+        '<div class="cc-color-label">Sáng / tối mặc định toàn hệ thống</div>' +
+        '<div class="cc-theme-switcher" role="group" aria-label="Giao diện mặc định">' +
+          '<button type="button" class="cc-theme-btn ' + (currentTheme === 'light' ? 'active' : '') + '" id="ccBtnLight">Sáng</button>' +
+          '<button type="button" class="cc-theme-btn ' + (currentTheme === 'dark' ? 'active' : '') + '" id="ccBtnDark">Tối</button>' +
+        '</div>' +
+        '<label class="cc-schedule-mode"><span>Chế độ</span><select id="ccThemeMode"><option value="manual" ' + (currentSchedule.mode === 'manual' ? 'selected' : '') + '>Cố định</option><option value="schedule" ' + (currentSchedule.mode === 'schedule' ? 'selected' : '') + '>Theo giờ Việt Nam</option></select></label>' +
+        '<div class="cc-schedule-times">' +
+          '<label><span>Bắt đầu nền sáng</span><input type="time" id="ccLightStart" value="' + currentSchedule.lightStart + '"></label>' +
+          '<label><span>Bắt đầu nền tối</span><input type="time" id="ccDarkStart" value="' + currentSchedule.darkStart + '"></label>' +
+        '</div>' +
+        '<button type="button" class="cc-schedule-save" id="ccSaveThemeSchedule">Lưu lịch toàn hệ thống</button>' +
+        '<small id="ccThemeScheduleStatus">Múi giờ: Việt Nam (UTC+7)</small>' +
+      '</div>' +
       // Accent Color
       '<div class="cc-color-picker">' +
         '<div class="cc-color-label">Màu chủ đề</div>' +
@@ -1999,7 +2088,11 @@ function khoiTaoControlCenter() {
   var btnDark = $('ccBtnDark');
   
   function setCCTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
+    if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') {
+      window.VMThemePreflight.apply(theme);
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
     localStorage.setItem('vm-theme', theme);
     
     // Cập nhật nút trong CC
@@ -2021,12 +2114,67 @@ function khoiTaoControlCenter() {
     
     // Chỉ lưu lên database nếu tài khoản là admin
     if (window.VM_USER_ROLE === 'admin') {
+      vmXoaThemeTamTheoPhien();
+      vmLuuLichTheme(Object.assign({}, vmDocLichThemeDaLuu(), { mode:'manual', theme:theme }));
+      var modeControl = document.getElementById('ccThemeMode');
+      if (modeControl) modeControl.value = 'manual';
+      capNhatTrangThaiDieuKhienLichTheme();
+      luuCaiDatHeThong('theme_mode', 'manual');
       luuCaiDatHeThong('theme_theme', theme);
     }
   }
   
   if (btnLight) btnLight.addEventListener('click', function() { setCCTheme('light'); });
   if (btnDark) btnDark.addEventListener('click', function() { setCCTheme('dark'); });
+
+  var followSystem = $('ccFollowSystem');
+  if (followSystem) followSystem.addEventListener('click', function() {
+    vmXoaThemeTamTheoPhien();
+    vmApDungThemeHienTai();
+    followSystem.textContent = 'Đang theo lịch hệ thống';
+    setTimeout(function() { followSystem.textContent = 'Theo lịch hệ thống'; }, 1800);
+  });
+
+  var scheduleMode = $('ccThemeMode');
+  var scheduleSave = $('ccSaveThemeSchedule');
+  if (scheduleMode) scheduleMode.addEventListener('change', function() {
+    // Không truyền thẳng Event vào hàm: Event không phải dữ liệu lịch và trước
+    // đây khiến lựa chọn "Theo giờ Việt Nam" lập tức bị trả về "Cố định".
+    capNhatTrangThaiDieuKhienLichTheme();
+  });
+  capNhatTrangThaiDieuKhienLichTheme();
+  if (scheduleSave) scheduleSave.addEventListener('click', async function() {
+    if (window.VM_USER_ROLE !== 'admin') return;
+    var lightStart = ($('ccLightStart') && $('ccLightStart').value) || '06:00';
+    var darkStart = ($('ccDarkStart') && $('ccDarkStart').value) || '18:00';
+    var mode = scheduleMode && scheduleMode.value === 'schedule' ? 'schedule' : 'manual';
+    var status = $('ccThemeScheduleStatus');
+    if (mode === 'schedule' && lightStart === darkStart) {
+      if (status) status.textContent = 'Giờ bắt đầu sáng và tối phải khác nhau.';
+      return;
+    }
+    scheduleSave.disabled = true;
+    if (status) status.textContent = 'Đang lưu lịch toàn hệ thống…';
+    var fallbackTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    var nextSchedule = vmLichThemeMacDinh({
+      mode: mode,
+      theme: fallbackTheme,
+      lightStart: lightStart,
+      darkStart: darkStart
+    });
+    var saved = await luuLichThemeHeThong(nextSchedule);
+    scheduleSave.disabled = false;
+    if (saved) {
+      vmLuuLichTheme(nextSchedule);
+      vmXoaThemeTamTheoPhien();
+      vmApDungThemeHienTai(nextSchedule);
+      if (status) status.textContent = nextSchedule.mode === 'schedule'
+        ? 'Đã áp dụng theo giờ Việt Nam (UTC+7).'
+        : 'Đã áp dụng giao diện cố định toàn hệ thống.';
+    } else if (status) {
+      status.textContent = 'Chưa lưu được. Vui lòng kiểm tra kết nối rồi thử lại.';
+    }
+  });
   
   // Slider Opacity
   var sldOpacity = $('sldOpacity');
@@ -2597,12 +2745,34 @@ function themAdminControlsVaoCC() {
 // Khởi chạy các dịch vụ khi DOM sẵn sàng
 // ---------- 8. QUẢN LÝ GIAO DIỆN HỆ THỐNG TOÀN CỤC ----------
 async function luuCaiDatHeThong(key, value) {
-  if (!daKetNoi()) return;
+  if (!daKetNoi()) return false;
   try {
     var r = await sb.from('app_settings').upsert({ key: key, value: String(value) });
     if (r.error) throw r.error;
+    return true;
   } catch (err) {
     console.error("Lỗi lưu cài đặt hệ thống:", err);
+    return false;
+  }
+}
+
+async function luuLichThemeHeThong(schedule) {
+  if (!daKetNoi()) return false;
+  var value = vmLichThemeMacDinh(schedule);
+  try {
+    // Một statement duy nhất: hoặc cả bốn thành phần lịch được lưu, hoặc không
+    // thành phần nào đổi. Tránh các máy khác nhận một lịch nửa cũ nửa mới.
+    var r = await sb.from('app_settings').upsert([
+      { key: 'theme_mode', value: value.mode },
+      { key: 'theme_theme', value: value.theme },
+      { key: 'theme_light_start', value: value.lightStart },
+      { key: 'theme_dark_start', value: value.darkStart }
+    ], { onConflict: 'key' });
+    if (r.error) throw r.error;
+    return true;
+  } catch (err) {
+    console.error('Lỗi lưu lịch giao diện hệ thống:', err);
+    return false;
   }
 }
 
@@ -2612,6 +2782,9 @@ async function taiCaiDatHeThongGlobal() {
     var r = await sb.from('app_settings').select('key, value');
     if (r.data) {
       var dbTheme = r.data.find(function(x) { return x.key === 'theme_theme'; });
+      var dbThemeMode = r.data.find(function(x) { return x.key === 'theme_mode'; });
+      var dbThemeLightStart = r.data.find(function(x) { return x.key === 'theme_light_start'; });
+      var dbThemeDarkStart = r.data.find(function(x) { return x.key === 'theme_dark_start'; });
       var dbTrans = r.data.find(function(x) { return x.key === 'theme_transparency'; });
       var dbBlur = r.data.find(function(x) { return x.key === 'theme_blur'; });
       var dbCanvas = r.data.find(function(x) { return x.key === 'theme_canvas_opacity'; });
@@ -2619,24 +2792,34 @@ async function taiCaiDatHeThongGlobal() {
       
       var root = document.documentElement;
       
-      var theme = dbTheme ? dbTheme.value : 'dark';
-      var transparency = dbTrans ? dbTrans.value : (theme === 'dark' ? '0.3' : '0.2');
+      var schedule = vmLuuLichTheme({
+        mode: dbThemeMode ? dbThemeMode.value : 'manual',
+        theme: dbTheme ? dbTheme.value : 'dark',
+        lightStart: dbThemeLightStart ? dbThemeLightStart.value : '06:00',
+        darkStart: dbThemeDarkStart ? dbThemeDarkStart.value : '18:00'
+      });
+      var systemTheme = vmThemeTheoLich(schedule);
+      var transparency = dbTrans ? dbTrans.value : (systemTheme === 'dark' ? '0.3' : '0.2');
       var blur = dbBlur ? dbBlur.value : '20';
       var canvasOpacity = dbCanvas ? dbCanvas.value : '0.25';
       var accent = dbAccent ? dbAccent.value : 'amber';
       
-      var isAdmin = (window.VM_USER_ROLE === 'admin');
-      
-      // Nếu là admin, đồng bộ giá trị từ DB. 
-      // Nếu không phải admin, ưu tiên giá trị từ localStorage (nếu có).
-      var finalTheme = localStorage.getItem('vm-theme') !== null ? localStorage.getItem('vm-theme') : theme;
+      // Người dùng có thể đổi tạm bằng nút mặt trời trong phiên hiện tại. Mỗi
+      // lần đăng nhập mới lại bắt đầu từ lịch hệ thống.
+      var sessionTheme = null;
+      try { sessionTheme = sessionStorage.getItem(VM_THEME_OVERRIDE_KEY); } catch (_) {}
+      var finalTheme = vmDangTheoThemeHeThong() ? systemTheme : (sessionTheme === 'light' ? 'light' : 'dark');
       var finalTrans = localStorage.getItem('vm-transparency') !== null ? localStorage.getItem('vm-transparency') : transparency;
       var finalBlur = localStorage.getItem('vm-blur') !== null ? localStorage.getItem('vm-blur') : blur;
       var finalCanvasOpacity = localStorage.getItem('vm-canvas-opacity') !== null ? localStorage.getItem('vm-canvas-opacity') : canvasOpacity;
       var finalAccent = accent; // Màu accent luôn đồng bộ từ DB cho tất cả tài khoản
       
       // Áp dụng styles hệ thống
-      root.setAttribute('data-theme', finalTheme);
+      if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') {
+        window.VMThemePreflight.apply(finalTheme);
+      } else {
+        root.setAttribute('data-theme', finalTheme);
+      }
       root.style.setProperty('--glass-opacity', finalTrans);
       root.style.setProperty('--glass-blur-radius', finalBlur + 'px');
       root.style.setProperty('--canvas-opacity', finalCanvasOpacity);
@@ -2645,22 +2828,24 @@ async function taiCaiDatHeThongGlobal() {
       // biến màu sau khi theme toàn cục tải bất đồng bộ từ database.
       try { window.dispatchEvent(new Event('theme-change')); } catch (themeEventError) {}
       
-      // Đồng bộ vào localStorage để load nhanh cho lần sau
-      localStorage.setItem('vm-theme', finalTheme);
+      // Chỉ cache theme hệ thống cho lần sơn đầu kế tiếp; không ghi lựa chọn
+      // tạm của người dùng vào cache bền vững.
+      localStorage.setItem('vm-theme', systemTheme);
       localStorage.setItem('vm-transparency', finalTrans);
       localStorage.setItem('vm-blur', finalBlur);
       localStorage.setItem('vm-canvas-opacity', finalCanvasOpacity);
       localStorage.setItem('vm-accent', finalAccent);
       
       // Đồng bộ các controls UI ở CC
-      capNhatCCUI(finalTheme, finalTrans, finalBlur, finalCanvasOpacity, finalAccent);
+      capNhatCCUI(finalTheme, finalTrans, finalBlur, finalCanvasOpacity, finalAccent, schedule);
+      vmKhoiDongDongHoTheme();
     }
   } catch (e) {
     console.error("Lỗi taiCaiDatHeThongGlobal:", e);
   }
 }
 
-function capNhatCCUI(theme, transparency, blur, canvasOpacity, accent) {
+function capNhatCCUI(theme, transparency, blur, canvasOpacity, accent, schedule) {
   var ccLight = document.getElementById('ccBtnLight');
   var ccDark = document.getElementById('ccBtnDark');
   if (ccLight && ccDark) {
@@ -2707,42 +2892,29 @@ function capNhatCCUI(theme, transparency, blur, canvasOpacity, accent) {
   }
   
   capNhatNutTheme();
+  if (schedule) capNhatTrangThaiDieuKhienLichTheme(schedule);
 }
 
 function dangKyRealtimeCaiDatHeThong() {
   if (!daKetNoi()) return;
   try {
     sb.channel('realtime-system-theme-settings')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_settings' }, function(payload) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, function(payload) {
         var row = payload.new;
+        if (!row || !row.key) return;
         var root = document.documentElement;
         var theme = root.getAttribute('data-theme') || 'dark';
         var isAdmin = (window.VM_USER_ROLE === 'admin');
         
-        if (row.key === 'theme_theme') {
-          if (isAdmin || localStorage.getItem('vm-theme') === null) {
-            theme = row.value;
-            root.setAttribute('data-theme', theme);
-            localStorage.setItem('vm-theme', theme);
-            
-            var activeColor = localStorage.getItem('vm-accent') || 'amber';
-            apdungMauAccent(root, activeColor, theme === 'dark');
-            try { window.dispatchEvent(new Event('theme-change')); } catch (themeEventError) {}
-            
-            var ccLight = document.getElementById('ccBtnLight');
-            var ccDark = document.getElementById('ccBtnDark');
-            if (ccLight && ccDark) {
-              if (theme === 'dark') {
-                ccDark.classList.add('active');
-                ccLight.classList.remove('active');
-              } else {
-                ccLight.classList.add('active');
-                ccDark.classList.remove('active');
-              }
-            }
-            capNhatNutTheme();
-            try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
-          }
+        if (['theme_theme', 'theme_mode', 'theme_light_start', 'theme_dark_start'].indexOf(row.key) !== -1) {
+          var schedule = vmDocLichThemeDaLuu();
+          if (row.key === 'theme_theme') schedule.theme = row.value;
+          if (row.key === 'theme_mode') schedule.mode = row.value;
+          if (row.key === 'theme_light_start') schedule.lightStart = row.value;
+          if (row.key === 'theme_dark_start') schedule.darkStart = row.value;
+          schedule = vmLuuLichTheme(schedule);
+          capNhatTrangThaiDieuKhienLichTheme(schedule);
+          if (vmDangTheoThemeHeThong()) theme = vmApDungThemeHienTai(schedule);
         } else if (row.key === 'theme_transparency') {
           if (isAdmin || localStorage.getItem('vm-transparency') === null) {
             var val = row.value;
@@ -2837,6 +3009,9 @@ async function khoiDongTrang() {
   // 2. Khởi tạo Control Center cơ bản
   khoiTaoControlCenter();
   capNhatNutTheme();
+  // Lịch đã cache vẫn phải tự chuyển đúng mốc giờ ngay cả khi lần tải cài đặt
+  // từ máy chủ chậm hoặc thiết bị đang ngoại tuyến.
+  vmKhoiDongDongHoTheme();
   themNutChupManHinh();
   
   // 3. Tải cài đặt AI
@@ -3991,7 +4166,7 @@ function layEmojiGiaoVien(fullName) {
     vmKhoaHuongDocTrenPwa();
     var vmLaLocalAnToan = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || vmLaLocalAnToan)) {
-      navigator.serviceWorker.register('/sw.js?v=52', { scope: '/', updateViaCache: 'none' })
+      navigator.serviceWorker.register('/sw.js?v=53', { scope: '/', updateViaCache: 'none' })
         .then(function (registration) { return registration.update(); })
         .catch(function () {});
     }
