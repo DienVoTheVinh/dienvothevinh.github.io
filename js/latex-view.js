@@ -1509,6 +1509,32 @@ function parseLatexQuestions(latexText) {
     return blocks;
   }
 
+  function parseCommandArgumentAt(text, commandIndex, commandLength) {
+    var index = commandIndex + commandLength;
+    while (index < text.length && /\s/.test(text[index])) index++;
+    if (text[index] === '[') {
+      var bracketDepth = 1;
+      index++;
+      while (index < text.length && bracketDepth > 0) {
+        if (text[index] === '[' && text[index - 1] !== '\\') bracketDepth++;
+        else if (text[index] === ']' && text[index - 1] !== '\\') bracketDepth--;
+        index++;
+      }
+      while (index < text.length && /\s/.test(text[index])) index++;
+    }
+    if (text[index] !== '{') return null;
+    var start = index;
+    var braceDepth = 1;
+    index++;
+    while (index < text.length && braceDepth > 0) {
+      if (text[index] === '{' && text[index - 1] !== '\\') braceDepth++;
+      else if (text[index] === '}' && text[index - 1] !== '\\') braceDepth--;
+      index++;
+    }
+    if (braceDepth !== 0) return null;
+    return { value: text.substring(start + 1, index - 1), end: index };
+  }
+
   var regexEx = /\\begin\{(ex|bt)\}([\s\S]*?)\\end\{\1\}/g;
   var match;
   var questions = [];
@@ -1524,6 +1550,7 @@ function parseLatexQuestions(latexText) {
     var choices = [];
     var choiceTFIndex = content.indexOf('\\choiceTF');
     var choiceIndex = content.indexOf('\\choice');
+    var shortAnswerIndex = content.indexOf('\\shortans');
     var questionBody = content;
     
     if (envType === 'bt') {
@@ -1575,6 +1602,16 @@ function parseLatexQuestions(latexText) {
             correct: isCorrect
           });
         });
+      } else if (shortAnswerIndex !== -1) {
+        var shortAnswerData = parseCommandArgumentAt(content, shortAnswerIndex, 9);
+        if (shortAnswerData) {
+          choices.push({
+            key: 'short',
+            latex: shortAnswerData.value.trim(),
+            correct: true
+          });
+          questionBody = (content.substring(0, shortAnswerIndex) + content.substring(shortAnswerData.end)).trim();
+        }
       } else {
         var ansMatch = solution.match(/\\textbf\{(Câu trả lời|Đáp số|Kết quả|Đáp án):?\}\s*([^\n}]+)/i);
         if (ansMatch) {
@@ -1589,6 +1626,9 @@ function parseLatexQuestions(latexText) {
     }
     
     questions.push({
+      question_type: choiceTFIndex !== -1 ? 'true_false' :
+        choiceIndex !== -1 ? 'multiple_choice' :
+        (choices.length === 1 && choices[0].key === 'short' ? 'short_answer' : ''),
       content_latex: questionBody.trim(),
       choices: choices,
       solution_latex: solution.trim()

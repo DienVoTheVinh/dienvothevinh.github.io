@@ -484,12 +484,11 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         {kind:'tf', title:'Phần II. Trắc nghiệm Đúng/Sai — 4 ý'},
         {kind:'short', title:'Phần III. Trắc nghiệm trả lời ngắn'}
       ];
-      var no = 0;
       sections.forEach(function (section) {
         var qs = state.parsed.filter(function (q) { return kindOf(q) === section.kind; });
         if (!qs.length) return;
         paper += '<div class="exam-section-heading">' + section.title + '</div>';
-        qs.forEach(function (q) { no++; paper += renderQuestion(q, no, {fullSource:source}); });
+        qs.forEach(function (q, index) { paper += renderQuestion(q, index + 1, {fullSource:source}); });
       });
     }
     paper += '</div>';
