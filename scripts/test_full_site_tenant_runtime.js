@@ -37,7 +37,13 @@ expect(menu.includes("role !== 'admin'"), 'Admin feature-policy bypass is missin
 expect(!/item\.featureKey === 'home'[\s\S]{0,180}vmTenantHomePath\(fullSiteTenant\)/.test(menu), 'The workspace Home menu must stay inside the shared role dashboard');
 expect(menu.includes('tenantContext && tenantContext.portal_only && !tenantContext.full_site'), 'Exam-only portals must remain isolated from full-site tenants');
 expect(menu.includes("allowed = ['thi', 'luyen-de', 'dang-nhap']"), 'Legacy exam-only portal allow-list regressed');
-expect(menu.includes('apDungMenu(r.data.role, portalContext, tenantContext)'), 'Full-site context is not passed to the shared menu');
+expect(menu.includes('function vmMenuFeatureMap(access)') && menu.includes("map[item.feature_key]"), 'Server feature access is not normalized before menu rendering');
+expect(menu.includes("sb.rpc('vm_my_feature_access'") && menu.includes('p_portal_id: tenantContext && tenantContext.full_site ? tenantContext.id : null'), 'Menu must load effective feature access for the current tenant');
+expect(menu.includes('apDungMenu(r.data.role, portalContext, tenantContext, featureAccess)'), 'Role, portal, tenant and effective access must all reach the shared menu');
+expect(menu.includes("globalState === 'hidden' || item.featureState === 'hidden'") && menu.includes("globalState === 'locked' || item.featureState === 'locked'"), 'Tenant presentation must not elevate a globally hidden or locked feature');
+expect(menu.includes("vmTenantFeatureForPath(null, r.data.role)") && menu.includes("pageState !== 'shown'"), 'Direct routes must honor server-authoritative feature access before tenant presentation rules');
+expect(menu.includes('function vmMenuTenantExamFocus(context)') && menu.includes("feature_key || item.key) === 'exam_focus'"), 'Exam focus must use the shared tenant feature contract');
+expect(menu.includes("role === 'student' && vmMenuTenantExamFocus(fullSiteTenant)") && menu.includes("item.featureKey === 'practice' || item.featureKey === 'results' || item.featureKey === 'profile'"), 'Exam focus must narrow only the student presentation menu');
 
 expect(shared.includes('function vmGuardTenantRoute') && shared.includes("sessionStorage.setItem('vm-tenant-feature-notice'"), 'Direct-route feature guard is missing');
 expect(shared.includes("role === 'admin'") && shared.includes("if (state === 'shown') return false"), 'Direct-route guard does not preserve admin/shown access');

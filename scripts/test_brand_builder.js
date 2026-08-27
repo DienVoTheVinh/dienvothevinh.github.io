@@ -28,8 +28,15 @@ const goldMigration = read('supabase/migrations/20260822065653_restore_vinhmath_
 const wordmarkMigration = read('supabase/migrations/20260824161736_add_brand_wordmark_colors.sql');
 const menu = read('js/menu-v5.js');
 const shared = read('js/vinhmath.js');
+const adminHub = read('quan-tri.html');
+const unifiedManager = compileInline('quan-tri-khong-gian.html');
 
-expect(menu.includes("path: 'quan-tri', label: 'Quản trị'") && read('quan-tri.html').includes('href="quan-tri-thuong-hieu"'), 'Admin hub shortcut is missing');
+expect(menu.includes("path: 'quan-tri', label: 'Quản trị'"), 'Admin task navigation must retain its management entry');
+expect((adminHub.match(/href="quan-tri-khong-gian"/g) || []).length === 1, 'Admin hub must expose exactly one brand/tenant management entry');
+expect(!adminHub.includes('href="quan-tri-thuong-hieu"') && !adminHub.includes('href="quan-tri-portal-thi"'), 'Admin hub must not retain competing legacy brand or portal shortcuts');
+expect(unifiedManager.includes('quan-tri-thuong-hieu?embed=1') && unifiedManager.includes('quan-tri-portal-thi?embed=1'), 'Unified manager must compose the existing brand and portal editors');
+expect(manager.includes("get('embed')==='1'") && manager.includes("location.replace('quan-tri-khong-gian?panel=brands')"), 'Legacy brand URL must redirect to the unified panel while remaining embeddable');
+expect(unifiedManager.includes("sb.rpc('vm_admin_deploy_tenant'") && unifiedManager.includes("sb.rpc('vm_admin_update_tenant_lifecycle'"), 'Unified manager must distinguish draft save from audited deploy/update lifecycle');
 expect(manager.includes('id="logoDrop"') && manager.includes("addEventListener('paste'"), 'Logo drop/paste workflow is missing');
 expect(manager.includes('id="previewLogoBox"') && manager.includes("addEventListener('pointermove'"), 'Logo drag positioning is missing');
 expect(manager.includes("PRESETS={") && manager.includes('vinhmath:') && manager.includes('map:') && manager.includes('duyminh:'), 'Brand presets are incomplete');

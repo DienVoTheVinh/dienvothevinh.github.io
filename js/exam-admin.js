@@ -63,7 +63,11 @@
       taxonomyBrowserQuery: '',
       blueprintSeq: 1,
       generationDraft: null,
-      access: { canUse: false, canAdmin: false },
+      access: {
+        canUse: false, canReport: false, canImport: false,
+        canDownloadTex: false, canManage: false, canManageIdSchema: false, canAdmin: false,
+        source: 'none'
+      },
       preview: {
         title: '', questions: [], showAnswers: false, showSolutions: false,
         editableSource: '', fullSource: '', editorMode: 'append', pdfUrl: '',
@@ -316,7 +320,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   function bankAllowedView(name) {
     if(name==='repository')return state.bank.access.canAdmin?'manage':'overview';
     var allowed=['overview','create','manage'];
-    if(state.bank.access.canAdmin)allowed.push('import');
+    if(state.bank.access.canImport)allowed.push('import');
     return allowed.indexOf(name)>=0?name:'overview';
   }
 
@@ -341,7 +345,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var requested=String(name||'overview'),key=bankAllowedView(requested);
     state.bank.activeView=key;
     document.querySelectorAll('[data-bank-zone]').forEach(function(zone){
-      var visible=zone.dataset.bankZone===key&&(zone.dataset.bankZone!=='import'||state.bank.access.canAdmin);
+      var visible=zone.dataset.bankZone===key&&(zone.dataset.bankZone!=='import'||state.bank.access.canImport);
       zone.hidden=!visible;
       zone.classList.toggle('active',visible);
       zone.setAttribute('aria-hidden',visible?'false':'true');
@@ -964,7 +968,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
         var reportId = state.bank.access.canAdmin ? String(question.item_id || '') : '';
         var reportSort = Number.isFinite(Number(question.report_sort)) ? Number(question.report_sort) : number;
         paper += '<section class="bank-preview-question-block" id="bankPreviewQuestion-'+number+'" data-bank-preview-question-number="'+number+'" data-bank-preview-item-id="'+esc(reportId)+'" data-bank-preview-report-sort="'+reportSort+'">';
-        if (state.bank.access.canUse && !state.bank.access.canAdmin && state.bank.preview.targetType) {
+        if (state.bank.access.canReport && !state.bank.access.canAdmin && state.bank.preview.targetType) {
           paper += '<div class="bank-preview-question-actions"><button class="bank-preview-question-report" type="button" data-bank-preview-report-id="'+esc(reportId)+'" data-bank-preview-report-number="'+number+'" data-bank-preview-report-sort="'+reportSort+'" aria-label="Báo lỗi ở câu '+number+'"><span aria-hidden="true">⚑</span> Báo lỗi</button></div>';
         }
         if (state.bank.access.canAdmin) {
@@ -1163,9 +1167,11 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     preview.adminIssue = null;
     var reportButton = el('bankPreviewReportButton');
     if (reportButton) {
-      reportButton.hidden = state.bank.access.canAdmin || !state.bank.access.canUse ||
+      reportButton.hidden = state.bank.access.canAdmin || !state.bank.access.canReport ||
         ['source_document','exam'].indexOf(preview.targetType) < 0 || !preview.targetId;
     }
+    var downloadTexButton = el('bankPreviewDownloadTex');
+    if (downloadTexButton) downloadTexButton.hidden = !state.bank.access.canDownloadTex || !preview.documentId;
     if (el('bankPreviewResolveButton')) el('bankPreviewResolveButton').hidden = true;
   }
 
@@ -1357,7 +1363,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankOpenLocalPreview(index) {
-    if (!state.bank.access.canAdmin || !state.bank.items[index]) return;
+    if (!state.bank.access.canImport || !state.bank.items[index]) return;
     bankSetPreviewActive('', '');
     var question = state.bank.items[index];
     var source = state.bank.documents[question._bankDocumentIndex] || {};
@@ -1367,7 +1373,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankOpenImportPreview() {
-    if (!state.bank.access.canAdmin || !state.bank.items.length) return;
+    if (!state.bank.access.canImport || !state.bank.items.length) return;
     bankSetPreviewActive('', '');
     var title = String(el('bankImportTitle') && el('bankImportTitle').value || '').trim() || bankDefaultPastedTitle();
     var source = state.bank.items.map(function (question) {
@@ -1453,6 +1459,37 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     } finally { if (requestToken === preview.requestToken) button.disabled = false; }
   }
 
+  async function bankDownloadPreviewTex() {
+    var preview = state.bank.preview;
+    if (!state.bank.access.canDownloadTex || !preview.documentId) return;
+    var button = el('bankPreviewDownloadTex');
+    if (button) { button.disabled = true; button.setAttribute('aria-busy','true'); }
+    try {
+      var response = await sb.rpc('vm_bank_download_tex',{p_document_id:preview.documentId});
+      if (response.error) throw response.error;
+      var payload = Array.isArray(response.data) ? (response.data[0] || {}) : (response.data || {});
+      var raw = String(payload.raw_tex || '');
+      if (!raw) throw new Error('Nguồn này chưa có nội dung TeX để tải.');
+      var filename = String(payload.original_filename || '').trim() || bankPreviewSlug(payload.title || preview.title)+'.tex';
+      if (!/\.tex$/i.test(filename)) filename += '.tex';
+      var url = URL.createObjectURL(new Blob([raw],{type:'text/x-tex;charset=utf-8'}));
+      var link = document.createElement('a');
+      link.href = url; link.download = filename; link.hidden = true;
+      document.body.appendChild(link); link.click(); link.remove();
+      window.setTimeout(function () { URL.revokeObjectURL(url); },0);
+      toast('Đã chuẩn bị tệp TeX để tải xuống.','ok');
+    } catch (error) {
+      if (bankRpcMissing(error)) {
+        state.bank.access.canDownloadTex = false;
+        document.body.classList.remove('bank-download-tex-mode');
+        if (button) button.hidden = true;
+      }
+      toast('Chưa tải được TeX: '+bankSafeError(error),'err');
+    } finally {
+      if (button) { button.disabled = false; button.removeAttribute('aria-busy'); }
+    }
+  }
+
   function bankClosePreview(options) {
     options = options || {};
     state.bank.preview.requestToken += 1;
@@ -1473,6 +1510,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     if (el('bankPreviewToEditor')) el('bankPreviewToEditor').hidden = true;
     if (el('bankPreviewReportButton')) el('bankPreviewReportButton').hidden = true;
     if (el('bankPreviewResolveButton')) el('bankPreviewResolveButton').hidden = true;
+    if (el('bankPreviewDownloadTex')) el('bankPreviewDownloadTex').hidden = true;
     var dialog = el('bankPreviewDialog');
     if (dialog) { if (dialog.close) dialog.close(); else dialog.removeAttribute('open'); }
     bankResetPreviewPdf();
@@ -1535,7 +1573,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankOpenIssueReport(itemId, questionNumber, reportSort) {
-    if (!state.bank.access.canUse || state.bank.access.canAdmin) return;
+    if (!state.bank.access.canReport || state.bank.access.canAdmin) return;
     var preview = state.bank.preview;
     if (['source_document','exam'].indexOf(preview.targetType) < 0 || !preview.targetId) {
       toast('Chưa xác định được đề đang xem để gửi báo lỗi.','err');
@@ -1577,7 +1615,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   async function bankSubmitIssueReport(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     var pending = state.bank.preview.pendingIssue;
-    if (!pending || !state.bank.access.canUse || state.bank.access.canAdmin) return;
+    if (!pending || !state.bank.access.canReport || state.bank.access.canAdmin) return;
     var issueType = String(el('bankIssueType') && el('bankIssueType').value || 'other');
     if (issueType === 'answer') issueType = 'answer_suspected';
     var description = String(el('bankIssueDescription') && el('bankIssueDescription').value || '').trim();
@@ -1684,7 +1722,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankImportEditorSource() {
-    if (!state.bank.access.canAdmin) { toast('Chỉ admin được đưa TeX trực tiếp vào kho riêng.','err'); return; }
+    if (!state.bank.access.canImport) { toast('Tài khoản này chưa được cấp quyền gửi nguồn TeX.','err'); return; }
     var parser = window.VinhMathQuestionBank;
     var raw = el('exType').value === 'essay' ? el('exEssayPrompt').value.trim() : el('exLatex').value.trim();
     if (!raw) { toast('Bản soạn chưa có nội dung để phân loại.','err'); return; }
@@ -1952,7 +1990,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     raw = raw || {};
     var grade = Number(raw.grade), chapter = Number(raw.chapter), skill = Number(raw.skill);
     var area = String(raw.area || '').trim().toUpperCase().slice(0,1);
-    if ([10,11,12].indexOf(grade) < 0 || !area || !isFinite(chapter)) return null;
+    if (!Number.isInteger(grade) || grade < 1 || grade > 12 || !area || !isFinite(chapter)) return null;
     return {
       grade:grade, area:area, chapter:chapter, skill:isFinite(skill)?skill:null,
       area_label:String(raw.area_label || (area==='D'?'Đại số & Giải tích':area==='H'?'Hình học':area==='C'?'Chuyên đề':area)).trim(),
@@ -2132,9 +2170,48 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     }catch(error){state.bank.taxonomyFacetsLoaded=false;if(!silent&&!bankRpcMissing(error))toast('Chưa tải được bộ lọc chương và bài học.','err');bankRefreshAllHierarchyControls();}
   }
 
+  function bankNormalizeAccess(raw, profile) {
+    raw = Array.isArray(raw) ? (raw[0] || {}) : (raw || {});
+    if (raw.bank && typeof raw.bank === 'object') raw = raw.bank;
+    var roleAdmin = !!profile && profile.role === 'admin';
+    var canAdmin = roleAdmin || raw.is_admin === true || raw.can_admin === true || raw.canAdmin === true;
+    var access = {
+      canUse:canAdmin || raw.can_use === true || raw.canUse === true,
+      canReport:canAdmin || raw.can_report === true || raw.canReport === true,
+      canImport:canAdmin || raw.can_import === true || raw.canImport === true,
+      canDownloadTex:canAdmin || raw.can_download_tex === true || raw.canDownloadTex === true,
+      canManage:canAdmin || raw.can_manage === true || raw.canManage === true,
+      canManageIdSchema:canAdmin || raw.can_manage_id_schema === true || raw.canManageIdSchema === true,
+      canAdmin:canAdmin,
+      source:raw.source || (canAdmin ? 'admin' : 'server')
+    };
+    if (!access.canUse) {
+      access.canReport = false;
+      access.canImport = false;
+      access.canDownloadTex = false;
+      access.canManage = false;
+      access.canManageIdSchema = false;
+    }
+    return access;
+  }
+
   function bankAccessFor(profile) {
-    var canAdmin = !!profile && profile.role === 'admin';
-    return { canAdmin:canAdmin, canUse:canAdmin || (!!profile && profile.role === 'teacher') };
+    // Fail closed when the capability RPC is unavailable. Admin keeps the
+    // highest tier; all delegated staff permissions must come from the server.
+    return bankNormalizeAccess({},profile);
+  }
+
+  async function bankLoadAccess(profile) {
+    var fallback = bankAccessFor(profile);
+    if (!window.sb || typeof window.sb.rpc !== 'function') return fallback;
+    try {
+      var response = await sb.rpc('vm_my_bank_capabilities');
+      if (response.error) throw response.error;
+      return bankNormalizeAccess(response.data,profile);
+    } catch (error) {
+      if (profile && profile.role === 'admin') return fallback;
+      return bankNormalizeAccess({},profile);
+    }
   }
 
   function bankFillClassOptions() {
@@ -2168,19 +2245,26 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     syncPublish();
   }
 
-  function bankConfigureAccess(profile) {
-    state.bank.access = bankAccessFor(profile);
+  function bankConfigureAccess(profile, capabilities) {
+    state.bank.access = capabilities ? bankNormalizeAccess(capabilities,profile) : bankAccessFor(profile);
     document.body.classList.add('bank-access-ready');
     document.body.classList.toggle('bank-admin-mode',state.bank.access.canAdmin);
+    document.body.classList.toggle('bank-import-mode',state.bank.access.canImport);
+    document.body.classList.toggle('bank-delegated-import-mode',state.bank.access.canImport&&!state.bank.access.canAdmin);
+    document.body.classList.toggle('bank-download-tex-mode',state.bank.access.canDownloadTex);
+    document.body.classList.toggle('bank-manage-mode',state.bank.access.canManage);
+    document.body.classList.toggle('bank-id-schema-manage-mode',state.bank.access.canManageIdSchema);
     bankSetupPreviewDialog();
     bankSetupSourceAssignDialog();
     var tab = el('bankTab');
     if (tab) tab.hidden = !state.bank.access.canUse;
-    if (el('editorToBankButton')) el('editorToBankButton').hidden = !state.bank.access.canAdmin;
-    if (el('bankAdminWorkbench')) el('bankAdminWorkbench').hidden = !state.bank.access.canAdmin;
-    if (el('bankImportNav')) el('bankImportNav').hidden = !state.bank.access.canAdmin;
+    if (el('editorToBankButton')) el('editorToBankButton').hidden = !state.bank.access.canImport;
+    if (el('bankAdminWorkbench')) el('bankAdminWorkbench').hidden = !state.bank.access.canImport;
+    if (el('bankImportNav')) el('bankImportNav').hidden = !state.bank.access.canImport;
     if (el('bankManageSourcesTab')) el('bankManageSourcesTab').hidden = !state.bank.access.canAdmin;
     if (el('bankOverviewReviewCard')) el('bankOverviewReviewCard').hidden = !state.bank.access.canAdmin;
+    if (el('bankDelegatedImportPanel')) el('bankDelegatedImportPanel').hidden = !state.bank.access.canImport || state.bank.access.canAdmin;
+    if (el('bankPreviewDownloadTex')) el('bankPreviewDownloadTex').hidden = !state.bank.access.canDownloadTex || !state.bank.preview.documentId;
     if (!state.bank.access.canUse) {
       document.body.classList.remove('bank-teacher-mode');
       return;
@@ -2212,10 +2296,12 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       switchTab('bank');
     } else {
       document.body.classList.remove('bank-teacher-mode');
+      if (state.bank.activeView === 'manage' && state.bank.manageMode === 'sources') bankLoadRepository();
+    }
+    if (state.bank.access.canImport) {
       bankSetupDropzone();
       bankSetImportMode('topic_pack');
-      bankLoadTaxonomyCatalog(true);
-      if (state.bank.activeView === 'manage' && state.bank.manageMode === 'sources') bankLoadRepository();
+      if (state.bank.access.canAdmin) bankLoadTaxonomyCatalog(true);
     }
   }
 
@@ -2402,7 +2488,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankSetImportMode(mode) {
-    if(!state.bank.access.canAdmin)return;
+    if(!state.bank.access.canImport)return;
     mode=mode==='complete_exam'?'complete_exam':'topic_pack';
     state.bank.importMode=mode;
     var source=el('bankImportSourceKind');if(source)source.value=mode==='complete_exam'?'mock_exam':'topic_pack';
@@ -2432,7 +2518,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankUpdateImportExamKind() {
-    if(!state.bank.access.canAdmin)return;
+    if(!state.bank.access.canImport)return;
     var kind=String(el('bankImportExamType')&&el('bankImportExamType').value||''),context=el('bankImportSchoolContext');
     var needsTerm=['midterm','final','semester_1','semester_2'].indexOf(kind)>=0;
     if(context)context.hidden=!needsTerm;
@@ -2443,7 +2529,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankUpdateImportOrigin(fromUser) {
-    if(!state.bank.access.canAdmin)return;
+    if(!state.bank.access.canImport)return;
     var select=el('bankImportOrigin'),title=String(el('bankImportTitle')&&el('bankImportTitle').value||'').trim();
     if(!select)return;
     if(fromUser)select.dataset.userSelected='true';
@@ -2454,8 +2540,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankFocusImport() {
-    if (!state.bank.access.canAdmin) {
-      toast('Chỉ quản trị viên có quyền nhập dữ liệu vào ngân hàng đề.','err');
+    if (!state.bank.access.canImport) {
+      toast('Tài khoản này chưa được cấp quyền gửi nguồn vào ngân hàng đề.','err');
       return;
     }
     switchTab('bank');
@@ -2465,7 +2551,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankImportActionHtml(label) {
-    return state.bank.access.canAdmin
+    return state.bank.access.canImport
       ? '<div><button class="btn btn-primary btn-sm" type="button" onclick="VMExamAdmin.bankFocusImport()">'+esc(label || 'Nhập dữ liệu vào kho')+'</button></div>'
       : '';
   }
@@ -2654,7 +2740,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var catalog=state.bank.taxonomyCatalog||[];
     var schemaOptions=bankTaxonomyOptionGroups(catalog,'schema_name','schema_label','').map(function(option){
       option.text=option.value==='legacy-v1'
-        ? 'legacy-v1 · THPT 10–12 (tác giả gốc)'
+        ? 'legacy-v1 · THPT 10–12'
         : option.value+(option.label&&option.label!==option.value?' · '+option.label:'');
       return option;
     });
@@ -2881,7 +2967,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankClearPastedTex() {
-    if(!state.bank.access.canAdmin)return;
+    if(!state.bank.access.canImport)return;
     var area=el('bankPasteTex');if(!area)return;
     var hasPastedQueue=state.bank.documents.some(function(document){return document.inputMethod==='paste';});
     if(hasPastedQueue&&state.bank.items.length&&!confirm('Xóa cả nội dung đã dán và danh sách câu vừa tách?'))return;
@@ -2891,7 +2977,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   function bankParsePastedTex() {
-    if(!state.bank.access.canAdmin){toast('Chỉ admin được nạp TeX vào kho riêng.','err');return;}
+    if(!state.bank.access.canImport){toast('Tài khoản này chưa được cấp quyền gửi nguồn TeX.','err');return;}
     var parser=window.VinhMathQuestionBank,area=el('bankPasteTex'),raw=String(area&&area.value||'').trim();
     if(!parser){toast('Chưa tải được bộ đọc ngân hàng TeX.','err');return;}
     if(!raw){toast('Hãy dán nội dung TeX cần tách câu.','err');if(area)area.focus();return;}
@@ -3166,6 +3252,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     var summary = el('bankLocalSummary');
     if (summary) summary.innerHTML = '<span>'+state.bank.documents.length+' tệp</span><span>'+items.length+' câu</span><span>✓ '+active+' hợp lệ</span><span>⚠ '+quarantined+' cách ly</span>'+(state.bank.parseErrors.length?'<span>'+state.bank.parseErrors.length+' lỗi cấu trúc tệp</span>':'');
     var previewButton=el('bankImportPreviewButton');if(previewButton)previewButton.hidden=!items.length;
+    var delegatedButton=el('bankDelegatedImportButton');if(delegatedButton)delegatedButton.disabled=!state.bank.documents.length;
     var localMatrix=el('bankLocalMatrix');
     if(localMatrix){
       var matrixRows=bankMatrixRows(items),matrixHtml=[];
@@ -3182,8 +3269,8 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
       var globalIndex = q._bankIndex;
       var source = state.bank.documents[q._bankDocumentIndex] || {};
       return '<article class="bank-question-item '+(q._bankStatus==='quarantined'?'quarantined ':'')+(q._bankSelected?'selected':'')+'" data-bank-question-index="'+globalIndex+'">'+
-        '<div class="bank-question-select"><label><input type="checkbox" '+(q._bankSelected?'checked':'')+' onchange="VMExamAdmin.bankToggleQuestionSelection('+globalIndex+',this.checked)" aria-label="Chọn câu '+(globalIndex+1)+'"><span class="bank-question-index">#'+(globalIndex+1)+'</span></label></div><div class="bank-question-main"><div class="bank-question-top"><span class="bank-chip">'+esc(bankTypeLabel(q.type))+'</span><span class="bank-chip">'+esc(q.grade||'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(q.difficulty||'Chưa rõ mức')+'</span><span class="bank-chip '+(q._bankStatus==='active'?'ok':'warn')+'">'+(q._bankStatus==='active'?'Hợp lệ':'Cách ly')+'</span>'+(q.has_assets?'<span class="bank-chip">Có hình</span>':'')+'</div><p>'+esc(stripLatex(q.content_tex).slice(0,230)||'Câu hỏi chưa có nội dung hiển thị')+'</p><span class="bank-question-source">'+esc(source.path||q.source_path||'Tệp TeX')+' · vị trí '+(Number(q.source_index||0)+1)+'</span><span class="bank-answer-summary">Đáp án nội bộ: '+esc(bankAnswerSummary(q))+'</span><button class="btn btn-secondary btn-sm bank-preview-open" type="button" onclick="VMExamAdmin.bankOpenLocalPreview('+globalIndex+')">🌐 Xem HTML / PDF</button></div>'+
-        '<div class="bank-question-id"><label for="bankItemId'+globalIndex+'">Mã phân loại</label><input class="input" id="bankItemId'+globalIndex+'" value="'+esc(q.question_id||'')+'" placeholder="Ví dụ: 2D1H3-1" onchange="VMExamAdmin.bankUpdateId('+globalIndex+',this.value)"><small>Giữ chuẩn mã gốc; UID/hash được tạo tự động và không đổi.</small>'+(q._bankReason?'<span class="bank-question-reason">'+esc(q._bankReason)+'</span>':'')+'</div></article>';
+        '<div class="bank-question-select bank-admin-only-ui"><label><input type="checkbox" '+(q._bankSelected?'checked':'')+' onchange="VMExamAdmin.bankToggleQuestionSelection('+globalIndex+',this.checked)" aria-label="Chọn câu '+(globalIndex+1)+'"><span class="bank-question-index">#'+(globalIndex+1)+'</span></label></div><div class="bank-question-main"><div class="bank-question-top"><span class="bank-chip">'+esc(bankTypeLabel(q.type))+'</span><span class="bank-chip">'+esc(q.grade||'Chưa rõ khối')+'</span><span class="bank-chip">'+esc(q.difficulty||'Chưa rõ mức')+'</span><span class="bank-chip '+(q._bankStatus==='active'?'ok':'warn')+'">'+(q._bankStatus==='active'?'Hợp lệ':'Cách ly')+'</span>'+(q.has_assets?'<span class="bank-chip">Có hình</span>':'')+'</div><p>'+esc(stripLatex(q.content_tex).slice(0,230)||'Câu hỏi chưa có nội dung hiển thị')+'</p><span class="bank-question-source">'+esc(source.path||q.source_path||'Tệp TeX')+' · vị trí '+(Number(q.source_index||0)+1)+'</span>'+(state.bank.access.canAdmin?'<span class="bank-answer-summary">Đáp án nội bộ: '+esc(bankAnswerSummary(q))+'</span>':'')+'<button class="btn btn-secondary btn-sm bank-preview-open" type="button" onclick="VMExamAdmin.bankOpenLocalPreview('+globalIndex+')">🌐 Xem HTML / PDF</button></div>'+
+        '<div class="bank-question-id bank-admin-only-ui"><label for="bankItemId'+globalIndex+'">Mã phân loại</label><input class="input" id="bankItemId'+globalIndex+'" value="'+esc(q.question_id||'')+'" placeholder="Ví dụ: 2D1H3-1" onchange="VMExamAdmin.bankUpdateId('+globalIndex+',this.value)"><small>Giữ chuẩn mã; UID/hash được tạo tự động và không đổi.</small>'+(q._bankReason?'<span class="bank-question-reason">'+esc(q._bankReason)+'</span>':'')+'</div></article>';
     }).join('');
     var more = el('bankLoadMore');
     if (more) { more.hidden = visible.length >= items.length; more.textContent = 'Hiện thêm '+Math.min(120,items.length-visible.length)+' câu'; }
@@ -3191,7 +3278,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
   }
 
   async function bankSelectFiles(fileList) {
-    if (!state.bank.access.canAdmin) return;
+    if (!state.bank.access.canImport) return;
     var parser = window.VinhMathQuestionBank;
     if (!parser) { toast('Chưa tải được bộ đọc ngân hàng TeX.','err'); return; }
     var files = Array.from(fileList || []).filter(function (file) { return /\.tex$/i.test(file.name || ''); }).sort(function (a,b) { return String(a.webkitRelativePath||a.name).localeCompare(String(b.webkitRelativePath||b.name),'vi'); });
@@ -3374,8 +3461,43 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     box.querySelector('i').style.width = (total ? Math.min(100,done*100/total) : 0)+'%';
   }
 
+  async function bankDelegateImport() {
+    if (!state.bank.access.canImport || state.bank.access.canAdmin || !state.bank.documents.length) return;
+    if (!bankValidateImportMetadata()) return;
+    var button = el('bankDelegatedImportButton'), total = state.bank.documents.length, done = 0;
+    if (button) { button.disabled = true; button.textContent = 'Đang gửi…'; }
+    try {
+      for (var index=0;index<state.bank.documents.length;index++) {
+        var documentItem = state.bank.documents[index];
+        if (!String(documentItem.text || '').trim()) throw new Error('Tệp '+(documentItem.fileName || index+1)+' không có nội dung TeX.');
+        var payload = bankDocumentPayload(documentItem,{expectedCount:(documentItem.parsed&&documentItem.parsed.questions||[]).length,final:false});
+        payload.metadata = Object.assign({},payload.metadata||{}, {
+          import_state:'pending_review', review_status:'pending_review', delegated_upload:true
+        });
+        var response = await sb.rpc('vm_bank_delegate_upload_tex',{p_document:payload});
+        if (response.error) throw response.error;
+        if (response.data && response.data.error) throw new Error(response.data.error);
+        done += 1;
+        bankSetImportProgress(done,total,'Đã gửi '+done+' / '+total+' nguồn vào hàng chờ');
+      }
+      bankSetImportProgress(total,total,'Đã gửi đủ '+total+' nguồn · đang chờ kiểm tra');
+      toast('Đã gửi nguồn TeX. Nội dung sẽ xuất hiện trong kho sau khi được kiểm tra.','ok');
+    } catch (error) {
+      if (bankRpcMissing(error)) {
+        state.bank.access.canImport = false;
+        bankConfigureAccess(state.profile,state.bank.access);
+      }
+      bankSetImportProgress(done,total,'Dừng ở '+done+' / '+total+' nguồn');
+      toast('Chưa gửi được nguồn: '+bankSafeError(error),'err');
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Gửi nguồn chờ duyệt'; }
+    }
+  }
+
   async function bankImport() {
-    if (!state.bank.access.canAdmin || !state.bank.items.length) return;
+    if (!state.bank.access.canImport || !state.bank.documents.length) return;
+    if (!state.bank.access.canAdmin) return bankDelegateImport();
+    if (!state.bank.items.length) return;
     if(!bankValidateImportMetadata())return;
     if(!state.bank.taxonomyCatalogLoaded)await bankLoadTaxonomyCatalog(false);
     if(!state.bank.taxonomyCatalogLoaded){toast('Chưa tải được danh mục ID chuẩn. Hãy thử tải lại danh mục trước khi nhập.','err');return;}
@@ -4040,7 +4162,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     state.profile=profile;
     state.portalMembership=await loadPortalManager(profile);
     state.portal=state.portalMembership&&state.portalMembership.portal||null;
-    var bankAccess=bankAccessFor(profile);
+    var bankAccess=await bankLoadAccess(profile);
     if(!bankAccess.canUse){location.href=state.portal?'thi?portal='+encodeURIComponent(state.portal.slug):'luyen-de';return;}
     if(portalSlug()&&!state.portal){location.href='thi?portal='+encodeURIComponent(portalSlug());return;}
     if(state.portal){
@@ -4065,7 +4187,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     }
     el('kpiClasses').textContent=state.classes.length;
     if(typeof vmTaiMoiTruongTex==='function')await vmTaiMoiTruongTex();
-    bankConfigureAccess(profile);
+    bankConfigureAccess(profile,bankAccess);
     if(!bankAccess.canAdmin){
       await bankLoadExamCatalog(true);
       el('kpiAttempts').textContent='—';
@@ -4092,7 +4214,7 @@ Bài 2. Giải thích rõ các bước biến đổi và kết luận.`
     renderPreview(false);
   }
 
-  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankSetManageMode:bankSetManageMode,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateImportOrigin:bankUpdateImportOrigin,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyHierarchy:bankUpdateTaxonomyHierarchy,bankSelectTaxonomyGrade:bankSelectTaxonomyGrade,bankFilterTaxonomyCatalog:bankFilterTaxonomyCatalog,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankRetryMatrix:bankRetryMatrix,bankPreviewExamDraft:bankPreviewExamDraft,bankSaveExamDraft:bankSaveExamDraft,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankCloseSourceAssign:bankCloseSourceAssign,bankAssignSourceExam:bankAssignSourceExam,bankLoadRepository:bankLoadRepository,bankRepositoryPage:bankRepositoryPage,bankResetRepositoryFilters:bankResetRepositoryFilters,bankOpenRepositoryDocument:bankOpenRepositoryDocument,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_normalizeLegacyPdfFragment:normalizeLegacyPdfFragment,_buildPdfSource:buildPdfSource,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
+  window.VMExamAdmin={switchTab:switchTab,switchPreview:switchPreview,applyTemplate:applyTemplate,insertSnippet:insertSnippet,formatSource:formatSource,renderPreview:renderPreview,updateExamType:updateExamType,saveExam:saveExam,editExam:editExam,resetForm:resetForm,deleteExam:deleteExam,toggleSolutionPdf:toggleSolutionPdf,renderLibrary:renderLibrary,loadAnalyticsOptions:loadAnalyticsOptions,loadAnalytics:loadAnalytics,openAnalytics:openAnalytics,compilePdf:compilePdf,closePdf:closePdf,openBankFromEditor:openBankFromEditor,bankImportEditorSource:bankImportEditorSource,bankSendPreviewToEditor:bankSendPreviewToEditor,bankSwitchPreview:bankSwitchPreview,bankCompilePreviewPdf:bankCompilePreviewPdf,bankDownloadPreviewTex:bankDownloadPreviewTex,bankClosePreview:bankClosePreview,bankOpenLocalPreview:bankOpenLocalPreview,bankOpenImportPreview:bankOpenImportPreview,bankOpenSearchPreview:bankOpenSearchPreview,bankOpenSourcePreview:bankOpenSourcePreview,bankOpenExamPreview:bankOpenExamPreview,bankSetView:bankSetView,bankScrollZone:bankScrollZone,bankSetManageMode:bankSetManageMode,bankOpenOverview:bankOpenOverview,bankSetSourceCategory:bankSetSourceCategory,bankSyncSourceCategory:bankSyncSourceCategory,bankUpdateBrowseHierarchy:bankUpdateBrowseHierarchy,bankUpdateGeneratorHierarchy:bankUpdateGeneratorHierarchy,bankUpdateImportHierarchy:bankUpdateImportHierarchy,bankUpdateImportExamKind:bankUpdateImportExamKind,bankUpdateImportOrigin:bankUpdateImportOrigin,bankUpdateBlueprintHierarchy:bankUpdateBlueprintHierarchy,bankResetSearchFilters:bankResetSearchFilters,bankFocusImport:bankFocusImport,bankSetImportMode:bankSetImportMode,bankParsePastedTex:bankParsePastedTex,bankClearPastedTex:bankClearPastedTex,bankNewSeed:bankNewSeed,bankAddBlueprintRow:bankAddBlueprintRow,bankRemoveBlueprintRow:bankRemoveBlueprintRow,bankUpdateBlueprintTotal:bankUpdateBlueprintTotal,bankSelectFiles:bankSelectFiles,bankImportAdminPackage:bankImportAdminPackage,bankUpdateId:bankUpdateId,bankApplyBulkIds:bankApplyBulkIds,bankLoadTaxonomyCatalog:bankLoadTaxonomyCatalog,bankChooseTaxonomy:bankChooseTaxonomy,bankUpdateTaxonomyHierarchy:bankUpdateTaxonomyHierarchy,bankSelectTaxonomyGrade:bankSelectTaxonomyGrade,bankFilterTaxonomyCatalog:bankFilterTaxonomyCatalog,bankUpdateTaxonomyPreview:bankUpdateTaxonomyPreview,bankToggleQuestionSelection:bankToggleQuestionSelection,bankSelectMissingIds:bankSelectMissingIds,bankClearSelection:bankClearSelection,bankApplyClassification:bankApplyClassification,bankShowMore:bankShowMore,bankImport:bankImport,bankLoadStats:bankLoadStats,bankSearch:bankSearch,bankRetryMatrix:bankRetryMatrix,bankPreviewExamDraft:bankPreviewExamDraft,bankSaveExamDraft:bankSaveExamDraft,bankGenerateExam:bankGenerateExam,bankLoadSourceCatalog:bankLoadSourceCatalog,bankLoadMoreSources:bankLoadMoreSources,bankChooseSourceExam:bankChooseSourceExam,bankCloseSourceAssign:bankCloseSourceAssign,bankAssignSourceExam:bankAssignSourceExam,bankLoadRepository:bankLoadRepository,bankRepositoryPage:bankRepositoryPage,bankResetRepositoryFilters:bankResetRepositoryFilters,bankOpenRepositoryDocument:bankOpenRepositoryDocument,_templates:TEMPLATES,_kindOf:kindOf,_normalizeSolutionParagraphs:normalizeSolutionParagraphs,_normalizeLegacyPdfFragment:normalizeLegacyPdfFragment,_buildPdfSource:buildPdfSource,_syncAuthoringRail:syncAuthoringRail,_bankConfigureAccess:bankConfigureAccess,_bankAccessFor:bankAccessFor,_bankRefreshQuestion:bankRefreshQuestion,_bankCollectBlueprint:bankCollectBlueprint,_bankRenderMatrix:bankRenderMatrix,_bankUpdateOverview:bankUpdateOverview,_bankLoadInventory:bankLoadInventory,_bankLoadMatrix:bankLoadMatrix,_bankState:state.bank};
   Object.assign(window.VMExamAdmin,{
     bankTogglePreviewFullscreen:bankTogglePreviewFullscreen,
     bankTogglePreviewSidebar:bankTogglePreviewSidebar,

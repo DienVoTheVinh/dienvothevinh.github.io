@@ -22,6 +22,7 @@ const portalRuntime = read('js/exam-portal.js');
 const examAdmin = read('js/exam-admin.js');
 const practice = read('luyen-de.html');
 const accountEdge = read('supabase/functions/tao-tai-khoan/index.ts');
+const unifiedMigration = read('supabase/migrations/20260828143000_unify_admin_brand_theme_feature_access.sql');
 
 expect(landing.includes("target.searchParams.set('tenant', 'uyenmath')"), 'The historic UYENMATH route must preserve identity while redirecting to the shared shell');
 expect(landing.includes("new URL('khong-gian', location.href)"), 'UYENMATH must use the generic full-site renderer');
@@ -35,9 +36,17 @@ expect(admin.includes(".eq('experience_mode','full_site')"), 'Admin must manage 
 expect(admin.includes("['teacher','student'].forEach") && admin.includes('stateSelect(role,f.key,item.state)'), 'Admin needs role-specific show/lock/hide controls');
 expect(admin.includes("type:'full_site_tenant_migrate'"), 'Admin account migration must use the audited Edge action');
 expect(admin.includes("me.role!=='admin'"), 'Tenant controls must be admin-only');
-expect(admin.includes("active.disabled=currentTenant.is_active!==true"), 'A staged tenant must not be activated before the audited account migration');
+expect(admin.includes('active.disabled=true'), 'Identity edits must not expose a second direct activation path');
+expect(admin.includes("sb.rpc('vm_admin_deploy_tenant'") && admin.includes("sb.rpc('vm_admin_update_tenant_lifecycle'"), 'Tenant activation, update and pause must use audited lifecycle RPCs');
+expect(admin.includes('if(!await saveIdentity(true))return') && admin.includes('if(!await saveFeatures(true))return'), 'Deploy must persist the complete draft before publishing it');
+expect(admin.includes('id="tenantExamFocus"') && admin.includes('exam_focus_mode,deployed_at'), 'Exam-focus state and deploy metadata must be explicit in the unified manager');
 expect(admin.includes(".eq('experience_mode','full_site').select().single()"), 'Identity edits must stay scoped to full-site overlays');
-expect(rootAdmin.includes('href="quan-tri-khong-gian"'), 'The admin hub must link to tenant controls');
+expect((rootAdmin.match(/href="quan-tri-khong-gian"/g) || []).length === 1, 'The admin hub must expose exactly one unified tenant entry');
+expect(!rootAdmin.includes('href="quan-tri-thuong-hieu"') && !rootAdmin.includes('href="quan-tri-portal-thi"'), 'Legacy brand and portal shortcuts must not bypass the unified manager');
+expect(admin.includes('quan-tri-thuong-hieu?embed=1') && admin.includes('quan-tri-portal-thi?embed=1'), 'The unified manager must retain both legacy workflows as embedded panels');
+expect(unifiedMigration.includes('exam_focus_mode boolean not null default false'), 'Exam focus must be independent from experience_mode');
+expect(unifiedMigration.includes("if v_portal.experience_mode<>'full_site'") && unifiedMigration.includes("where id=p_portal_id and experience_mode='full_site'"), 'Lifecycle RPCs must never activate an exam-only portal as a full-site tenant');
+expect(unifiedMigration.includes('deployed_at=now()') && unifiedMigration.includes('deployed_by=v_actor'), 'Publishing must record audited deploy metadata');
 
 expect(portalAdmin.includes(".eq('experience_mode','exam_only')"), 'The legacy portal manager must exclude full-site brand overlays');
 expect(accountAdmin.includes(".eq('experience_mode', 'exam_only')"), 'Portal-only account creation must not list full-site brand overlays');

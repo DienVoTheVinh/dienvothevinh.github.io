@@ -14,7 +14,7 @@ assert.ok(html.includes('class="exam-runtime-state" hidden aria-hidden="true"'),
 for (const tab of ['compose','bank','library','analytics']) {
   assert.ok(html.includes(`data-tab="${tab}"`), `primary workspace tab ${tab} must remain available`);
 }
-assert.ok(html.includes('class="bank-usage-roles bank-admin-only-ui"') && html.includes('class="bank-usage-identifiers bank-admin-only-ui"') && html.includes('class="bank-usage-legacy bank-admin-only-ui"'), 'teacher workspace must mark admin guidance, IDs and TeX compatibility as admin-only');
+assert.ok(html.includes('class="bank-usage-roles bank-admin-only-ui"') && html.includes('class="bank-usage-identifiers bank-id-schema-only-ui"') && html.includes('class="bank-usage-legacy bank-admin-only-ui"'), 'teacher workspace must hide admin guidance and gate ID schema tools with the server capability');
 assert.ok(html.includes('class="bank-usage-link bank-teacher-only-ui"') && html.includes('id="bankPreviewToEditor"') && html.includes('bank-admin-only-ui'), 'teacher workspace needs its own concise guide while editor handoff remains admin-only');
 assert.ok(html.includes('id="bankPreviewReportButton"') && html.includes('Báo lỗi') && html.includes('id="bankIssueDialog"') && html.includes('id="bankIssueForm"'), 'teacher preview must offer an issue-report dialog');
 for (const id of ['bankPreviewFullscreenButton','bankPreviewSidebar','bankPreviewSourcesToggle','bankPreviewSourceSearch','bankPreviewSourceList']) {
@@ -26,7 +26,7 @@ assert.ok(html.includes('Giáo viên</b> dùng kho') && html.includes('Admin</b>
 assert.ok(html.includes('Nạp đề TeX và gắn ID') && html.includes('Xem HTML/PDF'), 'guide must cover TeX classification and preview');
 assert.ok(html.includes('Liên kết với Soạn thảo') && html.includes('Tra ngân hàng đề'), 'guide must explain the two-way authoring link');
 assert.ok(html.includes('Mã phân loại gốc') && html.includes('2D1H3-1') && html.includes('UID kỹ thuật QB'), 'guide must distinguish original classification codes from immutable QB identifiers');
-assert.ok(html.includes('Ma trận ID khối 10, 11, 12') && html.includes('question-bank-id-guide.js'), 'guide must expose the complete original ID matrix');
+assert.ok(html.includes('<h3 id="bankIdReferenceTitle">Danh mục ID</h3>') && html.includes('id="bankIdReferenceGradeTabs"') && html.includes('question-bank-id-guide.js'), 'guide must expose the complete data-driven ID catalogue without a fixed grade range');
 assert.ok(html.includes('Ánh xạ ID cũ sang chuẩn tương lai') && html.includes('bankIdMapOrder') && html.includes('bankIdAliasSave'), 'admin needs versioned ID schema and alias controls');
 for (const id of ['bankIdSystemPreset','bankIdSystemName','bankIdSystemLevel','bankIdSystemSave','bankIdFamilySchema','bankIdFamilyGrade','bankIdFamilySave']) {
   assert.ok(html.includes(`id="${id}"`), `admin ID-system builder is missing ${id}`);
@@ -125,7 +125,7 @@ for (const rpc of [
 ]) assert.ok(js.includes(`sb.rpc('${rpc}'`), `missing ${rpc}`);
 
 assert.ok(js.includes("profile.role === 'admin'"));
-assert.ok(js.includes("profile.role === 'teacher'"));
+assert.ok(js.includes("sb.rpc('vm_my_bank_capabilities')") && js.includes('function bankNormalizeAccess'), 'teacher access must be capability-driven instead of inferred from a role label');
 assert.ok(js.includes("/^#bank-(overview|create|import|repository|manage)$/") && js.includes("requested==='repository'?'sources'") && js.includes("history.pushState(history.state,'',hash)"), 'legacy repository deep links must map to the private source pane without restoring a fifth workspace view');
 assert.ok(js.includes('function bankSetManageMode') && js.includes("bankSetManageMode:bankSetManageMode"), 'management workspace must switch safely between question matrix and private source panes');
 assert.ok(js.includes("document.querySelectorAll('[data-bank-zone]')") && js.includes('zone.hidden=!visible'), 'switching bank views must hide every inactive panel without rebuilding forms');

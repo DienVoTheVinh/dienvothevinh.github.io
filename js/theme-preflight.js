@@ -51,7 +51,7 @@
     if (!schedule || schedule.mode !== 'schedule') return normaliseTheme(schedule && schedule.theme);
     var now = minutesAtVietnam(date);
     var light = parseClock(schedule.lightStart, 6 * 60);
-    var dark = parseClock(schedule.darkStart, 18 * 60);
+    var dark = parseClock(schedule.darkStart, 19 * 60);
     if (light === dark) return normaliseTheme(schedule.theme);
     var isLight = light < dark ? now >= light && now < dark : now >= light || now < dark;
     return isLight ? LIGHT : DARK;

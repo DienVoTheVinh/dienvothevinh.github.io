@@ -136,6 +136,9 @@ function jsFunction(source, name) {
 const migration = findMigrationContaining(
   'create or replace function public.vm_admin_create_full_site_tenant'
 );
+const unifiedMigration = findMigrationContaining(
+  'create or replace function public.vm_admin_deploy_tenant'
+);
 const builder = compileInline('quan-tri-khong-gian.html');
 const genericLanding = compileInline('khong-gian.html');
 const shared = read('js/vinhmath.js');
@@ -189,6 +192,61 @@ section('admin create and clone workflow', () => {
     'Optional tenant image must save as NULL instead of violating the database constraint.');
   checkMatch(builder, /currentTenant[\s\S]{0,1600}(?:clone|nhân bản|sao chép)|(?:clone|nhân bản|sao chép)[\s\S]{0,1600}currentTenant/i,
     'Clone mode must derive its draft from the currently selected tenant.');
+});
+
+section('audited deploy and lifecycle workflow', () => {
+  const deployBody = stripSqlComments(sqlFunctionBody(
+    unifiedMigration,
+    'public.vm_admin_deploy_tenant'
+  ));
+  const lifecycleBody = stripSqlComments(sqlFunctionBody(
+    unifiedMigration,
+    'public.vm_admin_update_tenant_lifecycle'
+  ));
+
+  [deployBody, lifecycleBody].forEach((body) => {
+    checkMatch(body, /security definer[\s\S]*set search_path\s*=\s*''/i,
+      'Tenant lifecycle RPCs must pin an empty search_path.');
+    checkMatch(body, /auth\.uid\(\)[\s\S]*public\.is_admin\(\)/i,
+      'Tenant lifecycle RPCs must reject anonymous and non-admin callers.');
+    checkNoMatch(body, /update\s+public\.exam_portals\s+set(?:(?!\bwhere\b)[\s\S])*?\bexperience_mode\s*=/i,
+      'Deploying an exam-focused tenant must never rewrite experience_mode.');
+  });
+  checkMatch(deployBody, /experience_mode\s*<>\s*'full_site'/i,
+    'Deploy must reject legacy exam-only portals.');
+  checkMatch(deployBody,
+    /brand_id[\s\S]*brand_templates[\s\S]*is_active[\s\S]*tenant_brand_required/i,
+    'Deploy must require an active brand before publishing a tenant.');
+  checkMatch(deployBody,
+    /set\s+is_active\s*=\s*true\s*,\s*exam_focus_mode\s*=\s*coalesce\(p_exam_focus\s*,\s*false\)[\s\S]*deployed_at\s*=\s*now\(\)[\s\S]*deployed_by\s*=\s*v_actor/i,
+    'Deploy must atomically publish the tenant and record its audit metadata.');
+  checkMatch(lifecycleBody,
+    /where\s+id\s*=\s*p_portal_id\s+and\s+experience_mode\s*=\s*'full_site'/i,
+    'Lifecycle updates must stay scoped to full-site tenants.');
+  [deployBody, lifecycleBody].forEach((body) => checkMatch(body,
+    /exam_portal_feature_rules[\s\S]*'exam_focus'[\s\S]*case\s+when\s+p_exam_focus\s+then\s+'shown'\s+else\s+'hidden'/i,
+    'Exam focus must be represented by the shared tenant feature contract.'));
+  checkMatch(unifiedMigration,
+    /revoke all on function public\.vm_admin_deploy_tenant\(uuid,\s*boolean\) from public,anon[\s\S]*grant execute on function public\.vm_admin_deploy_tenant\(uuid,\s*boolean\) to authenticated/i,
+    'Deploy RPC needs an explicit authenticated grant after public/anon revocation.');
+  checkMatch(unifiedMigration,
+    /revoke all on function public\.vm_admin_update_tenant_lifecycle\(uuid,\s*boolean,\s*boolean\) from public,anon[\s\S]*grant execute on function public\.vm_admin_update_tenant_lifecycle\(uuid,\s*boolean,\s*boolean\) to authenticated/i,
+    'Lifecycle RPC needs an explicit authenticated grant after public/anon revocation.');
+
+  const saveIdentity = jsFunction(builder, 'saveIdentity');
+  const deployTenant = jsFunction(builder, 'deployTenant');
+  const lifecycle = jsFunction(builder, 'updateTenantLifecycle');
+  checkNoMatch(saveIdentity, /\bis_active\s*:/,
+    'Saving a draft must not publish or pause the live tenant implicitly.');
+  checkMatch(builder, /active\.disabled\s*=\s*true/,
+    'The identity form must not expose a second direct activation control.');
+  check(deployTenant.indexOf('saveIdentity(true)') < deployTenant.indexOf('saveFeatures(true)')
+      && deployTenant.indexOf('saveFeatures(true)') < deployTenant.indexOf("vm_admin_deploy_tenant"),
+    'Deploy must save identity and presentation rules before invoking the audited RPC.');
+  checkMatch(lifecycle, /vm_admin_update_tenant_lifecycle[\s\S]*p_is_active\s*:\s*activeValue===true[\s\S]*p_exam_focus\s*:/,
+    'Pause/resume must use the audited lifecycle RPC with an explicit exam-focus state.');
+  checkMatch(builder, /quan-tri-thuong-hieu\?embed=1[\s\S]*quan-tri-portal-thi\?embed=1/,
+    'The unified tenant manager must embed both legacy editors instead of duplicating them.');
 });
 
 section('accessible drag and keyboard ordering', () => {
@@ -405,6 +463,8 @@ section('shared runtime order, label and escaping', () => {
     jsFunction(shared, 'vmTenantFeatureForPath'),
     jsFunction(shared, 'vmTenantFirstShownPath'),
     jsFunction(menu, 'vmMenuEsc'),
+    jsFunction(menu, 'vmMenuFeatureMap'),
+    jsFunction(menu, 'vmMenuTenantExamFocus'),
     jsFunction(menu, 'apDungMenu')
   ].join('\n'), sandbox, { filename: 'tenant-builder-runtime-contract.js' });
 
@@ -434,15 +494,35 @@ section('shared runtime order, label and escaping', () => {
     && sandbox.vmTenantFeatureForPath('/thi.html', 'student') === 'practice',
   'Direct URLs must not bypass the tenant menu visibility policy.');
 
-  sandbox.apDungMenu('teacher', null, context);
+  const featureAccess = {
+    items: [
+      { feature_key: 'authoring', state: 'shown' },
+      { feature_key: 'grading', state: 'shown' },
+      { feature_key: 'classes', state: 'shown' },
+      { feature_key: 'schedule', state: 'locked' },
+      { feature_key: 'vmtool', state: 'hidden' },
+      { feature_key: 'home', state: 'shown' },
+      { feature_key: 'profile', state: 'shown' }
+    ]
+  };
+  sandbox.apDungMenu('teacher', null, context, featureAccess);
   const html = nav.innerHTML;
   check(!html.includes('Soạn thảo'), 'A hidden feature must not remain in the menu.');
+  check(!html.includes('VMTool'), 'A globally hidden feature must not be restored by a shown tenant rule.');
+  check(html.includes('data-vm-feature="schedule"') && html.includes('Lịch <span aria-hidden="true">🔒</span>'),
+    'A globally locked feature must remain visible but disabled even when the tenant marks it shown.');
   check(html.indexOf('vm-feature-locked') >= 0 && html.indexOf('vm-feature-locked') < html.indexOf('Lớp &lt;img'),
     'Locked and shown features must render in their configured order.');
   check(html.includes('Lớp &lt;img src=x onerror=alert(1)&gt; &amp; &quot;X&quot;'),
     'Escaped tenant label must remain readable as text.');
   check(!html.includes('<img src=x'),
     'Tenant label override must not inject an HTML element.');
+  check(sandbox.vmMenuTenantExamFocus({ full_site: true, features: [
+    { feature_key: 'exam_focus', state: 'shown' }
+  ] }) === true && sandbox.vmMenuTenantExamFocus({ full_site: true, features: [
+    { feature_key: 'exam_focus', state: 'hidden' }
+  ] }) === false,
+  'Exam-focus helper must accept only an explicit shown rule on a full-site tenant.');
 });
 
 if (failures.length) {
