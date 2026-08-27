@@ -469,6 +469,16 @@ async function vmVeTrangTikz(pdf, pageNumber, figure) {
     'Vẽ hình TikZ quá thời gian',
     function () { if (renderTask && typeof renderTask.cancel === 'function') renderTask.cancel(); }
   );
+  // PDF.js có thể tô nền trang gần-trắng dù canvas dùng alpha. Loại đúng
+  // các pixel nền trắng thuần để hình hòa vào theme; nét và vùng tô vẫn giữ.
+  try {
+    var context = canvas.getContext('2d', { alpha:true });
+    var pixels = context.getImageData(0,0,canvas.width,canvas.height);
+    for (var p=0;p<pixels.data.length;p+=4) {
+      if (pixels.data[p] > 249 && pixels.data[p+1] > 249 && pixels.data[p+2] > 249) pixels.data[p+3] = 0;
+    }
+    context.putImageData(pixels,0,0);
+  } catch (_) {}
   figure.innerHTML = ''; figure.appendChild(canvas);
   figure.setAttribute('data-vm-tikz-ready', 'done');
 }
@@ -685,6 +695,9 @@ function vmThayLenhHaiKhoi(src, command, replacer) {
     if (at === -1) break;
     var after = at + token.length;
     if (/[A-Za-z@]/.test(text.charAt(after))) { from = after; continue; }
+    while (/\s/.test(text.charAt(after))) after++;
+    var optional = vmDocNhomCanBang(text, after, '[', ']');
+    if (optional) after = optional.end;
     var first = vmDocKhoiNgoac(text, after);
     var second = first ? vmDocKhoiNgoac(text, first.end) : null;
     if (!first || !second) { from = after; continue; }
@@ -939,6 +952,22 @@ function vmNoiDungBangSangHtml(body) {
     .replace(/\\(?:cline|cmidrule)(?:\([^)]*\))?\{[^}]*\}/g, '')
     .replace(/\\(?:rowcolor|cellcolor)\{[^}]*\}/g, '')
     .replace(/\\addlinespace(?:\[[^\]]*\])?/g, '');
+  ['tabular','tabularx','tabular*','array'].forEach(function (env) {
+    var limit = 40;
+    while (limit-- > 0) {
+      var token = '\\begin{' + env + '}', at = text.lastIndexOf(token);
+      if (at === -1) break;
+      var argsAt = at + token.length, first = vmDocKhoiNgoac(text, argsAt);
+      if (!first) break;
+      var bodyAt = first.end;
+      if (env === 'tabularx' || env === 'tabular*') {
+        var second = vmDocKhoiNgoac(text, bodyAt); if (!second) break; bodyAt = second.end;
+      }
+      var close = vmTimDongMoiTruong(text, env, bodyAt); if (!close) break;
+      var flat = text.slice(bodyAt, close.start).replace(/&amp;/g,' · ').replace(/\\\\(?:\[[^\]]*\])?|\\tabularnewline/g,'<br>');
+      text = text.slice(0,at) + flat + text.slice(close.end);
+    }
+  });
   text = vmThayLenhNhieuKhoi(text, 'multicolumn', 3, function (_, __, content) { return content; });
   text = vmThayLenhNhieuKhoi(text, 'multirow', 3, function (_, __, content) { return content; });
   text = vmThayLenhNhieuKhoi(text, 'makecell', 1, function (content) { return content; });
@@ -949,11 +978,11 @@ function vmNoiDungBangSangHtml(body) {
   var html = rows.map(function (row) {
     var cells = row.split('&amp;').map(function (cell) {
       var clean = cell.replace(/___VM_ESCAPED_AMP___/g, '&amp;').trim();
-      return '<td style="border:1px solid var(--line-2);padding:6px 10px;text-align:center;vertical-align:middle">' + clean + '</td>';
+      return '<td>' + clean + '</td>';
     }).join('');
     return '<tr>' + cells + '</tr>';
   }).join('');
-  return '</p><div class="vm-tex-table-wrap"><table style="border-collapse:collapse;margin:10px auto;max-width:100%"><tbody>' + html + '</tbody></table></div><p>';
+  return '</p><div class="vm-tex-table-wrap"><table class="vm-tex-table"><tbody>' + html + '</tbody></table></div><p>';
 }
 
 // Đọc khai báo cột bằng bộ đếm ngoặc thay vì regex. Nhờ vậy các cột kiểu
@@ -993,7 +1022,14 @@ function tabularSangBangHTML(src) {
 
 // LaTeX -> chuỗi HTML an toàn (công thức $...$ giữ nguyên chờ KaTeX)
 function latexRaHTML(src) {
-  var s = vmBaoVeKhoiTikz(lamSachLatex(src || ''), src || '');
+  var prepared = vmThayLenhHaiKhoi(String(src || ''), 'immini', function (left, right) { return left + '\n\n' + right; });
+  var shortAnswerTokens = [];
+  prepared = thayLenhKhoiLatex(prepared, 'shortans', function () {
+    var token = '___VMSHORTANSWER_' + shortAnswerTokens.length + '___';
+    shortAnswerTokens.push('<span class="vm-tex-short-answer">Ô trả lời ngắn</span>');
+    return token;
+  });
+  var s = vmBaoVeKhoiTikz(lamSachLatex(prepared), src || '');
   s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   
   // Bảo vệ các khối công thức toán học tránh bị biên dịch sai ký tự (như \\ thành <br>)
@@ -1086,6 +1122,9 @@ function latexRaHTML(src) {
   for (var i = mathBlocks.length - 1; i >= 0; i--) {
     s = s.split('___MATHBLOCK_' + i + '___').join(mathBlocks[i]);
   }
+  shortAnswerTokens.forEach(function (html, index) {
+    s = s.split('___VMSHORTANSWER_' + index + '___').join(html);
+  });
   
   return vmKhoiTikzSangHtml(s);
 }

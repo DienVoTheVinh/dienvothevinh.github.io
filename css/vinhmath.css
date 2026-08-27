@@ -2318,3 +2318,9 @@ iframe, video, canvas, svg, table { max-width: 100%; }
     transition-duration: .01ms !important;
   }
 }
+/* TeX HTML: bảng và ô trả lời phải kế thừa theme, không tạo mảng trắng/đen. */
+.vm-tex-table-wrap{max-width:100%;margin:10px auto;overflow:auto;color:var(--ink)}
+.vm-tex-table{max-width:100%;margin:auto;border-collapse:collapse;background:transparent;color:inherit}
+.vm-tex-table td{padding:6px 10px;border:1px solid var(--line-2,var(--line));background:transparent;color:inherit;text-align:center;vertical-align:middle}
+.vm-tex-table .katex,.vm-tex-table .katex *{color:inherit}
+.vm-tex-short-answer{display:inline-flex;align-items:center;min-height:30px;padding:4px 10px;border:1px dashed var(--line-2,var(--line));border-radius:8px;background:var(--surface-2);color:var(--ink-3);font-size:.78em;font-weight:700}

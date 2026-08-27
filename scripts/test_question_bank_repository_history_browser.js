@@ -28,7 +28,7 @@ const { chromium } = require('playwright');
       window.confirm = () => true;
       window.fetch = async () => ({ ok:true, text:async () => '\\ProvidesPackage{ex_test}\\newenvironment{ex}{}{}\\newcommand{\\choice}[4]{}\\newcommand{\\loigiai}[1]{}' });
       window.__bankRpcCalls = [];
-      const raw = String.raw`\begin{ex}%[2D1H3-HAM-SO]
+      const raw = String.raw`\begin{ex}%[2D1H3-1]
 Cho hàm số $y=x^3$. Chọn đáp án đúng.
 \choice{1}{\True 2}{3}{4}
 \loigiai{Đáp án 2.}
@@ -45,7 +45,7 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
           if (name === 'vm_bank_admin_document') return { data:{
             id:'doc-authored-9', title:'Dethamkhao9', original_filename:'Dethamkhao9.tex', raw_tex:raw,
             items:[{
-              source_ordinal:1, stable_id:'QB-83BECE2FD068CA64A146EF73', legacy_code:'2D1H3-HAM-SO',
+              source_ordinal:1, stable_id:'QB-83BECE2FD068CA64A146EF73', legacy_code:'2D1H3-1',
               question_type:'multiple_choice', canonical_tex:raw,
               answer:{correct_indexes:[1]}, solution_latex:'Đáp án 2.'
             }]
@@ -123,7 +123,7 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
         adminDocumentCalls:window.__bankRpcCalls.filter((entry) => entry.name === 'vm_bank_admin_document').length
       };
     });
-    if (!preview.url.includes('preview=bank') || preview.label !== 'Mã phân loại · 2D1H3-HAM-SO' || preview.text.includes('QB-83BECE2FD068CA64A146EF73') || preview.tooltip !== 'Mã hệ thống: QB-83BECE2FD068CA64A146EF73' || preview.adminDocumentCalls !== 1) {
+    if (!preview.url.includes('preview=bank') || preview.label !== 'Mã phân loại · 2D1H3-1' || preview.text.includes('QB-83BECE2FD068CA64A146EF73') || preview.tooltip !== 'Mã hệ thống: QB-83BECE2FD068CA64A146EF73' || preview.adminDocumentCalls !== 1) {
       throw new Error(`Compact classification ID / technical tooltip failed: ${JSON.stringify(preview)}`);
     }
 
@@ -148,7 +148,7 @@ Cho hàm số $y=x^3$. Chọn đáp án đúng.
       source:document.getElementById('exLatex').value,
       title:document.getElementById('exTitle').value
     }));
-    if (!handoff.url.includes('tab=compose') || handoff.url.includes('preview=bank') || handoff.url.includes('#bank-') || handoff.dialog || !handoff.source.includes('2D1H3-HAM-SO') || handoff.title !== 'Dethamkhao9') {
+    if (!handoff.url.includes('tab=compose') || handoff.url.includes('preview=bank') || handoff.url.includes('#bank-') || handoff.dialog || !handoff.source.includes('2D1H3-1') || handoff.title !== 'Dethamkhao9') {
       throw new Error(`Repository-to-editor history handoff failed: ${JSON.stringify(handoff)}`);
     }
 

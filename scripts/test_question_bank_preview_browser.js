@@ -61,7 +61,7 @@ const { chromium } = require('playwright');
       window.VMExamAdmin.switchTab('bank');
     });
 
-    const localTex = String.raw`\begin{ex}%[2D1H3-HAM-SO]
+    const localTex = String.raw`\begin{ex}%[2D1H3-1]
 Giá trị của $2^3$ bằng
 \choice{$4$}{$6$}{\True $8$}{$9$}
 \loigiai{$2^3=8$.}

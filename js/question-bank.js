@@ -7,7 +7,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var QUESTION_ENVS = ['ex', 'bt', 'vd', 'cauhoi', 'question', 'baitap'];
   var QUESTION_ENV_SET = QUESTION_ENVS.reduce(function (result, name) {
     result[name] = true;
@@ -333,7 +333,11 @@
 
   function parseQuestionId(value) {
     var id = String(value == null ? '' : value).trim().toUpperCase();
-    var match = /^([012])([A-Z])(\d+)([A-Z])(\d+)-([A-Z0-9-]+)$/.exec(id);
+    // Chuẩn NganHangTHPT1.x của tác giả gốc:
+    // <khối><mảng><chương><mức><bài/kỹ năng>-<dạng số>.
+    // Không nới lỏng hậu tố thành nhãn chữ vì sẽ làm mất khả năng đối chiếu
+    // trực tiếp với id_map.json và khiến cùng một dạng có nhiều mã khác nhau.
+    var match = /^([012])([A-Z])(\d+)([NBYHTVKGC])(\d+)-(\d+)$/.exec(id);
     if (!match) return null;
     var gradeLookup = { '0': 10, '1': 11, '2': 12 };
     var grade = gradeLookup[match[1]] || null;
