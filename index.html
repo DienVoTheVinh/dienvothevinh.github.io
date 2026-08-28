@@ -850,6 +850,10 @@ footer .wrap {
 /* Add canvas visibility through transparent bodies */
 body.math-grid {
   position: relative;
+  /* Keep negative-z background effects above this page's own opaque paint.
+     The root background is intentionally opaque to prevent light flashes
+     during theme/navigation changes. */
+  isolation: isolate;
 }
 
 /* Translucent panels for high contrast */
