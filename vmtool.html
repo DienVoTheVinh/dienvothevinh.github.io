@@ -13,7 +13,7 @@
 <script src="js/theme-preflight.js?v=1"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.7">
-  <link rel="stylesheet" href="css/vmtool.css?v=8">
+  <link rel="stylesheet" href="css/vmtool.css?v=9">
 </head>
 <body class="vmtool-page">
   <header class="topbar">
@@ -27,20 +27,15 @@
     </div>
   </header>
 
-  <main class="vmtool-wrap">
-    <section class="vmtool-hero">
-      <div>
-        <div class="vmtool-kicker">Phòng thí nghiệm Toán học VinhMath</div>
-        <div class="vmtool-hero-line"><h1>VMTool</h1></div>
-      </div>
+  <main class="vmtool-wrap" role="main" aria-label="Công cụ Toán học trực quan">
+    <section class="vmtool-tool-switcher" aria-label="Chọn công cụ VMTool">
+      <nav class="vmtool-tabs" aria-label="Danh sách công cụ">
+        <button class="vmtool-tab active" type="button" data-vmtool-tab="inequality" aria-controls="inequalityTool" aria-selected="true">▧ Miền nghiệm 2D</button>
+        <button class="vmtool-tab" type="button" data-vmtool-tab="plane" aria-controls="planeTool" aria-selected="false">△ Hình phẳng <span class="vmtool-new">Mới</span></button>
+        <button class="vmtool-tab" type="button" data-vmtool-tab="spatial" aria-controls="spatialTool" aria-selected="false">◇ Hình không gian 3D <span class="vmtool-new">Mới</span></button>
+      </nav>
       <div class="vmtool-mark" aria-hidden="true"><div class="vmtool-mark-icon">VM</div><div><b id="vmtoolModeName">Miền nghiệm 2D</b><small id="vmtoolModeMeta">Đồ thị · PNG · TikZ</small></div></div>
     </section>
-
-    <nav class="vmtool-tabs" aria-label="Danh sách công cụ">
-      <button class="vmtool-tab active" type="button" data-vmtool-tab="inequality" aria-controls="inequalityTool" aria-selected="true">▧ Miền nghiệm 2D</button>
-      <button class="vmtool-tab" type="button" data-vmtool-tab="plane" aria-controls="planeTool" aria-selected="false">△ Hình phẳng <span class="vmtool-new">Mới</span></button>
-      <button class="vmtool-tab" type="button" data-vmtool-tab="spatial" aria-controls="spatialTool" aria-selected="false">◇ Hình không gian 3D <span class="vmtool-new">Mới</span></button>
-    </nav>
 
     <section class="vmtool-workspace vmtool-tool-panel" id="inequalityTool" data-vmtool-panel="inequality">
       <aside class="vmtool-panel">

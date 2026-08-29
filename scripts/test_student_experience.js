@@ -72,7 +72,7 @@ expect(!home.includes("title.textContent = 'Cập nhật học tập mới nhấ
 expect(home.includes("type:'lesson'") && home.includes("type:'homework'") && home.includes("type:'test'"), 'Dòng cập nhật phải hợp nhất bài giảng, bài tập và bài kiểm tra');
 expect(!homePage.includes('selActiveLop') && !homePage.includes('LỚP ĐANG XEM'), 'Trang Hôm nay không được render lại bộ chọn lớp cũ');
 expect(!home.includes('activeClass(profile)') && !home.includes('Lớp học của em'), 'Trang Hôm nay không được phụ thuộc bộ chọn một lớp');
-expect(homePage.includes('css/role-home.css?v=10') && homePage.includes('js/role-home.js?v=11'), 'Trang Hôm nay phải nạp phiên bản bố cục học online và việc cần làm mới nhất');
+expect(homePage.includes('css/role-home.css?v=11') && homePage.includes('js/role-home.js?v=12'), 'Trang Hôm nay phải nạp phiên bản bố cục học online, staff và việc cần làm mới nhất');
 expect(homePage.includes('vmStudentClockTime') && home.includes("timeZone: 'Asia/Ho_Chi_Minh'") && home.includes("['khungMeetHoc', 'khungDiemDanhHoc']"), 'Trang Hôm nay phải có đồng hồ Việt Nam và đặt Google Meet trước điểm danh');
 expect(home.includes('<aside class="vm-student-side"><div id="vmStudentLiveSlot"') && homeCss.includes('.vm-student-side{display:grid;gap:12px;min-width:0}') && homeCss.includes('.vm-meet-clock') && homeCss.includes('.vm-meet-session-context'), 'Desktop phải đặt việc cần làm bên trái, Google Meet và bốn ô nhanh trong cùng cột phải');
 expect(homePage.includes('<small>LỊCH HỌC</small><b>Buổi học sắp tới</b>') && !homePage.includes('GIỜ VIỆT NAM') && homePage.includes('vm-meet-schedule-panel'), 'Đồng hồ phải nằm gọn trong vùng lịch học và không còn nhãn giờ Việt Nam');

@@ -7,10 +7,10 @@
     });
   }
 
-  function card(icon, title, detail, href, count) {
-    return '<a class="vm-role-action" href="' + href + '"><span class="ic">' + icon + '</span>' +
-      (count != null ? '<span class="count">' + esc(count) + '</span>' : '') +
-      '<b>' + esc(title) + '</b><small>' + esc(detail) + '</small></a>';
+  function safeRows(promise) {
+    return Promise.resolve(promise).then(function (result) {
+      return result && !result.error && Array.isArray(result.data) ? result.data : [];
+    }).catch(function () { return []; });
   }
 
   async function count(table, configure) {
@@ -292,19 +292,115 @@
     if (graded) graded.textContent = snapshot.graded;
   }
 
+  function staffSubmissionClassId(item) {
+    return item && ((item.lessons && item.lessons.class_id) || (item.exams && item.exams.class_id)) || null;
+  }
+
+  function staffScheduleDate(item) {
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (item.date) {
+      var fixed = new Date(item.date + 'T00:00:00');
+      return isNaN(fixed.getTime()) || fixed < today ? null : fixed;
+    }
+    var weekday = Number(item.weekday);
+    if (!weekday) return null;
+    var current = today.getDay() || 7;
+    var delta = (weekday - current + 7) % 7;
+    var next = new Date(today); next.setDate(today.getDate() + delta);
+    if (item.start_date && next < new Date(item.start_date + 'T00:00:00')) {
+      do { next.setDate(next.getDate() + 7); } while (next < new Date(item.start_date + 'T00:00:00'));
+    }
+    if (item.end_date && next > new Date(item.end_date + 'T23:59:59')) return null;
+    return next;
+  }
+
+  function staffDateLabel(date) {
+    if (!date) return '';
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((date - today) / 86400000);
+    if (days === 0) return 'Hôm nay';
+    if (days === 1) return 'Ngày mai';
+    return new Intl.DateTimeFormat('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'}).format(date);
+  }
+
+  async function loadStaffSnapshot(profile) {
+    var classes = await safeRows(sb.rpc('vm_list_accessible_classes', {p_scope:'mine', p_teacher_ids:[]}));
+    var ids = classes.map(function (item) { return item.id; }).filter(Boolean);
+    if (!ids.length) return {classes:classes, students:0, lessons:[], pending:[], schedules:[]};
+    var results = await Promise.all([
+      safeRows(sb.from('class_students').select('student_id,class_id').in('class_id', ids).limit(2000)),
+      safeRows(sb.from('lessons').select('id,title,class_id,published,created_at,classes(name)').in('class_id', ids).order('created_at', {ascending:false}).limit(100)),
+      safeRows(sb.from('exams').select('id,title,class_id').in('class_id', ids)),
+      safeRows(sb.from('schedules').select('id,class_id,weekday,start_time,end_time,date,start_date,end_date,recurrence,mode,classes(name)').in('class_id', ids))
+    ]);
+    var students = {}, idSet = {};
+    ids.forEach(function (id) { idSet[id] = true; });
+    results[0].forEach(function (item) { if (item.student_id) students[item.student_id] = true; });
+    var lessonIds = results[1].map(function (item) { return item.id; }).filter(Boolean);
+    var examIds = results[2].map(function (item) { return item.id; }).filter(Boolean);
+    var contentFilters = [];
+    if (lessonIds.length) contentFilters.push('lesson_id.in.(' + lessonIds.join(',') + ')');
+    if (examIds.length) contentFilters.push('exam_id.in.(' + examIds.join(',') + ')');
+    var pending = [];
+    if (contentFilters.length) {
+      pending = await safeRows(sb.from('submissions').select('id,status,submitted_at,lesson_id,exam_id,lessons(title,class_id),exams(title,class_id),profiles(full_name)').eq('status', 'submitted').or(contentFilters.join(',')).order('submitted_at', {ascending:false}).limit(500));
+      pending = pending.filter(function (item) { return idSet[staffSubmissionClassId(item)]; });
+    }
+    var schedules = results[3].map(function (item) {
+      return Object.assign({}, item, {nextDate:staffScheduleDate(item)});
+    }).filter(function (item) { return item.nextDate; }).sort(function (a, b) {
+      var dateDiff = a.nextDate - b.nextDate;
+      return dateDiff || String(a.start_time || '').localeCompare(String(b.start_time || ''));
+    });
+    return {classes:classes, students:Object.keys(students).length, lessons:results[1], pending:pending, schedules:schedules};
+  }
+
+  function staffMetric(icon, value, label, href) {
+    return '<a class="vm-staff-metric" href="' + href + '"><span>' + icon + '</span><strong>' + esc(value) + '</strong><small>' + esc(label) + '</small></a>';
+  }
+
+  function staffShortcut(icon, title, detail, href) {
+    return '<a class="vm-staff-shortcut" href="' + href + '"><span>' + icon + '</span><span><b>' + esc(title) + '</b><small>' + esc(detail) + '</small></span><i>→</i></a>';
+  }
+
+  function renderStaffPending(snapshot) {
+    if (!snapshot.pending.length) return '<div class="vm-staff-empty"><span>✓</span><b>Không còn bài chờ chấm</b><small>Bài nộp mới sẽ tự xuất hiện tại đây.</small></div>';
+    return snapshot.pending.slice(0, 6).map(function (item) {
+      var source = item.lessons || item.exams || {};
+      var classRow = snapshot.classes.find(function (entry) { return entry.id === staffSubmissionClassId(item); }) || {};
+      return '<a class="vm-staff-pending-row" href="quan-tri-cham-bai"><span class="vm-staff-pending-icon">✍️</span><span><b>' + esc(source.title || 'Bài học') + '</b><small>' + esc(item.profiles && item.profiles.full_name || 'Học sinh') + ' · ' + esc(classRow.name || 'Lớp học') + '</small></span><time>' + esc(formatUpdateTime(item.submitted_at)) + '</time></a>';
+    }).join('');
+  }
+
+  function renderStaffSchedule(snapshot) {
+    if (!snapshot.schedules.length) return '<div class="vm-staff-empty compact"><span>📅</span><b>Chưa có lịch sắp tới</b><small>Có thể tạo hoặc điều chỉnh trong Lịch dạy.</small></div>';
+    return snapshot.schedules.slice(0, 5).map(function (item) {
+      return '<a class="vm-staff-schedule-row" href="quan-tri-lich"><span><b>' + esc(staffDateLabel(item.nextDate)) + '</b><small>' + esc((item.classes && item.classes.name) || 'Lớp học') + '</small></span><time>' + esc(String(item.start_time || '').slice(0,5)) + (item.end_time ? ' – ' + esc(String(item.end_time).slice(0,5)) : '') + '</time></a>';
+    }).join('');
+  }
+
+  async function renderStaffHome(profile, box, actions, title, sub) {
+    document.body.classList.add('vm-home-staff');
+    title.textContent = '';
+    sub.textContent = '';
+    actions.innerHTML = '<div class="vm-staff-loading">Đang tổng hợp công việc hôm nay…</div>';
+    box.classList.add('is-ready');
+    var snapshot = await loadStaffSnapshot(profile);
+    var published = snapshot.lessons.filter(function (item) { return item.published !== false; }).length;
+    var adminLinks = profile.role === 'admin' ? '<section class="vm-staff-admin"><div class="vm-staff-section-head"><div><span class="vm-staff-kicker">QUẢN TRỊ HỆ THỐNG</span><h3>Điều hành nhanh</h3></div><a href="quan-tri">Mở trung tâm →</a></div><div class="vm-staff-admin-grid">' +
+      staffShortcut('🔑','Tài khoản','Tạo và quản lý đăng nhập','quan-tri-tai-khoan') + staffShortcut('◫','Thương hiệu','Không gian và cổng thi','quan-tri-khong-gian') + staffShortcut('◐','Giao diện','Sáng/tối và theo mùa','quan-tri-le-hoi') + staffShortcut('🔐','Phân quyền','Bật, khóa từng tính năng','quan-tri-quyen-tinh-nang') + '</div></section>' : '';
+    actions.innerHTML = '<div class="vm-staff-home-grid"><section class="vm-staff-main"><div class="vm-staff-card-head"><div><span class="vm-staff-kicker">TỔNG QUAN HÔM NAY</span><h3>Công việc cần xử lý</h3><p>Bài nộp, lớp học và nội dung được gom về một nơi.</p></div><a class="btn btn-primary btn-sm" href="quan-tri-cham-bai">Mở màn chấm bài →</a></div><div class="vm-staff-metrics">' +
+      staffMetric('✍️', snapshot.pending.length, 'Bài chờ chấm', 'quan-tri-cham-bai') + staffMetric('🏫', snapshot.classes.length, 'Lớp phụ trách', 'quan-tri-lop') + staffMetric('👥', snapshot.students, 'Học sinh', 'quan-tri-hoc-sinh') + staffMetric('📚', published, 'Bài giảng', 'quan-tri-lop') +
+      '</div><div class="vm-staff-list-head"><b>Bài nộp mới nhất</b><a href="quan-tri-cham-bai">Xem tất cả</a></div><div class="vm-staff-pending-list">' + renderStaffPending(snapshot) + '</div></section><aside class="vm-staff-side"><section class="vm-staff-schedule"><div class="vm-staff-list-head"><b>📅 Lịch dạy sắp tới</b><a href="quan-tri-lich">Xem lịch</a></div>' + renderStaffSchedule(snapshot) + '</section><section class="vm-staff-tools"><div class="vm-staff-list-head"><b>Công cụ giảng dạy</b></div>' + staffShortcut('🏫','Lớp & bài giảng','Quản lý nội dung từng lớp','quan-tri-lop') + staffShortcut('🧪','Soạn đề','Ngân hàng, ma trận và kỳ thi','quan-tri-de') + staffShortcut('📄','Soạn tài liệu','LaTeX, PDF và kho dùng chung','quan-tri-tai-lieu') + staffShortcut('📈','Báo cáo học sinh','Tiến độ theo tuần, tháng','quan-tri-bao-cao-hoc-sinh') + '</section></aside></div>' + adminLinks;
+  }
+
   window.vmRoleHomeRender = async function (profile) {
     hideInternalInstallPanel();
     var box = document.getElementById('vmRoleFocus'), actions = document.getElementById('vmRoleActions'), title = document.getElementById('vmRoleTitle'), sub = document.getElementById('vmRoleSub');
     if (!box || !profile) return;
     var role = profile.role;
     if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
-      document.body.classList.add('vm-home-staff');
-      var pending = await count('submissions', function (query) { return query.eq('status', 'submitted'); });
-      var classes = role === 'admin' ? 'Tất cả' : ((profile.class_students || []).length || 'Của tôi');
-      title.textContent = 'Việc cần ưu tiên';
-      sub.textContent = 'Đi thẳng vào công việc giảng dạy thường dùng nhất.';
-      actions.innerHTML = card('🏫','Lớp học','Mở ngay lớp và danh sách bài giảng gần nhất.','quan-tri-lop',classes) + card('✍️','Bài chờ chấm','Xử lý bài nộp chưa được phản hồi.','quan-tri-cham-bai',pending) + card('📅','Lịch dạy','Xem buổi dạy, điểm danh và thay đổi lịch.','quan-tri-lich') + card('📚','Nội dung','Soạn tài liệu, đề thi và bài học.','quan-tri-tai-lieu');
-      box.classList.add('is-ready');
+      await renderStaffHome(profile, box, actions, title, sub);
       return;
     }
     await renderStudentHome(profile, box, actions, title, sub);
