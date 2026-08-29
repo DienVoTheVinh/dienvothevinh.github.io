@@ -58,7 +58,11 @@ assert(/\.wrap \{[^}]*padding: 18px 24px 96px/.test(students),
 
 assert(home.includes('id="loiChao"') && home.includes('Chào em'),
   'personalized Today context is useful and must not be removed by the compact-header pass');
-assert(vmtool.includes('id="vmtoolModeName"') && vmtool.includes('class="vmtool-mark"'),
-  'VMTool current-mode context is functional and must remain visible');
+assert(!vmtool.includes('class="vmtool-hero"') && !/<h1[^>]*>VMTool<\/h1>/.test(vmtool),
+  'VMTool must not repeat its active navigation context in a large hero');
+assert(/class="vmtool-wrap" role="main" aria-label="Công cụ Toán học trực quan"/.test(vmtool)
+  && vmtool.includes('class="vmtool-tool-switcher"')
+  && vmtool.includes('id="vmtoolModeName"') && vmtool.includes('class="vmtool-mark"'),
+  'VMTool tabs and current-mode context must share the compact first row');
 
 console.log('authenticated compact headers: static contract passed');
