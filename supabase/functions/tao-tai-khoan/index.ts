@@ -55,6 +55,19 @@ function compactLogin(email: string): string {
   return email.toLowerCase().replace(/\.vinhmath\.com$/, "");
 }
 
+async function rollbackCreatedAuthUsers(svc: EdgeServiceClient, userIds: string[]) {
+  const failedUserIds: string[] = [];
+  for (const userId of [...userIds].reverse()) {
+    try {
+      const { error } = await svc.auth.admin.deleteUser(userId);
+      if (error) failedUserIds.push(userId);
+    } catch (_) {
+      failedUserIds.push(userId);
+    }
+  }
+  return { ok: failedUserIds.length === 0, failedUserIds };
+}
+
 async function rollbackAuthEmails(svc: EdgeServiceClient, changed: AuthSnapshot[]) {
   const failedUserIds: string[] = [];
   for (const actor of [...changed].reverse()) {
@@ -376,7 +389,8 @@ Deno.serve(async (req) => {
       for (let i = 1; i <= 60; i++) {
         const cand = i === 1 ? baseU : baseU + i;
         const names = needPh ? [cand, cand + "_ph"] : [cand];
-        const { data: taken } = await svc.from("profiles").select("username").in("username", names);
+        const { data: taken, error: lookupError } = await svc.from("profiles").select("username").in("username", names);
+        if (lookupError) throw new Error("Khong kiem tra duoc ten dang nhap da ton tai");
         if (!taken || taken.length === 0) return cand;
       }
       return null;
@@ -408,13 +422,25 @@ Deno.serve(async (req) => {
       // Portal managers stay profile.role=student on purpose. Their manager
       // permission comes only from exam_portal_members, preventing broad teacher
       // access to the main VinhMath tenant.
-      const profileResult = await svc.from("profiles").update({ full_name: fullName, username: u, role: "student" }).eq("id", acc.user.id);
+      const profileResult = await svc.from("profiles")
+        .update({ full_name: fullName, username: u, role: "student" })
+        .eq("id", acc.user.id)
+        .select("id,role,username")
+        .maybeSingle();
       const memberResult = await svc.from("exam_portal_members").insert({
         portal_id: portal.id, user_id: acc.user.id, member_role: isManager ? "manager" : "student", portal_only: true,
       });
-      if (profileResult.error || memberResult.error) {
-        await svc.auth.admin.deleteUser(acc.user.id).catch(() => {});
-        return jsonRes({ error: "Khong gan duoc tai khoan vao portal" }, 500);
+      const profileOk = !profileResult.error && profileResult.data?.id === acc.user.id &&
+        profileResult.data?.role === "student" && profileResult.data?.username === u;
+      if (!profileOk || memberResult.error) {
+        const rollback = await rollbackCreatedAuthUsers(svc, [acc.user.id]);
+        return jsonRes({
+          error: rollback.ok
+            ? "Khong gan duoc tai khoan vao portal; da hoan tac tai khoan tam"
+            : "Khong gan duoc tai khoan vao portal va chua hoan tac duoc tai khoan tam",
+          rollbackOk: rollback.ok,
+          rollbackFailedUserIds: rollback.failedUserIds,
+        }, rollback.ok ? 500 : 503);
       }
       return jsonRes({ ok: true, type, login: `${u}@${suffix}`, memberRole: isManager ? "manager" : "student" });
     }
@@ -436,11 +462,42 @@ Deno.serve(async (req) => {
         app_metadata: { vinhmath_role: "parent" },
       });
       if (phErr || !ph?.user) {
-        await svc.auth.admin.deleteUser(hs.user.id).catch(() => {});
-        return jsonRes({ error: "Tao TK phu huynh loi: " + (phErr?.message || "unknown") }, 500);
+        const rollback = await rollbackCreatedAuthUsers(svc, [hs.user.id]);
+        return jsonRes({
+          error: rollback.ok
+            ? "Khong tao duoc tai khoan phu huynh; da hoan tac tai khoan hoc sinh tam"
+            : "Khong tao duoc tai khoan phu huynh va chua hoan tac duoc tai khoan hoc sinh tam",
+          rollbackOk: rollback.ok,
+          rollbackFailedUserIds: rollback.failedUserIds,
+        }, rollback.ok ? 500 : 503);
       }
-      await svc.from("profiles").update({ full_name: "Phụ huynh " + fullName }).eq("id", ph.user.id);
-      await svc.from("profiles").update({ full_name: fullName, parent_id: ph.user.id }).eq("id", hs.user.id);
+      const finalizeResult = await svc.rpc("vm_finalize_managed_account_pair", {
+        p_student_id: hs.user.id,
+        p_parent_id: ph.user.id,
+        p_username: u,
+        p_student_full_name: fullName,
+      });
+      const profileCheck = finalizeResult.error
+        ? { data: null, error: finalizeResult.error }
+        : await svc.from("profiles")
+          .select("id,role,username,parent_id")
+          .in("id", [hs.user.id, ph.user.id]);
+      const rows = profileCheck.data || [];
+      const studentProfile = rows.find((row: any) => row.id === hs.user.id);
+      const parentProfile = rows.find((row: any) => row.id === ph.user.id);
+      const finalized = !profileCheck.error && rows.length === 2 &&
+        studentProfile?.role === "student" && studentProfile?.username === u && studentProfile?.parent_id === ph.user.id &&
+        parentProfile?.role === "parent" && parentProfile?.username === u + "_ph";
+      if (!finalized) {
+        const rollback = await rollbackCreatedAuthUsers(svc, [hs.user.id, ph.user.id]);
+        return jsonRes({
+          error: rollback.ok
+            ? "Khong lien ket duoc cap tai khoan; da hoan tac toan bo du lieu tam"
+            : "Khong lien ket duoc cap tai khoan va chua hoan tac duoc toan bo du lieu tam",
+          rollbackOk: rollback.ok,
+          rollbackFailedUserIds: rollback.failedUserIds,
+        }, rollback.ok ? 500 : 503);
+      }
       return jsonRes({ ok: true, type,
         student: { id: hs.user.id, login: u + "@hs.vinhmath", email: hsEmail },
         parent: { id: ph.user.id, login: u + "@ph.vinhmath", email: phEmail },
@@ -458,7 +515,23 @@ Deno.serve(async (req) => {
       app_metadata: { vinhmath_role: accountRole },
     });
     if (accErr || !acc?.user) return jsonRes({ error: "Tao TK loi: " + (accErr?.message || "unknown") }, 500);
-    await svc.from("profiles").update({ full_name: fullName }).eq("id", acc.user.id);
+    const profileResult = await svc.from("profiles")
+      .update({ full_name: fullName, username: u, role: accountRole })
+      .eq("id", acc.user.id)
+      .select("id,role,username")
+      .maybeSingle();
+    const profileOk = !profileResult.error && profileResult.data?.id === acc.user.id &&
+      profileResult.data?.role === accountRole && profileResult.data?.username === u;
+    if (!profileOk) {
+      const rollback = await rollbackCreatedAuthUsers(svc, [acc.user.id]);
+      return jsonRes({
+        error: rollback.ok
+          ? "Khong gan duoc vai tro tai khoan; da hoan tac tai khoan tam"
+          : "Khong gan duoc vai tro tai khoan va chua hoan tac duoc tai khoan tam",
+        rollbackOk: rollback.ok,
+        rollbackFailedUserIds: rollback.failedUserIds,
+      }, rollback.ok ? 500 : 503);
+    }
     return jsonRes({ ok: true, type,
       account: { id: acc.user.id, login: u + "@" + key + ".vinhmath", email, role: accountRole },
     });
