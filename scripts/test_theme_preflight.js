@@ -90,7 +90,7 @@ for (const file of canonical) {
   const preflightAt = html.indexOf('js/theme-preflight.js?v=1');
   const tokensAt = html.indexOf('css/tokens.css');
   expect(preflightAt !== -1 && preflightAt < tokensAt, `${file}: preflight must be parser-blocking before tokens.css`);
-  expect(html.includes('css/vinhmath.css?v=8.6'), `${file}: shared motion CSS cache key is stale`);
+  expect(html.includes('css/vinhmath.css?v=8.7'), `${file}: shared motion CSS cache key is stale`);
   expect(html.includes('js/vinhmath.js?v=9.6'), `${file}: shared runtime cache key is stale`);
 }
 

@@ -6,10 +6,6 @@
   --exam-red:#c94d55;
 }
 .exam-admin-topbar{position:relative;inset:auto;width:100%;transform:none}
-.exam-admin-topbar .nav{width:min(1880px,100%);max-width:none;min-height:68px}
-.exam-admin-topbar .logo{flex:0 0 auto}
-.exam-admin-topbar .navlinks{min-width:0;flex:1;justify-content:center}
-.exam-admin-topbar .navlinks>a,.exam-admin-topbar .nav-dropdown-btn{padding-inline:10px;white-space:nowrap}
 .exam-admin-wrap{width:100%;max-width:none;margin:0 auto;padding:0 28px 96px}
 .exam-admin-wrap,.exam-workflow,.exam-workflow>*{min-width:0}
 .exam-runtime-state{display:none!important}

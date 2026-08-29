@@ -94,8 +94,9 @@ button,input,select,textarea,option{font-family:var(--font-sans)}
   box-shadow:var(--shadow);
   transition: background 0.3s, border-color 0.3s;
 }
-.topbar .nav{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-title);font-weight:700;font-size:1.15rem;letter-spacing:0.05em;text-decoration:none;color:var(--topbar-text);text-transform:uppercase}
+.topbar .nav{width:min(1880px,100%);max-width:none;min-height:68px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;flex:0 0 auto;align-items:center;gap:10px;font-family:var(--font-title);font-weight:700;font-size:1.15rem;letter-spacing:0.05em;text-decoration:none;color:var(--topbar-text);text-transform:uppercase}
+.logo .brand-container-el{display:inline-flex;align-items:center;gap:0;white-space:nowrap}
 .logo .dot{
   width:30px;height:30px;border-radius:6px;background:var(--accent);
   color:#ffffff;display:grid;place-items:center;font-size:.95rem;font-weight:700;flex:none;
@@ -114,10 +115,10 @@ button,input,select,textarea,option{font-family:var(--font-sans)}
 .role-badge.badge-student{background:var(--topbar-btn-bg);color:var(--topbar-link);border:1px solid var(--topbar-btn-border)}
 .role-badge.badge-parent{background:var(--topbar-btn-bg);color:var(--topbar-link);border:1px solid var(--topbar-btn-border)}
 
-.navlinks{display:flex;gap:4px;align-items:center}
+.navlinks{display:flex;flex:1 1 auto;min-width:0;justify-content:center;gap:4px;align-items:center}
 .navlinks a{
   text-decoration:none;font-size:.92rem;font-weight:600;color:var(--topbar-link);
-  padding:7px 14px;border-radius:var(--r-sm);transition:all .15s;
+  padding:7px 10px;border-radius:var(--r-sm);transition:all .15s;white-space:nowrap;
 }
 .navlinks a:hover{background:var(--topbar-btn-bg);color:var(--topbar-link-hover)}
 .navlinks a.active {
@@ -275,7 +276,7 @@ button,input,select,textarea,option{font-family:var(--font-sans)}
   font-size: .92rem;
   font-weight: 600;
   color: var(--topbar-link);
-  padding: 7px 14px;
+  padding: 7px 10px;
   border-radius: var(--r-sm);
   background: transparent;
   border: none;
@@ -285,6 +286,7 @@ button,input,select,textarea,option{font-family:var(--font-sans)}
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 .nav-dropdown-btn:hover {
   background: rgba(255, 255, 255, 0.08);

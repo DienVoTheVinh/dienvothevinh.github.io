@@ -323,7 +323,7 @@ function napHeThongCapBac() {
   if (document.getElementById('vmRankSystemScript')) return;
   var sc = document.createElement('script');
   sc.id = 'vmRankSystemScript';
-  sc.src = 'js/rank-system.js?v=7';
+  sc.src = 'js/rank-system.js?v=8';
   sc.onload = function () { if (window.VMRank) window.VMRank.init(); };
   document.body.appendChild(sc);
 }
