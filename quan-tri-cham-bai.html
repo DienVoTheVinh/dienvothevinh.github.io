@@ -25,8 +25,11 @@
 .chb-rank-panel{margin-bottom:18px;padding:18px;border-color:color-mix(in srgb,#7b61ff 28%,var(--line));background:radial-gradient(circle at 90% 0,rgba(123,97,255,.12),transparent 34%),var(--surface)}
 .chb-rank-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.chb-rank-head span{color:#7651ce;font-size:.65rem;font-weight:900;letter-spacing:.1em}.chb-rank-head h2{margin:4px 0;font-size:1.12rem}.chb-rank-head p{margin:0;color:var(--ink-3);font-size:.7rem;line-height:1.5}.chb-rank-head>b{padding:6px 10px;border-radius:999px;background:rgba(123,97,255,.12);color:#7651ce;font-size:.68rem;white-space:nowrap}.chb-rank-queue{display:grid;gap:9px;margin-top:14px}.chb-rank-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}.chb-rank-row.passed{border-color:var(--ok)}.chb-rank-row.failed{opacity:.78}.chb-rank-student{display:flex;align-items:center;gap:9px;min-width:0}.chb-rank-student>span{font-size:1.4rem}.chb-rank-student b,.chb-rank-student small,.chb-rank-result b,.chb-rank-result small{display:block}.chb-rank-student b{font-size:.78rem}.chb-rank-student small,.chb-rank-result small{color:var(--ink-3);font-size:.6rem;margin-top:2px}.chb-rank-grade{display:grid;grid-template-columns:90px minmax(150px,1fr) auto;gap:7px;min-width:min(470px,55%)}.chb-rank-result{text-align:right}.chb-rank-result b{font-size:.72rem}.chb-rank-empty{padding:15px;text-align:center;color:var(--ink-3);font-size:.72rem}@media(max-width:760px){.chb-rank-head,.chb-rank-row{flex-direction:column;align-items:stretch}.chb-rank-grade{min-width:0;grid-template-columns:1fr}.chb-rank-result{text-align:left}}
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
-.chb-filter-selects { display:flex; gap:10px; margin-left:auto; align-items:center; flex-wrap:wrap; }
-.chb-filter-selects select { padding:6px 12px; font-size:.85rem; }
+.chb-filter-selects { display:grid; grid-template-columns:minmax(110px,.62fr) minmax(170px,1fr) minmax(210px,1.25fr) minmax(230px,1.4fr); gap:10px; width:100%; margin-top:2px; align-items:end; }
+.chb-filter-field { display:grid; gap:5px; min-width:0; color:var(--ink-3); font-size:.68rem; font-weight:800; }
+.chb-filter-field span { padding-left:2px; letter-spacing:.025em; }
+.chb-filter-field select { width:100%; min-width:0; padding:7px 11px; font-size:.82rem; }
+.chb-filter-field select:disabled { opacity:.62; cursor:not-allowed; }
 .tab-btn { background: transparent; border: 1px solid var(--line-2); padding: 7px 16px; font-family: inherit; font-size: .88rem; font-weight: 500; color: var(--ink-2); cursor: pointer; border-radius: 99px; }
 .tab-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 .sub-card { margin-bottom: 16px; }
@@ -49,6 +52,7 @@
   .chb-filter-selects { width:100%; margin-left:0; display:grid; grid-template-columns:1fr; gap:8px; }
   .chb-filter-selects select { width:100% !important; min-height:40px; }
 }
+@media(min-width:641px) and (max-width:900px) { .chb-filter-selects { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .empty { text-align: center; padding: 64px 24px; color: var(--ink-3); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal-content { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); width: 100%; max-width: 640px; padding: 28px; max-height: 88vh; overflow-y: auto; position: relative; }
@@ -489,16 +493,27 @@
     <button class="tab-btn" id="loc-test" onclick="locTheo('test')">📝 Trắc nghiệm cuối giờ (<span id="demTest">0</span>)</button>
     <button class="tab-btn" id="loc-luyende" onclick="locTheo('luyende')">🎯 Luyện đề (<span id="demLuyenDe">0</span>)</button>
     
-    <div class="chb-filter-selects">
-      <select class="input" id="selKhoi" aria-label="Lọc theo khối" onchange="capNhatLopTheoKhoi(); locDuLieu();" style="width:125px">
-        <option value="">-- Tất cả khối --</option>
-      </select>
-      <select class="input" id="selLop" aria-label="Lọc theo lớp" onchange="capNhatDropdownBoLoc(); locDuLieu();" style="width:160px">
-        <option value="">-- Tất cả các lớp --</option>
-      </select>
-      <select class="input" id="selBai" aria-label="Lọc theo bài giảng hoặc đề thi" onchange="locDuLieu()" style="width:200px">
-        <option value="">-- Tất cả các bài giảng --</option>
-      </select>
+    <div class="chb-filter-selects" aria-label="Lọc bài chấm theo nội dung">
+      <label class="chb-filter-field"><span>Khối</span>
+        <select class="input" id="selKhoi" aria-label="Lọc theo khối" onchange="capNhatLopTheoKhoi(); locDuLieu();">
+          <option value="">-- Tất cả khối --</option>
+        </select>
+      </label>
+      <label class="chb-filter-field"><span>Lớp học</span>
+        <select class="input" id="selLop" aria-label="Lọc theo lớp" onchange="capNhatDropdownBoLoc(); locDuLieu();">
+          <option value="">-- Tất cả các lớp --</option>
+        </select>
+      </label>
+      <label class="chb-filter-field"><span>Chuyên đề</span>
+        <select class="input" id="selChuyenDe" aria-label="Lọc theo chuyên đề" onchange="capNhatBaiTheoChuyenDe(); locDuLieu();">
+          <option value="">-- Tất cả chuyên đề --</option>
+        </select>
+      </label>
+      <label class="chb-filter-field"><span id="selBaiLabel">Bài giảng</span>
+        <select class="input" id="selBai" aria-label="Lọc theo bài giảng hoặc đề thi" onchange="locDuLieu()">
+          <option value="">-- Tất cả các bài giảng --</option>
+        </select>
+      </label>
     </div>
   </div>
 
@@ -615,7 +630,7 @@ async function chamDotPha(attemptId,button){var scoreInput=document.querySelecto
     var rLop = await sb.from('classes').select('id, name, grade, is_specialized, teacher_id, co_teacher_id').order('grade').order('name');
     dsLop = rLop.data || [];
     
-    var rBai = await sb.from('lessons').select('id, title, class_id').order('title');
+    var rBai = await sb.from('lessons').select('id, title, class_id, sort, topic_id, created_at, topics(id, name, color, sort)');
     dsBai = rBai.data || [];
     
     var rDe = await sb.from('exams').select('id, title, class_id').order('title');
@@ -657,6 +672,13 @@ async function chamDotPha(attemptId,button){var scoreInput=document.querySelecto
       var _lopObj = dsLop.find(function (l) { return l.id === _lop; });
       if (_lopObj) { $('selKhoi').value = giaTriKhoi(_lopObj); capNhatLopTheoKhoi(); }
       $('selLop').value = _lop; capNhatDropdownBoLoc();
+    }
+    if (_bai && dangLoc !== 'luyende') {
+      var _baiObj = dsBai.find(function (b) { return b.id === _bai; });
+      if (_baiObj) {
+        $('selChuyenDe').value = giaTriChuyenDe(_baiObj);
+        capNhatBaiTheoChuyenDe();
+      }
     }
     if (_bai) { $('selBai').value = _bai; }
     if (_lop || _bai) await veDanhSach();
@@ -718,11 +740,76 @@ function capNhatLopTheoKhoi() {
   capNhatDropdownBoLoc();
 }
 
-function capNhatDropdownBoLoc() {
+function giaTriChuyenDe(bai) {
+  return bai && bai.topics && bai.topics.id ? String(bai.topics.id) : '__khac__';
+}
+
+function baiTrongPhamViDangChon() {
+  var selKhoiVal = $('selKhoi').value;
+  var selLopVal = $('selLop').value;
+  if (selLopVal) return dsBai.filter(function (b) { return b.class_id === selLopVal; });
+  if (selKhoiVal) {
+    var idsBaiKhoi = lopTheoKhoiDangChon().map(function (lop) { return lop.id; });
+    return dsBai.filter(function (b) { return idsBaiKhoi.indexOf(b.class_id) !== -1; });
+  }
+  return dsBai.slice();
+}
+
+function sapXepBaiTrongChuyenDe(a, b) {
+  var da = a.created_at ? new Date(a.created_at).getTime() : 0;
+  var db = b.created_at ? new Date(b.created_at).getTime() : 0;
+  if (da !== db) return da - db;
+  return (Number(a.sort) || 0) - (Number(b.sort) || 0);
+}
+
+function nhomBaiTheoChuyenDe(rows) {
+  var map = {}, topics = [], baiKhac = [];
+  rows.forEach(function (bai) {
+    if (!bai.topics || !bai.topics.id) { baiKhac.push(bai); return; }
+    var id = String(bai.topics.id);
+    if (!map[id]) {
+      map[id] = { id: id, topic: bai.topics, lessons: [] };
+      topics.push(map[id]);
+    }
+    map[id].lessons.push(bai);
+  });
+  topics.sort(function (a, b) { return (Number(a.topic.sort) || 0) - (Number(b.topic.sort) || 0); });
+  topics.forEach(function (group) { group.lessons.sort(sapXepBaiTrongChuyenDe); });
+  baiKhac.sort(sapXepBaiTrongChuyenDe);
+  var stt = 1;
+  var groups = topics.map(function (group) {
+    var chiSo = Number(group.topic.sort) > 0 ? Number(group.topic.sort) : stt++;
+    group.label = 'Chuyên đề ' + chiSo + ': ' + (group.topic.name || 'Chưa đặt tên');
+    return group;
+  });
+  if (baiKhac.length) groups.push({ id: '__khac__', label: 'Bài giảng khác / Tự do', topic: null, lessons: baiKhac });
+  return groups;
+}
+
+function capNhatChuyenDeTheoPhamVi() {
+  var selChuyenDe = $('selChuyenDe');
+  var dangChon = selChuyenDe.value;
+  if (dangLoc === 'luyende') {
+    selChuyenDe.disabled = true;
+    selChuyenDe.innerHTML = '<option value="">Không áp dụng cho luyện đề</option>';
+    capNhatBaiTheoChuyenDe();
+    return;
+  }
+  selChuyenDe.disabled = false;
+  var groups = nhomBaiTheoChuyenDe(baiTrongPhamViDangChon());
+  selChuyenDe.innerHTML = '<option value="">-- Tất cả chuyên đề --</option>' + groups.map(function (group) {
+    return '<option value="' + chamEsc(group.id) + '">' + chamEsc(group.label) + '</option>';
+  }).join('');
+  if (groups.some(function (group) { return group.id === dangChon; })) selChuyenDe.value = dangChon;
+  capNhatBaiTheoChuyenDe();
+}
+
+function capNhatBaiTheoChuyenDe() {
   var selKhoiVal = $('selKhoi').value;
   var selLopVal = $('selLop').value;
   var selBai = $('selBai');
-  
+  var baiDangChon = selBai.value;
+  $('selBaiLabel').textContent = dangLoc === 'luyende' ? 'Đề thi' : 'Bài giảng';
   if (dangLoc === 'luyende') {
     var dsDeLoc = dsDe;
     if (selLopVal) {
@@ -731,19 +818,26 @@ function capNhatDropdownBoLoc() {
       var idsDeKhoi = lopTheoKhoiDangChon().map(function (lop) { return lop.id; });
       dsDeLoc = dsDe.filter(function (d) { return d.class_id === null || idsDeKhoi.indexOf(d.class_id) !== -1; });
     }
-    selBai.innerHTML = '<option value="">-- Tất cả đề thi --</option>' +
-      dsDeLoc.map(function (d) { return '<option value="' + d.id + '">' + d.title + '</option>'; }).join('');
+    selBai.innerHTML = '<option value="">-- Tất cả đề thi --</option>' + dsDeLoc.map(function (d) {
+      return '<option value="' + chamEsc(d.id) + '">' + chamEsc(d.title) + '</option>';
+    }).join('');
+    if (dsDeLoc.some(function (d) { return d.id === baiDangChon; })) selBai.value = baiDangChon;
   } else {
-    var dsBaiLoc = dsBai;
-    if (selLopVal) {
-      dsBaiLoc = dsBai.filter(function (b) { return b.class_id === selLopVal; });
-    } else if (selKhoiVal) {
-      var idsBaiKhoi = lopTheoKhoiDangChon().map(function (lop) { return lop.id; });
-      dsBaiLoc = dsBai.filter(function (b) { return idsBaiKhoi.indexOf(b.class_id) !== -1; });
-    }
-    selBai.innerHTML = '<option value="">-- Tất cả bài giảng --</option>' +
-      dsBaiLoc.map(function (b) { return '<option value="' + b.id + '">' + b.title + '</option>'; }).join('');
+    var chuyenDeDangChon = $('selChuyenDe').value;
+    var groups = nhomBaiTheoChuyenDe(baiTrongPhamViDangChon()).filter(function (group) {
+      return !chuyenDeDangChon || group.id === chuyenDeDangChon;
+    });
+    selBai.innerHTML = '<option value="">-- Tất cả bài giảng --</option>' + groups.map(function (group) {
+      return '<optgroup label="' + chamEsc(group.label) + '">' + group.lessons.map(function (b) {
+        return '<option value="' + chamEsc(b.id) + '">' + chamEsc(b.title) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    if (groups.some(function (group) { return group.lessons.some(function (b) { return b.id === baiDangChon; }); })) selBai.value = baiDangChon;
   }
+}
+
+function capNhatDropdownBoLoc() {
+  capNhatChuyenDeTheoPhamVi();
 }
 
 function locDuLieu() {
@@ -993,8 +1087,9 @@ async function locTheo(loai) {
   var mapping = { submitted: 'cho', graded: 'xong', tatca: 'tatca', test: 'test', luyende: 'luyende' };
   $('loc-' + mapping[loai]).classList.add('active');
   
-  capNhatDropdownBoLoc();
+  $('selChuyenDe').value = '';
   $('selBai').value = '';
+  capNhatDropdownBoLoc();
   
   if (loai === 'test') {
     $('dsBaiNop').innerHTML = '<div class="empty card">Đang tải kết quả trắc nghiệm…</div>';
@@ -1009,7 +1104,14 @@ async function locTheo(loai) {
 function veDanhSach() {
   var selectedKhoi = $('selKhoi').value;
   var selectedLop = $('selLop').value;
+  var selectedTopic = $('selChuyenDe').value;
   var selectedSub = $('selBai').value;
+
+  function matchChuyenDe(lessonId) {
+    if (!selectedTopic || dangLoc === 'luyende') return true;
+    var bai = dsBai.find(function (item) { return item.id === lessonId; });
+    return !!bai && giaTriChuyenDe(bai) === selectedTopic;
+  }
   
   function matchLop(lessonOrExam, studentProfiles) {
     if (!selectedKhoi && !selectedLop) return true;
@@ -1028,6 +1130,7 @@ function veDanhSach() {
   if (dangLoc === 'test') {
     var ds = dsTestAttempts.filter(function (s) {
       if (!matchLop(s.lessons || s.exams, s.profiles)) return false;
+      if (!matchChuyenDe(s.lesson_id)) return false;
       if (selectedSub && s.lesson_id !== selectedSub) return false;
       return true;
     });
@@ -1086,6 +1189,7 @@ function veDanhSach() {
   var ds = dangLoc === 'tatca' ? tatCa : tatCa.filter(function (s) { return s.status === dangLoc; });
   ds = ds.filter(function (s) {
     if (!matchLop(s.lessons || s.exams, s.profiles)) return false;
+    if (!matchChuyenDe(s.lesson_id)) return false;
     if (selectedSub && s.lesson_id !== selectedSub) return false;
     return true;
   });
