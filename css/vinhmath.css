@@ -2008,44 +2008,17 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
   transition-timing-function: cubic-bezier(.2,.8,.2,1) !important;
 }
 
-/* Native cross-document transitions keep the previous frame visible while the
-   next page is parsed. This avoids both a white interstitial frame and the old
-   JavaScript navigation delay. Unsupported browsers simply navigate normally. */
-@view-transition { navigation: auto; }
-::view-transition-group(root) {
-  animation-duration: .2s;
-  animation-timing-function: cubic-bezier(.22,1,.36,1);
-}
-::view-transition-old(root) {
-  animation: vmRouteOut .12s ease-out both;
-  mix-blend-mode: normal;
-}
-::view-transition-new(root) {
-  animation: vmRouteIn .2s cubic-bezier(.22,1,.36,1) both;
-  mix-blend-mode: normal;
-}
-@keyframes vmRouteOut {
-  to { opacity: .97; }
-}
-@keyframes vmRouteIn {
-  from { opacity: .97; }
-  to { opacity: 1; }
-}
+/* Điều hướng giữa các tệp HTML phải đổi khung hình trực tiếp. View Transition
+   đa trang chụp lại toàn bộ nền, hạt động và lớp kính rồi chồng ảnh cũ/mới;
+   trên GPU yếu hoặc khi hai trang có chiều cao khác nhau sẽ tạo bóng ma và
+   khựng rõ rệt. Theme preflight và menu phiên đã sẵn sàng từ khung hình đầu,
+   nên không cần giữ bất kỳ ảnh chụp chuyển tiếp nào. */
+@view-transition { navigation: none; }
 .topbar,
 .topbar-lesson,
 .space-topbar,
 .portal-topbar {
-  view-transition-name: vm-stable-topbar;
-}
-::view-transition-group(vm-stable-topbar) {
-  z-index: 2147483000;
-  animation-duration: .14s;
-  animation-timing-function: cubic-bezier(.22,1,.36,1);
-}
-::view-transition-old(vm-stable-topbar),
-::view-transition-new(vm-stable-topbar) {
-  animation: none;
-  mix-blend-mode: normal;
+  view-transition-name: none;
 }
 .vm-page-hidden *, .vm-page-hidden *::before, .vm-page-hidden *::after {
   animation-play-state: paused !important;
@@ -2071,21 +2044,6 @@ html.vm-lite-motion [class*="pulse"],
 html.vm-lite-motion [class*="shimmer"] {
   animation: none !important;
 }
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(root),
-  ::view-transition-old(root),
-  ::view-transition-new(root),
-  ::view-transition-group(vm-stable-topbar),
-  ::view-transition-old(vm-stable-topbar),
-  ::view-transition-new(vm-stable-topbar) { animation: none !important; }
-}
-html.vm-lite-motion::view-transition-group(root),
-html.vm-lite-motion::view-transition-old(root),
-html.vm-lite-motion::view-transition-new(root),
-html.vm-lite-motion::view-transition-group(vm-stable-topbar),
-html.vm-lite-motion::view-transition-old(vm-stable-topbar),
-html.vm-lite-motion::view-transition-new(vm-stable-topbar) { animation: none !important; }
-
 /* Cuộn mượt toàn trang */
 html { scroll-behavior: smooth; }
 

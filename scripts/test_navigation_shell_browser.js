@@ -51,8 +51,10 @@ function pageHtml() {
     assert.strictEqual(state.links, 7, `Cached menu disappeared after navigation: ${JSON.stringify(state)}`);
     assert.strictEqual(state.active, 'Lớp học', `Cached menu did not update its active tab: ${JSON.stringify(state)}`);
     assert(state.ready && state.role, `Cached menu did not restore the session shell: ${JSON.stringify(state)}`);
-    assert.strictEqual(state.topbarTransitionName, 'vm-stable-topbar', 'Topbar is not isolated from the root fade');
-    console.log('PASS navigation keeps a stable topbar and restores the session menu before async permission refresh');
+    assert.strictEqual(state.topbarTransitionName, 'none', 'Topbar must not create a cross-document snapshot layer');
+    assert(css.includes('@view-transition { navigation: none; }'), 'Cross-document snapshots must stay disabled');
+    assert(!css.includes('::view-transition-old(root)') && !css.includes('::view-transition-new(root)'), 'Old and new page snapshots can cause ghost frames');
+    console.log('PASS navigation restores the session menu immediately without cross-document ghost frames');
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
