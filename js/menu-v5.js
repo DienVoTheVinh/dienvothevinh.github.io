@@ -11,6 +11,81 @@ function vmMenuEsc(value) {
   });
 }
 
+var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v1';
+
+function vmMenuCurrentPage() {
+  return (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '').split('?')[0];
+}
+
+function vmMenuPathIsActive(path, currentPage) {
+  var menuPage = String(path || '').split('?')[0].split('#')[0].replace(/\.html$/, '');
+  if (menuPage === currentPage) return true;
+  if (menuPage === 'quan-tri' && currentPage === 'quan-tri-le-hoi') return true;
+  if (menuPage === 'lop-hoc' && currentPage === 'bai-hoc') return true;
+  if (menuPage === 'quan-tri-lop' && currentPage === 'quan-tri-bai-hoc') return true;
+  if (menuPage === 'quan-tri-de' && currentPage === 'quan-tri-tai-lieu') return true;
+  return false;
+}
+
+function vmMenuMarkCurrent(nav) {
+  if (!nav) return;
+  var currentPage = vmMenuCurrentPage();
+  nav.querySelectorAll('a').forEach(function (link) {
+    link.classList.toggle('active', vmMenuPathIsActive(link.getAttribute('href'), currentPage));
+  });
+  nav.querySelectorAll('.nav-dropdown').forEach(function (dropdown) {
+    var button = dropdown.querySelector('.nav-dropdown-btn');
+    if (button) button.classList.toggle('active', !!dropdown.querySelector('a.active'));
+  });
+}
+
+function vmMenuBindLockedLinks(nav) {
+  if (!nav) return;
+  nav.querySelectorAll('.vm-feature-locked').forEach(function (link) {
+    link.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); });
+  });
+}
+
+function vmMenuSaveShell(role) {
+  var nav = document.querySelector('.navlinks');
+  if (!nav || !nav.innerHTML || !role) return;
+  try {
+    sessionStorage.setItem(VM_MENU_SHELL_CACHE_KEY, JSON.stringify({
+      version: 1,
+      role: role,
+      html: nav.innerHTML,
+      savedAt: Date.now()
+    }));
+  } catch (_) {}
+}
+
+function vmMenuClearShell() {
+  try { sessionStorage.removeItem(VM_MENU_SHELL_CACHE_KEY); } catch (_) {}
+}
+window.vmMenuClearShell = vmMenuClearShell;
+
+function vmMenuHydrateShell() {
+  var nav = document.querySelector('.navlinks');
+  if (!nav) return false;
+  try {
+    var cached = JSON.parse(sessionStorage.getItem(VM_MENU_SHELL_CACHE_KEY) || 'null');
+    var validRole = cached && ['admin', 'teacher', 'assistant', 'student', 'parent'].indexOf(cached.role) !== -1;
+    var fresh = cached && Number(cached.savedAt || 0) > Date.now() - 12 * 60 * 60 * 1000;
+    if (!validRole || !fresh || !cached.html) { vmMenuClearShell(); return false; }
+    nav.innerHTML = cached.html;
+    vmMenuMarkCurrent(nav);
+    vmMenuBindLockedLinks(nav);
+    document.body.classList.add('vm-authenticated', 'vm-role-' + cached.role);
+    apDungLogoBadge(cached.role);
+    damBaoNutMenuMobile();
+    document.documentElement.classList.add('vm-menu-shell-ready');
+    return true;
+  } catch (_) {
+    vmMenuClearShell();
+    return false;
+  }
+}
+
 function vmMenuFeatureMap(access) {
   var map = Object.create(null);
   var items = access && Array.isArray(access.items) ? access.items : [];
@@ -32,7 +107,7 @@ function vmMenuTenantExamFocus(context) {
 function apDungMenu(role, portalContext, tenantContext, featureAccess) {
   var nav = document.querySelector('.navlinks');
   if (!nav) return;
-  var trang = (location.pathname.split('/').pop() || 'index').split('?')[0];
+  var trang = vmMenuCurrentPage();
 
   var muc;
   if (portalContext && portalContext.portal_only) {
@@ -137,34 +212,12 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
       if (m.featureState === 'locked') {
         return '<a href="#" class="vm-feature-locked" data-vm-feature="' + vmMenuEsc(m.featureKey) + '" aria-disabled="true" title="Chức năng đang tạm khóa">' + vmMenuEsc(m.label) + ' <span aria-hidden="true">🔒</span></a>';
       }
-      var activeClass = '';
-      var menuPage = m.path.split('?')[0].split('#')[0];
-      if (menuPage === trang) {
-        activeClass = ' class="active"';
-      } else if (m.path === 'quan-tri' && trang === 'quan-tri-le-hoi') {
-        activeClass = ' class="active"';
-      } else if (m.path === 'lop-hoc' && trang === 'bai-hoc') {
-        activeClass = ' class="active"';
-      } else if (m.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
-        activeClass = ' class="active"';
-      } else if (menuPage === 'quan-tri-de' && trang === 'quan-tri-tai-lieu') {
-        activeClass = ' class="active"';
-      }
+      var activeClass = vmMenuPathIsActive(m.path, trang) ? ' class="active"' : '';
       return '<a href="' + m.path + '"' + activeClass + '>' + vmMenuEsc(m.label) + '</a>';
     } else if (m.type === 'dropdown') {
       var dropdownActive = false;
       var itemsHtml = m.items.map(function(sub) {
-        var isSubActive = false;
-        var subPage = sub.path.split('?')[0].split('#')[0];
-        if (subPage === trang) {
-          isSubActive = true;
-        } else if (sub.path === 'quan-tri-lop' && trang === 'quan-tri-bai-hoc') {
-          isSubActive = true;
-        } else if (sub.path === 'quan-tri-tai-lieu' && trang === 'tai-lieu') {
-          isSubActive = true;
-        } else if (sub.path === 'lop-hoc' && trang === 'bai-hoc') {
-          isSubActive = true;
-        }
+        var isSubActive = vmMenuPathIsActive(sub.path, trang);
         
         var activeClass = '';
         if (isSubActive) {
@@ -182,10 +235,9 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
     }
     return '';
   }).join('');
+  vmMenuMarkCurrent(nav);
   if ((fullSiteTenant && role !== 'admin') || Object.keys(globalFeatures).length) {
-    nav.querySelectorAll('.vm-feature-locked').forEach(function (link) {
-      link.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); });
-    });
+    vmMenuBindLockedLinks(nav);
     if (!document.getElementById('vmTenantMenuStyle')) {
       var style = document.createElement('style');
       style.id = 'vmTenantMenuStyle';
@@ -193,6 +245,8 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
       document.head.appendChild(style);
     }
   }
+  vmMenuSaveShell(role);
+  document.documentElement.classList.add('vm-menu-shell-ready');
   if (typeof window.vmCapNhatNutCaiDatPwa === 'function') window.vmCapNhatNutCaiDatPwa();
 }
 
@@ -242,6 +296,11 @@ function apDungLogoBadge(role) {
   logoEl.appendChild(span);
 }
 
+// Hiện lại ngay thanh điều hướng của chính phiên đăng nhập hiện tại. Dữ liệu
+// quyền thật vẫn được tải và vẽ đè ngay bên dưới, nên cache này chỉ loại bỏ
+// khoảng trống thị giác khi chuyển trang, không thay thế kiểm tra quyền.
+vmMenuHydrateShell();
+
 // Tự chạy: lấy vai trò người đang đăng nhập rồi vẽ menu
 (async function () {
   if (document.readyState === 'loading') {
@@ -260,7 +319,7 @@ function apDungLogoBadge(role) {
     }
     if (typeof daKetNoi !== 'function' || !daKetNoi()) return;
     var s = await sb.auth.getSession();
-    if (!s.data.session) return;
+    if (!s.data.session) { vmMenuClearShell(); return; }
     var r = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
     if (r.data) {
       document.body.classList.add('vm-authenticated');
