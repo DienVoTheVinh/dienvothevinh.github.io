@@ -10,7 +10,7 @@ function between(source, from, to) {
 
 (async () => {
   const shared = fs.readFileSync('js/vinhmath.js', 'utf8');
-  const navigation = between(shared, '/* ---------- 0A.', '/* ---------- 0. CHUYỂN CẢNH');
+  const navigation = between(shared, '/* ---------- 0A.', '/* ---------- 1. CHẾ ĐỘ SÁNG');
   const executablePath = process.env.VM_CHROME_PATH;
   if (!executablePath || !fs.existsSync(executablePath)) throw new Error('VM_CHROME_PATH must point to Chrome');
 

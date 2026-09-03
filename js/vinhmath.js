@@ -1539,6 +1539,10 @@ function vmUngVienMatKhauDangNhap(password) {
 async function dangNhap(username, password) {
   if (!daKetNoi()) return { error: 'Web đang ở chế độ xem thử — chưa kết nối Supabase.' };
 
+  // Không mang vỏ menu của một tài khoản cũ sang lần đăng nhập mới trên thiết
+  // bị dùng chung. Trang đích sẽ tạo lại cache sau khi xác minh đúng vai trò.
+  try { sessionStorage.removeItem('vm-menu-shell-v1'); } catch (_) {}
+
   var email = vmEmailDangNhap(username);
   var candidates = vmUngVienMatKhauDangNhap(password);
   var r = null;
@@ -1602,6 +1606,8 @@ async function dangXuat() {
     returnUrl += '?portal=' + encodeURIComponent(portalContext.portal.slug);
   }
   sessionStorage.removeItem('vm-guest-mode');
+  if (typeof window.vmMenuClearShell === 'function') window.vmMenuClearShell();
+  else { try { sessionStorage.removeItem('vm-menu-shell-v1'); } catch (_) {} }
   vmXoaThemeTamTheoPhien();
   // PDF TikZ co the chua noi dung bai hoc. Xoa ban sao tren thiet bi dung
   // chung khi doi tai khoan; raw TeX khong bao gio duoc luu trong cache nay.

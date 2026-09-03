@@ -2013,23 +2013,39 @@ a, button, .btn, .card, .nav-btn, .navlinks a, input, select, textarea, summary 
    JavaScript navigation delay. Unsupported browsers simply navigate normally. */
 @view-transition { navigation: auto; }
 ::view-transition-group(root) {
-  animation-duration: .24s;
+  animation-duration: .2s;
   animation-timing-function: cubic-bezier(.22,1,.36,1);
 }
 ::view-transition-old(root) {
-  animation: vmRouteOut .16s ease-in both;
+  animation: vmRouteOut .12s ease-out both;
   mix-blend-mode: normal;
 }
 ::view-transition-new(root) {
-  animation: vmRouteIn .24s cubic-bezier(.22,1,.36,1) both;
+  animation: vmRouteIn .2s cubic-bezier(.22,1,.36,1) both;
   mix-blend-mode: normal;
 }
 @keyframes vmRouteOut {
-  to { opacity: .94; }
+  to { opacity: .97; }
 }
 @keyframes vmRouteIn {
-  from { opacity: .94; }
+  from { opacity: .97; }
   to { opacity: 1; }
+}
+.topbar,
+.topbar-lesson,
+.space-topbar,
+.portal-topbar {
+  view-transition-name: vm-stable-topbar;
+}
+::view-transition-group(vm-stable-topbar) {
+  z-index: 2147483000;
+  animation-duration: .14s;
+  animation-timing-function: cubic-bezier(.22,1,.36,1);
+}
+::view-transition-old(vm-stable-topbar),
+::view-transition-new(vm-stable-topbar) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 .vm-page-hidden *, .vm-page-hidden *::before, .vm-page-hidden *::after {
   animation-play-state: paused !important;
@@ -2058,11 +2074,17 @@ html.vm-lite-motion [class*="shimmer"] {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(root),
   ::view-transition-old(root),
-  ::view-transition-new(root) { animation: none !important; }
+  ::view-transition-new(root),
+  ::view-transition-group(vm-stable-topbar),
+  ::view-transition-old(vm-stable-topbar),
+  ::view-transition-new(vm-stable-topbar) { animation: none !important; }
 }
 html.vm-lite-motion::view-transition-group(root),
 html.vm-lite-motion::view-transition-old(root),
-html.vm-lite-motion::view-transition-new(root) { animation: none !important; }
+html.vm-lite-motion::view-transition-new(root),
+html.vm-lite-motion::view-transition-group(vm-stable-topbar),
+html.vm-lite-motion::view-transition-old(vm-stable-topbar),
+html.vm-lite-motion::view-transition-new(vm-stable-topbar) { animation: none !important; }
 
 /* Cuộn mượt toàn trang */
 html { scroll-behavior: smooth; }
