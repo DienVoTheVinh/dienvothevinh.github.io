@@ -76,14 +76,9 @@ expect(/vmXoaThemeTamTheoPhien\(\);[\s\S]{0,500}vmChoCoGioiHan\(taiCaiDatHeThong
 expect(!/addEventListener\('change',\s*capNhatTrangThaiDieuKhienLichTheme\)/.test(shared), 'Schedule mode changes must not pass the DOM Event as schedule data');
 expect(/khoiTaoControlCenter\(\);[\s\S]{0,300}vmKhoiDongDongHoTheme\(\);/.test(shared), 'Cached schedules must keep ticking even when the settings request is offline');
 expect(/upsert\(\[[\s\S]*theme_mode[\s\S]*theme_theme[\s\S]*theme_light_start[\s\S]*theme_dark_start[\s\S]*\],\s*\{ onConflict: 'key' \}\)/.test(shared), 'Admin schedule persistence must atomically save mode, fallback theme and both time boundaries');
-expect(css.includes('@view-transition { navigation: auto; }'), 'Supported browsers must use native cross-document transitions');
-expect(css.includes('::view-transition-old(root)') && css.includes('::view-transition-new(root)'), 'Both navigation snapshots need a subtle compositor transition');
-expect(css.includes('view-transition-name: vm-stable-topbar'), 'The topbar must remain a separately preserved navigation layer');
-expect(css.includes('::view-transition-old(vm-stable-topbar)') && css.includes('::view-transition-new(vm-stable-topbar)'), 'The preserved topbar must not fade out between pages');
-expect(/prefers-reduced-motion:[^)]*reduce[\s\S]*::view-transition-group\(root\)/.test(css), 'Navigation transitions must respect reduced-motion');
-expect(css.includes('html.vm-lite-motion::view-transition-group(root)'), 'Low-end devices must disable route transitions');
-expect(/prefers-reduced-motion:[^)]*reduce[\s\S]*::view-transition-group\(vm-stable-topbar\)/.test(css), 'Stable topbar transitions must respect reduced-motion');
-expect(css.includes('html.vm-lite-motion::view-transition-group(vm-stable-topbar)'), 'Low-end devices must disable stable topbar transitions');
+expect(css.includes('@view-transition { navigation: none; }'), 'Cross-document snapshot transitions must stay disabled');
+expect(!css.includes('::view-transition-old(root)') && !css.includes('::view-transition-new(root)'), 'Shared CSS must not retain old/new page snapshots');
+expect(/\.topbar,[\s\S]*\.portal-topbar\s*\{[\s\S]*view-transition-name:\s*none/.test(css), 'Shared topbars must not create independent snapshot layers');
 
 const menu = read('js/menu-v5.js');
 expect(menu.includes("VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v1'"), 'Shared navigation must keep a session-scoped visual shell');
@@ -100,13 +95,13 @@ for (const file of canonical) {
   const preflightAt = html.indexOf('js/theme-preflight.js?v=1');
   const tokensAt = html.indexOf('css/tokens.css');
   expect(preflightAt !== -1 && preflightAt < tokensAt, `${file}: preflight must be parser-blocking before tokens.css`);
-  expect(html.includes('css/vinhmath.css?v=8.8'), `${file}: shared motion CSS cache key is stale`);
+  expect(html.includes('css/vinhmath.css?v=8.9'), `${file}: shared motion CSS cache key is stale`);
   expect(html.includes('js/vinhmath.js?v=9.7'), `${file}: shared runtime cache key is stale`);
   if (html.includes('js/menu-v5.js')) expect(html.includes('js/menu-v5.js?v=10.4'), `${file}: shared menu cache key is stale`);
 }
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v68"), 'Offline shell must advance for the stable navigation release');
+expect(worker.includes("vinhmath-shell-v69"), 'Offline shell must advance for the snapshot-free navigation release');
 expect(worker.includes("'/js/theme-preflight.js'"), 'Offline shell must cache the preflight script');
 
-console.log(`PASS theme prepaint, native route motion and ${canonical.length} canonical HTML pages`);
+console.log(`PASS theme prepaint, snapshot-free navigation and ${canonical.length} canonical HTML pages`);
