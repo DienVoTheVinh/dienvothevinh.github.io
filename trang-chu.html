@@ -2564,7 +2564,9 @@ async function veLichDayStaff() {
     }
     var thuText = classDateStr + ' (' + TEN_THU_VIET[_thuWd] + ')';
       
-    var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\')">📝 Điểm danh</button>' +
+    var attendanceDateStr = effDate || sDateStr;
+    var attendanceTeacherId = s.teacher_id || (hoSoNguoiDung && hoSoNguoiDung.id) || '';
+    var btnDiemDanh = '<button class="btn btn-secondary btn-sm" onclick="moDiemDanhNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\', \'' + s.id + '\', \'' + attendanceDateStr + '\', \'' + effStart.slice(0, 5) + '\', \'' + attendanceTeacherId + '\')">📝 Điểm danh</button>' +
       ' <button class="btn btn-secondary btn-sm" title="Thưởng nóng" aria-label="Thưởng nóng" style="background:linear-gradient(135deg,#ffd76a,#f39c12);color:#3a2560;border-color:#f39c12;font-weight:700;padding:6px 10px" onclick="moThuongNongNhanh(\'' + s.class_id + '\', \'' + tenLop.replace(/'/g, "\\'") + '\')">🎁</button>';
     
     var rowStyle = '';
@@ -3499,22 +3501,42 @@ async function taiDiemDanhBu() {
       if (!isOccur) return;
       if (di === 0 && s.start_time && s.start_time.slice(0, 5) >= nowHM) return; // hôm nay chưa tới giờ -> để ở "sắp tới"
       if (window.ovByOrig) { var ov = window.ovByOrig[s.id + '|' + dKey]; if (ov && ov.status === 'cancelled') return; }
-      occ.push({ classId: s.class_id, className: s.classes.name, date: dKey, gio: (s.start_time || '').slice(0, 5), di: di });
+      occ.push({
+        scheduleId: s.id,
+        classId: s.class_id,
+        className: s.classes.name,
+        teacherId: s.teacher_id || myId,
+        date: dKey,
+        gio: (s.start_time || '').slice(0, 5),
+        di: di
+      });
     });
   }
   if (!occ.length) { btn.style.display = 'none'; return; }
   var classIds = occ.map(function (o) { return o.classId; });
+  var occurrenceCounts = {};
+  occ.forEach(function (o) {
+    var legacyKey = o.classId + '|' + o.date;
+    occurrenceCounts[legacyKey] = (occurrenceCounts[legacyKey] || 0) + 1;
+  });
   var minD = new Date(); minD.setDate(minD.getDate() - 3);
-  var attSet = {};
+  var attSet = {}, legacyAttSet = {};
   try {
-    var ra = await sb.from('attendance').select('class_sessions!inner(class_id, held_on)')
+    var ra = await sb.from('attendance').select('class_sessions!inner(schedule_id, class_id, held_on)')
       .in('class_sessions.class_id', classIds).gte('class_sessions.held_on', minD.toLocaleDateString('sv'));
-    (ra.data || []).forEach(function (x) { var cs = x.class_sessions; if (cs) attSet[cs.class_id + '|' + cs.held_on] = true; });
+    (ra.data || []).forEach(function (x) {
+      var cs = x.class_sessions;
+      if (!cs) return;
+      if (cs.schedule_id) attSet[cs.schedule_id + '|' + cs.held_on] = true;
+      else legacyAttSet[cs.class_id + '|' + cs.held_on] = true;
+    });
   } catch (e) {}
   var seen = {}, rows = [];
   occ.forEach(function (o) {
-    var k = o.classId + '|' + o.date;
-    if (attSet[k] || seen[k]) return;
+    var k = o.scheduleId + '|' + o.date;
+    var legacyKey = o.classId + '|' + o.date;
+    var safelyCoveredByLegacy = occurrenceCounts[legacyKey] === 1 && legacyAttSet[legacyKey];
+    if (attSet[k] || safelyCoveredByLegacy || seen[k]) return;
     seen[k] = 1; rows.push(o);
   });
   if (!rows.length) { btn.style.display = 'none'; return; }
@@ -3526,16 +3548,17 @@ async function taiDiemDanhBu() {
     return '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
       '<div style="flex:1; min-width:180px"><b>' + (o.className || 'Lớp') + '</b>' +
       '<div style="font-size:.8rem; color:var(--ink-3)">' + nhan(o) + (o.gio ? ' · ' + o.gio : '') + '</div></div>' +
-      '<button class="btn btn-primary btn-sm" style="background:#d97706; border-color:#d97706" onclick="moDiemDanhBu(\'' + o.classId + '\', \'' + (o.className || '').replace(/'/g, "\\'") + '\', \'' + o.date + '\')">📝 Điểm danh bù</button>' +
+      '<button class="btn btn-primary btn-sm" style="background:#d97706; border-color:#d97706" onclick="moDiemDanhBu(\'' + o.classId + '\', \'' + (o.className || '').replace(/'/g, "\\'") + '\', \'' + o.scheduleId + '\', \'' + o.date + '\', \'' + o.gio + '\', \'' + o.teacherId + '\')">📝 Điểm danh bù</button>' +
       '</div>';
   }).join('');
 }
 
-async function moDiemDanhBu(classId, className, dateStr) {
+async function moDiemDanhBu(classId, className, scheduleId, dateStr, startTime, teacherId) {
   lopDangXem = classId;
+  if (!scheduleId) { alert('Không xác định được ca học. Vui lòng tải lại trang rồi thử lại.'); return; }
   var r = await sb.from('class_sessions')
     .select('id, qr_token, title, attendance_open')
-    .eq('class_id', classId).eq('held_on', dateStr)
+    .eq('schedule_id', scheduleId).eq('held_on', dateStr)
     .order('created_at', { ascending: false }).limit(1);
   if (r.data && r.data.length > 0) {
     var b = r.data[0];
@@ -3543,21 +3566,28 @@ async function moDiemDanhBu(classId, className, dateStr) {
     hienQR(b.id, b.qr_token, b.title || ('Điểm danh bù · ' + dateStr), classId);
   } else {
     var ins = await sb.from('class_sessions').insert({
-      class_id: classId, held_on: dateStr, title: 'Điểm danh bù · ' + dateStr,
+      class_id: classId, schedule_id: scheduleId, teacher_id: teacherId || null,
+      held_on: dateStr, title: 'Điểm danh bù · ' + className + (startTime ? ' · ' + startTime : '') + ' · ' + dateStr,
       attendance_open: true, qr_expires: new Date(Date.now() + 15 * 60000).toISOString()
     }).select('id, qr_token, title').single();
+    if (ins.error && ins.error.code === '23505') {
+      var retry = await sb.from('class_sessions').select('id, qr_token, title')
+        .eq('schedule_id', scheduleId).eq('held_on', dateStr).maybeSingle();
+      if (retry.data) { hienQR(retry.data.id, retry.data.qr_token, retry.data.title, classId); return; }
+    }
     if (ins.error) { alert('Không thể tạo buổi điểm danh bù: ' + ins.error.message); return; }
     hienQR(ins.data.id, ins.data.qr_token, ins.data.title, classId);
   }
 }
 
-async function moDiemDanhNhanh(classId, className) {
+async function moDiemDanhNhanh(classId, className, scheduleId, dateStr, startTime, teacherId) {
   lopDangXem = classId;
-  var todayStr = new Date().toLocaleDateString('sv'); // yyyy-mm-dd
+  if (!scheduleId) { alert('Không xác định được ca học. Vui lòng tải lại trang rồi thử lại.'); return; }
+  dateStr = dateStr || new Date().toLocaleDateString('sv');
   var r = await sb.from('class_sessions')
     .select('id, qr_token, title, attendance_open, qr_expires')
-    .eq('class_id', classId)
-    .eq('held_on', todayStr)
+    .eq('schedule_id', scheduleId)
+    .eq('held_on', dateStr)
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -3571,15 +3601,23 @@ async function moDiemDanhNhanh(classId, className) {
     
     hienQR(b.id, b.qr_token, b.title, classId);
   } else {
-    var ten = 'Buổi học ngày ' + new Date().toLocaleDateString('vi-VN');
+    var ten = className + (startTime ? ' · ' + startTime : '') + ' · ' + formatNgayDep(dateStr);
     var phut = 45;
     var ins = await sb.from('class_sessions').insert({
       class_id: classId,
+      schedule_id: scheduleId,
+      teacher_id: teacherId || null,
+      held_on: dateStr,
       title: ten,
       attendance_open: true,
       qr_expires: new Date(Date.now() + phut * 60000).toISOString()
     }).select('id, qr_token, title').single();
 
+    if (ins.error && ins.error.code === '23505') {
+      var retry = await sb.from('class_sessions').select('id, qr_token, title')
+        .eq('schedule_id', scheduleId).eq('held_on', dateStr).maybeSingle();
+      if (retry.data) { hienQR(retry.data.id, retry.data.qr_token, retry.data.title, classId); return; }
+    }
     if (ins.error) {
       alert('Không thể tạo buổi học điểm danh: ' + ins.error.message);
       return;

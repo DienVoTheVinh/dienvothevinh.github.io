@@ -101,7 +101,7 @@ for (const file of canonical) {
 }
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v69"), 'Offline shell must advance for the snapshot-free navigation release');
+expect(worker.includes("vinhmath-shell-v70"), 'Offline shell must advance for schedule-scoped attendance');
 expect(worker.includes("'/js/theme-preflight.js'"), 'Offline shell must cache the preflight script');
 
 console.log(`PASS theme prepaint, snapshot-free navigation and ${canonical.length} canonical HTML pages`);
