@@ -162,7 +162,39 @@ function builderSourceTenant(){var source=document.getElementById('builderSource
 function applyBuilderSource(){var source=builderSourceTenant();if(!source)return;document.getElementById('builderTitle').value=source.home_title||'';document.getElementById('builderSubtitle').value=source.home_subtitle||'';document.getElementById('builderSupport').value=source.support_text||'';var brand=brands.find(function(b){return b.id===source.brand_id&&b.is_active!==false;});if(brand)document.getElementById('builderBrand').value=brand.id;}
 function builderFeatures(){var source=document.getElementById('builderSource').value;if(!source)return [];return rules.filter(function(r){return r.portal_id===source&&(r.role_scope==='teacher'||r.role_scope==='student')&&r.feature_key!=='question_bank'&&featureForKey(r.feature_key);}).map(function(r){return {role_scope:r.role_scope,feature_key:r.feature_key,state:r.state,sort_order:Number(r.sort_order)||0,label_override:r.label_override||''};});}
 async function createTenant(){var form=document.getElementById('tenantBuilderForm');if(!form.reportValidity())return;var ns=document.getElementById('builderNamespace').value.trim().toLowerCase(),slug=document.getElementById('builderSlug').value.trim().toLowerCase(),source=builderSourceTenant();if(!/^[a-z0-9]{2,20}$/.test(ns)){alert('Mã hậu tố chỉ gồm 2–20 chữ thường hoặc số.');return;}var button=document.getElementById('createTenantBtn');button.disabled=true;button.textContent='Đang tạo…';try{var config={name:document.getElementById('builderName').value.trim(),short_name:document.getElementById('builderShort').value.trim(),slug:slug,brand_id:document.getElementById('builderBrand').value,login_suffix:'hs'+ns,teacher_login_suffix:'gv'+ns,home_path:'khong-gian?tenant='+slug,home_title:document.getElementById('builderTitle').value.trim(),home_subtitle:document.getElementById('builderSubtitle').value.trim(),home_image_path:source&&source.home_image_path||'',support_text:document.getElementById('builderSupport').value.trim(),landing_copy:source&&source.landing_copy||{}};var result=await sb.rpc('vm_admin_create_full_site_tenant',{p_config:config,p_features:builderFeatures()});if(result.error)throw result.error;var newId=result.data&&result.data.id;if(newId){var sourceBankRule=source&&rules.find(function(rule){return rule.portal_id===source.id&&rule.role_scope==='teacher'&&rule.feature_key==='question_bank';});var bankRule={portal_id:newId,role_scope:'teacher',feature_key:'question_bank',state:sourceBankRule&&sourceBankRule.state||'shown',sort_order:sourceBankRule&&Number(sourceBankRule.sort_order)||45,label_override:sourceBankRule&&sourceBankRule.label_override||null,updated_by:currentUserId,updated_at:new Date().toISOString()};var bankSave=await sb.from('exam_portal_feature_rules').upsert(bankRule,{onConflict:'portal_id,role_scope,feature_key'});if(bankSave.error)throw bankSave.error;}document.getElementById('tenantBuilder').close();await loadAll(newId);activateTenantTab(document.getElementById('tenant-tab-identity'));status('Đã tạo bản nháp '+config.short_name+'. Hãy kiểm tra và bấm Triển khai khi sẵn sàng.','ok');}catch(e){alert('Không tạo được không gian: '+(e.message||e));}finally{button.disabled=false;button.textContent='Tạo bản nháp';}}
-async function migrateAccounts(dryRun){if(!currentTenant)return;var teacherId=document.getElementById('tenantTeacher').value,classId=document.getElementById('tenantClass').value,out=document.getElementById('migrationResult');if(!teacherId||!classId){status('Hãy chọn giáo viên và lớp học sinh.','warn');return;}if(!dryRun&&!confirm('Đổi hậu tố đăng nhập cho giáo viên và toàn bộ học sinh lớp đã chọn? Dữ liệu học tập được giữ nguyên.'))return;out.hidden=false;out.textContent=dryRun?'Đang kiểm tra…':'Đang chuyển đổi an toàn…';try{var r=await sb.functions.invoke('tao-tai-khoan',{body:{type:'full_site_tenant_migrate',tenantId:currentTenant.id,teacherId:teacherId,classId:classId,dryRun:dryRun}});if(r.error)throw r.error;var data=r.data||{};if(data.error)throw new Error(data.error);out.textContent=JSON.stringify(data,null,2);status(dryRun?'Đã kiểm tra. Chưa có tài khoản nào bị thay đổi.':'Đã chuyển hậu tố và gắn '+(currentTenant.short_name||currentTenant.name)+'. Các phiên cũ cần đăng nhập lại.','ok');if(!dryRun)await loadAll(currentTenant.id);}catch(e){out.textContent='Lỗi: '+(e.message||e);status('Chuyển đổi chưa hoàn tất; máy chủ đã cố khôi phục các email đã đổi.','err');}}
+var migrationRunning=false;
+function migrationSummary(data){
+  var preflight=data.preflight||{},mapping=preflight.loginMapping||[];
+  return (data.dryRun?'Kiểm tra trước':'Kết quả chuyển đổi')+' · '+(preflight.tenantSlug||'')+'\n'+
+    'Tổng: '+mapping.length+' · Giữ nguyên: '+(preflight.skippedCount||0)+' · '+(data.dryRun?'Cần cập nhật: ':'Đã cập nhật: ')+(preflight.changeCount||0)+'\n\n'+
+    mapping.map(function(item){return (item.skipped?'✓ Giữ nguyên: ':item.unchanged?'↻ Hoàn thiện liên kết: ':'→ Đổi: ')+item.from+(item.from!==item.to?' → '+item.to:'');}).join('\n');
+}
+async function migrateAccounts(dryRun){
+  if(!currentTenant||migrationRunning)return;
+  var tenantId=currentTenant.id,tenantName=currentTenant.short_name||currentTenant.name;
+  var teacherId=document.getElementById('tenantTeacher').value,classId=document.getElementById('tenantClass').value,out=document.getElementById('migrationResult');
+  if(!teacherId||!classId){status('Hãy chọn giáo viên và lớp học sinh.','warn');return;}
+  if(!dryRun&&!confirm('Chuyển tài khoản giáo viên và học sinh lớp đã chọn sang '+tenantName+'? Tài khoản đã đúng thương hiệu sẽ được giữ nguyên. Dữ liệu học tập được giữ nguyên.'))return;
+  migrationRunning=true;
+  var buttons=Array.from(document.querySelectorAll('button[onclick^="migrateAccounts"]'));
+  buttons.forEach(function(button){button.disabled=true;});
+  out.hidden=false;out.textContent=dryRun?'Đang kiểm tra…':'Đang chuyển đổi…';clearStatus();
+  try{
+    var r=await sb.functions.invoke('tao-tai-khoan',{body:{type:'full_site_tenant_migrate',tenantId:tenantId,teacherId:teacherId,classId:classId,dryRun:dryRun}});
+    var data=r.data||{};
+    if(r.error){
+      try{if(r.error.context&&typeof r.error.context.json==='function')data=await r.error.context.json();}catch(_){}
+      var failure=new Error(data.error||r.error.message||'Không nhận được kết quả từ máy chủ.');failure.details=data;throw failure;
+    }
+    if(data.error){var failure=new Error(data.error);failure.details=data;throw failure;}
+    out.textContent=migrationSummary(data);
+    status(dryRun?'Đã kiểm tra. Chưa thay đổi tài khoản.':data.unchanged?'Tất cả tài khoản đã đúng thương hiệu; không cần thay đổi.':'Đã cập nhật '+tenantName+'. Tài khoản được chuyển cần đăng nhập lại.','ok');
+    if(!dryRun&&currentTenant&&currentTenant.id===tenantId)currentTenant.is_active=true;
+  }catch(e){
+    var details=e.details||{},note=details.rollbackOk===true?' Các thay đổi trong lượt này đã được hoàn tác.':details.rollbackOk===false||details.retryable?' Cần kiểm tra lại trạng thái bằng nút Kiểm tra trước.':'';
+    out.textContent='Lỗi: '+(e.message||e)+note;status('Chưa hoàn tất chuyển đổi: '+(e.message||e)+note,'err');
+  }finally{migrationRunning=false;buttons.forEach(function(button){button.disabled=false;});}
+}
 document.getElementById('builderNamespace').addEventListener('input',updateNamespacePreview);
 document.getElementById('builderSource').addEventListener('change',applyBuilderSource);
 document.getElementById('pane-identity').addEventListener('input',function(event){if(SAVE_IDENTITY_FIELDS.indexOf(event.target.id)===-1)return;markLivePreviewDirty();if(PREVIEW_IDENTITY_FIELDS.indexOf(event.target.id)===-1)return;livePreviewFocusedField=event.target.id;queueLivePreview();});

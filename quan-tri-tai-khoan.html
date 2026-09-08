@@ -398,7 +398,7 @@ async function ttTaiPhamViTaiKhoan() {
     var result = await sb.from('exam_portals')
       .select('id,slug,name,short_name,login_suffix,teacher_login_suffix,is_active,experience_mode')
       .eq('is_active', true)
-      .eq('experience_mode', 'exam_only')
+      .in('experience_mode', ['exam_only', 'full_site'])
       .order('name');
     if (result.error) throw result.error;
     window.ttPortals = (result.data || []).filter(function (portal) {
@@ -407,7 +407,7 @@ async function ttTaiPhamViTaiKhoan() {
     window.ttPortals.forEach(function (portal) {
       var option = document.createElement('option');
       option.value = portal.id;
-      option.textContent = (portal.short_name || portal.name || portal.slug) + ' · @' + portal.login_suffix + ' / @' + portal.teacher_login_suffix;
+      option.textContent = (portal.short_name || portal.name || portal.slug) + ' · @' + portal.login_suffix + ' / @' + portal.teacher_login_suffix + (portal.experience_mode === 'full_site' ? ' · Không gian thương hiệu' : ' · Cổng thi');
       select.appendChild(option);
     });
   } catch (error) {
@@ -427,8 +427,8 @@ function ttDoiPhamVi() {
   loai.innerHTML = '';
   var options = portal
     ? [
-        { value: 'portal_hs', label: 'Học sinh phân hiệu' },
-        { value: 'portal_gv', label: 'Giáo viên quản lý phân hiệu' }
+        { value: 'portal_hs', label: portal.experience_mode === 'full_site' ? 'Học sinh của thương hiệu' : 'Học sinh cổng thi' },
+        { value: 'portal_gv', label: portal.experience_mode === 'full_site' ? 'Giáo viên của thương hiệu' : 'Giáo viên quản lý cổng thi' }
       ]
     : [
         { value: 'hs_ph', label: 'Học sinh + Phụ huynh (tự liên kết)' },
@@ -449,7 +449,7 @@ function ttDoiPhamVi() {
     if (options.some(function (item) { return item.value === selected; })) loai.value = selected;
   }
   $('ttPhamViMoTa').textContent = portal
-    ? 'Tài khoản chỉ vào vùng ' + (portal.name || portal.short_name || portal.slug) + '; hậu tố học sinh @' + portal.login_suffix + ', giáo viên @' + portal.teacher_login_suffix + '.'
+    ? (portal.experience_mode === 'full_site' ? 'Đăng nhập vào trang chủ thương hiệu ' : 'Tài khoản chỉ dùng cổng thi ') + (portal.name || portal.short_name || portal.slug) + '; hậu tố học sinh @' + portal.login_suffix + ', giáo viên @' + portal.teacher_login_suffix + '. Quyền học và dạy vẫn theo lớp được giao.'
     : 'Tài khoản VinhMath đầy đủ; học sinh có thể dùng các lớp và tính năng chính.';
   ttDoiLoai();
   if (window.ttCheDo === 'bulk') ttBulkCapNhatPhamVi();
@@ -549,7 +549,7 @@ async function taoTaiKhoan() {
                 'Vai trò: Phụ huynh';
       html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + data.student.login + '</b><br>👪 PH: <b>' + data.parent.login + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
     } else if (data.type === 'portal_hs' || data.type === 'portal_gv') {
-      var portalRoleName = data.type === 'portal_gv' ? 'Giáo viên quản lý phân hiệu' : 'Học sinh phân hiệu';
+      var portalRoleName = data.type === 'portal_gv' ? (portal && portal.experience_mode === 'full_site' ? 'Giáo viên của thương hiệu' : 'Giáo viên quản lý cổng thi') : 'Học sinh';
       var portalName = portal ? (portal.name || portal.short_name || portal.slug) : 'phân hiệu đã chọn';
       textVal = 'THÔNG TIN TÀI KHOẢN PHÂN HIỆU\n\n' +
                 'Tên đăng nhập: ' + data.login + '\n' +

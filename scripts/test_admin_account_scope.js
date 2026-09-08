@@ -29,7 +29,7 @@ for (const page of pages) {
 }
 
 expect(edge.includes('type === "portal_hs" || type === "portal_gv"'), 'Edge Function does not support partner accounts');
-expect(edge.includes('member_role: isManager ? "manager" : "student"') && edge.includes('portal_only: true'), 'Partner accounts are not portal-scoped');
+expect(edge.includes('member_role: isManager ? "manager" : "student"') && edge.includes('portal_only: !isFullSite, is_primary: isFullSite'), 'Account membership must match the server-verified space mode');
 expect(edge.includes('role: "student"') && edge.includes('preventing broad teacher'), 'Partner managers could accidentally receive broad VinhMath teacher access');
 expect(!edge.includes('console.log(password)') && !edge.includes('console.log(body)'), 'Credentials must not be logged');
 
