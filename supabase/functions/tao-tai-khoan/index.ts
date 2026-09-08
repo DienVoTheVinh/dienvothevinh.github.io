@@ -191,13 +191,16 @@ async function migrateFullSiteTenant(
   if (new Set(targetEmails).size !== targetEmails.length) {
     return jsonRes({ error: "Danh sach co ten dang nhap tenant bi trung" }, 409);
   }
-  if (portal.is_active === true) {
-    const existingState = await fullSiteTenantState(svc, portalId, teacherId, studentIds);
-    if (!existingState.known) return jsonRes({ error: "Khong kiem tra duoc trang thai tenant dang hoat dong" }, 500);
-    if (!existingState.complete) {
-      return jsonRes({ error: "Tenant phai o trang thai cho hoac da hoan tat dung nhom tai khoan" }, 409);
-    }
-  }
+  // Active spaces accept additional cohorts. Existing identities belong to the
+  // same users and must not block a class containing both old and new members.
+  const existingState = await fullSiteTenantState(svc, portalId, teacherId, studentIds);
+  if (!existingState.known) return jsonRes({ error: "Khong kiem tra duoc trang thai tai khoan thuong hieu" }, 500);
+  const { data: existingMembers, error: membershipError } = await svc.from("exam_portal_members")
+    .select("user_id,member_role,portal_only,is_primary").eq("portal_id", portalId)
+    .in("user_id", actors.map((actor) => actor.id));
+  if (membershipError) return jsonRes({ error: "Khong kiem tra duoc lien ket thuong hieu" }, 500);
+  const membershipMatches = (actor: FullSiteActor) => (existingMembers || []).some((member: PortalMemberRow) =>
+    member.user_id === actor.id && member.member_role === actor.memberRole && !member.portal_only && member.is_primary);
 
   const authResults = await Promise.all(actors.map(async (actor) => ({
     actor,
@@ -243,6 +246,9 @@ async function migrateFullSiteTenant(
     to: compactLogin(actor.targetEmail),
     unchanged: actor.oldEmail === actor.targetEmail,
     roleClaimRepair: String(actor.appMetadata.vinhmath_role || "") !== actor.profileRole,
+    membershipRepair: !membershipMatches(actor),
+    skipped: actor.oldEmail === actor.targetEmail &&
+      String(actor.appMetadata.vinhmath_role || "") === actor.profileRole && membershipMatches(actor),
   }));
   const preflight = {
     tenantId: portal.id,
@@ -252,8 +258,13 @@ async function migrateFullSiteTenant(
     studentCount: studentIds.length,
     willActivate: portal.is_active !== true,
     loginMapping,
+    skippedCount: loginMapping.filter((item) => item.skipped).length,
+    changeCount: loginMapping.filter((item) => !item.skipped).length,
   };
   if (dryRun) return jsonRes({ ok: true, type: "full_site_tenant_migrate", dryRun: true, preflight });
+  if (existingState.complete && preflight.changeCount === 0) {
+    return jsonRes({ ok: true, type: "full_site_tenant_migrate", dryRun: false, unchanged: true, preflight });
+  }
 
   const changed: AuthSnapshot[] = [];
   for (const actor of snapshots) {
@@ -402,12 +413,14 @@ Deno.serve(async (req) => {
         return jsonRes({ error: "Portal khong hop le" }, 400);
       }
       const { data: portal } = await svc.from("exam_portals").select("id,slug,login_suffix,teacher_login_suffix,is_active,experience_mode").eq("id", portalId).maybeSingle();
-      if (!portal || !portal.is_active || portal.experience_mode !== "exam_only") {
-        return jsonRes({ error: "Portal thi khong ton tai hoac dang tam dung" }, 404);
+      if (!portal || !portal.is_active || !["exam_only", "full_site"].includes(portal.experience_mode)) {
+        return jsonRes({ error: "Thuong hieu khong ton tai hoac dang tam dung" }, 404);
       }
+      const isFullSite = portal.experience_mode === "full_site";
       const u = await timU(false);
       if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
       const isManager = type === "portal_gv";
+      const profileRole = isFullSite && isManager ? "teacher" : "student";
       const suffix = isManager ? portal.teacher_login_suffix : portal.login_suffix;
       if (!new RegExp(isManager ? "^gv[a-z0-9]{2,20}$" : "^hs[a-z0-9]{2,20}$").test(String(suffix || ""))) {
         return jsonRes({ error: "Hau to portal khong hop le" }, 409);
@@ -416,22 +429,23 @@ Deno.serve(async (req) => {
       const { data: acc, error: accErr } = await svc.auth.admin.createUser({
         email, password, email_confirm: true,
         user_metadata: { full_name: fullName },
-        app_metadata: { vinhmath_role: "student" },
+        app_metadata: { vinhmath_role: profileRole },
       });
       if (accErr || !acc?.user) return jsonRes({ error: "Khong tao duoc tai khoan portal" }, 500);
-      // Portal managers stay profile.role=student on purpose. Their manager
+      // Exam-only portal managers stay profile.role=student. Their manager
       // permission comes only from exam_portal_members, preventing broad teacher
       // access to the main VinhMath tenant.
       const profileResult = await svc.from("profiles")
-        .update({ full_name: fullName, username: u, role: "student" })
+        .update({ full_name: fullName, username: u, role: profileRole })
         .eq("id", acc.user.id)
         .select("id,role,username")
         .maybeSingle();
       const memberResult = await svc.from("exam_portal_members").insert({
-        portal_id: portal.id, user_id: acc.user.id, member_role: isManager ? "manager" : "student", portal_only: true,
+        portal_id: portal.id, user_id: acc.user.id, member_role: isManager ? "manager" : "student",
+        portal_only: !isFullSite, is_primary: isFullSite,
       });
       const profileOk = !profileResult.error && profileResult.data?.id === acc.user.id &&
-        profileResult.data?.role === "student" && profileResult.data?.username === u;
+        profileResult.data?.role === profileRole && profileResult.data?.username === u;
       if (!profileOk || memberResult.error) {
         const rollback = await rollbackCreatedAuthUsers(svc, [acc.user.id]);
         return jsonRes({

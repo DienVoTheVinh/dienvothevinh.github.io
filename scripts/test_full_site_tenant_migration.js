@@ -37,8 +37,8 @@ expect(/profile\.role !== "student"/.test(migration),
 
 expect(/auth\.admin\.getUserById\(actor\.id\)/.test(migration),
   'Auth users must be resolved by immutable profile id.');
-expect(/portal\.is_active === true[\s\S]*fullSiteTenantState\(svc, portalId, teacherId, studentIds\)[\s\S]*!existingState\.complete/.test(migration),
-  'An active tenant may only be retried when the exact cohort is already finalized.');
+expect(!migration.includes('if (!existingState.complete)') && migration.includes('preflight.changeCount === 0'),
+  'Active tenants must accept mixed cohorts and return without writes for a completed retry.');
 expect(/auth\.admin\.listUsers\(\{ page, perPage: 1000 \}\)/.test(migration) &&
   /owner && owner !== actor\.id/.test(migration),
   'Target Auth emails must be collision-checked while allowing idempotent same-user retries.');
