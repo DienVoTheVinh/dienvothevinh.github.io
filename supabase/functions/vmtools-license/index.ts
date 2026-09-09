@@ -15,7 +15,7 @@ const origins=new Set(['https://vinhmath.com','https://www.vinhmath.com']);
 Deno.serve(async req=>{
  const origin=req.headers.get('origin');const headers:any={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
  if(origin&&origins.has(origin))headers['Access-Control-Allow-Origin']=origin;
- headers['Access-Control-Allow-Headers']='authorization,apikey,content-type';headers['Access-Control-Allow-Methods']='POST,OPTIONS';
+ headers['Access-Control-Allow-Headers']='authorization,x-client-info,apikey,content-type';headers['Access-Control-Allow-Methods']='POST,OPTIONS';
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(req.method!=='POST')return new Response('{}',{status:405,headers});
  try{
