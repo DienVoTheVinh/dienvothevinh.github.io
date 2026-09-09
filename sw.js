@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v73';
+const VM_CACHE = 'vinhmath-shell-v74';
 const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
@@ -22,6 +22,7 @@ const VM_SHELL = [
   '/css/student-experience.css',
   '/css/student-result-viewer.css',
   '/css/vmtools-portal.css',
+  '/css/home-compact-intro.css',
   '/js/config.js',
   '/js/theme-preflight.js',
   '/js/vinhmath.js',

@@ -1,0 +1,15 @@
+/* Contain decorative glows without creating horizontal page scroll. */
+.hero-glow-1{left:0}.hero-glow-2{right:0}
+/* Keep the VMTools project visible near the first fold on desktop. */
+@media(min-width:861px){
+ .home-install-first{margin-top:14px;padding:10px 18px;gap:14px;grid-template-columns:40px minmax(0,1fr) auto;border-radius:14px}
+ .home-install-first-logo{width:40px;height:40px}.home-install-first-copy h2{font-size:13px}.home-install-first-copy p{font-size:12px;margin:2px 0 0}.home-install-first-note{display:none}.home-install-first-action{min-height:36px;font-size:12px;padding:0 14px}
+ .hero,.home-install-first+.hero{padding:18px 0 12px;gap:18px 42px;grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr)}
+ .hero-brand-banner{padding:4px 18px;margin-bottom:0;border-radius:14px}.hero-3d-scene-wrapper{width:48px;height:48px}.hero-3d-scene-wrapper .hero-3d-scene{transform:translate(-50%,-50%) scale(.3)}.brand-title{font-size:17px;letter-spacing:.12em}
+ .hero h1{font-size:clamp(28px,2.9vw,38px);line-height:1.13;margin:0}.hero .sub{margin-top:12px;font-size:14px;line-height:1.6;max-width:64ch}
+ .hero .reveal>div[style]{margin-top:16px!important;gap:10px!important}.hero .btn-lg{font-size:12px;padding:10px 17px;min-height:38px}
+ .hero .contact-channels{margin-top:14px;gap:8px;flex-wrap:wrap}.hero .contact-link{padding:6px 10px;font-size:11px;gap:6px}.hero .contact-link .icon-box{width:22px;height:22px}.hero .note{font-size:11px;margin:12px 0 0}
+ .hero .portrait{min-height:265px}.hero .portrait-grid{height:265px;max-width:255px}.hero .portrait-grid .photo-caption{font-size:10px;padding:18px 7px 6px}.hero .portrait-grid .ph-portrait,.hero .portrait-grid .ph-landscape{border-radius:14px}.hero .vertical-text{display:none}
+ .vm-home-showcase{margin-top:18px!important}.vm-home-showcase .vm-showcase{padding-top:32px}.vm-home-showcase .vm-eyebrow{margin-bottom:18px}.vm-home-showcase .vm-logo{width:42px;height:42px;margin-bottom:16px}.vm-home-showcase h2.vm-title{font-size:clamp(34px,3.6vw,54px)}
+}
+@media(max-width:860px){.hero,.home-install-first+.hero{padding-top:18px;padding-bottom:20px;gap:24px}.hero-brand-banner{margin-bottom:0}.hero .portrait{margin-top:0}.hero .portrait-grid{flex-direction:row;gap:12px;max-width:380px}.hero .portrait-grid .ph-portrait,.hero .portrait-grid .ph-landscape{width:calc(50% - 6px)}.hero .sub{font-size:15px;margin-top:16px}.hero .reveal>div[style]{margin-top:20px!important;gap:10px!important}.hero .btn-lg{font-size:13px;padding:11px 15px}.hero .contact-channels{margin-top:16px}.hero .note{margin-top:15px}}
