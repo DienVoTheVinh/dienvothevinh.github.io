@@ -8,8 +8,8 @@ for(const width of [1366,390])for(const theme of ['dark','light']){
  await host.screenshot({path:`${out}/launch-${width}-${theme}.png`});
  for(const key of ['workspace','calculator','geometry','solid','graphs','cubic','geometry-code','variation-code']){await host.locator(`[data-vm-view="${key}"]`).click();await img.evaluate(i=>i.decode());assert.ok(await img.evaluate(i=>i.naturalWidth===1680));if(['workspace','solid'].includes(key))assert.ok((await img.getAttribute('src')).includes('-053-'));}
  assert.equal(await p.locator('[data-vinh-contact] a[href*="zalo"]').count(),0);await p.getByRole('button',{name:'Quét mã Zalo',exact:true}).click();assert.equal(await p.locator('dialog a[href^="https://zalo"]').count(),0);assert.equal(await p.locator('dialog img').getAttribute('src'),'/assets/vmtools/zalo-the-vinh.png');await p.keyboard.press('Escape');
- await host.locator('.vm-motion').click();assert.equal(await host.locator('.vm-motion').getAttribute('aria-pressed'),'false');await p.evaluate(()=>scrollBy(0,-150));await p.waitForTimeout(50);assert.equal(await host.evaluate(e=>e.style.getPropertyValue('--vm-scroll-y')),'0px');
+ assert.equal(await host.locator('.vm-motion,.vm-orbit-tools,.vm-orbit-scene').count(),0);
  await p.emulateMedia({reducedMotion:'reduce'});assert.equal(await host.locator('.vm-launch-preview').evaluate(e=>getComputedStyle(e).transform),'none');await p.close();
 }
-console.log('PASS launch: real gallery images, corrected replacements, enlarged logo, image before teaching copy, desktop/mobile, dark/light, QR-only contact, motion off and reduced motion');
+console.log('PASS launch: real gallery images, corrected replacements, enlarged logo, image before teaching copy, desktop/mobile, dark/light, QR-only contact, ambient scene without controls and reduced motion');
 }finally{await b.close();server.kill();}})().catch(e=>{console.error(e);server.kill();process.exitCode=1});
