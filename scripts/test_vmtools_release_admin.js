@@ -8,4 +8,3 @@ function fixture({role='admin',session=true,published=false,older='0.4.0',manife
  return {writes,run:p=>handler(new Request('https://server',{method:'POST',headers:{authorization:'Bearer '+token,origin:'https://vinhmath.com'},body:JSON.stringify(p)}))};
 }
 (async()=>{for(const options of [{role:'teacher'},{session:false},{published:true},{older:'0.6.0'},{manifest:false}]){const f=fixture(options),r=await f.run({action:'publish',version:'0.5.0',confirm:true});assert.ok(r.status>=400);assert.equal(f.writes.length,0)}const f=fixture();assert.equal((await f.run({action:'publish',version:'0.5.0',confirm:true})).status,200);assert.equal(f.writes[0].published,true);console.log('PASS release owner/session gating, immutable published release, downgrade prevention and installer/manifest completeness')})().catch(e=>{console.error(e);process.exitCode=1});
-
