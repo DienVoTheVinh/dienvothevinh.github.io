@@ -4090,5 +4090,5 @@ async function moThuongNongNhanh(classId, className) {
 }
 </script>
 
-</body>
+<script>if(new URLSearchParams(location.search).get('service')==='classroom'){const n=document.createElement('div');n.setAttribute('role','status');n.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:90vw;padding:20px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;z-index:5000';n.textContent='Các tính năng trên lớp chưa được kích hoạt hoặc đã hết hạn. Vui lòng liên hệ thầy Vinh. ';const a=document.createElement('a');a.href='/vmtool';a.textContent='Mở VMTools';n.append(a);const b=document.createElement('button');b.textContent='Đóng';b.onclick=()=>n.remove();n.append(b);document.body.append(n);}</script></body>
 </html>

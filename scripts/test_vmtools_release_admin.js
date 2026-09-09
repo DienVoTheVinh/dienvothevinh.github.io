@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),{stripTypeScriptTypes}=require('node:module');
+const source=fs.readFileSync('supabase/functions/vmtools-release-admin/index.ts','utf8').replace(/^import .*;\r?\n/gm,'');
+const token='x.'+Buffer.from(JSON.stringify({session_id:'s'})).toString('base64url')+'.x';
+function fixture({role='admin',session=true,published=false,older='0.4.0',manifest=true}={}){
+ let handler;const writes=[],tables={profiles:[{id:'u',role}],vmtools_accounts:[{id:'owner',auth_user_id:'u',role:'owner',status:'active'}],vmtools_releases:[{version:'0.5.0',published},{version:older,published:true}],vmtools_release_files:[{version:'0.5.0',platform:'win32',arch:'x64',kind:'installer'},...(manifest?[{version:'0.5.0',platform:'win32',arch:'x64',kind:'update_manifest'}]:[])]};
+ const db={auth:{getUser:async()=>({data:{user:{id:'u'}}})},rpc:async()=>({data:session}),from(t){let filters=[],one=false;const q={select(){return q},eq(k,v){filters.push(x=>x[k]===v);return q},maybeSingle(){one=true;return q},update(p){writes.push(p);return q},order(){return q},limit(){return q},then(fn){const a=(tables[t]||[]).filter(x=>filters.every(f=>f(x)));return Promise.resolve({data:one?a[0]:a}).then(fn)}};return q}};
+ vm.runInNewContext(stripTypeScriptTypes(source),{Deno:{env:{get:()=>''},serve:h=>handler=h},createClient:()=>db,Request,Response,atob,Date,JSON,Error,Number});
+ return {writes,run:p=>handler(new Request('https://server',{method:'POST',headers:{authorization:'Bearer '+token,origin:'https://vinhmath.com'},body:JSON.stringify(p)}))};
+}
+(async()=>{for(const options of [{role:'teacher'},{session:false},{published:true},{older:'0.6.0'},{manifest:false}]){const f=fixture(options),r=await f.run({action:'publish',version:'0.5.0',confirm:true});assert.ok(r.status>=400);assert.equal(f.writes.length,0)}const f=fixture();assert.equal((await f.run({action:'publish',version:'0.5.0',confirm:true})).status,200);assert.equal(f.writes[0].published,true);console.log('PASS release owner/session gating, immutable published release, downgrade prevention and installer/manifest completeness')})().catch(e=>{console.error(e);process.exitCode=1});
+

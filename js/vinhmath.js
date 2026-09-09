@@ -1560,6 +1560,9 @@ async function dangNhap(username, password) {
     if (code !== 'invalid_credentials' && message.indexOf('Invalid login credentials') === -1) break;
   }
 
+  if(r?.error && !/\.vinhmath\.com$/i.test(email)){
+    try{const linked=await sb.functions.invoke('vmtools-web-login',{body:{email,password:String(password)}});if(!linked.error&&linked.data?.session){r=await sb.auth.setSession({access_token:linked.data.session.access_token,refresh_token:linked.data.session.refresh_token});}}catch{}
+  }
   if (r.error) {
     var msg = r.error.message || '';
     if (r.error.code === 'invalid_credentials' || msg.indexOf('Invalid login credentials') !== -1)
@@ -1714,6 +1717,13 @@ async function yeuCauDangNhap() {
   var profile = await layHoSo();
   var tenantContext = await vmLoadTenantContext();
   if (profile && vmGuardTenantRoute(tenantContext, profile.role)) return null;
+  if(profile?.role==='teacher'){
+    const route=location.pathname.split('/').pop().replace(/\.html$/,'');
+    if(['classes','lessons','grading','authoring','schedule'].includes(vmTenantFeatureForPath(route,profile.role))){
+      const service=await sb.rpc('vm_my_services');
+      if(service.error||!service.data?.classroom){location.replace('/trang-chu?service=classroom');return null;}
+    }
+  }
   return profile;
 }
 

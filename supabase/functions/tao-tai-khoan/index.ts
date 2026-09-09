@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {teacherGrant} from "../_shared/vmtools-access.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.95.0";
 
 const cors = {
@@ -425,7 +426,13 @@ Deno.serve(async (req) => {
       if (!new RegExp(isManager ? "^gv[a-z0-9]{2,20}$" : "^hs[a-z0-9]{2,20}$").test(String(suffix || ""))) {
         return jsonRes({ error: "Hau to portal khong hop le" }, 409);
       }
-      const email = `${u}@${suffix}.vinhmath.com`;
+      let grant:any=null;
+      const realEmail=String(body.email||'').trim().toLowerCase();
+      if(profileRole==='teacher'){
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(realEmail)||realEmail.endsWith('.vinhmath.com'))return jsonRes({error:'Giáo viên cần email thật để dùng chung VinhMath và VMTools'},400);
+        try{grant=teacherGrant(body);}catch(e){return jsonRes({error:(e as Error).message},400);}
+      }
+      const email = profileRole==='teacher'?realEmail:`${u}@${suffix}.vinhmath.com`;
       const { data: acc, error: accErr } = await svc.auth.admin.createUser({
         email, password, email_confirm: true,
         user_metadata: { full_name: fullName },
@@ -436,7 +443,7 @@ Deno.serve(async (req) => {
       // permission comes only from exam_portal_members, preventing broad teacher
       // access to the main VinhMath tenant.
       const profileResult = await svc.from("profiles")
-        .update({ full_name: fullName, username: u, role: profileRole })
+        .update({ full_name: fullName, username: u, role: profileRole, ...(profileRole==='teacher'?{email}:{}) })
         .eq("id", acc.user.id)
         .select("id,role,username")
         .maybeSingle();
@@ -456,7 +463,11 @@ Deno.serve(async (req) => {
           rollbackFailedUserIds: rollback.failedUserIds,
         }, rollback.ok ? 500 : 503);
       }
-      return jsonRes({ ok: true, type, login: `${u}@${suffix}`, memberRole: isManager ? "manager" : "student" });
+      if(grant){
+        const provision=await svc.rpc('vm_teacher_services_provision',{p_actor:user.id,p_user:acc.user.id,p_email:email,p_name:fullName,p_classroom:grant.classroom,p_vmtools:grant.vmtools});
+        if(provision.error){const rollback=await rollbackCreatedAuthUsers(svc,[acc.user.id]);return jsonRes({error:'Chưa cấp được dịch vụ cho giáo viên',rollbackOk:rollback.ok},rollback.ok?500:503);}
+      }
+      return jsonRes({ ok: true, type, login: profileRole==='teacher'?email:`${u}@${suffix}`, memberRole: isManager ? "manager" : "student" });
     }
 
     if (type === "hs_ph") {
@@ -523,14 +534,8 @@ Deno.serve(async (req) => {
     if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
     const teacherEmail = String(body.email || "").trim().toLowerCase();
     if (type === "gv" && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail) || /\.vinhmath\.com$/.test(teacherEmail))) return jsonRes({error:"Giáo viên cần email thật để dùng chung VinhMath và VMTools"},400);
-    const grant = body.vmtools;
-    let vmActor: string | null = null;
-    if (type === "gv") {
-      if (!grant || (grant.plan !== "pending" && grant.confirmGrant !== true) || !["pending","monthly","yearly","custom","lifetime"].includes(grant.plan) || !Number.isInteger(grant.units) || grant.units < 1 || grant.units > 120 || !Number.isFinite(grant.amount) || grant.amount < 0 || (grant.plan === "custom" && !(Date.parse(grant.until) > Date.now()))) return jsonRes({error:"Hãy xác nhận gói và hạn VMTools hợp lệ"},400);
-      const owner = await svc.from("vmtools_accounts").select("id").eq("auth_user_id",user.id).eq("role","owner").eq("status","active").maybeSingle();
-      if (owner.error || !owner.data) return jsonRes({error:"Chưa có quyền cấp gói VMTools"},403);
-      vmActor = owner.data.id;
-    }
+    let grant: any = null;
+    if(type==='gv') { try {grant=teacherGrant(body);} catch(e){return jsonRes({error:(e as Error).message},400);} }
     const email = type === "gv" ? teacherEmail : u + "@" + DOMAIN[key];
     const accountRole = type === "gv" ? "teacher" : "assistant";
     const { data: acc, error: accErr } = await svc.auth.admin.createUser({
@@ -557,7 +562,7 @@ Deno.serve(async (req) => {
       }, rollback.ok ? 500 : 503);
     }
     if (type === "gv") {
-      const license = await svc.rpc("vmtools_provision",{p_actor:vmActor,p_user:acc.user.id,p_email:email,p_name:fullName,p_web:grant.webEnabled===true,p_plan:grant.plan,p_units:grant.units,p_until:grant.until,p_amount:grant.amount});
+      const license = await svc.rpc("vm_teacher_services_provision",{p_actor:user.id,p_user:acc.user.id,p_email:email,p_name:fullName,p_classroom:grant.classroom,p_vmtools:grant.vmtools});
       if (license.error) {
         const rollback = await rollbackCreatedAuthUsers(svc,[acc.user.id]);
         return jsonRes({error:"Chưa cấp được gói VMTools; " + (rollback.ok?"đã hoàn tác tài khoản mới":"cần kiểm tra tài khoản tạm"),rollbackOk:rollback.ok},500);
