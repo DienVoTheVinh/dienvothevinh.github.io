@@ -1492,14 +1492,14 @@ function vmChuanHoaTenDangNhap(value) {
     .replace(/^mailto:/i, '')
     .replace(/\s+/g, '')
     .toLowerCase()
-    .replace(/\.app$/, '.com');
+    .replace(/\.vinhmath\.app$/, '.vinhmath.com');
 }
 
 function vmEmailDangNhap(username) {
   var u = vmChuanHoaTenDangNhap(username);
 
   // Tự động cắt bỏ đuôi .com nếu trình duyệt tự điền email nội bộ đầy đủ.
-  if (u.endsWith('.com')) u = u.replace(/\.com$/, '');
+  if (/\.vinhmath\.com$/.test(u)) u = u.replace(/\.com$/, '');
 
   var email = "";
   if (!u.includes('@')) {

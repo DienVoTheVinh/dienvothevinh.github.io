@@ -1,0 +1,8 @@
+const CACHE='vmtools-6559088f1e36',ASSETS=["./assets/html2canvas.esm-B0tyYwQk.js","./assets/index-C70Br8Pv.js","./assets/index-CAEL8Op2.css","./assets/index.es-VTyAD_fo.js","./assets/jspdf.es.min-B7M3ykW2.js","./assets/pdf-B7zhfHd9.js","./assets/pdf.worker.min-CtqWkzeZ.js","./assets/pdf.worker.min-r-TJsTTt.mjs","./assets/purify.es-DedTAGkB.js","./icons/icon-192.png","./icons/icon-512.png","./index.html","./manifest.webmanifest","./samples/circle-angles.vmtool"];
+const ROOT=new URL('./',self.location.href),PUBLIC=new Set(ASSETS.map(p=>new URL(p,ROOT).href));
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
+// A new worker waits until existing documents close: no forced reload while writing.
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('vmtools-')&&k!==CACHE).map(k=>caches.delete(k))))));
+self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==ROOT.origin||!url.pathname.startsWith(ROOT.pathname))return;
+ const asset=new URL(url.pathname,ROOT.origin).href;if(!PUBLIC.has(asset)&&!(event.request.mode==='navigate'&&url.pathname===ROOT.pathname))return;
+ event.respondWith(caches.open(CACHE).then(async cache=>(await cache.match(event.request,{ignoreSearch:true}))||(event.request.mode==='navigate'?cache.match(new URL('index.html',ROOT).href):fetch(event.request))));});

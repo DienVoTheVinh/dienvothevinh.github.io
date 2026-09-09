@@ -11,7 +11,7 @@ function fixture(mode = 'full_site') {
   const profiles = [{id:id(2),username:'teacher',role:'teacher'}, {id:id(3),username:'done',role:'student'}, {id:id(4),username:'new',role:'student'}];
   const members = profiles.slice(0,2).map(p => ({portal_id:portal.id,user_id:p.id,member_role:p.role==='teacher'?'manager':'student',portal_only:false,is_primary:true}));
   const auth = profiles.map(p => ({id:p.id,email:p.username+'@'+(p.id===id(2)?'gvum':p.id===id(3)?'hsum':'hs')+'.vinhmath.com',app_metadata:{vinhmath_role:p.role,keep:'private'},user_metadata:{keep:'public'}}));
-  const tables = {exam_portals:[portal],profiles,exam_portal_members:members,classes:[{id:id(5),teacher_id:id(2)}],class_students:[{class_id:id(5),student_id:id(3)},{class_id:id(5),student_id:id(4)}]};
+  const tables = {vmtools_accounts:[{id:id(98),auth_user_id:id(99),role:'owner',status:'active'}],exam_portals:[portal],profiles,exam_portal_members:members,classes:[{id:id(5),teacher_id:id(2)}],class_students:[{class_id:id(5),student_id:id(3)},{class_id:id(5),student_id:id(4)}]};
   const state = {portal,profiles,members,auth,tables,writes:[],callerRole:'admin',failRpc:false,failMember:false,failAuthId:null,sequence:10};
   function query(table) {
     let filters=[],operation='read',payload,single=false;
@@ -40,6 +40,7 @@ function fixture(mode = 'full_site') {
   }},async rpc(name,args){
     state.writes.push(['rpc',name]);
     if(state.failRpc)return {data:null,error:{message:'transaction failed'}};
+    if(name==='vmtools_provision'){tables.vmtools_accounts.push({id:id(state.sequence++),auth_user_id:args.p_user,email:args.p_email,status:args.p_plan==='pending'?'pending':'active'});return {data:id(state.sequence-1),error:null};}
     for(const userId of [args.p_teacher_id,...args.p_student_ids]){
       members.filter(m=>m.user_id===userId).forEach(m=>m.is_primary=false);
       let row=members.find(m=>m.user_id===userId&&m.portal_id===portal.id);
@@ -57,6 +58,11 @@ function fixture(mode = 'full_site') {
   return state;
 }
 (async()=>{
+  for(const plan of ['pending','monthly']){
+    const f=fixture(),created=await f.call({type:'gv',fullName:'Teacher QA',username:'teacherqa',email:'teacher@example.com',password:'test-only-password',vmtools:{plan,units:1,amount:0,until:null,confirmGrant:plan==='monthly',webEnabled:true}});
+    assert.equal(created.status,200,JSON.stringify(created));assert.equal(created.account.login,'teacher@example.com');const license=f.tables.vmtools_accounts.find(a=>a.email==='teacher@example.com');assert.equal(license.auth_user_id,created.account.id);assert.equal(license.status,plan==='pending'?'pending':'active');
+  }
+  {const f=fixture();f.failRpc=true;const r=await f.call({type:'gv',fullName:'Teacher QA',username:'teacherqa',email:'teacher@example.com',password:'test-only-password',vmtools:{plan:'pending',units:1,amount:0}});assert.equal(r.status,500);assert.equal(f.auth.some(u=>u.email==='teacher@example.com'),false);}
   let s=fixture();let r=await s.migrate(true);
   assert.equal(r.status,200);assert.equal(r.preflight.skippedCount,2);assert.equal(r.preflight.changeCount,1);assert.equal(s.writes.length,0);
   r=await s.migrate(false);assert.equal(r.status,200);assert.deepEqual(s.writes.filter(w=>w[0]==='auth').map(w=>w[1]),[id(4)]);

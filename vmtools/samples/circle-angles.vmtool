@@ -1,0 +1,295 @@
+{
+  "format": "vmtools-workspace",
+  "version": 1,
+  "title": "Góc nội tiếp · Bài giảng mẫu",
+  "geometry": {
+    "format": "vmtools",
+    "version": 1,
+    "title": "Góc nội tiếp và ký hiệu bằng nhau",
+    "style": {
+      "labelSize": 24,
+      "angleSize": 20,
+      "lineWidth": 2,
+      "pointSize": 3.5
+    },
+    "objects": [
+      {
+        "id": "68252d1b-6141-49f7-8171-3a5f9e5e9e3c",
+        "type": "point",
+        "x": 0,
+        "y": 0,
+        "label": "O"
+      },
+      {
+        "id": "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+        "type": "point",
+        "x": 1.5,
+        "y": 2.598076211353316,
+        "label": "A"
+      },
+      {
+        "id": "0d37fa41-b296-47b0-81f2-d9a298eb17fe",
+        "type": "circle",
+        "refs": [
+          "68252d1b-6141-49f7-8171-3a5f9e5e9e3c",
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1"
+        ],
+        "color": "#00a62e"
+      },
+      {
+        "id": "f9a2fc58-1374-4add-bbe7-1893d494e2c0",
+        "type": "pointOnCircle",
+        "refs": [
+          "0d37fa41-b296-47b0-81f2-d9a298eb17fe"
+        ],
+        "t": 5.235987755982989,
+        "label": "B"
+      },
+      {
+        "id": "db54adac-7636-4e43-a747-6d4c66f9e7d9",
+        "type": "pointOnCircle",
+        "refs": [
+          "0d37fa41-b296-47b0-81f2-d9a298eb17fe"
+        ],
+        "t": 3.141592653589793,
+        "label": "C"
+      },
+      {
+        "id": "aa6aba09-a73a-4e6c-b402-0fb44c3450f2",
+        "type": "pointOnCircle",
+        "refs": [
+          "0d37fa41-b296-47b0-81f2-d9a298eb17fe"
+        ],
+        "t": 2.6179938779914944,
+        "label": "D"
+      },
+      {
+        "id": "353b2369-1adc-4e3f-b2c6-ccce8487f110",
+        "type": "pointOnCircle",
+        "refs": [
+          "0d37fa41-b296-47b0-81f2-d9a298eb17fe"
+        ],
+        "t": 0,
+        "label": "E"
+      },
+      {
+        "id": "74b5931b-14e4-47e3-bc5c-727de2b155b5",
+        "type": "segment",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0"
+        ],
+        "color": "#4040ff",
+        "ticks": 1,
+        "dash": false
+      },
+      {
+        "id": "6320d736-7a19-4ae6-a4db-49c2e048900a",
+        "type": "segment",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "db54adac-7636-4e43-a747-6d4c66f9e7d9"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "88c7a461-b742-4a25-8f6b-b0469ab6a183",
+        "type": "segment",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "aa6aba09-a73a-4e6c-b402-0fb44c3450f2"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "eed615d3-078f-4dcd-bc75-ccd8d98e9ddc",
+        "type": "segment",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "353b2369-1adc-4e3f-b2c6-ccce8487f110"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "6b648cf5-3400-41ad-a67c-18110581a154",
+        "type": "segment",
+        "refs": [
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0",
+          "db54adac-7636-4e43-a747-6d4c66f9e7d9"
+        ],
+        "color": "#ff8800",
+        "ticks": 1,
+        "dash": false
+      },
+      {
+        "id": "e6e1d66d-4186-42c6-b3e3-9b797529ce17",
+        "type": "segment",
+        "refs": [
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0",
+          "aa6aba09-a73a-4e6c-b402-0fb44c3450f2"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "fd700d65-61cc-4def-b85c-8f0b9c76ce44",
+        "type": "segment",
+        "refs": [
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0",
+          "353b2369-1adc-4e3f-b2c6-ccce8487f110"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "44caa7b7-570c-4761-a62d-1d878521d4aa",
+        "type": "segment",
+        "refs": [
+          "aa6aba09-a73a-4e6c-b402-0fb44c3450f2",
+          "353b2369-1adc-4e3f-b2c6-ccce8487f110"
+        ],
+        "color": "#ff8800",
+        "ticks": 0,
+        "dash": false
+      },
+      {
+        "id": "4d9839ee-353f-4fef-9092-928ae5e1abc6",
+        "type": "segment",
+        "refs": [
+          "68252d1b-6141-49f7-8171-3a5f9e5e9e3c",
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": true
+      },
+      {
+        "id": "cd34ef0a-d13d-4463-9b24-a3d21c346ab2",
+        "type": "segment",
+        "refs": [
+          "68252d1b-6141-49f7-8171-3a5f9e5e9e3c",
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0"
+        ],
+        "color": "#4040ff",
+        "ticks": 0,
+        "dash": true
+      },
+      {
+        "id": "6d6e2be2-d9b8-4153-a266-bc8763173193",
+        "type": "angleMark",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "db54adac-7636-4e43-a747-6d4c66f9e7d9",
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0"
+        ],
+        "autoEqual": true,
+        "radius": 0.5,
+        "color": "#d629d6"
+      },
+      {
+        "id": "d499628e-d764-4b62-8d97-bc2435aaf712",
+        "type": "angleMark",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "aa6aba09-a73a-4e6c-b402-0fb44c3450f2",
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0"
+        ],
+        "autoEqual": true,
+        "radius": 0.7,
+        "color": "#d629d6"
+      },
+      {
+        "id": "110953b9-ce02-49c7-ba34-8253e97f8b0b",
+        "type": "angleMark",
+        "refs": [
+          "2367916d-5332-4a5c-985a-b0ea4bf604a1",
+          "353b2369-1adc-4e3f-b2c6-ccce8487f110",
+          "f9a2fc58-1374-4add-bbe7-1893d494e2c0"
+        ],
+        "autoEqual": true,
+        "radius": 0.5,
+        "color": "#00a62e"
+      }
+    ],
+    "view": {
+      "x": -4.1,
+      "y": -3.8,
+      "w": 8.2,
+      "h": 7.6
+    }
+  },
+  "notebook": {
+    "title": "Góc nội tiếp · Bài giảng mẫu",
+    "pages": [
+      {
+        "id": "5728c198-ad53-4888-bfcc-57aba2d755fb",
+        "size": "A4",
+        "paper": "ruled",
+        "background": "#ffffff",
+        "themeAuto": true,
+        "strokes": [],
+        "images": [],
+        "texts": [
+          {
+            "id": "title",
+            "x": 50,
+            "y": 70,
+            "text": "GÓC NỘI TIẾP",
+            "size": 32,
+            "color": "#111111",
+            "autoColor": true
+          },
+          {
+            "id": "note1",
+            "x": 50,
+            "y": 125,
+            "text": "1. Kéo các điểm C, D trên đường tròn.",
+            "size": 22,
+            "color": "#111111",
+            "autoColor": true
+          },
+          {
+            "id": "note2",
+            "x": 50,
+            "y": 165,
+            "text": "2. Quan sát hai góc chắn cùng cung AB.",
+            "size": 22,
+            "color": "#111111",
+            "autoColor": true
+          },
+          {
+            "id": "note3",
+            "x": 50,
+            "y": 205,
+            "text": "3. Các góc bằng nhau dùng cùng ký hiệu.",
+            "size": 22,
+            "color": "#111111",
+            "autoColor": true
+          }
+        ]
+      }
+    ],
+    "active": 0
+  },
+  "layout": {
+    "panels": [
+      "ink",
+      "geometry",
+      "calculator"
+    ],
+    "mode": "columns",
+    "ratios": [
+      1.2,
+      1.2,
+      0.8
+    ]
+  }
+}

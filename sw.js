@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v71';
+const VM_CACHE = 'vinhmath-shell-v72';
 const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
@@ -21,7 +21,7 @@ const VM_SHELL = [
   '/css/role-home.css',
   '/css/student-experience.css',
   '/css/student-result-viewer.css',
-  '/css/vmtool.css',
+  '/css/vmtools-portal.css',
   '/js/config.js',
   '/js/theme-preflight.js',
   '/js/vinhmath.js',
@@ -36,8 +36,7 @@ const VM_SHELL = [
   '/js/student-achievement-map.js',
   '/js/tex-environments.js',
   '/js/push-notifications.js',
-  '/js/vmtool.js',
-  '/js/vmtool-loader.js',
+  '/js/vmtools-portal.js',
   '/icons/vinhmath-192.png',
   '/icons/vinhmath-512.png',
   '/logo/toan-thay-truong-logo.svg',
@@ -78,9 +77,9 @@ self.addEventListener('activate', function (event) {
             return Promise.all(windows.map(function (client) {
               try {
                 var target = new URL(client.url);
-                if (target.origin !== self.location.origin) return null;
-                if (target.searchParams.get('vm_refresh') === '71') return null;
-                target.searchParams.set('vm_refresh', '71');
+                if (target.origin !== self.location.origin || /^\/vmtools?(?:\/|\.|$)/.test(target.pathname)) return null;
+                if (target.searchParams.get('vm_refresh') === '72') return null;
+                target.searchParams.set('vm_refresh', '72');
                 return client.navigate(target.href);
               } catch (_) { return null; }
             }));

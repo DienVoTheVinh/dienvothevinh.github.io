@@ -107,6 +107,7 @@
         <input class="input" id="ttHoTen" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%" oninput="ttXemTruoc()">
       </div>
 
+      <div class="field" id="ttTeacherEmailField" hidden><label>Email thật của giáo viên</label><input class="input" id="ttTeacherEmail" type="email" placeholder="giaovien@gmail.com" oninput="ttXemTruoc()"><small>Dùng chung tài khoản cho VinhMath và VMTools; không tạo địa chỉ @gv mới.</small><fieldset style="margin-top:12px"><legend>VMTools · dịch vụ riêng (tùy chọn)</legend><label>Thời hạn<select class="input" id="ttVmPlan"><option value="pending">Chưa đăng ký VMTools</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label>Số tháng / năm<input class="input" id="ttVmUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttVmUntil" type="datetime-local"></label><label>Số tiền đã nhận (đ)<input class="input" id="ttVmAmount" type="number" min="0" value="0"></label><label><input id="ttVmWeb" type="checkbox" checked> Cho dùng VMTools trên web VinhMath</label><label><input id="ttVmConfirm" type="checkbox"> Tôi xác nhận đã thu tiền hoặc chủ động cấp miễn phí</label><small>Thiết bị mới cần được duyệt trong VMTools Admin. Phí và thời hạn VMTools độc lập với dịch vụ quản lý học sinh. Có thể đăng ký VMTools sau.</small></fieldset></div>
       <div class="preview-box">
         <div id="ttRowHS">🎓 Đăng nhập HS: <b id="ttPreviewHS">—</b></div>
         <div id="ttRowPH">👪 Đăng nhập PH: <b id="ttPreviewPH">—</b></div>
@@ -236,7 +237,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.7"></script>
+<script src="js/vinhmath.js?v=9.8"></script>
 <script src="js/menu-v5.js?v=10.4"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -456,6 +457,7 @@ function ttDoiPhamVi() {
 }
 
 function ttDoiLoai() {
+  $('ttTeacherEmailField').hidden = $('ttLoai').value !== 'gv';
   var loai = $('ttLoai').value;
   var laHSPH = loai === 'hs_ph';
   var laHocSinh = laHSPH || loai === 'portal_hs';
@@ -486,7 +488,8 @@ function ttXemTruoc() {
     var portalSuffix = loai === 'portal_gv' ? portal.teacher_login_suffix : portal.login_suffix;
     $('ttPreviewOne').textContent = u ? (u + '@' + portalSuffix) : '—';
   } else {
-    var d = loai === 'gv' ? '@gv.vinhmath' : '@tg.vinhmath';
+    if(loai==='gv'){$('ttPreviewOne').textContent=$('ttTeacherEmail').value.trim()||'Nhập email giáo viên';return;}
+    var d = '@tg.vinhmath';
     $('ttPreviewOne').textContent = u ? (u + d) : '—';
   }
 }
@@ -522,6 +525,7 @@ async function taoTaiKhoan() {
 
   try {
     var requestBody = { type: loai, fullName: fullName, username: username, password: mk, password2: mk2 };
+    if(loai==='gv'){requestBody.email=$('ttTeacherEmail').value.trim();if(!$('ttTeacherEmail').checkValidity()||!requestBody.email)throw Error('Nhập email thật của giáo viên.');if($('ttVmPlan').value!=='pending'&&!$('ttVmConfirm').checked)throw Error('Hãy xác nhận cấp hạn VMTools.');requestBody.vmtools={plan:$('ttVmPlan').value,units:Number($('ttVmUnits').value),until:$('ttVmUntil').value?new Date($('ttVmUntil').value).toISOString():null,amount:Number($('ttVmAmount').value),webEnabled:$('ttVmWeb').checked,confirmGrant:true};}
     if (portal) requestBody.portalId = portal.id;
     var r = await sb.functions.invoke('tao-tai-khoan', { body: requestBody });
     var data = r.data || {};
