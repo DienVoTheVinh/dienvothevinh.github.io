@@ -107,7 +107,7 @@
         <input class="input" id="ttHoTen" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%" oninput="ttXemTruoc()">
       </div>
 
-      <div class="field" id="ttTeacherEmailField" hidden><label>Email thật của giáo viên</label><input class="input" id="ttTeacherEmail" type="email" placeholder="giaovien@gmail.com" oninput="ttXemTruoc()"><small>Dùng chung tài khoản cho VinhMath và VMTools; không tạo địa chỉ @gv mới.</small><fieldset style="margin-top:12px"><legend>VMTools · dịch vụ riêng (tùy chọn)</legend><label>Thời hạn<select class="input" id="ttVmPlan"><option value="pending">Chưa đăng ký VMTools</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label>Số tháng / năm<input class="input" id="ttVmUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttVmUntil" type="datetime-local"></label><label>Số tiền đã nhận (đ)<input class="input" id="ttVmAmount" type="number" min="0" value="0"></label><label><input id="ttVmWeb" type="checkbox" checked> Cho dùng VMTools trên web VinhMath</label><label><input id="ttVmConfirm" type="checkbox"> Tôi xác nhận đã thu tiền hoặc chủ động cấp miễn phí</label><small>Thiết bị mới cần được duyệt trong VMTools Admin. Phí và thời hạn VMTools độc lập với dịch vụ quản lý học sinh. Có thể đăng ký VMTools sau.</small></fieldset></div>
+      <div class="field" id="ttTeacherEmailField" hidden><label>Email thật của giáo viên</label><input class="input" id="ttTeacherEmail" type="email" placeholder="giaovien@gmail.com" oninput="ttXemTruoc()"><small>Dùng chung tài khoản cho VinhMath và VMTools; không tạo địa chỉ @gv mới.</small><fieldset style="padding:14px;margin:12px 0;border:1px solid var(--line);border-radius:12px"><legend>Các tính năng trên lớp</legend><label><input type="checkbox" id="ttClassEnabled" checked> Tạo và quản lý lớp, bài giảng, học sinh</label><label>Thời hạn<select class="input" id="ttClassPlan"><option value="lifetime">Vĩnh viễn</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option></select></label><label>Số tháng / năm<input class="input" id="ttClassUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttClassUntil" type="datetime-local"></label></fieldset><fieldset style="margin-top:12px"><legend>VMTools · dịch vụ riêng (tùy chọn)</legend><label>Thời hạn<select class="input" id="ttVmPlan"><option value="pending">Chưa đăng ký VMTools</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label>Số tháng / năm<input class="input" id="ttVmUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttVmUntil" type="datetime-local"></label><label>Số tiền đã nhận (đ)<input class="input" id="ttVmAmount" type="number" min="0" value="0"></label><label><input type="checkbox" id="ttVmApp" checked> Dùng app trên máy tính</label><label><input type="checkbox" id="ttVmDownload" checked> Tải bộ cài và cập nhật</label><div style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0"><label><input type="checkbox" name="ttVmFeature" value="ink" checked> Viết tay</label><label><input type="checkbox" name="ttVmFeature" value="pdf" checked> Đọc PDF</label><label><input type="checkbox" name="ttVmFeature" value="geometry2d" checked> Hình học 2D</label><label><input type="checkbox" name="ttVmFeature" value="geometry3d" checked> Hình học 3D</label><label><input type="checkbox" name="ttVmFeature" value="graphs" checked> Đồ thị</label><label><input type="checkbox" name="ttVmFeature" value="calculator" checked> Máy tính</label><label><input type="checkbox" name="ttVmFeature" value="export" checked> Xuất tài liệu</label></div><label><input id="ttVmWeb" type="checkbox" checked> Cho dùng VMTools trên web VinhMath</label><label><input id="ttVmConfirm" type="checkbox"> Tôi xác nhận đã thu tiền hoặc chủ động cấp miễn phí</label><small>Thiết bị mới cần được duyệt trong VMTools Admin. Phí và thời hạn VMTools độc lập với dịch vụ quản lý học sinh. Có thể đăng ký VMTools sau.</small></fieldset></div>
       <div class="preview-box">
         <div id="ttRowHS">🎓 Đăng nhập HS: <b id="ttPreviewHS">—</b></div>
         <div id="ttRowPH">👪 Đăng nhập PH: <b id="ttPreviewPH">—</b></div>
@@ -456,8 +456,9 @@ function ttDoiPhamVi() {
   if (window.ttCheDo === 'bulk') ttBulkCapNhatPhamVi();
 }
 
+function ttIsTeacher(){return $('ttLoai').value==='gv'||($('ttLoai').value==='portal_gv'&&ttPortalDangChon()?.experience_mode==='full_site');}
 function ttDoiLoai() {
-  $('ttTeacherEmailField').hidden = $('ttLoai').value !== 'gv';
+  $('ttTeacherEmailField').hidden = !ttIsTeacher();
   var loai = $('ttLoai').value;
   var laHSPH = loai === 'hs_ph';
   var laHocSinh = laHSPH || loai === 'portal_hs';
@@ -481,6 +482,7 @@ function ttXemTruoc() {
   var u = ttSlug($('ttHoTen').value);
   var loai = $('ttLoai').value;
   var portal = ttPortalDangChon();
+  if(ttIsTeacher()){$('ttPreviewOne').textContent=$('ttTeacherEmail').value.trim()||'Nhập email giáo viên';return;}
   if (loai === 'hs_ph') {
     $('ttPreviewHS').textContent = u ? (u + '@hs.vinhmath') : '—';
     $('ttPreviewPH').textContent = u ? (u + '@ph.vinhmath') : '—';
@@ -525,7 +527,7 @@ async function taoTaiKhoan() {
 
   try {
     var requestBody = { type: loai, fullName: fullName, username: username, password: mk, password2: mk2 };
-    if(loai==='gv'){requestBody.email=$('ttTeacherEmail').value.trim();if(!$('ttTeacherEmail').checkValidity()||!requestBody.email)throw Error('Nhập email thật của giáo viên.');if($('ttVmPlan').value!=='pending'&&!$('ttVmConfirm').checked)throw Error('Hãy xác nhận cấp hạn VMTools.');requestBody.vmtools={plan:$('ttVmPlan').value,units:Number($('ttVmUnits').value),until:$('ttVmUntil').value?new Date($('ttVmUntil').value).toISOString():null,amount:Number($('ttVmAmount').value),webEnabled:$('ttVmWeb').checked,confirmGrant:true};}
+    if(ttIsTeacher()){requestBody.email=$('ttTeacherEmail').value.trim();if(!$('ttTeacherEmail').checkValidity()||!requestBody.email)throw Error('Nhập email thật của giáo viên.');if($('ttVmPlan').value!=='pending'&&!$('ttVmConfirm').checked)throw Error('Hãy xác nhận cấp hạn VMTools.');requestBody.vmtools={plan:$('ttVmPlan').value,units:Number($('ttVmUnits').value),until:$('ttVmUntil').value?new Date($('ttVmUntil').value).toISOString():null,amount:Number($('ttVmAmount').value),webEnabled:$('ttVmWeb').checked,appEnabled:$('ttVmApp').checked,downloadEnabled:$('ttVmDownload').checked,features:Array.from(document.querySelectorAll('[name=ttVmFeature]:checked'),x=>x.value),confirmGrant:true};requestBody.classroom={enabled:$('ttClassEnabled').checked,plan:$('ttClassPlan').value,units:Number($('ttClassUnits').value),until:$('ttClassUntil').value?new Date($('ttClassUntil').value).toISOString():null,amount:0};}
     if (portal) requestBody.portalId = portal.id;
     var r = await sb.functions.invoke('tao-tai-khoan', { body: requestBody });
     var data = r.data || {};

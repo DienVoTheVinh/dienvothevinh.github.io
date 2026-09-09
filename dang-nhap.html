@@ -669,6 +669,7 @@ if (vmRequestedTenantSlug && typeof vmLoadPublicTenantContext === 'function') {
 async function vmDichDangNhap(uid, role) {
   var requestedPortal = new URLSearchParams(location.search).get('portal');
   var tenantContext = typeof vmLoadTenantContext === 'function' ? await vmLoadTenantContext() : null;
+  if(new URLSearchParams(location.search).get('redirect')==='vmtool'&&['teacher','admin'].includes(role)&&!tenantContext?.portal_only){location.replace('/vmtool#download');return;}
   if (tenantContext && tenantContext.full_site) {
     location.replace(vmTenantHomePath(tenantContext));
     return;

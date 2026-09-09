@@ -40,7 +40,7 @@ function fixture(mode = 'full_site') {
   }},async rpc(name,args){
     state.writes.push(['rpc',name]);
     if(state.failRpc)return {data:null,error:{message:'transaction failed'}};
-    if(name==='vmtools_provision'){tables.vmtools_accounts.push({id:id(state.sequence++),auth_user_id:args.p_user,email:args.p_email,status:args.p_plan==='pending'?'pending':'active'});return {data:id(state.sequence-1),error:null};}
+    if(name==='vm_teacher_services_provision'){tables.vmtools_accounts.push({id:id(state.sequence++),auth_user_id:args.p_user,email:args.p_email,status:args.p_vmtools.plan==='pending'?'pending':'active'});return {data:id(state.sequence-1),error:null};}
     for(const userId of [args.p_teacher_id,...args.p_student_ids]){
       members.filter(m=>m.user_id===userId).forEach(m=>m.is_primary=false);
       let row=members.find(m=>m.user_id===userId&&m.portal_id===portal.id);
@@ -52,7 +52,7 @@ function fixture(mode = 'full_site') {
   const caller={auth:{async getUser(){return {data:{user:state.callerRole?{id:id(99)}:null}};}}};
   // Caller profile lives separately from the cohort.
   profiles.push({id:id(99),username:'admin',role:'admin'});
-  vm.runInNewContext(code,{Request,Response,createClient:(_url,key)=>key==='SUPABASE_SERVICE_ROLE_KEY'?svc:caller,Deno:{env:{get:k=>k},serve:fn=>handler=fn}});
+  vm.runInNewContext(stripTypeScriptTypes(fs.readFileSync('supabase/functions/_shared/vmtools-access.ts','utf8').replace(/export /g,''))+code,{Request,Response,createClient:(_url,key)=>key==='SUPABASE_SERVICE_ROLE_KEY'?svc:caller,Deno:{env:{get:k=>k},serve:fn=>handler=fn}});
   state.call=async body=>{profiles.find(p=>p.id===id(99)).role=state.callerRole;const r=await handler(new Request('https://test.invalid',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,...await r.json()};};
   state.migrate=dryRun=>state.call({type:'full_site_tenant_migrate',tenantId:portal.id,teacherId:id(2),classId:id(5),dryRun});
   return state;
@@ -73,8 +73,8 @@ function fixture(mode = 'full_site') {
   assert.deepEqual(s.auth.find(u=>u.id===id(4)).app_metadata,{vinhmath_role:'student',keep:'private'});
   s=fixture();s.failAuthId=id(4);r=await s.migrate(false);assert.equal(r.status,409);assert.equal(s.members.length,2);
   for(const mode of ['full_site','exam_only'])for(const type of ['portal_hs','portal_gv']){
-    s=fixture(mode);r=await s.call({type,portalId:id(1),fullName:'Test',username:'created',password:'test-only-password'});
-    assert.equal(r.status,200);assert.equal(r.login,'created@'+(type==='portal_gv'?'gvum':'hsum'));
+    s=fixture(mode);r=await s.call({type,email:'teacher@example.com',portalId:id(1),fullName:'Test',username:'created',password:'test-only-password'});
+    assert.equal(r.status,200);assert.equal(r.login,mode==='full_site'&&type==='portal_gv'?'teacher@example.com':'created@'+(type==='portal_gv'?'gvum':'hsum'));
     const p=s.profiles.find(p=>p.username==='created'),m=s.members.find(m=>m.user_id===p.id);
     assert.equal(p.role,mode==='full_site'&&type==='portal_gv'?'teacher':'student');
     assert.equal(m.portal_only,mode==='exam_only');assert.equal(m.is_primary,mode==='full_site');

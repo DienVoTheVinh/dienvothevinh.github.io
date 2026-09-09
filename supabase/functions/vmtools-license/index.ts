@@ -1,5 +1,6 @@
 import {createClient} from 'jsr:@supabase/supabase-js@2.95.0';
 import {linkedPasswordLogin} from './login.ts';
+import {vmAccess} from '../_shared/vmtools-access.ts';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const features=['ink','pdf','geometry2d','geometry3d','graphs','calculator','export'];
 const encoder=new TextEncoder();
@@ -12,6 +13,10 @@ async function audit(actor:string,account:string|null,action:string,details:any=
 let signer:CryptoKey|null=null;
 async function sign(payload:any){if(!signer){const k=await result(db.from('vmtools_server_keys').select('private_jwk').eq('id',1).single());signer=await crypto.subtle.importKey('jwk',k.private_jwk,{name:'Ed25519'},false,['sign']);}const text=JSON.stringify(payload);return {payload:text,signature:b64(await crypto.subtle.sign('Ed25519',signer,encoder.encode(text)))};}
 async function session(token:string){requireValue(typeof token==='string'&&token.length<12000,'Cần đăng nhập');const {data,error}=await db.auth.getUser(token);requireValue(!error&&data.user,'Phiên đăng nhập không hợp lệ');const claims=JSON.parse(new TextDecoder().decode(bytes(token.split('.')[1].replaceAll('-','+').replaceAll('_','/'))));requireValue(await rpc('vmtools_auth_session',{p_user:data.user!.id,p_session:claims.session_id}),'Phiên đăng nhập đã kết thúc');return data.user!;}
+async function latestRelease(){
+ const r=await result(db.from('vmtools_releases').select('version,title,notes,published_at').eq('published',true).order('published_at',{ascending:false}).limit(1).maybeSingle());
+ return r?{...r,published:true,windows_url:'https://vinhmath.com/vmtool?tab=download&platform=win32',macos_url:'https://vinhmath.com/vmtool?tab=download&platform=darwin'}:null;
+}
 const origins=new Set(['https://vinhmath.com','https://www.vinhmath.com']);
 Deno.serve(async req=>{
  const origin=req.headers.get('origin');const headers:any={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
@@ -22,7 +27,22 @@ Deno.serve(async req=>{
  try{
   requireValue(!origin||origin==='null'||origins.has(origin),'Nguồn truy cập không hợp lệ');
   const raw=await req.text();requireValue(raw.length<40000,'Yêu cầu quá lớn');const body=JSON.parse(raw);
-  if(body.action==='web-catalog'){const user=await session(body.token);const profile=await result(db.from('profiles').select('role').eq('id',user.id).maybeSingle());requireValue(profile&&['teacher','admin'].includes(profile.role),'Chỉ tài khoản giáo viên do quản trị cấp được dùng VMTools');const account=await result(db.from('vmtools_accounts').select('name,email,status,plan,paid_until,web_enabled').eq('auth_user_id',user.id).maybeSingle());requireValue(account,'Hãy bổ sung email thật và liên hệ quản trị cấp quyền VMTools cho tài khoản hiện có');requireValue(account.status!=='blocked','Tài khoản VMTools đã bị khóa');const release=await result(db.from('vmtools_releases').select('version,title,notes,windows_url,macos_url,published,published_at').eq('published',true).order('published_at',{ascending:false}).limit(1).maybeSingle());return Response.json({account,release},{headers});}
+  if (['public-catalog','web-catalog','download'].includes(body.action)) {
+   const release = await latestRelease();
+   const files = release ? await result(db.from('vmtools_release_files').select('id,version,platform,arch,kind,file_name,size,sha256,notarized').eq('version',release.version)) : [];
+   if(body.action==='public-catalog') return Response.json({release,files},{headers});
+   const user=await session(body.token);
+   const profile=await result(db.from('profiles').select('role').eq('id',user.id).maybeSingle());
+   const account=await result(db.from('vmtools_accounts').select('name,email,role,status,plan,paid_until,web_enabled,app_enabled,download_enabled').eq('auth_user_id',user.id).maybeSingle());
+   const access=vmAccess(account,profile?.role||'');
+   if(body.action==='web-catalog')return Response.json({account,access,release,files},{headers});
+   if(!access.download)return Response.json({error:'Quyền tải VMTools chưa được kích hoạt hoặc đã hết hạn. Vui lòng liên hệ thầy Vinh.'},{status:403,headers});
+   requireValue(typeof body.fileId==='string'&&body.fileId.length===36,'Tệp tải không hợp lệ');
+   const file=await result(db.from('vmtools_release_files').select('storage_path,file_name,release:vmtools_releases!inner(published)').eq('id',body.fileId).eq('release.published',true).maybeSingle());
+   requireValue(file,'Bộ cài chưa được công bố');
+   const link=await result(db.storage.from('vmtools-releases').createSignedUrl(file.storage_path,90,{download:file.file_name}));
+   return Response.json({url:link.signedUrl,expiresIn:90},{headers});
+  }
 
   requireValue(typeof body.publicKey==='string'&&body.publicKey.length<200,'Khóa thiết bị không hợp lệ');
   const publicBytes=bytes(body.publicKey);const key=await crypto.subtle.importKey('spki',publicBytes,{name:'Ed25519'},false,['verify']);
@@ -52,9 +72,9 @@ Deno.serve(async req=>{
   requireValue(device,'Thiết bị chưa được đăng ký');
   const a=await result(db.from('vmtools_accounts').select('*').eq('id',device.account_id).single());
   if(p.action==='status'||p.action==='register'||p.action==='login'){
-   const release=await result(db.from('vmtools_releases').select('version,title,notes,windows_url,macos_url,published,published_at').eq('published',true).order('published_at',{ascending:false}).limit(1).maybeSingle());
+   const release=await latestRelease();
    const teacher=a.role==='owner'||(await result(db.from('profiles').select('role').eq('id',a.auth_user_id).maybeSingle()))?.role==='teacher';
-   let reason=!teacher?'teacher-required':a.status!=='active'?'account-'+a.status:device.status!=='active'?'device-'+device.status:device.platform==='web'&&!a.web_enabled?'web-disabled':a.role!=='owner'&&a.plan!=='lifetime'&&(!a.paid_until||Date.parse(a.paid_until)<=Date.now())?'expired':null;
+   let reason=!teacher?'teacher-required':a.status!=='active'?'account-'+a.status:device.status!=='active'?'device-'+device.status:device.platform==='web'&&!a.web_enabled?'web-disabled':device.platform!=='web'&&a.app_enabled===false?'app-disabled':a.role!=='owner'&&a.plan!=='lifetime'&&(!a.paid_until||Date.parse(a.paid_until)<=Date.now())?'expired':null;
    const summary={id:a.id,email:a.email,name:a.name,role:a.role,plan:a.plan,paidUntil:a.paid_until,webEnabled:a.web_enabled,device:device.name};
    if(reason)return Response.json({denied:true,reason,account:summary,release},{headers});
    const config=await result(db.from('vmtools_config').select('offline_days').eq('id',1).single());

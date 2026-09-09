@@ -369,6 +369,16 @@ vmMenuHydrateShell();
       }
       if (tenantContext && tenantContext.full_site && typeof vmGuardTenantRoute === 'function' && vmGuardTenantRoute(tenantContext, r.data.role)) return;
       apDungMenu(r.data.role, portalContext, tenantContext, featureAccess);
+      if(r.data.role==='teacher'){
+        const service=await sb.rpc('vm_my_services');
+        if(!service.error&&!service.data?.classroom){
+          document.querySelectorAll('.navlinks a').forEach(a=>{if(['classes','lessons','grading','authoring','schedule'].includes(vmTenantFeatureForPath(a.getAttribute('href'),'teacher'))){a.setAttribute('aria-disabled','true');a.title='Liên hệ thầy Vinh để kích hoạt các tính năng trên lớp';a.style.opacity='.5';a.onclick=e=>{e.preventDefault();location.href='/trang-chu?service=classroom';};}});
+          if(['classes','lessons','grading','authoring','schedule'].includes(vmTenantFeatureForPath(null,'teacher'))){location.replace('/trang-chu?service=classroom');return;}
+        }
+      }
+      if(['teacher','admin'].includes(r.data.role)){
+        const releaseScript=document.createElement('script');releaseScript.src='/js/vmtools-release-notice.js?v=5';releaseScript.onload=()=>window.vmCheckSoftwareRelease(s.data.session.user.id);document.head.append(releaseScript);
+      }
       apDungLogoBadge(r.data.role);
       if (r.data.role === 'student' && !portalContext) napHeThongCapBac();
     }
