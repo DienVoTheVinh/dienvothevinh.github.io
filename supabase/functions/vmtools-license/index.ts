@@ -1,4 +1,5 @@
 import {createClient} from 'jsr:@supabase/supabase-js@2.95.0';
+import {linkedPasswordLogin} from './login.ts';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const features=['ink','pdf','geometry2d','geometry3d','graphs','calculator','export'];
 const encoder=new TextEncoder();
@@ -31,7 +32,16 @@ Deno.serve(async req=>{
   requireValue(await crypto.subtle.verify('Ed25519',key,bytes(body.signature),encoder.encode(body.nonce+'\n'+body.payload)),'Chữ ký thiết bị không hợp lệ');
   requireValue(await rpc('vmtools_consume_challenge',{p_id:body.nonce,p_key:hash}),'Yêu cầu đã dùng hoặc hết hạn');
   const p=JSON.parse(body.payload);
-  if(p.action==='register'){
+  if(p.action==='login'){
+   const auth=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+   p.token=await linkedPasswordLogin(p,{
+    account:(email:string)=>result(db.from('vmtools_accounts').select('auth_user_id,status').eq('email',email).maybeSingle()),
+    identity:async(id:string)=>{const {data,error}=await db.auth.admin.getUserById(id);return error?null:data.user;},
+    signIn:(email:string,password:string)=>auth.auth.signInWithPassword({email,password}),
+   });
+   delete p.password;
+  }
+  if(p.action==='register'||p.action==='login'){
    const user=await session(p.token);const account=await result(db.from('vmtools_accounts').select('id,status,web_enabled').eq('auth_user_id',user.id).maybeSingle());
    requireValue(account&&account.status!=='blocked','Tài khoản chưa được cấp hoặc đã bị khóa');
    requireValue(p.platform!=='web'||account.web_enabled,'Tài khoản chưa được bật VMTools trên VinhMath');
@@ -41,7 +51,7 @@ Deno.serve(async req=>{
   const device=await result(db.from('vmtools_devices').select('*').eq('key_hash',hash).maybeSingle());
   requireValue(device,'Thiết bị chưa được đăng ký');
   const a=await result(db.from('vmtools_accounts').select('*').eq('id',device.account_id).single());
-  if(p.action==='status'||p.action==='register'){
+  if(p.action==='status'||p.action==='register'||p.action==='login'){
    const release=await result(db.from('vmtools_releases').select('version,title,notes,windows_url,macos_url,published,published_at').eq('published',true).order('published_at',{ascending:false}).limit(1).maybeSingle());
    const teacher=a.role==='owner'||(await result(db.from('profiles').select('role').eq('id',a.auth_user_id).maybeSingle()))?.role==='teacher';
    let reason=!teacher?'teacher-required':a.status!=='active'?'account-'+a.status:device.status!=='active'?'device-'+device.status:device.platform==='web'&&!a.web_enabled?'web-disabled':a.role!=='owner'&&a.plan!=='lifetime'&&(!a.paid_until||Date.parse(a.paid_until)<=Date.now())?'expired':null;
