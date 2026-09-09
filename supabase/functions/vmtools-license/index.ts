@@ -1,6 +1,7 @@
 import {createClient} from 'jsr:@supabase/supabase-js@2.95.0';
 import {linkedPasswordLogin} from './login.ts';
 import {vmAccess} from '../_shared/vmtools-access.ts';
+import {webTrial} from '../_shared/vmtools-trial.ts';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const features=['ink','pdf','geometry2d','geometry3d','graphs','calculator','export'];
 const encoder=new TextEncoder();
@@ -30,12 +31,13 @@ Deno.serve(async req=>{
   if (['public-catalog','web-catalog','download'].includes(body.action)) {
    const release = await latestRelease();
    const files = release ? await result(db.from('vmtools_release_files').select('id,version,platform,arch,kind,file_name,size,sha256,notarized').eq('version',release.version)) : [];
-   if(body.action==='public-catalog') return Response.json({release,files},{headers});
+   const policy=await result(db.from('vmtools_web_experience').select('audience,features').eq('id',1).single());
+   if(body.action==='public-catalog') return Response.json({release,files,trial:webTrial(policy,'',null)},{headers});
    const user=await session(body.token);
    const profile=await result(db.from('profiles').select('role').eq('id',user.id).maybeSingle());
    const account=await result(db.from('vmtools_accounts').select('name,email,role,status,plan,paid_until,web_enabled,app_enabled,download_enabled').eq('auth_user_id',user.id).maybeSingle());
    const access=vmAccess(account,profile?.role||'');
-   if(body.action==='web-catalog')return Response.json({account,access,release,files},{headers});
+   if(body.action==='web-catalog')return Response.json({account,access,release,files,trial:webTrial(policy,profile?.role||'',account)},{headers});
    if(!access.download)return Response.json({error:'Quyền tải VMTools chưa được kích hoạt hoặc đã hết hạn. Vui lòng liên hệ thầy Vinh.'},{status:403,headers});
    requireValue(typeof body.fileId==='string'&&body.fileId.length===36,'Tệp tải không hợp lệ');
    const file=await result(db.from('vmtools_release_files').select('storage_path,file_name,release:vmtools_releases!inner(published)').eq('id',body.fileId).eq('release.published',true).maybeSingle());
@@ -52,6 +54,16 @@ Deno.serve(async req=>{
   requireValue(await crypto.subtle.verify('Ed25519',key,bytes(body.signature),encoder.encode(body.nonce+'\n'+body.payload)),'Chữ ký thiết bị không hợp lệ');
   requireValue(await rpc('vmtools_consume_challenge',{p_id:body.nonce,p_key:hash}),'Yêu cầu đã dùng hoặc hết hạn');
   const p=JSON.parse(body.payload);
+  if(p.action==='web-trial'){
+   requireValue(p.platform==='web','Trải nghiệm chỉ dành cho bản web');
+   let user:any=null,role='',account:any=null;
+   if(p.token){user=await session(p.token);role=(await result(db.from('profiles').select('role').eq('id',user.id).maybeSingle()))?.role||'other';account=await result(db.from('vmtools_accounts').select('status').eq('auth_user_id',user.id).maybeSingle());}
+   const policy=await result(db.from('vmtools_web_experience').select('audience,features').eq('id',1).single()),trial=webTrial(policy,role,account);
+   if(!trial.allowed)return Response.json({denied:true,reason:'trial-closed',account:null},{headers});
+   const now=Date.now(),trialAccount={id:user?.id||'00000000-0000-4000-8000-000000000000',name:'Trải nghiệm VMTools',role:'trial',plan:'trial',email:user?.email||'',webEnabled:true,device:'Trình duyệt'};
+   const lease=await sign({version:1,app:'vn.vmtools.classroom',userId:trialAccount.id,deviceKey:hash,leaseId:crypto.randomUUID(),plan:'trial',issuedAt:now,offlineAllowanceMs:90000,offlineUntil:now+90000,paidUntil:null,features:trial.features});
+   return Response.json({lease,account:trialAccount,release:await latestRelease()},{headers});
+  }
   if(p.action==='login'){
    const auth=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
    p.token=await linkedPasswordLogin(p,{

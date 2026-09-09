@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { encryptSecret, googleClientConfig, safeReturnUrl, sha256Hex } from "../_shared/google_oauth.ts";
 
 const admin = createClient(
@@ -8,24 +8,30 @@ const admin = createClient(
 );
 
 Deno.serve(async (request: Request) => {
+  let purpose='meet';
+  const back=(status:'connected'|'error',detail='')=>purpose==='vmtools'?'https://vinhmath.com/vmtools-drive-connected?google='+status:safeReturnUrl(status,detail);
   try {
     if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
     const oauthError = url.searchParams.get("error");
-    if (oauthError) return Response.redirect(safeReturnUrl("error", "Google không cấp quyền."), 302);
-    if (!code || !state) return Response.redirect(safeReturnUrl("error", "Thiếu mã xác thực Google."), 302);
+    if (!state) return Response.redirect(back("error", "Thiếu mã xác thực Google."), 302);
 
     const stateHash = await sha256Hex(state);
     const { data: saved, error: stateError } = await admin
       .from("google_oauth_states")
-      .select("state_hash,user_id,expires_at,used_at")
+      .select("state_hash,user_id,expires_at,used_at,purpose")
       .eq("state_hash", stateHash)
       .maybeSingle();
     if (stateError || !saved || saved.used_at || new Date(saved.expires_at).getTime() < Date.now()) {
       return Response.redirect(safeReturnUrl("error", "Phiên kết nối đã hết hạn hoặc đã được sử dụng."), 302);
     }
+    purpose=saved.purpose;
+    const claimed=await admin.from('google_oauth_states').update({used_at:new Date().toISOString()}).eq('state_hash',stateHash).is('used_at',null).select('state_hash').maybeSingle();
+    if(claimed.error||!claimed.data)throw Error('Phiên kết nối đã được sử dụng');
+    if(oauthError||!code)return Response.redirect(back('error','Google không cấp quyền.'),302);
+    const table=purpose==='vmtools'?'vmtools_drive_connections':'google_drive_connections';
 
     const cfg = googleClientConfig();
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -42,7 +48,7 @@ Deno.serve(async (request: Request) => {
     const tokens = await tokenResponse.json();
     if (!tokenResponse.ok || !tokens.access_token) throw new Error(tokens.error_description || tokens.error || "Đổi mã OAuth thất bại.");
 
-    const existing = await admin.from("google_drive_connections").select("refresh_token_ciphertext").eq("user_id", saved.user_id).maybeSingle();
+    const existing = await admin.from(table).select("refresh_token_ciphertext").eq("user_id", saved.user_id).maybeSingle();
     const encryptedRefreshToken = tokens.refresh_token
       ? await encryptSecret(tokens.refresh_token)
       : existing.data?.refresh_token_ciphertext;
@@ -53,7 +59,8 @@ Deno.serve(async (request: Request) => {
     if (userInfo.ok) googleEmail = (await userInfo.json()).email || null;
 
     const scopes = String(tokens.scope || "").split(/\s+/).filter(Boolean);
-    const { error: upsertError } = await admin.from("google_drive_connections").upsert({
+    if(purpose==='vmtools'&&!scopes.includes('https://www.googleapis.com/auth/drive.file'))throw Error('Google chưa cấp quyền lưu bài giảng');
+    const { error: upsertError } = await admin.from(table).upsert({
       user_id: saved.user_id,
       google_email: googleEmail,
       refresh_token_ciphertext: encryptedRefreshToken,
@@ -63,9 +70,9 @@ Deno.serve(async (request: Request) => {
     }, { onConflict: "user_id" });
     if (upsertError) throw upsertError;
     await admin.from("google_oauth_states").update({ used_at: new Date().toISOString() }).eq("state_hash", stateHash);
-    return Response.redirect(safeReturnUrl("connected"), 302);
+    return Response.redirect(back("connected"), 302);
   } catch (error) {
-    console.error("google-drive-oauth-callback", error instanceof Error ? error.message : error);
-    return Response.redirect(safeReturnUrl("error", error instanceof Error ? error.message : "Lỗi kết nối Google."), 302);
+    console.error("google-drive-oauth-callback", 'OAuth connection failed');
+    return Response.redirect(back("error", "Chưa liên kết được Google. Hãy thử lại."), 302);
   }
 });

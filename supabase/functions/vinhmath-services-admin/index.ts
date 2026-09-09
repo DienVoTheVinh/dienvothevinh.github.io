@@ -1,5 +1,6 @@
 import {createClient} from 'jsr:@supabase/supabase-js@2.95.0';
 import {VM_FEATURES} from '../_shared/vmtools-access.ts';
+import {TRIAL_FEATURES} from '../_shared/vmtools-trial.ts';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
 async function query(q:any){const {data,error}=await q;if(error)throw Error(error.message);return data;}
 const fail=(message:string):never=>{throw Error(message);};
@@ -16,6 +17,15 @@ Deno.serve(async req=>{
   const claims=JSON.parse(atob(token.split('.')[1].replaceAll('-','+').replaceAll('_','/')));
   if(!await query(db.rpc('vmtools_auth_session',{p_user:user.id,p_session:claims.session_id})))fail('Phiên đăng nhập đã kết thúc');
   const raw=await req.text();if(raw.length>16000)fail('Yêu cầu quá lớn');const p=JSON.parse(raw);
+  if(['experience-get','experience-save'].includes(p.action)){
+   const owner=await query(db.from('vmtools_accounts').select('id').eq('auth_user_id',user.id).eq('role','owner').eq('status','active').maybeSingle());if(!owner)fail('Chỉ chủ sở hữu được mở trải nghiệm');
+   if(p.action==='experience-save'){
+    if(!['closed','teachers','everyone'].includes(p.audience)||!Array.isArray(p.features)||p.features.some((f:any)=>!TRIAL_FEATURES.includes(f))||p.audience!=='closed'&&!p.features.length)fail('Chọn đối tượng và ít nhất một tính năng');
+    await query(db.from('vmtools_web_experience').update({audience:p.audience,features:[...new Set(p.features)],updated_at:new Date().toISOString(),updated_by:user.id}).eq('id',1));
+    await query(db.from('vmtools_audit').insert({actor:owner.id,action:'web-experience',details:{audience:p.audience,features:p.features}}));
+   }
+   return Response.json({policy:await query(db.from('vmtools_web_experience').select('audience,features,updated_at').eq('id',1).single())},{headers});
+  }
   if(p.action==='list'){
    const [teachers,classroom,vmtools,payments,vmPayments]=await Promise.all([
     query(db.from('profiles').select('id,full_name,username,email').eq('role','teacher').order('full_name').limit(2000)),
