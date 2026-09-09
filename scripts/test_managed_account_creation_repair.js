@@ -54,7 +54,7 @@ expect(/studentProfile\?\.role === "student"[\s\S]*studentProfile\?\.parent_id =
   'The HS/PH branch must verify both profiles before returning credentials.');
 expect(/if \(phErr \|\| !ph\?\.user\)[\s\S]*rollbackCreatedAuthUsers\(svc, \[hs\.user\.id\]\)/i.test(edge),
   'A failed parent creation must roll back the temporary student.');
-expect(/update\(\{ full_name: fullName, username: u, role: accountRole \}\)[\s\S]*profileResult\.data\?\.role === accountRole[\s\S]*rollbackCreatedAuthUsers\(svc, \[acc\.user\.id\]\)/i.test(edge),
+expect(/update\(\{ full_name: fullName, username: u, role: accountRole[^\n]*\}\)[\s\S]*profileResult\.data\?\.role === accountRole[\s\S]*rollbackCreatedAuthUsers\(svc, \[acc\.user\.id\]\)/i.test(edge),
   'GV/TG creation must finalize, verify and compensate the profile role.');
 expect(/rollback\.ok \? 500 : 503/g.test(edge),
   'Uncertain cleanup must surface as 503 instead of a false ordinary failure.');

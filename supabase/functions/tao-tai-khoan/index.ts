@@ -521,7 +521,17 @@ Deno.serve(async (req) => {
     const key = type === "gv" ? "gv" : "tg";
     const u = await timU(false);
     if (!u) return jsonRes({ error: "Khong tao duoc ten dang nhap duy nhat" }, 409);
-    const email = u + "@" + DOMAIN[key];
+    const teacherEmail = String(body.email || "").trim().toLowerCase();
+    if (type === "gv" && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail) || /\.vinhmath\.com$/.test(teacherEmail))) return jsonRes({error:"Giáo viên cần email thật để dùng chung VinhMath và VMTools"},400);
+    const grant = body.vmtools;
+    let vmActor: string | null = null;
+    if (type === "gv") {
+      if (!grant || (grant.plan !== "pending" && grant.confirmGrant !== true) || !["pending","monthly","yearly","custom","lifetime"].includes(grant.plan) || !Number.isInteger(grant.units) || grant.units < 1 || grant.units > 120 || !Number.isFinite(grant.amount) || grant.amount < 0 || (grant.plan === "custom" && !(Date.parse(grant.until) > Date.now()))) return jsonRes({error:"Hãy xác nhận gói và hạn VMTools hợp lệ"},400);
+      const owner = await svc.from("vmtools_accounts").select("id").eq("auth_user_id",user.id).eq("role","owner").eq("status","active").maybeSingle();
+      if (owner.error || !owner.data) return jsonRes({error:"Chưa có quyền cấp gói VMTools"},403);
+      vmActor = owner.data.id;
+    }
+    const email = type === "gv" ? teacherEmail : u + "@" + DOMAIN[key];
     const accountRole = type === "gv" ? "teacher" : "assistant";
     const { data: acc, error: accErr } = await svc.auth.admin.createUser({
       email, password, email_confirm: true,
@@ -530,7 +540,7 @@ Deno.serve(async (req) => {
     });
     if (accErr || !acc?.user) return jsonRes({ error: "Tao TK loi: " + (accErr?.message || "unknown") }, 500);
     const profileResult = await svc.from("profiles")
-      .update({ full_name: fullName, username: u, role: accountRole })
+      .update({ full_name: fullName, username: u, role: accountRole, ...(type === "gv" ? {email} : {}) })
       .eq("id", acc.user.id)
       .select("id,role,username")
       .maybeSingle();
@@ -546,8 +556,15 @@ Deno.serve(async (req) => {
         rollbackFailedUserIds: rollback.failedUserIds,
       }, rollback.ok ? 500 : 503);
     }
+    if (type === "gv") {
+      const license = await svc.rpc("vmtools_provision",{p_actor:vmActor,p_user:acc.user.id,p_email:email,p_name:fullName,p_web:grant.webEnabled===true,p_plan:grant.plan,p_units:grant.units,p_until:grant.until,p_amount:grant.amount});
+      if (license.error) {
+        const rollback = await rollbackCreatedAuthUsers(svc,[acc.user.id]);
+        return jsonRes({error:"Chưa cấp được gói VMTools; " + (rollback.ok?"đã hoàn tác tài khoản mới":"cần kiểm tra tài khoản tạm"),rollbackOk:rollback.ok},500);
+      }
+    }
     return jsonRes({ ok: true, type,
-      account: { id: acc.user.id, login: u + "@" + key + ".vinhmath", email, role: accountRole },
+      account: { id: acc.user.id, login: type === "gv" ? email : u + "@" + key + ".vinhmath", email, role: accountRole },
     });
   } catch (e) {
     return jsonRes({ error: String((e as Error).message || e) }, 500);

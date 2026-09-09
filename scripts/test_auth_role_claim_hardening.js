@@ -49,8 +49,8 @@ for (const call of createCalls) {
   expect(/app_metadata:\s*\{\s*vinhmath_role:/.test(call),
     'Every service-role createUser call must attach an explicit role claim.');
 }
-expect(/app_metadata:\s*\{\s*vinhmath_role:\s*"student"\s*\}/.test(createCalls[0]),
-  'Portal accounts must remain ordinary student profiles.');
+expect(/app_metadata:\s*\{\s*vinhmath_role:\s*profileRole\s*\}/.test(createCalls[0]) && /const profileRole = isFullSite && isManager \? "teacher" : "student"/.test(edge),
+  'Full-site managers are teachers; exam-only managers remain students.');
 expect(/app_metadata:\s*\{\s*vinhmath_role:\s*"student"\s*\}/.test(createCalls[1]),
   'Student accounts need an explicit student claim.');
 expect(/app_metadata:\s*\{\s*vinhmath_role:\s*"parent"\s*\}/.test(createCalls[2]),

@@ -34,7 +34,7 @@ jobs:
           done
           # LaTeX fragments are compiled in the browser after these shared
           # structure files are fetched. Keep both directories in production.
-          for dir in assets bia13 cautruc13 css icons img js logo; do
+          for dir in assets bia13 cautruc13 css icons img js logo vmtools; do
             if [ -d "$dir" ]; then
               cp -R "$dir" "_site/$dir"
             fi

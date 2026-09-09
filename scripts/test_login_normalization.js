@@ -32,6 +32,9 @@ const pasted = context.vmUngVienMatKhauDangNhap('\u200BMatKhau\u00A0');
 expect(pasted.length === 2 && pasted[0] !== pasted[1] && pasted[1] === 'MatKhau', 'Invisible paste characters need a safe retry candidate');
 
 expect(!/console\.(?:log|info|warn|error)\([^\n]*(?:password|candidates)/i.test(core), 'Login code must not log password candidates');
-expect(fs.readFileSync('dang-nhap.html', 'utf8').includes('js/vinhmath.js?v=9.5'), 'Login page cache version must be bumped');
+expect(fs.readFileSync('dang-nhap.html', 'utf8').includes('js/vinhmath.js?v=9.8'), 'Login page cache version must be bumped');
 
 console.log('PASS resilient student login normalization and safe password retry');
+
+expect(context.vmEmailDangNhap('Teacher.Name@gmail.com') === 'teacher.name@gmail.com', 'Real teacher Gmail must remain intact');
+expect(context.vmEmailDangNhap('Teacher@example.app') === 'teacher@example.app', 'A real .app address must remain intact');
