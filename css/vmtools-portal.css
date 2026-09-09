@@ -17,3 +17,22 @@
 @keyframes vm-arrive{from{opacity:0;transform:translateY(32px) rotateX(3deg)}to{opacity:1;transform:none}}
 @media(max-width:760px){.vm-showcase{padding:55px 16px 0}.vm-showcase h1,.vm-showcase h2.vm-title{letter-spacing:-.045em}.vm-feature-grid,.vm-download-grid,.vm-updates{grid-template-columns:1fr;gap:24px}.vm-section{padding:60px 20px}.vmtools-portal-head{padding:0 16px;gap:14px;height:64px}.vmtools-portal-head>a{display:none}.vmtools-portal-head nav{gap:3px}.vmtools-portal-head .vm-button{padding:8px 10px}.vm-window{border-radius:9px 9px 0 0}.vm-window-bar{padding:9px 12px}.vm-gallery-tabs{gap:2px}.vm-gallery-tabs button{padding:9px;font-size:12px}.vm-footer{flex-direction:column}.vm-showcase .vm-micro{line-height:1.8}.vm-web-workspace{height:calc(100dvh - 64px)}}
 @media(prefers-reduced-motion:reduce){.vm-showcase *,.vmtools-portal *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Compact host controls; hiding them keeps the same live iframe and lesson. */
+.vmtools-portal.vm-working{height:100dvh;min-height:0;overflow:hidden;--vm-bar-height:40px}
+.vm-working .vmtools-portal-head{height:var(--vm-bar-height);padding:0 12px;gap:12px}
+.vm-working .vmtools-portal-head strong{font-size:13px}
+.vm-working .vmtools-portal-head nav{gap:6px}
+.vm-working .vmtools-portal-head .vm-button{min-height:28px;padding:4px 10px;font-size:11px}
+.vm-working #use-web{display:none}
+.vm-working .vm-web-workspace{height:calc(100dvh - var(--vm-bar-height));background:var(--vm-bg);color-scheme:dark}
+.vm-working.vm-toolbar-hidden .vmtools-portal-head{display:none}
+.vm-working.vm-toolbar-hidden .vm-web-workspace{height:100dvh}
+.vm-show-toolbar{position:fixed;right:8px;top:0;z-index:60;width:34px;height:26px;border:1px solid var(--vm-line);border-top:0;border-radius:0 0 8px 8px;background:var(--vm-panel);color:var(--vm-text);font-size:18px!important;box-shadow:0 2px 8px #0003}
+.vm-showcase .vm-author{max-width:760px;margin:24px auto 0;color:var(--vm-text);line-height:1.55}
+.vm-author strong{display:block;font-size:clamp(18px,1.7vw,23px);font-weight:600}
+.vm-author span{display:block;margin-top:6px;color:var(--vm-muted);font-size:14px}
+.vm-showcase .vm-experience{background:#156ce4;color:#fff;border-color:#65a4fa;box-shadow:0 6px 24px #156ce42e;font-size:15px;min-height:50px;padding:14px 24px}
+.vm-showcase .vm-experience:hover{background:#206cd6;box-shadow:0 8px 28px #156ce445}
+html[data-vm-theme=light] .vmtools-portal{--vm-bg:#fff;--vm-panel:#f5f7fa;--vm-line:#d6dfe9;--vm-text:#141920;--vm-muted:#596777;--vm-accent:#156ce4;--vm-glow:#e2edff}
+@media(max-width:760px){.vmtools-portal.vm-working{--vm-bar-height:44px}.vm-working .vmtools-portal-head>a{display:inline}.vm-working .vmtools-portal-head{gap:8px;padding:0 8px}.vm-working .vmtools-portal-head strong{display:none}.vm-working .vmtools-portal-head .vm-button{min-height:32px}.vm-showcase .vm-experience{max-width:100%;font-size:14px;padding:13px 18px}.vm-author strong{font-size:18px}.vm-author span{font-size:13px}}
