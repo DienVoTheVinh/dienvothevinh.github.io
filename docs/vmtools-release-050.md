@@ -27,3 +27,5 @@ Migration: 20260909184535_vmtools_launch_access.sql. Custom-auth Edge functions 
 - Both have signed .vmupdate.json companions. Signing private key stays outside repositories.
 
 Rollback: prior web VMTools bundle retained outside repo in F:/GSP/VMTools/qa/web-before-050; deploy commit may be reverted. Database migration is additive; do not delete teacher identities or lesson data when rolling back UI.
+
+Production: PR #177 / c8f0ec7, Pages run 34395425632 succeeded. Storage global file limit raised from 50 MB to 300 MB to accept complete installers; vmtools-releases capped at 250000000 bytes. Other previously inherited buckets (avatars, hinh-anh, tai-lieu) explicitly retain their previous 50000000-byte limit. Spend cap unchanged. Signed manifests and installer hashes verified for both platforms.
