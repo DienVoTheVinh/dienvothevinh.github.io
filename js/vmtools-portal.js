@@ -2,6 +2,14 @@
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let data={files:[],access:{}},session=null,frame=null,accessError=false;
 vmToolsShowcase($('vmtools-showcase'));
+const header=document.querySelector('.vmtools-portal-head');
+const hideBar=document.createElement('button');hideBar.id='vm-hide-toolbar';hideBar.className='vm-button';hideBar.textContent='Ẩn thanh';hideBar.title='Ẩn thanh điều hướng để mở rộng vùng làm việc';hideBar.setAttribute('aria-label','Ẩn thanh điều hướng');hideBar.hidden=true;header.querySelector('nav').append(hideBar);
+const showBar=document.createElement('button');showBar.id='vm-show-toolbar';showBar.className='vm-show-toolbar';showBar.textContent='⌄';showBar.title='Hiện thanh điều hướng';showBar.setAttribute('aria-label','Hiện thanh điều hướng');showBar.hidden=true;document.body.append(showBar);
+let barHidden=false;try{barHidden=sessionStorage.getItem('vmtools-toolbar-hidden')==='1';}catch{}
+function layoutShell(){const working=!!frame&&!frame.hidden;document.body.classList.toggle('vm-working',working);document.body.classList.toggle('vm-toolbar-hidden',working&&barHidden);hideBar.hidden=!working;showBar.hidden=!working||!barHidden;}
+function setBar(hidden){barHidden=hidden;try{sessionStorage.setItem('vmtools-toolbar-hidden',hidden?'1':'0');}catch{}layoutShell();(hidden?showBar:hideBar).focus();}
+hideBar.onclick=()=>setBar(true);showBar.onclick=()=>setBar(false);
+
 async function api(body){const r=await fetch(VINHMATH_CONFIG.SUPABASE_URL+'/functions/v1/vmtools-license',{method:'POST',headers:{'Content-Type':'application/json',apikey:VINHMATH_CONFIG.SUPABASE_ANON_KEY},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});const d=await r.json();if(!r.ok||d.error)throw Error(d.error||'Chưa kết nối được máy chủ');return d;}
 async function token(){const {data,error}=await sb.auth.getSession();if(error||!data.session)throw Error('Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.');return data.session.access_token;}
 const contact='<a href="https://zalo.me/0794742199" target="_blank" rel="noopener">Liên hệ thầy Vinh</a>';
@@ -16,8 +24,8 @@ function render(){
  document.querySelectorAll('[data-install-web]').forEach(b=>b.onclick=()=>{if(!session&&!data.trial?.allowed){location.href='/dang-nhap?redirect=vmtool';return;}if(!data.access?.web&&!data.trial?.allowed){$('vm-feedback').textContent='Vui lòng liên hệ thầy Vinh để bật quyền dùng VMTools trên web.';return;}location.href='/vmtools/';});
  document.querySelectorAll('[data-open-web]').forEach(b=>b.onclick=e=>{e.preventDefault();openWeb();});
 }
-function downloads(){if(frame)frame.hidden=true;$('vmtools-content').hidden=false;document.querySelector('.vm-footer').hidden=false;$('download').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
-async function openWeb(){if(!session&&!data.trial?.allowed){location.href='/dang-nhap?redirect=vmtool';return;}if(!data.access?.web&&!data.trial?.allowed){downloads();$('vm-feedback').textContent='Quyền dùng VMTools trên web chưa được kích hoạt hoặc đã hết hạn. Vui lòng liên hệ thầy Vinh.';return;}if(!frame){frame=document.createElement('iframe');frame.title='VMTools — Không gian dạy học';frame.className='vm-web-workspace';frame.src='/vmtools/';frame.allow='clipboard-read; clipboard-write; fullscreen';$('vmtools-content').after(frame);}$('vmtools-content').hidden=true;document.querySelector('.vm-footer').hidden=true;frame.hidden=false;window.scrollTo(0,0);}
+function downloads(){if(frame)frame.hidden=true;layoutShell();$('vmtools-content').hidden=false;document.querySelector('.vm-footer').hidden=false;$('download').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
+async function openWeb(){if(!session&&!data.trial?.allowed){location.href='/dang-nhap?redirect=vmtool';return;}if(!data.access?.web&&!data.trial?.allowed){downloads();$('vm-feedback').textContent='Quyền dùng VMTools trên web chưa được kích hoạt hoặc đã hết hạn. Vui lòng liên hệ thầy Vinh.';return;}if(!frame){frame=document.createElement('iframe');frame.title='VMTools — Không gian dạy học';frame.className='vm-web-workspace';frame.style.background='var(--vm-bg)';frame.style.colorScheme=document.body.dataset.vmTheme||'dark';frame.style.visibility='hidden';frame.addEventListener('load',()=>{frame.style.visibility='visible';});frame.src='/vmtools/web-entry.html?v=20260910a';frame.allow='clipboard-read; clipboard-write; fullscreen';$('vmtools-content').after(frame);}$('vmtools-content').hidden=true;document.querySelector('.vm-footer').hidden=true;frame.hidden=false;layoutShell();window.scrollTo(0,0);}
 $('use-web').onclick=openWeb;$('show-downloads').onclick=e=>{e.preventDefault();downloads();history.replaceState(null,'','#download');};
 try{
  data={...data,...await api({action:'public-catalog'})};
