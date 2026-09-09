@@ -1,6 +1,6 @@
 /* The launch puts the actual app beside a compact introduction. */
 .vm-launch.vm-showcase{padding:32px 28px 18px;background:var(--vm-bg)}
-.vm-launch::before{background:linear-gradient(90deg,var(--vm-bg),transparent 72%)}
+.vm-launch::before{border-radius:inherit;background:linear-gradient(90deg,var(--vm-bg),transparent 72%)}
 .vm-launch .vm-cosmos{position:absolute;inset:0;width:100%;height:min(100%,900px);z-index:-1;pointer-events:none}
 .vm-launch-grid{display:grid;grid-template-columns:minmax(290px,.8fr) minmax(0,1.3fr);align-items:center;gap:30px;max-width:1440px;margin:auto}
 .vm-launch .vm-intro{max-width:none;margin:0;text-align:left}
@@ -23,7 +23,7 @@
 .vm-launch .vm-window-bar{font-size:9px;padding:10px 12px;letter-spacing:0}
 .vm-preview-controls{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px}
 .vm-launch .vm-theme-picker button{font-size:11px;padding:6px 11px}
-.vm-motion{font-size:11px!important;border:0;border-radius:8px;background:var(--vm-panel);color:var(--vm-muted);padding:8px 10px}
+
 .vm-launch .vm-gallery-tabs{max-width:1280px;margin:28px auto 0;gap:4px}
 .vm-launch .vm-gallery-tabs button{font-size:12px;padding:9px 12px;border:1px solid transparent}
 .vm-launch .vm-gallery-tabs button[aria-pressed=true]{border-color:var(--vm-line)}
@@ -38,21 +38,15 @@
 @media(prefers-reduced-motion:reduce){.vm-launch-preview{transform:none!important}}
 .vm-launch .vm-brand{position:relative;isolation:isolate}
 .vm-launch .vm-app-logo{position:relative;z-index:1;flex-shrink:0;display:block}
-.vm-launch .vm-brand::before{content:'';position:absolute;z-index:-1;left:-25px;top:27px;width:145px;height:42px;border:1px solid #90b9f47a;border-radius:50%;transform:rotate(-24deg);box-shadow:0 0 12px #80aefd45,inset 0 0 10px #80aefd28;pointer-events:none}.vm-launch .vm-teaching-grid h3{color:var(--vm-text)}
-.vm-launch[data-vm-theme=light] .vm-cosmos{opacity:.32}
-/* Direct interaction is confined to the visible orbit scene; the page can scroll elsewhere. */
-.vm-launch .vm-orbit-scene{height:240px;position:relative;isolation:isolate;margin:-12px -12px 20px;border-radius:18px;overflow:hidden;background:linear-gradient(120deg,var(--vm-bg),transparent)}
-.vm-launch .vm-orbit-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;outline-offset:-3px}
-.vm-launch .vm-orbit-canvas.dragging{cursor:grabbing}
-.vm-launch .vm-orbit-scene .vm-brand{position:absolute;left:12px;top:42px;right:12px;margin:0;pointer-events:none;gap:12px}
-.vm-launch .vm-orbit-scene .vm-app-logo{width:86px;height:86px}
-.vm-launch .vm-orbit-scene .vm-brand>div{padding:8px 5px;border-radius:12px;background:color-mix(in srgb,var(--vm-bg) 75%,transparent)}
-.vm-launch .vm-orbit-scene .vm-brand::before{display:none}
-.vm-launch .vm-orbit-tools{position:absolute;bottom:6px;left:12px;right:8px;display:flex;justify-content:space-between;align-items:center;gap:6px;pointer-events:none}
-.vm-orbit-tools>span{font-size:10px;line-height:1.5;color:var(--vm-muted);max-width:200px}
-.vm-orbit-tools>div{display:flex;gap:4px;pointer-events:auto}
-.vm-orbit-tools button{width:28px;height:28px;padding:0;border:1px solid var(--vm-line);border-radius:7px;background:var(--vm-panel);color:var(--vm-text);font-size:16px!important}
-.vm-launch .vm-motion{white-space:nowrap}
-@media(max-width:760px){.vm-launch .vm-orbit-scene{height:225px;margin-bottom:16px}.vm-launch .vm-orbit-scene .vm-app-logo{width:80px;height:80px}.vm-launch .vm-orbit-scene .vm-brand{top:32px}.vm-orbit-tools>span{max-width:160px}}
-.vm-launch .vm-orbit-scene .vm-brand{top:86px}
-@media(max-width:760px){.vm-launch .vm-orbit-scene .vm-brand{top:72px}}
+.vm-launch .vm-teaching-grid h3{color:var(--vm-text)}
+
+
+/* One ambient star field, without an interactive frame or controls. */
+.vm-home-showcase{overflow:visible}
+.vm-home-showcase .vm-launch.vm-showcase,.vm-launch.vm-showcase{overflow:visible;border-radius:inherit;padding-top:92px}
+.vm-launch .vm-cosmos{top:-64px;left:0;width:100%;height:calc(100% + 88px);z-index:0;pointer-events:none;mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}
+.vm-launch-grid,.vm-launch>.vm-gallery-tabs,.vm-launch>.vm-caption,.vm-launch>.vm-teaching-grid,.vm-launch>.vm-micro{position:relative;z-index:1}
+.vm-launch .vm-intro{text-shadow:0 1px 20px var(--vm-bg)}
+.vm-launch .vm-brand{margin-bottom:24px}
+.vm-launch .vm-brand>div{background:transparent}
+@media(max-width:760px){.vm-home-showcase .vm-launch.vm-showcase,.vm-launch.vm-showcase{padding-top:112px}.vm-launch .vm-brand{margin-bottom:20px}}
