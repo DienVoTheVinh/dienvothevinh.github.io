@@ -1,6 +1,6 @@
 export const VM_FEATURES = ['ink','pdf','geometry2d','geometry3d','graphs','calculator','export'];
 export function vmAccess(account: any, role: string, now = Date.now()) {
-  const active = !!account && ['teacher','admin'].includes(role) && account.status === 'active' &&
+  const active = !!account && ['teacher','admin','student'].includes(role) && account.status === 'active' &&
     (account.role === 'owner' || account.plan === 'lifetime' || Date.parse(account.paid_until) > now);
   return {active, download:active && account.download_enabled !== false,
     desktop:active && account.app_enabled !== false, web:active && account.web_enabled === true};

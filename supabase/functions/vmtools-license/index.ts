@@ -61,7 +61,7 @@ Deno.serve(async req=>{
    const policy=await result(db.from('vmtools_web_experience').select('audience,features').eq('id',1).single()),trial=webTrial(policy,role,account);
    if(!trial.allowed)return Response.json({denied:true,reason:'trial-closed',account:null},{headers});
    const now=Date.now(),trialAccount={id:user?.id||'00000000-0000-4000-8000-000000000000',name:'Trải nghiệm VMTools',role:'trial',plan:'trial',email:user?.email||'',webEnabled:true,device:'Trình duyệt'};
-   const lease=await sign({version:1,app:'vn.vmtools.classroom',userId:trialAccount.id,deviceKey:hash,leaseId:crypto.randomUUID(),plan:'trial',issuedAt:now,offlineAllowanceMs:90000,offlineUntil:now+90000,paidUntil:null,features:trial.features});
+   const lease=await sign({version:1,app:'vn.vmtools.classroom',userId:trialAccount.id,deviceKey:hash,leaseId:crypto.randomUUID(),plan:'trial',issuedAt:now,offlineAllowanceMs:600000,offlineUntil:now+600000,paidUntil:null,features:trial.features});
    return Response.json({lease,account:trialAccount,release:await latestRelease()},{headers});
   }
   if(p.action==='login'){
@@ -80,14 +80,15 @@ Deno.serve(async req=>{
    requireValue(['win32','darwin','web'].includes(p.platform)&&typeof p.name==='string','Thiết bị không hợp lệ');
    await rpc('vmtools_register',{p_account:account.id,p_key:hash,p_public:body.publicKey,p_name:p.name,p_platform:p.platform});
   }
+  if(['status','register','login'].includes(p.action))await rpc('vmtools_activate_device_if_allowed',{p_key:hash});
   const device=await result(db.from('vmtools_devices').select('*').eq('key_hash',hash).maybeSingle());
   requireValue(device,'Thiết bị chưa được đăng ký');
   const a=await result(db.from('vmtools_accounts').select('*').eq('id',device.account_id).single());
   if(p.action==='status'||p.action==='register'||p.action==='login'){
    const release=await latestRelease();
-   const teacher=a.role==='owner'||(await result(db.from('profiles').select('role').eq('id',a.auth_user_id).maybeSingle()))?.role==='teacher';
-   let reason=!teacher?'teacher-required':a.status!=='active'?'account-'+a.status:device.status!=='active'?'device-'+device.status:device.platform==='web'&&!a.web_enabled?'web-disabled':device.platform!=='web'&&a.app_enabled===false?'app-disabled':a.role!=='owner'&&a.plan!=='lifetime'&&(!a.paid_until||Date.parse(a.paid_until)<=Date.now())?'expired':null;
-   const summary={id:a.id,email:a.email,name:a.name,role:a.role,plan:a.plan,paidUntil:a.paid_until,webEnabled:a.web_enabled,device:device.name};
+   const eligible=a.role==='owner'||['teacher','student','admin'].includes((await result(db.from('profiles').select('role').eq('id',a.auth_user_id).maybeSingle()))?.role);
+   let reason=!eligible?'account-ineligible':a.status!=='active'?'account-'+a.status:device.status!=='active'?'device-'+device.status:device.platform==='web'&&!a.web_enabled?'web-disabled':device.platform!=='web'&&a.app_enabled===false?'app-disabled':a.role!=='owner'&&a.plan!=='lifetime'&&(!a.paid_until||Date.parse(a.paid_until)<=Date.now())?'expired':null;
+   const summary={id:a.id,email:a.email,name:a.name,role:a.role,plan:a.plan,paidUntil:a.paid_until,webEnabled:a.web_enabled,device:device.name,approvalMode:a.role==='owner'?'owner':a.auto_approve_devices?'automatic':'manual',maxDevices:a.max_devices};
    if(reason)return Response.json({denied:true,reason,account:summary,release},{headers});
    const config=await result(db.from('vmtools_config').select('offline_days').eq('id',1).single());
    const issuedAt=Date.now(),offlineAllowanceMs=(a.offline_days??config.offline_days)*86400000,paidUntil=['owner','lifetime'].includes(a.plan)?null:Date.parse(a.paid_until);

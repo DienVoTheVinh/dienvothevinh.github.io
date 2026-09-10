@@ -27,23 +27,40 @@ Deno.serve(async req=>{
    return Response.json({policy:await query(db.from('vmtools_web_experience').select('audience,features,updated_at').eq('id',1).single())},{headers});
   }
   if(p.action==='list'){
-   const [teachers,classroom,vmtools,payments,vmPayments]=await Promise.all([
-    query(db.from('profiles').select('id,full_name,username,email').eq('role','teacher').order('full_name').limit(2000)),
+   const [teachers,classroom,vmtools,payments,vmPayments,devices]=await Promise.all([
+    query(db.from('profiles').select('id,full_name,username,email,role').in('role',['teacher','student','admin']).order('full_name').limit(2000)),
     query(db.from('teacher_service_accounts').select('*').limit(2000)),
-    query(db.from('vmtools_accounts').select('id,auth_user_id,email,status,plan,paid_until,web_enabled,app_enabled,download_enabled,features,max_devices').eq('role','user').limit(2000)),
+    query(db.from('vmtools_accounts').select('id,auth_user_id,email,status,plan,paid_until,web_enabled,app_enabled,download_enabled,features,max_devices,auto_approve_devices,role').limit(2000)),
     query(db.from('teacher_service_payments').select('id,user_id,plan,amount,note,expires_at,created_at').order('created_at',{ascending:false}).limit(100)),
-    query(db.from('vmtools_payments').select('id,account_id,amount,note,paid_until,created_at').order('created_at',{ascending:false}).limit(100))]);
-   return Response.json({teachers,classroom,vmtools,payments,vmPayments,classroomEnforced:true},{headers});
+    query(db.from('vmtools_payments').select('id,account_id,amount,note,paid_until,created_at').order('created_at',{ascending:false}).limit(100)),query(db.from('vmtools_devices').select('key_hash,account_id,name,platform,status,last_seen').limit(5000))]);
+   return Response.json({teachers,classroom,vmtools,payments,vmPayments,devices,classroomEnforced:true},{headers});
   }
   if(!['classroom','vmtools'].includes(p.service))fail('Dịch vụ không hợp lệ');
-  const target=await query(db.from('profiles').select('id').eq('id',p.userId).eq('role','teacher').maybeSingle());if(!target)fail('Không tìm thấy giáo viên');
+  const target=await query(db.from('profiles').select('id,role,full_name').eq('id',p.userId).in('role',['teacher','student','admin']).maybeSingle());if(!target)fail('Không tìm thấy tài khoản');if(p.service==='classroom'&&target.role!=='teacher')fail('Tính năng trên lớp chỉ dành cho giáo viên');
   let owner:any=null,account:any=null;
   if(p.service==='vmtools'){
    owner=await query(db.from('vmtools_accounts').select('id').eq('auth_user_id',user.id).eq('role','owner').eq('status','active').maybeSingle());if(!owner)fail('Chưa có quyền quản trị VMTools');
-   account=await query(db.from('vmtools_accounts').select('id').eq('auth_user_id',p.userId).maybeSingle());if(!account&&p.action!=='link')fail('Hãy liên kết email thật trước khi cấp hạn cho tài khoản cũ.');
+   account=await query(db.from('vmtools_accounts').select('id,role').eq('auth_user_id',p.userId).maybeSingle());if(!account&&!['link','link-student'].includes(p.action))fail(target.role==='student'?'Hãy chọn Cấp VMTools cho học sinh trước.':'Hãy liên kết email thật trước khi cấp hạn cho tài khoản cũ.');
+   if(account?.role==='owner'&&!['device','device-policy'].includes(p.action))fail('Không sửa quyền chủ sở hữu tại đây.');
+  }
+  if(p.action==='link-student'){
+   if(p.service!=='vmtools'||target.role!=='student'||account)fail('Chỉ cấp cho học sinh chưa có VMTools');
+   const identity=await db.auth.admin.getUserById(target.id);if(identity.error||!identity.data.user?.email)fail('Chưa tìm được thông tin đăng nhập học sinh');
+   await query(db.rpc('vmtools_provision',{p_actor:owner.id,p_user:target.id,p_email:identity.data.user!.email,p_name:target.full_name||'',p_web:false,p_plan:'pending',p_units:1,p_until:null,p_amount:0}));
+   return Response.json({ok:true},{headers});
+  }
+  if(p.action==='device'){
+   if(p.service!=='vmtools'||!['active','blocked','pending'].includes(p.status))fail('Trạng thái thiết bị không hợp lệ');
+   const device=await query(db.from('vmtools_devices').select('key_hash').eq('key_hash',p.key).eq('account_id',account.id).maybeSingle());if(!device)fail('Thiết bị không thuộc tài khoản này');
+   await query(db.rpc('vmtools_device_status',{p_actor:owner.id,p_key:p.key,p_status:p.status}));return Response.json({ok:true},{headers});
+  }
+  if(p.action==='device-policy'){
+   if(p.service!=='vmtools'||typeof p.autoApprove!=='boolean'||!Number.isInteger(p.maxDevices)||p.maxDevices<1||p.maxDevices>100)fail('Giới hạn thiết bị không hợp lệ');
+   await query(db.from('vmtools_accounts').update({auto_approve_devices:p.autoApprove,max_devices:p.maxDevices}).eq('id',account.id));
+   await query(db.from('vmtools_audit').insert({actor:owner.id,account_id:account.id,action:'device-policy',details:{autoApprove:p.autoApprove,maxDevices:p.maxDevices}}));return Response.json({ok:true},{headers});
   }
   if(p.action==='link'){
-   if(p.service!=='vmtools'||account)fail('Tài khoản đã liên kết hoặc dịch vụ không hợp lệ');
+   if(p.service!=='vmtools'||target.role!=='teacher'||account)fail('Tài khoản đã liên kết hoặc dịch vụ không hợp lệ');
    const email=String(p.email||'').trim().toLowerCase();
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.endsWith('.vinhmath.com'))fail('Nhập email thật của giáo viên');
    await query(db.rpc('vm_teacher_link_email',{p_actor:user.id,p_user:p.userId,p_email:email}));

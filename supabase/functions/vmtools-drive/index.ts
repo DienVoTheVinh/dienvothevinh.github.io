@@ -17,7 +17,7 @@ Deno.serve(async req=>{
   if(error||!data.user)return Response.json({error:'Cần đăng nhập giáo viên VinhMath'},{status:401,headers});
   const user=data.user,claims=JSON.parse(atob(jwt.split('.')[1].replaceAll('-','+').replaceAll('_','/')));
   if(!await q(db.rpc('vmtools_auth_session',{p_user:user.id,p_session:claims.session_id})))throw Error('Phiên đăng nhập đã kết thúc');
-  const profile=await q(db.from('profiles').select('role').eq('id',user.id).maybeSingle());if(!['teacher','admin'].includes(profile?.role))return Response.json({error:'Chỉ giáo viên được liên kết Drive'},{status:403,headers});
+  const profile=await q(db.from('profiles').select('role').eq('id',user.id).maybeSingle());if(!['teacher','admin','student'].includes(profile?.role))return Response.json({error:'Tài khoản chưa được phép liên kết Drive'},{status:403,headers});
   const raw=await req.text();if(new TextEncoder().encode(raw).length>limit)throw Error('Bài giảng vượt 20 MB. Hãy tách bớt trang PDF trước khi lưu lên Drive.');const p=JSON.parse(raw);
   const connection=await q(db.from('vmtools_drive_connections').select('*').eq('user_id',user.id).maybeSingle());
   if(p.action==='status')return Response.json({connected:!!connection?.granted_scopes?.includes(scope),email:connection?.google_email||null},{headers});
