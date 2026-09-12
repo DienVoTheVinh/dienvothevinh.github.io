@@ -465,6 +465,12 @@ function layBadgeRole(role) {
   return '';
 }
 
+function hsEscapeTelemetry(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'})[char];
+  });
+}
+
 function moChiTiet(id) {
   var s = dsHS.find(function (x) { return x.id === id; });
   if (!s) return;
@@ -479,7 +485,7 @@ function moChiTiet(id) {
         '<div><b>' + bd.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' }) + '</b> · ' +
           bd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' → ' +
           kt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + '</div>' +
-        '<div style="color:var(--ink-2)">' + phutDep(p.duration_seconds) + ' · ' + (p.device_type || '') + '</div>' +
+        '<div style="color:var(--ink-2)">' + phutDep(p.duration_seconds) + ' · ' + hsEscapeTelemetry(p.device_type) + '</div>' +
         '</div>';
     }).join('');
   }
