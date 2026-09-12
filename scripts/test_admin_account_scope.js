@@ -19,7 +19,7 @@ for (const page of pages) {
     .forEach((source, index) => new vm.Script(source, { filename: `${page}#${index + 1}` }));
 
   expect(html.includes('placeholder="Ví dụ: Nguyễn Văn A"'), `${page}: account-name placeholder is stale`);
-  expect(html.includes("TT_MAT_KHAU_MAC_DINH = 'VinhMath2026#'"), `${page}: requested default password is missing`);
+  expect(!html.includes('TT_MAT_KHAU_MAC_DINH') && html.includes('ttMatKhauNgauNhien()'), `${page}: random per-account password default is missing`);
   expect(html.includes('id="ttPhamVi"') && html.includes("from('exam_portals')"), `${page}: active portal selector is missing`);
   expect(html.includes("value: 'portal_hs'") && html.includes("value: 'portal_gv'"), `${page}: partner account types are missing`);
   expect(html.includes('portal.teacher_login_suffix') && html.includes('portal.login_suffix'), `${page}: partner suffix preview is incomplete`);

@@ -17,6 +17,16 @@
     }
 
     try {
+      // Never let a signed-out visitor insert telemetry or claim another identity.
+      var authResult = await sb.auth.getUser();
+      var profileId = authResult.data && authResult.data.user && authResult.data.user.id;
+      if (authResult.error || !profileId) return;
+      if (sessionStorage.getItem('vm-session-profile-id') !== profileId) {
+        ['vm-session-key', 'vm-session-start', 'vm-session-db-id'].forEach(function (key) {
+          sessionStorage.removeItem(key);
+        });
+        sessionStorage.setItem('vm-session-profile-id', profileId);
+      }
       // 2. Thu thập thông tin thiết bị, HĐH, Trình duyệt
       var ua = navigator.userAgent.toLowerCase();
       
@@ -54,20 +64,13 @@
       var sessionKey = sessionStorage.getItem('vm-session-key');
       var sessionStart = sessionStorage.getItem('vm-session-start');
       if (!sessionKey) {
-        sessionKey = 'vm-sess-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        sessionKey = 'vm-sess-' + crypto.randomUUID();
         sessionStart = Date.now().toString();
         sessionStorage.setItem('vm-session-key', sessionKey);
         sessionStorage.setItem('vm-session-start', sessionStart);
       }
 
       var sessionDbId = sessionStorage.getItem('vm-session-db-id');
-      var profileId = null;
-
-      // Lấy thông tin tài khoản nếu đã đăng nhập
-      if (typeof layHoSo === 'function') {
-        var hoSo = await layHoSo();
-        if (hoSo) profileId = hoSo.id;
-      }
 
       // 4. Đồng bộ hoặc tạo mới phiên truy cập trong CSDL
       if (!sessionDbId) {
@@ -78,7 +81,7 @@
           device_type: deviceType,
           os: os,
           browser: browser,
-          user_agent: navigator.userAgent
+          user_agent: navigator.userAgent.slice(0, 2048)
         }, { onConflict: 'session_key' }).select('id').single();
 
         if (insertRes.data) {
@@ -101,15 +104,21 @@
         
         await sb.from('analytics_page_views').insert({
           session_id: sessionDbId,
-          page_path: pageName,
-          referrer: document.referrer || null
+          page_path: pageName.slice(0, 512),
+          // Do not store URL queries/fragments, which may contain OAuth secrets.
+          referrer: document.referrer ? new URL(document.referrer).origin : null
         });
 
         // 6. Nhịp tim cập nhật thời gian hoạt động (Heartbeat - 15 giây một lần)
-        setInterval(async function () {
+        var heartbeat = setInterval(async function () {
           try {
+            var currentAuth = await sb.auth.getSession();
+            if (!currentAuth.data.session || currentAuth.data.session.user.id !== profileId) {
+              clearInterval(heartbeat);
+              return;
+            }
             var startTs = parseInt(sessionStorage.getItem('vm-session-start') || Date.now());
-            var duration = Math.round((Date.now() - startTs) / 1000);
+            var duration = Math.min(2678400, Math.max(0, Math.round((Date.now() - startTs) / 1000)));
 
             await sb.from('analytics_sessions')
               .update({

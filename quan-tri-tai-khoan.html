@@ -117,7 +117,7 @@
       <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
       <div style="display:flex;gap:8px"><input class="input" id="ttMkHS" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkHS')">Tạo mạnh</button></div>
-      <small class="tt-scope-note">Mật khẩu chung mặc định đã được điền sẵn; nút “Tạo mạnh” dùng khi cần mật khẩu riêng.</small>
+      <small class="tt-scope-note">Mật khẩu riêng được tạo ngẫu nhiên cho mỗi lần tạo tài khoản. Sao chép và gửi riêng cho người nhận.</small>
       </div>
 
       <div class="field" id="ttRowDungChung">
@@ -157,8 +157,9 @@
       </div>
       <div class="tt-bulk-preview" id="ttBulkPreview" aria-live="polite"></div>
       <div class="field">
-        <label for="ttBulkPassword">Mật khẩu chung <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
+        <label for="ttBulkPassword">Mật khẩu chung tùy chọn <span style="color:var(--ink-3); font-weight:400">(để trống để tạo riêng từng học sinh)</span></label>
         <div style="display:flex;gap:8px"><input class="input" id="ttBulkPassword" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttBulkPassword')">Tạo mạnh</button></div>
+        <small class="tt-scope-note">An toàn nhất: để trống. Mỗi học sinh có mật khẩu ngẫu nhiên riêng trong danh sách sao chép/tải xuống. Chỉ điền mật khẩu chung khi thầy chủ động muốn dùng chung.</small>
         <small class="tt-scope-note" id="ttBulkScopeNote">Mỗi học sinh VinhMath sẽ được tạo kèm tài khoản phụ huynh tự liên kết và dùng chung mật khẩu.</small>
       </div>
       <div id="ttBulkNotice" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
@@ -253,26 +254,30 @@
   ttDoiPhamVi();
 })();
 
-var TT_MAT_KHAU_MAC_DINH = 'VinhMath2026#';
 window.ttPortals = [];
 window.ttCheDo = 'single';
 window.ttBulkResultsData = [];
 window.ttBulkPasswordDaTao = '';
 window.ttBulkPortalDaTao = null;
 
+function ttMatKhauNgauNhien() {
+  var bytes = new Uint32Array(3);
+  crypto.getRandomValues(bytes);
+  return 'VM-' + Array.from(bytes).map(function(n){ return n.toString(36); }).join('-') + '!';
+}
+
 function ttDatMatKhauMacDinh() {
-  ['ttMkHS', 'ttMkPH', 'ttBulkPassword'].forEach(function (id) {
+  ['ttMkHS', 'ttMkPH'].forEach(function (id) {
     var input = $(id);
     if (!input) return;
-    input.value = TT_MAT_KHAU_MAC_DINH;
+    input.value = ttMatKhauNgauNhien();
     input.type = 'text';
   });
+  if ($('ttBulkPassword')) $('ttBulkPassword').value = '';
 }
 
 function ttTaoMatKhau(inputId) {
-  var bytes = new Uint32Array(3);
-  crypto.getRandomValues(bytes);
-  var value = 'VM-' + Array.from(bytes).map(function(n){ return n.toString(36); }).join('-') + '!';
+  var value = ttMatKhauNgauNhien();
   var input = $(inputId);
   input.value = value;
   input.type = 'text';
@@ -634,7 +639,7 @@ async function ttBulkTaoTaiKhoan() {
   var type = portal ? 'portal_hs' : 'hs_ph';
   if (!names.length) { ttBulkBao('Vui lòng dán ít nhất một họ tên học sinh.'); return; }
   if (allNames.length > 60) { ttBulkBao('Mỗi lượt tối đa 60 học sinh. Vui lòng chia danh sách thành hai lượt.'); return; }
-  if (password.length < 8) { ttBulkBao('Mật khẩu chung phải có ít nhất 8 ký tự.'); return; }
+  if (password && password.length < 8) { ttBulkBao('Mật khẩu chung phải có ít nhất 8 ký tự, hoặc để trống để tạo riêng.'); return; }
   if (portal && !portal.id) { ttBulkBao('Phân hiệu đã chọn không hợp lệ.'); return; }
   if (!window.confirm('Tạo ngay ' + names.length + ' học sinh' + (portal ? ' cho ' + (portal.name || portal.short_name || portal.slug) : ' kèm tài khoản phụ huynh') + '?\n\nCác tài khoản tạo thành công sẽ có hiệu lực ngay.')) return;
 
@@ -656,20 +661,22 @@ async function ttBulkTaoTaiKhoan() {
 
   for (var index = 0; index < names.length; index += 1) {
     var fullName = names[index];
+    var studentPassword = password || ttMatKhauNgauNhien();
     $('ttBulkProgressText').textContent = 'Đang tạo: ' + fullName;
     try {
       var requestBody = {
         type: type,
         fullName: fullName,
         username: ttSlug(fullName),
-        password: password,
-        password2: password
+        password: studentPassword,
+        password2: studentPassword
       };
       if (portal) requestBody.portalId = portal.id;
       var data = await ttBulkGoiTao(requestBody);
       window.ttBulkResultsData.push({
         fullName: fullName,
         ok: true,
+        password: studentPassword,
         studentLogin: data.type === 'hs_ph' ? data.student.login : data.login,
         parentLogin: data.type === 'hs_ph' ? data.parent.login : '',
         error: ''
@@ -708,9 +715,9 @@ function ttBulkTsv() {
     : [['Họ và tên', 'Tài khoản học sinh', 'Mật khẩu HS', 'Tài khoản phụ huynh', 'Mật khẩu PH', 'Trạng thái / ghi chú']];
   window.ttBulkResultsData.forEach(function (item) {
     if (portal) {
-      rows.push([item.fullName, item.studentLogin, item.ok ? window.ttBulkPasswordDaTao : '', portal.name || portal.short_name || portal.slug, item.ok ? 'Đã tạo' : item.error]);
+      rows.push([item.fullName, item.studentLogin, item.ok ? (item.password || window.ttBulkPasswordDaTao) : '', portal.name || portal.short_name || portal.slug, item.ok ? 'Đã tạo' : item.error]);
     } else {
-      rows.push([item.fullName, item.studentLogin, item.ok ? window.ttBulkPasswordDaTao : '', item.parentLogin, item.ok ? window.ttBulkPasswordDaTao : '', item.ok ? 'Đã tạo' : item.error]);
+      rows.push([item.fullName, item.studentLogin, item.ok ? (item.password || window.ttBulkPasswordDaTao) : '', item.parentLogin, item.ok ? (item.password || window.ttBulkPasswordDaTao) : '', item.ok ? 'Đã tạo' : item.error]);
     }
   });
   return rows.map(function (row) { return row.join('\t'); }).join('\n');
@@ -724,12 +731,12 @@ function ttBulkVanBanChiaSe() {
     var number = String(index + 1).padStart(2, '0');
     lines.push(number + '. ' + String(item.fullName || '').toUpperCase());
     lines.push('• Tài khoản HS: ' + (item.studentLogin || '—'));
-    lines.push('• Mật khẩu HS: ' + (item.ok ? password : '—'));
+    lines.push('• Mật khẩu HS: ' + (item.ok ? (item.password || password) : '—'));
     if (portal) {
       lines.push('• Phân hiệu: ' + (portal.name || portal.short_name || portal.slug || '—'));
     } else {
       lines.push('• Tài khoản PH: ' + (item.parentLogin || '—'));
-      lines.push('• Mật khẩu PH: ' + (item.ok ? password : '—'));
+      lines.push('• Mật khẩu PH: ' + (item.ok ? (item.password || password) : '—'));
     }
     lines.push('• Trạng thái: ' + (item.ok ? 'Đã tạo' : ('Lỗi — ' + (item.error || 'Không xác định'))));
     if (index < window.ttBulkResultsData.length - 1) lines.push('────────────────────', '');

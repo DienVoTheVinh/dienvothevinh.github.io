@@ -72,7 +72,7 @@
     <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
       <input class="input" id="ttMkHS" type="text" minlength="8" autocomplete="new-password" style="width:100%">
-      <small class="tt-scope-note">Mật khẩu chung mặc định đã được điền sẵn.</small>
+      <small class="tt-scope-note">Mật khẩu riêng được tạo ngẫu nhiên cho mỗi lần tạo tài khoản.</small>
     </div>
 
     <div class="field" id="ttRowDungChung">
@@ -160,13 +160,18 @@
   ttDoiPhamVi();
 })();
 
-var TT_MAT_KHAU_MAC_DINH = 'VinhMath2026#';
 window.ttPortals = [];
+
+function ttMatKhauNgauNhien() {
+  var bytes = new Uint32Array(3);
+  crypto.getRandomValues(bytes);
+  return 'VM-' + Array.from(bytes).map(function(n){ return n.toString(36); }).join('-') + '!';
+}
 
 function ttDatMatKhauMacDinh() {
   ['ttMkHS', 'ttMkPH'].forEach(function (id) {
     var input = $(id);
-    if (input) input.value = TT_MAT_KHAU_MAC_DINH;
+    if (input) input.value = ttMatKhauNgauNhien();
   });
 }
 
