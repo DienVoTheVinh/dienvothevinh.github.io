@@ -15,8 +15,9 @@
 <script src="js/theme-preflight.js?v=1"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
 <link rel="stylesheet" href="css/vinhmath.css?v=8.9">
+<link rel="stylesheet" href="css/account-service-form.css?v=1">
 <style>
-.wrap { max-width: 720px; margin: 0 auto; padding: 0 24px 96px; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 24px 96px; }
 .head { padding: 40px 0 20px; }
 .field { margin-bottom: 14px; }
 .field label { font-weight: 600; font-size: .9rem; margin-bottom: 6px; display: block; }
@@ -30,6 +31,7 @@
 .tt-dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 .tt-create-card { transition:max-width .2s ease; }
 .tt-create-card.is-bulk { max-width:720px !important; }
+.tt-create-card.is-teacher { max-width:100% !important; }
 .tt-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin-bottom:18px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
 .tt-mode-btn { border:0; border-radius:9px; padding:11px 12px; color:var(--ink-2); background:transparent; font:inherit; font-weight:700; cursor:pointer; }
 .tt-mode-btn.is-active { color:var(--accent-ink, var(--ink)); background:var(--surface); box-shadow:var(--shadow-sm); }
@@ -107,7 +109,66 @@
         <input class="input" id="ttHoTen" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%" oninput="ttXemTruoc()">
       </div>
 
-      <div class="field" id="ttTeacherEmailField" hidden><label>Email thật của giáo viên</label><input class="input" id="ttTeacherEmail" type="email" placeholder="giaovien@gmail.com" oninput="ttXemTruoc()"><small>Dùng chung tài khoản cho VinhMath và VMTools; không tạo địa chỉ @gv mới.</small><fieldset style="padding:14px;margin:12px 0;border:1px solid var(--line);border-radius:12px"><legend>Các tính năng trên lớp</legend><label><input type="checkbox" id="ttClassEnabled" checked> Tạo và quản lý lớp, bài giảng, học sinh</label><label>Thời hạn<select class="input" id="ttClassPlan"><option value="lifetime">Vĩnh viễn</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option></select></label><label>Số tháng / năm<input class="input" id="ttClassUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttClassUntil" type="datetime-local"></label></fieldset><fieldset style="margin-top:12px"><legend>VMTools · dịch vụ riêng (tùy chọn)</legend><label>Thời hạn<select class="input" id="ttVmPlan"><option value="pending">Chưa đăng ký VMTools</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label>Số tháng / năm<input class="input" id="ttVmUnits" type="number" min="1" max="120" value="1"></label><label>Hạn tùy chỉnh<input class="input" id="ttVmUntil" type="datetime-local"></label><label>Số tiền đã nhận (đ)<input class="input" id="ttVmAmount" type="number" min="0" value="0"></label><label><input type="checkbox" id="ttVmApp" checked> Dùng app trên máy tính</label><label><input type="checkbox" id="ttVmDownload" checked> Tải bộ cài và cập nhật</label><div style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0"><label><input type="checkbox" name="ttVmFeature" value="ink" checked> Viết tay</label><label><input type="checkbox" name="ttVmFeature" value="pdf" checked> Đọc PDF</label><label><input type="checkbox" name="ttVmFeature" value="geometry2d" checked> Hình học 2D</label><label><input type="checkbox" name="ttVmFeature" value="geometry3d" checked> Hình học 3D</label><label><input type="checkbox" name="ttVmFeature" value="graphs" checked> Đồ thị</label><label><input type="checkbox" name="ttVmFeature" value="calculator" checked> Máy tính</label><label><input type="checkbox" name="ttVmFeature" value="export" checked> Xuất tài liệu</label></div><label><input id="ttVmWeb" type="checkbox" checked> Cho dùng VMTools trên web VinhMath</label><label><input id="ttVmConfirm" type="checkbox"> Tôi xác nhận đã thu tiền hoặc chủ động cấp miễn phí</label><small>Thiết bị mới cần được duyệt trong VMTools Admin. Phí và thời hạn VMTools độc lập với dịch vụ quản lý học sinh. Có thể đăng ký VMTools sau.</small></fieldset></div>
+      <div class="field" id="ttTeacherEmailField" hidden>
+        <label for="ttTeacherEmail">Email thật của giáo viên</label>
+        <input class="input" id="ttTeacherEmail" type="email" placeholder="giaovien@gmail.com" oninput="ttXemTruoc()">
+        <small class="tt-scope-note">Một tài khoản dùng chung cho VinhMath và VMTools; mỗi dịch vụ được cấp quyền độc lập.</small>
+
+        <div class="tt-services-intro"><h2>Dịch vụ của tài khoản</h2><p>Tích dịch vụ cần cấp. Có thể chọn một, cả hai hoặc đăng ký sau.</p></div>
+        <div class="tt-services">
+          <section class="tt-service" id="ttClassService">
+            <label class="tt-service-toggle" for="ttClassEnabled">
+              <input type="checkbox" id="ttClassEnabled" aria-controls="ttClassSettings" onchange="ttCapNhatDichVu()">
+              <span><small>Dịch vụ 1</small><strong>Quản lý lớp học</strong></span>
+              <span class="tt-service-state" id="ttClassState">Chưa chọn</span>
+            </label>
+            <p class="tt-service-description">Tạo lớp, quản lý bài giảng, học sinh và hoạt động giảng dạy.</p>
+            <fieldset class="tt-service-settings" id="ttClassSettings" hidden disabled aria-label="Thiết lập Quản lý lớp học">
+              <div class="tt-service-period">
+                <label for="ttClassPlan">Thời hạn<select class="input" id="ttClassPlan" onchange="ttCapNhatDichVu()"><option value="lifetime">Vĩnh viễn</option><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option></select></label>
+                <label id="ttClassUnitsField" for="ttClassUnits" hidden><span id="ttClassUnitsLabel">Số tháng</span><input class="input" id="ttClassUnits" type="number" min="1" max="120" step="1" value="1"></label>
+                <label class="tt-service-until" id="ttClassUntilField" for="ttClassUntil" hidden>Hết hạn lúc<input class="input" id="ttClassUntil" type="datetime-local"></label>
+              </div>
+              <p class="tt-scope-note">Không bao gồm quyền sử dụng VMTools.</p>
+            </fieldset>
+          </section>
+
+          <section class="tt-service" id="ttVmService">
+            <label class="tt-service-toggle" for="ttVmEnabled">
+              <input type="checkbox" id="ttVmEnabled" aria-controls="ttVmSettings" onchange="ttCapNhatDichVu()">
+              <span><small>Dịch vụ 2</small><strong>VMTools</strong></span>
+              <span class="tt-service-state" id="ttVmState">Chưa chọn</span>
+            </label>
+            <p class="tt-service-description">Công cụ toán học trên máy tính và web, với thời hạn sử dụng riêng.</p>
+            <fieldset class="tt-service-settings" id="ttVmSettings" hidden disabled aria-label="Thiết lập VMTools">
+              <div class="tt-service-period">
+                <label for="ttVmPlan">Thời hạn<select class="input" id="ttVmPlan" onchange="ttCapNhatDichVu()"><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label>
+                <label id="ttVmUnitsField" for="ttVmUnits"><span id="ttVmUnitsLabel">Số tháng</span><input class="input" id="ttVmUnits" type="number" min="1" max="120" step="1" value="1"></label>
+                <label class="tt-service-until" id="ttVmUntilField" for="ttVmUntil" hidden>Hết hạn lúc<input class="input" id="ttVmUntil" type="datetime-local"></label>
+              </div>
+              <label for="ttVmAmount">Số tiền đã nhận (₫)<input class="input" id="ttVmAmount" type="number" min="0" step="1" value="0"></label>
+              <small class="tt-scope-note">Ghi nhận thanh toán; để 0 nếu cấp miễn phí.</small>
+              <div class="tt-service-access" aria-label="Nơi được sử dụng VMTools">
+                <label class="tt-choice"><input type="checkbox" id="ttVmApp" checked> Dùng ứng dụng trên máy tính</label>
+                <label class="tt-choice"><input type="checkbox" id="ttVmDownload" checked> Tải bộ cài và bản cập nhật</label>
+                <label class="tt-choice"><input type="checkbox" id="ttVmWeb" checked> Dùng trên web VinhMath</label>
+              </div>
+              <details class="tt-service-features"><summary>Tùy chọn tính năng</summary><div>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="ink" checked> Viết tay</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="pdf" checked> Đọc PDF</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="geometry2d" checked> Hình học 2D</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="geometry3d" checked> Hình học 3D</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="graphs" checked> Đồ thị</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="calculator" checked> Máy tính</label>
+                <label class="tt-choice"><input type="checkbox" name="ttVmFeature" value="export" checked> Xuất tài liệu</label>
+              </div></details>
+              <label class="tt-choice tt-service-confirm"><input id="ttVmConfirm" type="checkbox"> Tôi xác nhận đã thu tiền hoặc chủ động cấp miễn phí.</label>
+              <p class="tt-scope-note">Thiết bị mới áp dụng chính sách duyệt máy đã cấu hình trong VMTools Admin.</p>
+            </fieldset>
+          </section>
+        </div>
+        <p class="tt-service-summary" id="ttServiceSummary" role="status">Chưa chọn dịch vụ. Tài khoản sẽ được tạo để cấp dịch vụ sau.</p>
+      </div>
       <div class="preview-box">
         <div id="ttRowHS">🎓 Đăng nhập HS: <b id="ttPreviewHS">—</b></div>
         <div id="ttRowPH">👪 Đăng nhập PH: <b id="ttPreviewPH">—</b></div>
@@ -117,7 +178,7 @@
       <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
       <div style="display:flex;gap:8px"><input class="input" id="ttMkHS" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttMkHS')">Tạo mạnh</button></div>
-      <small class="tt-scope-note">Mật khẩu riêng được tạo ngẫu nhiên cho mỗi lần tạo tài khoản. Sao chép và gửi riêng cho người nhận.</small>
+      <small class="tt-scope-note" id="ttPasswordNote"></small>
       </div>
 
       <div class="field" id="ttRowDungChung">
@@ -159,7 +220,7 @@
       <div class="field">
         <label for="ttBulkPassword">Mật khẩu chung tùy chọn <span style="color:var(--ink-3); font-weight:400">(để trống để tạo riêng từng học sinh)</span></label>
         <div style="display:flex;gap:8px"><input class="input" id="ttBulkPassword" type="text" minlength="8" autocomplete="new-password" style="width:100%"><button class="btn btn-secondary btn-sm" type="button" onclick="ttTaoMatKhau('ttBulkPassword')">Tạo mạnh</button></div>
-        <small class="tt-scope-note">An toàn nhất: để trống. Mỗi học sinh có mật khẩu ngẫu nhiên riêng trong danh sách sao chép/tải xuống. Chỉ điền mật khẩu chung khi thầy chủ động muốn dùng chung.</small>
+        <small class="tt-scope-note">Đã điền mật khẩu khởi tạo học sinh theo cấu hình của thầy. Có thể đổi mật khẩu chung, hoặc xóa trống để tạo riêng từng học sinh. Không thay đổi tài khoản đã có.</small>
         <small class="tt-scope-note" id="ttBulkScopeNote">Mỗi học sinh VinhMath sẽ được tạo kèm tài khoản phụ huynh tự liên kết và dùng chung mật khẩu.</small>
       </div>
       <div id="ttBulkNotice" style="display:none; font-size:.86rem; padding:10px 12px; border-radius:9px; margin-bottom:14px"></div>
@@ -259,6 +320,8 @@ window.ttCheDo = 'single';
 window.ttBulkResultsData = [];
 window.ttBulkPasswordDaTao = '';
 window.ttBulkPortalDaTao = null;
+// Owner-approved initial student password. Never use this default for staff.
+var TT_MAT_KHAU_HS_KHOI_TAO = 'VinhMath2026#';
 
 function ttMatKhauNgauNhien() {
   var bytes = new Uint32Array(3);
@@ -267,13 +330,23 @@ function ttMatKhauNgauNhien() {
 }
 
 function ttDatMatKhauMacDinh() {
-  ['ttMkHS', 'ttMkPH'].forEach(function (id) {
-    var input = $(id);
-    if (!input) return;
-    input.value = ttMatKhauNgauNhien();
-    input.type = 'text';
-  });
-  if ($('ttBulkPassword')) $('ttBulkPassword').value = '';
+  ttCapNhatMatKhauTheoLoai(true);
+  if ($('ttBulkPassword')) $('ttBulkPassword').value = TT_MAT_KHAU_HS_KHOI_TAO;
+}
+
+function ttCapNhatMatKhauTheoLoai(force) {
+  var type = $('ttLoai').value;
+  var audience = type === 'hs_ph' || type === 'portal_hs' ? 'student' : 'staff';
+  if (!force && window.ttPasswordAudience === audience) return;
+  window.ttPasswordAudience = audience;
+  $('ttMkHS').value = audience === 'student' ? TT_MAT_KHAU_HS_KHOI_TAO : ttMatKhauNgauNhien();
+  $('ttMkHS').type = 'text';
+  // When the sharing checkbox is on, the request uses the student's password.
+  // An independently created parent password stays random.
+  $('ttMkPH').value = ttMatKhauNgauNhien();
+  if ($('ttPasswordNote')) $('ttPasswordNote').textContent = audience === 'student'
+    ? 'Đã điền mật khẩu khởi tạo học sinh. Nút “Tạo mạnh” tạo mật khẩu riêng nếu cần. Không đổi mật khẩu tài khoản cũ.'
+    : 'Mật khẩu riêng được tạo ngẫu nhiên cho giáo viên/trợ giảng. Sao chép và gửi riêng cho người nhận.';
 }
 
 function ttTaoMatKhau(inputId) {
@@ -462,8 +535,69 @@ function ttDoiPhamVi() {
 }
 
 function ttIsTeacher(){return $('ttLoai').value==='gv'||($('ttLoai').value==='portal_gv'&&ttPortalDangChon()?.experience_mode==='full_site');}
+function ttCapNhatDichVu() {
+  var selected = [];
+  [['ttClass','Quản lý lớp học'],['ttVm','VMTools']].forEach(function (item) {
+    var prefix = item[0], enabled = $(prefix + 'Enabled').checked;
+    var plan = $(prefix + 'Plan').value;
+    var quantity = plan === 'monthly' || plan === 'yearly';
+    $(prefix + 'Service').classList.toggle('is-selected', enabled);
+    $(prefix + 'State').textContent = enabled ? 'Đã chọn' : 'Chưa chọn';
+    $(prefix + 'Enabled').setAttribute('aria-expanded', String(enabled));
+    $(prefix + 'Settings').hidden = !enabled;
+    $(prefix + 'Settings').disabled = !enabled;
+    $(prefix + 'UnitsField').hidden = !quantity;
+    $(prefix + 'Units').disabled = !enabled || !quantity;
+    $(prefix + 'UnitsLabel').textContent = plan === 'yearly' ? 'Số năm' : 'Số tháng';
+    $(prefix + 'UntilField').hidden = plan !== 'custom';
+    $(prefix + 'Until').disabled = !enabled || plan !== 'custom';
+    $(prefix + 'Settings').querySelector('.tt-service-period').classList.toggle('has-quantity', quantity);
+    if (enabled) selected.push(item[1]);
+  });
+  if (!$('ttVmEnabled').checked) $('ttVmConfirm').checked = false;
+  $('ttServiceSummary').textContent = selected.length
+    ? 'Dịch vụ sẽ cấp: ' + selected.join(' + ') + '. Các thời hạn được quản lý riêng.'
+    : 'Chưa chọn dịch vụ. Tài khoản sẽ được tạo để cấp dịch vụ sau.';
+}
+
+function ttDocThoiHanDichVu(prefix) {
+  var plan = $(prefix + 'Plan').value;
+  if (!['monthly','yearly','custom','lifetime'].includes(plan)) throw Error('Chọn thời hạn dịch vụ hợp lệ.');
+  var quantity = plan === 'monthly' || plan === 'yearly';
+  var units = quantity ? Number($(prefix + 'Units').value) : 1;
+  if (!Number.isInteger(units) || units < 1 || units > 120) throw Error('Số tháng / năm phải là số nguyên từ 1 đến 120.');
+  var until = plan === 'custom' ? new Date($(prefix + 'Until').value) : null;
+  if (until && !(until.getTime() > Date.now())) throw Error('Ngày hết hạn phải nằm trong tương lai.');
+  return {plan:plan,units:units,until:until ? until.toISOString() : null};
+}
+
+function ttDocDichVuGiaoVien() {
+  var email = $('ttTeacherEmail').value.trim();
+  if (!$('ttTeacherEmail').checkValidity() || !email) throw Error('Nhập email thật của giáo viên.');
+  var classroomEnabled = $('ttClassEnabled').checked;
+  var vmEnabled = $('ttVmEnabled').checked;
+  var classroom = classroomEnabled ? ttDocThoiHanDichVu('ttClass') : {plan:'lifetime',units:1,until:null};
+  var vmtools = vmEnabled ? ttDocThoiHanDichVu('ttVm') : {plan:'pending',units:1,until:null};
+  var amount = vmEnabled ? Number($('ttVmAmount').value) : 0;
+  if (!Number.isFinite(amount) || amount < 0) throw Error('Số tiền VMTools phải từ 0 trở lên.');
+  if (vmEnabled && !$('ttVmConfirm').checked) throw Error('Hãy xác nhận đã thu tiền hoặc chủ động cấp VMTools miễn phí.');
+  return {email:email,
+    classroom:Object.assign(classroom,{enabled:classroomEnabled,amount:0}),
+    vmtools:Object.assign(vmtools,{
+      amount:amount,confirmGrant:vmEnabled && $('ttVmConfirm').checked,
+      webEnabled:vmEnabled && $('ttVmWeb').checked,
+      appEnabled:vmEnabled && $('ttVmApp').checked,
+      downloadEnabled:vmEnabled && $('ttVmDownload').checked,
+      features:vmEnabled ? Array.from(document.querySelectorAll('[name=ttVmFeature]:checked'),function(x){return x.value;}) : []
+    })
+  };
+}
+
 function ttDoiLoai() {
+  ttCapNhatMatKhauTheoLoai(false);
   $('ttTeacherEmailField').hidden = !ttIsTeacher();
+  $('ttCreateCard').classList.toggle('is-teacher', ttIsTeacher() && window.ttCheDo !== 'bulk');
+  ttCapNhatDichVu();
   var loai = $('ttLoai').value;
   var laHSPH = loai === 'hs_ph';
   var laHocSinh = laHSPH || loai === 'portal_hs';
@@ -501,11 +635,12 @@ function ttXemTruoc() {
   }
 }
 
-function ttBao(msg, loai) {
+function ttBao(msg, loai, trustedHtml) {
   var el = $('ttThongBao');
   if (!el) return;
   el.style.display = 'block';
-  el.innerHTML = msg;
+  if (trustedHtml === true) el.innerHTML = msg;
+  else el.textContent = msg;
   if (loai === 'ok') { el.style.background = 'var(--ok-soft, rgba(40,167,69,.12))'; el.style.color = 'var(--ok)'; }
   else { el.style.background = 'rgba(220,53,69,.12)'; el.style.color = 'var(--err)'; }
 }
@@ -532,7 +667,7 @@ async function taoTaiKhoan() {
 
   try {
     var requestBody = { type: loai, fullName: fullName, username: username, password: mk, password2: mk2 };
-    if(ttIsTeacher()){requestBody.email=$('ttTeacherEmail').value.trim();if(!$('ttTeacherEmail').checkValidity()||!requestBody.email)throw Error('Nhập email thật của giáo viên.');if($('ttVmPlan').value!=='pending'&&!$('ttVmConfirm').checked)throw Error('Hãy xác nhận cấp hạn VMTools.');requestBody.vmtools={plan:$('ttVmPlan').value,units:Number($('ttVmUnits').value),until:$('ttVmUntil').value?new Date($('ttVmUntil').value).toISOString():null,amount:Number($('ttVmAmount').value),webEnabled:$('ttVmWeb').checked,appEnabled:$('ttVmApp').checked,downloadEnabled:$('ttVmDownload').checked,features:Array.from(document.querySelectorAll('[name=ttVmFeature]:checked'),x=>x.value),confirmGrant:true};requestBody.classroom={enabled:$('ttClassEnabled').checked,plan:$('ttClassPlan').value,units:Number($('ttClassUnits').value),until:$('ttClassUntil').value?new Date($('ttClassUntil').value).toISOString():null,amount:0};}
+    if (ttIsTeacher()) Object.assign(requestBody, ttDocDichVuGiaoVien());
     if (portal) requestBody.portalId = portal.id;
     var r = await sb.functions.invoke('tao-tai-khoan', { body: requestBody });
     var data = r.data || {};
@@ -558,7 +693,7 @@ async function taoTaiKhoan() {
                 '2. Email hệ thống (tk): ' + data.parent.login + '\n' +
                 'Mật khẩu: ' + mk2 + '\n' +
                 'Vai trò: Phụ huynh';
-      html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + data.student.login + '</b><br>👪 PH: <b>' + data.parent.login + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
+      html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + ttEscapeHtml(data.student.login) + '</b><br>👪 PH: <b>' + ttEscapeHtml(data.parent.login) + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
     } else if (data.type === 'portal_hs' || data.type === 'portal_gv') {
       var portalRoleName = data.type === 'portal_gv' ? (portal && portal.experience_mode === 'full_site' ? 'Giáo viên của thương hiệu' : 'Giáo viên quản lý cổng thi') : 'Học sinh';
       var portalName = portal ? (portal.name || portal.short_name || portal.slug) : 'phân hiệu đã chọn';
@@ -574,9 +709,9 @@ async function taoTaiKhoan() {
                 'Email hệ thống (tk): ' + data.account.login + '\n' +
                 'Mật khẩu: ' + mk + '\n' +
                 'Vai trò: ' + roleName;
-      html = '✅ Đã tạo xong!<br>🔑 Đăng nhập: <b>' + data.account.login + '</b><br>Mật khẩu như đã nhập.';
+      html = '✅ Đã tạo xong!<br>🔑 Đăng nhập: <b>' + ttEscapeHtml(data.account.login) + '</b><br>Mật khẩu như đã nhập.';
     }
-    ttBao(html, 'ok');
+    ttBao(html, 'ok', true);
     $('ttCopyArea').value = textVal;
     $('ttResultBox').style.display = 'flex';
     $('ttHoTen').value = '';
@@ -823,7 +958,7 @@ async function taiDanhSachTaiKhoan() {
     window.allUsers = r.data || [];
     ttLocUser();
   } catch (e) {
-    $('ttDsTaiKhoan').innerHTML = '<div style="color:var(--err); padding:20px; text-align:center">Lỗi tải danh sách: ' + e.message + '</div>';
+    $('ttDsTaiKhoan').innerHTML = '<div style="color:var(--err); padding:20px; text-align:center">Lỗi tải danh sách: ' + ttEscapeHtml(e.message) + '</div>';
   }
 }
 
@@ -910,16 +1045,17 @@ function renderUserRow(u) {
     }).filter(Boolean);
     detail = classesList.length > 0 ? (' · Lớp: ' + classesList.join(', ')) : ' · Chưa vào lớp';
   } else if (u.role === 'parent') {
-    detail = ' · Phụ huynh của: ' + u.username.replace('_ph', '');
+    detail = ' · Phụ huynh của: ' + String(u.username || '').replace('_ph', '');
   }
   
   var isSelf = u.id === window._hoSo.id;
-  var actionButtons = isSelf ? '' : '<div class="tt-user-actions"><button class="btn btn-secondary btn-sm" onclick="ttMoDatLaiMatKhau(\'' + u.id + '\')">Cấp lại MK</button><button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\', \'' + u.full_name.replace(/'/g, "\\'") + '\')">Xoá</button></div>';
+  var safeId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(u.id || '');
+  var actionButtons = isSelf || !safeId ? '' : '<div class="tt-user-actions"><button class="btn btn-secondary btn-sm" onclick="ttMoDatLaiMatKhau(\'' + u.id + '\')">Cấp lại MK</button><button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\')">Xoá</button></div>';
   
   return '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface)">' +
     '<div>' +
       '<div style="font-weight:700; font-size:.9rem; color:var(--ink)">' + qlaEsc(u.full_name) + ' (' + roleLabel + ')</div>' +
-      '<div style="font-size:.78rem; color:var(--ink-3); margin-top:2px">ID: ' + u.username + detail + '</div>' +
+      '<div style="font-size:.78rem; color:var(--ink-3); margin-top:2px">ID: ' + ttEscapeHtml(u.username) + ttEscapeHtml(detail) + '</div>' +
     '</div>' +
     actionButtons +
     '</div>';
@@ -974,7 +1110,10 @@ function qlaEsc(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function xoaTaiKhoan(id, name) {
+async function xoaTaiKhoan(id) {
+  var user = window.allUsers.find(function (item) { return item.id === id; });
+  if (!user || id === window._hoSo.id) return;
+  var name = user.full_name || user.username || 'Tài khoản';
   if (!confirm('Thầy có chắc chắn muốn xóa vĩnh viễn tài khoản của "' + name + '"?\nHành động này không thể hoàn tác, mọi kết quả làm bài, chuyên cần liên quan cũng sẽ bị xóa.')) return;
   
   try {

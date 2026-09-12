@@ -72,7 +72,7 @@
     <div class="field">
       <label id="ttLblMk">Mật khẩu <span style="color:var(--ink-3); font-weight:400">(tối thiểu 8 ký tự)</span></label>
       <input class="input" id="ttMkHS" type="text" minlength="8" autocomplete="new-password" style="width:100%">
-      <small class="tt-scope-note">Mật khẩu riêng được tạo ngẫu nhiên cho mỗi lần tạo tài khoản.</small>
+      <small class="tt-scope-note" id="ttPasswordNote"></small>
     </div>
 
     <div class="field" id="ttRowDungChung">
@@ -161,6 +161,7 @@
 })();
 
 window.ttPortals = [];
+var TT_MAT_KHAU_HS_KHOI_TAO = 'VinhMath2026#';
 
 function ttMatKhauNgauNhien() {
   var bytes = new Uint32Array(3);
@@ -169,10 +170,20 @@ function ttMatKhauNgauNhien() {
 }
 
 function ttDatMatKhauMacDinh() {
-  ['ttMkHS', 'ttMkPH'].forEach(function (id) {
-    var input = $(id);
-    if (input) input.value = ttMatKhauNgauNhien();
-  });
+  ttCapNhatMatKhauTheoLoai(true);
+}
+
+function ttCapNhatMatKhauTheoLoai(force) {
+  var type = $('ttLoai').value;
+  var audience = type === 'hs_ph' || type === 'portal_hs' ? 'student' : 'staff';
+  if (!force && window.ttPasswordAudience === audience) return;
+  window.ttPasswordAudience = audience;
+  $('ttMkHS').value = audience === 'student' ? TT_MAT_KHAU_HS_KHOI_TAO : ttMatKhauNgauNhien();
+  $('ttMkHS').type = 'text';
+  $('ttMkPH').value = ttMatKhauNgauNhien();
+  if ($('ttPasswordNote')) $('ttPasswordNote').textContent = audience === 'student'
+    ? 'Đã điền mật khẩu khởi tạo học sinh. Không đổi mật khẩu tài khoản cũ.'
+    : 'Mật khẩu riêng được tạo ngẫu nhiên cho giáo viên/trợ giảng.';
 }
 
 function ttSlug(s) {
@@ -237,6 +248,7 @@ function ttDoiPhamVi() {
 }
 
 function ttDoiLoai() {
+  ttCapNhatMatKhauTheoLoai(false);
   var loai = $('ttLoai').value;
   var laHSPH = loai === 'hs_ph';
   var laHocSinh = laHSPH || loai === 'portal_hs';
@@ -271,11 +283,12 @@ function ttXemTruoc() {
   }
 }
 
-function ttBao(msg, loai) {
+function ttBao(msg, loai, trustedHtml) {
   var el = $('ttThongBao');
   if (!el) return;
   el.style.display = 'block';
-  el.innerHTML = msg;
+  if (trustedHtml === true) el.innerHTML = msg;
+  else el.textContent = msg;
   if (loai === 'ok') { el.style.background = 'var(--ok-soft, rgba(40,167,69,.12))'; el.style.color = 'var(--ok)'; }
   else { el.style.background = 'rgba(220,53,69,.12)'; el.style.color = 'var(--err)'; }
 }
@@ -327,7 +340,7 @@ async function taoTaiKhoan() {
                 '2. Email hệ thống (tk): ' + data.parent.login + '\n' +
                 'Mật khẩu: ' + mk2 + '\n' +
                 'Vai trò: Phụ huynh';
-      html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + data.student.login + '</b><br>👪 PH: <b>' + data.parent.login + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
+      html = '✅ Đã tạo xong & liên kết PH ↔ HS!<br>🎓 HS: <b>' + ttEscapeHtml(data.student.login) + '</b><br>👪 PH: <b>' + ttEscapeHtml(data.parent.login) + '</b><br>🔑 Mật khẩu như đã nhập. Nhớ gửi cho gia đình.';
     } else if (data.type === 'portal_hs' || data.type === 'portal_gv') {
       var portalRoleName = data.type === 'portal_gv' ? 'Giáo viên quản lý phân hiệu' : 'Học sinh phân hiệu';
       var portalName = portal ? (portal.name || portal.short_name || portal.slug) : 'phân hiệu đã chọn';
@@ -343,9 +356,9 @@ async function taoTaiKhoan() {
                 'Email hệ thống (tk): ' + data.account.login + '\n' +
                 'Mật khẩu: ' + mk + '\n' +
                 'Vai trò: ' + roleName;
-      html = '✅ Đã tạo xong!<br>🔑 Đăng nhập: <b>' + data.account.login + '</b><br>Mật khẩu như đã nhập.';
+      html = '✅ Đã tạo xong!<br>🔑 Đăng nhập: <b>' + ttEscapeHtml(data.account.login) + '</b><br>Mật khẩu như đã nhập.';
     }
-    ttBao(html, 'ok');
+    ttBao(html, 'ok', true);
     $('ttCopyArea').value = textVal;
     $('ttResultBox').style.display = 'flex';
     $('ttHoTen').value = '';
@@ -397,7 +410,7 @@ async function taiDanhSachTaiKhoan() {
     window.allUsers = r.data || [];
     ttLocUser();
   } catch (e) {
-    $('ttDsTaiKhoan').innerHTML = '<div style="color:var(--err); padding:20px; text-align:center">Lỗi tải danh sách: ' + e.message + '</div>';
+    $('ttDsTaiKhoan').innerHTML = '<div style="color:var(--err); padding:20px; text-align:center">Lỗi tải danh sách: ' + ttEscapeHtml(e.message) + '</div>';
   }
 }
 
@@ -484,16 +497,17 @@ function renderUserRow(u) {
     }).filter(Boolean);
     detail = classesList.length > 0 ? (' · Lớp: ' + classesList.join(', ')) : ' · Chưa vào lớp';
   } else if (u.role === 'parent') {
-    detail = ' · Phụ huynh của: ' + u.username.replace('_ph', '');
+    detail = ' · Phụ huynh của: ' + String(u.username || '').replace('_ph', '');
   }
   
   var isSelf = u.id === window._hoSo.id;
-  var deleteBtn = isSelf ? '' : '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\', \'' + u.full_name.replace(/'/g, "\\'") + '\')">Xoá</button>';
+  var safeId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(u.id || '');
+  var deleteBtn = isSelf || !safeId ? '' : '<button class="btn btn-ghost btn-sm" style="color:var(--err); padding:4px 8px; font-weight:700" onclick="xoaTaiKhoan(\'' + u.id + '\')">Xoá</button>';
   
   return '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface)">' +
     '<div>' +
       '<div style="font-weight:700; font-size:.9rem; color:var(--ink)">' + qlaEsc(u.full_name) + ' (' + roleLabel + ')</div>' +
-      '<div style="font-size:.78rem; color:var(--ink-3); margin-top:2px">ID: ' + u.username + detail + '</div>' +
+      '<div style="font-size:.78rem; color:var(--ink-3); margin-top:2px">ID: ' + ttEscapeHtml(u.username) + ttEscapeHtml(detail) + '</div>' +
     '</div>' +
     deleteBtn +
     '</div>';
@@ -504,7 +518,10 @@ function qlaEsc(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function xoaTaiKhoan(id, name) {
+async function xoaTaiKhoan(id) {
+  var user = window.allUsers.find(function (item) { return item.id === id; });
+  if (!user || id === window._hoSo.id) return;
+  var name = user.full_name || user.username || 'Tài khoản';
   if (!confirm('Thầy có chắc chắn muốn xóa vĩnh viễn tài khoản của "' + name + '"?\nHành động này không thể hoàn tác, mọi kết quả làm bài, chuyên cần liên quan cũng sẽ bị xóa.')) return;
   
   try {

@@ -30,11 +30,20 @@ jobs:
           node scripts/check_secret_indicators.js
           node scripts/test_anonymous_security_hardening.cjs
           node scripts/test_admin_password_reset.js
+          node scripts/test_student_initial_password.cjs
+          node scripts/test_notification_helper_security.cjs
           node scripts/test_admin_account_scope.js
           node scripts/test_admin_bulk_accounts.js
           node scripts/test_managed_account_creation_repair.js
           node scripts/test_profiles_privilege_hardening_sql.js
           node scripts/test_auth_role_claim_hardening.js
+      - name: Check administrator rendering in an isolated browser
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+          npx --no-install playwright install --with-deps chromium
+          node scripts/test_admin_profile_rendering_browser.cjs
+          node scripts/test_account_services_form_browser.cjs
+          node -e "process.env.VM_CHROME_PATH=require('playwright').chromium.executablePath(); require('./scripts/test_notification_menu_security_browser.js')"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Prepare production artifact

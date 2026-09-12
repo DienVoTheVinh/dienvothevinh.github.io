@@ -1,5 +1,9 @@
 # Anonymous access review — 13 September 2026 (Vietnam time)
 
+Follow-up: the owner subsequently requested keeping the shared initial student
+password. This exception and additional security/service-form changes are tracked
+in [the follow-up report](SECURITY-AND-ACCOUNT-SERVICES-2026-09-13.md).
+
 ## Scope and safety
 
 Reviewed public VinhMath pages, public configuration, selected REST/RPC/Edge

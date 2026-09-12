@@ -1,0 +1,36 @@
+/* Scoped account-service cards: no global fieldset, navigation or theme rules. */
+.tt-services-intro { margin:24px 0 14px; }
+.tt-services-intro h2 { margin:0 0 5px; font-size:1.05rem; letter-spacing:0; text-transform:none; }
+.tt-services-intro p { margin:0; font-size:.8rem; color:var(--ink-3); line-height:1.6; }
+.tt-services { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+.tt-service { min-width:0; border:1px solid var(--line); border-radius:14px; background:var(--surface); overflow:hidden; }
+.tt-service.is-selected { border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent); }
+.field label.tt-service-toggle { display:grid; grid-template-columns:20px minmax(0,1fr) auto; gap:10px; align-items:center; margin:0; padding:17px 16px 9px; cursor:pointer; }
+.tt-service-toggle small { display:block; color:var(--ink-3); font-size:.67rem; font-weight:600; line-height:1.5; }
+.tt-service-toggle strong { display:block; color:var(--ink); font-size:.91rem; line-height:1.6; }
+.tt-service input[type="checkbox"] { width:18px; height:18px; flex:0 0 18px; accent-color:var(--accent); cursor:pointer; margin:0; }
+.tt-service-toggle input:focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
+.tt-service-state { padding:4px 7px; border-radius:6px; background:var(--surface-2); font-size:.65rem; color:var(--ink-3); white-space:nowrap; }
+.is-selected .tt-service-state { background:var(--accent-soft); color:var(--accent); }
+.tt-service-description { margin:0; min-height:56px; box-sizing:border-box; padding:0 16px 16px 46px; color:var(--ink-3); font-size:.75rem; line-height:1.6; }
+.tt-service-settings { min-width:0; border:0; border-top:1px solid var(--line); margin:0; padding:16px; }
+.tt-service-settings[hidden], .tt-services [hidden] { display:none !important; }
+.field .tt-service-settings label { margin:0; font-size:.78rem; line-height:1.5; }
+.tt-service-settings .input { margin-top:6px; width:100%; min-width:0; box-sizing:border-box; font-size:.82rem; }
+.tt-service-period { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; margin-bottom:14px; }
+.tt-service-period.has-quantity { grid-template-columns:minmax(0,1.25fr) minmax(90px,1fr); }
+.tt-service-until { grid-column:1 / -1; }
+.tt-service-access { display:grid; gap:10px; padding:16px 0; }
+.field label.tt-choice { display:flex; gap:9px; align-items:flex-start; font-size:.77rem; font-weight:500; cursor:pointer; line-height:1.5; }
+.tt-service-features { border-top:1px solid var(--line); padding:12px 0; }
+.tt-service-features summary { cursor:pointer; font-size:.8rem; font-weight:600; color:var(--ink-2); }
+.tt-service-features > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 8px; padding-top:14px; }
+.field label.tt-service-confirm { border:1px solid var(--line); border-radius:9px; padding:11px; background:var(--surface-2); }
+.tt-service-summary { margin:14px 0 0; padding:11px 13px; background:var(--surface-2); border-radius:9px; color:var(--ink-2); font-size:.78rem; line-height:1.6; }
+#ttTeacherEmailField > .input { width:100%; }
+@media (max-width:720px) { .tt-services { grid-template-columns:minmax(0,1fr); } }
+@media (max-width:420px) {
+  #ttCreateCard { padding:16px !important; }
+  .tt-service-toggle strong { font-size:.87rem; }
+  .tt-service-state { font-size:.61rem; }
+}
