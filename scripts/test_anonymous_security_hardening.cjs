@@ -49,4 +49,4 @@ for(const page of ['quan-tri-tai-khoan.html','quan-tri-hoc-sinh.html']) {
   for(const m of fs.readFileSync(page,'utf8').matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(m[1]);
 }
 new vm.Script(analytics);
-console.log('PASS anonymous hardening: random credentials, individual exports, markup escaped, session isolation, policy boundaries');
+console.log('PASS anonymous hardening: strong password option, individual exports, markup escaped, session isolation, policy boundaries');
