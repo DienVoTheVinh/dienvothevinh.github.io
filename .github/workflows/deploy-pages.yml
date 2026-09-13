@@ -37,12 +37,15 @@ jobs:
           node scripts/test_managed_account_creation_repair.js
           node scripts/test_profiles_privilege_hardening_sql.js
           node scripts/test_auth_role_claim_hardening.js
+          node scripts/test_teacher_services.js
+          node scripts/test_teacher_email_verification.cjs
       - name: Check administrator and PDF rendering in an isolated browser
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
           npx --no-install playwright install --with-deps chromium
           node scripts/test_admin_profile_rendering_browser.cjs
           node scripts/test_account_services_form_browser.cjs
+          node scripts/test_teacher_email_browser.cjs
           node scripts/test_lesson_pdf_layout_browser.cjs
           node -e "process.env.VM_CHROME_PATH=require('playwright').chromium.executablePath(); require('./scripts/test_notification_menu_security_browser.js')"
       - name: Configure GitHub Pages
