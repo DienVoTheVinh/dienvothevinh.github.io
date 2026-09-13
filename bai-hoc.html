@@ -247,6 +247,22 @@ body.vm-video-locked { overflow:hidden !important; }
 .ctrl-btn:hover { background:rgba(0,0,0,.8); }
 .content-body { flex:1; display:flex; flex-direction:column; min-height:0; }
 .pdf-frame { flex:1; width:100%; border:none; background:#f4f4f4; }
+/* PDF pages keep their own proportions; only HTML documents reflow to wide screens. */
+.pdf-zoom-toolbar { flex:0 0 auto; }
+.vm-pdf-pages {
+  flex:1 1 0; min-height:0; min-width:0; overflow:auto; padding:16px;
+  display:flex; flex-direction:column; gap:16px; align-items:flex-start;
+  background:var(--surface-2); overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.vm-pdf-pages > .pdfjs-page {
+  display:block; flex:0 0 auto; height:auto; min-height:0; box-sizing:border-box;
+  width:calc(100% * var(--vm-pdf-zoom, 1));
+  max-width:calc(800px * var(--vm-pdf-zoom, 1));
+  /* Auto margins center fitted pages but never hide the left edge on zoom. */
+  margin:0 auto; border:1px solid var(--line); border-radius:8px;
+  box-shadow:var(--shadow); background:#fff;
+}
 .no-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; color:var(--ink-3); height:100%; }
 .no-content .ic { font-size:3rem; margin-bottom:14px; }
 .no-content h3 { color:var(--ink); margin-bottom:8px; }
@@ -689,7 +705,7 @@ body.vm-reader-locked > #vmPdfExportModal { visibility:visible !important; z-ind
   .pdf-zoom-toolbar .pdf-zoom-btn { width:42px; min-width:42px; height:42px; padding:0 !important; }
   .pdf-zoom-toolbar .pdf-zoom-label { min-width:48px !important; }
   .pdf-zoom-toolbar .pdf-fit-btn { margin-left:auto; min-height:42px; padding:7px 10px !important; white-space:nowrap; }
-  #pdfCanvasContainer { padding:10px !important; gap:10px !important; }
+  .vm-pdf-pages { padding:10px; gap:10px; }
   .content-toolbar { padding:7px 10px !important; background:var(--surface-solid) !important; }
 }
 @media (max-width:430px) {
@@ -3068,7 +3084,7 @@ function renderPDFWithJS(pdfUrl, container) {
         '<button class="btn btn-secondary btn-sm pdf-zoom-btn" style="padding:2px 12px;font-size:1rem;line-height:1" onclick="pdfZoomJS(1,\'' + canvasId + '\',\'' + labelId + '\')" aria-label="Phóng to tài liệu">+</button>' +
         '<button class="btn btn-secondary btn-sm pdf-fit-btn" style="padding:2px 12px;font-size:.8rem" onclick="pdfZoomJS(0,\'' + canvasId + '\',\'' + labelId + '\')">↔ Vừa khung</button>' +
       '</div>' +
-      '<div style="flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--surface-2); align-items:center;" id="' + canvasId + '"></div>';
+      '<div class="vm-pdf-pages" id="' + canvasId + '"></div>';
     var canvasContainer = document.getElementById(canvasId);
     
     // Thêm cache-busting cho URL của Supabase để tránh việc trình duyệt cache kết quả request không có CORS
@@ -3096,9 +3112,7 @@ function renderPDFWithJS(pdfUrl, container) {
           var viewport = page.getViewport({ scale: scale });
           canvas.height = Math.floor(viewport.height);
           canvas.width = Math.floor(viewport.width);
-          canvas.style.minHeight = '0';
-          canvas.style.width = '100%';
-          canvas.style.maxWidth = '800px';
+          canvas.style.aspectRatio = 'auto';
           return page.render({
             canvasContext: canvas.getContext('2d', { alpha: false }),
             viewport: viewport
@@ -3118,12 +3132,11 @@ function renderPDFWithJS(pdfUrl, container) {
         var canvas = document.createElement('canvas');
         canvas.className = 'pdfjs-page';
         canvas.dataset.pageNumber = String(pageNum);
-        canvas.style.width = '100%'; canvas.style.maxWidth = '800px';
-        canvas.style.minHeight = '520px';
-        canvas.style.borderRadius = '8px';
-        canvas.style.border = '1px solid var(--line)';
-        canvas.style.boxShadow = 'var(--shadow)';
-        canvas.style.background = '#fff';
+        // Reserve a portrait page until PDF.js supplies its true dimensions.
+        // No large backing bitmap is allocated until the page is near the viewport.
+        canvas.style.aspectRatio = '595 / 842';
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', 'Trang PDF ' + pageNum);
         canvasContainer.appendChild(canvas);
         canvases.push(canvas);
       }
@@ -3161,10 +3174,9 @@ function pdfZoomJS(dir, containerId, labelId) {
   if (dir === 0) z = 1; else z = Math.min(2.5, Math.max(0.6, z + dir * 0.2));
   z = Math.round(z * 100) / 100;
   vmPdfZoomLevels[containerId] = z;
-  cont.querySelectorAll('.pdfjs-page').forEach(function (cv) {
-    if (z === 1) { cv.style.width = '100%'; cv.style.maxWidth = '800px'; }
-    else { cv.style.width = (800 * z) + 'px'; cv.style.maxWidth = 'none'; }
-  });
+  // Shared CSS sizing survives lazy rendering and follows viewport resizing.
+  cont.style.setProperty('--vm-pdf-zoom', String(z));
+  if (dir === 0) cont.scrollLeft = 0;
   var lbl = document.getElementById(labelId); if (lbl) lbl.textContent = Math.round(z * 100) + '%';
 }
 
