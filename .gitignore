@@ -30,3 +30,8 @@ web/supabase/supabase/
 # imported through admin-only RPCs; raw TeX/answers must never ship with Pages.
 NganHang/
 .codex-remote-attachments/
+
+# Desktop installers live in private release storage, never in Git/Pages.
+*.exe
+*.dmg
+*.vmupdate.json
