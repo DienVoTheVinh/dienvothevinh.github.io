@@ -1,7 +1,7 @@
 import {createClient} from 'jsr:@supabase/supabase-js@2.95.0';
 import {VM_FEATURES} from '../_shared/vmtools-access.ts';
 import {TRIAL_FEATURES} from '../_shared/vmtools-trial.ts';
-import {requestTeacherEmail} from '../_shared/teacher-email.ts';
+import {requestTeacherEmail, checkAuthEmail} from '../_shared/teacher-email.ts';
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
 async function query(q:any){const {data,error}=await q;if(error)throw Error(error.message);return data;}
 const fail=(message:string):never=>{throw Error(message);};
@@ -42,7 +42,7 @@ Deno.serve(async req=>{
   let owner:any=null,account:any=null;
   if(p.service==='vmtools'){
    owner=await query(db.from('vmtools_accounts').select('id').eq('auth_user_id',user.id).eq('role','owner').eq('status','active').maybeSingle());if(!owner)fail('Chưa có quyền quản trị VMTools');
-   account=await query(db.from('vmtools_accounts').select('id,role').eq('auth_user_id',p.userId).maybeSingle());if(!account&&!['link','link-student','link-cancel'].includes(p.action))fail(target.role==='student'?'Hãy chọn Cấp VMTools cho học sinh trước.':'Hãy xác nhận email thật trước khi cấp hạn cho tài khoản cũ.');
+   account=await query(db.from('vmtools_accounts').select('id,role').eq('auth_user_id',p.userId).maybeSingle());if(!account&&!['link','link-direct','link-student','link-cancel'].includes(p.action))fail(target.role==='student'?'Hãy chọn Cấp VMTools cho học sinh trước.':'Hãy xác nhận email thật trước khi cấp hạn cho tài khoản cũ.');
    if(account?.role==='owner'&&!['device','device-policy'].includes(p.action))fail('Không sửa quyền chủ sở hữu tại đây.');
   }
   if(p.action==='link-student'){
@@ -65,6 +65,14 @@ Deno.serve(async req=>{
    if(p.service!=='vmtools'||target.role!=='teacher'||account)fail('Yêu cầu không hợp lệ');
    await query(db.from('vm_teacher_email_requests').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('user_id',p.userId).in('status',['sending','sent','failed']));
    return Response.json({ok:true},{headers});
+  }
+  if(p.action==='link-direct'){
+   if(p.service!=='vmtools'||target.role!=='teacher'||account)fail('Tài khoản đã liên kết hoặc dịch vụ không hợp lệ');
+   const email=String(p.email||'').trim().toLowerCase();
+   if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.endsWith('.vinhmath.com'))fail('Nhập email thật của giáo viên');
+   await checkAuthEmail(db,email,p.userId);
+   await query(db.rpc('vm_teacher_link_email',{p_actor:user.id,p_user:p.userId,p_email:email}));
+   return Response.json({ok:true,direct:true,email},{headers});
   }
   if(p.action==='link'){
    if(p.service!=='vmtools'||target.role!=='teacher'||account)fail('Tài khoản đã liên kết hoặc dịch vụ không hợp lệ');

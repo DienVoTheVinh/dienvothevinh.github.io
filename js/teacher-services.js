@@ -13,23 +13,79 @@
   host.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>edit(b.closest('[data-user]').dataset.user,b.closest('[data-service]').dataset.service,b.dataset.action));
  }
  function edit(userId,service,action){if(action==='devices')return editDevices(userId);if(action==='link-student')return linkStudent(userId);if(['permissions','link'].includes(action))return editAccess(userId,action);const t=data.teachers.find(x=>x.id===userId),a=account(userId,service),requestId=crypto.randomUUID();const d=document.createElement('dialog');d.className='services-dialog';
-  d.innerHTML=`<form><h2>${action==='renew'?'Cấp / Gia hạn':'Trạng thái'} · ${names[service]}</h2><p>${esc(t.full_name||t.username)}</p><p>Chỉ áp dụng cho <b>${names[service]}</b>. Dịch vụ còn lại giữ nguyên.</p>${action==='renew'?'<label>Loại hạn<select class="input" name="plan"><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label>Số tháng / năm<input class="input" name="units" type="number" value="1" min="1" max="120" required></label><label>Hạn tùy chỉnh<input class="input" name="until" type="datetime-local"></label><label>Số tiền đã xác nhận (đ)<input class="input" name="amount" type="number" value="0" min="0" required></label><label>Ghi chú<input class="input" name="note" maxlength="500"></label><label><input type="checkbox" name="confirm" required> Tôi xác nhận đã nhận thanh toán hoặc chủ động cấp miễn phí</label>':`<label>Trạng thái<select class="input" name="status">${Object.entries({pending:'Chưa kích hoạt',active:'Hoạt động',blocked:'Đã khóa'}).map(([value,label])=>`<option value="${value}" ${a?.status===value?'selected':''}>${label}</option>`).join('')}</select></label><p>Đổi trạng thái không cộng thêm ngày sử dụng.${service==='classroom'?' Khi khóa, giáo viên không thể dùng các tính năng trên lớp.':''}</p>`}<p class="services-error" role="alert"></p><div class="actions"><button type="button" class="btn btn-secondary" data-cancel>Hủy</button><button class="btn btn-primary" type="submit">Xác nhận</button></div></form>`;
-  document.body.append(d);d.showModal();d.onclose=()=>d.remove();d.querySelector('[data-cancel]').onclick=()=>d.close();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const submit=d.querySelector('[type=submit]');submit.disabled=true;try{const f=Object.fromEntries(new FormData(e.target));await api({action,service,userId,...f,requestId,units:Number(f.units||1),amount:Number(f.amount||0),until:f.until?new Date(f.until).toISOString():null,confirm:f.confirm==='on'});d.close();await load();}catch(err){d.querySelector('[role=alert]').textContent=err.message;submit.disabled=false;}};
+  d.innerHTML=`<form><h2>${action==='renew'?'Cấp / Gia hạn':'Trạng thái'} · ${names[service]}</h2><p>${esc(t.full_name||t.username)}</p><p>Chỉ áp dụng cho <b>${names[service]}</b>. Dịch vụ còn lại giữ nguyên.</p>${action==='renew'?'<label>Loại hạn<select class="input" name="plan" id="renew-plan"><option value="monthly">Theo tháng</option><option value="yearly">Theo năm</option><option value="custom">Ngày tùy chỉnh</option><option value="lifetime">Vĩnh viễn</option></select></label><label id="renew-units-box"><span id="renew-units-label">Số tháng</span><input class="input" name="units" id="renew-units" type="number" value="1" min="1" max="120" required></label><label id="renew-until-box" style="display:none">Hạn tùy chỉnh<input class="input" name="until" id="renew-until" type="datetime-local"></label><label>Số tiền đã xác nhận (đ)<input class="input" name="amount" type="number" value="0" min="0" required></label><label>Ghi chú<input class="input" name="note" maxlength="500"></label><label><input type="checkbox" name="confirm" required> Tôi xác nhận đã nhận thanh toán hoặc chủ động cấp miễn phí</label>':`<label>Trạng thái<select class="input" name="status">${Object.entries({pending:'Chưa kích hoạt',active:'Hoạt động',blocked:'Đã khóa'}).map(([value,label])=>`<option value="${value}" ${a?.status===value?'selected':''}>${label}</option>`).join('')}</select></label><p>Đổi trạng thái không cộng thêm ngày sử dụng.${service==='classroom'?' Khi khóa, giáo viên không thể dùng các tính năng trên lớp.':''}</p>`}<p class="services-error" role="alert"></p><div class="actions"><button type="button" class="btn btn-secondary" data-cancel>Hủy</button><button class="btn btn-primary" type="submit">Xác nhận</button></div></form>`;
+  document.body.append(d);d.showModal();d.onclose=()=>d.remove();d.querySelector('[data-cancel]').onclick=()=>d.close();
+  if(action==='renew'){
+   const planSel=d.querySelector('#renew-plan'),unitsBox=d.querySelector('#renew-units-box'),unitsLbl=d.querySelector('#renew-units-label'),unitsInp=d.querySelector('#renew-units'),untilBox=d.querySelector('#renew-until-box'),untilInp=d.querySelector('#renew-until');
+   const syncPlanUI=()=>{
+    const p=planSel.value;
+    if(p==='lifetime'){
+     unitsBox.style.display='none';unitsInp.required=false;untilBox.style.display='none';untilInp.required=false;
+    }else if(p==='custom'){
+     unitsBox.style.display='none';unitsInp.required=false;untilBox.style.display='block';untilInp.required=true;
+    }else{
+     unitsBox.style.display='block';unitsInp.required=true;unitsLbl.textContent=p==='yearly'?'Số năm':'Số tháng';untilBox.style.display='none';untilInp.required=false;
+    }
+   };
+   planSel.onchange=syncPlanUI;syncPlanUI();
+  }
+  d.querySelector('form').onsubmit=async e=>{e.preventDefault();const submit=d.querySelector('[type=submit]');submit.disabled=true;try{const f=Object.fromEntries(new FormData(e.target));const plan=f.plan;await api({action,service,userId,...f,requestId,units:plan==='lifetime'?1:Number(f.units||1),amount:Number(f.amount||0),until:(plan==='custom'&&f.until)?new Date(f.until).toISOString():null,confirm:f.confirm==='on'});d.close();await load();}catch(err){d.querySelector('[role=alert]').textContent=err.message;submit.disabled=false;}};
  }
 
  function emailRequestStatus(r){if(r.status==='cancelled')return 'Đã hủy xác nhận';if(r.status==='failed')return 'Chưa gửi được thư';if(Date.parse(r.expires_at)<=Date.now())return 'Xác nhận đã hết hạn';return r.status==='sending'?'Đang gửi thư':'Chờ xác nhận email';}
  function editAccess(userId,action){
   const a=account(userId,'vmtools'),d=document.createElement('dialog');d.className='services-dialog';
   const features={ink:'Viết tay',pdf:'Đọc PDF',geometry2d:'Hình học 2D',geometry3d:'Hình học 3D',graphs:'Đồ thị',calculator:'Máy tính',export:'Xuất tài liệu'};
-  d.innerHTML='<form><h2>'+ (action==='link'?'Liên kết email giáo viên':'Quyền dùng VMTools')+'</h2>'+(action==='link'?'<p>Dùng email thật với mật khẩu hiện tại. Lớp học và dữ liệu được giữ nguyên.</p><label>Email<input class="input" name="email" type="email" required></label>':Object.entries({appEnabled:['Dùng app trên máy tính',a.app_enabled],webEnabled:['Dùng trên web / Chrome',a.web_enabled],downloadEnabled:['Tải bộ cài và cập nhật',a.download_enabled]}).map(([k,[label,on]])=>'<label><input type="checkbox" name="'+k+'" '+(on?'checked':'')+'> '+label+'</label>').join('')+'<hr>'+Object.entries(features).map(([k,label])=>'<label><input type="checkbox" name="features" value="'+k+'" '+(a.features?.includes(k)?'checked':'')+'> '+label+'</label>').join(''))+'<p role="alert"></p><div class="actions"><button type="button" data-cancel>Hủy</button><button type="submit" class="btn btn-primary">Lưu</button></div></form>';
+  d.innerHTML='<form><h2>'+ (action==='link'?'Liên kết email giáo viên':'Quyền dùng VMTools')+'</h2>'+(action==='link'?'<p>Dùng email thật của giáo viên để kích hoạt và sử dụng VMTools. Mật khẩu và lớp học được giữ nguyên.</p><label>Email thật của giáo viên<input class="input" name="email" type="email" placeholder="vi-du@gmail.com" required></label>':Object.entries({appEnabled:['Dùng app trên máy tính',a.app_enabled],webEnabled:['Dùng trên web / Chrome',a.web_enabled],downloadEnabled:['Tải bộ cài và cập nhật',a.download_enabled]}).map(([k,[label,on]])=>'<label><input type="checkbox" name="'+k+'" '+(on?'checked':'')+'> '+label+'</label>').join('')+'<hr>'+Object.entries(features).map(([k,label])=>'<label><input type="checkbox" name="features" value="'+k+'" '+(a.features?.includes(k)?'checked':'')+'> '+label+'</label>').join(''))+'<p class="services-error" role="alert"></p><div class="actions"><button type="button" class="btn btn-secondary" data-cancel>Hủy</button>'+(action==='link'?'<button type="submit" class="btn btn-primary" id="btn-link-direct">Liên kết ngay</button><button type="button" class="btn btn-secondary" id="btn-link-mail">Gửi thư xác nhận</button>':'<button type="submit" class="btn btn-primary">Lưu</button>')+'</div></form>';
   if(action==='link'){
    const pending=data.emailRequests?.find(r=>r.user_id===userId),teacher=data.teachers.find(t=>t.id===userId);
-   d.querySelector('h2+p').textContent='Gửi thư để giáo viên xác nhận quyền sở hữu email. Chỉ hoàn tất liên kết sau khi xác nhận; mật khẩu và lớp học được giữ nguyên.';
-   d.querySelector('[name=email]').value=pending?.email||teacher?.email||'';
-   d.querySelector('[type=submit]').textContent=pending?'Gửi lại xác nhận':'Gửi thư xác nhận';
-   if(pending){d.querySelector('[role=alert]').textContent=emailRequestStatus(pending);if(['sending','sent'].includes(pending.status)){const cancel=document.createElement('button');cancel.type='button';cancel.className='btn btn-secondary';cancel.textContent='Hủy yêu cầu liên kết';d.querySelector('.actions').prepend(cancel);cancel.onclick=async()=>{cancel.disabled=true;try{await api({action:'link-cancel',service:'vmtools',userId});d.close();await load();}catch(e){d.querySelector('[role=alert]').textContent=e.message;cancel.disabled=false;}};}}
+   const emailInp=d.querySelector('[name=email]'),alertEl=d.querySelector('[role=alert]'),btnDirect=d.querySelector('#btn-link-direct'),btnMail=d.querySelector('#btn-link-mail');
+   emailInp.value=pending?.email||teacher?.email||'';
+   if(pending){
+    alertEl.textContent=emailRequestStatus(pending);
+    btnMail.textContent='Gửi lại xác nhận';
+    if(['sending','sent'].includes(pending.status)){
+     const cancel=document.createElement('button');cancel.type='button';cancel.className='btn btn-ghost btn-sm';cancel.textContent='Hủy yêu cầu liên kết';d.querySelector('.actions').prepend(cancel);cancel.onclick=async()=>{cancel.disabled=true;try{await api({action:'link-cancel',service:'vmtools',userId});d.close();await load();}catch(e){alertEl.textContent=e.message;cancel.disabled=false;}};
+    }
+   }
+   btnMail.onclick=async()=>{
+    const email=String(emailInp.value||'').trim().toLowerCase();
+    if(!email||!email.includes('@')){alertEl.textContent='Vui lòng nhập địa chỉ email hợp lệ';return;}
+    btnMail.disabled=true;btnDirect.disabled=true;
+    try{
+     const result=await api({action:'link',service:'vmtools',userId,email});
+     if(result.pending){
+      alertEl.textContent='Đã gửi thư xác nhận tới '+result.email+'. Giáo viên cần mở thư và xác nhận trong 30 phút. Liên kết hiện vẫn đang chờ xác nhận.';
+      btnMail.textContent='Đã gửi';await load();
+     }else{
+      d.close();await load();
+     }
+    }catch(err){
+     alertEl.textContent=err.message;btnMail.disabled=false;btnDirect.disabled=false;
+    }
+   };
   }
-  document.body.append(d);d.showModal();d.onclose=()=>d.remove();d.querySelector('[data-cancel]').onclick=()=>d.close();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const b=d.querySelector('[type=submit]');b.disabled=true;try{const f=new FormData(e.target);const result=await api({action,service:'vmtools',userId,email:f.get('email'),appEnabled:f.has('appEnabled'),webEnabled:f.has('webEnabled'),downloadEnabled:f.has('downloadEnabled'),features:f.getAll('features')});if(result.pending){d.querySelector('[role=alert]').textContent='Đã gửi thư xác nhận tới '+result.email+'. Giáo viên cần mở thư và xác nhận trong 30 phút. Liên kết hiện vẫn đang chờ xác nhận.';b.textContent='Đã gửi';await load();}else{d.close();await load();}}catch(e){d.querySelector('[role=alert]').textContent=e.message;b.disabled=false;}};
+  document.body.append(d);d.showModal();d.onclose=()=>d.remove();d.querySelector('[data-cancel]').onclick=()=>d.close();
+  d.querySelector('form').onsubmit=async e=>{
+   e.preventDefault();
+   const b=d.querySelector('[type=submit]');
+   b.disabled=true;
+   try{
+    const f=new FormData(e.target);
+    if(action==='link'){
+     const email=String(f.get('email')||'').trim().toLowerCase();
+     if(!email||!email.includes('@')){d.querySelector('[role=alert]').textContent='Vui lòng nhập địa chỉ email hợp lệ';b.disabled=false;return;}
+     await api({action:'link-direct',service:'vmtools',userId,email});
+     d.close();await load();
+    }else{
+     await api({action,service:'vmtools',userId,appEnabled:f.has('appEnabled'),webEnabled:f.has('webEnabled'),downloadEnabled:f.has('downloadEnabled'),features:f.getAll('features')});
+     d.close();await load();
+    }
+   }catch(e){
+    d.querySelector('[role=alert]').textContent=e.message;b.disabled=false;
+    const btnMail=d.querySelector('#btn-link-mail');if(btnMail)btnMail.disabled=false;
+   }
+  };
  }
  async function linkStudent(userId){
   const t=data.teachers.find(x=>x.id===userId),d=document.createElement('dialog');d.className='services-dialog';
