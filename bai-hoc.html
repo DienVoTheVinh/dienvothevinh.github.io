@@ -33,9 +33,9 @@ body, html { margin:0; padding:0; height:100%; overflow:hidden; overscroll-behav
 .vm-class-answer-files { display:flex; flex-wrap:wrap; gap:9px; margin:10px 0; }
 .vm-class-answer-file { min-width:130px; min-height:48px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); cursor:pointer; font:inherit; font-size:.8rem; font-weight:750; text-align:left; }
 .vm-class-answer-file:hover { border-color:#7c3aed; color:#7c3aed; }
-.vm-class-answer-preview { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-top:10px; }
+.vm-class-answer-preview { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; margin:10px auto 0; max-width:1100px; }
 .vm-class-answer-preview button { padding:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); cursor:zoom-in; min-height:120px; }
-.vm-class-answer-preview img { display:block; width:100%; height:150px; object-fit:contain; background:var(--surface-2); }
+.vm-class-answer-preview img { display:block; width:100%; height:auto; object-fit:contain; background:var(--surface-2); }
 .vm-class-answer-preview span { display:block; padding:7px; color:var(--ink-2); font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .vm-lesson-assessment { display:flex; align-items:center; gap:10px; margin-top:12px; padding:11px 13px; border-radius:12px; font-weight:800; }
 .vm-lesson-assessment>span { font-size:1.45rem; }
@@ -930,7 +930,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
           <input type="file" class="vm-submit-file-native" id="nbFiles" accept="image/*,application/pdf" multiple onchange="vmThemFileDaChon('nbFiles','nbFileList')">
           <label class="vm-submit-pick-button" for="nbFiles"><span aria-hidden="true">📷</span><span id="nbFilePickerText">Chọn ảnh / PDF</span></label>
           <p class="vm-submit-help">📌 <b>Nộp nhiều ảnh:</b> trong thư viện, chọn <b>“Chọn nhiều”</b> hoặc bấm giữ ảnh đầu tiên rồi tick các ảnh còn lại. Nếu điện thoại chỉ cho chọn từng ảnh, cứ quay lại bấm <b>“Thêm ảnh / PDF”</b> — những ảnh đã chọn trước đó vẫn được giữ.</p>
-          <div class="vm-submit-selection-summary" id="nbSelectionSummary" aria-live="polite"><span>Chưa chọn tệp nào</span><span>Tối đa 12 tệp</span></div>
+          <div class="vm-submit-selection-summary" id="nbSelectionSummary" aria-live="polite"><span>Chưa chọn tệp nào</span><span>Tối đa 30 tệp · 30 MB/tệp · 600 MB sau tối ưu</span></div>
           <div id="nbFileList" class="vm-submit-file-grid" role="list"><div class="vm-submit-file-empty">Ảnh đã chọn sẽ hiện ở đây với dấu ✓ rõ ràng.</div></div>
         </div>
         <div style="font-size:.78rem;color:var(--ink-3);margin-top:7px">📋 Trên máy tính, em cũng có thể <b>chụp màn hình rồi dán (Ctrl/⌘ + V)</b> vào đây.</div>
@@ -1067,6 +1067,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
+<script src="js/submission-upload.js?v=1"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
 <script src="js/student-result-viewer.js?v=1"></script>
@@ -1177,8 +1178,9 @@ var nguoiDung = null;
 var nopBaiPhanLoai = 'test';
 var vmFileSelections = Object.create(null);
 var vmFilePreviewUrls = Object.create(null);
-var VM_MAX_SUBMISSION_FILES = 12;
+var VM_MAX_SUBMISSION_FILES = 30;
 function moNopBai(phanloai) {
+  if (window._vmDangNop) return;
   nopBaiPhanLoai = (phanloai === 'homework') ? 'homework' : (phanloai === 'homework_bonus') ? 'homework_bonus' : 'test';
   var laBonus = nopBaiPhanLoai === 'homework_bonus';
   var laBtvn = nopBaiPhanLoai === 'homework' || laBonus;
@@ -1190,6 +1192,7 @@ function moNopBai(phanloai) {
   $('nbThongBao').textContent = '';
   // Hạn nộp + chính sách quá hạn (khoá / cho nộp trễ)
   var dl = laBonus ? (details && details.homework2_due) : nopBaiPhanLoai === 'test' ? (details && details.test_deadline) : (details && details.homework_due);
+  if (nopBaiPhanLoai === 'test' && details.test_mode && details.test_mode !== 'legacy') dl = vmTestSession && vmTestSession.ends_at;
   var pol = (laBonus ? (details && details.homework2_late_policy) : nopBaiPhanLoai === 'test' ? (details && details.test_late_policy) : (details && details.homework_late_policy)) || 'late';
   var bn = $('nbDeadlineBanner'), gui = $('nbGui'), inp = $('nbFiles'), khoa = false;
   // Modal được dùng chung cho nhiều loại bài. Luôn khôi phục trạng thái trước khi
@@ -1228,7 +1231,7 @@ function moNopBai(phanloai) {
   }
   taiBaiDaNop();
 }
-function dongNopBai() { $('modalNopBai').style.display = 'none'; }
+function dongNopBai() { if (window._vmDangNop) return; $('modalNopBai').style.display = 'none'; }
 
 function vmFileKey(file) {
   return [file && file.name, file && file.size, file && file.lastModified, file && file.type].join('|');
@@ -1263,7 +1266,7 @@ function vmThemFileDaChon(inputId, listId) {
     var st = $('nbDanAnhTrangThai');
     if (st) {
       st.style.color = boQua ? 'var(--warn)' : 'var(--ok)';
-      st.textContent = boQua ? '⚠️ Một số tệp bị trùng, không đúng định dạng hoặc vượt quá giới hạn 12 tệp.' : (daChon.length ? '✓ Ảnh có dấu tick sẽ được gửi cùng nhau khi em bấm nút Gửi bài.' : '');
+      st.textContent = boQua ? '⚠️ Một số tệp bị trùng, không đúng định dạng hoặc vượt quá giới hạn 30 tệp.' : (daChon.length ? '✓ Các ảnh đã chọn sẽ được tối ưu và tải theo hàng đợi khi em bấm Gửi bài.' : '');
     }
   }
 }
@@ -1312,7 +1315,7 @@ function vmRenderFileList(inputId, listId) {
   if (!fs || !fs.length) {
     box.innerHTML = inputId === 'nbFiles' ? '<div class="vm-submit-file-empty">Ảnh đã chọn sẽ hiện ở đây với dấu ✓ rõ ràng.</div>' : '';
     if (inputId === 'nbFiles') {
-      var emptySummary = $('nbSelectionSummary'); if (emptySummary) emptySummary.innerHTML = '<span>Chưa chọn tệp nào</span><span>Tối đa 12 tệp</span>';
+      var emptySummary = $('nbSelectionSummary'); if (emptySummary) emptySummary.innerHTML = '<span>Chưa chọn tệp nào</span><span>Tối đa 30 tệp · 30 MB/tệp</span>';
       var emptyPicker = $('nbFilePickerText'); if (emptyPicker) emptyPicker.textContent = 'Chọn ảnh / PDF';
     }
     return;
@@ -1334,7 +1337,7 @@ function vmRenderFileList(inputId, listId) {
     }
     box.innerHTML = cards;
     var summary = $('nbSelectionSummary'); if (summary) summary.innerHTML = '<strong>✓ Đã chọn ' + fs.length + ' tệp</strong><span>Có thể thêm ' + Math.max(0, VM_MAX_SUBMISSION_FILES - fs.length) + ' tệp</span>';
-    var picker = $('nbFilePickerText'); if (picker) picker.textContent = fs.length >= VM_MAX_SUBMISSION_FILES ? 'Đã đủ 12 tệp' : 'Thêm ảnh / PDF';
+    var picker = $('nbFilePickerText'); if (picker) picker.textContent = fs.length >= VM_MAX_SUBMISSION_FILES ? 'Đã đủ 30 tệp' : 'Thêm ảnh / PDF';
     return;
   }
   var html = '';
@@ -1358,13 +1361,16 @@ function vmXoaFile(inputId, idx, listId) {
 }
 
 async function taiBaiDaNop() {
+  var requestedKind = nopBaiPhanLoai;
+  var requestNumber = window._vmSubmissionListRequest = (window._vmSubmissionListRequest || 0) + 1;
   $('nbDaNop').innerHTML = '<div style="font-size:.85rem;color:var(--ink-3)">Đang tải…</div>';
   var r = await sb.from('submissions')
     .select('id, submitted_at, files, status, score, feedback, graded_files, kind')
     .eq('lesson_id', lessonId)
     .eq('student_id', nguoiDung.id)
-    .eq('kind', nopBaiPhanLoai)
+    .eq('kind', requestedKind)
     .order('submitted_at', { ascending: false });
+  if (requestNumber !== window._vmSubmissionListRequest || requestedKind !== nopBaiPhanLoai || window._vmDangNop) return;
   var ds = r.data || [];
   var nutGui = $('nbGui');
   if (!ds.length) {
@@ -1412,6 +1418,8 @@ async function taiBaiDaNop() {
 }
 
 async function guiBaiNop() {
+  if (window._vmDangNop) return;
+  var submittingKind = nopBaiPhanLoai;
   var fs = $('nbFiles').files;
   var tb = $('nbThongBao');
   if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
@@ -1428,14 +1436,13 @@ async function guiBaiNop() {
   tb.style.color = '';
   tb.innerHTML = '<div style="padding:10px 12px;border-radius:10px;background:rgba(224,160,32,.14);border:1px solid rgba(224,160,32,.4);color:var(--accent);font-weight:700;font-size:.86rem">⚠️ Đang gửi bài lên Drive của thầy… <b>Em vui lòng KHÔNG tắt/thoát trang</b> cho tới khi thấy thông báo “Nộp bài thành công” để tránh mất bài nhé!</div>';
   try {
-    var fd = new FormData();
-    fd.append('kind', 'nop');
-    fd.append('phanloai', nopBaiPhanLoai);
-    fd.append('lesson_id', lessonId);
-    for (var i = 0; i < fs.length; i++) fd.append('files', fs[i]);
-    await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
+    await VMSubmissionUpload.upload(fs, {phanloai:submittingKind, lesson_id:lessonId}, function (message) {
+      nut.textContent = message; tb.textContent = 'Đang gửi bài. Giữ trang mở; nếu có lỗi, bấm Gửi lại để tiếp tục những tệp còn thiếu.';
+    });
+    window._vmDangNop = false;
     vmDatLaiFileDaChon('nbFiles', 'nbFileList');
     var nguonDaMo = await vmLayNguonLatexTheoQuyen(nopBaiPhanLoai, '');
+    if (nopBaiPhanLoai !== submittingKind) return;
     var coLoiGiaiDaMo = !!(nguonDaMo.unlocked && nguonDaMo.hasSolution);
     tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div>' +
       '<div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô.' + (coLoiGiaiDaMo ? ' Hệ thống vừa mở lời giải và gửi thông báo cho em.' : ' Cố lên nhé!') + '</div>' +
@@ -1443,7 +1450,7 @@ async function guiBaiNop() {
     if (typeof bhConfetti === 'function') bhConfetti();
     nut.textContent = '🔄 Nộp lại bài khác';   // đổi nhãn để HS biết đã nộp
     await taiBaiDaNop();
-    if (noiDungDangChon === 'test' && nopBaiPhanLoai === 'test') await hienTestTex();
+    if (noiDungDangChon === 'test' && submittingKind === 'test') await chonNoiDung('test');
     if (noiDungDangChon === 'btvn' && nopBaiPhanLoai !== 'test') await renderBTVN($('thanNoiDung'));
     if (typeof taiMucLuc === 'function') taiMucLuc(); // cập nhật glow Nộp bài -> tắt
   } catch (e) {
@@ -1711,7 +1718,7 @@ window.addEventListener('resize', function() {
 /* ===== CHI TIẾT BÀI HỌC ===== */
 async function taiChiTietBaiHoc() {
   var r = await sb.from('lessons')
-    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_latex_content, test_deadline, homework_late_policy, test_late_policy, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, linked_exam_id, linked_exam_ids, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title, file_path)')
+    .select('id, title, class_id, youtube_url, note, images, locked, latex_content, theory_sections, homework_text, homework_images, homework_latex_content, homework_document_id, homework_due, test_latex_content, test_deadline, homework_late_policy, test_late_policy, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, linked_exam_id, linked_exam_ids, document_id, teacher_id, topic_id, test_document_id, test_active, test_started_at, test_duration_minutes, test_mode, test_opens_at, documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(title, file_path), bai_btvn:documents!lessons_homework_document_id_fkey(title, file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(title, file_path)')
     .eq('id', lessonId)
     .single();
 
@@ -3409,7 +3416,24 @@ async function checkDaLamTest() {
   return false;
 }
 
+var vmTestSession=null, vmTestClockOffset=0, vmTestAutoSent=false;
+async function vmRefreshTestSession(start){
+  if (!details || !details.test_mode || details.test_mode==='legacy') return;
+  var response=await sb.rpc('vm_lesson_test_session',{p_lesson_id:lessonId,p_start:!!start});
+  if(response.error)throw new Error(response.error.message);
+  vmTestSession=response.data;vmTestClockOffset=new Date(vmTestSession.server_now).getTime()-Date.now();
+}
+async function vmStartOwnTest(button){
+  if(button)button.disabled=true;
+  try { await vmRefreshTestSession(true); kiemTraVaChayTestTimer(); await chonNoiDung('test'); }
+  catch(error){alert(error.message);if(button)button.disabled=false;}
+}
 function vmTrangThaiMoTest() {
+  if(details && details.test_mode && details.test_mode!=='legacy'){
+    if(!vmTestSession)return 'waiting';
+    if(vmTestSession.status==='open' && vmTestSession.ends_at && Date.now()+vmTestClockOffset>=new Date(vmTestSession.ends_at).getTime())return 'ended';
+    return vmTestSession.status;
+  }
   if (!details || !details.test_active) return 'hidden';
   if (details.test_deadline && new Date(details.test_deadline).getTime() <= Date.now()) return 'ended';
   return 'open';
@@ -3520,6 +3544,7 @@ async function chonNoiDung(loai) {
     $('swTest').classList.add('active');
     capNhatAdminTestBar();
     
+    try { await vmRefreshTestSession(false); } catch(error) { than.textContent='Không xác nhận được giờ kiểm tra: '+error.message; return; }
     var daLamTest = false;
     if (nguoiDung) {
       daLamTest = await checkDaLamTest();
@@ -3528,10 +3553,12 @@ async function chonNoiDung(loai) {
     if (!coTest) {
       than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
         '<div class="no-content" style="background:var(--surface)"><div class="ic">📝</div><h3>Chưa có bài kiểm tra</h3></div>';
+    } else if (vmTrangThaiMoTest() === 'ready' && !laQuanTriBaiHoc() && !daLamTest) {
+      than.innerHTML=thanhCongCu('📝 Bài kiểm tra',null)+'<div class="no-content"><h3>Kiểm tra linh động</h3><p>Thời gian làm bài: '+Number(details.test_duration_minutes)+' phút. Đồng hồ bắt đầu sau khi em bấm nút; tải lại trang không đặt lại giờ.</p><button class="btn btn-primary" onclick="vmStartOwnTest(this)">Bắt đầu kiểm tra</button></div>';
     } else if (vmTrangThaiMoTest() !== 'open' && !laQuanTriBaiHoc() && !daLamTest) {
       var testEnded = vmTrangThaiMoTest() === 'ended';
       than.innerHTML = thanhCongCu('📝 Bài kiểm tra', null) +
-        '<div class="no-content"><div class="ic">🔒</div><h3>' + (testEnded ? 'Ca kiểm tra đã kết thúc' : 'Bài kiểm tra chưa được mở') + '</h3><p>' + (testEnded ? 'Hạn nhận bài của ca này đã hết. Em liên hệ thầy/cô nếu cần được mở lại.' : 'Thầy/cô sẽ kích hoạt đề khi tới giờ làm bài. Em quay lại sau nhé!') + '</p></div>';
+        '<div class="no-content"><div class="ic">🔒</div><h3>' + (testEnded ? 'Ca kiểm tra đã kết thúc' : 'Bài kiểm tra chưa được mở') + '</h3><p>' + (testEnded ? 'Hạn nhận bài của ca này đã hết. Em liên hệ thầy/cô nếu cần được mở lại.' : (details.test_mode==='scheduled' ? 'Đề mở lúc '+new Date(details.test_opens_at).toLocaleString('vi-VN') : 'Thầy/cô sẽ kích hoạt đề khi tới giờ làm bài. Em quay lại sau nhé!')) + '</p></div>';
     } else if (interactiveQuestions.length > 0) {
       renderInteractiveQuiz();
     } else if (details.test_latex_content) {
@@ -3729,66 +3756,14 @@ async function nopBaiTracNghiem(isAuto) {
     if (!confirm('Em chắc chắn muốn nộp bài kiểm tra trắc nghiệm này?')) return;
   }
   
-  var correctCount = 0;
-  var totalCount = interactiveQuestions.length;
-  var answerPayloads = [];
-  
-  interactiveQuestions.forEach(function (q) {
-    var chosen = selectedAnswers[q.id];
-    var isCorrect = false;
-    if (q.choices) {
-      q.choices.forEach(function (c) {
-        if (c.key === chosen && c.correct) {
-          isCorrect = true;
-          correctCount++;
-        }
-      });
-    }
-    answerPayloads.push({
-      question_id: q.id,
-      chosen_key: chosen || null,
-      is_correct: chosen ? isCorrect : false
-    });
-  });
-  
-  var score = (correctCount / totalCount) * 10;
-  
-  var rAttempt = await sb.from('attempts').insert({
-    student_id: nguoiDung.id,
-    lesson_id: lessonId,
-    score: parseFloat(score.toFixed(2)),
-    correct_n: correctCount,
-    total_n: totalCount,
-    submitted_at: new Date().toISOString()
-  }).select('id').single();
-  
-  if (rAttempt.error) {
-    alert('Lỗi nộp bài: ' + rAttempt.error.message);
-    return;
-  }
-  
-  var attemptId = rAttempt.data.id;
-  var answersToInsert = answerPayloads.map(function (ans) {
-    return {
-      attempt_id: attemptId,
-      question_id: ans.question_id,
-      chosen_key: ans.chosen_key,
-      is_correct: ans.is_correct
-    };
-  });
-  
-  var rAns = await sb.from('attempt_answers').insert(answersToInsert);
-  if (rAns.error) {
-    alert('Lỗi lưu kết quả chi tiết: ' + rAns.error.message);
-  }
-  
-  testAttempt = {
-    id: attemptId,
-    score: score,
-    submitted_at: new Date().toISOString(),
-    attempt_answers: answersToInsert
-  };
-  
+  if(window._vmQuizSubmitting)return;
+  window._vmQuizSubmitting=true;
+  try {
+    var result=await sb.rpc('vm_submit_lesson_quiz',{p_lesson_id:lessonId,p_answers:selectedAnswers});
+    if(result.error)throw new Error(result.error.message);
+    testAttempt=result.data;
+  } catch(error){alert('Không nộp được bài: '+error.message);return;}
+  finally{window._vmQuizSubmitting=false;}
   renderInteractiveQuiz();
 }
 
@@ -3858,6 +3833,7 @@ var testTimerInterval = null;
 var testDeadlineTimeout = null;
 
 function kiemTraVaChayTestTimer() {
+  if(details && details.test_mode && details.test_mode!=='legacy'){ vmRunOwnTimer(); return; }
   if (!details) return;
   if (testDeadlineTimeout) {
     clearTimeout(testDeadlineTimeout);
@@ -3883,7 +3859,7 @@ function kiemTraVaChayTestTimer() {
             return;
           }
           capNhatAdminTestBar();
-          if (noiDungDangChon === 'test') chonNoiDung('test');
+          if (noiDungDangChon === 'test' && !window._vmDangNop && !interactiveQuestions.length && $('modalNopBai').style.display !== 'flex') chonNoiDung('test');
         }, Math.min(deadlineDelay + 250, 2147483000));
       }
     }
@@ -3912,8 +3888,8 @@ function kiemTraVaChayTestTimer() {
     document.body.insertBefore(banner, document.body.firstChild);
   }
 
-  chonNoiDung('test');
-  $('boChuyen').style.display = 'none';
+  // Keep the current viewer/answers intact when realtime refreshes the timer.
+  $('boChuyen').style.display = 'flex';
 
   if (testTimerInterval) clearInterval(testTimerInterval);
 
@@ -3929,7 +3905,7 @@ function kiemTraVaChayTestTimer() {
         if (!testAttempt && interactiveQuestions.length > 0) {
           nopBaiTracNghiem(true);
         }
-        if (noiDungDangChon === 'test') chonNoiDung('test');
+        if (noiDungDangChon === 'test' && !window._vmDangNop && !interactiveQuestions.length && $('modalNopBai').style.display !== 'flex') chonNoiDung('test');
       }, 1500);
     } else {
       var p = Math.floor(conLaiReal / 60000);
@@ -3939,6 +3915,32 @@ function kiemTraVaChayTestTimer() {
   }, 1000);
 }
 
+
+var vmTestTimerGeneration=0;
+async function vmRunOwnTimer(){
+  var generation=++vmTestTimerGeneration;
+  if(testTimerInterval)clearInterval(testTimerInterval);
+  try {await vmRefreshTestSession(false);} catch(error){console.warn(error.message);return;}
+  if(generation!==vmTestTimerGeneration)return;
+  function tick(){
+    var box=$('divTestTimer'), status=vmTrangThaiMoTest();
+    if(status==='ready') {if(box)box.remove();return;}
+    if(!box){box=document.createElement('div');box.id='divTestTimer';box.style.cssText='padding:10px;text-align:center;background:var(--surface-2);color:var(--ink);border-bottom:1px solid var(--line);font-weight:700';$('boChuyen').before(box);}
+    var time=vmTestSession.ends_at, remaining=time?Math.max(0,new Date(time).getTime()-Date.now()-vmTestClockOffset):0;
+    if(status==='waiting'){
+      box.textContent='Đề mở lúc '+new Date(vmTestSession.opens_at).toLocaleString('vi-VN');
+      if(Date.now()+vmTestClockOffset>=new Date(vmTestSession.opens_at).getTime()){
+        clearInterval(testTimerInterval);vmRefreshTestSession(false).then(function(){vmRunOwnTimer();if(noiDungDangChon==='test')chonNoiDung('test');});
+      }
+    }else if(status==='ended'){
+      box.textContent=window._vmDangNop?'Đã hết giờ làm bài · tiếp tục tải các tệp đã đăng ký trước hạn.':'Đã hết giờ làm bài. Nội dung đang xem được giữ nguyên.';
+      // Never replace the viewer or submission modal while an upload is in progress.
+      if(!vmTestAutoSent&&!testAttempt&&interactiveQuestions.length){vmTestAutoSent=true;nopBaiTracNghiem(true);}
+    }else { if(remaining<=1500 && !vmTestAutoSent && !testAttempt && interactiveQuestions.length){vmTestAutoSent=true;nopBaiTracNghiem(true);} box.textContent='Thời gian còn lại: '+String(Math.floor(remaining/60000)).padStart(2,'0')+':'+String(Math.floor(remaining/1000)%60).padStart(2,'0'); }
+  }
+  tick();testTimerInterval=setInterval(tick,1000);
+}
+
 function dangKyRealtimeTest() {
   try {
     if (window._testChannel) { try { sb.removeChannel(window._testChannel); } catch (e) {} window._testChannel = null; }
@@ -3946,6 +3948,8 @@ function dangKyRealtimeTest() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lessons', filter: 'id=eq.' + lessonId }, function (payload) {
         if (payload.new) {
           var truocActive = details.test_active;
+          details.test_mode = payload.new.test_mode || 'legacy';
+          details.test_opens_at = payload.new.test_opens_at;
           details.test_started_at = payload.new.test_started_at;
           details.test_duration_minutes = payload.new.test_duration_minutes;
           details.test_active = payload.new.test_active;
@@ -3953,7 +3957,7 @@ function dangKyRealtimeTest() {
           details.test_late_policy = payload.new.test_late_policy;
           kiemTraVaChayTestTimer();
           // Nếu trạng thái mở/đóng thay đổi và đang xem tab Kiểm tra → vẽ lại
-          if (truocActive !== details.test_active && noiDungDangChon === 'test') {
+          if (truocActive !== details.test_active && noiDungDangChon === 'test' && !window._vmDangNop && !interactiveQuestions.length && $('modalNopBai').style.display !== 'flex') {
             pdfTestTex = null;
             chonNoiDung('test');
           }
@@ -3979,6 +3983,7 @@ function capNhatAdminTestBar() {
   if (!bar) return;
   if (noiDungDangChon !== 'test' || !coTheBatTatTest()) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
+  if(details.test_mode && details.test_mode!=='legacy'){bar.textContent=details.test_mode==='flexible'?'Kiểm tra linh động · đồng hồ riêng cho từng học sinh':'Kiểm tra theo lịch · tự mở/đóng theo giờ đã lưu';return;}
   if (vmTrangThaiMoTest() === 'open') {
     bar.style.background = 'var(--ok-soft)';
     bar.style.borderBottom = '1px solid var(--ok)';
@@ -4024,7 +4029,7 @@ async function batTatKichHoatTest(batLen) {
     details.test_started_at = null;
   }
   capNhatAdminTestBar();
-  if (noiDungDangChon === 'test') chonNoiDung('test');
+  if (noiDungDangChon === 'test' && !window._vmDangNop && !interactiveQuestions.length && $('modalNopBai').style.display !== 'flex') chonNoiDung('test');
 }
 
 function khoiTaoResizer() {
@@ -4769,6 +4774,8 @@ async function hubRenderNop(){
       '<button class="btn btn-primary" id="hnopBtn" onclick="hubNopHo(false)" style="width:100%;justify-content:center">📤 Nộp bài hộ</button>'+
       '<button class="btn" id="hnopTestBtn" onclick="hubNopHo(true)" style="width:100%;justify-content:center">🧪 Kiểm tra tải (không ghi bài)</button>'+
     '</div>'+
+    '<div class="field"><label for="hnopTiming">Hạn nộp (bắt buộc với kiểm tra)</label><select class="input" id="hnopTiming"><option value="">Theo hạn của bài</option><option value="on_time">Nộp đúng hạn</option><option value="late">Nộp trễ</option></select></div>'+
+    '<p>Tối đa 30 tệp · 30 MB/tệp · 600 MB sau tối ưu.</p>'+
     '<div id="hnopTT" style="font-size:.84rem;margin-top:8px"></div>'+
     '</div>';
 }
@@ -4784,6 +4791,7 @@ async function hubNopHo(chiKiemTra){
   var hsId=$('hnopHS').value; var loai=$('hnopLoai')?$('hnopLoai').value:''; var tt=$('hnopTT'); var inp=$('hnopFile');
   if(!hsId){tt.textContent='Thầy chưa chọn học sinh.';tt.style.color='var(--warn)';return;}
   if(!loai){tt.textContent='Thầy chưa chọn loại bài sẽ ghi nhận.';tt.style.color='var(--warn)';return;}
+  if(!dryRun && loai==='test' && !$('hnopTiming').value){tt.textContent='Chọn nộp đúng hạn hoặc nộp trễ trước khi gửi.';return;}
   if(!inp.files.length){tt.textContent='Thầy chưa chọn file bài làm.';tt.style.color='var(--warn)';return;}
   var btn=$('hnopBtn'), testBtn=$('hnopTestBtn');
   btn.disabled=true; testBtn.disabled=true;
@@ -4795,7 +4803,8 @@ async function hubNopHo(chiKiemTra){
     var fd=new FormData(); fd.append('kind','nop'); fd.append('student_id',hsId); fd.append('lesson_id',lessonId); fd.append('phanloai',loai);
     if(dryRun) fd.append('dry_run','1');
     for(var i=0;i<inp.files.length;i++) fd.append('files',inp.files[i]);
-    var data=await vmGoiHamFormData('nop-bai',fd,{timeoutMs:120000});
+    clearInterval(dem);
+    var data=dryRun ? await vmGoiHamFormData('nop-bai',fd,{timeoutMs:120000}) : await VMSubmissionUpload.upload(inp.files,{student_id:hsId,lesson_id:lessonId,phanloai:loai,submission_timing:$('hnopTiming').value},function(message){tt.textContent=message;});
     if(dryRun){
       tt.textContent='✓ Tải thử thành công: '+data.uploaded_count+' tệp đã lên Drive và được tự động xóa; chưa ghi thành bài nộp.';
     }else{

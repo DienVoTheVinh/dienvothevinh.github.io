@@ -573,7 +573,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
-<script src="js/menu-v5.js?v=10.4"></script>
+<script src="js/submission-upload.js?v=1"></script>
+<script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/latex-view.js?v=11.4"></script>
 <script src="js/analytics.js"></script>
 <script>
@@ -1445,18 +1446,13 @@ function vmXoaFile(inputId, idx, listId) {
 }
 
 async function guiTuLuan() {
+  if ($('tlGui').disabled) return;
   var inp = $('tlFiles');
   var tt = $('tlTrangThai');
   if (!inp || !inp.files.length) { if (tt) { tt.textContent = 'Em chưa chọn file nào.'; tt.style.color = 'var(--warn)'; } return; }
   var nut = $('tlGui'); nut.disabled = true; var cu = nut.textContent; nut.textContent = '⏳ Đang gửi lên Drive của thầy…';
   try {
-    var fd = new FormData();
-    fd.append('kind', 'nop');
-    fd.append('exam_id', currentExam.id);
-    for (var i = 0; i < inp.files.length; i++) fd.append('files', inp.files[i]);
-    var r = await sb.functions.invoke('nop-bai', { body: fd });
-    if (r.error) throw new Error(r.error.message || 'Lỗi gửi bài');
-    if (r.data && r.data.error) throw new Error(r.data.error);
+    await VMSubmissionUpload.upload(inp.files,{exam_id:currentExam.id,phanloai:'test'},function(message){if(tt)tt.textContent=message;});
     if (tt) { tt.textContent = '✓ Đã nộp bài! Thầy sẽ chấm và trả điểm.'; tt.style.color = 'var(--ok)'; }
     inp.value = '';
     taiTuLuanDaNop();

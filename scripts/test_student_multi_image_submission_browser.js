@@ -50,17 +50,17 @@ const payload = (name, type = 'image/png') => ({ name, mimeType: type, buffer: p
     if (state.files !== 1 || state.cards !== 1) throw new Error(`Removing a selected image failed: ${JSON.stringify(state)}`);
 
     await page.evaluate(() => vmDatLaiFileDaChon('nbFiles', 'nbFileList'));
-    await input.setInputFiles(Array.from({ length: 12 }, (_, i) => payload(`anh-${i + 1}.png`)));
-    await input.setInputFiles(payload('anh-13.png'));
+    await input.setInputFiles(Array.from({ length: 30 }, (_, i) => payload(`anh-${i + 1}.png`)));
+    await input.setInputFiles(payload('anh-31.png'));
     state = await page.evaluate(() => ({
       files: document.getElementById('nbFiles').files.length,
       cards: document.querySelectorAll('.vm-submit-file-card').length,
       warning: document.getElementById('nbDanAnhTrangThai').textContent,
     }));
-    if (state.files !== 12 || state.cards !== 12 || !state.warning.includes('giới hạn 12 tệp')) throw new Error(`12-file limit failed: ${JSON.stringify(state)}`);
+    if (state.files !== 30 || state.cards !== 30 || !state.warning.includes('giới hạn 30 tệp')) throw new Error(`30-file limit failed: ${JSON.stringify(state)}`);
     if (errors.length) throw new Error(`Browser errors: ${errors.join(' | ')}`);
 
-    console.log('PASS student multi-image picker: cumulative selection, clear ticks, removal, mobile layout and 12-file limit');
+    console.log('PASS student multi-image picker: cumulative selection, clear ticks, removal, mobile layout and 30-file limit');
   } finally {
     await browser.close();
   }

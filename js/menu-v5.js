@@ -73,6 +73,7 @@ function vmMenuHydrateShell() {
     var fresh = cached && Number(cached.savedAt || 0) > Date.now() - 12 * 60 * 60 * 1000;
     if (!validRole || !fresh || !cached.html) { vmMenuClearShell(); return false; }
     nav.innerHTML = cached.html;
+    if(cached.role==='student') { var classLink=nav.querySelector('a[href="lop-hoc"]'); if(classLink)classLink.textContent='Lớp học'; }
     vmMenuMarkCurrent(nav);
     vmMenuBindLockedLinks(nav);
     document.body.classList.add('vm-authenticated', 'vm-role-' + cached.role);
@@ -162,7 +163,7 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
     // Các điểm đến học sinh dùng thường xuyên được đặt trực tiếp trên thanh chính.
     muc = [
       { type: 'link', path: 'trang-chu', label: 'Hôm nay', featureKey: 'home' },
-      { type: 'link', path: 'lop-hoc', label: 'Bài học', featureKey: 'lessons' },
+      { type: 'link', path: 'lop-hoc', label: 'Lớp học', featureKey: 'lessons' },
       { type: 'link', path: 'luyen-de', label: 'Bài tập', featureKey: 'practice' },
       { type: 'link', path: 'ket-qua', label: 'Kết quả', featureKey: 'results' },
       { type: 'link', path: 'bang-vang', label: 'BXH', featureKey: 'leaderboard' },

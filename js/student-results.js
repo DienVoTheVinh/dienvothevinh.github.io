@@ -107,7 +107,7 @@
     return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : '';
   }
 
-  function fileCards(files, sectionTitle) {
+  function fileCards(files, sectionTitle, vertical) {
     var imageItems = files.filter(isImage).map(function (file, index) {
       return {url:filePreviewUrl(file, 'w2000'),fallbackUrl:fileFallbackUrl(file),name:file.name || ('Ảnh ' + (index + 1))};
     }).filter(function (item) { return !!item.url; });
@@ -118,7 +118,7 @@
       var url = fileLink(file);
       var name = esc(file.name || ('Tệp ' + (index + 1)));
       if (isImage(file)) {
-        var previewUrl = filePreviewUrl(file, 'w600');
+        var previewUrl = filePreviewUrl(file, vertical ? 'w2000' : 'w600');
         if (!previewUrl) return '';
         var currentImageIndex = imageIndex++;
         return '<button class="student-result-file" type="button" data-result-media-group="' + esc(groupId) + '" data-result-media-index="' + currentImageIndex + '" aria-label="Xem ' + name + '"><img src="' + esc(previewUrl) + '" alt="' + name + '" loading="lazy"><span>' + name + '</span></button>';
@@ -158,7 +158,7 @@
       var assessment = assessmentFor(item.assessment_level);
       var unlockedSolution = hasUnlockedSolution(item);
       var isGraded = item.status === 'graded';
-      var score = item.score == null ? (assessment ? assessment.icon + ' ' + assessment.label : (isGraded ? 'Đã chấm' : '🔓 Lời giải')) : esc(item.score) + '/10';
+      var score = item.score == null ? (assessment ? assessment.icon : (isGraded ? '✓' : '🔓')) : '<strong>'+esc(item.score)+'</strong><small>/10</small>';
       var itemClass = classOf(item);
       return '<article class="student-result-card">' +
         '<div class="student-result-score' + (item.score == null ? ' no-score' : '') + (assessment ? ' ' + assessment.className : '') + '">' + score + '</div>' +
@@ -225,7 +225,7 @@
         ? '<section class="student-result-solution"><div class="student-result-solution-head"><span>🔐</span><div><small>ĐÁP ÁN CHUNG ĐÚNG BÀI GIẢNG</small><h3>' + esc(titleFor(item)) + '</h3></div></div>' + latexTaiLieuRaHTML(answer.tex_content, {title:titleFor(item) + ' — Đáp án chung',kind:item.kind,showSolutions:true}) + '</section>'
         : '';
       var filesHtml = preparedFiles.length
-        ? '<section class="student-result-file-section student-result-class-answer"><h3>🔐 Đáp án chung của bài giảng</h3><div class="student-result-files">' + fileCards(preparedFiles, 'Đáp án chung — ' + titleFor(item)) + '</div></section>'
+        ? '<section class="student-result-file-section student-result-class-answer"><h3>🔐 Đáp án chung của bài giảng</h3><div class="student-result-files">' + fileCards(preparedFiles, 'Đáp án chung — ' + titleFor(item), true) + '</div></section>'
         : '';
       return filesHtml + texHtml;
     } catch (error) {
