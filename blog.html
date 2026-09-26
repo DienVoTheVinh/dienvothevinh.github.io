@@ -234,13 +234,14 @@
   }
 }
 </style>
+<link rel="stylesheet" href="css/blog-editorial.css?v=20260927a">
 </head>
-<body>
+<body class="vm-blog">
 
 <div class="topbar">
   <div class="nav">
     <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <small>· Lớp Toán Thầy Vinh</small></a>
-    <nav class="navlinks"><!-- menu.js (nếu đã đăng nhập) --></nav>
+    <nav class="navlinks"><a href="index">Trang chủ</a><a href="blog" class="active">Blog</a><a href="vmtool">VMTool</a></nav>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">🌙</button>
       <span id="khungAuth"></span>
@@ -258,11 +259,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
-<script src="js/menu-v5.js?v=submission-20260927"></script>
+<script src="js/menu-v5.js?v=blog-20260927"></script>
+<script src="js/blog-editorial.js?v=20260927a"></script>
 <script src="js/analytics.js"></script>
 <script>
 /* ====== RENDER MARKDOWN-LITE + MATHJAX (theme-aware) ====== */
-function blogEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function blogEsc(s){ return VMBlog.esc(s); }
 function renderBlog(src){
   src = String(src || '');
   var math = [];
@@ -287,7 +289,7 @@ function renderBlog(src){
     var t = ln.trim();
     if(t === ''){ flushPara(); closeLists(); return; }
     var img = t.match(/^!\[([^\]]*)\]\((https?:[^)\s]+)\)$/);
-    if(img){ flushPara(); closeLists(); html += '<figure><img src="' + img[2] + '" alt="' + blogEsc(img[1]) + '" loading="lazy">' + (img[1] ? '<figcaption>' + blogEsc(img[1]) + '</figcaption>' : '') + '</figure>'; return; }
+    if(img){ flushPara(); closeLists(); html += '<figure><img src="' + blogEsc(img[2]) + '" alt="' + blogEsc(img[1]) + '" loading="lazy">' + (img[1] ? '<figcaption>' + blogEsc(img[1]) + '</figcaption>' : '') + '</figure>'; return; }
     var hm = t.match(/^(#{1,4})\s+(.*)$/);
     if(hm){ flushPara(); closeLists(); var lvl = hm[1].length; html += '<h' + lvl + '>' + inline(hm[2]) + '</h' + lvl + '>'; return; }
     if(/^(---|\*\*\*|___)$/.test(t)){ flushPara(); closeLists(); html += '<hr>'; return; }
@@ -299,7 +301,7 @@ function renderBlog(src){
     para.push(t);
   });
   flushPara(); closeLists();
-  html = html.replace(/___MATH_(\d+)___/g, function(_, i){ return math[+i]; });
+  html = html.replace(/___MATH_(\d+)___/g, function(_, i){ return blogEsc(math[+i] || ''); });
   return html;
 }
 
@@ -360,12 +362,14 @@ async function taiBaiViet(){
   document.title = bPost.title + ' — Blog VinhMath';
 
   var ava = '<div class="art-ava" style="background:' + mauTen(bPost.author_name) + '">' + chuCai(bPost.author_name) + '</div>';
-  var coverHtml = bPost.cover_url ? '<div class="art-cover-wrap"><img class="art-cover" src="' + blogEsc(bPost.cover_url) + '" alt=""></div>' : '';
+  var coverUrl = VMBlog.safeImage(bPost.cover_url);
+  var coverHtml = coverUrl ? '<div class="art-cover-wrap"><img class="art-cover" src="' + blogEsc(coverUrl) + '" alt="Minh họa cho bài viết" width="1536" height="1024"></div>' : '';
   box.innerHTML =
     '<article>' +
       '<div class="art-head">' +
         (bPost.published ? '' : '<div style="display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:10px">● Bản nháp (chỉ thầy/trợ giảng thấy)</div>') +
         '<h1>' + blogEsc(bPost.title) + '</h1>' +
+        '<p class="art-summary">' + blogEsc(bPost.excerpt || '') + '</p>' +
         '<div class="art-meta">' + ava + '<div><b>' + blogEsc(bPost.author_name || 'Thầy Điền Võ Thế Vinh') + '</b><div style="font-size:.78rem;color:var(--ink-3)">' + khiNao(bPost.created_at) + '</div></div></div>' +
       '</div>' +
       coverHtml +
@@ -511,8 +515,7 @@ async function taiDanhSachBlog() {
       }
     }
 
-    html += '<h1 style="font-size:1.8rem; font-weight:800; margin-bottom:6px; color:var(--ink)">📚 Blog Toán học — VinhMath</h1>' +
-      '<p style="color:var(--ink-2); margin-bottom:28px; font-size:0.95rem">Nơi chia sẻ phương pháp học Toán tư duy, các chuyên đề nâng cao và sơ đồ học tập tối ưu.</p>';
+    html += '<header class="editorial-intro"><div class="editorial-eyebrow">Blog · VinhMath</div><h1>Ghi chép về việc học toán</h1><p>Những bài viết về cách học, cách suy nghĩ và việc dạy toán. Đọc tự do, không cần đăng nhập.</p></header>';
 
     if (!ds.length) {
       html += '<div class="blog-empty">Chưa có bài viết nào được đăng tải.</div>';
@@ -520,85 +523,9 @@ async function taiDanhSachBlog() {
       return;
     }
 
-    // Tách bài viết đầu tiên làm Bài viết nổi bật (Featured Post)
-    var featuredPost = ds[0];
-    var gridPosts = ds.slice(1);
-
-    // Render bài viết nổi bật
-    var featDate = new Date(featuredPost.created_at).toLocaleDateString('vi-VN');
-    var featDraft = !featuredPost.published;
-    var featAdminActions = '';
-    if (laAdmin && !viewAsStudent) {
-      featAdminActions = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
-        '<a href="viet-blog?id=' + featuredPost.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
-        '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + featuredPost.id + '\')">🗑️ Xoá</button>' +
-      '</div>';
-    }
-
-    var featCover = featuredPost.cover_url 
-      ? '<div style="overflow:hidden"><img class="featured-cover" src="' + blogEsc(featuredPost.cover_url) + '" alt="" loading="lazy"></div>'
-      : '';
-
-    html += '<div class="featured-card" onclick="window.location.href=\'blog?id=' + featuredPost.id + '\'">' +
-      featCover +
-      '<div class="featured-content">' +
-        '<span class="featured-tag">🔥 Nổi bật</span>' +
-        (featDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
-        '<h2 class="featured-title">' + blogEsc(featuredPost.title) + '</h2>' +
-        '<p class="featured-excerpt">' + blogEsc(featuredPost.excerpt || '') + '</p>' +
-        '<div>' +
-          '<div class="featured-meta">' +
-            '<span class="bl-auth">' + blogEsc(featuredPost.author_name || 'Thầy Điền Võ Thế Vinh') + '</span>' +
-            '<span>' + featDate + '</span>' +
-            '<span style="margin-left:auto">❤️ ' + (likeMap[featuredPost.id] || 0) + '</span>' +
-            '<span style="margin-left:8px">💬 ' + (cmtMap[featuredPost.id] || 0) + '</span>' +
-          '</div>' +
-          featAdminActions +
-        '</div>' +
-      '</div>' +
-    '</div>';
-
-    // Render danh sách còn lại dưới dạng Grid
-    if (gridPosts.length > 0) {
-      html += '<div class="blog-grid">';
-      html += gridPosts.map(function(p) {
-        var d = new Date(p.created_at).toLocaleDateString('vi-VN');
-        var isDraft = !p.published;
-        
-        var adminActionsHtml = '';
-        if (laAdmin && !viewAsStudent) {
-          adminActionsHtml = '<div style="display:flex; gap:8px; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; justify-content:flex-end">' +
-            '<a href="viet-blog?id=' + p.id + '" class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px" onclick="event.stopPropagation()">✏️ Sửa</a>' +
-            '<button class="btn btn-secondary btn-sm" style="padding:4px 8px; font-size:0.75rem; border-radius:4px; color:var(--err)" onclick="xoaPost(event, \'' + p.id + '\')">🗑️ Xoá</button>' +
-          '</div>';
-        }
-
-        var cover = p.cover_url 
-          ? '<div class="bl-cover-wrap"><img class="bl-cover" src="' + blogEsc(p.cover_url) + '" alt="" loading="lazy"></div>'
-          : '';
-        return '<div class="blog-list-card' + (p.cover_url ? ' has-cover' : '') + '" onclick="window.location.href=\'blog?id=' + p.id + '\'" style="cursor:pointer">' +
-          cover +
-          '<div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">' +
-            '<div>' +
-              (isDraft ? '<span style="display:inline-block; background:var(--warn-soft); color:var(--warn); font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:8px">● Nháp</span>' : '') +
-              '<div class="bl-title">' + blogEsc(p.title) + '</div>' +
-              '<div class="bl-excerpt">' + blogEsc(p.excerpt || '') + '</div>' +
-            '</div>' +
-            '<div>' +
-              '<div class="bl-meta">' +
-                '<span class="bl-auth">' + blogEsc(p.author_name || 'Thầy Điền Võ Thế Vinh') + '</span>' +
-                '<span>' + d + '</span>' +
-                '<span style="margin-left:auto">❤️ ' + (likeMap[p.id] || 0) + '</span>' +
-                '<span style="margin-left:8px">💬 ' + (cmtMap[p.id] || 0) + '</span>' +
-              '</div>' +
-              adminActionsHtml +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-      html += '</div>';
-    }
+    html += '<div class="editorial-grid">' + ds.map(function(p){return VMBlog.card(p,{admin:laAdmin&&!viewAsStudent});}).join('') + '</div>';
     box.innerHTML = html;
+    box.querySelectorAll('[data-blog-delete]').forEach(function(button){button.addEventListener('click',function(event){xoaPost(event,button.dataset.blogDelete);});});
   } catch (err) {
     console.error("Lỗi tải danh sách blog:", err);
     box.innerHTML = '<div class="blog-empty">Có lỗi xảy ra khi tải danh sách bài viết.</div>';
