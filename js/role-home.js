@@ -34,6 +34,10 @@
   }
 
   async function loadStudentSnapshot(profile) {
+    // Guest previews use synthetic IDs and must never call authenticated APIs.
+    if (!profile || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.id || '')) {
+      return {lessons:[], exams:[], posts:[], tasks:[], reminders:[], graded:0};
+    }
     var ids = classIds(profile);
     var gradedPromise = count('submissions', function (query) {
       return query.eq('student_id', profile.id).eq('status', 'graded');
@@ -45,7 +49,7 @@
         .in('class_id', ids).eq('published', true).order('created_at', {ascending:false}).limit(14),
       vmSafeExamCatalog().then(function (rows) {
         return rows.filter(function (exam) { return !exam.class_id || ids.indexOf(exam.class_id) !== -1; }).slice(0, 10);
-      }),
+      }).catch(function () { return []; }),
       sb.from('class_posts')
         .select('id,title,class_id,created_at')
         .in('class_id', ids).order('pinned', {ascending:false}).order('created_at', {ascending:false}).limit(3),
