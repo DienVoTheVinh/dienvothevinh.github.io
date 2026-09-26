@@ -156,7 +156,8 @@
     if(button)button.addEventListener('click',async function(){button.disabled=true;button.textContent='Đang gửi…';var r=await sb.rpc('request_rank_breakthrough');if(r.error||!r.data||!r.data.ok){button.disabled=false;button.textContent='Thử lại';alert((r.data&&r.data.message)||(r.error&&r.error.message)||'Chưa gửi được yêu cầu');return;}layer.remove();showCelebration('⚡','Đã gửi yêu cầu',r.data.message);});
   }
   async function init() {
-    addCss(); current=await load(); if(!current)return; injectLogo(current.rank);injectHome(current.rank);renderCompanion(current);showEggChoice(current);maybeCelebrate(current);maybeBreakthrough(current);
+    addCss(); current=await load(); if(!current)return; injectLogo(current.rank);
+    if(!document.body.classList.contains('vm-public-home')){injectHome(current.rank);renderCompanion(current);showEggChoice(current);maybeCelebrate(current);maybeBreakthrough(current);}
     window.dispatchEvent(new CustomEvent('vm-rank-ready',{detail:current}));
   }
   window.VMRank={majors:MAJORS,medals:MEDALS,pets:PETS,info:info,xpFloor:xpFloor,majorMark:majorMark,rankPill:rankPill,petVisual:petVisual,load:load,init:init,getCurrent:function(){return current;},refresh:function(){snapshotPromise=null;return init();}};
