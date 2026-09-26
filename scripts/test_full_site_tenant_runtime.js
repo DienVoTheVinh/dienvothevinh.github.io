@@ -36,7 +36,7 @@ expect(menu.includes("m.featureState === 'locked'") && menu.includes('aria-disab
 expect(menu.includes("role !== 'admin'"), 'Admin feature-policy bypass is missing');
 expect(!/item\.featureKey === 'home'[\s\S]{0,180}vmTenantHomePath\(fullSiteTenant\)/.test(menu), 'The workspace Home menu must stay inside the shared role dashboard');
 expect(menu.includes('tenantContext && tenantContext.portal_only && !tenantContext.full_site'), 'Exam-only portals must remain isolated from full-site tenants');
-expect(menu.includes("allowed = ['thi', 'luyen-de', 'dang-nhap']"), 'Legacy exam-only portal allow-list regressed');
+expect(menu.includes("allowed = ['thi', 'luyen-de', 'dang-nhap', 'blog']"), 'Exam-only allow-list may add public Blog, not protected classroom routes');
 expect(menu.includes('function vmMenuFeatureMap(access)') && menu.includes("map[item.feature_key]"), 'Server feature access is not normalized before menu rendering');
 expect(menu.includes("sb.rpc('vm_my_feature_access'") && menu.includes('p_portal_id: tenantContext && tenantContext.full_site ? tenantContext.id : null'), 'Menu must load effective feature access for the current tenant');
 expect(menu.includes('apDungMenu(r.data.role, portalContext, tenantContext, featureAccess)'), 'Role, portal, tenant and effective access must all reach the shared menu');

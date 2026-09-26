@@ -48,18 +48,26 @@ const ambientContext=new Proxy({},{get:()=>noop,set:()=>true});
 const canvas={getContext:()=>context,getBoundingClientRect:()=>({width:600,height:460}),parentElement:{},dataset:{}};
 const ambient={getContext:()=>ambientContext,dataset:{}};
 const reduced={matches:false,addEventListener:noop};
-const doc={hidden:false,documentElement:{dataset:{theme:'dark'},scrollHeight:1000},body:{classList:{add:noop}},getElementById:id=>id==='homeMathCanvas'?canvas:id==='homeAmbientCanvas'?ambient:null,querySelector:()=>null,querySelectorAll:()=>[],addEventListener:noop};
+const doc={hidden:false,createElement:()=>({getContext:()=>context}),documentElement:{dataset:{theme:'dark'},scrollHeight:1000},body:{classList:{add:noop}},getElementById:id=>id==='homeMathCanvas'?canvas:id==='homeAmbientCanvas'?ambient:null,querySelector:()=>null,querySelectorAll:()=>[],addEventListener:noop};
 const observer=function(){this.observe=noop;this.unobserve=noop;};
 vm.runInNewContext(source,{document:doc,window:{addEventListener:noop},matchMedia:()=>reduced,devicePixelRatio:2,innerWidth:1440,innerHeight:1000,ResizeObserver:observer,IntersectionObserver:observer,MutationObserver:observer,requestAnimationFrame:fn=>(queued=fn,1),cancelAnimationFrame:noop});
 const initial=draws;
 for(let i=1;i<=120;i++){const fn=queued;queued=null;fn(i*1000/60);assert.ok(queued,'Loop schedules next frame');}
-assert.equal(draws-initial,120,'Hero draws every display frame, not every other frame');
-doc.hidden=true;queued(3000);assert.equal(draws-initial,120,'Hidden page does not render');
-doc.hidden=false;reduced.matches=true;queued(4000);assert.equal(draws-initial,120,'Reduced-motion mode does not animate');
-assert.equal(math.surfaceMeshes.polyhedron.length,20,'Icosahedron has 20 triangular faces');
-assert.equal(math.polyEdges.length,30,'Icosahedron has 30 equal edges');
-for(let i=0;i<80;i++){const u=i*.1,v=i*.13,p=math.surfacePoint('torus',u,v);near((Math.hypot(p[0],p[1])-.95)**2+p[2]**2,.34**2,'Torus equation');const a=math.surfacePoint('mobius',0,i/40-1),b=math.surfacePoint('mobius',2*Math.PI,1-i/40);a.forEach((x,k)=>near(x,b[k],'Mobius seam reverses'));}
-for(const kind of ['torus','mobius','polyhedron']){for(let i=0;i<math.surfaceMeshes[kind].length;i++){const a=math.surfaceFace(kind,i,1,4),b=math.surfaceFace(kind,i,0,4);const center=f=>f.reduce((s,p)=>s.map((v,k)=>v+p[k]/f.length),[0,0,0]);assert.ok(Math.hypot(...center(b))>Math.hypot(...center(a)),'Fragments move outward');assert.ok(b.flat().every(Number.isFinite));assert.deepEqual(a,math.surfaceFace(kind,i,1,4),'Same assembly state is deterministic');}}
+assert.ok(draws-initial>=120,'Hero draws every display frame, not every other frame');
+const beforeHidden=draws;doc.hidden=true;queued(3000);assert.equal(draws,beforeHidden,'Hidden page does not render');
+doc.hidden=false;reduced.matches=true;queued(4000);assert.equal(draws,beforeHidden,'Reduced-motion mode does not animate');
+assert.deepEqual(Object.keys(math.surfaceMeshes),['mobius'],'Only Mobius remains');
+for(let i=0;i<=80;i++){const v=i/40-1,a=math.surfacePoint('mobius',0,v),b=math.surfacePoint('mobius',2*Math.PI,-v);a.forEach((x,k)=>near(x,b[k],'Mobius seam reverses'));}
+// Weld shared mesh vertices, including the reversed seam: chi=0, one boundary loop.
+const vertices=new Map(),edges=new Map();
+const vertex=p=>{const key=p.map(v=>(Math.abs(v)<1e-8?0:v).toFixed(7)).join(',');if(!vertices.has(key))vertices.set(key,vertices.size);return vertices.get(key);};
+for(const face of math.surfaceMeshes.mobius){const ids=face.map(vertex);ids.forEach((a,i)=>{const b=ids[(i+1)%4],key=[a,b].sort((x,y)=>x-y).join(',');edges.set(key,(edges.get(key)||0)+1);});}
+assert.equal(vertices.size-edges.size+math.surfaceMeshes.mobius.length,0,'Euler characteristic is 0');
+const boundary=new Map();for(const [key,n] of edges){assert.ok(n===1||n===2);if(n===1){const [a,b]=key.split(',').map(Number);for(const [x,y] of [[a,b],[b,a]]){if(!boundary.has(x))boundary.set(x,[]);boundary.get(x).push(y);}}}
+for(const neighbors of boundary.values())assert.equal(neighbors.length,2);
+const visited=new Set(),stack=[boundary.keys().next().value];while(stack.length){const n=stack.pop();if(visited.has(n))continue;visited.add(n);stack.push(...boundary.get(n));}assert.equal(visited.size,boundary.size,'Exactly one connected boundary');
+for(let i=0;i<math.surfaceMeshes.mobius.length;i++){const a=math.surfaceFace('mobius',i,1,4),b=math.surfaceFace('mobius',i,0,4);assert.ok(b.flat().every(Number.isFinite));assert.deepEqual(a,math.surfaceFace('mobius',i,1,4));}
+assert.doesNotMatch(source,/nextKind|storyFrom|'torus'|'polyhedron'/);
 near(math.assemblyProgress(.5,190,800),.75,'Down assembles');near(math.assemblyProgress(.75,-190,800),.5,'Up reverses');assert.ok(math.assemblyProgress(1,-50,800)<1,'Up breaks apart immediately even at bottom');
 assert.doesNotMatch(source,/aw\*\.52,ah\*\.91|assemblyPoint|scrollTarget\*1\.7/);
 assert.match(css,/section-rail a span\{[^}]*opacity:1/);
@@ -75,7 +83,8 @@ assert.ok(rendered.indexOf('09:00')<rendered.indexOf('13:00'),'Two Sunday sessio
 assert.ok(rendered.includes('&lt;img')&&!rendered.includes('<img src=x'),'Untrusted class names escaped');
 assert.ok(rendered.includes('28/09/2026'),'One-off dates are Vietnamese');
 const filtered=timetable.render(rows,'2026-09-27','Toán 9|9');assert.equal((filtered.match(/<article /g)||[]).length,3);
-assert.match(html,/class="home-zalo-contact"[^>]+https:\/\/zaloapp.com\/qr\/p\/ka7whkhn35yy/);
+assert.match(html,/<button[^>]+class="home-zalo-contact"[^>]+data-contact-qr[^>]+aria-haspopup="dialog"/);
+assert.doesNotMatch(html,/class="home-zalo-contact"[^>]+href=/);
 assert.match(read('js/rank-system.js'),/if\(!document.body.classList.contains\('vm-public-home'\)\)/);
 assert.match(read('js/vinhmath.js'),/function taoChatbotWidget\(\) \{\s+if \(document.body.classList.contains\('vm-public-home'\)\) return;/);
 console.log('Public home: assets, geometry, motion, rail, slideshow, timetable filtering/escaping and homepage contact isolation passed.');

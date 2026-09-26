@@ -11,7 +11,7 @@ function vmMenuEsc(value) {
   });
 }
 
-var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v1';
+var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v2-blog';
 
 function vmMenuCurrentPage() {
   return (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '').split('?')[0];
@@ -208,6 +208,9 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
     });
   }
 
+  // Blog is public reading, independent of classroom subscriptions and exam roles.
+  // Append after role/tenant feature filtering, without changing protected routes.
+  muc.push({type:'link',path:'blog',label:'Blog',featureKey:'public_blog',featureState:'shown'});
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
       if (m.featureState === 'locked') {
@@ -343,7 +346,7 @@ vmMenuHydrateShell();
       window.VM_PORTAL_CONTEXT = portalContext;
       if (portalContext) {
         var currentPage = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
-        var allowed = ['thi', 'luyen-de', 'dang-nhap'];
+        var allowed = ['thi', 'luyen-de', 'dang-nhap', 'blog'];
         if (portalContext.member_role === 'owner' || portalContext.member_role === 'manager') allowed.push('quan-tri-de');
         if (allowed.indexOf(currentPage) === -1) {
           location.replace('thi?portal=' + encodeURIComponent(portalContext.portal.slug));
