@@ -28,6 +28,7 @@ jobs:
       - name: Check security boundaries before publishing
         run: |
           node scripts/check_secret_indicators.js
+          node scripts/test_public_home.cjs
           node scripts/test_anonymous_security_hardening.cjs
           node scripts/test_admin_password_reset.js
           node scripts/test_student_initial_password.cjs
