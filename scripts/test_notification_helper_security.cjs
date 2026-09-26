@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const dir = 'supabase/migrations';
 const filename = fs.readdirSync(dir).find(f=>f.endsWith('_lock_internal_notification_helpers.sql'));
 assert(filename,'migration exists');
-const sql = fs.readFileSync(dir+'/'+filename,'utf8');
+const sql = fs.readFileSync(dir+'/'+filename,'utf8').replace(/\r\n/g,'\n');
 for (const fn of ['notify_class','notify_staff']) {
   assert(sql.includes(`revoke all on function public.${fn}(uuid,text,text,text,text)\n  from public, anon, authenticated;`));
   assert(sql.includes(`grant execute on function public.${fn}(uuid,text,text,text,text)\n  to service_role;`));

@@ -289,6 +289,8 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 @media(max-width:640px){.vm-tex-upload-row{align-items:stretch}.vm-tex-upload-row label{width:100%;justify-content:center}.vm-tex-preview{padding:8px}.vm-tex-preview .vm-tex-reader{padding:18px 12px}.vm-tex-preview .vm-tex-choices{grid-template-columns:1fr}}
 @media(max-width:640px){.wrap{padding:14px 14px 72px}.sidebar-classes{padding:14px}.sidebar-classes-head{align-items:stretch;flex-direction:column}.sidebar-classes-head .btn{width:100%;justify-content:center}}
 </style>
+<link rel="stylesheet" href="css/vm-date-inputs.css?v=20260927">
+<script defer src="js/vm-date-inputs.js?v=20260927"></script>
 </head>
 <body>
 
@@ -2231,6 +2233,7 @@ function khtCapNhatMode() {
 }
 
 async function xacNhanKichHoatTest() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var lessonId = $('khtLessonId').value;
   var mode = $('khtMode').value;
   var duration = parseInt($('khtDuration').value);
@@ -2894,6 +2897,7 @@ async function taiLichSuNhanXet() {
 }
 
 async function luuNhanXet() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var noiDung = $('nxNoiDung').value.trim();
   var thaiDo = $('nxThaiDo').value;
   var ngay = $('nxNgay').value;
@@ -2973,6 +2977,7 @@ async function xoaNhacNho(id) {
 }
 
 async function luuNhacNho() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var noiDung = $('nnNoiDung').value.trim();
   var ngay = $('nnNgay').value;
   if (!noiDung) { alert('Nhập nội dung nhắc nhở trước nhé.'); return; }

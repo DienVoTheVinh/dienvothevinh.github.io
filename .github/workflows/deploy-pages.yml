@@ -47,6 +47,8 @@ jobs:
           node scripts/test_account_services_form_browser.cjs
           node scripts/test_teacher_email_browser.cjs
           node scripts/test_lesson_pdf_layout_browser.cjs
+          node scripts/test_vietnamese_dates_browser.cjs
+          node scripts/test_grading_paste_browser.cjs
           node -e "process.env.VM_CHROME_PATH=require('playwright').chromium.executablePath(); require('./scripts/test_notification_menu_security_browser.js')"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

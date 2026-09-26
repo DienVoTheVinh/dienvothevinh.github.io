@@ -1,0 +1,16 @@
+.vm-date-iso{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;padding:0!important;border:0!important;overflow:hidden!important;clip-path:inset(50%)}
+.vm-date-control{display:inline-flex;position:relative;align-items:center;gap:6px;max-width:100%;vertical-align:middle;box-sizing:border-box}
+.vm-date-control[hidden]{display:none}
+.vm-date-control .vm-date-text{width:132px!important;min-width:0!important;max-width:100%;font-variant-numeric:tabular-nums;padding:10px!important;font:inherit;box-sizing:border-box}
+.vm-date-control .vm-date-time{width:78px!important;min-width:0!important;font-variant-numeric:tabular-nums;padding:10px!important;font:inherit;box-sizing:border-box}
+.vm-date-control input[aria-invalid=true]{outline:2px solid var(--err,#d04444);outline-offset:1px}
+.vm-date-open,.vm-date-calendar button{color:var(--ink,#20232a);background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:8px;cursor:pointer;min-height:36px;min-width:32px;font:inherit}
+.vm-date-control :focus-visible{outline:2px solid var(--accent,#db9400);outline-offset:2px}
+.vm-date-calendar{position:absolute;top:calc(100% + 6px);left:0;width:280px;max-width:calc(100vw - 32px);padding:12px;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);border-radius:12px;box-shadow:0 12px 32px #0003;z-index:10050}
+.vm-date-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.vm-date-calendar[popover]{position:fixed;margin:0;right:auto;bottom:auto;max-height:calc(100dvh - 16px);overflow:auto}
+.vm-date-calendar-footer{display:flex;justify-content:space-between;gap:8px}
+.vm-date-calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;margin-bottom:8px}
+.vm-date-calendar-grid small{padding:5px 0;color:var(--ink-3,#777)}
+.vm-date-calendar button[aria-current=date]{background:var(--accent,#eaa000);color:#171717;font-weight:700}
+.vm-date-calendar button:disabled{opacity:.35;cursor:not-allowed}

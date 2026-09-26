@@ -204,6 +204,8 @@ body.swm-study #vmStudyInline { display: none !important; } /* ẩn đồng hồ
 .bubble .bt { font-size: .68rem; opacity: .7; margin-top: 3px; }
 .unread-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--err); margin-left: 6px; }
 </style>
+<link rel="stylesheet" href="css/vm-date-inputs.css?v=20260927">
+<script defer src="js/vm-date-inputs.js?v=20260927"></script>
 </head>
 <body>
 
@@ -731,6 +733,7 @@ async function napTodo() {
   }).join('');
 }
 async function themTodo() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var c = document.getElementById('tdContent').value.trim(); if (!c) return;
   var due = document.getElementById('tdDue').value || null;
   var r = await sb.from('todos').insert({ student_id: meId, content: c, due_date: due });
@@ -755,6 +758,7 @@ async function napDiary() {
   }).join('');
 }
 async function luuDiary() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var content = document.getElementById('drContent').value.trim(); if (!content) { alert('Viết vài dòng đã nhé!'); return; }
   var rec = { student_id: meId, entry_date: document.getElementById('drDate').value || new Date().toISOString().slice(0, 10), mood: document.getElementById('drMood').value || null, content: content };
   var r = await sb.from('diary').insert(rec);
