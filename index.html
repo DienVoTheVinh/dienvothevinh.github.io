@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="css/vmtools-portal.css?v=9">
 <link rel="stylesheet" href="css/vmtools-showcase.css?v=3">
 <link rel="stylesheet" href="css/vinh-contact.css?v=1">
-<link rel="stylesheet" href="css/public-home.css?v=20260927c">
+<link rel="stylesheet" href="css/public-home.css?v=20260927d">
 </head>
 <body class="vm-public-home">
 <a class="home-skip" href="#noi-dung">Bỏ qua đến nội dung</a>
@@ -31,8 +31,18 @@
     <div class="home-nav-actions"><button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()" aria-label="Đổi giao diện sáng tối">☼</button><a class="btn btn-primary btn-sm" href="dang-nhap">Đăng nhập</a></div>
   </div>
 </header>
+<nav class="home-section-rail" aria-label="Các phần trên trang chủ">
+ <span class="rail-track" aria-hidden="true"><i></i></span>
+ <a href="#gioi-thieu" aria-label="Giới thiệu" aria-current="location"><span>Giới thiệu</span></a>
+ <a href="#he-thong" aria-label="Hệ thống"><span>Hệ thống</span></a>
+ <a href="#tinh-than-vinh" aria-label="Tinh thần VINH"><span>Tinh thần VINH</span></a>
+ <a href="#cong-cu" aria-label="VMTools"><span>VMTools</span></a>
+ <a href="#ve-vinhmath" aria-label="Người đồng hành"><span>Người đồng hành</span></a>
+ <a href="#lich-hoc" aria-label="Lịch học"><span>Lịch học</span></a>
+ <a href="#blog-cong-khai" aria-label="Blog"><span>Blog</span></a>
+</nav>
 <main id="noi-dung">
-<section class="home-hero">
+<section class="home-hero" id="gioi-thieu">
   <div class="home-shell hero-layout">
     <div class="hero-copy">
       <p class="home-kicker"><span></span> VINHMATH · KẾT NỐI TRI THỨC</p>
@@ -81,19 +91,7 @@
     <div class="sec-label">Lịch học · Tuyển sinh</div>
     <h2 style="margin-bottom:8px">Lịch các lớp đang mở</h2>
     <p style="margin-bottom:20px;color:var(--ink-2);max-width:60ch">Phụ huynh xem khung giờ phù hợp và liên hệ thầy qua Facebook hoặc Zalo để đăng ký cho con.</p>
-    <div class="card" style="padding:8px 4px;overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:.92rem">
-        <thead><tr>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lớp</th>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Lịch học trong tuần</th>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Hình thức</th>
-          <th style="text-align:left;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--line-2)">Ghi chú</th>
-        </tr></thead>
-        <tbody id="bangLichCongKhai">
-          <tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Đang tải lịch học…</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div id="bangLichCongKhai" class="public-timetable" aria-label="Thời khóa biểu các lớp"><p class="timetable-empty" role="status">Đang tải lịch học…</p></div>
   </section>
 
   <!-- Blog công khai (quảng bá, đọc tự do — không cần tài khoản) -->
@@ -109,12 +107,13 @@
 <footer class="home-footer"><div class="home-shell"><a class="logo" href="index"><span><span class="brand-vinh">VINH</span>MATH</span></a><span>Hệ thống dạy và học toán thông minh.</span><small>© 2026 VinhMath</small><a href="#noi-dung">Về đầu trang ↑</a></div></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.7"></script>
-<script src="js/menu-v5.js?v=submission-20260927"></script>
+<a class="home-zalo-contact" href="https://zaloapp.com/qr/p/ka7whkhn35yy" target="_blank" rel="noopener noreferrer" aria-label="Liên hệ thầy Vinh qua Zalo" title="Liên hệ thầy Vinh qua Zalo"><svg viewBox="0 0 64 64" aria-hidden="true"><path fill="white" d="M32 8C17 8 7 17 7 30c0 8 4 14 11 18l-3 9 12-5h5c15 0 25-9 25-22S47 8 32 8Z"/><text x="32" y="36" text-anchor="middle" fill="#0068ff" font-family="Arial,sans-serif" font-size="18" font-weight="700">Zalo</text></svg><span>Liên hệ Zalo</span></a>
+<script src="js/vinhmath.js?v=9.7-home-contact"></script>
+<script src="js/menu-v5.js?v=home-contact-20260927"></script>
 <script src="js/analytics.js"></script>
-<script src="js/public-home.js?v=20260927c"></script>
+<script src="js/public-home.js?v=20260927d"></script>
 <script src="js/vmtools-cosmos.js?v=2"></script>
-<script src="js/vmtools-showcase.js?v=13"></script>
+<script src="js/vmtools-showcase.js?v=14"></script>
 <script src="js/vinh-contact.js?v=2"></script>
 <script>
 // Blog công khai (quảng bá, đọc tự do — không cần đăng nhập)
@@ -138,80 +137,7 @@
   } catch (e) { box.innerHTML = '<p style="color:var(--ink-3)">Không tải được blog.</p>'; }
 })();
 </script>
-<script>
-// Lịch học công khai (đọc được không cần đăng nhập)
-(async function () {
-  var o = document.getElementById('bangLichCongKhai');
-  if (!daKetNoi()) { o.innerHTML = '<tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Lịch đang cập nhật.</td></tr>'; return; }
-  var TEN_THU = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
-  var r = await sb.from('schedules')
-    .select('weekday, start_time, end_time, mode, note, recurrence, date, start_date, end_date, classes(name, grade, is_specialized)')
-    .order('weekday').order('start_time');
-  
-  var tzOffset = (new Date()).getTimezoneOffset() * 60000;
-  var localToday = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
-  var ds = (r.data || []).filter(function (s) {
-    if (s.recurrence === 'once') {
-      return s.date && s.date >= localToday;
-    }
-    if (s.start_date && s.start_date > localToday) return false;
-    if (s.end_date && s.end_date < localToday) return false;
-    return true;
-  });
-  
-  if (!ds.length) { o.innerHTML = '<tr><td colspan="4" style="padding:16px 14px;color:var(--ink-3)">Lịch khai giảng sẽ được cập nhật sớm — phụ huynh liên hệ Zalo để được tư vấn.</td></tr>'; return; }
-  
-  // Nhóm theo lớp
-  var classesMap = {};
-  ds.forEach(function (s) {
-    var className = s.classes ? s.classes.name : '?';
-    if (!classesMap[className]) {
-      classesMap[className] = {
-        name: className,
-        grade: s.classes ? s.classes.grade : null,
-        is_specialized: s.classes ? s.classes.is_specialized : false,
-        modes: [],
-        schedules: []
-      };
-    }
-    var modeText = s.mode === 'online' ? '🎥 Online' : '🏫 Tại lớp';
-    if (classesMap[className].modes.indexOf(modeText) === -1) {
-      classesMap[className].modes.push(modeText);
-    }
-    classesMap[className].schedules.push(s);
-  });
-
-  var uniqueClasses = Object.keys(classesMap).map(function (k) { return classesMap[k]; });
-  uniqueClasses.sort(function (a, b) { return a.name.localeCompare(b.name, 'vi', { numeric: true }); });
-
-  o.innerHTML = uniqueClasses.map(function (c) {
-    c.schedules.sort(function (a, b) { return a.weekday - b.weekday; });
-    var scheduleTexts = c.schedules.map(function (s) {
-      var timeStr = s.start_time.slice(0, 5) + ' – ' + s.end_time.slice(0, 5);
-      var recText = s.recurrence === 'biweekly' ? ' <small style="color:var(--ink-3)"><i>(2 tuần/lần)</i></small>' : '';
-      return '<b>' + TEN_THU[s.weekday] + '</b>: ' + timeStr + recText;
-    });
-    
-    var timeColumnHtml = scheduleTexts.join('<br/>');
-    var modesHtml = c.modes.join(', ');
-    var notes = c.schedules.map(function (s) { return s.note; }).filter(Boolean);
-    var notesHtml = notes.length ? notes.join(' · ') : '';
-
-    return '<tr>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' +
-        '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">' +
-          '<b>' + c.name + '</b>' +
-          (c.grade ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:rgba(30,78,140,0.08); color:var(--ink-2); font-weight:600; margin-left:4px">Khối ' + c.grade + '</span>' : '') +
-          (c.is_specialized ? '<span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background:var(--accent-soft); color:var(--accent); border:1px solid rgba(194,125,0,0.15); font-weight:600; margin-left:4px">Chuyên</span>' : '') +
-        '</div>' +
-      '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);line-height:1.5;font-variant-numeric:tabular-nums">' + timeColumnHtml + '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line)">' + modesHtml + '</td>' +
-      '<td style="padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-2)">' + notesHtml + '</td>' +
-      '</tr>';
-  }).join('');
-})();
-</script>
+<script src="js/public-timetable.js?v=20260927a"></script>
 
 </body>
 </html>

@@ -2381,7 +2381,7 @@ let aiChatWidgetCreated = false;
 let aiChatHistory = [];
 
 function capNhatChatbotUI() {
-  var enabled = window.VM_AI_SETTINGS.enabled; // key giờ nằm phía máy chủ (Edge Function)
+  var enabled = window.VM_AI_SETTINGS.enabled && !document.body.classList.contains('vm-public-home'); // Trang giới thiệu dùng liên hệ Zalo, không dùng trợ lý học tập.
   var bubble = document.getElementById('aiChatBubble');
   var box = document.getElementById('aiChatBox');
   
@@ -2399,6 +2399,7 @@ function capNhatChatbotUI() {
 }
 
 function taoChatbotWidget() {
+  if (document.body.classList.contains('vm-public-home')) return;
   if (aiChatWidgetCreated) return;
   
   // 1. Tạo Bubble

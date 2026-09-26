@@ -13,7 +13,7 @@ for(const mobile of [false,true]){
  });
  await p.goto(target);await p.locator('#vm-preloader').waitFor({state:'hidden'});const host=p.locator('.vm-launch'),canvas=host.locator('.vm-cosmos');await host.scrollIntoViewIfNeeded();await p.waitForTimeout(200);
  assert.equal(await host.locator('.vm-orbit-scene,.vm-orbit-tools,.vm-orbit-canvas,.vm-motion').count(),0,'no framed scene or controls');assert.equal(await canvas.getAttribute('aria-hidden'),'true');
- const box=await host.boundingBox(),r=await canvas.boundingBox();assert.ok(r.y<box.y&&r.width>=box.width-2,'scene extends above whole section');assert.equal(await canvas.evaluate(e=>getComputedStyle(e).pointerEvents),'none');
+ const box=await host.boundingBox(),r=await canvas.boundingBox(),publicHome=await p.locator('body.vm-public-home').count();assert.ok((publicHome?r.y>=box.y:r.y<box.y)&&r.width>=box.width-2,publicHome?'public home keeps black hole inside showcase':'standalone scene extends above section');assert.equal(await canvas.evaluate(e=>getComputedStyle(e).pointerEvents),'none');
  const first=await p.evaluate(()=>cosmosTrace.frames);await p.waitForTimeout(350);assert.ok((await p.evaluate(()=>cosmosTrace.frames))-first>5,'continuous animation');
  // Keyboard activation proves the gallery itself emits a reaction, without a pointer pressing particles.
  const tab=host.locator('[data-vm-view="solid"]');await tab.focus();await p.evaluate(()=>cosmosTrace.maxStreaks=0);await p.keyboard.press('Enter');await p.waitForTimeout(500);assert.equal(await tab.getAttribute('aria-pressed'),'true');assert.ok(await p.evaluate(()=>cosmosTrace.maxStreaks)>8,'gallery wave moves particles');
