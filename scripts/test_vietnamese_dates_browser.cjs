@@ -1,0 +1,49 @@
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { chromium } = require('playwright');
+const root = path.resolve(__dirname, '..');
+(async () => {
+  const browser = await chromium.launch({headless:true, executablePath:process.env.VM_CHROME_PATH});
+  try {
+    for (const locale of ['en-US','vi-VN','en-GB']) {
+      const page = await browser.newPage({locale});
+      const errors=[]; page.on('pageerror', e=>errors.push(e.message));
+      await page.setContent('<form><label for="due">Hạn nộp bài</label><input id="due" name="due" type="datetime-local" value="2026-09-27T19:30" required><input id="day" type="date" value="2026-02-28"><button>Lưu</button></form>');
+      await page.addStyleTag({path:path.join(root,'css/vm-date-inputs.css')});
+      await page.addScriptTag({path:path.join(root,'js/vm-date-inputs.js')});
+      const date=page.locator('.vm-date-text').first(), time=page.locator('.vm-date-time');
+      assert.equal(await date.inputValue(),'27/09/2026');
+      assert.equal(await time.inputValue(),'19:30');
+      await date.fill('03/04/2027'); await time.fill('06:45');
+      assert.equal(await page.locator('#due').inputValue(),'2027-04-03T06:45');
+      assert.equal(await page.evaluate(()=>new FormData(document.querySelector('form')).get('due')),'2027-04-03T06:45');
+      await date.fill('31/02/2027');
+      assert.equal(await page.evaluate(()=>VMDateInputs.validate()),false);
+      assert.equal(await page.locator('#due').inputValue(),'2027-04-03T06:45');
+      await page.evaluate(()=>document.getElementById('due').value='2028-02-29T23:59');
+      assert.equal(await date.inputValue(),'29/02/2028');
+      assert.equal(await time.inputValue(),'23:59');
+      await page.locator('.vm-date-open').first().click();
+      await page.getByRole('button',{name:'17/02/2028',exact:true}).click();
+      assert.equal(await page.locator('#due').inputValue(),'2028-02-17T23:59');
+      await page.evaluate(()=>document.getElementById('due').disabled=true);
+      await page.waitForFunction(()=>document.querySelector('.vm-date-text').disabled);
+      await page.evaluate(()=>document.getElementById('due').disabled=false);
+      await page.evaluate(()=>document.querySelector('form').reset());
+      await page.waitForFunction(()=>document.querySelector('.vm-date-text').value==='27/09/2026');
+      await page.evaluate(()=>{var x=document.createElement('input');x.type='date';x.id='dynamic';x.value='2027-12-13';document.body.append(x);});
+      await page.waitForFunction(()=>document.querySelectorAll('.vm-date-text').length===3);
+      assert.equal(await page.locator('.vm-date-text').last().inputValue(),'13/12/2027');
+      await page.evaluate(()=>document.getElementById('dynamic').value='');
+      await page.locator('.vm-date-text').last().fill('29/02/2027');
+      assert.equal(await page.evaluate(()=>VMDateInputs.validate()),false);
+      await page.locator('.vm-date-text').last().fill('29/02/2028');
+      assert.equal(await page.evaluate(()=>VMDateInputs.validate()),true);
+      await page.setViewportSize({width:360,height:780});
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      assert.deepEqual(errors,[]);
+      await page.close();
+    }
+    console.log('PASS Vietnamese date controls: 3 locales, ISO payloads, leap years, validation, dynamic fields, calendar, reset, mobile');
+  } finally { await browser.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

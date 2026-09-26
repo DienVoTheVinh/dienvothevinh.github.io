@@ -574,6 +574,8 @@
   100% { left: 100%; width: 30%; }
 }
 </style>
+<link rel="stylesheet" href="css/vm-date-inputs.css?v=20260927">
+<script defer src="js/vm-date-inputs.js?v=20260927"></script>
 </head>
 <body>
 <!-- Premium Page Preloader -->
@@ -4006,6 +4008,7 @@ function dbToggleMoveFields() {
 }
 function dongDoiBuoi() { document.getElementById('modalDoiBuoi').style.display = 'none'; }
 async function luuDoiBuoi() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   var s = (tatCaSchedules || []).find(function (x) { return x.id === _dbSchedId; });
   if (!s) return;
   var status = document.querySelector('input[name="dbStatus"]:checked').value;

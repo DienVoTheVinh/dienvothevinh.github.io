@@ -59,6 +59,8 @@
   .tt-bulk-result-login { grid-column:1 / -1; }
 }
 </style>
+<link rel="stylesheet" href="css/vm-date-inputs.css?v=20260927">
+<script defer src="js/vm-date-inputs.js?v=20260927"></script>
 </head>
 <body>
 
@@ -646,6 +648,7 @@ function ttBao(msg, loai, trustedHtml) {
 }
 
 async function taoTaiKhoan() {
+  if (window.VMDateInputs && !VMDateInputs.validate()) return;
   $('ttResultBox').style.display = 'none';
   var loai = $('ttLoai').value;
   var fullName = $('ttHoTen').value.trim();

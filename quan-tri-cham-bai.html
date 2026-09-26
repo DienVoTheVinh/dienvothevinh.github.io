@@ -529,8 +529,9 @@
       <div class="chb-answer-grid">
         <div class="chb-answer-pane">
           <b>Ảnh hoặc PDF</b>
-          <div class="chb-answer-drop" id="dapAnDrop" tabindex="0" onclick="document.getElementById('dapAnFiles').click()">
-            📤 Chọn nhiều ảnh/PDF · hoặc bấm vào đây rồi dán ảnh (Ctrl/⌘ + V)
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('dapAnFiles').click()">📂 Chọn ảnh / PDF từ máy</button>
+          <div class="chb-answer-drop" id="dapAnDrop" tabindex="0" role="group" aria-label="Vùng dán ảnh đáp án chung" onclick="this.focus()">
+            📋 Bấm vào vùng này rồi dán ảnh bằng <b>Ctrl/⌘ + V</b>
           </div>
           <input type="file" id="dapAnFiles" accept="image/*,application/pdf" multiple hidden onchange="dapAnThemFile(this.files);this.value=String()">
           <div class="chb-answer-files" id="dapAnFileList"></div>
@@ -1344,7 +1345,8 @@ function veDanhSach() {
       '</div>' +
       '<div id="preview-' + s.id + '" style="display:none;margin-top:8px;padding:12px 14px;border:1px solid var(--ok);border-radius:8px;background:var(--ok-soft)"></div>' +
       '<div class="chb-label">✏️ Ảnh chấm trả cho học sinh — dán (Ctrl/⌘+V) hoặc chọn tệp, ◀▶ đổi thứ tự, ✕ xoá, bấm ảnh để xem lớn</div>' +
-      '<div class="chb-stage-zone" id="stagezone-' + s.id + '" tabindex="0" onclick="document.getElementById(\'filecham-' + s.id + '\').click()">📤 Bấm chọn ảnh · hoặc bấm vào đây rồi <b>dán (Ctrl/⌘ + V)</b></div>' +
+      '<button type="button" class="btn btn-secondary btn-sm" style="margin-bottom:8px" onclick="document.getElementById(\'filecham-' + s.id + '\').click()">📂 Chọn ảnh / PDF từ máy</button>' +
+      '<div class="chb-stage-zone" id="stagezone-' + s.id + '" tabindex="0" role="group" aria-label="Vùng dán ảnh chấm bài" onclick="this.focus()">📋 Bấm vào vùng này rồi <b>dán ảnh (Ctrl/⌘ + V)</b></div>' +
       '<input type="file" id="filecham-' + s.id + '" accept="image/*,application/pdf" multiple style="display:none" onchange="chamThemFile(\'' + s.id + '\', this.files); this.value=String()">' +
       '<div class="chb-thumbs" id="chamstage-' + s.id + '" style="margin-top:8px"></div>' +
       '<div id="danchamtt-' + s.id + '" style="font-size:.8rem;color:var(--ok);margin-top:4px"></div>' +
