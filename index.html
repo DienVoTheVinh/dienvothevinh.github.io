@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="css/vmtools-portal.css?v=9">
 <link rel="stylesheet" href="css/vmtools-showcase.css?v=3">
 <link rel="stylesheet" href="css/vinh-contact.css?v=1">
-<link rel="stylesheet" href="css/public-home.css?v=20260927b">
+<link rel="stylesheet" href="css/public-home.css?v=20260927c">
 </head>
 <body class="vm-public-home">
 <a class="home-skip" href="#noi-dung">Bỏ qua đến nội dung</a>
@@ -41,8 +41,8 @@
       <div class="home-actions"><a class="home-button primary" href="trang-chu?preview=1" id="homeTry">Khám phá VinhMath <span aria-hidden="true">↗</span></a><a class="home-text-link" href="#he-thong">Tìm hiểu hệ thống <span aria-hidden="true">↓</span></a></div>
       <div class="hero-footnote"><span>THCS & THPT</span><i></i><span>Học sinh · Giáo viên · Phụ huynh</span></div>
     </div>
-    <figure class="math-art" aria-label="Hình học động: mặt cầu trong hệ trục Oxyz, tiếp tuyến parabol và góc nội tiếp">
-      <canvas id="homeMathCanvas" role="img" aria-label="Mặt cầu tâm O với ba trục Ox, Oy, Oz có mũi tên. Hình tự chuyển cảnh sang parabol và góc nội tiếp."></canvas>
+    <figure class="math-art" aria-label="Hình học động: mặt cầu trong hệ trục tọa độ, tiếp tuyến parabol và góc nội tiếp">
+      <canvas id="homeMathCanvas" role="img" aria-label="Mặt cầu tâm O với ba trục x, y, z có mũi tên. Hình tự chuyển cảnh sang parabol và góc nội tiếp."></canvas>
       <figcaption class="sr-only">Minh họa tự động. Chế độ giảm chuyển động của thiết bị sẽ giữ hình tĩnh.</figcaption>
     </figure>
   </div>
@@ -51,20 +51,21 @@
 <section class="home-section home-shell" id="he-thong">
   <div class="section-heading home-reveal"><p class="home-kicker">01 / HỆ SINH THÁI HỌC TẬP</p><h2>Mọi bước học tập.<br><span>Trong một hệ thống.</span></h2><p>Bớt chuyển ứng dụng. Thêm thời gian để hiểu bài.<br>VinhMath nối liền việc dạy, học và theo dõi tiến bộ.</p></div>
   <div class="system-grid">
-    <a class="system-item home-reveal" href="lop-hoc"><span class="item-number">01</span><svg viewBox="0 0 200 100" aria-hidden="true"><path d="M15 76L60 18L102 76ZM102 76L143 30L185 76M60 18L143 30M60 18V76" stroke-dasharray="0"/><circle cx="60" cy="18" r="4"/><circle cx="143" cy="30" r="4"/></svg><h3>Lớp học kết nối <span>↗</span></h3><p>Bài giảng, video và lịch học. Học trên lớp, tiếp nối ở nhà.</p></a>
-    <a class="system-item home-reveal" href="luyen-de"><span class="item-number">02</span><svg viewBox="0 0 200 100" aria-hidden="true"><path d="M18 76H185M36 87V13M48 68Q105-30 174 65"/><path d="M66 76V45M88 76V31M110 76V31M132 76V41M154 76V54" opacity=".35"/></svg><h3>Luyện tập có hướng <span>↗</span></h3><p>Luyện đề theo chuyên đề, xem kết quả và nhận phản hồi.</p></a>
-    <a class="system-item home-reveal" href="quan-tri-de?tab=compose"><span class="item-number">03</span><svg viewBox="0 0 200 100" aria-hidden="true"><rect x="42" y="12" width="90" height="74" rx="3"/><path d="M58 30H116M58 43H96M58 58L74 69L98 50M140 24H155V93H60"/></svg><h3>Soạn & giao bài <span>↗</span></h3><p>Tài liệu LaTeX, ngân hàng câu hỏi và kiểm tra cùng một nơi.</p></a>
-    <a class="system-item home-reveal" href="ket-qua"><span class="item-number">04</span><svg viewBox="0 0 200 100" aria-hidden="true"><path d="M20 83H185M30 78V55H54V78M74 78V40H98V78M118 78V21H142V78M162 78V12H182V78"/><path d="M35 37L84 22L128 9" opacity=".5"/></svg><h3>Thấy rõ tiến bộ <span>↗</span></h3><p>Bài chấm, nhận xét và báo cáo giúp việc đồng hành cụ thể hơn.</p></a>
+    <a class="system-item home-reveal" href="lop-hoc"><svg class="system-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 13C18 9 10 8 4 10v26c7-2 14-1 20 3 6-4 13-5 20-3V10c-6-2-14-1-20 3Z"/><path d="M24 13v26M10 17c3-.4 6 .1 9 1.5M10 24c3-.4 6 .1 9 1.5M29 18.5c3-1.4 6-1.9 9-1.5M29 25.5c3-1.4 6-1.9 9-1.5"/></svg><h3>Lớp học kết nối <span>↗</span></h3><p>Bài giảng, video và lịch học. Học trên lớp, tiếp nối ở nhà.</p></a>
+    <a class="system-item home-reveal" href="luyen-de"><svg class="system-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M39 24a16 16 0 1 1-15-16M32 24a9 9 0 1 1-8-9"/><path d="m24 24 16-16m-9 0h9v9"/><circle cx="24" cy="24" r="2" fill="currentColor" stroke="none"/></svg><h3>Luyện tập có hướng <span>↗</span></h3><p>Luyện đề theo chuyên đề, xem kết quả và nhận phản hồi.</p></a>
+    <a class="system-item home-reveal" href="quan-tri-de?tab=compose"><svg class="system-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="m29 10 7-7 9 9-7 7-9-9Zm0 0L9 30l-3 12 12-3 20-20M9 30l9 9M27 42h17"/><path d="m33 6 9 9" opacity=".45"/></svg><h3>Soạn & giao bài <span>↗</span></h3><p>Tài liệu LaTeX, ngân hàng câu hỏi và kiểm tra cùng một nơi.</p></a>
+    <a class="system-item home-reveal" href="ket-qua"><svg class="system-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 7v34h36M12 29l9-10 8 6 12-16"/><path d="M33 9h8v8"/><circle cx="21" cy="19" r="2.5" fill="currentColor" stroke="none"/><circle cx="29" cy="25" r="2.5" fill="currentColor" stroke="none"/></svg><h3>Thấy rõ tiến bộ <span>↗</span></h3><p>Bài chấm, nhận xét và báo cáo giúp việc đồng hành cụ thể hơn.</p></a>
   </div>
 </section>
-<section class="learning-band">
+<section class="learning-band" id="tinh-than-vinh">
  <div class="home-shell learning-layout">
-  <div class="home-reveal"><p class="home-kicker">KHÔNG CHỈ LÀ MỘT ĐÁP ÁN</p><h2>Hiểu điều đã học.<br><em>Biết bước tiếp theo.</em></h2><p>Học toán là hành trình kết nối những điều tưởng chừng rời rạc. Công nghệ giúp hành trình ấy rõ ràng hơn; người thầy vẫn là người đồng hành.</p><a class="home-text-link" href="#ve-vinhmath">Tinh thần VinhMath <span>↗</span></a></div>
-  <ol class="learning-steps">
-   <li class="home-reveal"><span>01</span><div><h3>Khám phá bản chất</h3><p>Quan sát hình vẽ, đọc bài giảng, đặt câu hỏi.</p></div></li>
-   <li class="home-reveal"><span>02</span><div><h3>Thử sức & nhận phản hồi</h3><p>Làm bài, xem lại lời giải và những điều cần cải thiện.</p></div></li>
-   <li class="home-reveal"><span>03</span><div><h3>Tiến bộ từng ngày</h3><p>Theo dõi kết quả để điều chỉnh cách học phù hợp.</p></div></li>
-  </ol>
+  <div class="home-reveal"><p class="home-kicker">TINH THẦN VINH</p><h2>Một tầm nhìn.<br><em>Bốn giá trị đồng hành.</em></h2><p>VINH là Vision · Inquiry · Nurture · Humanity. Từ cách đặt câu hỏi đến cách xây dựng công nghệ, mỗi lựa chọn đều hướng về sự trưởng thành của người học.</p><a class="home-text-link" href="#ve-vinhmath">Con người phía sau VinhMath <span>↗</span></a></div>
+  <dl class="vinh-values">
+   <div class="home-reveal"><dt><span class="value-letter" aria-hidden="true">V</span><span>Vision<small>Tầm nhìn</small></span></dt><dd>Nhìn xa hơn một điểm số, hướng đến năng lực học tập lâu dài.</dd></div>
+   <div class="home-reveal"><dt><span class="value-letter" aria-hidden="true">I</span><span>Inquiry<small>Khám phá</small></span></dt><dd>Nuôi sự tò mò, biết đặt câu hỏi và tìm hiểu đến bản chất.</dd></div>
+   <div class="home-reveal"><dt><span class="value-letter" aria-hidden="true">N</span><span>Nurture<small>Nuôi dưỡng</small></span></dt><dd>Đồng hành, khích lệ và tạo điều kiện để mỗi người tiến bộ.</dd></div>
+   <div class="home-reveal"><dt><span class="value-letter" aria-hidden="true">H</span><span>Humanity<small>Nhân văn</small></span></dt><dd>Đặt con người ở trung tâm; công nghệ phục vụ việc dạy và học.</dd></div>
+  </dl>
  </div>
 </section>
 <section class="home-shell home-section" id="cong-cu">
@@ -111,7 +112,7 @@
 <script src="js/vinhmath.js?v=9.7"></script>
 <script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/analytics.js"></script>
-<script src="js/public-home.js?v=20260927b"></script>
+<script src="js/public-home.js?v=20260927c"></script>
 <script src="js/vmtools-cosmos.js?v=2"></script>
 <script src="js/vmtools-showcase.js?v=13"></script>
 <script src="js/vinh-contact.js?v=2"></script>
