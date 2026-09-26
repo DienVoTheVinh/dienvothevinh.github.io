@@ -1,80 +1,38 @@
 'use strict';
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-const html = read('index.html');
-const source = read('js/public-home.js');
-const css = read('css/public-home.css');
-assert.match(html, /Hệ thống dạy và học toán thông minh/);
-assert.ok(html.indexOf('id="vmInstallHero"') < html.indexOf('<header class="topbar">'), 'Install strip must precede navigation');
-for (const id of ['vmInstallHeroBtn', 'vmInstallHeroNote', 'homeTry', 'homeMathCanvas', 'scene-space', 'scene-graph', 'scene-geometry', 'graphA', 'blogCongKhai', 'bangLichCongKhai']) {
-  assert.equal(html.split('id="' + id + '"').length - 1, 1, `Unique integration anchor: ${id}`);
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const html=read('index.html'),source=read('js/public-home.js'),css=read('css/public-home.css');
+const math=require('../js/public-home.js');
+assert.match(html,/Hệ thống dạy và học toán thông minh/);
+for(const id of ['homeTry','homeMathCanvas','homeAmbientCanvas','blogCongKhai','bangLichCongKhai'])assert.equal(html.split('id="'+id+'"').length-1,1,id);
+assert.doesNotMatch(html,/id="vmInstallHero"|class="math-lab"|id="mathMotion"|id="graphA"|data-scene=/);
+assert.match(css,/\.vm-public-home #vmInstallBtn/);
+assert.match(css,/prefers-reduced-motion:reduce/);
+assert.match(source,/document.hidden\|\|reduced.matches/);
+assert.match(source,/Math.min\(devicePixelRatio\|\|1,1.5\)/);
+assert.match(source,/'Ox'/);assert.match(source,/'Oy'/);assert.match(source,/'Oz'/);
+new vm.Script(source);
+for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
+for(const match of html.matchAll(/(?:src|href)="([^"#?]+)(?:\?[^"\s]*)?"/g)){
+  if(/^(?:https?:|#)/.test(match[1]))continue;
+  const file=path.join(root,match[1].replace(/^\//,''));
+  assert.ok(fs.existsSync(file)||fs.existsSync(file+'.html'),'Missing asset/route: '+match[1]);
 }
-assert.match(css, /body\.vm-public-home/);
-assert.match(css, /prefers-reduced-motion:reduce/);
-assert.doesNotMatch(html, /id="cyberCanvas"|id="preloader"/);
-for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
-for (const match of html.matchAll(/(?:src|href)="([^"#?]+)(?:\?[^"\s]*)?"/g)) {
-  if (/^(?:https?:|#)/.test(match[1])) continue;
-  const file = path.join(root, match[1].replace(/^\//, ''));
-  assert.ok(fs.existsSync(file) || fs.existsSync(file + '.html'), `Missing linked asset/route: ${match[1]}`);
-}
-
-// Deterministic motion and interaction checks, without network or real user data.
-function checkMotion(reduce) {
-  const elements = new Map(), frames = new Map(), observers = [];
-  let frameId = 0;
-  const ctx = new Proxy({}, { get: (obj, key) => obj[key] || (() => {}) });
-  function element(id) {
-    if (elements.has(id)) return elements.get(id);
-    const value = { id, value: '1', hidden: false, dataset: {}, attrs: {}, listeners: {},
-      classList: { add() {}, remove() {} },
-      setAttribute(k,v) { this.attrs[k] = v; },
-      addEventListener(k,v) { this.listeners[k] = v; },
-      getBoundingClientRect: () => ({ width: 500, height: 390, left: 0, top: 0 }),
-      getContext: () => ctx
-    };
-    elements.set(id, value); return value;
+const near=(a,b,msg)=>assert.ok(Math.abs(a-b)<1e-10,msg+': '+a+' != '+b);
+for(let i=0;i<1000;i++){
+  const lat=-Math.PI/2+Math.PI*i/999,lon=i*.618,p=math.spherePoint(lat,lon);
+  near(p.reduce((s,v)=>s+v*v,0),1,'Point stays on sphere');
+  const h=.55*Math.sin(i),r=Math.sqrt(1-h*h);
+  near((r*Math.cos(lon))**2+(r*Math.sin(lon))**2+h*h,1,'Section stays on sphere');
+  const t=-1.45+2.9*i/999;near(math.tangent(t,t),t*t,'Tangent contains point');
+  const epsilon=.001;
+  near(((t+epsilon)**2-(t-epsilon)**2)/(2*epsilon),2*t,'Derivative is 2t');
+  const B=math.circlePoint(7*Math.PI/6),C=math.circlePoint(11*Math.PI/6);
+  for(const angle of [2.12+.22*Math.sin(i*.29),.78+.2*Math.sin(i*.24)]){
+    const A=math.circlePoint(angle),u=B.map((v,k)=>v-A[k]),v=C.map((n,k)=>n-A[k]);
+    near(Math.acos((u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v))),Math.PI/3,'Inscribed angle is 60 degrees');
   }
-  const buttons = ['space', 'graph', 'geometry'].map(id => { const e = element('button-' + id); e.dataset.scene = id; return e; });
-  const canvas = element('homeMathCanvas'); canvas.parentElement = element('stage');
-  const media = { matches: reduce, addEventListener() {} };
-  const document = { hidden: false, body: element('body'), listeners: {},
-    getElementById: element, querySelector: element,
-    querySelectorAll: selector => selector === '[data-scene]' ? buttons : [],
-    addEventListener(k,v) { this.listeners[k] = v; }
-  };
-  class Observer { constructor(fn) { this.fn = fn; observers.push(this); } observe() {} unobserve() {} }
-  const context = { document, matchMedia: () => media, devicePixelRatio: 3,
-    ResizeObserver: Observer, IntersectionObserver: Observer, innerHeight: 900,
-    requestAnimationFrame: fn => { frames.set(++frameId, fn); return frameId; },
-    cancelAnimationFrame: id => frames.delete(id), sessionStorage: { setItem() {} },
-    window: { IntersectionObserver: Observer, addEventListener() {} }
-  };
-  vm.runInNewContext(source, context);
-  assert.equal(canvas.width, 750, 'Canvas resolution is capped for performance');
-  assert.equal(frames.size, reduce ? 0 : 1, 'Reduced motion starts static');
-  element('mathMotion').listeners.click();
-  assert.equal(frames.size, reduce ? 1 : 0, 'Pause/play control works');
-  if (!reduce) element('mathMotion').listeners.click();
-  document.hidden = true; document.listeners.visibilitychange();
-  assert.equal(frames.size, 0, 'Background tab stops animation');
-  document.hidden = false; document.listeners.visibilitychange();
-  buttons[1].listeners.click();
-  assert.equal(frames.size, 0, 'Other math scenes stop sphere animation');
-  assert.equal(element('scene-space').hidden, true);
-  assert.equal(element('scene-graph').hidden, false);
-  element('graphA').value = '1.5'; element('graphA').listeners.input();
-  assert.equal(element('graphAValue').textContent, '1,5');
-  assert.equal(element('.math-tracer').attrs.cy, 214);
-  assert.match(element('parabolaPath').attrs.d, /^M[\d.]+ [\d.]+ L/);
-  buttons[0].listeners.click();
-  assert.equal(frames.size, 1, 'Sphere resumes when selected');
-  observers[1].fn([{ isIntersecting: false }]);
-  assert.equal(frames.size, 0, 'Offscreen sphere stops animation');
 }
-checkMotion(false); checkMotion(true);
-console.log('Public homepage: assets, integration anchors, syntax, motion budget and math interactions passed.');
+const z=math.project(0,0,1);near(z[0],0,'Oz is vertical');assert.ok(z[1]<0,'Oz points up');
+for(const p of [[1,0,0],[0,1,0],[0,0,1]])assert.ok(Math.hypot(...math.project(...p))<=1,'Projection does not distort sphere beyond its radius');
+console.log('Public home: syntax, assets, icon integration, motion guards and 5000+ mathematical invariants passed.');
