@@ -56,7 +56,13 @@ for(let i=1;i<=120;i++){const fn=queued;queued=null;fn(i*1000/60);assert.ok(queu
 assert.equal(draws-initial,120,'Hero draws every display frame, not every other frame');
 doc.hidden=true;queued(3000);assert.equal(draws-initial,120,'Hidden page does not render');
 doc.hidden=false;reduced.matches=true;queued(4000);assert.equal(draws-initial,120,'Reduced-motion mode does not animate');
-for(let i=0;i<160;i++){const p=math.assemblyPoint(i,1,1400,900,0),q=math.assemblyPoint(i,1,1400,900,100);near(p[0],q[0],'Assembled graph does not drift');near(p[1],900*(.52-.23*Math.sin((i/159)*2*Math.PI)),'Assembles into sine curve');const a=math.assemblyPoint(i,.4,1400,900,2),b=math.assemblyPoint(i,.4,1400,900,2);assert.deepEqual(a,b,'Scroll assembly is reversible, not direction-triggered');}
+assert.equal(math.surfaceMeshes.polyhedron.length,20,'Icosahedron has 20 triangular faces');
+assert.equal(math.polyEdges.length,30,'Icosahedron has 30 equal edges');
+for(let i=0;i<80;i++){const u=i*.1,v=i*.13,p=math.surfacePoint('torus',u,v);near((Math.hypot(p[0],p[1])-.95)**2+p[2]**2,.34**2,'Torus equation');const a=math.surfacePoint('mobius',0,i/40-1),b=math.surfacePoint('mobius',2*Math.PI,1-i/40);a.forEach((x,k)=>near(x,b[k],'Mobius seam reverses'));}
+for(const kind of ['torus','mobius','polyhedron']){for(let i=0;i<math.surfaceMeshes[kind].length;i++){const a=math.surfaceFace(kind,i,1,4),b=math.surfaceFace(kind,i,0,4);const center=f=>f.reduce((s,p)=>s.map((v,k)=>v+p[k]/f.length),[0,0,0]);assert.ok(Math.hypot(...center(b))>Math.hypot(...center(a)),'Fragments move outward');assert.ok(b.flat().every(Number.isFinite));assert.deepEqual(a,math.surfaceFace(kind,i,1,4),'Same assembly state is deterministic');}}
+near(math.assemblyProgress(.5,190,800),.75,'Down assembles');near(math.assemblyProgress(.75,-190,800),.5,'Up reverses');assert.ok(math.assemblyProgress(1,-50,800)<1,'Up breaks apart immediately even at bottom');
+assert.doesNotMatch(source,/aw\*\.52,ah\*\.91|assemblyPoint|scrollTarget\*1\.7/);
+assert.match(css,/section-rail a span\{[^}]*opacity:1/);
 assert.match(html,/class="home-section-rail"/);assert.match(source,/aria-current/);
 const showcase=read('js/vmtools-showcase.js');new vm.Script(showcase);
 assert.match(showcase,/next.decode\(\).then\(commit\)/);assert.match(showcase,/6500/);assert.match(showcase,/!document.hidden/);assert.match(showcase,/reduced.matches/);
