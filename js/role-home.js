@@ -115,7 +115,7 @@
     var kind = {
       review:{icon:'🔎', label:'Xem lại bài đã chấm', tab:'', weight:2},
       btvn:{icon:'📝', label:'Bài tập về nhà', tab:'btvn', weight:4},
-      test:{icon:'🧪', label:'Bài kiểm tra', tab:'test', weight:3},
+      test:{icon:'📝', label:'Bài kiểm tra', tab:'test', weight:3},
       dando:{icon:'📌', label:'Lời dặn của giáo viên', tab:'', weight:5},
       lesson:{icon:'📚', label:'Bài giảng chưa xem', tab:'', weight:7}
     };
@@ -124,7 +124,7 @@
       var meta = kind[task.kind] || kind.lesson, lesson = lessons[task.lesson_id] || {};
       var dueValue = task.kind === 'btvn' ? lesson.homework_due : (task.kind === 'test' ? lesson.test_deadline : null);
       var due = todoDue(dueValue), priority = due.priority == null ? meta.weight : due.priority;
-      todos.push({id:'todo-task-' + task.kind + '-' + task.lesson_id, type:'todo', icon:meta.icon, label:meta.label,
+      todos.push({id:'todo-task-' + task.kind + '-' + task.lesson_id, type:'todo', category:task.kind, icon:meta.icon, label:meta.label,
         title:task.title || 'Việc cần làm', className:task.class_name || names[task.class_id] || 'Lớp học',
         detail:due.label || meta.label, priorityLabel:due.label || 'Ưu tiên', priorityState:due.state,
         priority:priority, dueTime:due.time, createdAt:task.created_at,
@@ -160,11 +160,11 @@
       if (lesson.linked_exam_id) linked.push(lesson.linked_exam_id);
       linked.forEach(function (id) { if (id) linkedExams[id] = true; });
       var test = !!lesson.test_document_id || hasText(lesson.test_latex_content) || !!lesson.test_active || linked.length > 0;
-      if (test) feed.push(Object.assign({}, base, {id:'test-' + lesson.id, type:'test', icon:'🧪', label:'Bài kiểm tra mới', detail:formatDeadline(lesson.test_deadline, 'Đóng lúc') || 'Trong bài giảng', href:'bai-hoc?id=' + encodeURIComponent(lesson.id) + '&tab=test'}));
+      if (test) feed.push(Object.assign({}, base, {id:'test-' + lesson.id, type:'test', icon:'📝', label:'Bài kiểm tra mới', detail:formatDeadline(lesson.test_deadline, 'Đóng lúc') || 'Trong bài giảng', href:'bai-hoc?id=' + encodeURIComponent(lesson.id) + '&tab=test'}));
     });
     (snapshot.exams || []).forEach(function (exam) {
       if (linkedExams[exam.id]) return;
-      feed.push({id:'exam-' + exam.id, type:'test', icon:'🧪', label:'Đề luyện mới', title:exam.title, className:names[exam.class_id] || 'Lớp học', detail:formatDeadline(exam.closes_at, 'Đóng lúc') || 'Sẵn sàng làm bài', createdAt:exam.created_at || exam.opens_at, href:'luyen-de?exam_id=' + encodeURIComponent(exam.id)});
+      feed.push({id:'exam-' + exam.id, type:'test', icon:'📝', label:'Đề luyện mới', title:exam.title, className:names[exam.class_id] || 'Lớp học', detail:formatDeadline(exam.closes_at, 'Đóng lúc') || 'Sẵn sàng làm bài', createdAt:exam.created_at || exam.opens_at, href:'luyen-de?exam_id=' + encodeURIComponent(exam.id)});
     });
     return feed.sort(function (a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); });
   }
@@ -184,7 +184,7 @@
     box.innerHTML = rows.map(function (item) {
       var priorityClass = item.type === 'todo' ? ' priority-' + esc(item.priorityState || 'normal') : '';
       var timeLabel = item.type === 'todo' ? item.priorityLabel : formatUpdateTime(item.createdAt);
-      return '<a class="vm-student-feed-row type-' + esc(item.type) + priorityClass + '" href="' + esc(item.href) + '"><span class="vm-student-feed-icon">' + item.icon + '</span>' +
+      return '<a class="vm-student-feed-row type-' + esc(item.type) + ' category-' + esc(item.category || item.type) + priorityClass + '" href="' + esc(item.href) + '"><span class="vm-student-feed-icon">' + item.icon + '</span>' +
         '<span class="vm-student-feed-copy"><span class="vm-student-feed-meta"><b>' + esc(item.label) + '</b><small>' + esc(timeLabel) + '</small></span>' +
         '<strong>' + esc(item.title) + '</strong><small>' + esc(item.className) + ' · ' + esc(item.detail || '') + '</small></span><span class="vm-student-feed-open">Mở →</span></a>';
     }).join('');
@@ -273,7 +273,7 @@
       '<section id="vmStudentPriority" class="vm-student-priority" hidden aria-label="Việc nên làm trước"></section>' +
       '<div class="vm-student-feed-filters" id="vmStudentFeedFilters"><button class="vm-student-todo-filter active" type="button" data-feed-filter="todo">Cần làm <span id="vmStudentTodoCount">0</span></button><button type="button" data-feed-filter="lesson">Bài giảng</button><button type="button" data-feed-filter="homework">Bài tập</button><button type="button" data-feed-filter="test">Kiểm tra</button></div>' +
       '<div class="vm-student-latest" id="vmStudentLatest"><div class="vm-student-loading">Đang tải cập nhật…</div></div></section>' +
-      '<aside class="vm-student-side"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>🧪</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
+      '<aside class="vm-student-side"><div id="vmStudentLiveSlot" class="vm-student-live-slot"></div><div class="vm-student-quick-grid"><a href="ket-qua"><span>✅</span><b>0</b><small>Bài đã chấm</small></a><a href="luyen-de"><span>📝</span><b>Bài</b><small>Bài tập</small></a><a href="thanh-tuu"><span>🗺️</span><b>Cảnh giới</b><small>Hồ sơ hành trình</small></a><a href="bang-vang"><span>🏆</span><b>Hạng</b><small>BXH</small></a></div>' +
       '<section class="vm-student-notices"><div class="vm-student-side-head"><b>Thông báo mới</b><a href="lop-hoc">Xem trong lớp</a></div><div id="vmStudentPosts"><div class="vm-student-loading">Đang tải…</div></div></section></aside></div>';
     moveLiveCards();
     box.classList.add('is-ready');
@@ -391,7 +391,7 @@
       staffShortcut('🔑','Tài khoản','Tạo và quản lý đăng nhập','quan-tri-tai-khoan') + staffShortcut('◫','Thương hiệu','Không gian và cổng thi','quan-tri-khong-gian') + staffShortcut('◐','Giao diện','Sáng/tối và theo mùa','quan-tri-le-hoi') + staffShortcut('🔐','Phân quyền','Bật, khóa từng tính năng','quan-tri-quyen-tinh-nang') + '</div></section>' : '';
     actions.innerHTML = '<div class="vm-staff-home-grid"><section class="vm-staff-main"><div class="vm-staff-card-head"><div><span class="vm-staff-kicker">TỔNG QUAN HÔM NAY</span><h3>Công việc cần xử lý</h3><p>Bài nộp, lớp học và nội dung được gom về một nơi.</p></div><a class="btn btn-primary btn-sm" href="quan-tri-cham-bai">Mở màn chấm bài →</a></div><div class="vm-staff-metrics">' +
       staffMetric('✍️', snapshot.pending.length, 'Bài chờ chấm', 'quan-tri-cham-bai') + staffMetric('🏫', snapshot.classes.length, 'Lớp phụ trách', 'quan-tri-lop') + staffMetric('👥', snapshot.students, 'Học sinh', 'quan-tri-hoc-sinh') + staffMetric('📚', published, 'Bài giảng', 'quan-tri-lop') +
-      '</div><div class="vm-staff-list-head"><b>Bài nộp mới nhất</b><a href="quan-tri-cham-bai">Xem tất cả</a></div><div class="vm-staff-pending-list">' + renderStaffPending(snapshot) + '</div></section><aside class="vm-staff-side"><section class="vm-staff-schedule"><div class="vm-staff-list-head"><b>📅 Lịch dạy sắp tới</b><a href="quan-tri-lich">Xem lịch</a></div>' + renderStaffSchedule(snapshot) + '</section><section class="vm-staff-tools"><div class="vm-staff-list-head"><b>Công cụ giảng dạy</b></div>' + staffShortcut('🏫','Lớp & bài giảng','Quản lý nội dung từng lớp','quan-tri-lop') + staffShortcut('🧪','Soạn đề','Ngân hàng, ma trận và kỳ thi','quan-tri-de') + staffShortcut('📄','Soạn tài liệu','LaTeX, PDF và kho dùng chung','quan-tri-tai-lieu') + staffShortcut('📈','Báo cáo học sinh','Tiến độ theo tuần, tháng','quan-tri-bao-cao-hoc-sinh') + '</section></aside></div>' + adminLinks;
+      '</div><div class="vm-staff-list-head"><b>Bài nộp mới nhất</b><a href="quan-tri-cham-bai">Xem tất cả</a></div><div class="vm-staff-pending-list">' + renderStaffPending(snapshot) + '</div></section><aside class="vm-staff-side"><section class="vm-staff-schedule"><div class="vm-staff-list-head"><b>📅 Lịch dạy sắp tới</b><a href="quan-tri-lich">Xem lịch</a></div>' + renderStaffSchedule(snapshot) + '</section><section class="vm-staff-tools"><div class="vm-staff-list-head"><b>Công cụ giảng dạy</b></div>' + staffShortcut('🏫','Lớp & bài giảng','Quản lý nội dung từng lớp','quan-tri-lop') + staffShortcut('📝','Soạn đề','Ngân hàng, ma trận và kỳ thi','quan-tri-de') + staffShortcut('📄','Soạn tài liệu','LaTeX, PDF và kho dùng chung','quan-tri-tai-lieu') + staffShortcut('📈','Báo cáo học sinh','Tiến độ theo tuần, tháng','quan-tri-bao-cao-hoc-sinh') + '</section></aside></div>' + adminLinks;
   }
 
   window.vmRoleHomeRender = async function (profile) {

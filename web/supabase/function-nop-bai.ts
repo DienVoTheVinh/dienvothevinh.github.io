@@ -14,6 +14,9 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
 const MAX_TEX_BYTES = 200000;
 const UPLOAD_CONCURRENCY = 3;
+const MAX_SUBMISSION_FILES = 30;
+const MAX_SUBMISSION_FILE_BYTES = 30 * 1024 * 1024;
+const MAX_SUBMISSION_TOTAL_BYTES = 600 * 1024 * 1024;
 const folderCache = new Map<string, string>();
 
 function traJson(data: unknown, status = 200) {
@@ -293,16 +296,66 @@ Deno.serve(async (req) => {
     const { data: prof } = await svc.from("profiles").select("username, full_name, role").eq("id", user.id).single();
     if (!prof) throw new Error("Không tìm thấy hồ sơ người dùng.");
 
+    if (Number(req.headers.get('content-length') || 0) > 64 * 1024 * 1024) throw loi('Một lượt tải quá lớn. Hãy dùng hàng đợi tải từng tệp.', 413);
     const form = await req.formData();
     const action = String(form.get("kind") || "nop");
     const phanloai = String(form.get("phanloai") || "");
     const files = form.getAll("files").filter((item): item is File => item instanceof File);
-    const canKhongCanTep = new Set(["xoa_cham", "submission_file", "result_file", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
+    const canKhongCanTep = new Set(["nop_begin", "nop_finish", "xoa_cham", "submission_file", "result_file", "class_answer_get", "class_answer_file", "class_answer_delete", "class_answer_save"]);
     if (!canKhongCanTep.has(action) && !files.length) throw loi("Chưa chọn tệp nào.", 400);
+
+    let manifest: any[] = [];
+    if (action === "nop_begin") {
+      try { manifest = JSON.parse(String(form.get("manifest") || "[]")); } catch { throw loi("Danh sách tệp không hợp lệ.", 400); }
+      if (!Array.isArray(manifest) || !manifest.length || manifest.length > MAX_SUBMISSION_FILES) throw loi("Mỗi bài nhận tối đa 30 tệp.", 400);
+      let total = 0;
+      for (const item of manifest) {
+        if (!item || !/^[a-f0-9]{64}$/.test(item.sha256) || !Number.isSafeInteger(item.size) || item.size <= 0 || item.size > MAX_SUBMISSION_FILE_BYTES || !DAP_AN_MIME_HOP_LE.has(item.type)) throw loi("Tệp phải là ảnh/PDF hợp lệ và không quá 30 MB.", 400);
+        total += item.size;
+      }
+      if (total > MAX_SUBMISSION_TOTAL_BYTES) throw loi("Tổng tệp sau tối ưu không được vượt 600 MB.", 400);
+      const requestId = String(form.get("request_id") || "");
+      if (!/^[a-f0-9-]{36}$/i.test(requestId)) throw loi("Thiếu mã phiên tải.", 400);
+      const { data: prior } = await svc.from("submission_upload_receipts").select("*").eq("id", requestId).maybeSingle();
+      if (prior) {
+        const sameManifest = prior.manifest.length === manifest.length && manifest.every((item, i) => ["sha256","size","type","name"].every(k => item[k] === prior.manifest[i][k]));
+        if (prior.actor_id !== user.id || prior.lesson_id !== (form.get("lesson_id") || null) || prior.exam_id !== (form.get("exam_id") || null) || prior.student_id !== (form.get("student_id") || user.id) || prior.kind !== phanloai || !sameManifest) throw loi("Phiên tải không khớp bài nộp.", 409);
+        if (new Date(prior.expires_at).getTime() <= Date.now() && !prior.submission_id) throw loi("Phiên tải hết hạn. Chọn lại tệp để gửi phiên mới.", 410);
+        return traJson({ ok:true, upload_id:prior.id, uploaded_files:prior.uploaded_files, expires_at:prior.expires_at });
+      }
+    }
+    if (action === "nop_file" || action === "nop_finish") {
+      const { data: receipt, error } = await svc.from("submission_upload_receipts").select("*").eq("id", String(form.get("upload_id") || "")).single();
+      if (error || !receipt || receipt.actor_id !== user.id) throw loi("Không có quyền truy cập phiên tải này.", 403);
+      if (new Date(receipt.expires_at).getTime() <= Date.now() && !receipt.submission_id) throw loi("Phiên tải đã hết hạn. Hãy gửi lại bài.", 410);
+      const staff = ["admin", "teacher", "assistant"].includes(prof.role);
+      if (staff && !(await coQuyenQuanLyLop(svc, user.id, prof.role, receipt.class_id))) throw loi("Không có quyền nộp hộ lớp này.", 403);
+      if (!staff && receipt.student_id !== user.id) throw loi("Không có quyền nộp bài này.", 403);
+      await xacNhanHocSinhTrongLop(svc, receipt.student_id, receipt.class_id);
+      if (action === "nop_finish") {
+        const { data: row, error: finishError } = await svc.rpc("vm_finish_submission_upload", { p_id:receipt.id });
+        if (finishError) throw loi(finishError.message, 400);
+        return traJson({ ok:true, submission:row });
+      }
+      const index = Number(form.get("file_index"));
+      const expected = Number.isInteger(index) && index >= 0 ? receipt.manifest[index] : null;
+      if (!expected || files.length !== 1) throw loi("Vị trí tệp không hợp lệ.", 400);
+      if (receipt.uploaded_files[String(index)]) return traJson({ ok:true, file:receipt.uploaded_files[String(index)], reused:true });
+      const file = files[0];
+      if (file.size !== expected.size || file.type !== expected.type) throw loi("Tệp đã thay đổi sau khi bắt đầu gửi.", 400);
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer()))).map(b=>b.toString(16).padStart(2,"0")).join("");
+      if (digest !== expected.sha256) throw loi("Nội dung tệp không khớp bản đã đăng ký trước hạn.", 400);
+      const token = await googleToken();
+      const uploaded = await taiLenDrive(token, file, receipt.folder_id, `[${receipt.target_title}] ${file.name}`);
+      const { data: accepted, error: recordError } = await svc.rpc("vm_record_submission_upload_file", { p_id:receipt.id, p_index:index, p_file:uploaded });
+      if (recordError || accepted?.id !== uploaded.id) await xoaFileDrive(token, uploaded.id);
+      if (recordError) throw loi(recordError.message, 400);
+      return traJson({ ok:true, file:accepted });
+    }
 
     const canGoogle = action !== "class_answer_get";
     const token = canGoogle ? await googleToken() : "";
-    const canThuMucNopBai = action === "nop" || action === "cham";
+    const canThuMucNopBai = action === "nop" || action === "nop_begin" || action === "cham";
     const goc = canThuMucNopBai ? await timHoacTaoThuMuc(token, "VINHMATH NOP BAI") : "";
     const ngay = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 
@@ -523,7 +576,7 @@ Deno.serve(async (req) => {
       return traJson({ ok: true, answer: answerWrite.data, notified_count: studentIds.length });
     }
 
-    if (action === "nop") {
+    if (action === "nop" || action === "nop_begin") {
       const lessonId = form.get("lesson_id") ? String(form.get("lesson_id")) : null;
       const examId = form.get("exam_id") ? String(form.get("exam_id")) : null;
       if ((!lessonId && !examId) || (lessonId && examId)) throw new Error("Phải chọn đúng một bài giảng hoặc một đề thi.");
@@ -544,6 +597,7 @@ Deno.serve(async (req) => {
 
       let folderPath: string[] = [];
       let targetTitle = "";
+      const receivedAt = new Date().toISOString();
       let kindVal = "test";
       let isLate = false;
       let classId: string | null = null;
@@ -572,6 +626,11 @@ Deno.serve(async (req) => {
         if (kindVal === "test" && !coTest) throw new Error("Bài giảng này chưa có bài kiểm tra nhận bài nộp.");
 
         if (!isTeacher) {
+          if (kindVal === "test") {
+            const { data: access, error: accessError } = await userClient.rpc("vm_lesson_test_session", { p_lesson_id:lessonId, p_start:false });
+            if (accessError) throw loi(accessError.message, 403);
+            if (access?.mode !== "legacy" && access?.status !== "open") throw loi(access?.status === "ready" ? "Em cần bấm Bắt đầu kiểm tra trước khi nộp." : "Bài kiểm tra chưa mở hoặc đã hết giờ.", 403);
+          }
           const { data: daCham } = await svc.from("submissions").select("id").eq("student_id", targetStudentId).eq("lesson_id", lessonId).eq("kind", kindVal).eq("status", "graded").limit(1);
           if (daCham?.length) throw new Error("Bài này đã được chấm nên em không nộp lại được nữa.");
         }
@@ -593,11 +652,28 @@ Deno.serve(async (req) => {
 
       if (isTeacher && !(await coQuyenQuanLyLop(svc, user.id, prof.role, classId))) throw new Error("Thầy/cô không có quyền quản lý lớp của bài đã chọn.");
       await xacNhanHocSinhTrongLop(svc, targetStudentId, classId);
+      const submissionTiming = String(form.get("submission_timing") || "");
+      if (isTeacher && submissionTiming) {
+        if (!["on_time", "late"].includes(submissionTiming)) throw loi("Chọn nộp đúng hạn hoặc nộp trễ.", 400);
+        isLate = submissionTiming === "late";
+      }
+      if (isTeacher && action === "nop_begin" && kindVal === "test" && !submissionTiming) throw loi("Thầy/cô cần chọn nộp đúng hạn hoặc nộp trễ.", 400);
       const dryRun = String(form.get("dry_run") || "") === "1";
       if (dryRun && !isTeacher) throw new Error("Chỉ giáo viên mới được chạy kiểm tra tải tệp.");
 
       let currentParentId = goc;
       for (const folderName of folderPath) currentParentId = await timHoacTaoThuMuc(token, folderName, currentParentId);
+      if (action === "nop_begin") {
+        const { count } = await svc.from("submission_upload_receipts").select("id", { count:"exact", head:true }).eq("actor_id", user.id).is("submission_id", null).gt("expires_at", new Date().toISOString());
+        if ((count || 0) >= 5) throw loi("Đang có nhiều phiên tải chưa xong. Hoàn tất hoặc chờ phiên cũ hết hạn rồi thử lại.", 429);
+        const { data: receipt, error: receiptError } = await svc.from("submission_upload_receipts").insert({
+          id:String(form.get("request_id")), actor_id:user.id, student_id:targetStudentId,
+          lesson_id:lessonId, exam_id:examId, class_id:classId, kind:kindVal, is_late:isLate,
+          manifest, folder_id:currentParentId, target_title:targetTitle, created_at:receivedAt,
+        }).select("id,expires_at").single();
+        if (receiptError) throw loi("Không tạo được phiên tải: " + receiptError.message, 409);
+        return traJson({ ok:true, upload_id:receipt.id, uploaded_files:{}, expires_at:receipt.expires_at });
+      }
       const ketQua = await taiNhieuFile(token, files, currentParentId, `[${targetTitle}] `);
 
       if (dryRun) {

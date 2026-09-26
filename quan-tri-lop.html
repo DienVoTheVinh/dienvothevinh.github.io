@@ -1246,8 +1246,11 @@ body.theme-map .classroom-card-head { border-top:3px solid #C9A227; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
+<script src="js/lesson-file-upload.js?v=1"></script>
+<script src="js/lesson-test-editor.js?v=1"></script>
+<script src="js/submission-upload.js?v=1"></script>
 <script src="js/latex-view.js?v=11.4"></script>
-<script src="js/menu-v5.js?v=10.4"></script>
+<script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1890,7 +1893,7 @@ async function taiLessonsLop() {
   $('dsBaiHocLop').innerHTML = '<div class="empty">Đang tải bài học...</div>';
   await taiDuLieuDanhMuc();
   var r = await sb.from('lessons')
-    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_active, test_started_at, test_duration_minutes, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, linked_exam_ids, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
+    .select('id, title, youtube_url, note, published, locked, images, document_id, test_document_id, homework_document_id, sort, test_active, test_started_at, test_duration_minutes, test_mode, test_opens_at, topic_id, teacher_id, created_at, latex_content, homework_text, homework_images, homework_latex_content, test_latex_content, theory_sections, homework_due, homework_late_policy, test_deadline, test_late_policy, linked_exam_id, linked_exam_ids, homework_bonus, homework2_text, homework2_images, homework2_latex_content, homework2_document_id, homework2_due, homework2_late_policy, topics(id, name, color, sort), documents!lessons_document_id_fkey(title, file_path), bai_test:documents!lessons_test_document_id_fkey(file_path), bai_btvn:documents!lessons_homework_document_id_fkey(file_path), bai_btvn2:documents!lessons_homework2_document_id_fkey(file_path)')
     .eq('class_id', classDangChon.id);
 
   var lessons = r.data || [];
@@ -1998,6 +2001,7 @@ function renderLessonAcc(b, mauChuyenDe) {
     ? '<button class="btn btn-sm chi-gv" style="background:#e74c3c;color:#fff;border-color:#e74c3c;padding:4px 10px" onclick="dungTest(\'' + b.id + '\', \'' + tenJs + '\')">⏹ Đóng test</button>'
     : '<button class="btn btn-secondary btn-sm chi-gv" style="padding:4px 10px" onclick="moKichHoatTest(\'' + b.id + '\', \'' + tenJs + '\')">⏱ Mở test</button>';
 
+  if (b.test_mode && b.test_mode !== 'legacy') testBtn = '<span class="badge">' + (b.test_mode === 'flexible' ? '⏱ Giờ riêng từng HS' : '📅 Tự mở/đóng theo lịch') + '</span>';
   var stateBadge = b.published ? '<span class="badge badge-ok">Đã xuất bản</span>' : '<span class="badge badge-mute">Nháp</span>';
 
   var rawNote = b.note || '';
@@ -3701,26 +3705,12 @@ function _fileToDataURL(file) {
     r.readAsDataURL(file);
   });
 }
+var _vmTestPdfBuild=Promise.resolve(),_vmTestPdfError=null,_vmTestPdfRevision=0;
 async function buildTestPdfFromImages() {
-  if (!testImgFiles.length) { pdfBlobTest = null; return; }
-  if (!window.jspdf || !window.jspdf.jsPDF) { console.error('jsPDF chưa tải'); return; }
-  var JsPDF = window.jspdf.jsPDF;
-  var doc = null;
-  for (var i = 0; i < testImgFiles.length; i++) {
-    var f = testImgFiles[i];
-    // Dùng dữ liệu gốc (base64) — KHÔNG vẽ lại qua canvas -> giữ nguyên độ nét
-    var dataUrl = await _fileToDataURL(f);
-    var img = await _loadImgEl(dataUrl); // chỉ để lấy kích thước gốc
-    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-    var ty = (f.type || '').toLowerCase();
-    var fmt = (ty.indexOf('jpeg') !== -1 || ty.indexOf('jpg') !== -1) ? 'JPEG' : 'PNG';
-    var orient = w >= h ? 'l' : 'p';
-    if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [w, h] });
-    else doc.addPage([w, h], orient);
-    // compression 'NONE' -> không nén thêm, ảnh sắc nét tối đa
-    doc.addImage(dataUrl, fmt, 0, 0, w, h, undefined, 'NONE');
-  }
-  pdfBlobTest = doc.output('blob');
+  var revision=++_vmTestPdfRevision;
+  pdfBlobTest=null;_vmTestPdfError=null;
+  _vmTestPdfBuild=vmBuildLessonPdf(testImgFiles).then(function(blob){if(revision===_vmTestPdfRevision)pdfBlobTest=blob;}).catch(function(error){if(revision===_vmTestPdfRevision){_vmTestPdfError=error;alert('Không tạo được PDF: '+error.message);}});
+  return _vmTestPdfBuild;
 }
 // Gắn vùng dán/chọn/kéo-thả ảnh đề kiểm tra
 (function () {
@@ -3832,6 +3822,8 @@ async function moFormThemBaiGiang() {
   $('bhPdfUrl').value = '';
   $('bhTestUrl').value = '';
   $('bhTestDuration').value = '15';
+  VMTestEditor.load(null);
+  testImgFiles = []; veAnhTest(); buildTestPdfFromImages();
   $('modalTieuDe').textContent = 'Thêm bài giảng mới';
   $('nutXoa').style.display = 'none';
   $('bhSapXep').value = '0';
@@ -4003,6 +3995,8 @@ async function moFormSua(id) {
     $('bhTestTaiLieu').value = bh.test_document_id || '';
   }
   $('bhTestDuration').value = bh.test_duration_minutes || 15;
+  VMTestEditor.load(bh);
+  testImgFiles = []; veAnhTest(); buildTestPdfFromImages();
   var rawNote = bh.note || '';
   var noteParts = rawNote.split('---TEACHER_NOTE---');
   $('bhGhiChu').value = noteParts[0].trim();
@@ -4093,7 +4087,10 @@ async function luuBaiHoc(e) {
   };
 
   var nut = $('nutLuu');
+  if (nut.disabled) return;
   nut.disabled = true; nut.textContent = '⏳ Đang lưu...';
+  try {
+  await _vmTestPdfBuild; if(_vmTestPdfError)throw _vmTestPdfError; VMTestEditor.collect(data);
 
   // File PDF tải lên trực tiếp hoặc dán URL
   var filePdf = $('bhPdfFile').files[0];
@@ -4101,7 +4098,7 @@ async function luuBaiHoc(e) {
   if (filePdf) {
     nut.textContent = '⏳ Đang tải PDF...';
     var path = Date.now() + '-' + tenAnToan(filePdf.name);
-    var up = await sb.storage.from('tai-lieu').upload(path, filePdf, { contentType: 'application/pdf' });
+    var up = await vmUploadLessonFile('tai-lieu',path, filePdf, { contentType: 'application/pdf' });
     if (up.error) {
       alert('Lỗi PDF: ' + up.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -4130,7 +4127,7 @@ async function luuBaiHoc(e) {
   if (fileTest) {
     nut.textContent = '⏳ Đang tải bài test...';
     var pathTest = Date.now() + '-test-' + tenAnToan(fileTest.name);
-    var upTest = await sb.storage.from('tai-lieu').upload(pathTest, fileTest, { contentType: 'application/pdf' });
+    var upTest = await vmUploadLessonFile('tai-lieu',pathTest, fileTest, { contentType: 'application/pdf' });
     if (upTest.error) {
       alert('Lỗi PDF test: ' + upTest.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -4146,7 +4143,7 @@ async function luuBaiHoc(e) {
   } else if (pdfBlobTest) {
     nut.textContent = '⏳ Đang tải PDF test biên dịch...';
     var pathTestBlob = Date.now() + '-latex-test.pdf';
-    var upTestBlob = await sb.storage.from('tai-lieu').upload(pathTestBlob, pdfBlobTest, { contentType: 'application/pdf' });
+    var upTestBlob = await vmUploadLessonFile('tai-lieu',pathTestBlob, pdfBlobTest, { contentType: 'application/pdf' });
     if (upTestBlob.error) {
       alert('Lỗi tải PDF test tự biên dịch: ' + upTestBlob.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -4176,7 +4173,7 @@ async function luuBaiHoc(e) {
       var f = selectedImageFiles[i];
       var tenFile = f.name || ('pasted-image-' + Date.now() + '.png');
       var imgPath = Date.now() + '-' + i + '-' + tenAnToan(tenFile);
-      var upImg = await sb.storage.from('hinh-anh').upload(imgPath, f, { contentType: f.type || 'image/png' });
+      var upImg = await vmUploadLessonFile('hinh-anh',imgPath, f, { contentType: f.type || 'image/png' });
       if (upImg.error) {
         alert('Lỗi tải ảnh: ' + upImg.error.message);
         nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -4194,7 +4191,7 @@ async function luuBaiHoc(e) {
       var hf = hwSelectedFiles[hi];
       var hwTen = hf.name || ('btvn-' + Date.now() + '.png');
       var hwPath = Date.now() + '-hw-' + hi + '-' + tenAnToan(hwTen);
-      var upHw = await sb.storage.from('hinh-anh').upload(hwPath, hf, { contentType: hf.type || 'image/png' });
+      var upHw = await vmUploadLessonFile('hinh-anh',hwPath, hf, { contentType: hf.type || 'image/png' });
       if (upHw.error) {
         alert('Lỗi tải ảnh BTVN: ' + upHw.error.message);
         nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -4215,7 +4212,7 @@ async function luuBaiHoc(e) {
   if (fileBtvn) {
     nut.textContent = '⏳ Đang tải PDF bài tập...';
     var pathBtvn = Date.now() + '-btvn-' + tenAnToan(fileBtvn.name);
-    var upBtvn = await sb.storage.from('tai-lieu').upload(pathBtvn, fileBtvn, { contentType: 'application/pdf' });
+    var upBtvn = await vmUploadLessonFile('tai-lieu',pathBtvn, fileBtvn, { contentType: 'application/pdf' });
     if (upBtvn.error) { alert('Lỗi tải PDF BTVN: ' + upBtvn.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
     var insBtvn = await sb.from('documents').insert({ title: data.title + ' — Bài tập về nhà', class_id: classDangChon.id, file_path: pathBtvn }).select('id').single();
     if (insBtvn.error) { alert('Lỗi ghi CSDL PDF BTVN: ' + insBtvn.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
@@ -4233,7 +4230,7 @@ async function luuBaiHoc(e) {
       var h2f = hw2SelectedFiles[h2i];
       var h2Ten = h2f.name || ('btvn2-' + Date.now() + '.png');
       var h2Path = Date.now() + '-hw2-' + h2i + '-' + tenAnToan(h2Ten);
-      var upH2 = await sb.storage.from('hinh-anh').upload(h2Path, h2f, { contentType: h2f.type || 'image/png' });
+      var upH2 = await vmUploadLessonFile('hinh-anh',h2Path, h2f, { contentType: h2f.type || 'image/png' });
       if (upH2.error) { alert('Lỗi tải ảnh bài thưởng: ' + upH2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
       hw2AnhDaCo.push(h2Path);
     }
@@ -4249,7 +4246,7 @@ async function luuBaiHoc(e) {
   if (fileBtvn2) {
     nut.textContent = '⏳ Đang tải PDF bài thưởng...';
     var pathBtvn2 = Date.now() + '-btvn2-' + tenAnToan(fileBtvn2.name);
-    var upBtvn2 = await sb.storage.from('tai-lieu').upload(pathBtvn2, fileBtvn2, { contentType: 'application/pdf' });
+    var upBtvn2 = await vmUploadLessonFile('tai-lieu',pathBtvn2, fileBtvn2, { contentType: 'application/pdf' });
     if (upBtvn2.error) { alert('Lỗi tải PDF bài thưởng: ' + upBtvn2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
     var insBtvn2 = await sb.from('documents').insert({ title: data.title + ' — Bài tập thưởng thêm', class_id: classDangChon.id, file_path: pathBtvn2 }).select('id').single();
     if (insBtvn2.error) { alert('Lỗi ghi CSDL PDF bài thưởng: ' + insBtvn2.error.message); nut.disabled = false; nut.textContent = 'Lưu bài giảng'; return; }
@@ -4287,6 +4284,8 @@ async function luuBaiHoc(e) {
 
   dongForm();
   await taiLessonsLop();
+  } catch(error) { alert('Không lưu được bài: '+error.message+'\nNội dung đang chỉnh vẫn được giữ để thử lại.'); }
+  finally { nut.disabled=false; nut.textContent='Lưu bài giảng'; }
 }
 
 async function xoaBaiHoc() {
@@ -5024,6 +5023,7 @@ async function moFormNopBaiHo(studentId, studentName) {
   if ($('nbhFileList')) $('nbhFileList').innerHTML = '';
   if ($('nbhDanAnhTrangThai')) $('nbhDanAnhTrangThai').textContent = '';
   $('nbhTrangThai').textContent = '';
+  $('nbhTiming').value = '';
   
   var sel = $('nbhTargetSelect');
   var loaiSel = $('nbhLoaiSelect');
@@ -5140,6 +5140,7 @@ function vmXoaFile(inputId, idx, listId) {
 
 async function nopBaiHoChoHocSinh() {
   var phanloai = $('nbhLoaiSelect') ? $('nbhLoaiSelect').value : '';
+  if (phanloai === 'test' && !$('nbhTiming').value) { $('nbhTrangThai').textContent='Chọn nộp đúng hạn hoặc nộp trễ trước khi gửi.'; return; }
   if (!phanloai) {
     $('nbhTrangThai').textContent = 'Vui lòng chọn loại bài sẽ ghi nhận.';
     $('nbhTrangThai').style.color = 'var(--warn)';
@@ -5196,7 +5197,10 @@ async function nopBaiHoChoHocSinh() {
       fd.append('files', inp.files[i]);
     }
     
-    await vmGoiHamFormData('nop-bai', fd, { timeoutMs: 120000 });
+    clearInterval(dem);
+    var uploadMeta = {student_id:window.nbhTargetStudentId,phanloai:phanloai,submission_timing:$('nbhTiming').value};
+    uploadMeta[type === 'lesson' ? 'lesson_id' : 'exam_id'] = id;
+    await VMSubmissionUpload.upload(inp.files, uploadMeta, function(message){tt.textContent=message;});
     
     if (tt) {
       tt.textContent = '✓ Đã nộp hộ thành công vào ' + $('nbhLoaiSelect').options[$('nbhLoaiSelect').selectedIndex].textContent + ' — ' + $('nbhTargetSelect').options[$('nbhTargetSelect').selectedIndex].textContent + '!';
@@ -5462,7 +5466,7 @@ async function luuTailieuLop(e) {
       var fileName = 'doc-' + Date.now() + '.' + fileExt;
       var filePath = 'documents/' + fileName;
       
-      var rUpload = await sb.storage.from('tai-lieu').upload(filePath, file);
+      var rUpload = await vmUploadLessonFile('tai-lieu',filePath, file);
       if (rUpload.error) throw new Error('Lỗi tải tệp lên: ' + rUpload.error.message);
       
       path = filePath;
@@ -5555,6 +5559,8 @@ async function luuTailieuLop(e) {
       <div id="nbhFileList"></div>
       <div id="nbhDanAnhTrangThai" style="font-size:.8rem;color:var(--ok);margin-top:2px"></div>
     </div>
+    <div class="field"><label for="nbhTiming">Ghi nhận hạn nộp (bắt buộc với bài kiểm tra)</label><select class="input" id="nbhTiming"><option value="">Theo hạn của bài</option><option value="on_time">Nộp đúng hạn</option><option value="late">Nộp trễ</option></select></div>
+    <p class="muted">Tối đa 30 tệp · 30 MB/tệp · 600 MB sau tối ưu.</p>
     <div id="nbhTrangThai" style="font-size: 0.85rem; margin-top: 8px; min-height: 20px;"></div>
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px">
       <button class="btn btn-secondary" onclick="dongFormNopBaiHo()">Huỷ</button>

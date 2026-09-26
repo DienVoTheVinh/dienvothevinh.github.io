@@ -142,6 +142,7 @@
             </div></section>
           </div></div>
         </div>
+        <section id="reportTests" hidden style="margin-top:20px;border:1px solid #ddd;border-radius:12px;padding:16px"><h3 style="margin:0 0 12px">Kết quả kiểm tra trong kỳ</h3><div id="reportTestsRows"></div></section>
         <footer class="report-foot"><span>Số liệu lấy từ hoạt động thực tế trên VinhMath trong đúng khoảng thời gian đã chọn.</span><span id="reportFooter">vinhmath.com</span></footer>
       </div>
     </article>
@@ -159,7 +160,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
-<script src="js/menu-v5.js?v=10.4"></script>
+<script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/analytics.js"></script>
 <script>
 var reportMe=null,reportStudent=null,reportClasses=[],reportStudents=[],reportPeriodType='week',reportAnchorDate=new Date(),reportResult=null,reportLoadSeq=0;
@@ -266,7 +267,7 @@ async function taiBaoCao(){
   var start=period.start,end=period.end;
   var startKey=bcDateKey(start),endKey=bcDateKey(end);
   try{
-    var response=await sb.rpc('gv_bao_cao_hoc_tap',{p_student:studentId,p_class:classId,p_start:startKey,p_end:endKey});if(seq!==reportLoadSeq)return;
+    var response=await sb.rpc('gv_bao_cao_hoc_tap_v2',{p_student:studentId,p_class:classId,p_start:startKey,p_end:endKey});if(seq!==reportLoadSeq)return;
     if(response.error)throw response.error;
     var payload=response.data||{};if(payload.error)throw new Error('Không có quyền hoặc kỳ báo cáo không hợp lệ ('+payload.error+').');
     reportResult=tinhBaoCao({start:start,end:end,periodType:reportPeriodType,lop:payload.class||lop,sessions:payload.sessions||[],lessons:payload.lessons||[],remarks:payload.remarks||[],analytics:payload.analytics||[],study:payload.study||[],attendance:(payload.sessions||[]).filter(function(x){return x.status;}).map(function(x){return {session_id:x.id,status:x.status,checked_at:x.checked_at};}),progress:payload.progress||[],submissions:payload.submissions||[],attempts:payload.attempts||[]});
@@ -274,6 +275,7 @@ async function taiBaoCao(){
     var savedResponse=await sb.from('teacher_report_insights').select('strengths,limitations,improvements,updated_at').eq('student_id',studentId).eq('class_id',classId).eq('period_type',reportPeriodType).eq('period_start',startKey).eq('period_end',endKey).maybeSingle();if(seq!==reportLoadSeq)return;
     if(savedResponse.error){reportInsightLoadError=savedResponse.error.message||String(savedResponse.error);}else if(savedResponse.data){reportSavedInsight=bcNormalizeInsight(savedResponse.data);reportSavedInsight.updated_at=savedResponse.data.updated_at;}
     reportActiveInsight=reportSavedInsight||reportSystemInsight;reportInsightDirty=false;
+    reportResult.testResults=payload.test_results||[];
     veBaoCao(reportResult);
   }catch(e){hienLoiBaoCao('Không tổng hợp được báo cáo: '+(e.message||e));}
 }
@@ -373,6 +375,14 @@ async function luuNhanDinhBaoCao(){
 }
 
 function veBaoCao(r){
+  var tests=r.testResults||[];
+  $('reportTests').hidden=!tests.length;
+  $('reportTestsRows').innerHTML=tests.map(function(t){
+    var status=t.status==='missing'?'Chưa nộp':t.status==='graded'?'Đã chấm':'Chờ chấm';
+    var assessment={good:'Tốt',pass:'Đạt',meets:'Đạt',needs_effort:'Cần cố gắng',needs_improvement:'Cần cố gắng'}[t.assessment_level]||'';
+    var score=t.score==null?(assessment||status):Number(t.score).toFixed(1)+'/10';
+    return '<div style="padding:10px 0;border-top:1px solid #e5e7eb;break-inside:avoid"><div style="display:flex;justify-content:space-between;gap:16px"><b>'+bcEsc(t.title)+'</b><strong style="white-space:nowrap">'+bcEsc(score)+'</strong></div><small>'+bcEsc(new Date(t.at_time).toLocaleDateString('vi-VN'))+' · '+bcEsc(t.source)+' · '+status+(t.is_late?' · Nộp trễ':'')+'</small>'+(t.feedback?'<p style="white-space:pre-wrap;margin:6px 0 0">'+bcEsc(t.feedback)+'</p>':'')+'</div>';
+  }).join('');
   $('reportState').style.display='none';$('reportContent').style.display='block';
   $('reportAvatar').textContent=bcInitials(reportStudent.full_name);$('reportStudentName').textContent=reportStudent.full_name;$('reportStudentMeta').textContent=(r.lop.grade?'Khối '+r.lop.grade+' · ':'')+r.lop.name+(reportStudent.school?' · '+reportStudent.school:'');
   $('reportPeriodType').textContent=r.periodType==='month'?'Báo cáo tháng':'Báo cáo tuần';$('reportPeriod').textContent='Từ '+bcDate(r.start)+' đến '+bcDate(r.end);$('reportGenerated').textContent='Tạo lúc '+new Date().toLocaleString('vi-VN');$('reportFooter').textContent='VinhMath · '+r.lop.name;

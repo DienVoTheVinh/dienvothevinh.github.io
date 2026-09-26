@@ -1,5 +1,5 @@
 /* VinhMath PWA service worker — chi cache tai nguyen cong khai cung ten mien. */
-const VM_CACHE = 'vinhmath-shell-v83';
+const VM_CACHE = 'vinhmath-shell-v84';
 const VM_SHELL_PREFIX = 'vinhmath-shell-';
 const VM_SHELL = [
   '/',
@@ -33,6 +33,9 @@ const VM_SHELL = [
   '/js/latex-view.js',
   '/js/role-home.js',
   '/js/student-results.js',
+  '/js/submission-upload.js',
+  '/js/lesson-file-upload.js',
+  '/js/lesson-test-editor.js',
   '/js/student-result-viewer.js',
   '/js/student-achievement-map.js',
   '/js/tex-environments.js',
@@ -72,16 +75,16 @@ self.addEventListener('activate', function (event) {
       })
       .then(function (needsShellRefresh) {
         if (!needsShellRefresh) return;
-        /* Tải lại một lần để cửa sổ ứng dụng đang mở nhận điều hướng theo vai trò. */
+        /* Never navigate an open lesson: it may contain unsent answers or uploads.
+           New pages use the updated assets; current work remains uninterrupted. */
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
           .then(function (windows) {
             return Promise.all(windows.map(function (client) {
               try {
                 var target = new URL(client.url);
                 if (target.origin !== self.location.origin || /^\/vmtools?(?:\/|\.|$)/.test(target.pathname)) return null;
-                if (target.searchParams.get('vm_refresh') === '72') return null;
-                target.searchParams.set('vm_refresh', '72');
-                return client.navigate(target.href);
+                client.postMessage({type:'VM_UPDATE_READY',version:VM_CACHE});
+                return null;
               } catch (_) { return null; }
             }));
           });

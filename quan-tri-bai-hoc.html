@@ -405,9 +405,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/vinhmath.js?v=9.7"></script>
+<script src="js/lesson-file-upload.js?v=1"></script>
+<script src="js/lesson-test-editor.js?v=1"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/latex-view.js?v=11.4"></script>
-<script src="js/menu-v5.js?v=10.4"></script>
+<script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/analytics.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1087,22 +1089,12 @@ function _loadImgEl(src) {
     var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = src;
   });
 }
+var _vmTestPdfBuild=Promise.resolve(),_vmTestPdfError=null,_vmTestPdfRevision=0;
 async function buildTestPdfFromImages() {
-  if (!testImgFiles.length) { pdfBlobTest = null; return; }
-  if (!window.jspdf || !window.jspdf.jsPDF) { console.error('jsPDF chưa tải'); return; }
-  var JsPDF = window.jspdf.jsPDF;
-  var doc = null;
-  for (var i = 0; i < testImgFiles.length; i++) {
-    var url = URL.createObjectURL(testImgFiles[i]);
-    var img = await _loadImgEl(url);
-    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-    var orient = w >= h ? 'l' : 'p';
-    if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [w, h] });
-    else doc.addPage([w, h], orient);
-    doc.addImage(img, 'PNG', 0, 0, w, h);
-    URL.revokeObjectURL(url);
-  }
-  pdfBlobTest = doc.output('blob');
+  var revision=++_vmTestPdfRevision;
+  pdfBlobTest=null;_vmTestPdfError=null;
+  _vmTestPdfBuild=vmBuildLessonPdf(testImgFiles).then(function(blob){if(revision===_vmTestPdfRevision)pdfBlobTest=blob;}).catch(function(error){if(revision===_vmTestPdfRevision){_vmTestPdfError=error;alert('Không tạo được PDF: '+error.message);}});
+  return _vmTestPdfBuild;
 }
 // Gắn vùng dán/chọn/kéo-thả ảnh đề kiểm tra
 (function () {
@@ -1592,6 +1584,8 @@ async function moFormThemMoi() {
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
   testImgFiles = []; pdfBlobTest = null; if (typeof veAnhTest === 'function') veAnhTest();
   if ($('bhTestDuration')) $('bhTestDuration').value = '15';
+  VMTestEditor.load(null);
+  buildTestPdfFromImages();
   
   if (lopDangLoc !== 'tat-ca') {
     $('bhLop').value = lopDangLoc;
@@ -1647,6 +1641,8 @@ async function moFormSua(id) {
   $('bhXuatBan').checked = !!bh.published;
   
   if ($('bhTestDuration')) $('bhTestDuration').value = bh.test_duration_minutes || 15;
+  VMTestEditor.load(bh);
+  testImgFiles = []; buildTestPdfFromImages();
   if ($('bhTestLatex')) $('bhTestLatex').value = bh.test_latex_content || '';
   pdfBlobTest = null;
   if ($('khungXemTest')) $('khungXemTest').style.display = 'none';
@@ -1706,15 +1702,18 @@ async function luuBaiHoc(e) {
   }
 
   var nut = $('nutLuu');
+  if (nut.disabled) return;
   nut.disabled = true;
   nut.textContent = '⏳ Đang lưu…';
+  try {
+  await _vmTestPdfBuild; if(_vmTestPdfError)throw _vmTestPdfError; VMTestEditor.collect(data);
 
   var filePdf = $('bhPdfFile').files[0];
   var urlPdfCustom = $('bhPdfUrl').value.trim();
   if (filePdf) {
     nut.textContent = '⏳ Đang tải PDF lên…';
     var duongDanPdf = Date.now() + '-' + tenAnToan(filePdf.name);
-    var up1 = await sb.storage.from('tai-lieu').upload(duongDanPdf, filePdf, { contentType: 'application/pdf' });
+    var up1 = await vmUploadLessonFile('tai-lieu',duongDanPdf, filePdf, { contentType: 'application/pdf' });
     if (up1.error) {
       alert('Lỗi tải PDF lên kho: ' + up1.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -1748,7 +1747,7 @@ async function luuBaiHoc(e) {
   if (fileTest) {
     nut.textContent = '⏳ Đang tải bài test lên…';
     var duongDanTest = Date.now() + '-test-' + tenAnToan(fileTest.name);
-    var upT = await sb.storage.from('tai-lieu').upload(duongDanTest, fileTest, { contentType: 'application/pdf' });
+    var upT = await vmUploadLessonFile('tai-lieu',duongDanTest, fileTest, { contentType: 'application/pdf' });
     if (upT.error) {
       alert('Lỗi tải bài test: ' + upT.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -1766,7 +1765,7 @@ async function luuBaiHoc(e) {
   } else if (pdfBlobTest) {
     nut.textContent = '⏳ Đang tải PDF test biên dịch...';
     var pathTestBlob = Date.now() + '-latex-test.pdf';
-    var upTestBlob = await sb.storage.from('tai-lieu').upload(pathTestBlob, pdfBlobTest, { contentType: 'application/pdf' });
+    var upTestBlob = await vmUploadLessonFile('tai-lieu',pathTestBlob, pdfBlobTest, { contentType: 'application/pdf' });
     if (upTestBlob.error) {
       alert('Lỗi tải PDF test tự biên dịch: ' + upTestBlob.error.message);
       nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -1797,7 +1796,7 @@ async function luuBaiHoc(e) {
       var f = selectedImageFiles[i];
       var tenFile = f.name || ('pasted-image-' + Date.now() + '.png');
       var duongDanAnh = Date.now() + '-' + i + '-' + tenAnToan(tenFile);
-      var up2 = await sb.storage.from('hinh-anh').upload(duongDanAnh, f, { contentType: f.type || 'image/png' });
+      var up2 = await vmUploadLessonFile('hinh-anh',duongDanAnh, f, { contentType: f.type || 'image/png' });
       if (up2.error) {
         alert('Lỗi tải ảnh "' + tenFile + '": ' + up2.error.message);
         nut.disabled = false; nut.textContent = 'Lưu bài giảng';
@@ -1823,6 +1822,8 @@ async function luuBaiHoc(e) {
   }
   nut.disabled = false;
   nut.textContent = 'Lưu bài giảng';
+  } catch(error) { alert('Không lưu được bài: '+error.message+'\nNội dung đang chỉnh vẫn được giữ để thử lại.'); }
+  finally { nut.disabled=false; nut.textContent='Lưu bài giảng'; }
 }
 
 async function xoaBaiHoc() {
