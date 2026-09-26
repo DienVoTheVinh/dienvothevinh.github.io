@@ -19,17 +19,11 @@
 <link rel="stylesheet" href="css/vmtools-portal.css?v=9">
 <link rel="stylesheet" href="css/vmtools-showcase.css?v=3">
 <link rel="stylesheet" href="css/vinh-contact.css?v=1">
-<link rel="stylesheet" href="css/public-home.css?v=20260927">
+<link rel="stylesheet" href="css/public-home.css?v=20260927b">
 </head>
 <body class="vm-public-home">
 <a class="home-skip" href="#noi-dung">Bỏ qua đến nội dung</a>
-<section id="vmInstallHero" class="home-install-first" aria-labelledby="vmInstallHeroTitle">
-  <div class="home-install-inner">
-    <span class="install-mark" aria-hidden="true">↗</span>
-    <div class="home-install-first-copy"><h2 id="vmInstallHeroTitle">VinhMath, ngay trên thiết bị của bạn.</h2><p>Mở lớp học từ màn hình chính.</p><span id="vmInstallHeroNote" class="sr-only"></span></div>
-    <button type="button" id="vmInstallHeroBtn" class="home-install-first-action" aria-describedby="vmInstallHeroNote">Cài ứng dụng ↗</button>
-  </div>
-</section>
+<canvas id="homeAmbientCanvas" aria-hidden="true"></canvas>
 <header class="topbar">
   <div class="nav">
     <a class="logo" href="index" aria-label="VinhMath — trang chủ"><img src="img/logo.png" width="38" height="38" alt=""><span><span class="brand-vinh" style="color:var(--accent)">VINH</span><span class="brand-math">MATH</span></span></a>
@@ -47,37 +41,9 @@
       <div class="home-actions"><a class="home-button primary" href="trang-chu?preview=1" id="homeTry">Khám phá VinhMath <span aria-hidden="true">↗</span></a><a class="home-text-link" href="#he-thong">Tìm hiểu hệ thống <span aria-hidden="true">↓</span></a></div>
       <div class="hero-footnote"><span>THCS & THPT</span><i></i><span>Học sinh · Giáo viên · Phụ huynh</span></div>
     </div>
-    <figure class="math-lab" aria-labelledby="mathLabCaption">
-      <div class="lab-top"><span>KHÔNG GIAN TOÁN HỌC</span><button type="button" id="mathMotion" aria-pressed="false" aria-label="Tạm dừng chuyển động">Ⅱ</button></div>
-      <div class="math-stage">
-        <div class="math-scene" id="scene-space">
-          <canvas id="homeMathCanvas" aria-label="Mặt cầu các điểm vàng xoay trong hệ tọa độ, phản hồi khi di chuyển con trỏ" role="img"></canvas>
-          <span class="math-equation">x² + y² + z² = R²</span>
-        </div>
-        <div class="math-scene" id="scene-graph" hidden>
-          <svg viewBox="0 0 520 410" role="img" aria-label="Đồ thị parabol y bằng a nhân x bình phương">
-            <defs><pattern id="graphGrid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="currentColor" opacity=".12"/></pattern></defs>
-            <rect x="40" y="25" width="440" height="340" fill="url(#graphGrid)"/>
-            <path class="math-axis" d="M40 310H480m-8-5 8 5-8 5M260 365V30m-5 8 5-8 5 8"/>
-            <g class="math-label"><text x="475" y="335">x</text><text x="276" y="40">y</text><text x="240" y="333">O</text><text x="330" y="334">1</text></g>
-            <path id="parabolaPath" class="math-curve" d="M100 54Q260 566 420 54"/>
-            <circle class="math-tracer" r="5" cx="340" cy="246"/>
-          </svg>
-          <label class="graph-control" for="graphA"><span>y = <b id="graphAValue">1</b>x²</span><input id="graphA" type="range" min="0.3" max="1.6" step="0.1" value="1"><small>Thay đổi hệ số a</small></label>
-        </div>
-        <div class="math-scene" id="scene-geometry" hidden>
-          <svg viewBox="0 0 520 410" role="img" aria-label="Tam giác ABC nội tiếp đường tròn với hai góc cùng chắn cung BC">
-            <circle cx="260" cy="205" r="147" class="math-outline"/>
-            <path d="M176 84L127 268L393 268Z M176 84L350 89 M350 89L127 268 M350 89L393 268" class="math-curve"/>
-            <path d="M260 205L127 268M260 205L393 268" class="math-axis" stroke-dasharray="5 6"/>
-            <g class="math-dots"><circle cx="176" cy="84" r="5"/><circle cx="127" cy="268" r="5"/><circle cx="393" cy="268" r="5"/><circle cx="350" cy="89" r="5"/><circle cx="260" cy="205" r="3"/></g>
-            <g class="math-label"><text x="152" y="73">A</text><text x="103" y="292">B</text><text x="398" y="292">C</text><text x="356" y="80">D</text><text x="271" y="200">O</text></g>
-          </svg>
-          <span class="math-equation">∠BAC = ∠BDC</span>
-        </div>
-      </div>
-      <figcaption id="mathLabCaption"><span id="mathSceneTitle">Nhìn toán học từ một góc khác.</span><span class="lab-index" id="mathSceneIndex">01 / 03</span></figcaption>
-      <div class="math-tabs" role="group" aria-label="Chọn hình minh họa"><button type="button" data-scene="space" aria-pressed="true">Không gian</button><button type="button" data-scene="graph" aria-pressed="false">Đồ thị</button><button type="button" data-scene="geometry" aria-pressed="false">Hình học</button></div>
+    <figure class="math-art" aria-label="Hình học động: mặt cầu trong hệ trục Oxyz, tiếp tuyến parabol và góc nội tiếp">
+      <canvas id="homeMathCanvas" role="img" aria-label="Mặt cầu tâm O với ba trục Ox, Oy, Oz có mũi tên. Hình tự chuyển cảnh sang parabol và góc nội tiếp."></canvas>
+      <figcaption class="sr-only">Minh họa tự động. Chế độ giảm chuyển động của thiết bị sẽ giữ hình tĩnh.</figcaption>
     </figure>
   </div>
   <div class="home-shell hero-bottom"><span>HIỂU BẢN CHẤT. ĐIỂM SỐ SẼ THEO SAU.</span><a href="#he-thong" aria-label="Cuộn đến hệ thống">KHÁM PHÁ TIẾP <span>↓</span></a></div>
@@ -145,7 +111,7 @@
 <script src="js/vinhmath.js?v=9.7"></script>
 <script src="js/menu-v5.js?v=submission-20260927"></script>
 <script src="js/analytics.js"></script>
-<script src="js/public-home.js?v=20260927"></script>
+<script src="js/public-home.js?v=20260927b"></script>
 <script src="js/vmtools-cosmos.js?v=2"></script>
 <script src="js/vmtools-showcase.js?v=13"></script>
 <script src="js/vinh-contact.js?v=2"></script>
