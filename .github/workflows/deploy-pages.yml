@@ -91,7 +91,9 @@ jobs:
             fi
           done
           du -sh _site
-          find _site -type f -exec du -h {} + | sort -hr | head -20
+          # Consume the full stream: head closes the pipe early and makes sort
+          # fail intermittently under GitHub's bash -o pipefail.
+          find _site -type f -exec du -h {} + | sort -hr | sed -n '1,20p'
       - name: Verify runtime LaTeX assets
         shell: bash
         run: |
