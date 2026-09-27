@@ -7,6 +7,10 @@
   function spherePoint(lat,lon){return [Math.cos(lat)*Math.cos(lon),Math.cos(lat)*Math.sin(lon),Math.sin(lat)];}
   function circlePoint(a){return [Math.cos(a),Math.sin(a)];}
   function tangent(t,x){return 2*t*x-t*t;}
+  // Solid of revolution about x, 0 <= x <= 3.6. Radius stays strictly positive.
+  function solidRadius(x){return .64+.11*x+.20*Math.cos(1.8*x);}
+  function solidPoint(x,angle){var r=solidRadius(x);return [x,r*Math.cos(angle),r*Math.sin(angle)];}
+  function sectionArea(x){return Math.PI*Math.pow(solidRadius(x),2);}
   function assemblyProgress(current,delta,viewport){return Math.max(0,Math.min(1,current+delta/Math.max(1,viewport*.95)));}
   function rotate3D(v,ry,rx){var x=v[0]*Math.cos(ry)-v[2]*Math.sin(ry),z=v[0]*Math.sin(ry)+v[2]*Math.cos(ry);return [x,v[1]*Math.cos(rx)-z*Math.sin(rx),v[1]*Math.sin(rx)+z*Math.cos(rx)];}
   // Standard embedded Mobius strip, one half-turn; P(2π,v) = P(0,-v).
@@ -40,7 +44,7 @@
     if(active){var dx=x+state.x-mx,dy=y+state.y-my,d=Math.hypot(dx,dy),reach=145;if(d<reach){var force=Math.pow(1-d/reach,2)*17*step;state.x+=(d?dx/d:1)*force;state.y+=(d?dy/d:0)*force;}}
     return [x+state.x,y+state.y];
   }
-  if(typeof module!=='undefined'&&module.exports){module.exports={project:project,axisLayout:axisLayout,spherePoint:spherePoint,circlePoint:circlePoint,tangent:tangent,assemblyProgress:assemblyProgress,surfacePoint:surfacePoint,surfaceMeshes:surfaceMeshes,surfaceFace:surfaceFace,repel:repel};return;}
+  if(typeof module!=='undefined'&&module.exports){module.exports={project:project,axisLayout:axisLayout,spherePoint:spherePoint,circlePoint:circlePoint,tangent:tangent,solidRadius:solidRadius,solidPoint:solidPoint,sectionArea:sectionArea,assemblyProgress:assemblyProgress,surfacePoint:surfacePoint,surfaceMeshes:surfaceMeshes,surfaceFace:surfaceFace,repel:repel};return;}
   var canvas=document.getElementById('homeMathCanvas'),ambient=document.getElementById('homeAmbientCanvas');
   if(!canvas||!ambient)return;
   var ctx=canvas.getContext('2d'),bg=ambient.getContext('2d');if(!ctx||!bg)return;
@@ -105,11 +109,32 @@
     function arc(P){var a=Math.atan2(B[1]-P[1],B[0]-P[0]),b=Math.atan2(C[1]-P[1],C[0]-P[0]);ctx.beginPath();ctx.strokeStyle=gold;ctx.arc(P[0],P[1],24,Math.min(a,b),Math.max(a,b));ctx.stroke();}
     arc(A);arc(D);[[A,'A',-20,-14],[B,'B',-23,20],[C,'C',12,20],[D,'D',10,-15]].forEach(function(v){dot(v[0],4);label(v[1],v[0][0]+v[2],v[0][1]+v[3]);});dot([300,230],2,ink);label('O',310,225);
   }
-  var scenes=[sphere,parabola,geometry];
+  function integralSolid(t){
+    var scale=108,a=.28,b=.29,cut=3.6*(.5-.5*Math.cos((t%14)/14*Math.PI*2));
+    // Two orthonormal camera rows: circular sections are consistently projected.
+    function p(x,y,z){return [105+scale*(Math.cos(a)*x+Math.sin(a)*y),250+scale*(Math.sin(a)*Math.sin(b)*x-Math.cos(a)*Math.sin(b)*y-Math.cos(b)*z)];}
+    function ring(x){var points=[];for(var j=0;j<=96;j++)points.push(p.apply(null,solidPoint(x,j/96*Math.PI*2)));return points;}
+    function fill(points,color){ctx.beginPath();points.forEach(function(q,j){j?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);});ctx.closePath();ctx.fillStyle=color;ctx.fill();}
+    // Fine longitudinal wires and sections show the unswept solid without hiding the cut.
+    for(var j=0;j<24;j++){var points=[],angle=j/24*Math.PI*2;for(var k=0;k<=90;k++)points.push(p.apply(null,solidPoint(k/90*3.6,angle)));line(points,gold+'35',.75);}
+    for(var k=0;k<=36;k++){var x=k/10;line(ring(x),x<=cut?gold+'75':muted+'35',x<=cut?.85:.65);}
+    line(ring(0),gold+'b0',1.2);line(ring(3.6),gold+'b0',1.2);
+    // The moving plane is x=constant; its disk radius is exactly f(x).
+    var r=solidRadius(cut),plane=[p(cut,-1.32,-1.32),p(cut,1.32,-1.32),p(cut,1.32,1.32),p(cut,-1.32,1.32)];
+    fill(plane,dark?'#74b8e50a':'#28669508');line(plane.concat([plane[0]]),dark?'#84b8db55':'#386c9650',.8);
+    var disk=ring(cut);fill(disk,gold+'25');line(disk,gold,2.2);
+    // Parallel chords lie inside y²+z²=f(x)² (not a rectangle pasted over a disk).
+    for(var y=-r+.08;y<r;y+=.105){var z=Math.sqrt(Math.max(0,r*r-y*y));line([p(cut,y,-z),p(cut,y,z)],gold+'65',.75);}
+    arrow(p(-.48,0,0),p(4.18,0,0),'x');
+    [0,3.6].forEach(function(x,i){var q=p(x,0,0);dot(q,2,ink);label(i?'b':'a',q[0]-4,q[1]+25);});
+    var top=p(cut,0,r),center=p(cut,0,0);line([center,top],ink+'90',1,[3,4]);dot(center,3);label('S(x)',top[0]+14,top[1]-15,gold,20);
+    canvas.dataset.sectionX=cut.toFixed(4);
+  }
+  var scenes=[sphere,parabola,geometry,integralSolid];
   function paint(){
     if(!width||!height)return;ctx.clearRect(0,0,width,height);ctx.save();var scale=Math.min(width/600,height/460);
     ctx.translate((width-600*scale)/2,(height-460*scale)/2);ctx.scale(scale,scale);
-    var cycle=reduced.matches?0:time%42,index=Math.floor(cycle/14),phase=cycle%14;
+    var cycle=reduced.matches?0:time%(14*scenes.length),index=Math.floor(cycle/14),phase=cycle%14;
     // Only the illustration fades: the navigation and text never fade.
     ctx.globalAlpha=reduced.matches||time===0?1:Math.min(1,phase/.65,(14-phase)/.65);
     scenes[index](time);canvas.dataset.scene=String(index);ctx.restore();

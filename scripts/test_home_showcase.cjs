@@ -2,7 +2,11 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8'),source=fs.readFileSync('js/public-timetable.js','utf8');
 for(const id of ['dong-hanh','hoc-sinh','bien-soan'])assert.equal(html.split('id="'+id+'"').length-1,1);
-for(const s of ['304','186','311','378','196','76 học sinh · 6 giáo viên · 7 phụ huynh','Sắp ra mắt','Dữ liệu minh họa'])assert.ok(html.includes(s),s);
+for(const s of ['304','186','311','378','196','76 học sinh · 6 giáo viên · 7 phụ huynh','Sắp ra mắt','Dữ liệu giả định'])assert.ok(html.includes(s),s);
+for(const file of ['monthly-report-light.svg','monthly-report-dark.svg','latex-geometry.webp','latex-combinatorics.webp'])assert.ok(fs.existsSync('assets/home-showcase/'+file));
+for(const theme of ['light','dark']){const svg=fs.readFileSync('assets/home-showcase/monthly-report-'+theme+'.svg','utf8');assert.match(svg,/HỌC SINH MINH HỌA/);assert.match(svg,/DỮ LIỆU GIẢ ĐỊNH/);assert.doesNotMatch(svg,/<image|foreignObject/);assert.match(svg,/width="1440" height="1060"/);}
+assert.match(html,/data-home-dark=/);assert.doesNotMatch(html,/monthly-report\.webp/);
+assert.match(fs.readFileSync('js/home-showcase.js','utf8'),/dialog.open/);
 assert.doesNotMatch(html,/hero-footnote|KHÁM PHÁ TIẾP|01 \/ HỆ SINH/);
 assert.match(html,/home-arrow/);
 assert.doesNotMatch(source,/sb\.from\(|daKetNoi\(/);
