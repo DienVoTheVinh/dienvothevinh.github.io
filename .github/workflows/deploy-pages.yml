@@ -29,6 +29,7 @@ jobs:
         run: |
           node scripts/check_secret_indicators.js
           node scripts/test_public_home.cjs
+          node scripts/test_home_showcase.cjs
           node scripts/test_blog_editorial.cjs
           node scripts/test_anonymous_security_hardening.cjs
           node scripts/test_admin_password_reset.js
