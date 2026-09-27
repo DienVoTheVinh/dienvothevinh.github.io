@@ -23,6 +23,8 @@ for(const match of html.matchAll(/(?:src|href)="([^"#?]+)(?:\?[^"\s]*)?"/g)){
   assert.ok(fs.existsSync(file)||fs.existsSync(file+'.html'),'Missing asset/route: '+match[1]);
 }
 const near=(a,b,msg)=>assert.ok(Math.abs(a-b)<1e-10,msg+': '+a+' != '+b);
+for(let i=0;i<=200;i++){const x=3.6*i/200,r=math.solidRadius(x);assert.ok(r>0);for(let j=0;j<32;j++){const p=math.solidPoint(x,j*Math.PI/16);near(p[0],x,'Section perpendicular to x');near(p[1]**2+p[2]**2,r*r,'Section lies on disk boundary');}near(math.sectionArea(x),Math.PI*r*r,'Disk area is pi f(x)^2');}
+assert.match(source,/scenes=\[sphere,parabola,geometry,integralSolid\]/);
 for(let i=0;i<1000;i++){
   const lat=-Math.PI/2+Math.PI*i/999,lon=i*.618,p=math.spherePoint(lat,lon);
   near(p.reduce((s,v)=>s+v*v,0),1,'Point stays on sphere');
@@ -54,6 +56,10 @@ vm.runInNewContext(source,{document:doc,window:{addEventListener:noop},matchMedi
 const initial=draws;
 for(let i=1;i<=120;i++){const fn=queued;queued=null;fn(i*1000/60);assert.ok(queued,'Loop schedules next frame');}
 assert.ok(draws-initial>=120,'Hero draws every display frame, not every other frame');
+const seen=new Set(),cuts=[];
+for(let i=1;i<=1120;i++){queued(2000+i*50);seen.add(canvas.dataset.scene);if(canvas.dataset.scene==='3')cuts.push(Number(canvas.dataset.sectionX));}
+assert.deepEqual([...seen].sort(),['0','1','2','3'],'All four scenes execute');
+assert.ok(Math.max(...cuts)>3.59&&Math.min(...cuts)<.01,'Integral disk sweeps both ends of the solid');
 const beforeHidden=draws;doc.hidden=true;queued(3000);assert.equal(draws,beforeHidden,'Hidden page does not render');
 doc.hidden=false;reduced.matches=true;queued(4000);assert.equal(draws,beforeHidden,'Reduced-motion mode does not animate');
 assert.deepEqual(Object.keys(math.surfaceMeshes),['mobius'],'Only Mobius remains');
