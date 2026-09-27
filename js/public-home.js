@@ -11,7 +11,7 @@
   function rotate3D(v,ry,rx){var x=v[0]*Math.cos(ry)-v[2]*Math.sin(ry),z=v[0]*Math.sin(ry)+v[2]*Math.cos(ry);return [x,v[1]*Math.cos(rx)-z*Math.sin(rx),v[1]*Math.sin(rx)+z*Math.cos(rx)];}
   // Standard embedded Mobius strip, one half-turn; P(2π,v) = P(0,-v).
   // Radius 1 and half-width .38 avoid self-intersection. No "other shape" states.
-  var MOBIUS_COLUMNS=128,MOBIUS_ROWS=8;
+  var MOBIUS_COLUMNS=128,MOBIUS_ROWS=16;
   function surfacePoint(kind,u,v){
     var r=1+.38*v*Math.cos(u/2);return [r*Math.cos(u),r*Math.sin(u),.38*v*Math.sin(u/2)];
   }
@@ -21,12 +21,18 @@
     surfaceMeshes.mobius.push([surfacePoint('mobius',u,v),surfacePoint('mobius',u1,v),surfacePoint('mobius',u1,v1),surfacePoint('mobius',u,v1)]);
   }
   function surfaceFace(kind,index,progress,t){
-    var face=surfaceMeshes.mobius[index],segment=Math.floor(index/(MOBIUS_ROWS*4)),u=(segment+.5)/32*Math.PI*2,center=surfacePoint('mobius',u,0);
+    var face=surfaceMeshes.mobius[index],column=Math.floor(index/MOBIUS_ROWS),row=index%MOBIUS_ROWS;
+    // 256 rigid patches, each containing a 2 x 4 continuous mesh of cells.
+    var segment=Math.floor(column/2),band=Math.floor(row/4),u=(segment+.5)/64*Math.PI*2,v=-1+(band+.5)/2,center=surfacePoint('mobius',u,v);
     var f=Math.max(0,Math.min(1,progress)),spread=1-f*f*(3-2*f);
     return face.map(function(p){
-      // Adjacent tessellation cells move together as 32 ribbon sections, not random confetti.
-      var local=rotate3D(p.map(function(v,k){return v-center[k];}),spread*Math.sin(segment*1.7)*.35,spread*Math.cos(segment*.7)*.3);
-      return rotate3D(local.map(function(v,k){return v+center[k]*(1+spread*.38);}),.18+Math.sin(t*.07)*.12,.92+Math.sin(t*.055)*.08);
+      var local=rotate3D(p.map(function(n,k){return n-center[k];}),spread*Math.sin(u*3+band)*.65,spread*Math.cos(u*2-band)*.55);
+      var separation=[Math.cos(u)*(.36+.08*band),Math.sin(u)*(.36+.08*band),v*.44+Math.sin(u*3)*.12];
+      var assembled=local.map(function(n,k){return n+center[k]+spread*separation[k];}),spin=t*.08;
+      // Turn around the ring normal, then tilt the camera gently: never collapse
+      // the hole into an edge-on sliver or change the underlying surface.
+      var turned=[assembled[0]*Math.cos(spin)-assembled[1]*Math.sin(spin),assembled[0]*Math.sin(spin)+assembled[1]*Math.cos(spin),assembled[2]];
+      return rotate3D(turned,.18+Math.sin(t*.10)*.18,.62+Math.sin(t*.13)*.12);
     });
   }
   function repel(state,x,y,mx,my,dt,active){
@@ -116,7 +122,8 @@
     points.forEach(function(p,i){for(var j=i+1;j<points.length;j++){var a=space[i],b=space[j],d=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);if(d<.68){var alpha=(.025+.13*(1-d/.68));bg.strokeStyle=(dark?'rgba(164,181,209,':'rgba(65,88,120,')+alpha+')';bg.beginPath();bg.moveTo(p[0],p[1]);bg.lineTo(points[j][0],points[j][1]);bg.stroke();edgeCount++;}}bg.fillStyle=i%5===0?(dark?'#ffb30088':'#a66b0070'):(dark?'#c3cede60':'#36527350');bg.beginPath();bg.arc(p[0],p[1],i%5===0?1.8:1.2,0,Math.PI*2);bg.fill();});
     var assembly=reduced.matches?1:scrollBlend;
     function drawSurface(){
-      var size=Math.min(aw*.22,ah*.27),cx=aw*(aw<700?.53:.70),cy=ah*.55;
+      if(previousScroll<1)return;
+      var size=Math.min(aw*(aw<700?.32:.25),ah*.31),cx=aw*(aw<700?.53:.70),cy=ah*.54;
       var layerSize=Math.ceil(size*4),dpr=Math.min(devicePixelRatio||1,1.5);
       if(ribbonLayer.width!==Math.round(layerSize*dpr)){ribbonLayer.width=Math.round(layerSize*dpr);ribbonLayer.height=Math.round(layerSize*dpr);}
       ribbon.setTransform(dpr,0,0,dpr,0,0);ribbon.clearRect(0,0,layerSize,layerSize);
@@ -125,13 +132,14 @@
         var p=face.p,a=p[1].map(function(v,k){return v-p[0][k];}),b=p[3].map(function(v,k){return v-p[0][k];});
         var normal=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],length=Math.hypot(...normal)||1;
         var light=Math.min(1,Math.abs(normal[0]*.25-normal[1]*.4+normal[2]*.88)/length);
-        var shine=Math.pow(light,9),red=Math.round(90+light*125+shine*35),green=Math.round(57+light*97+shine*45),blue=Math.round(18+light*40+shine*70);
-        ribbon.fillStyle='rgb('+red+','+green+','+blue+')';ribbon.strokeStyle=ribbon.fillStyle;ribbon.lineWidth=.65;
+        var shine=Math.pow(light,7),tone=Math.round(12+light*22);
+        ribbon.fillStyle=dark?'rgb('+tone+','+(tone+2)+','+(tone+6)+')':'#faf7ef';
+        ribbon.strokeStyle=dark?'rgba(255,'+Math.round(175+shine*55)+','+Math.round(55+shine*120)+','+(.22+light*.45)+')':'rgba(150,93,10,'+(.3+light*.5)+')';ribbon.lineWidth=.55;
         ribbon.beginPath();p.forEach(function(v,i){var x=layerSize/2+v[0]*size,y=layerSize/2+v[1]*size;if(i)ribbon.lineTo(x,y);else ribbon.moveTo(x,y);});ribbon.closePath();ribbon.fill();ribbon.stroke();
         var row=face.index%MOBIUS_ROWS;
         if(row===0||row===MOBIUS_ROWS-1){var e=row===0?[p[0],p[1]]:[p[3],p[2]];ribbon.beginPath();ribbon.moveTo(layerSize/2+e[0][0]*size,layerSize/2+e[0][1]*size);ribbon.lineTo(layerSize/2+e[1][0]*size,layerSize/2+e[1][1]*size);ribbon.strokeStyle='#ecc67a';ribbon.lineWidth=1;ribbon.stroke();}
       });
-      bg.save();bg.globalAlpha=(dark?.25:.14)*Math.min(1,previousScroll/(ah*.65));bg.drawImage(ribbonLayer,cx-layerSize/2,cy-layerSize/2,layerSize,layerSize);bg.restore();
+      bg.save();bg.globalAlpha=(dark?.42:.25)*Math.min(1,previousScroll/(ah*.65));bg.drawImage(ribbonLayer,cx-layerSize/2,cy-layerSize/2,layerSize,layerSize);bg.restore();
     }
     drawSurface();
     ambient.dataset.assembly=assembly.toFixed(3);ambient.dataset.shape=storyKind;ambient.dataset.networkEdges=String(edgeCount);

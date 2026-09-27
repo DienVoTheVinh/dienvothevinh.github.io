@@ -19,14 +19,26 @@
  if(typeof module!=='undefined'&&module.exports){module.exports={render:render,activeRows:activeRows,classKey:classKey};return;}
  window.VMPublicTimetable={render:render};
  var host=document.getElementById('bangLichCongKhai');if(!host)return;
- (async function(){
-  if(typeof daKetNoi!=='function'||!daKetNoi()){host.innerHTML='<p class="timetable-empty">Lịch đang cập nhật.</p>';return;}
+ var snapshot=window.VM_PUBLIC_SCHEDULE||{updatedAt:'',rows:[]},rows=snapshot.rows,filter='',busy=false,status='snapshot';
+ var updatedAt=snapshot.updatedAt;
+ try{var saved=JSON.parse(localStorage.getItem('vm-public-schedule-v1'));if(saved&&Array.isArray(saved.rows)&&saved.updatedAt>updatedAt){rows=saved.rows;updatedAt=saved.updatedAt;}}catch(e){}
+ function paint(){
+  var today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  var stamp=updatedAt?new Date(updatedAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
+  host.innerHTML=render(rows,today,filter)+'<div class="timetable-sync"><span role="status">'+(status==='live'?'Đã đồng bộ lịch công khai.':status==='loading'?'Đang kiểm tra lịch mới…':'Bản lịch lưu ngày '+esc(stamp)+'. Chưa xác nhận được thay đổi mới nhất.')+'</span><button type="button"'+(busy?' disabled':'')+'>Cập nhật lịch</button></div>';
+  var select=host.querySelector('select');if(select)select.addEventListener('change',function(){filter=select.value;paint();host.querySelector('select').focus({preventScroll:true});});
+  host.querySelector('.timetable-sync button').addEventListener('click',refresh);
+ }
+ async function refresh(){
+  if(busy)return;busy=true;status='loading';paint();var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},8000);
   try{
-   var result=await sb.from('schedules').select('weekday, start_time, end_time, mode, note, recurrence, date, start_date, end_date, classes(name, grade, is_specialized)').order('weekday').order('start_time');
-   if(result.error)throw result.error;
-   var today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),rows=result.data||[];
-   function paint(filter){host.innerHTML=render(rows,today,filter);var select=host.querySelector('select');if(select)select.addEventListener('change',function(){paint(select.value);host.querySelector('select').focus({preventScroll:true});});}
-   paint('');
-  }catch(e){host.innerHTML='<p class="timetable-empty">Chưa tải được lịch học. Bạn vui lòng tải lại trang hoặc liên hệ thầy để xem lịch.</p>';}
- })();
+   var config=window.VINHMATH_CONFIG;if(!config)throw new Error('No config');
+   // Deliberately independent of login state and the third-party client CDN.
+   var response=await fetch(config.SUPABASE_URL+'/rest/v1/public_home_schedule?select=weekday,start_time,end_time,mode,recurrence,date,start_date,end_date,class_name,grade,is_specialized&order=weekday,start_time',{headers:{apikey:config.SUPABASE_ANON_KEY},signal:controller.signal,cache:'no-store'});
+   if(!response.ok)throw new Error('Schedule unavailable');var data=await response.json();if(!Array.isArray(data))throw new Error('Invalid schedule');
+   rows=data.map(function(s){return {weekday:s.weekday,start_time:s.start_time,end_time:s.end_time,mode:s.mode,recurrence:s.recurrence,date:s.date,start_date:s.start_date,end_date:s.end_date,classes:{name:s.class_name,grade:s.grade,is_specialized:s.is_specialized}};});
+   updatedAt=new Date().toISOString();status='live';try{localStorage.setItem('vm-public-schedule-v1',JSON.stringify({rows:rows,updatedAt:updatedAt}));}catch(e){}
+  }catch(e){status='snapshot';}finally{clearTimeout(timer);busy=false;paint();}
+ }
+ paint();refresh();window.addEventListener('online',refresh);
 })();
