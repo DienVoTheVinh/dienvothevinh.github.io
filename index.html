@@ -22,8 +22,8 @@
 <link rel="stylesheet" href="css/public-home.css?v=20260927g">
 <link rel="stylesheet" href="css/home-showcase.css?v=20260927b">
 <link rel="stylesheet" href="css/blog-editorial.css?v=20260927a">
-<link rel="stylesheet" href="css/vmgame-home.css?v=20261004">
-</head>
+<link rel="stylesheet" href="css/vmgame-promotion.css?v=2">
+<link rel="stylesheet" href="assets/vmgame/environment.css?v=2"><script src="assets/vmgame/icons.js?v=2" defer></script><script src="assets/vmgame/scene-layers.js?v=2" defer></script><script src="assets/vmgame/environment.js?v=2" defer></script><script src="assets/vmgame/home-preview.js?v=2" defer></script></head>
 <body class="vm-public-home">
 <a class="home-skip" href="#noi-dung">Bỏ qua đến nội dung</a>
 <canvas id="homeAmbientCanvas" aria-hidden="true"></canvas>
@@ -49,6 +49,10 @@
  <a href="#blog-cong-khai" aria-label="Blog"><span>Blog</span></a>
 </nav>
 <main id="noi-dung">
+<section class="vmgame-home home-shell" id="vmgame" aria-labelledby="vmgame-title">
+ <div class="vmgame-home-art vm-environment" id="vmgame-preview"><div class="vm-landscape"></div><img class="vmgame-preview-scholar" src="assets/vmgame/art/vietnam.webp" width="240" height="360" alt="Học giả An Nhiên"><span class="vmgame-scene-caption">LẠC VÂN · NƠI NHỮNG Ý TƯỞNG GẶP NHAU</span><div class="vmgame-preview-controls"><button id="preview-motion" type="button" aria-pressed="true"><span data-icon="pause"></span><span>Tạm dừng</span></button><button id="preview-night" type="button" aria-pressed="false"><span data-icon="moon"></span><span>Ban đêm</span></button></div></div>
+ <div class="vmgame-home-copy"><p class="home-kicker">TRÒ CHƠI TOÁN HỌC · BẢN TRẢI NGHIỆM</p><h2 id="vmgame-title">VMGame<span>Hội đồng tri thức</span></h2><p>Chọn học giả đồng hành, khám phá những miền đất và cùng xây dựng bằng sức mạnh của lời giải.</p><div class="vmgame-features"><span><i data-icon="scholar"></i>10 học giả</span><span><i data-icon="compass"></i>8 vùng đất</span><span><i data-icon="proof"></i>Thử thách hình học</span></div><div class="home-actions"><a class="home-button primary" href="vmgame">Vào vương quốc <span data-icon="arrow"></span></a><a class="vmgame-proof-cta" href="vmgame-proof"><span data-icon="proof"></span>Chơi Nhịp cầu Thalès</a></div><small>Thế giới minh họa 2.5D · Tiến độ lưu trên thiết bị</small><p id="preview-motion-status" class="preview-motion-status" role="status"></p></div>
+</section>
 <section class="home-hero" id="gioi-thieu">
   <div class="home-shell hero-layout">
     <div class="hero-copy">
@@ -63,10 +67,7 @@
     </figure>
   </div>
 </section>
-<section class="vmgame-home home-shell" id="vmgame" aria-labelledby="vmgame-title">
- <div class="vmgame-home-art"><img src="assets/vmgame/art/kingdom.webp" width="1672" height="941" alt="Châu thổ học viện VMGame, những cây cầu nối các vườn và quảng trường bên biển" loading="lazy"><span>VMGAME · HỘI ĐỒNG TRI THỨC</span></div>
- <div class="vmgame-home-copy"><p class="home-kicker">MỘT HÀNH TRÌNH TOÁN HỌC MỚI</p><h2 id="vmgame-title">Cùng khám phá.<br><em>Cùng kiến tạo.</em></h2><p>Gặp những học giả, xây dựng học viện và du hành qua các vùng đất hư cấu. Bắt đầu với Nhịp cầu Thalès: ghép từng mắt xích để hoàn thành một lời giải.</p><div class="home-actions"><a class="home-button primary" href="vmgame">Khám phá VMGame</a><a class="home-text-link" href="vmgame-proof">Thử bài hình học</a></div><small>Bản trải nghiệm 2.5D · Tiến độ lưu trên thiết bị · Chưa có phần thưởng học tập thật</small></div>
-</section>
+
 <section class="home-section home-shell" id="he-thong">
   <div class="section-heading compact home-reveal"><p class="home-kicker">HỆ THỐNG</p><h2>Mọi bước học tập.<br><span>Trong một hệ thống.</span></h2></div>
   <div class="system-grid">

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "canvas": {"width": 1672, "height": 941},
+  "layers": {
+    "background": "assets/vmgame/art/layers/background.webp",
+    "architecture": "assets/vmgame/art/layers/architecture.webp",
+    "foreground": "assets/vmgame/art/layers/foreground.webp"
+  },
+  "overscan": 1.05,
+  "sourceRevision": "284cea067b7927ad96319cdfc5e1f8d569adee90",
+  "description": "Registered reconstructed original artwork, native 1672x941. Alpha retained; never independently trim or crop layers. Not native 4K or 3D geometry."
+}
