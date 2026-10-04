@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="js/theme-preflight.js?v=1"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.9">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.10">
 <link rel="stylesheet" href="css/student-result-viewer.css?v=1">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -1066,7 +1066,7 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vinhmath.js?v=9.7"></script>
+<script src="js/vm-progress.js?v=20261004"></script><script src="js/vinhmath.js?v=9.7"></script>
 <script src="js/submission-upload.js?v=1"></script>
 <script src="js/tex-environments.js?v=1.0"></script>
 <script src="js/analytics.js"></script>
@@ -3065,6 +3065,7 @@ function vmTaiPdfJs() {
 }
 
 function renderPDFWithJS(pdfUrl, container) {
+  var progress = window.VMProgress && VMProgress.start('Mở tài liệu PDF');
   container.innerHTML = '<div class="no-content"><div class="spinner"></div><h3>Đang chuẩn bị tài liệu...</h3></div>';
   var seq = ++vmPdfViewerSeq;
   var canvasId = 'pdfCanvasContainer-' + seq;
@@ -3077,6 +3078,7 @@ function renderPDFWithJS(pdfUrl, container) {
     if (viewerClosed) return;
     viewerClosed = true;
     clearTimeout(loadTimer);
+    if(progress)progress.cancel();
     if (reason) console.warn('Chuyển sang trình xem PDF của trình duyệt:', reason && reason.message ? reason.message : reason);
     container.innerHTML = '<iframe class="pdf-frame" src="' + pdfUrl + '#toolbar=1&navpanes=0"></iframe>';
   }
@@ -3101,13 +3103,16 @@ function renderPDFWithJS(pdfUrl, container) {
     }
     
     var loadingTask = pdfjsLib.getDocument(fetchUrl);
+    loadingTask.onProgress = function(event){if(progress)progress.update(event.total ? event.loaded/event.total*70 : 10,'Đang nhận PDF…',event.total?'bytes':'steps');};
     loadingTask.promise.then(function(pdf) {
       if (viewerClosed) return;
       clearTimeout(loadTimer);
+      if(progress)progress.update(75,'Đang dựng các trang đầu…','steps');
 
       function renderPage(num, canvas) {
         if (!canvas || canvas.dataset.renderState) return Promise.resolve();
         canvas.dataset.renderState = 'loading';
+        var pageProgress = window.VMProgress && VMProgress.start('Dựng trang PDF ' + num);
         return pdf.getPage(num).then(function(page) {
           if (viewerClosed || !canvas.isConnected) return;
           var base = page.getViewport({ scale: 1 });
@@ -3125,12 +3130,17 @@ function renderPDFWithJS(pdfUrl, container) {
             viewport: viewport
           }).promise;
         }).then(function () {
+          if(viewerClosed || !canvas.isConnected){if(pageProgress)pageProgress.cancel();return;}
           canvas.dataset.renderState = 'done';
+          if(pageProgress)pageProgress.finish();
+          if(num===1 && progress)progress.finish('Tài liệu đã sẵn sàng');
         }).catch(function (error) {
           canvas.dataset.renderState = 'error';
           canvas.style.minHeight = '120px';
           canvas.title = 'Không dựng được trang ' + num;
           console.error('Không dựng được trang PDF ' + num + ':', error);
+          if(pageProgress)pageProgress.fail(error);
+          if(num===1 && progress)progress.fail(error);
         });
       }
 

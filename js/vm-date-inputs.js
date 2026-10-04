@@ -11,7 +11,9 @@
       ? String(y).padStart(4, '0') + '-' + pad(m) + '-' + pad(d) : '';
   }
   function parseDate(text) {
-    var parts = String(text).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    text = String(text).trim();
+    if (/^\d{8}$/.test(text)) text = text.slice(0, 2) + '/' + text.slice(2, 4) + '/' + text.slice(4);
+    var parts = text.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
     return parts ? isoDate(+parts[3], +parts[2], +parts[1]) : '';
   }
   function display(value) {
@@ -26,6 +28,7 @@
     if (r.time) r.time.value = value.slice(11, 16);
     r.date.setCustomValidity(''); if (r.time) r.time.setCustomValidity('');
     r.date.setAttribute('aria-invalid', 'false');
+    if (r.time) r.time.setAttribute('aria-invalid', 'false');
     r.source.setCustomValidity('');
     r.date.disabled = r.source.disabled; r.date.readOnly = r.source.readOnly;
     r.date.required = r.source.required;
@@ -33,7 +36,25 @@
     r.wrap.hidden = r.source.hidden;
     if (r.time) { r.time.disabled = r.source.disabled; r.time.readOnly = r.source.readOnly; r.time.required = r.source.required; }
   }
-  function commit(r, emit) {
+  function formatTyping(field, isTime, event) {
+    if (event && event.isComposing) return;
+    var raw = field.value, caret = field.selectionStart, formatted = raw;
+    if (!isTime && (/^\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}$/.test(raw) && raw.replace(/\D/g,'').length < 8 || event && /^[/.\-]$/.test(event.data || '') && /^\d[/.\-]/.test(raw))) {
+      field.dataset.vmMask = 'false'; return;
+    }
+    // Explicit separators also allow 3/4/2027. A numeric keyboard needs none.
+    if (isTime || !/[/.\-]/.test(raw) || field.dataset.vmMask === 'true') {
+      var digits = raw.replace(/\D/g, '').slice(0, isTime ? 4 : 8);
+      var before = raw.slice(0, caret).replace(/\D/g, '').length;
+      formatted = digits.slice(0, 2) + (digits.length > 2 ? (isTime ? ':' : '/') + digits.slice(2, 4) : '') + (!isTime && digits.length > 4 ? '/' + digits.slice(4) : '');
+      field.dataset.vmMask = 'true';
+      field.value = formatted;
+      var position = 0, count = 0;
+      while (position < formatted.length && count < before) { if (/\d/.test(formatted[position])) count++; position++; }
+      field.setSelectionRange(position, position);
+    }
+  }
+  function commit(r, emit, report) {
     var dateText = r.date.value.trim(), timeText = r.time ? r.time.value.trim() : '';
     var date = parseDate(dateText), timeValid = !r.time || /^([01]\d|2[0-3]):[0-5]\d$/.test(timeText);
     var empty = !dateText && !timeText, valid = empty || (date && timeValid);
@@ -42,8 +63,12 @@
     if (next && ((r.source.min && next < r.source.min) || (r.source.max && next > r.source.max))) {
       valid = false; message = 'Ngày giờ ngoài khoảng cho phép.';
     }
-    r.date.setCustomValidity(message); r.source.setCustomValidity(message);
-    r.date.setAttribute('aria-invalid', String(!valid));
+    var dateBad = !!dateText && !date, timeBad = !!r.time && (!!timeText && !timeValid || !!date && !timeText);
+    r.date.setCustomValidity(dateBad || (!dateText && timeText) || (date && timeValid && !valid) ? message : '');
+    if (r.time) r.time.setCustomValidity(timeBad ? message : '');
+    r.source.setCustomValidity(message);
+    r.date.setAttribute('aria-invalid', String(!!report && !!r.date.validationMessage));
+    if (r.time) r.time.setAttribute('aria-invalid', String(!!report && !!r.time.validationMessage));
     // Invalid input cannot become an empty/no-deadline value silently.
     if (!valid) return false;
     var changed = valueProperty.get.call(r.source) !== next;
@@ -111,10 +136,27 @@
     Object.defineProperty(source, 'value', { configurable: true, get: function () { return valueProperty.get.call(this); }, set: function (value) { valueProperty.set.call(this, value); sync(r); } });
     source.addEventListener('change', function () { sync(r); });
     source.addEventListener('focus', function () { date.focus(); });
-    source.addEventListener('invalid', function (event) { event.preventDefault(); date.focus(); date.reportValidity(); });
+    source.addEventListener('invalid', function (event) {
+      event.preventDefault(); commit(r, false, true);
+      var invalid = date.validationMessage ? date : (time || date); invalid.focus(); invalid.reportValidity();
+    });
     [date, time].filter(Boolean).forEach(function (field) {
-      field.addEventListener('input', function () { commit(r, true); });
-      field.addEventListener('blur', function () { if (commit(r, true)) date.value = display(source.value); });
+      field.addEventListener('beforeinput', function (event) {
+        // Backspace over a generated separator removes the preceding digit,
+        // rather than re-inserting the slash and trapping the caret.
+        if (event.inputType !== 'deleteContentBackward' || field.selectionStart !== field.selectionEnd) return;
+        var at = field.selectionStart;
+        if (at > 0 && /[/:]/.test(field.value[at - 1]) && field.dataset.vmMask === 'true') {
+          event.preventDefault(); field.setRangeText('', Math.max(0, at - 2), at, 'end');
+          formatTyping(field, field === time); commit(r, true, false);
+        }
+      });
+      field.addEventListener('input', function (event) {
+        if (event.isComposing) return;
+        if (!field.value) delete field.dataset.vmMask;
+        formatTyping(field, field === time, event); commit(r, true, false);
+      });
+      field.addEventListener('blur', function () { if (commit(r, true, true)) date.value = display(source.value); });
     });
     button.onclick = function () { calendar(r); };
     sync(r);
@@ -127,8 +169,8 @@
     var ok = true;
     records.forEach(function (r) {
       if (!r.source.isConnected || !isVisible(r.wrap) || r.source.disabled || (root && !root.contains(r.source))) return;
-      if (!commit(r, false) || !r.date.checkValidity() || (r.time && !r.time.checkValidity())) {
-        if (ok) { r.date.focus(); r.date.reportValidity(); } ok = false;
+      if (!commit(r, false, true) || !r.date.checkValidity() || (r.time && !r.time.checkValidity())) {
+        if (ok) { var invalid = r.date.validationMessage ? r.date : (r.time || r.date); invalid.focus(); invalid.reportValidity(); } ok = false;
       }
     });
     return ok;

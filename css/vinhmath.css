@@ -2395,3 +2395,48 @@ iframe, video, canvas, svg, table { max-width: 100%; }
 .vm-tex-table td{padding:6px 10px;border:1px solid var(--line-2,var(--line));background:transparent;color:inherit;text-align:center;vertical-align:middle}
 .vm-tex-table .katex,.vm-tex-table .katex *{color:inherit}
 .vm-tex-short-answer{display:inline-flex;align-items:center;min-height:30px;padding:4px 10px;border:1px dashed var(--line-2,var(--line));border-radius:8px;background:var(--surface-2);color:var(--ink-3);font-size:.78em;font-weight:700}
+
+/* Shared header: reserve action widths, then collapse the whole menu before
+   links collide. This also fits custom tenant labels and late rank/PWA badges. */
+.topbar .nav{position:relative;flex-wrap:nowrap!important;gap:clamp(12px,1vw,20px);padding:12px clamp(16px,2vw,32px)}
+.topbar .nav>.navlinks{gap:clamp(4px,.55vw,12px);flex-wrap:nowrap}
+.topbar .nav>.navlinks>a,.topbar .nav>.navlinks>.nav-dropdown>.nav-dropdown-btn{flex:none;font-size:.85rem;padding:10px 8px;line-height:1.3}
+.topbar .nav>.vm-nav-actions,.topbar .nav>div:has(>#themeBtn){display:flex;flex:0 0 auto;align-items:center;flex-wrap:nowrap;gap:8px!important;margin-left:auto}
+.topbar .vm-nav-actions>.btn,.topbar .home-nav-actions>.btn{flex:0 0 auto;white-space:nowrap;min-height:40px;padding:9px 16px;line-height:1.2;border-radius:9px}
+.topbar .vm-nav-actions>button[onclick*="dangXuat"]{height:40px!important}
+.topbar .nav #themeBtn,.topbar .nav .nav-bell,.topbar .nav .nav-burger{flex:none;width:40px!important;height:40px!important;min-height:40px!important}
+.topbar .vm-nav-utilities{display:flex;flex:0 0 auto;align-items:center;gap:8px}
+.topbar .vm-nav-utility-label{display:none}
+.topbar .logo .vm-nav-wordmark{min-width:0;white-space:nowrap}
+.topbar .nav.vm-nav-compact>.logo{flex-shrink:1;min-width:0;max-width:var(--vm-logo-room,100%);overflow:visible}
+.topbar .nav.vm-nav-compact>.logo .vm-nav-wordmark{overflow:hidden;text-overflow:ellipsis;display:block}
+.topbar .nav.vm-nav-compact>.logo .vm-rank-logo-tag{flex:none}
+.topbar .nav.vm-nav-compact>.nav-burger{display:grid;place-items:center}
+.topbar .nav.vm-nav-compact>.navlinks{display:none;position:absolute;top:100%;left:0;right:0;padding:12px;flex-direction:column;align-items:stretch;gap:4px;background:var(--surface-solid);border:1px solid var(--line);border-top:none;box-shadow:0 14px 28px rgba(0,0,0,.16);border-radius:0 0 14px 14px;max-height:calc(100dvh - 80px - var(--vm-safe-top));overflow-y:auto;z-index:99}
+.topbar .nav.vm-nav-compact>.navlinks.open{display:flex}
+.topbar .nav.vm-nav-compact>.navlinks>a,.topbar .nav.vm-nav-compact>.navlinks>.nav-dropdown>.nav-dropdown-btn{padding:13px 16px;min-height:44px;font-size:.9rem}
+.topbar .nav.vm-nav-compact .nav-dropdown{width:100%}
+.topbar .nav.vm-nav-compact .nav-dropdown-btn{width:100%;justify-content:space-between}
+.topbar .nav.vm-nav-compact .nav-dropdown-content{position:static;transform:none;box-shadow:none;border:0;background:transparent;padding-left:16px}
+.topbar .nav.vm-nav-measuring>.navlinks{display:flex!important;position:absolute!important;left:-10000px!important;right:auto!important;top:0!important;width:max-content!important;max-width:none!important;flex-direction:row!important;align-items:center!important;visibility:hidden!important;padding:0!important;border:0!important;overflow:visible!important}
+.topbar .nav.vm-nav-measuring>.navlinks>a,.topbar .nav.vm-nav-measuring>.navlinks>.nav-dropdown>.nav-dropdown-btn{width:auto!important;min-height:0!important;font-size:.85rem!important;padding:10px 8px!important}
+.topbar .nav.vm-nav-measuring .vm-nav-utilities{display:none!important}
+.topbar .nav.vm-nav-measuring>.logo{max-width:none!important;flex:none!important}
+.topbar .nav.vm-nav-measuring>.logo .vm-nav-wordmark{overflow:visible!important}
+@media(max-width:1100px){
+  .topbar .nav{min-height:68px;gap:12px!important;padding:12px 20px!important}
+  .topbar .nav>.nav-burger{display:grid;place-items:center}
+  .topbar .nav>.navlinks{display:none}
+}
+@media(max-width:600px){
+  .topbar .nav{min-height:60px;gap:6px!important;padding:10px 12px!important}
+  .topbar .nav>.vm-nav-actions{gap:6px!important}
+  .topbar .nav .nav-bell,.topbar .nav .nav-burger{width:36px!important;height:36px!important;min-height:36px!important}
+  .topbar .vm-nav-actions>.btn{font-size:.75rem;padding:8px 12px;min-height:36px}
+  .topbar .vm-nav-actions>button[onclick*="dangXuat"]{height:36px!important}
+  .topbar .nav>.navlinks>.vm-nav-utilities{flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:8px;padding:12px 16px 2px;border-top:1px solid var(--line)}
+  .topbar .navlinks>.vm-nav-utilities .vm-nav-utility-label{display:block;font-size:.78rem;color:var(--ink-3)}
+  .topbar .navlinks .vm-install-btn{width:auto!important;min-width:40px!important;padding:0 12px!important;gap:7px!important}
+  .topbar .navlinks .vm-install-btn .vm-install-label{display:inline!important}
+  .topbar .nav.vm-nav-compact>.logo{font-size:.93rem!important;gap:5px!important}
+}

@@ -1,0 +1,20 @@
+#vm-transfer-progress{position:fixed;inset:auto 20px max(20px,env(safe-area-inset-bottom)) auto;width:350px;max-width:calc(100vw - 24px);max-height:38vh;margin:0;padding:0;border:0;background:transparent;color:var(--ink,#172033);z-index:2147483646;overflow:visible;pointer-events:none;font:14px/1.4 var(--font-body,system-ui,sans-serif)}
+#vm-transfer-progress[hidden]{display:none}
+#vm-transfer-progress::backdrop{background:transparent;pointer-events:none}
+.vm-progress-rows{display:flex;flex-direction:column;gap:8px;max-height:38vh;overflow:auto;padding:4px}
+.vm-progress-item{flex:none;padding:13px 15px;border:1px solid var(--line-2,var(--vm-line,#dce1e8));border-radius:12px;background:var(--surface,var(--vm-panel,#fff));color:var(--ink,var(--vm-text,#172033));box-shadow:0 8px 28px #0002;pointer-events:auto}
+.vm-progress-head{display:flex;align-items:center;gap:12px;margin-bottom:7px}
+.vm-progress-head strong{flex:1;min-width:0;font-size:13px;font-weight:650}
+.vm-progress-percent{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent,var(--vm-accent,#bd7900))}
+.vm-progress-head button{border:0;background:transparent;color:inherit;font:20px/1 system-ui;cursor:pointer;padding:0 3px;min-height:24px}
+.vm-progress-item progress{display:block;appearance:none;width:100%;height:5px;border:0;border-radius:4px;overflow:hidden;background:var(--line-2,#e1e5ec);color:var(--accent,#dc9700);accent-color:var(--accent,#dc9700)}
+.vm-progress-item progress::-webkit-progress-bar{background:var(--line-2,#e1e5ec);border-radius:4px}
+.vm-progress-item progress::-webkit-progress-value{background:var(--accent,var(--vm-accent,#dc9700));border-radius:4px;transition:width .12s linear}
+.vm-progress-item progress::-moz-progress-bar{background:var(--accent,#dc9700);border-radius:4px}
+.vm-progress-item small{display:block;margin-top:7px;color:var(--ink-3,var(--vm-muted,#627086));font-size:11px;overflow-wrap:anywhere}
+.vm-progress-item[data-state=error] progress::-webkit-progress-value{background:var(--err,#dc3545)}
+.vm-progress-item[data-state=error] small{color:var(--err,#dc3545)}
+.vm-progress-item[data-state=done] .vm-progress-percent{color:var(--ok,#20805b)}
+[data-theme=dark] .vm-progress-item{background:var(--surface,#171e28);color:var(--ink,#e7ecf3);border-color:var(--line-2,#354052)}
+@media(max-width:600px){#vm-transfer-progress{right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:calc(100vw - 24px);max-height:30vh}.vm-progress-rows{max-height:30vh}.vm-progress-item{padding:11px 13px}}
+@media(prefers-reduced-motion:reduce){.vm-progress-item progress::-webkit-progress-value{transition:none}}
