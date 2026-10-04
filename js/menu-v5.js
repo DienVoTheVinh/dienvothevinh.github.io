@@ -11,7 +11,7 @@ function vmMenuEsc(value) {
   });
 }
 
-var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v2-blog';
+var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v3-responsive';
 
 function vmMenuCurrentPage() {
   return (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '').split('?')[0];
@@ -50,10 +50,12 @@ function vmMenuSaveShell(role) {
   var nav = document.querySelector('.navlinks');
   if (!nav || !nav.innerHTML || !role) return;
   try {
+    var shell = nav.cloneNode(true);
+    shell.querySelectorAll('.vm-nav-utilities').forEach(function (tools) { tools.remove(); });
     sessionStorage.setItem(VM_MENU_SHELL_CACHE_KEY, JSON.stringify({
       version: 1,
       role: role,
-      html: nav.innerHTML,
+      html: shell.innerHTML,
       savedAt: Date.now()
     }));
   } catch (_) {}
@@ -255,7 +257,102 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
   if (typeof window.vmCapNhatNutCaiDatPwa === 'function') window.vmCapNhatNutCaiDatPwa();
 }
 
-// Nút ☰ cho màn hình hẹp: tự chèn vào thanh đầu trang (mọi trang dùng menu.js)
+// Fit the actual role/brand/actions, not just a device breakpoint. Keep the
+// native action nodes (and their handlers); secondary tools move into the menu
+// on small phones, rather than squeezing the login label or hiding a feature.
+function vmKhoiTaoTopbarResponsive(nav, links) {
+  if (nav.dataset.vmResponsiveBound) return;
+  nav.dataset.vmResponsiveBound = '1';
+  var pending = false;
+  var utilities;
+  function fit() {
+    pending = false;
+    var logo = nav.querySelector('.logo');
+    var actions = Array.from(nav.children).find(function (child) {
+      return child !== links && child.tagName === 'DIV' &&
+        (child.classList.contains('vm-nav-actions') || child.querySelector('#themeBtn,button[onclick*="dangXuat"],a[href="dang-nhap"]'));
+    });
+    if (actions && !actions.classList.contains('vm-nav-actions')) actions.classList.add('vm-nav-actions');
+    var theme = nav.querySelector('#themeBtn');
+    if (theme && actions && !utilities) {
+      utilities = document.createElement('div');
+      utilities.className = 'vm-nav-utilities';
+      var install = nav.querySelector('#vmInstallBtn');
+      if (install) utilities.appendChild(install);
+      utilities.appendChild(theme);
+      var caption = document.createElement('span');
+      caption.className = 'vm-nav-utility-label';
+      caption.textContent = 'Giao diện';
+      utilities.appendChild(caption);
+      actions.insertBefore(utilities, actions.firstChild);
+      if (!theme.getAttribute('aria-label')) theme.setAttribute('aria-label', 'Đổi giao diện sáng tối');
+      theme.title = 'Đổi giao diện sáng tối';
+    }
+    if (logo) Array.from(logo.children).forEach(function (child) {
+      if (child.tagName === 'SPAN' && !child.matches('.role-badge,.vm-rank-logo-tag')) {
+        if (!child.classList.contains('vm-nav-wordmark')) child.classList.add('vm-nav-wordmark');
+        if (!child.title) child.title = child.textContent.trim();
+      }
+    });
+    // apDungMenu replaces its children after role/tenant hydration. Reattach
+    // tools if that happened while the mobile menu was open.
+    if (utilities && actions) {
+      var destination = innerWidth <= 600 ? links : actions;
+      if (utilities.parentNode !== destination) {
+        if (destination === actions) actions.insertBefore(utilities, actions.firstChild);
+        else links.appendChild(utilities);
+      }
+    }
+    var css = getComputedStyle(nav);
+    var available = nav.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight);
+    // Temporarily measure the desktop menu at its intrinsic width. Removed in
+    // the same frame: no clone, duplicate IDs, layout flash, or resize loop.
+    nav.classList.add('vm-nav-measuring');
+    var menuWidth = links.getBoundingClientRect().width;
+    var logoWidth = logo ? logo.getBoundingClientRect().width : 0;
+    nav.classList.remove('vm-nav-measuring');
+    var fixed = Array.from(nav.children).filter(function (child) {
+      return child !== links && child.id !== 'navBurger' && getComputedStyle(child).display !== 'none';
+    });
+    var fixedWidth = fixed.reduce(function (sum, child) { return sum + child.getBoundingClientRect().width; }, 0);
+    var gap = parseFloat(css.columnGap) || 0;
+    // Restore the full menu when the actual (untruncated) brand fits again.
+    var required = fixedWidth - (logo ? logo.getBoundingClientRect().width : 0) + logoWidth + menuWidth + gap * fixed.length + 24;
+    var compact = innerWidth <= 1100 || required > available;
+    nav.classList.toggle('vm-nav-compact', compact);
+    if (logo && compact) {
+      var burger = document.getElementById('navBurger');
+      var room = available - (fixedWidth - logo.getBoundingClientRect().width) - (burger ? burger.getBoundingClientRect().width : 40) - gap * fixed.length;
+      nav.style.setProperty('--vm-logo-room', Math.max(60, Math.floor(room)) + 'px');
+    }
+    if (!compact && links.classList.contains('open')) vmDongMenuTopbar();
+  }
+  function schedule() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(fit);
+  }
+  window.vmCanTopbar = schedule;
+  window.addEventListener('resize', schedule, { passive: true });
+  new MutationObserver(function (records) {
+    if (records.some(function (record) { return record.target !== nav && record.target !== links || record.type === 'childList'; })) schedule();
+  }).observe(nav, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+  if (window.ResizeObserver) new ResizeObserver(schedule).observe(nav);
+  if (document.fonts) {
+    document.fonts.ready.then(schedule);
+    document.fonts.addEventListener('loadingdone', schedule);
+  }
+  fit();
+}
+
+function vmDongMenuTopbar() {
+  var links = document.querySelector('.topbar .navlinks');
+  var button = document.getElementById('navBurger');
+  if (links) links.classList.remove('open');
+  if (button) { button.setAttribute('aria-expanded', 'false'); button.setAttribute('aria-label', 'Mở menu'); }
+}
+
+// Nút menu tự chèn vào thanh đầu trang (mọi trang dùng menu-v5.js).
 function damBaoNutMenuMobile() {
   var nav = document.querySelector('.topbar .nav');
   var links = document.querySelector('.navlinks');
@@ -263,16 +360,29 @@ function damBaoNutMenuMobile() {
   var nut = document.createElement('button');
   nut.id = 'navBurger';
   nut.className = 'nav-burger';
-  nut.innerHTML = '☰';
+  nut.type = 'button';
+  nut.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
   nut.setAttribute('aria-label', 'Mở menu');
-  nut.onclick = function (e) { e.stopPropagation(); links.classList.toggle('open'); };
+  nut.setAttribute('aria-expanded', 'false');
+  if (!links.id) links.id = 'vmNavLinks';
+  nut.setAttribute('aria-controls', links.id);
+  nut.onclick = function (e) {
+    e.stopPropagation();
+    var open = links.classList.toggle('open');
+    nut.setAttribute('aria-expanded', String(open));
+    nut.setAttribute('aria-label', open ? 'Đóng menu' : 'Mở menu');
+  };
   nav.appendChild(nut);
   document.addEventListener('click', function (e) {
-    if (!nav.contains(e.target)) links.classList.remove('open');
+    if (!nav.contains(e.target)) vmDongMenuTopbar();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && links.classList.contains('open')) { vmDongMenuTopbar(); nut.focus(); }
   });
   links.addEventListener('click', function (e) {
-    if (e.target.tagName === 'A') links.classList.remove('open');
+    if (e.target.closest('a')) vmDongMenuTopbar();
   });
+  vmKhoiTaoTopbarResponsive(nav, links);
 }
 
 function apDungLogoBadge(role) {
