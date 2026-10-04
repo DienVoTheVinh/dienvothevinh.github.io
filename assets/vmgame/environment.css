@@ -1,0 +1,15 @@
+.vm-icon{display:inline-block;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;flex-shrink:0}
+.vm-environment{position:relative;overflow:hidden;isolation:isolate;background:#345c72}
+.vm-landscape{position:absolute;inset:0;background:url('art/kingdom.webp') center/cover;filter:var(--region-filter,none)}
+.vm-night .vm-landscape{filter:brightness(.29) saturate(.6) hue-rotate(13deg)}
+.vm-environment-canvas,.vm-cloud-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.vm-cloud-layer{overflow:hidden;opacity:.7}.vm-cloud-0{animation:vm-cloud-drift 48s linear infinite}.vm-cloud-1{animation:vm-cloud-drift 67s linear infinite reverse;opacity:.48;translate:-220px -13px}
+.vm-night .vm-cloud-layer{opacity:.15}.vm-still .vm-cloud,.vm-low .vm-cloud-1{animation-play-state:paused!important}.vm-low .vm-cloud-1{display:none}
+@keyframes vm-cloud-drift{from{transform:translateX(-220px)}to{transform:translateX(620px)}}
+@media(prefers-reduced-motion:reduce){.vm-cloud{animation:none!important}}
+.vm-landscape{z-index:0}.vm-environment-canvas{z-index:1}.vm-cloud-layer{z-index:1}.vm-light-canvas{z-index:3}.vm-layer{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}.vm-layer-background{z-index:0}.vm-layer-architecture{z-index:2;translate:calc(var(--view-x,0px)*.28) calc(var(--view-y,0px)*.28)}.vm-layer-foreground{z-index:4;translate:var(--view-x,0px) var(--view-y,0px);transform-origin:5% 0;animation:vm-foreground-sway 7s ease-in-out infinite alternate}.vm-night .vm-layer{filter:brightness(.32) saturate(.68) hue-rotate(10deg)}.vm-layer-pause .vm-layer-foreground,.vm-still .vm-layer-foreground{animation-play-state:paused!important}.vm-light-canvas{translate:calc(var(--view-x,0px)*.28) calc(var(--view-y,0px)*.28)}
+@keyframes vm-foreground-sway{to{transform:rotate(.06deg) translateY(1.5px)}}
+@media(prefers-reduced-motion:reduce){.vm-layer-foreground{animation:none!important}.vm-layer,.vm-light-canvas{translate:none!important}}
+.vm-layer,.vm-landscape,.vm-environment-canvas,.vm-cloud-layer{scale:var(--vm-overscan,1);transform-origin:50% 50%}
+.vm-cloud-layer{opacity:1}.vm-cloud-0{animation:vm-painted-cloud-drift 130s linear infinite}.vm-night .vm-cloud-layer{opacity:1;filter:brightness(.32) saturate(.68) hue-rotate(10deg)}
+@keyframes vm-painted-cloud-drift{from{transform:translateX(0)}to{transform:translateX(-1672px)}}
