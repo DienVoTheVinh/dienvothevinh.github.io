@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102e35"><meta name="description" content="VMGame: cùng học giả hoàn thành sơ đồ chứng minh ngược với hình học tương tác.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Nhịp cầu Thalès · VMGame</title><link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/vmgame/proof.css?v=1">
+<script src="assets/vmgame/proof-engine.js?v=1" defer></script><script src="assets/vmgame/proof-ui.js?v=1" defer></script>
+</head>
+<body>
+<a class="proof-skip" href="#proof-main">Đến bài hình học</a>
+<header class="proof-header"><a class="proof-brand" href="vmgame.html">VM<span>Game</span><small>HỘI ĐỒNG TRI THỨC</small></a><a class="back-link" href="vmgame.html">← Về thế giới</a><button id="help-button" class="quiet">Cách chơi <span>?</span></button></header>
+<main id="proof-main">
+<div class="mission-heading"><div><p class="eyebrow">XƯỞNG SUY LUẬN · HÌNH HỌC</p><h1>Nhịp cầu Thalès</h1><p>Đi từ điều cần chứng minh, tìm những điều kiện đủ để nối hai bờ ý tưởng.</p></div><div class="mission-progress"><strong id="progress-count">0 / 6</strong><span>MẮT XÍCH ĐÃ KIỂM TRA</span><progress id="mission-progress" max="6" value="0" aria-label="Tiến độ hoàn thành"></progress></div></div>
+<div class="proof-layout">
+<aside class="geometry-panel">
+<div class="panel-label"><span>01 · QUAN SÁT CẤU HÌNH</span><button id="expand-figure" class="quiet" aria-label="Phóng to hình vẽ">⤢</button></div>
+<div id="geometry" class="geometry"></div>
+<div class="figure-controls"><label for="point-g">Vị trí G trên AB <output id="g-position">60%</output></label><input id="point-g" type="range" min="5" max="95" value="60" step="1"><label class="check-label"><input type="checkbox" id="show-auxiliary" checked> Hiện điểm K và đường phụ</label><label class="check-label"><input type="checkbox" id="show-target" checked> Hiện đoạn cần chứng minh HF</label></div>
+<details class="problem" open><summary>Đề bài</summary><p>Cho tam giác ABC cân tại A. E thuộc tia đối của tia CA, CE = CB. Lấy G <strong>nằm trong đoạn AB</strong>. Đường thẳng GE cắt BC tại F; GC cắt phân giác trong của góc ABC tại H. Chứng minh <strong>HF ∥ AC</strong>.</p><p class="construction-note">Đường phụ: dựng K trên tia đối của tia BA sao cho KE ∥ BC. K nằm vượt qua B.</p><p class="micro">G khác A và B để tránh cấu hình suy biến. Hình vẽ thay đổi giúp quan sát; đo đạc không thay cho chứng minh.</p></details>
+<details class="measurements"><summary>Kiểm tra các tỉ số trên hình</summary><div id="ratio-readout"></div><p class="micro">Số thập phân chỉ phục vụ quan sát. Điểm được tính từ công thức chính xác, không làm tròn hệ số dựng.</p></details>
+</aside>
+<section class="reasoning-panel" aria-labelledby="reasoning-title">
+<div class="panel-label"><span>02 · HOÀN THÀNH SƠ ĐỒ NGƯỢC</span><button id="reset-button" class="quiet">Làm lại ↺</button></div>
+<h2 id="reasoning-title">Muốn chứng minh điều này,<br>ta cần biết điều gì?</h2>
+<div class="direction-key"><span><b>↓</b> Khám phá ngược: tìm điều kiện đủ</span><span><b>↑</b> Suy ra: từ điều kiện đến kết luận</span></div>
+<div class="goal-node"><small>ĐÍCH ĐẾN</small><strong>HF ∥ AC</strong><span>A, C, E thẳng hàng</span></div>
+<p class="branch-intro">Điền mệnh đề và căn cứ cho từng mắt xích. Chạm ô chọn hoặc kéo thẻ từ kho bên dưới.</p>
+<div id="proof-steps"></div>
+<div id="completion" class="completion" hidden><span>✦</span><h2>Nhịp cầu đã được nối!</h2><p>Bạn đã hoàn thành các mắt xích. Hãy đọc lại lời giải theo chiều suy ra.</p><button id="solution-button" class="gold-button">Xem lời giải hoàn chỉnh →</button><small>Tiến độ luyện tập tại đây không cộng XP hay tiền trong trò chơi.</small></div>
+</section>
+</div>
+<section class="card-bank" aria-labelledby="bank-title"><div><p class="eyebrow">KHO Ý TƯỞNG</p><h2 id="bank-title">Những mảnh ghép của lời giải</h2><p>Chọn một thẻ rồi chạm ô cùng loại để đặt; hoặc kéo thả trên máy tính. Bạn cũng có thể dùng các ô chọn bằng bàn phím.</p></div><div class="bank-tabs" role="group" aria-label="Loại thẻ"><button data-bank="statement" aria-pressed="true">Mệnh đề</button><button data-bank="theorem" aria-pressed="false">Định lí & căn cứ</button></div><div id="bank-cards"></div><p id="selected-card" role="status" aria-live="polite">Chưa chọn thẻ.</p></section>
+</main>
+<footer>VMGame · Cùng khám phá, cùng kiến tạo.<a href="index.html">Trang chủ VinhMath ↗</a></footer>
+<dialog id="proof-dialog" aria-labelledby="dialog-title"><button id="close-dialog" aria-label="Đóng">×</button><div id="dialog-content"></div></dialog><div id="proof-status" role="status" aria-live="polite"></div>
+</body></html>
