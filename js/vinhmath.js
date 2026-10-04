@@ -1070,6 +1070,7 @@ async function vmLayPhienAnToan(timeoutMs) {
 
 if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
   sb = window.supabase.createClient(VM.SUPABASE_URL, VM.SUPABASE_ANON_KEY, {
+    global: { fetch: window.fetch.bind(window) },
     auth: {
       storage: vmTaoBoNhoPhien(),
       storageKey: VM_SHARED_KEY,
@@ -1419,7 +1420,10 @@ async function vmGoiHamFormData(tenHam, formData, tuyChon) {
   var timeoutMs = Number(tuyChon.timeoutMs) || 120000;
   var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
   try {
-    var response = await fetch(VM.SUPABASE_URL + '/functions/v1/' + encodeURIComponent(tenHam), {
+    var send = tuyChon.onUploadProgress && window.VMProgress ? function (url, options) {
+      return VMProgress.transfer(url, options, {update:function (percent) { tuyChon.onUploadProgress(Math.min(1, percent / 90)); }});
+    } : fetch;
+    var response = await send(VM.SUPABASE_URL + '/functions/v1/' + encodeURIComponent(tenHam), {
       method: 'POST',
       headers: {
         apikey: VM.SUPABASE_ANON_KEY,

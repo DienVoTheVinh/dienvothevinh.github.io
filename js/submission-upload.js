@@ -30,13 +30,15 @@
     Object.keys(meta).forEach(function (key) { if (meta[key] != null && meta[key] !== '') fd.append(key, String(meta[key])); });
     return fd;
   }
-  async function call(fd) { return vmGoiHamFormData('nop-bai', fd, {timeoutMs:fd.get('kind')==='nop_file'?300000:120000}); }
+  async function call(fd, onUploadProgress) { return vmGoiHamFormData('nop-bai', fd, {timeoutMs:fd.get('kind')==='nop_file'?300000:120000,onUploadProgress:onUploadProgress}); }
   async function upload(files, metadata, onProgress) {
     files = Array.from(files || []); metadata = Object.assign({}, metadata);
     if (!files.length || files.length > 30) throw new Error('Mỗi lần nộp từ 1 đến 30 ảnh/PDF.');
+    var task = window.VMProgress && VMProgress.start('Nộp bài · ' + files.length + ' tệp');
+    try {
     var status = function (text) { if (onProgress) onProgress(text); };
     var entries = [];
-    for (var i=0; i<files.length; i++) { status('Đang chuẩn bị tệp ' + (i+1) + '/' + files.length + '…'); entries.push(await prepare(files[i])); }
+    for (var i=0; i<files.length; i++) { status('Đang chuẩn bị tệp ' + (i+1) + '/' + files.length + '…'); entries.push(await prepare(files[i])); if(task)task.update(15*(i+1)/files.length,'Chuẩn bị tệp ' + (i+1) + '/' + files.length); }
     var total = entries.reduce(function (n,e) { return n+e.file.size; },0);
     if (total > 600*MB) throw new Error('Tổng dung lượng sau tối ưu vượt 600 MB. Hãy chia nhỏ PDF hoặc giảm kích thước ảnh.');
     var manifest = entries.map(function (entry) { return entry.manifest; });
@@ -54,6 +56,11 @@
     var ticket;
     try { ticket = await call(begin); } catch (error) { if (/hết hạn/i.test(error.message)) {pending.delete(key);try{sessionStorage.removeItem(key);}catch(_){}} throw error; }
     var done = Object.keys(ticket.uploaded_files || {}).length, next=0, errors=[];
+    var loaded = entries.map(function(entry,index){return ticket.uploaded_files && ticket.uploaded_files[String(index)] ? entry.file.size : 0;});
+    function progress(index, fraction) {
+      loaded[index] = entries[index].file.size * fraction;
+      if(task) task.update(20 + 70 * loaded.reduce(function(n,size){return n+size;},0)/total, 'Đã xác nhận ' + done + '/' + entries.length + ' tệp · đang truyền dữ liệu…', 'bytes');
+    }
     async function worker() {
       while (next < entries.length && !errors.length) {
         var index=next++; if (ticket.uploaded_files && ticket.uploaded_files[String(index)]) continue;
@@ -61,7 +68,7 @@
         for (var attempt=0; attempt<3 && !success; attempt++) {
           status('Đã tải ' + done + '/' + entries.length + ' tệp' + (attempt ? ' · đang thử lại tệp lỗi…' : '…'));
           var fd=form({upload_id:ticket.upload_id,file_index:index},'nop_file'); fd.append('files',entry.file);
-          try { await call(fd); success=true; done++; }
+          try { await call(fd, function(fraction){progress(index,fraction);}); success=true; done++; progress(index,1); }
           catch (error) {
             if (attempt===2 || /hết hạn|không có quyền|không khớp|đã thay đổi/i.test(error.message)) { errors.push(error); break; }
             await new Promise(function (resolve) { setTimeout(resolve, 1000*(attempt+1)); });
@@ -74,8 +81,10 @@
     await Promise.all(entries.some(function(e){return e.file.size>8*MB;}) ? [worker()] : [worker(),worker()]);
     if (errors.length) throw new Error('Đã giữ ' + done + '/' + files.length + ' tệp. Bấm Gửi lại để tiếp tục phần còn thiếu (trong 30 phút). ' + errors[0].message);
     status('Đã tải đủ ' + done + ' tệp. Đang xác nhận bài nộp…');
+    if(task)task.update(95,'Đang ghi nhận bài nộp…','steps');
     var result=await call(form({upload_id:ticket.upload_id},'nop_finish'));
-    pending.delete(key);try{sessionStorage.removeItem(key);}catch(_){} return result;
+    pending.delete(key);try{sessionStorage.removeItem(key);}catch(_){} if(task)task.finish('Đã ghi nhận bài nộp'); return result;
+    } catch(error) { if(task)task.fail(error); throw error; }
   }
   window.VMSubmissionUpload={upload:upload,prepare:prepare,maxFiles:30,maxFileBytes:30*MB,maxTotalBytes:600*MB};
 })();

@@ -505,13 +505,18 @@ function vmTikzViewportAnToan(page, preferredScale) {
 
 async function vmRenderTikzEntriesNhanh(entries) {
   if (!entries.length) return;
+  var progress = window.VMProgress && VMProgress.start('Dựng hình toán học · ' + entries.length + ' hình');
+  var completed = new Set();
+  function rendered(entry) { completed.add(entry); if(progress)progress.update(40+completed.size/entries.length*59,'Đã dựng '+completed.size+'/'+entries.length+' hình'); }
+  try {
   try {
     // standalone multi=tikzpicture tạo một trang cho mỗi hình: một lần gọi
     // máy chủ có thể dựng toàn bộ bảng hình thay vì N lần gọi liên tiếp.
     var batchBlob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entries.map(function (entry) { return entry.item; }), true));
     var pdf = await vmMoPdfTikz(batchBlob);
+    if(progress)progress.update(40,'Đang vẽ các hình từ PDF…');
     if (pdf.numPages < entries.length) throw new Error('Bản TikZ theo lô thiếu trang');
-    await Promise.all(entries.map(function (entry, index) { return vmVeTrangTikz(pdf, index + 1, entry.figure); }));
+    await Promise.all(entries.map(async function (entry, index) { await vmVeTrangTikz(pdf, index + 1, entry.figure); rendered(entry); }));
   } catch (batchError) {
     if (batchError && (batchError.code === 'VM_TIKZ_TIMEOUT' || batchError.code === 'VM_TIKZ_PDFJS')) {
       entries.forEach(function (entry) { vmDatLoiTikz(entry.figure, batchError); });
@@ -525,12 +530,20 @@ async function vmRenderTikzEntriesNhanh(entries) {
           var blob = await vmLayTikzPdfNhanh(vmTexTikzPreview(entry.item, false));
           var pdf = await vmMoPdfTikz(blob);
           await vmVeTrangTikz(pdf, 1, entry.figure);
+          rendered(entry);
         } catch (error) {
           vmDatLoiTikz(entry.figure, error);
         }
       }
     }
     await Promise.all([worker(), worker()]);
+  }
+  } finally {
+    if(progress) {
+      var failed=entries.filter(function(entry){return entry.figure.getAttribute('data-vm-tikz-ready')!=='done';}).length;
+      if(failed)progress.fail(new Error(failed+' hình chưa kết xuất được. Có thể thử lại ở từng hình.'));
+      else progress.finish('Đã dựng đủ hình');
+    }
   }
 }
 
