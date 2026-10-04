@@ -210,6 +210,7 @@ function apDungMenu(role, portalContext, tenantContext, featureAccess) {
 
   // Blog is public reading, independent of classroom subscriptions and exam roles.
   // Append after role/tenant feature filtering, without changing protected routes.
+  if (!portalContext && !fullSiteTenant) muc.push({type:'link',path:'vmgame',label:'VMGame',featureKey:'public_vmgame',featureState:'shown'});
   muc.push({type:'link',path:'blog',label:'Blog',featureKey:'public_blog',featureState:'shown'});
   nav.innerHTML = muc.map(function (m) {
     if (m.type === 'link') {
