@@ -909,6 +909,10 @@ body.theme-map #mapWatermark { display:none; } /* bỏ ảnh mờ nền — gây
 
   <style>
     @keyframes bhFall { to { transform: translateY(112vh) rotate(720deg); opacity:.85; } }
+    #bh-celebration { position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;overflow:hidden;pointer-events:none;z-index:2147483647; }
+    #bh-celebration::backdrop { background:transparent;pointer-events:none; }
+    #bh-celebration .bh-confetti-piece { position:absolute;top:-5vh;width:9px;height:14px;pointer-events:none;border-radius:2px; }
+    @media (prefers-reduced-motion:reduce) { #bh-celebration { display:none; } }
     @keyframes mlGlowAmber { 0%,100%{ box-shadow:0 0 0 rgba(224,160,32,0); } 50%{ box-shadow:0 0 13px 2px rgba(224,160,32,.8); } }
     @keyframes mlGlowGreen { 0%,100%{ box-shadow:0 0 0 rgba(46,213,115,0); } 50%{ box-shadow:0 0 13px 2px rgba(46,213,115,.8); } }
     a.ml-sub2.ml-glow { animation: mlGlowAmber 1.4s ease-in-out infinite; border-radius:8px; background:rgba(224,160,32,.12)!important; font-weight:800; color:var(--accent)!important; }
@@ -1424,6 +1428,16 @@ async function guiBaiNop() {
   var tb = $('nbThongBao');
   if (!fs.length) { tb.textContent = 'Em chưa chọn file nào.'; tb.style.color = 'var(--warn)'; return; }
   var nut = $('nbGui');
+  var successNotice;
+  function hienThanhCong(coLoiGiaiDaMo) {
+    tb.innerHTML = '<div style="text-align:center;padding:6px"><div aria-hidden="true" style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div>' +
+      '<div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô.' + (coLoiGiaiDaMo ? ' Hệ thống vừa mở lời giải và gửi thông báo cho em.' : ' Cố lên nhé!') + '</div>' +
+      (coLoiGiaiDaMo ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="vmXemLoiGiaiVuaMo(\'' + submittingKind + '\')">🔓 Xem lời giải ngay</button>' : '') + '</div>';
+    successNotice = tb.firstElementChild;
+  }
+  function conThongBaoThanhCong() {
+    return successNotice && tb.isConnected && tb.firstElementChild === successNotice && nopBaiPhanLoai === submittingKind && !window._vmDangNop;
+  }
   // Cảnh báo không thoát khi đang gửi (đóng trang giữa chừng có thể mất bài)
   if (!window._vmUnloadReg) {
     window.addEventListener('beforeunload', function (e) {
@@ -1439,27 +1453,37 @@ async function guiBaiNop() {
     await VMSubmissionUpload.upload(fs, {phanloai:submittingKind, lesson_id:lessonId}, function (message) {
       nut.textContent = message; tb.textContent = 'Đang gửi bài. Giữ trang mở; nếu có lỗi, bấm Gửi lại để tiếp tục những tệp còn thiếu.';
     });
-    window._vmDangNop = false;
-    vmDatLaiFileDaChon('nbFiles', 'nbFileList');
-    var nguonDaMo = await vmLayNguonLatexTheoQuyen(nopBaiPhanLoai, '');
-    if (nopBaiPhanLoai !== submittingKind) return;
-    var coLoiGiaiDaMo = !!(nguonDaMo.unlocked && nguonDaMo.hasSolution);
-    tb.innerHTML = '<div style="text-align:center;padding:6px"><div style="font-size:2rem">🎉</div><div style="font-weight:800;color:var(--ok);font-size:1.05rem">Nộp bài thành công!</div>' +
-      '<div style="font-size:.82rem;color:var(--ink-2);margin-top:2px">Bài của em đã được gửi tới thầy/cô.' + (coLoiGiaiDaMo ? ' Hệ thống vừa mở lời giải và gửi thông báo cho em.' : ' Cố lên nhé!') + '</div>' +
-      (coLoiGiaiDaMo ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="vmXemLoiGiaiVuaMo(\'' + nopBaiPhanLoai + '\')">🔓 Xem lời giải ngay</button>' : '') + '</div>';
-    if (typeof bhConfetti === 'function') bhConfetti();
-    nut.textContent = '🔄 Nộp lại bài khác';   // đổi nhãn để HS biết đã nộp
-    await taiBaiDaNop();
-    if (noiDungDangChon === 'test' && submittingKind === 'test') await chonNoiDung('test');
-    if (noiDungDangChon === 'btvn' && nopBaiPhanLoai !== 'test') await renderBTVN($('thanNoiDung'));
-    if (typeof taiMucLuc === 'function') taiMucLuc(); // cập nhật glow Nộp bài -> tắt
+    // upload() only resolves after nop_finish acknowledges the saved submission.
+    // Celebrate now; a slow/failed solution lookup must not hide this receipt.
+    if (nopBaiPhanLoai === submittingKind) {
+      vmDatLaiFileDaChon('nbFiles', 'nbFileList');
+      hienThanhCong(false);
+      nut.textContent = '🔄 Nộp lại bài khác';
+    }
+    try { if (typeof bhConfetti === 'function') bhConfetti(); }
+    catch (_) { console.warn('Bài đã nộp; chưa hiển thị được hiệu ứng chúc mừng.'); }
   } catch (e) {
     tb.textContent = 'Lỗi: ' + e.message;
     tb.style.color = 'var(--err)';
     nut.textContent = 'Gửi bài cho thầy';
+  } finally {
+    window._vmDangNop = false;
+    nut.disabled = false;
   }
-  window._vmDangNop = false;
-  nut.disabled = false;
+  if (!successNotice) return;
+  // Independent, best-effort refreshes. Do not replace a successful receipt
+  // with a network error, or overwrite a newer submission's UI.
+  Promise.resolve().then(function () { return vmLayNguonLatexTheoQuyen(submittingKind, ''); }).then(function (nguonDaMo) {
+    if (conThongBaoThanhCong() && nguonDaMo && nguonDaMo.unlocked && nguonDaMo.hasSolution) hienThanhCong(true);
+  }).catch(function () { console.warn('Bài đã nộp; chưa tải được trạng thái lời giải.'); });
+  Promise.resolve().then(async function () {
+    if (!conThongBaoThanhCong()) return;
+    await taiBaiDaNop();
+    if (!conThongBaoThanhCong()) return;
+    if (noiDungDangChon === 'test' && submittingKind === 'test') await chonNoiDung('test');
+    if (noiDungDangChon === 'btvn' && submittingKind !== 'test') await renderBTVN($('thanNoiDung'));
+    if (typeof taiMucLuc === 'function') await taiMucLuc();
+  }).catch(function () { console.warn('Bài đã nộp; chưa cập nhật được danh sách bài.'); });
 }
 
 function vmXemLoiGiaiVuaMo(kind) {
@@ -1875,13 +1899,30 @@ function bhAnhThumbs(files) {
 }
 // ===== Hiệu ứng chúc mừng khi nộp bài =====
 function bhConfetti() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var prior = document.getElementById('bh-celebration');
+  if (prior) prior.remove();
+  var layer = document.createElement('aside'); layer.id = 'bh-celebration';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.setAttribute('data-vm-passive-overlay', 'true');
+  layer.setAttribute('data-html2canvas-ignore', 'true');
+  // The progress panel and native dialogs use the browser's top layer.
+  // A passive popover stays visible above them without focus or scroll locks.
+  if (typeof layer.showPopover === 'function') layer.setAttribute('popover', 'manual');
+  var dialogs = document.querySelectorAll('dialog:modal');
+  var host = document.fullscreenElement || (dialogs.length ? dialogs[dialogs.length - 1] : document.body);
+  host.appendChild(layer);
+  if (layer.hasAttribute('popover')) {
+    try { layer.showPopover(); } catch (_) { layer.removeAttribute('popover'); }
+  }
   var colors = ['#e0a020', '#2ed573', '#ff6b6b', '#54a0ff', '#a55eea', '#ffd76a'];
   for (var i = 0; i < 60; i++) {
     var c = document.createElement('div');
-    c.style.cssText = 'position:fixed;z-index:100001;width:9px;height:14px;top:-5vh;pointer-events:none;border-radius:2px;left:' + (Math.random() * 100) + 'vw;background:' + colors[i % colors.length] + ';animation:bhFall ' + (2 + Math.random() * 1.6) + 's linear ' + (Math.random() * 0.3) + 's forwards';
-    document.body.appendChild(c);
-    (function (el) { setTimeout(function () { el.remove(); }, 4200); })(c);
+    c.className = 'bh-confetti-piece';
+    c.style.cssText = 'left:' + (Math.random() * 100) + '%;background:' + colors[i % colors.length] + ';animation:bhFall ' + (2 + Math.random() * 1.6) + 's linear ' + (Math.random() * 0.3) + 's forwards';
+    layer.appendChild(c);
   }
+  setTimeout(function () { layer.remove(); }, 4200);
 }
 function buildPdfUrl(p) {
   var value = typeof vmStoragePathHopLe === 'function'
