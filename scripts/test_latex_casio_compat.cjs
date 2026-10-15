@@ -89,6 +89,10 @@ Rút gọn biểu thức $A=\dfrac{\sqrt{15}-\sqrt5}{\sqrt3-1}$.
     const candidate = explicit || (config ? configure(generated, config) : generated);
     await validateLatexSource(candidate, 'document');
     if (!process.env.VM_TEST_LESSON_SOURCE && config) assert.equal(candidate.includes('VMSOLUTIONSENTINEL'), config.answers === 'show', name + ': do not expose answers');
+    if (config && config.answers === 'dots') {
+      const body = candidate.slice(candidate.lastIndexOf('\\begin{document}'));
+      assert.equal((body.match(/\\dotfill/g) || []).length, config.dotLines * (lesson.match(/\\loigiai\b/g) || []).length, name + ': exact requested dotted-line count');
+    }
   }
   if (process.argv.includes('--compile')) {
     fs.mkdirSync(path.join(root, 'output/pdf-render-qa'), {recursive:true});
@@ -108,6 +112,7 @@ Rút gọn biểu thức $A=\dfrac{\sqrt{15}-\sqrt5}{\sqrt3-1}$.
     if (text.error) throw text.error;
     assert.equal(text.status, 0);
     if (!process.env.VM_TEST_LESSON_SOURCE && config) assert.equal(text.stdout.includes('VMSOLUTIONSENTINEL'), config.answers === 'show', name + ': verify answers in the rendered PDF, not only TeX');
+    if (process.env.VM_TEST_LESSON_SOURCE && config && /\\loigiai\b/.test(lesson)) assert.equal(/Lời\s+giải/i.test(text.stdout), config.answers === 'show', name + ': actual lesson solution visibility');
     console.log('PDF compile, text and second-pass references verified:', path.join(folder, 'document.pdf'));
     }
   }

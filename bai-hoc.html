@@ -2811,6 +2811,41 @@ async function vmBienDichPdfTex(tex) {
   return r.data;
 }
 
+async function vmPdfBiTranHaiCot(blob, config) {
+  if (config.layout !== 'two') return false;
+  var pdf;
+  try {
+    var lib = await vmTaiPdfJs();
+    pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    var top = config.margins === 'tight' ? 34 : (config.margins === 'loose' ? 62 : 48);
+    var bottom = config.margins === 'tight' ? 34 : (config.margins === 'loose' ? 57 : 45);
+    // The lesson template uses an 8 mm column gap. Inspect actual PDF glyph
+    // positions, excluding the running header/footer and rotated watermark.
+    var halfGap = 8 * 72 / 25.4 / 2 - 2;
+    for (var i = 1; i <= pdf.numPages; i++) {
+      var page = await pdf.getPage(i);
+      var view = page.getViewport({ scale: 1 });
+      var text = await page.getTextContent();
+      var middle = view.width / 2;
+      var overflow = text.items.some(function (item) {
+        if (!item.str || !item.str.trim() || !item.transform) return false;
+        var x = item.transform[4], y = item.transform[5];
+        return y > bottom + 12 && y < view.height - top - 12 &&
+          Math.abs(item.transform[1]) < 0.1 && Math.abs(item.transform[2]) < 0.1 &&
+          x < middle + halfGap && x + item.width > middle - halfGap;
+      });
+      page.cleanup();
+      if (overflow) return true;
+    }
+  } catch (_) {
+    // An unavailable preview library must not discard an otherwise valid PDF.
+    console.warn('Chưa kiểm tra được độ rộng hai cột của PDF.');
+  } finally {
+    if (pdf) { try { await pdf.destroy(); } catch (_) {} }
+  }
+  return false;
+}
+
 async function vmBatDauXuatPdf() {
   var item = vmLatexDownloads[vmPdfExportKey];
   if (!item) return;
@@ -2836,6 +2871,7 @@ async function vmBatDauXuatPdf() {
     var fallbackUsed = false;
     var answerSafeFallback = false;
     var geometryRepaired = false;
+    var columnLayoutRepaired = false;
     try {
       pdfBlob = await vmBienDichPdfTex(tex);
     } catch (advancedError) {
@@ -2859,6 +2895,13 @@ async function vmBatDauXuatPdf() {
         pdfBlob = await vmBienDichPdfTex(fallbackTex);
       }
     }
+    if (!preserveSource && await vmPdfBiTranHaiCot(pdfBlob, config)) {
+      $('vmPdfProgressTitle').textContent = 'Đang điều chỉnh công thức dài…';
+      $('vmPdfProgressText').textContent = 'Công thức tràn giữa hai cột. Hệ thống đang tạo lại bản một cột, giữ nguyên lựa chọn lời giải và dòng chấm.';
+      var singleColumnConfig = Object.assign({}, config, { layout: 'one' });
+      pdfBlob = await vmBienDichPdfTex(vmCauHinhNoiDungPdf(originalTex, singleColumnConfig));
+      columnLayoutRepaired = true;
+    }
     vmPdfExportBlob = pdfBlob;
     if (vmPdfExportUrl) URL.revokeObjectURL(vmPdfExportUrl);
     vmPdfExportUrl = URL.createObjectURL(pdfBlob);
@@ -2866,7 +2909,9 @@ async function vmBatDauXuatPdf() {
     var resultNote = $('vmPdfResultNote');
     if (resultNote) {
       resultNote.style.display = 'block';
-      resultNote.innerHTML = geometryRepaired
+      resultNote.innerHTML = columnLayoutRepaired
+        ? '<b>Đã chuyển sang một cột để công thức không bị chồng lấn.</b> Cỡ chữ, lề trang và lựa chọn lời giải hoặc dòng chấm vẫn được giữ nguyên.'
+        : geometryRepaired
         ? '<b>Đã tự sửa xung đột geometry.</b> Các khai báo lề trang bị lặp đã được hợp nhất trước khi biên dịch.'
         : (fallbackUsed
           ? (answerSafeFallback

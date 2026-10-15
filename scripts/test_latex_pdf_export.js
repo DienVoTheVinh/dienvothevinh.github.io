@@ -35,7 +35,7 @@ const source = [
   extractFunction(reader, 'vmThayMoiTruongCanBang'),
   extractRange(reader, 'function xoaLenhKhoiLatex', 'function dinhDangVanBanTaiLieuLatex'),
   extractRange(lesson, 'function vmChenTruocDocument', 'async function vmBatDauXuatPdf'),
-  'return { configure: vmCauHinhNoiDungPdf, answers: vmBienDoiLoiGiaiPdf, repair: vmSuaXungDotGeometry };',
+  'return { configure: vmCauHinhNoiDungPdf, answers: vmBienDoiLoiGiaiPdf, repair: vmSuaXungDotGeometry, overflow: vmPdfBiTranHaiCot };',
 ].join('\n');
 const helpers = new Function(source)();
 const configure = helpers.configure;

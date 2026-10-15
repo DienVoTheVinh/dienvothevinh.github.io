@@ -45,6 +45,7 @@ jobs:
           node scripts/test_latex_relay_security.js
           node scripts/test_latex_pdf_export.js
           node scripts/test_latex_casio_compat.cjs
+          node scripts/test_latex_pdf_columns.cjs
       - name: Check administrator and PDF rendering in an isolated browser
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
