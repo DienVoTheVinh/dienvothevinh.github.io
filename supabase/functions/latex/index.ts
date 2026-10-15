@@ -4,6 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.112.3";
 import { LatexValidationError, validateLatexSource } from "./security.ts";
+import { prepareValidatedLatexForCompile } from "./compat.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +73,7 @@ Deno.serve(async (request: Request) => {
     if (!tex) throw new Error("Thiếu nội dung LaTeX");
     if (sourceBytes > MAX_TEX_BYTES) throw new Error("Nội dung LaTeX vượt giới hạn 2 MB");
     const validation = await validateLatexSource(tex, purpose);
+    const compilationTex = prepareValidatedLatexForCompile(tex);
 
     // Only isolated TikZ previews are retained. Full exams may contain private
     // material and therefore continue through the non-persistent path.
@@ -79,7 +81,7 @@ Deno.serve(async (request: Request) => {
     const standalone = validation.standalone;
     const cacheable = purpose === "tikz" && standalone && tikzCount > 0 && tikzCount <= 16;
     if (!cacheable) {
-      const result = await compile(tex, engine, DOCUMENT_TIMEOUT_MS);
+      const result = await compile(compilationTex, engine, DOCUMENT_TIMEOUT_MS);
       return reply(result.bytes, result.contentType, 200, { "x-vinhmath-cache": "BYPASS" });
     }
 
@@ -109,7 +111,7 @@ Deno.serve(async (request: Request) => {
     let ownsJob = false;
     if (!job) {
       ownsJob = true;
-      job = compile(tex, engine, TIKZ_TIMEOUT_MS);
+      job = compile(compilationTex, engine, TIKZ_TIMEOUT_MS);
       inflight.set(key, job);
       const createdJob = job;
       // Giu ket qua nong vai giay de lap khoang tre giua luc tra response va

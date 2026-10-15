@@ -104,3 +104,4 @@ if (!lesson.includes('Option clash for package geometry') || !lesson.includes('Ä
 if (!/if \(\/\\\\documentclass\/\.test\(trimmed\)\) \{[\s\S]{0,320}?vmChenPreambleMoiTruongTex\(trimmed\)/.test(lesson)) throw new Error('Complete TeX documents must preserve their source while accepting the controlled published environment preamble');
 if (!lesson.includes('.vm-pdf-preview { height:min(62dvh,620px); min-height:360px; overflow:hidden; display:flex; flex-direction:column;') || !lesson.includes('min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch')) throw new Error('Exported PDF preview cannot scroll through all rendered pages');
 console.log('PASS configurable PDF export presets and single popup flow');
+module.exports = helpers;
