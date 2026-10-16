@@ -54,6 +54,7 @@ jobs:
           npx --no-install playwright install --with-deps chromium
           node scripts/test_admin_profile_rendering_browser.cjs
           node scripts/test_startup_appearance_browser.cjs
+          node scripts/test_account_theme_browser.cjs
           node scripts/test_account_services_form_browser.cjs
           node scripts/test_teacher_email_browser.cjs
           node scripts/test_lesson_pdf_layout_browser.cjs
