@@ -757,6 +757,164 @@ var VM_THEME_SCHEDULE_KEY = 'vm-theme-schedule';
 var VM_THEME_CHOICE_KEY = 'vm-theme-choice';
 var VM_THEME_OVERRIDE_KEY = 'vm-theme-session';
 var vmThemeScheduleTimer = null;
+var vmThemeAccountUser = window.VMThemePreflight && window.VMThemePreflight.readAccount ? window.VMThemePreflight.readAccount() : null;
+var vmThemeAccountSaving = false;
+var vmThemeAccountRefresh = null;
+var vmThemeAccountLastRefresh = 0;
+
+function vmThemeCaNhan() {
+  var api = window.VMThemePreflight;
+  return api && api.preferenceForUser ? api.preferenceForUser(vmThemeAccountUser) : null;
+}
+
+function vmThemeHieuLuc(schedule, date) {
+  var preference = vmThemeCaNhan();
+  if (preference && preference.mode !== 'system') return window.VMThemePreflight.resolvePreference(preference, date);
+  return vmThemeTheoLich(schedule || vmDocLichThemeDaLuu(), date);
+}
+
+function vmDongBoThemeTaiKhoan(user, confirmed) {
+  var oldId = vmThemeAccountUser && vmThemeAccountUser.id;
+  var newId = user && user.id;
+  if (oldId !== newId) {
+    vmXoaThemeTamTheoPhien();
+    var form = document.getElementById('ccPersonalTheme');
+    if (form) delete form.dataset.dirty;
+  }
+  // Do not let a session read started before Save replace the confirmed result.
+  if (vmThemeAccountSaving && oldId === newId) return;
+  vmThemeAccountUser = user || null;
+  if (confirmed && user && window.VMThemePreflight && window.VMThemePreflight.rememberPreference) window.VMThemePreflight.rememberPreference(user);
+  vmApDungThemeHienTai();
+  vmCapNhatThemeCaNhanUI();
+}
+
+async function vmTaiThemeCaNhan(force) {
+  if (!daKetNoi() || !sb.auth.getUser) return;
+  if (vmThemeAccountRefresh) return vmThemeAccountRefresh;
+  if (!force && Date.now() - vmThemeAccountLastRefresh < 60000) return;
+  vmThemeAccountLastRefresh = Date.now();
+  var expectedId = vmThemeAccountUser && vmThemeAccountUser.id;
+  if (!expectedId) return;
+  vmThemeAccountRefresh = (async function () {
+    try {
+      var result = await vmChoCoGioiHan(sb.auth.getUser(), 8000);
+      if (!result.error && result.data && result.data.user && result.data.user.id === expectedId && vmThemeAccountUser && vmThemeAccountUser.id === expectedId) vmDongBoThemeTaiKhoan(result.data.user, true);
+    } catch (_) { /* Retain the last saved account preference while offline. */ }
+  })();
+  try { await vmThemeAccountRefresh; } finally { vmThemeAccountRefresh = null; }
+}
+
+function vmCapNhatThemeCaNhanUI() {
+  var form = document.getElementById('ccPersonalTheme');
+  if (!form) return;
+  var preference = vmThemeCaNhan() || {mode:'system',lightStart:'06:00',darkStart:'19:00'};
+  if (!form.dataset.dirty) {
+    $('ccPersonalMode').value = preference.mode;
+    $('ccPersonalLightStart').value = preference.lightStart;
+    $('ccPersonalDarkStart').value = preference.darkStart;
+  }
+  var scheduled = $('ccPersonalMode').value === 'schedule';
+  $('ccPersonalTimes').hidden = !scheduled;
+  $('ccPersonalLightStart').disabled = !scheduled || vmThemeAccountSaving;
+  $('ccPersonalDarkStart').disabled = !scheduled || vmThemeAccountSaving;
+  $('ccPersonalMode').disabled = vmThemeAccountSaving || !vmThemeAccountUser;
+  $('ccPersonalSave').disabled = vmThemeAccountSaving || !vmThemeAccountUser;
+  if (!vmThemeAccountUser) $('ccPersonalStatus').textContent = 'Đăng nhập để lưu giao diện theo tài khoản.';
+  var globalLink = $('ccGlobalThemeLink');
+  if (globalLink) globalLink.hidden = window.VM_USER_ROLE !== 'admin';
+}
+
+function vmKhoiTaoCaiDatThemeCaNhan() {
+  if (document.getElementById('ccPanel')) { vmCapNhatThemeCaNhanUI(); return; }
+  var panel = document.createElement('section');
+  panel.className = 'control-center-panel';
+  panel.id = 'ccPanel';
+  panel.dataset.personalTheme = 'true';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-labelledby', 'ccPersonalTitle');
+  panel.style.position = 'fixed';
+  panel.innerHTML = '<div class="cc-personal-theme" id="ccPersonalTheme">' +
+    '<h3 id="ccPersonalTitle">Giao diện của tôi</h3>' +
+    '<label class="cc-schedule-mode"><span>Chế độ</span><select id="ccPersonalMode"><option value="system">Theo cài đặt toàn web</option><option value="light">Luôn sáng</option><option value="dark">Luôn tối</option><option value="schedule">Tự chuyển theo giờ</option></select></label>' +
+    '<div class="cc-schedule-times" id="ccPersonalTimes" hidden><label><span>Bắt đầu nền sáng</span><input type="time" id="ccPersonalLightStart" value="06:00"></label><label><span>Bắt đầu nền tối</span><input type="time" id="ccPersonalDarkStart" value="19:00"></label></div>' +
+    '<button type="button" class="cc-schedule-save" id="ccPersonalSave">Lưu cho tài khoản của tôi</button>' +
+    '<p class="cc-personal-note">Lịch cá nhân ưu tiên hơn lịch toàn web, lưu theo tài khoản trên các thiết bị. Giờ Việt Nam (UTC+7).</p>' +
+    '<p id="ccPersonalStatus" class="cc-personal-status" role="status" aria-live="polite"></p>' +
+    '</div><div class="cc-personal-quick"><button type="button" class="cc-follow-system" id="ccQuickToggle">Đổi tạm sáng/tối</button><button type="button" class="cc-follow-system" id="ccEndTemporary">Dùng cài đặt đã lưu</button></div>' +
+    '<a id="ccGlobalThemeLink" class="cc-personal-note" href="quan-tri-le-hoi" hidden>Cài đặt toàn web →</a>';
+  document.body.appendChild(panel);
+  vmCapNhatThemeCaNhanUI();
+  var form = $('ccPersonalTheme');
+  form.addEventListener('change', function () { form.dataset.dirty = 'true'; $('ccPersonalStatus').textContent = 'Chưa lưu thay đổi.'; vmCapNhatThemeCaNhanUI(); });
+  $('ccPersonalSave').addEventListener('click', async function () {
+    var status = $('ccPersonalStatus');
+    status.textContent = 'Đang lưu vào tài khoản…';
+    try {
+      var preference = await vmLuuThemeCaNhan({version:1,mode:$('ccPersonalMode').value,lightStart:$('ccPersonalLightStart').value,darkStart:$('ccPersonalDarkStart').value});
+      status.textContent = preference.mode === 'system' ? 'Đã lưu. Đang theo cài đặt toàn web.' : 'Đã lưu giao diện riêng cho tài khoản.';
+    } catch (error) { status.textContent = error.message || 'Chưa lưu được. Vui lòng thử lại.'; }
+  });
+  $('ccQuickToggle').addEventListener('click', toggleTheme);
+  $('ccEndTemporary').addEventListener('click', function () { vmXoaThemeTamTheoPhien(); vmApDungThemeHienTai(); $('ccPersonalStatus').textContent = 'Đang dùng cài đặt đã lưu.'; });
+  function close() { panel.classList.remove('open'); var button = $('themeBtn'); if (button) button.setAttribute('aria-expanded','false'); }
+  panel.addEventListener('click', function (event) { event.stopPropagation(); });
+  document.addEventListener('click', close);
+  panel.addEventListener('keydown', function (event) { if (event.key === 'Escape') { close(); $('themeBtn').focus(); } });
+  window.addEventListener('resize', function () { if (panel.classList.contains('open')) vmDinhViCaiDatTheme(); });
+}
+
+function vmDinhViCaiDatTheme() {
+  var panel = $('ccPanel'), button = $('themeBtn');
+  if (!panel || !button) return;
+  var rect = button.getBoundingClientRect();
+  panel.style.top = Math.min(rect.bottom + 10, innerHeight - 120) + 'px';
+  panel.style.right = Math.max(12, innerWidth - rect.right) + 'px';
+}
+
+function vmMoCaiDatTheme() {
+  vmKhoiTaoCaiDatThemeCaNhan();
+  var panel = $('ccPanel'), button = $('themeBtn');
+  if (!panel || !button) return;
+  var open = !panel.classList.contains('open');
+  vmDinhViCaiDatTheme();
+  panel.classList.toggle('open', open);
+  button.setAttribute('aria-expanded', String(open));
+  if (open) ($('ccPersonalMode').disabled ? $('ccQuickToggle') : $('ccPersonalMode')).focus();
+}
+
+async function vmLuuThemeCaNhan(value) {
+  var api = window.VMThemePreflight;
+  var preference = api && api.normalisePreference && api.normalisePreference(value);
+  if (!preference) throw new Error('Giờ sáng và tối phải hợp lệ và khác nhau.');
+  if (vmThemeAccountSaving) throw new Error('Đang lưu, vui lòng chờ.');
+  vmThemeAccountSaving = true;
+  vmCapNhatThemeCaNhanUI();
+  try {
+    var expectedId = vmThemeAccountUser && vmThemeAccountUser.id;
+    var session = await vmLayPhienAnToan();
+    var user = session.data && session.data.session && session.data.session.user;
+    if (session.error || !user || !daKetNoi()) throw new Error('Vui lòng đăng nhập lại trước khi lưu.');
+    if (user.id !== expectedId) throw new Error('Tài khoản đã thay đổi. Vui lòng tải lại trang.');
+    // Only cosmetic metadata for the CURRENT signed-in user; no role, profile,
+    // email, password, app_metadata, user id, RPC or app_settings writes.
+    var result = await vmChoCoGioiHan(sb.auth.updateUser({data:{vm_theme_preferences:preference}}), 15000);
+    if (result.error || !result.data || !result.data.user || result.data.user.id !== user.id) throw new Error('Chưa lưu được lên tài khoản. Vui lòng kiểm tra kết nối rồi thử lại.');
+    if (!vmThemeAccountUser || vmThemeAccountUser.id !== user.id) throw new Error('Tài khoản đã thay đổi. Vui lòng tải lại trang.');
+    var confirmed = api.normalisePreference(result.data.user.user_metadata && result.data.user.user_metadata.vm_theme_preferences);
+    if (!confirmed || JSON.stringify(confirmed) !== JSON.stringify(preference)) throw new Error('Máy chủ chưa xác nhận cài đặt mới. Vui lòng thử lại.');
+    vmThemeAccountUser = result.data.user;
+    api.rememberPreference(result.data.user);
+    vmXoaThemeTamTheoPhien();
+    var form = document.getElementById('ccPersonalTheme');
+    if (form) delete form.dataset.dirty;
+    vmApDungThemeHienTai();
+    return preference;
+  } finally {
+    vmThemeAccountSaving = false;
+    vmCapNhatThemeCaNhanUI();
+  }
+}
 
 function vmLichThemeMacDinh(overrides) {
   var value = overrides && typeof overrides === 'object' ? overrides : {};
@@ -770,7 +928,7 @@ function vmLichThemeMacDinh(overrides) {
 }
 
 function vmDocLichThemeDaLuu() {
-  try { return vmLichThemeMacDinh(JSON.parse(localStorage.getItem(VM_THEME_SCHEDULE_KEY) || '{}')); }
+  try { return vmLichThemeMacDinh(JSON.parse(localStorage.getItem(VM_THEME_SCHEDULE_KEY) || 'null') || {theme:localStorage.getItem('vm-theme') || 'dark'}); }
   catch (_) { return vmLichThemeMacDinh(); }
 }
 
@@ -799,6 +957,9 @@ function vmThemeTheoLich(schedule, date) {
 }
 
 function vmDangTheoThemeHeThong() {
+  // Historical name: use the SAVED source (personal first, global fallback),
+  // rather than the temporary choice made in this browser tab.
+  if (window.VMThemePreflight && window.VMThemePreflight.hasTemporaryChoice) return !window.VMThemePreflight.hasTemporaryChoice(vmThemeAccountUser && vmThemeAccountUser.id);
   try { return sessionStorage.getItem(VM_THEME_CHOICE_KEY) !== 'manual'; } catch (_) { return true; }
 }
 
@@ -806,15 +967,16 @@ function vmXoaThemeTamTheoPhien() {
   try {
     sessionStorage.removeItem(VM_THEME_CHOICE_KEY);
     sessionStorage.removeItem(VM_THEME_OVERRIDE_KEY);
+    sessionStorage.removeItem('vm-theme-override-user');
   } catch (_) {}
 }
 
 function vmApDungThemeHienTai(schedule) {
   if (!vmDangTheoThemeHeThong()) return document.documentElement.getAttribute('data-theme') || 'dark';
-  var theme = vmThemeTheoLich(schedule || vmDocLichThemeDaLuu());
+  var theme = vmThemeHieuLuc(schedule);
   if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') window.VMThemePreflight.apply(theme);
   else document.documentElement.setAttribute('data-theme', theme);
-  try { localStorage.setItem('vm-theme', theme); } catch (_) {}
+  try { localStorage.setItem('vm-theme', vmThemeTheoLich(schedule || vmDocLichThemeDaLuu())); } catch (_) {}
   capNhatNutTheme();
   var accent = localStorage.getItem('vm-accent') || 'amber';
   apdungMauAccent(document.documentElement, accent, theme === 'dark');
@@ -828,6 +990,20 @@ function vmKhoiDongDongHoTheme() {
     if (!document.hidden) vmApDungThemeHienTai();
   }, 30000);
 }
+
+// Re-evaluate immediately after sleep/backgrounding and share only cosmetic
+// per-account preferences across tabs. No identity or authorization from cache.
+window.addEventListener('focus', function () { vmApDungThemeHienTai(); vmTaiThemeCaNhan(); });
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) { vmApDungThemeHienTai(); vmTaiThemeCaNhan(); }
+});
+window.addEventListener('storage', function (event) {
+  if (vmThemeAccountUser && event.key === 'vm-account-theme:' + vmThemeAccountUser.id) {
+    vmXoaThemeTamTheoPhien();
+    vmApDungThemeHienTai();
+    vmCapNhatThemeCaNhanUI();
+  }
+});
 
 function capNhatTrangThaiDieuKhienLichTheme(schedule) {
   var value = schedule ? vmLichThemeMacDinh(schedule) : vmDocLichThemeDaLuu();
@@ -849,6 +1025,11 @@ function capNhatNutTheme() {
   var svgMoon = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
   var svgSun = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="display:block"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
   btn.innerHTML = (theme === 'dark') ? svgMoon : svgSun;
+  btn.title = 'Cài đặt giao diện sáng/tối';
+  btn.setAttribute('aria-label', 'Cài đặt giao diện sáng/tối');
+  btn.setAttribute('aria-haspopup', 'dialog');
+  btn.setAttribute('aria-controls', 'ccPanel');
+  btn.onclick = function (event) { event.stopPropagation(); vmMoCaiDatTheme(); };
 }
 
 function toggleTheme() {
@@ -865,19 +1046,6 @@ function toggleTheme() {
   
   capNhatNutTheme();
   
-  // Đồng bộ cả nút ở Control Center nếu đang mở
-  var ccLight = document.getElementById('ccBtnLight');
-  var ccDark = document.getElementById('ccBtnDark');
-  if (ccLight && ccDark) {
-    if (newTheme === 'dark') {
-      ccDark.classList.add('active');
-      ccLight.classList.remove('active');
-    } else {
-      ccLight.classList.add('active');
-      ccDark.classList.remove('active');
-    }
-  }
-
   var activeColor = localStorage.getItem('vm-accent') || 'amber';
   apdungMauAccent(h, activeColor, newTheme === 'dark');
   
@@ -887,6 +1055,7 @@ function toggleTheme() {
   try {
     sessionStorage.setItem(VM_THEME_CHOICE_KEY, 'manual');
     sessionStorage.setItem(VM_THEME_OVERRIDE_KEY, newTheme);
+    sessionStorage.setItem('vm-theme-override-user', vmThemeAccountUser && vmThemeAccountUser.id || '');
   } catch (e) {}
   try { window.dispatchEvent(new Event('theme-change')); } catch (e) {}
 }
@@ -1092,6 +1261,17 @@ if (VM.SUPABASE_URL && VM.SUPABASE_ANON_KEY && window.supabase) {
       persistSession: true,
       autoRefreshToken: !/^\/dang-nhap(?:\.html)?$/.test(window.location.pathname),
       detectSessionInUrl: true
+    }
+  });
+  if (typeof sb.auth.onAuthStateChange === 'function') sb.auth.onAuthStateChange(function (event, session) {
+    // No awaited Auth calls inside this callback (the SDK's session lock is held).
+    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'TOKEN_REFRESHED'].indexOf(event) !== -1) {
+      setTimeout(function () {
+        var user = session && session.user;
+        var fresh = event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED' ||
+          (event === 'SIGNED_IN' && user && (!vmThemeAccountUser || vmThemeAccountUser.id !== user.id));
+        vmDongBoThemeTaiKhoan(user, fresh);
+      }, 0);
     }
   });
 }
@@ -1958,7 +2138,7 @@ function showSamSuccess(msg) {
 
 /* ---------- 6. KHỞI TẠO TRUNG TÂM ĐIỀU KHIỂN (APPLE CONTROL CENTER) ---------- */
 function khoiTaoControlCenter() {
-  return; // Hủy theo yêu cầu: Bỏ các icon bổ sung trên thanh công cụ
+  return vmKhoiTaoCaiDatThemeCaNhan(); // Reuse the existing theme button; no extra toolbar icons.
   var nav = document.querySelector('.topbar .nav') || document.querySelector('.nav') || document.querySelector('.topbar');
   if (!nav) return;
   
@@ -2708,7 +2888,7 @@ async function guiTinNhanAI() {
 
 function themAdminControlsVaoCC() {
   var ccPanel = document.getElementById('ccPanel');
-  if (!ccPanel) return;
+  if (!ccPanel || ccPanel.dataset.personalTheme === 'true') return;
   
   var adminDiv = document.createElement('div');
   adminDiv.id = 'ccAdminControls';
@@ -2822,11 +3002,11 @@ async function taiCaiDatHeThongGlobal() {
       var canvasOpacity = dbCanvas ? dbCanvas.value : '0.25';
       var accent = dbAccent ? dbAccent.value : (localStorage.getItem('vm-accent') || 'amber');
       
-      // Người dùng có thể đổi tạm bằng nút mặt trời trong phiên hiện tại. Mỗi
-      // lần đăng nhập mới lại bắt đầu từ lịch hệ thống.
+      // Temporary tab choice first, saved personal preference next; the global
+      // schedule is only a fallback. Global refreshes cannot replace a personal schedule.
       var sessionTheme = null;
       try { sessionTheme = sessionStorage.getItem(VM_THEME_OVERRIDE_KEY); } catch (_) {}
-      var finalTheme = vmDangTheoThemeHeThong() ? systemTheme : (sessionTheme === 'light' ? 'light' : 'dark');
+      var finalTheme = vmDangTheoThemeHeThong() ? vmThemeHieuLuc(schedule) : (sessionTheme === 'light' ? 'light' : 'dark');
       var finalTrans = localStorage.getItem('vm-transparency') !== null ? localStorage.getItem('vm-transparency') : transparency;
       var finalBlur = localStorage.getItem('vm-blur') !== null ? localStorage.getItem('vm-blur') : blur;
       var finalCanvasOpacity = localStorage.getItem('vm-canvas-opacity') !== null ? localStorage.getItem('vm-canvas-opacity') : canvasOpacity;
@@ -2864,6 +3044,7 @@ async function taiCaiDatHeThongGlobal() {
 }
 
 function capNhatCCUI(theme, transparency, blur, canvasOpacity, accent, schedule) {
+  if (schedule) theme = schedule.theme;
   var ccLight = document.getElementById('ccBtnLight');
   var ccDark = document.getElementById('ccBtnDark');
   if (ccLight && ccDark) {
@@ -3014,6 +3195,8 @@ async function khoiDongTrang() {
     try {
       var s = await vmLayPhienAnToan();
       if (s.data.session) {
+        vmDongBoThemeTaiKhoan(s.data.session.user);
+        vmTaiThemeCaNhan();
         var rp = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
         if (rp.data) {
           window.VM_USER_ROLE = rp.data.role;

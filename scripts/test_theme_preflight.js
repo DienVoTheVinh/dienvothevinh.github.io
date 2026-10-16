@@ -37,6 +37,7 @@ function runPreflight(savedTheme, options = {}) {
       getItem(key) {
         if (key === 'vm-theme-choice') return options.manual ? 'manual' : null;
         if (key === 'vm-theme-session') return options.override || null;
+        if (options.sessionSettings && key in options.sessionSettings) return options.sessionSettings[key];
         return null;
       }
     }
@@ -96,16 +97,16 @@ const canonical = fs.readdirSync(root)
 expect(canonical.length >= 40, 'Expected the canonical themed HTML surface');
 for (const file of canonical) {
   const html = read(file);
-  const preflightAt = html.indexOf('js/theme-preflight.js?v=2');
+  const preflightAt = html.indexOf('js/theme-preflight.js?v=3');
   const tokensAt = html.indexOf('css/tokens.css');
   expect(preflightAt !== -1 && preflightAt < tokensAt, `${file}: preflight must be parser-blocking before tokens.css`);
-  expect(html.includes('css/vinhmath.css?v=8.11-startup'), `${file}: shared motion CSS cache key is stale`);
-  if (html.includes('js/vinhmath.js')) expect(html.includes('js/vinhmath.js?v=9.8-startup'), `${file}: shared runtime cache key is stale`);
+  expect(html.includes('css/vinhmath.css?v=8.12-account-theme'), `${file}: shared motion CSS cache key is stale`);
+  if (html.includes('js/vinhmath.js')) expect(html.includes('js/vinhmath.js?v=9.9-account-theme'), `${file}: shared runtime cache key is stale`);
   if (html.includes('js/menu-v5.js')) expect(html.includes('js/menu-v5.js?v=20261016-startup'), `${file}: shared menu cache key is stale`);
 }
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v97"), 'Offline shell must advance for startup appearance/identity fixes');
+expect(worker.includes("vinhmath-shell-v98"), 'Offline shell must advance for saved account themes');
 expect(worker.includes("'/js/theme-preflight.js'"), 'Offline shell must cache the preflight script');
 
 for (const theme of ['light', 'dark']) {
@@ -122,3 +123,21 @@ expect(personal.styles['--accent'] === '#12abcd', 'Personal accent must not flas
 const corrupt = runPreflight('dark', {settings:{'vm-theme-color':'url(bad)', 'vm-blur':'bad', 'vm-canvas-opacity':'999'}});
 expect(corrupt.styles['--accent'] === '#d97706' && corrupt.styles['--glass-blur-radius'] === '20px' && corrupt.styles['--canvas-opacity'] === '1', 'Invalid saved settings must have safe bounded defaults');
 console.log(`PASS theme prepaint, identity-safe navigation and ${canonical.length} canonical HTML pages`);
+
+const pref = mode => ({version:1,mode,lightStart:'06:00',darkStart:'19:00'});
+const session = value => JSON.stringify({user:{id:'account-a',user_metadata:{vm_theme_preferences:value}}});
+expect(runPreflight('dark',{settings:{'vmauth-shared':session(pref('light'))}}).attrs['data-theme'] === 'light', 'Personal fixed light must win over global dark before CSS');
+expect(runPreflight('light',{settings:{'vmauth-shared':session(pref('dark'))}}).attrs['data-theme'] === 'dark', 'Personal fixed dark must win over global light');
+expect(runPreflight('light',{settings:{'vmauth-shared':session(pref('system'))}}).attrs['data-theme'] === 'light', 'Explicit system choice must follow global theme');
+expect(runPreflight('dark',{settings:{'vm-auth-remember':'0'},sessionSettings:{'vmauth-shared':session(pref('light'))}}).attrs['data-theme'] === 'light', 'Remember-me off must use only the tab session');
+expect(runPreflight('dark',{settings:{'vm-auth-remember':'0','vmauth-shared':session(pref('light'))}}).attrs['data-theme'] === 'dark', 'Do not resurrect another persisted account when remember-me is off');
+expect(runPreflight('dark',{manual:true,override:'dark',settings:{'vmauth-shared':session(pref('light'))},sessionSettings:{'vm-theme-override-user':'other-account'}}).attrs['data-theme'] === 'light', 'Temporary overrides must not leak across accounts');
+expect(runPreflight('light',{settings:{'vm-account-theme:other-account':JSON.stringify({version:1,userId:'other-account',preference:pref('dark')})}}).attrs['data-theme'] === 'light', 'Signed-out pages must never use the last account preference');
+const freshCache = {'vmauth-shared':session(pref('light')),'vm-account-theme:account-a':JSON.stringify({version:1,userId:'account-a',preference:pref('dark')})};
+expect(runPreflight('light',{settings:freshCache}).attrs['data-theme'] === 'dark', 'Fresh server-confirmed cosmetic cache wins over stale session metadata for the same account');
+const schedulePref = {...pref('schedule'),lightStart:'07:00',darkStart:'20:30'};
+expect(resolver.resolvePreference(schedulePref,new Date('2026-10-17T13:29:00Z')) === 'light', 'Personal schedule: 20:29 Vietnam remains light');
+expect(resolver.resolvePreference(schedulePref,new Date('2026-10-17T13:30:00Z')) === 'dark', 'Personal schedule: 20:30 Vietnam becomes dark');
+expect(resolver.resolvePreference({...schedulePref,lightStart:'21:00',darkStart:'05:00'},new Date('2026-10-17T17:00:00Z')) === 'light', 'Schedules spanning midnight must work');
+for (const invalid of [{...schedulePref,lightStart:'25:00'},{...schedulePref,darkStart:'07:00'},{...pref('dark'),version:999},{...pref('admin')},null]) expect(resolver.normalisePreference(invalid) === null, 'Invalid cosmetic metadata must be ignored');
+console.log('PASS personal first paint, account isolation, session-only storage, fresh cache, schedule boundaries and invalid metadata');

@@ -8,6 +8,14 @@
 4. Xem local bằng `python scripts/serve.py`, rồi mở `http://127.0.0.1:8000`.
 5. Khi đã được duyệt, chuyển PR sang ready, merge vào `main`, theo dõi GitHub Pages và kiểm tra production.
 
+## Giao diện sáng/tối theo tài khoản
+
+- Nút sáng/tối hiện có mở **Giao diện của tôi**; không thêm biểu tượng trên thanh đầu. Người dùng lưu một trong bốn chế độ: theo toàn web, luôn sáng, luôn tối, hoặc theo giờ Việt Nam.
+- Cấu hình được lưu bằng `auth.updateUser({ data: { vm_theme_preferences } })` cho chính tài khoản đăng nhập. Đây chỉ là dữ liệu giao diện trong `user_metadata`, tuyệt đối không dùng để phân quyền.
+- Thứ tự áp dụng: lựa chọn tạm trong tab → cài đặt cá nhân đã lưu → lịch toàn web. Khi đăng nhập lại, lựa chọn tạm được xóa nhưng cài đặt cá nhân vẫn giữ nguyên.
+- Preflight đọc đúng kho phiên `vmauth-shared`; cache giao diện có khóa theo user id, không chứa token hoặc hồ sơ. Máy chủ xác nhận trước khi báo lưu thành công. `getUser()` làm mới lựa chọn khi vào trang hoặc quay lại tab; lỗi mạng giữ bản đã lưu gần nhất.
+- Hồi quy: `scripts/test_theme_preflight.js`, `scripts/test_account_theme_browser.cjs`, `scripts/test_startup_appearance_browser.cjs`.
+
 ## Database và Supabase
 
 - Mọi DDL đi qua file mới trong `supabase/migrations/`; không sửa lịch sử migration đã áp dụng.

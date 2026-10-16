@@ -9,6 +9,7 @@
   var SCHEDULE_KEY = 'vm-theme-schedule';
   var CHOICE_KEY = 'vm-theme-choice';
   var OVERRIDE_KEY = 'vm-theme-session';
+  var ACCOUNT_KEY = 'vm_theme_preferences';
   var root = document.documentElement;
   // One palette for the head prepaint and all later settings/theme updates.
   var palettes = {
@@ -105,17 +106,65 @@
 
   function readSavedTheme() {
     try {
-      // Lựa chọn bằng nút mặt trời chỉ có hiệu lực trong phiên đăng nhập hiện
-      // tại. Khi đăng xuất/đăng nhập lại, hệ thống trở về lịch của quản trị.
-      if (window.sessionStorage && window.sessionStorage.getItem(CHOICE_KEY) === 'manual') {
+      var account = readAccount();
+      if (hasTemporaryChoice(account && account.id)) {
         return normaliseTheme(window.sessionStorage.getItem(OVERRIDE_KEY));
       }
+      var preference = preferenceForUser(account);
+      if (preference && preference.mode !== 'system') return resolvePreference(preference);
       var schedule = parseSchedule();
       if (schedule) return resolveSystemTheme(schedule);
       return normaliseTheme(window.localStorage.getItem('vm-theme'));
     } catch (_) {
       return DARK;
     }
+  }
+
+  // Cosmetic metadata only: never use this cached identity or user_metadata to
+  // authorize data, pages or roles. Auth/profile/RLS still own those decisions.
+  function readAccount() {
+    try {
+      var storage = null;
+      if (saved('vm-auth-remember') !== '0') { try { storage = window.localStorage; } catch (_) {} }
+      if (!storage) storage = window.sessionStorage;
+      var session = JSON.parse(storage.getItem('vmauth-shared') || 'null');
+      return session && session.user && typeof session.user.id === 'string' ? session.user : null;
+    } catch (_) { return null; }
+  }
+  function normalisePreference(value) {
+    if (!value || value.version !== 1 || ['system', 'light', 'dark', 'schedule'].indexOf(value.mode) === -1) return null;
+    var clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+    if (value.mode === 'schedule' && (!clock.test(value.lightStart || '') || !clock.test(value.darkStart || '') || value.lightStart === value.darkStart)) return null;
+    return { version:1, mode:value.mode, lightStart:clock.test(value.lightStart || '') ? value.lightStart : '06:00', darkStart:clock.test(value.darkStart || '') ? value.darkStart : '19:00', timezone:'Asia/Ho_Chi_Minh' };
+  }
+  function preferenceForUser(user) {
+    if (!user || !user.id) return null;
+    try {
+      var cached = JSON.parse(saved('vm-account-theme:' + user.id) || 'null');
+      if (cached && cached.version === 1 && cached.userId === user.id) {
+        if (cached.preference === null) return null;
+        var preference = normalisePreference(cached.preference);
+        if (preference) return preference;
+      }
+    } catch (_) {}
+    return normalisePreference(user.user_metadata && user.user_metadata[ACCOUNT_KEY]);
+  }
+  function rememberPreference(user) {
+    if (!user || !user.id) return;
+    try {
+      window.localStorage.setItem('vm-account-theme:' + user.id, JSON.stringify({version:1,userId:user.id,preference:normalisePreference(user.user_metadata && user.user_metadata[ACCOUNT_KEY])}));
+    } catch (_) {}
+  }
+  function resolvePreference(preference, date) {
+    return preference.mode === 'schedule'
+      ? resolveSystemTheme({mode:'schedule', theme:'dark', lightStart:preference.lightStart, darkStart:preference.darkStart}, date)
+      : normaliseTheme(preference.mode);
+  }
+  function hasTemporaryChoice(userId) {
+    try {
+      var owner = window.sessionStorage.getItem('vm-theme-override-user') || '';
+      return window.sessionStorage.getItem(CHOICE_KEY) === 'manual' && owner === (userId || '');
+    } catch (_) { return false; }
   }
 
   function applyTheme(value) {
@@ -145,6 +194,13 @@
     overrideKey: OVERRIDE_KEY,
     resolveSystemTheme: resolveSystemTheme,
     readSavedTheme: readSavedTheme,
+    accountKey: ACCOUNT_KEY,
+    readAccount: readAccount,
+    normalisePreference: normalisePreference,
+    preferenceForUser: preferenceForUser,
+    rememberPreference: rememberPreference,
+    resolvePreference: resolvePreference,
+    hasTemporaryChoice: hasTemporaryChoice,
     applyAccent: applyAccent,
     applyPersonalColor: applyPersonalColor,
     apply: function (value) {
