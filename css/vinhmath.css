@@ -44,6 +44,10 @@ body::before, body::after {
   pointer-events: none;
   transition: opacity 0.5s ease, background 0.5s ease;
 }
+/* The public homepage owns its mathematical canvas. Never paint the older
+   blue/gold blobs beneath it, even while its dedicated stylesheet is loading. */
+html.vm-public-shell body { background: var(--vm-startup-bg); }
+html.vm-public-shell body::before, html.vm-public-shell body::after { content: none; display: none; }
 @keyframes floatBlob1 {
   0% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(6vw, 4vh) scale(1.1); }

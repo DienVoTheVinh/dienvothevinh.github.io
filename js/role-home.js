@@ -403,6 +403,7 @@
     var box = document.getElementById('vmRoleFocus'), actions = document.getElementById('vmRoleActions'), title = document.getElementById('vmRoleTitle'), sub = document.getElementById('vmRoleSub');
     if (!box || !profile) return;
     var role = profile.role;
+    if (['admin', 'teacher', 'assistant', 'student'].indexOf(role) === -1) return;
     if (['admin', 'teacher', 'assistant'].indexOf(role) !== -1) {
       await renderStaffHome(profile, box, actions, title, sub);
       return;

@@ -11,7 +11,7 @@ function vmMenuEsc(value) {
   });
 }
 
-var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v3-responsive';
+var VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v4-identity';
 
 function vmMenuCurrentPage() {
   return (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '').split('?')[0];
@@ -48,12 +48,13 @@ function vmMenuBindLockedLinks(nav) {
 
 function vmMenuSaveShell(role) {
   var nav = document.querySelector('.navlinks');
-  if (!nav || !nav.innerHTML || !role) return;
+  if (!nav || !nav.innerHTML || !role || !window.VM_MENU_USER_ID) return;
   try {
     var shell = nav.cloneNode(true);
     shell.querySelectorAll('.vm-nav-utilities').forEach(function (tools) { tools.remove(); });
     sessionStorage.setItem(VM_MENU_SHELL_CACHE_KEY, JSON.stringify({
-      version: 1,
+      version: 2,
+      userId: window.VM_MENU_USER_ID,
       role: role,
       html: shell.innerHTML,
       savedAt: Date.now()
@@ -62,18 +63,26 @@ function vmMenuSaveShell(role) {
 }
 
 function vmMenuClearShell() {
-  try { sessionStorage.removeItem(VM_MENU_SHELL_CACHE_KEY); } catch (_) {}
+  try {
+    for (var i = sessionStorage.length - 1; i >= 0; i--) {
+      var key = sessionStorage.key(i);
+      if (key && key.indexOf('vm-menu-shell-') === 0) sessionStorage.removeItem(key);
+    }
+  } catch (_) {}
 }
 window.vmMenuClearShell = vmMenuClearShell;
 
-function vmMenuHydrateShell() {
+function vmMenuHydrateShell(userId, role) {
+  // Visual cache is not proof of identity or role. Do not paint it until both
+  // match the currently resolved session and database profile.
+  if (!userId || !role) return false;
   var nav = document.querySelector('.navlinks');
   if (!nav) return false;
   try {
     var cached = JSON.parse(sessionStorage.getItem(VM_MENU_SHELL_CACHE_KEY) || 'null');
     var validRole = cached && ['admin', 'teacher', 'assistant', 'student', 'parent'].indexOf(cached.role) !== -1;
     var fresh = cached && Number(cached.savedAt || 0) > Date.now() - 12 * 60 * 60 * 1000;
-    if (!validRole || !fresh || !cached.html) { vmMenuClearShell(); return false; }
+    if (!validRole || !fresh || !cached.html || cached.version !== 2 || cached.userId !== userId || cached.role !== role) { vmMenuClearShell(); return false; }
     nav.innerHTML = cached.html;
     if(cached.role==='student') { var classLink=nav.querySelector('a[href="lop-hoc"]'); if(classLink)classLink.textContent='Lớp học'; }
     vmMenuMarkCurrent(nav);
@@ -411,10 +420,7 @@ function apDungLogoBadge(role) {
   logoEl.appendChild(span);
 }
 
-// Hiện lại ngay thanh điều hướng của chính phiên đăng nhập hiện tại. Dữ liệu
-// quyền thật vẫn được tải và vẽ đè ngay bên dưới, nên cache này chỉ loại bỏ
-// khoảng trống thị giác khi chuyển trang, không thay thế kiểm tra quyền.
-vmMenuHydrateShell();
+// Keep the initial public/neutral navigation until the identity is resolved.
 
 // Tự chạy: lấy vai trò người đang đăng nhập rồi vẽ menu
 (async function () {
@@ -424,7 +430,11 @@ vmMenuHydrateShell();
     damBaoNutMenuMobile();
   }
   try {
-    if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+    var s = typeof vmLayPhienAnToan === 'function' ? await vmLayPhienAnToan()
+      : (typeof daKetNoi === 'function' && daKetNoi() ? await sb.auth.getSession() : { data: { session: null } });
+    if (s.error) { vmMenuClearShell(); return; }
+    if (s.data.session) { sessionStorage.removeItem('vm-guest-mode'); }
+    if (!s.data.session && sessionStorage.getItem('vm-guest-mode') === 'true') {
       document.body.classList.add('vm-authenticated', 'vm-role-student');
       apDungMenu('student', null, null, null);
       apDungLogoBadge('student');
@@ -433,12 +443,24 @@ vmMenuHydrateShell();
       return;
     }
     if (typeof daKetNoi !== 'function' || !daKetNoi()) return;
-    var s = await sb.auth.getSession();
     if (!s.data.session) { vmMenuClearShell(); return; }
     var r = await sb.from('profiles').select('role').eq('id', s.data.session.user.id).single();
-    if (r.data) {
+    if (!r.error && r.data && ['admin', 'teacher', 'assistant', 'student', 'parent'].indexOf(r.data.role) !== -1) {
+      window.VM_MENU_USER_ID = s.data.session.user.id;
+      // Public documents start signed out; never leave a stale login action on
+      // the header after the real account has been resolved.
+      var loginLink = document.querySelector('.topbar a[href="dang-nhap"]');
+      if (loginLink) {
+        var logoutButton = document.createElement('button');
+        logoutButton.type = 'button';
+        logoutButton.className = loginLink.className;
+        logoutButton.textContent = 'Đăng xuất';
+        logoutButton.addEventListener('click', function () { if (typeof dangXuat === 'function') dangXuat(); });
+        loginLink.replaceWith(logoutButton);
+      }
+      ['admin', 'teacher', 'assistant', 'student', 'parent'].forEach(function (role) { document.body.classList.remove('vm-role-' + role); });
       document.body.classList.add('vm-authenticated');
-      document.body.classList.add('vm-role-' + (r.data.role || 'student'));
+      document.body.classList.add('vm-role-' + r.data.role);
       var tenantContext = typeof vmLoadTenantContext === 'function' ? await vmLoadTenantContext() : null;
       var portalContext = tenantContext && tenantContext.portal_only && !tenantContext.full_site ? tenantContext : null;
       // Tương thích với bản cơ sở dữ liệu cũ chưa có RPC tenant dùng chung.
@@ -499,7 +521,7 @@ vmMenuHydrateShell();
     }
     khoiDongChuong(s.data.session.user.id);
     napDongHoTuHoc();
-  } catch (e) { /* giữ menu tĩnh sẵn có nếu lỗi */ }
+  } catch (e) { vmMenuClearShell(); /* keep only the initial neutral/public menu */ }
 })();
 
 function napHeThongCapBac() {

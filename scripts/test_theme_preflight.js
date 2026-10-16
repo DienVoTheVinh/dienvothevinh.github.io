@@ -14,6 +14,8 @@ function runPreflight(savedTheme, options = {}) {
   const document = {
     documentElement: {
       style: {
+        setProperty(key, value) { styles[key] = String(value); },
+        removeProperty(key) { delete styles[key]; },
         set colorScheme(value) { styles.colorScheme = value; },
         set backgroundColor(value) { styles.backgroundColor = value; }
       },
@@ -27,6 +29,7 @@ function runPreflight(savedTheme, options = {}) {
       getItem(key) {
         if (key === 'vm-theme') return savedTheme;
         if (key === 'vm-theme-schedule') return options.schedule ? JSON.stringify(options.schedule) : null;
+        if (options.settings && key in options.settings) return options.settings[key];
         return null;
       }
     },
@@ -81,10 +84,11 @@ expect(!css.includes('::view-transition-old(root)') && !css.includes('::view-tra
 expect(/\.topbar,[\s\S]*\.portal-topbar\s*\{[\s\S]*view-transition-name:\s*none/.test(css), 'Shared topbars must not create independent snapshot layers');
 
 const menu = read('js/menu-v5.js');
-expect(menu.includes("VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v1'"), 'Shared navigation must keep a session-scoped visual shell');
-expect(menu.includes('vmMenuHydrateShell();') && menu.indexOf('vmMenuHydrateShell();') < menu.indexOf('// Tự chạy: lấy vai trò'), 'Cached navigation must render before asynchronous permission hydration');
+expect(menu.includes("VM_MENU_SHELL_CACHE_KEY = 'vm-menu-shell-v4-identity'"), 'Shared navigation must use the identity-scoped shell version');
+expect(menu.includes('if (!userId || !role) return false') && menu.includes('cached.userId !== userId') && menu.includes('cached.role !== role'), 'Unverified or other-account shells must never paint');
+expect(!/^vmMenuHydrateShell\(\);/m.test(menu), 'Do not hydrate a previous account before checking the current identity');
 expect(menu.includes('vmMenuSaveShell(role)') && menu.includes('vmMenuClearShell()'), 'Navigation shell cache needs both refresh and cleanup paths');
-expect(shared.includes("sessionStorage.removeItem('vm-menu-shell-v1')"), 'A new login must clear the previous account menu shell');
+expect(shared.includes('vmXoaVoGiaoDienTaiKhoan();') && shared.includes("key.indexOf('vm-menu-shell-') === 0"), 'Account changes must clear every historical menu-shell version');
 
 const canonical = fs.readdirSync(root)
   .filter((file) => file.endsWith('.html') && file !== 'quan-tri-de.html')
@@ -92,16 +96,29 @@ const canonical = fs.readdirSync(root)
 expect(canonical.length >= 40, 'Expected the canonical themed HTML surface');
 for (const file of canonical) {
   const html = read(file);
-  const preflightAt = html.indexOf('js/theme-preflight.js?v=1');
+  const preflightAt = html.indexOf('js/theme-preflight.js?v=2');
   const tokensAt = html.indexOf('css/tokens.css');
   expect(preflightAt !== -1 && preflightAt < tokensAt, `${file}: preflight must be parser-blocking before tokens.css`);
-  expect(html.includes('css/vinhmath.css?v=8.9'), `${file}: shared motion CSS cache key is stale`);
-  expect(html.includes('js/vinhmath.js?v=9.7'), `${file}: shared runtime cache key is stale`);
-  if (html.includes('js/menu-v5.js')) expect(html.includes('js/menu-v5.js?v=10.4'), `${file}: shared menu cache key is stale`);
+  expect(html.includes('css/vinhmath.css?v=8.11-startup'), `${file}: shared motion CSS cache key is stale`);
+  if (html.includes('js/vinhmath.js')) expect(html.includes('js/vinhmath.js?v=9.8-startup'), `${file}: shared runtime cache key is stale`);
+  if (html.includes('js/menu-v5.js')) expect(html.includes('js/menu-v5.js?v=20261016-startup'), `${file}: shared menu cache key is stale`);
 }
 
 const worker = read('sw.js');
-expect(worker.includes("vinhmath-shell-v70"), 'Offline shell must advance for schedule-scoped attendance');
+expect(worker.includes("vinhmath-shell-v97"), 'Offline shell must advance for startup appearance/identity fixes');
 expect(worker.includes("'/js/theme-preflight.js'"), 'Offline shell must cache the preflight script');
 
-console.log(`PASS theme prepaint, snapshot-free navigation and ${canonical.length} canonical HTML pages`);
+for (const theme of ['light', 'dark']) {
+  const state = runPreflight(theme, { settings: { 'vm-accent': 'violet', 'vm-transparency': '.45', 'vm-blur': '24', 'vm-canvas-opacity': '.3' } });
+  expect(state.styles['--accent'] === (theme === 'dark' ? '#c084fc' : '#8b5cf6'), 'Saved accent must paint before the runtime');
+  expect(state.styles['--glass-opacity'] === '.45' || state.styles['--glass-opacity'] === '0.45', 'Glass opacity must paint before CSS');
+  expect(state.styles['--glass-blur-radius'] === '24px', 'Blur must not change when runtime starts');
+  const initial = JSON.stringify(state.styles);
+  state.api.apply(theme);
+  expect(JSON.stringify(state.styles) === initial, 'Reapplying the same theme must not change its appearance');
+}
+const personal = runPreflight('dark', {settings:{'vm-theme-color':'#12abcd'}});
+expect(personal.styles['--accent'] === '#12abcd', 'Personal accent must not flash a global gold palette');
+const corrupt = runPreflight('dark', {settings:{'vm-theme-color':'url(bad)', 'vm-blur':'bad', 'vm-canvas-opacity':'999'}});
+expect(corrupt.styles['--accent'] === '#d97706' && corrupt.styles['--glass-blur-radius'] === '20px' && corrupt.styles['--canvas-opacity'] === '1', 'Invalid saved settings must have safe bounded defaults');
+console.log(`PASS theme prepaint, identity-safe navigation and ${canonical.length} canonical HTML pages`);

@@ -1,5 +1,9 @@
 .vm-role-focus{display:none;margin-bottom:22px}.vm-role-focus.is-ready{display:block}.vm-role-focus-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin-bottom:14px}.vm-role-focus-head h2{margin:0;font-size:1.28rem}.vm-role-focus-head p{margin:4px 0 0;color:var(--ink-3);font-size:.84rem}.vm-role-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.vm-role-action{display:flex;flex-direction:column;gap:6px;min-height:115px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);text-decoration:none;color:var(--ink);transition:.18s}.vm-role-action:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-sm)}.vm-role-action .ic{font-size:1.5rem}.vm-role-action b{font-size:.95rem}.vm-role-action small{color:var(--ink-3);line-height:1.45}.vm-role-action .count{font-size:1.35rem;color:var(--accent);font-weight:900}
 
+/* No student/staff-specific content before the current profile is resolved. */
+.vm-home-pending .wrap > :not(.greet){display:none!important}
+.vm-home-pending #loiChaoSub .btn{margin-inline-start:12px}
+
 /* Trang chủ bên trong ứng dụng không lặp lại lời mời cài đặt lớn. */
 .vm-home-student #vmInstallHero,.vm-home-staff #vmInstallHero{display:none!important}
 
