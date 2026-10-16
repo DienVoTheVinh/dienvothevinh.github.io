@@ -99,7 +99,7 @@ async function check(page, label, width) {
         await page.setViewportSize({width,height:844}); await page.setContent(fixture(theme,role));
         await page.evaluate(role=>{
           window.__themeClicks=0;
-          if(role!=='guest'){apDungMenu(role,null,null,null);apDungLogoBadge(role);}
+          if(role!=='guest'){window.VM_MENU_USER_ID='fixture-'+role;apDungMenu(role,null,null,null);apDungLogoBadge(role);}
           if(role==='student') document.querySelector('.logo').insertAdjacentHTML('beforeend','<span class="vm-rank-logo-tag"><span class="vm-rank-pill compact"><span class="vm-rank-symbol">✦</span><b>Tân thủ</b><span class="vm-rank-medal">◆</span></span></span>');
           if(role!=='guest') document.querySelector('.nav').insertAdjacentHTML('beforeend','<div class="bell-wrap"><button class="nav-bell" aria-label="Thông báo"><span>♧</span><span class="bell-badge">9+</span></button></div>');
           const bell=document.querySelector('.bell-wrap');if(bell)document.querySelector('.nav').insertBefore(bell,document.getElementById('navBurger'));

@@ -12,6 +12,11 @@
   function darken(hex,f){ var c=toRgb(hex); function h(x){x=Math.round(x*f);return('0'+x.toString(16)).slice(-2);} return '#'+h(c.r)+h(c.g)+h(c.b); }
   window.vmApplyThemeColor = function (color) {
     var root = document.documentElement;
+    if (window.VMThemePreflight && typeof window.VMThemePreflight.applyAccent === 'function') {
+      window.VMThemePreflight.applyAccent(root, localStorage.getItem('vm-accent') || 'amber', root.getAttribute('data-theme') === 'dark');
+      window.VMThemePreflight.applyPersonalColor(color, root);
+      return;
+    }
     var keys = ['--accent','--accent-2','--accent-strong','--accent-gradient','--accent-soft','--gold'];
     if (!color) { keys.forEach(function(k){ root.style.removeProperty(k); }); return; }
     try {
@@ -887,6 +892,10 @@ function toggleTheme() {
 }
 
 function apdungMauAccent(el, color, isDark) {
+  if (window.VMThemePreflight && typeof window.VMThemePreflight.applyAccent === 'function') {
+    window.VMThemePreflight.applyAccent(el, color, isDark);
+    return;
+  }
   var map = {
     light: {
       blue:   { accent: '#2563eb', grad: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', soft: 'rgba(37, 99, 235, 0.08)' },
@@ -919,6 +928,8 @@ function apdungMauAccent(el, color, isDark) {
       || localStorage.getItem('vm-theme') || 'dark';
     if (window.VMThemePreflight && typeof window.VMThemePreflight.apply === 'function') {
       window.VMThemePreflight.apply(savedTheme);
+      // Older installed/offline shells may still have the v1 preflight API.
+      if (typeof window.VMThemePreflight.applyAccent === 'function') return;
     } else {
       root.setAttribute('data-theme', savedTheme);
     }
@@ -1060,6 +1071,10 @@ async function vmLayPhienAnToan(timeoutMs) {
   if (!sb) return { data: { session: null }, error: null };
   try {
     var result = await vmChoCoGioiHan(sb.auth.getSession(), timeoutMs || 8000);
+    // A stale demo flag must never mask a real restored/admin session.
+    if (result && result.data && result.data.session) {
+      try { sessionStorage.removeItem('vm-guest-mode'); } catch (_) {}
+    }
     if (result && result.error && vmLaLoiPhienKhongHopLe(result.error)) vmXoaPhienHongCucBo();
     return result || { data: { session: null }, error: null };
   } catch (error) {
@@ -1545,7 +1560,7 @@ async function dangNhap(username, password) {
 
   // Không mang vỏ menu của một tài khoản cũ sang lần đăng nhập mới trên thiết
   // bị dùng chung. Trang đích sẽ tạo lại cache sau khi xác minh đúng vai trò.
-  try { sessionStorage.removeItem('vm-menu-shell-v1'); } catch (_) {}
+  vmXoaVoGiaoDienTaiKhoan();
 
   var email = vmEmailDangNhap(username);
   var candidates = vmUngVienMatKhauDangNhap(password);
@@ -1613,8 +1628,7 @@ async function dangXuat() {
     returnUrl += '?portal=' + encodeURIComponent(portalContext.portal.slug);
   }
   sessionStorage.removeItem('vm-guest-mode');
-  if (typeof window.vmMenuClearShell === 'function') window.vmMenuClearShell();
-  else { try { sessionStorage.removeItem('vm-menu-shell-v1'); } catch (_) {} }
+  vmXoaVoGiaoDienTaiKhoan();
   vmXoaThemeTamTheoPhien();
   // PDF TikZ co the chua noi dung bai hoc. Xoa ban sao tren thiet bi dung
   // chung khi doi tai khoan; raw TeX khong bao gio duoc luu trong cache nay.
@@ -1643,7 +1657,9 @@ async function dangXuat() {
 
 // Lấy hồ sơ (họ tên, vai trò, lớp) của người đang đăng nhập
 async function layHoSo() {
-  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
+  var s = daKetNoi() ? await vmLayPhienAnToan() : { data: { session: null } };
+  if (s.error) throw s.error;
+  if (!s.data.session && sessionStorage.getItem('vm-guest-mode') === 'true') {
     return {
       id: 'guest-id',
       role: 'student',
@@ -1667,7 +1683,6 @@ async function layHoSo() {
     };
   }
   if (!daKetNoi()) return null;
-  var s = await vmLayPhienAnToan();
   if (!s.data.session) return null;
   var r = await sb.from('profiles')
     .select('id, role, username, full_name, class_id, class_students(class_id, classes(name, mode, grade, is_specialized, teacher_id, co_teacher_id))')
@@ -1712,11 +1727,11 @@ async function layHoSo() {
 /* ---------- 4. CHẶN TRANG CẦN ĐĂNG NHẬP ---------- */
 // Gọi ở đầu các trang như lop-hoc. Chưa đăng nhập → đưa về trang đăng nhập.
 async function yeuCauDangNhap() {
-  if (sessionStorage.getItem('vm-guest-mode') === 'true') {
-    return layHoSo();
-  }
+  if (!daKetNoi() && sessionStorage.getItem('vm-guest-mode') === 'true') return layHoSo();
   if (!daKetNoi()) return null; // chế độ xem thử: cho xem với dữ liệu mẫu
   var s = await vmLayPhienAnToan();
+  if (s.error) throw s.error;
+  if (!s.data.session && sessionStorage.getItem('vm-guest-mode') === 'true') return layHoSo();
   if (!s.data.session) { window.location.href = 'dang-nhap'; return null; }
   var profile = await layHoSo();
   var tenantContext = await vmLoadTenantContext();
@@ -1729,6 +1744,17 @@ async function yeuCauDangNhap() {
     }
   }
   return profile;
+}
+
+// Clear every historical shell version on account changes, not only v1.
+function vmXoaVoGiaoDienTaiKhoan() {
+  if (typeof window.vmMenuClearShell === 'function') window.vmMenuClearShell();
+  try {
+    for (var i = sessionStorage.length - 1; i >= 0; i--) {
+      var key = sessionStorage.key(i);
+      if (key && key.indexOf('vm-menu-shell-') === 0) sessionStorage.removeItem(key);
+    }
+  } catch (_) {}
 }
 
 /* ---------- TIỆN ÍCH NHỎ ---------- */
@@ -2771,7 +2797,7 @@ async function taiCaiDatHeThongGlobal() {
   if (!daKetNoi()) return;
   try {
     var r = await sb.from('app_settings').select('key, value');
-    if (r.data) {
+    if (!r.error && Array.isArray(r.data) && r.data.some(function (row) { return /^theme_/.test(row.key); })) {
       var dbTheme = r.data.find(function(x) { return x.key === 'theme_theme'; });
       var dbThemeMode = r.data.find(function(x) { return x.key === 'theme_mode'; });
       var dbThemeLightStart = r.data.find(function(x) { return x.key === 'theme_light_start'; });
@@ -2783,17 +2809,18 @@ async function taiCaiDatHeThongGlobal() {
       
       var root = document.documentElement;
       
+      var cachedSchedule = vmDocLichThemeDaLuu();
       var schedule = vmLuuLichTheme({
-        mode: dbThemeMode ? dbThemeMode.value : 'schedule',
-        theme: dbTheme ? dbTheme.value : 'dark',
-        lightStart: dbThemeLightStart ? dbThemeLightStart.value : '06:00',
-        darkStart: dbThemeDarkStart ? dbThemeDarkStart.value : '19:00'
+        mode: dbThemeMode ? dbThemeMode.value : cachedSchedule.mode,
+        theme: dbTheme ? dbTheme.value : cachedSchedule.theme,
+        lightStart: dbThemeLightStart ? dbThemeLightStart.value : cachedSchedule.lightStart,
+        darkStart: dbThemeDarkStart ? dbThemeDarkStart.value : cachedSchedule.darkStart
       });
       var systemTheme = vmThemeTheoLich(schedule);
       var transparency = dbTrans ? dbTrans.value : (systemTheme === 'dark' ? '0.3' : '0.2');
       var blur = dbBlur ? dbBlur.value : '20';
       var canvasOpacity = dbCanvas ? dbCanvas.value : '0.25';
-      var accent = dbAccent ? dbAccent.value : 'amber';
+      var accent = dbAccent ? dbAccent.value : (localStorage.getItem('vm-accent') || 'amber');
       
       // Người dùng có thể đổi tạm bằng nút mặt trời trong phiên hiện tại. Mỗi
       // lần đăng nhập mới lại bắt đầu từ lịch hệ thống.

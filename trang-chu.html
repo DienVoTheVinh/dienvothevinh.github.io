@@ -15,10 +15,10 @@
 <title>Trang chủ — VinhMath</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="js/theme-preflight.js?v=1"></script>
+<script src="js/theme-preflight.js?v=2"></script>
 <link rel="stylesheet" href="css/tokens.css?v=8.4">
-<link rel="stylesheet" href="css/vinhmath.css?v=8.10">
-<link rel="stylesheet" href="css/role-home.css?v=submission-20260927">
+<link rel="stylesheet" href="css/vinhmath.css?v=8.11-startup">
+<link rel="stylesheet" href="css/role-home.css?v=20261016-startup">
 <style>
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; }
 .greet { padding: 40px 0 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
@@ -499,102 +499,14 @@
 }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
 .modal-inner { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-lg); max-width: 460px; width: 100%; padding: 32px; text-align: center; position: relative; }
-/* Custom Premium Preloader Styles */
-#vm-preloader {
-  position: fixed;
-  inset: 0;
-  background-color: var(--bg);
-  z-index: 999999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.6s ease;
-}
-#vm-preloader.fade-out {
-  opacity: 0;
-  visibility: hidden;
-}
-.vm-preloader-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-.vm-preloader-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  animation: preloaderPulse 2s infinite ease-in-out;
-}
-.vm-preloader-logo img {
-  width: 90px;
-  height: 90px;
-  filter: drop-shadow(0 0 15px var(--accent-soft));
-}
-.vm-preloader-logo span {
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 850;
-  letter-spacing: 0.15em;
-}
-.vm-preloader-bar {
-  width: 200px;
-  height: 3px;
-  background: var(--line);
-  border-radius: 99px;
-  overflow: hidden;
-  position: relative;
-}
-.vm-preloader-progress {
-  width: 40%;
-  height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 99px;
-  position: absolute;
-  left: -40%;
-  animation: preloaderBarAnim 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
-}
-.vm-preloader-text {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-3);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-@keyframes preloaderPulse {
-  0%, 100% { transform: scale(0.98); opacity: 0.95; }
-  50% { transform: scale(1.02); opacity: 1; }
-}
-@keyframes preloaderBarAnim {
-  0% { left: -40%; width: 30%; }
-  50% { width: 40%; }
-  100% { left: 100%; width: 30%; }
-}
 </style>
 <link rel="stylesheet" href="css/vm-date-inputs.css?v=20261004">
 <script defer src="js/vm-date-inputs.js?v=20261004"></script>
 </head>
-<body>
-<!-- Premium Page Preloader -->
-<div id="vm-preloader">
-  <div class="vm-preloader-content">
-    <div class="vm-preloader-logo">
-      <img src="img/logo.png" alt="VinhMath">
-      <span><span class="brand-vinh" style="color: var(--accent) !important;">VINH</span><span class="brand-math" style="color: var(--ink) !important;">MATH</span></span>
-    </div>
-    <div class="vm-preloader-bar">
-      <div class="vm-preloader-progress"></div>
-    </div>
-    <div class="vm-preloader-text">Đang tải tài nguyên lớp học...</div>
-  </div>
-</div>
-
+<body class="vm-home-pending">
 <div class="topbar">
   <div class="nav">
-    <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <span id="lblLogoSub" class="role-badge badge-student">Học tập</span></a>
+    <a class="logo" href="index"><img src="img/logo.png" alt="VinhMath"><span style="display: inline-flex; align-items: center; gap: 0;"><span class="brand-vinh" style="color: var(--accent) !important;">Vinh</span><span class="brand-math" style="color: var(--topbar-text, #ffffff) !important;">Math</span></span> <span id="lblLogoSub" class="role-badge">VinhMath</span></a>
     <nav class="navlinks">
       <!-- Tự động vẽ qua menu.js -->
     </nav>
@@ -609,8 +521,8 @@
   <section class="greet">
     <div>
       <div class="sec-label" id="tenLop">VinhMath</div>
-      <h1 id="loiChao">Chào em 👋</h1>
-      <p id="loiChaoSub">Chào mừng em quay trở lại học tập hôm nay!</p>
+      <h1 id="loiChao">Chào mừng đến VinhMath</h1>
+      <p id="loiChaoSub" role="status">Đang tải thông tin tài khoản…</p>
     </div>
   </section>
 
@@ -1167,10 +1079,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vm-progress.js?v=20261004"></script><script src="js/vinhmath.js?v=9.7"></script>
-<script src="js/menu-v5.js?v=20261005"></script>
+<script src="js/vm-progress.js?v=20261004"></script><script src="js/vinhmath.js?v=9.8-startup"></script>
+<script src="js/menu-v5.js?v=20261016-startup"></script>
 <script src="js/analytics.js"></script>
-  <script src="js/role-home.js?v=submission-20260927"></script>
+  <script src="js/role-home.js?v=20261016-startup"></script>
 <script>
 // ----- KHỞI TẠO BIẾN TOÀN CỤC -----
 var hoSoNguoiDung = null;
@@ -1217,7 +1129,7 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
 
 // ----- TỰ CHẠY KHI TẢI TRANG -----
 (async function() {
-  if (!daKetNoi()) {
+  if (!daKetNoi() && sessionStorage.getItem('vm-guest-mode') === 'true') {
     // Chế độ Xem thử (Demo)
     hoSoNguoiDung = { role: 'student', full_name: 'Học sinh Demo' };
     $('lblLogoSub').textContent = '· Xem thử';
@@ -1236,24 +1148,19 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
     
     // Nạp lịch demo
     napLichDemo();
+    document.body.classList.remove('vm-home-pending');
     return;
   }
 
   // Chế độ Thật
+  if (!daKetNoi()) throw new Error('Không kết nối được dịch vụ đăng nhập.');
   var hoSo = await yeuCauDangNhap();
-  if (!hoSo) return;
+  if (!hoSo || ['admin', 'teacher', 'assistant', 'student', 'parent'].indexOf(hoSo.role) === -1) throw new Error('Chưa tải được thông tin tài khoản.');
   if (hoSo.role === 'parent') {
     window.location.href = 'phu-huynh';
     return;
   }
   hoSoNguoiDung = hoSo;
-  await vmRoleHomeRender(hoSo);
-  
-  // Tải danh sách giáo viên để ánh xạ tên hiển thị trên lịch
-  try {
-    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin', 'assistant']);
-    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
-  } catch(e) { console.error("Lỗi tải danh sách giáo viên:", e); }
   
   var roleLabel = 'Học sinh';
   var badgeClass = 'badge-student';
@@ -1293,6 +1200,19 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   }
   
   $('loiChao').textContent = chao() + ', ' + tenChao + ' 👋';
+  $('loiChaoSub').textContent = hoSo.role === 'student'
+    ? 'Chào mừng em quay trở lại học tập hôm nay!'
+    : 'Chào mừng thầy/cô trở lại không gian giảng dạy.';
+  document.body.classList.add(hoSo.role === 'student' ? 'vm-home-student' : 'vm-home-staff');
+  document.body.classList.remove('vm-home-pending');
+  if (window.hideLoader) window.hideLoader();
+  await vmRoleHomeRender(hoSo);
+
+  // These secondary data requests must not delay the correct account greeting.
+  try {
+    var rT = await sb.from('profiles').select('id, full_name, role').in('role', ['teacher', 'admin', 'assistant']);
+    (rT.data || []).forEach(function(u) { mapGiaoVien[u.id] = u.full_name; });
+  } catch(e) { console.error('Lỗi tải danh sách giáo viên:', e); }
 
   if (hoSo.role && hoSo.role !== 'student') {
     // QUẢN TRỊ (GV/TG/Admin)
@@ -1367,7 +1287,18 @@ var TEN_THU_DAI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ 
   veLichTuan();
   khoiDongCountdown();
   if (window.hideLoader) window.hideLoader();
-})();
+})().catch(function (error) {
+  console.warn('Chưa tải được trang chủ:', error);
+  if (document.body.classList.contains('vm-home-pending')) {
+    $('loiChaoSub').textContent = 'Chưa tải được thông tin tài khoản. Vui lòng thử lại.';
+    var retry = document.createElement('button');
+    retry.className = 'btn btn-secondary btn-sm';
+    retry.textContent = 'Thử lại';
+    retry.onclick = function () { window.location.reload(); };
+    $('loiChaoSub').appendChild(retry);
+  }
+  if (window.hideLoader) window.hideLoader();
+});
 
 // ===== THÔNG BÁO MỚI TỪ LỚP (bảng tin) =====
 async function taiThongBaoLopHS() {
@@ -3883,19 +3814,6 @@ function khoiTaoChecklistStaff() {
   // Điểm danh đã chuyển sang dạng thông báo không tương tác
 }
 
-// Hide preloader when page finishes loading
-window.hideLoader = function() {
-  var pl = document.getElementById('vm-preloader');
-  if (pl && !pl.classList.contains('fade-out')) {
-    pl.classList.add('fade-out');
-    setTimeout(function () {
-      pl.style.display = 'none';
-    }, 600);
-  }
-};
-window.addEventListener('load', window.hideLoader);
-// Safety timeout: force hide after 2.5 seconds
-setTimeout(window.hideLoader, 2500);
 </script>
 
 <!-- Modal QR điểm danh cho giáo viên -->

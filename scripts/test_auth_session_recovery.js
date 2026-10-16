@@ -45,6 +45,7 @@ const context = {
     localStorage,
     sessionStorage,
     location:{ pathname:'/dang-nhap' },
+    fetch: async () => { throw new Error('This unit fixture must never make network requests'); },
     supabase:{ createClient(url, key, options) { clientOptions = options; return { auth }; } },
   },
   URL,
